@@ -522,7 +522,7 @@ layout: null
       <button class="btn" onclick="openImport()">Import</button>
       <button class="btn" onclick="exportData()">Export</button>
       <button class="btn teal" onclick="shareBuilds()">Share Builds</button>
-      <button class="btn primary" onclick="addHero()">+ Add Hero</button>
+      <button class="btn primary" onclick="addHero()">+ Add Row</button>
     </div>
   </header>
 
@@ -646,11 +646,11 @@ function load() {
 }
 
 // ── Hero CRUD ────────────────────────────────────────────
-function addHeroWithName(name) {
+function addRowWithName(name) {
   heroes.push({ id: uid++, name, slots: {} });
 }
-function addHero() {
-  addHeroWithName('New Hero');
+function addRow() {
+  addRowWithName('Type here');
   save();
   render();
   // focus last name input
@@ -659,7 +659,7 @@ function addHero() {
     if (inputs.length) inputs[inputs.length-1].focus();
   }, 50);
 }
-function deleteHero(id) {
+function deleteRow(id) {
   heroes = heroes.filter(h => h.id !== id);
   save(); render();
 }
@@ -716,7 +716,7 @@ function render() {
       <input class="hero-name-input" value="${esc(hero.name)}" title="Click to rename"
         onchange="renameHero(${hero.id}, this.value)"
         onblur="renameHero(${hero.id}, this.value)">
-      <button class="del-btn" title="Remove hero" onclick="deleteHero(${hero.id})">✕</button>
+      <button class="del-btn" title="Remove Row" onclick="deleteRow(${hero.id})">✕</button>
     </div>`;
     tr.appendChild(tdName);
 
@@ -775,7 +775,7 @@ function ctxRename() {
   if (tr) { const inp = tr.querySelector('.hero-name-input'); if(inp) inp.focus(); }
 }
 function ctxClear() { clearSlot(ctxHeroId, ctxCol); closeCtx(); }
-function ctxDelete() { deleteHero(ctxHeroId); closeCtx(); }
+function ctxDelete() { deleteRow(ctxHeroId); closeCtx(); }
 document.addEventListener('click', e => { if (!e.target.closest('#ctxMenu')) closeCtx(); });
 
 // ── Share ─────────────────────────────────────────────────
