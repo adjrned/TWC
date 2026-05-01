@@ -2,9 +2,6 @@
 layout: null
 ---
 <!DOCTYPE html>
-...
-
-<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -16,25 +13,22 @@ layout: null
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:       #0b0b14;
-    --bg2:      #11111e;
-    --bg3:      #181828;
-    --card:     #1c1c2e;
-    --border:   rgba(255,255,255,0.08);
-    --border2:  rgba(255,255,255,0.14);
-    --accent:   #e94560;
-    --accent2:  #f5a623;
-    --accent3:  #4ecdc4;
-    --text:     #e8e8f0;
-    --muted:    #6b6b8a;
-    --muted2:   #9898b8;
-    --glow-r:   rgba(233,69,96,0.18);
-    --glow-a:   rgba(245,166,35,0.15);
-    --cell:     80px;
+    --bg:      #0b0b14;
+    --bg2:     #11111e;
+    --bg3:     #181828;
+    --card:    #1c1c2e;
+    --border:  rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent:  #e94560;
+    --accent2: #f5a623;
+    --accent3: #4ecdc4;
+    --text:    #e8e8f0;
+    --muted:   #6b6b8a;
+    --muted2:  #9898b8;
+    --cell:    80px;
   }
 
   html { scroll-behavior: smooth; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -42,17 +36,13 @@ layout: null
     min-height: 100vh;
     overflow-x: hidden;
   }
-
-  /* ── Animated BG ── */
   body::before {
     content: '';
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background:
       radial-gradient(ellipse 60% 40% at 15% 20%, rgba(233,69,96,0.07) 0%, transparent 70%),
       radial-gradient(ellipse 50% 50% at 85% 80%, rgba(78,205,196,0.05) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
+    pointer-events: none; z-index: 0;
   }
 
   .page { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 20px 60px; }
@@ -60,48 +50,25 @@ layout: null
   /* ── Header ── */
   header {
     padding: 36px 0 24px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border); margin-bottom: 24px;
   }
-
   .logo-area h1 {
     font-family: 'Cinzel', serif;
-    font-size: clamp(20px, 4vw, 30px);
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: 3px;
-    line-height: 1;
+    font-size: clamp(20px, 4vw, 30px); font-weight: 700;
+    letter-spacing: 3px; line-height: 1;
   }
   .logo-area h1 span { color: var(--accent); }
-  .logo-area p {
-    font-size: 12px;
-    color: var(--muted2);
-    margin-top: 6px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-  }
-
+  .logo-area p { font-size: 12px; color: var(--muted2); margin-top: 6px; letter-spacing: 1.5px; text-transform: uppercase; }
   .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
   /* ── Buttons ── */
   .btn {
-    font-family: 'Nunito', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 8px 18px;
-    border-radius: 24px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--muted2);
-    cursor: pointer;
-    transition: all 0.18s;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
+    font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 8px 18px; border-radius: 24px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted2); cursor: pointer;
+    transition: all 0.18s; letter-spacing: 0.5px; white-space: nowrap;
   }
   .btn:hover { border-color: var(--accent2); color: var(--accent2); }
   .btn.primary { border-color: var(--accent); color: var(--accent); }
@@ -111,412 +78,231 @@ layout: null
 
   /* ── Toolbar ── */
   .toolbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; flex-wrap: wrap;
   }
 
-  .search-wrap {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-  }
-  .search-wrap svg {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.4;
-    pointer-events: none;
-  }
-  .search-wrap input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    border-radius: 24px;
-    padding: 9px 16px 9px 40px;
-    color: var(--text);
-    font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    outline: none;
+  .class-picker {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 24px; padding: 7px 18px 7px 16px;
+    flex: 1; min-width: 220px; max-width: 380px;
     transition: border-color 0.2s;
   }
-  .search-wrap input::placeholder { color: var(--muted); }
-  .search-wrap input:focus { border-color: var(--accent); }
-
-  .hero-count {
-    font-size: 12px;
-    color: var(--muted);
-    white-space: nowrap;
+  .class-picker:focus-within { border-color: var(--accent); }
+  .class-picker svg { opacity: 0.4; flex-shrink: 0; }
+  .class-picker select {
+    flex: 1; background: transparent; border: none;
+    color: var(--text); font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 600; outline: none;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
   }
-  .hero-count strong { color: var(--accent2); }
+  .class-picker select option { background: #1c1c2e; color: var(--text); font-weight: 400; }
+  .class-picker select optgroup { background: #11111e; color: var(--accent2); font-weight: 700; }
+
+  .badge-str { background: rgba(233,69,96,0.15); color: #e94560; }
+  .badge-agi { background: rgba(78,205,196,0.15); color: #4ecdc4; }
+  .badge-int { background: rgba(147,112,219,0.18); color: #b39ddb; }
 
   /* ── Share Banner ── */
   #shareBanner {
-    display: none;
-    background: var(--bg3);
-    border: 1px solid var(--accent3);
-    border-radius: 12px;
-    padding: 12px 18px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    color: var(--muted2);
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: none; background: var(--bg3); border: 1px solid var(--accent3);
+    border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
+    font-size: 13px; color: var(--muted2); align-items: center; gap: 12px; flex-wrap: wrap;
   }
   #shareBanner.show { display: flex; }
   #shareBanner strong { color: var(--accent3); }
   #shareUrl {
-    flex: 1;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 12px;
-    color: var(--text);
-    font-size: 12px;
-    font-family: monospace;
-    outline: none;
-    min-width: 200px;
-    cursor: text;
+    flex: 1; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; color: var(--text);
+    font-size: 12px; font-family: monospace; outline: none; min-width: 200px; cursor: text;
   }
 
-  /* ── Table wrapper ── */
-  .table-wrap {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
+  /* ── Table ── */
+  .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: visible; }
   .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 600px; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 600px;
-  }
-
-  /* ── Column headers ── */
-  thead tr {
-    background: rgba(0,0,0,0.3);
-    border-bottom: 1px solid var(--border2);
-  }
-
+  thead tr { background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border2); }
+  thead tr th:first-child { border-top-left-radius: 16px; }
+  thead tr th:last-child { border-top-right-radius: 16px; }
   thead th {
     padding: 14px 10px;
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--accent2);
-    text-align: center;
-    white-space: nowrap;
+    font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent2); text-align: center; white-space: nowrap;
   }
-
-  thead th:first-child {
-    text-align: left;
-    padding-left: 20px;
-    color: var(--muted);
-    width: 130px;
-    font-size: 9px;
-  }
-
+  thead th:first-child { text-align: left; padding-left: 20px; width: 160px; }
   .th-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  /* Dynamic hero column header */
+  #heroColHeader {
+    display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  }
+  .hero-col-icon-wrap {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 1.5px dashed rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.03);
+    display: none; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.2s; margin-bottom: 2px;
+    font-size: 14px; color: var(--muted);
+  }
+  .hero-col-icon-wrap.visible { display: flex; }
+  .hero-col-icon-wrap:hover { border-color: var(--accent2); color: var(--accent2); }
+  .hero-col-icon-wrap img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+  .hero-col-icon-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
+  #heroColName {
+    font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; color: var(--muted); transition: color 0.2s;
+  }
+  #heroColName.active { color: var(--text); }
+  #heroColBadge {
+    font-size: 9px; font-weight: 700; padding: 2px 7px;
+    border-radius: 8px; letter-spacing: 0.8px; text-transform: uppercase;
+    display: none;
+  }
+  #heroColBadge.visible { display: inline-block; }
 
   /* ── Body rows ── */
   tbody tr {
     border-bottom: 1px solid rgba(255,255,255,0.04);
     transition: background 0.15s;
+    cursor: grab;
   }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: rgba(255,255,255,0.025); }
-  tbody tr.hidden { display: none; }
+  tbody tr.dragging { opacity: 0.4; cursor: grabbing; }
+  tbody tr.drag-over { background: rgba(233,69,96,0.08); border-top: 2px solid var(--accent); }
 
-  /* ── Hero name cell ── */
-  .hero-cell {
-    padding: 10px 10px 10px 20px;
-    vertical-align: middle;
-    white-space: nowrap;
-  }
+  /* ── Row label ── */
+  .row-cell { padding: 10px 10px 10px 0; vertical-align: middle; white-space: nowrap; }
+  .row-inner { display: flex; align-items: center; gap: 6px; }
 
-  .hero-inner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .drag-handle {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; color: var(--muted); font-size: 14px;
+    cursor: grab; flex-shrink: 0; padding-left: 14px;
+    opacity: 0; transition: opacity 0.2s;
+    user-select: none;
   }
+  tbody tr:hover .drag-handle { opacity: 1; }
 
-  .hero-name-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid transparent;
-    color: var(--text);
-    font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    width: 110px;
-    outline: none;
-    cursor: pointer;
-    padding: 2px 0;
-    transition: border-color 0.2s;
+  .row-name-input {
+    background: transparent; border: none; border-bottom: 1px solid transparent;
+    color: var(--text); font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 700; width: 100px;
+    outline: none; cursor: pointer; padding: 2px 0; transition: border-color 0.2s;
   }
-  .hero-name-input:focus {
-    border-bottom-color: var(--accent);
-    cursor: text;
-  }
+  .row-name-input:focus { border-bottom-color: var(--accent); cursor: text; }
 
   .del-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 13px;
-    padding: 2px 5px;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.2s, color 0.2s;
-    line-height: 1;
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 13px; padding: 2px 5px; border-radius: 4px;
+    opacity: 0; transition: opacity 0.2s, color 0.2s; line-height: 1;
   }
   tbody tr:hover .del-btn { opacity: 1; }
   .del-btn:hover { color: var(--accent); }
 
   /* ── Slot cells ── */
-  .slot-cell {
-    text-align: center;
-    vertical-align: middle;
-    padding: 8px 6px;
-  }
+  .slot-cell { text-align: center; vertical-align: middle; padding: 8px 6px; }
 
   .slot-drop {
-    width: var(--cell);
-    height: var(--cell);
-    border-radius: 10px;
+    width: var(--cell); height: var(--cell); border-radius: 10px;
     border: 1.5px dashed rgba(255,255,255,0.12);
     background: rgba(255,255,255,0.02);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    cursor: pointer;
-    position: relative;
-    transition: border-color 0.18s, background 0.18s, transform 0.12s;
-    overflow: visible;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; cursor: pointer; position: relative;
+    overflow: visible; transition: border-color 0.18s, background 0.18s, transform 0.12s;
   }
-  .slot-drop:hover {
-    border-color: var(--accent);
-    background: rgba(233,69,96,0.07);
-    transform: scale(1.06);
-    z-index: 10;
-  }
-  .slot-drop.filled {
-    border-style: solid;
-    border-color: rgba(245,166,35,0.35);
-    background: rgba(245,166,35,0.04);
-  }
-  .slot-drop.filled:hover {
-    border-color: var(--accent);
-    background: rgba(233,69,96,0.08);
-  }
+  .slot-drop:hover { border-color: var(--accent); background: rgba(233,69,96,0.07); transform: scale(1.06); z-index: 10; }
+  .slot-drop.filled { border-style: solid; border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
+  .slot-drop.filled:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
+  .slot-drop.locked { cursor: default; opacity: 0.4; }
+  .slot-drop.locked:hover { transform: none; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); }
 
-  .slot-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
-    display: block;
-    pointer-events: none;
-  }
+  .slot-img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
+  .slot-plus { font-size: 20px; color: rgba(255,255,255,0.15); user-select: none; pointer-events: none; }
+  .slot-drop:hover:not(.locked) .slot-plus { color: var(--accent); }
 
-  .slot-plus {
-    font-size: 20px;
-    color: rgba(255,255,255,0.15);
-    user-select: none;
-    pointer-events: none;
-  }
-  .slot-drop:hover .slot-plus { color: var(--accent); }
-
-  /* file input overlay */
-  .slot-file {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-    font-size: 0;
-  }
+  .slot-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
 
   /* ── Tooltip ── */
   .slot-tooltip {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed;
     background: #0e0e1c;
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    padding: 10px 14px;
-    min-width: 130px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.18s;
-    z-index: 100;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    border: 1px solid var(--border2); border-radius: 10px;
+    padding: 10px 14px; min-width: 130px; pointer-events: none;
+    opacity: 0; transition: opacity 0.18s; z-index: 9000;
+    text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    transform: translateX(-50%);
   }
   .slot-drop:hover .slot-tooltip { opacity: 1; }
-  .slot-tooltip img {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-    border-radius: 6px;
-    display: block;
-    margin: 0 auto 6px;
-  }
-  .slot-tooltip .tt-name {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent2);
-    margin-bottom: 2px;
-  }
-  .slot-tooltip .tt-slot {
-    font-size: 10px;
-    color: var(--muted2);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
+  .slot-tooltip img { width: 56px; height: 56px; object-fit: contain; border-radius: 6px; display: block; margin: 0 auto 6px; }
+  .slot-tooltip .tt-name { font-size: 12px; font-weight: 700; color: var(--accent2); margin-bottom: 2px; }
+  .slot-tooltip .tt-slot { font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; }
 
   /* ── Context menu ── */
   #ctxMenu {
-    position: fixed;
-    background: #14141f;
-    border: 1px solid var(--border2);
-    border-radius: 12px;
-    padding: 6px;
-    z-index: 9999;
-    min-width: 160px;
-    display: none;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    position: fixed; background: #14141f; border: 1px solid var(--border2);
+    border-radius: 12px; padding: 6px; z-index: 9999; min-width: 160px;
+    display: none; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
   }
   #ctxMenu button {
-    display: block;
-    width: 100%;
-    background: none;
-    border: none;
-    color: var(--text);
-    font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 9px 14px;
-    text-align: left;
-    border-radius: 7px;
-    cursor: pointer;
-    transition: background 0.13s;
+    display: block; width: 100%; background: none; border: none;
+    color: var(--text); font-family: 'Nunito', sans-serif; font-size: 13px;
+    font-weight: 500; padding: 9px 14px; text-align: left;
+    border-radius: 7px; cursor: pointer; transition: background 0.13s;
   }
   #ctxMenu button:hover { background: rgba(255,255,255,0.07); }
   #ctxMenu button.danger { color: var(--accent); }
   #ctxMenu .ctx-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 
   /* ── Empty state ── */
-  #emptyState {
-    display: none;
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
+  #emptyState { display: none; text-align: center; padding: 60px 20px; color: var(--muted); }
   #emptyState .es-icon { font-size: 48px; margin-bottom: 14px; }
   #emptyState p { font-size: 14px; }
   #emptyState strong { color: var(--accent2); }
 
   /* ── Toast ── */
   #toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
+    position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: #14141f;
-    border: 1px solid var(--accent3);
-    color: var(--accent3);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 22px;
-    border-radius: 24px;
-    opacity: 0;
-    transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none;
-    z-index: 9999;
-    white-space: nowrap;
+    background: #14141f; border: 1px solid var(--accent3);
+    color: var(--accent3); font-size: 13px; font-weight: 600;
+    padding: 10px 22px; border-radius: 24px;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none; z-index: 9999; white-space: nowrap;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ── Modal ── */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 9000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9000; display: none; align-items: center; justify-content: center; }
   .modal-overlay.show { display: flex; }
-  .modal {
-    background: var(--card);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    padding: 28px 30px;
-    width: 90%;
-    max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  }
-  .modal h2 {
-    font-family: 'Cinzel', serif;
-    font-size: 16px;
-    color: var(--accent2);
-    margin-bottom: 16px;
-    letter-spacing: 1px;
-  }
+  .modal { background: var(--card); border: 1px solid var(--border2); border-radius: 16px; padding: 28px 30px; width: 90%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+  .modal h2 { font-family: 'Cinzel', serif; font-size: 16px; color: var(--accent2); margin-bottom: 16px; letter-spacing: 1px; }
   .modal p { font-size: 13px; color: var(--muted2); margin-bottom: 16px; line-height: 1.6; }
-  .modal textarea {
-    width: 100%;
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: monospace;
-    font-size: 11px;
-    resize: vertical;
-    min-height: 120px;
-    outline: none;
-    margin-bottom: 14px;
-  }
+  .modal textarea { width: 100%; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: monospace; font-size: 11px; resize: vertical; min-height: 120px; outline: none; margin-bottom: 14px; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
-  /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
   @media (max-width: 600px) {
-    :root { --cell: 66px; }
-    .header-actions { gap: 6px; }
-    .btn { padding: 7px 13px; }
+    :root { --cell: 64px; }
+    .btn { padding: 7px 12px; }
   }
 </style>
 </head>
 <body>
-
 <div class="page">
 
   <header>
     <div class="logo-area">
       <h1>TW<span>RPG</span> Loadout Builder</h1>
-      <p>Build Planner</p>
+      <p>Equipment Tracker &amp; Build Planner</p>
     </div>
     <div class="header-actions">
       <button class="btn" onclick="openImport()">Import</button>
@@ -535,13 +321,14 @@ layout: null
   </div>
 
   <div class="toolbar">
-    <div class="search-wrap">
+    <div class="class-picker">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input type="text" id="searchInput" placeholder="Filter by Hero..." oninput="filterHeroes()">
+      <select id="classSelect" onchange="onClassChange()">
+        <option value="">— Select Hero Class —</option>
+      </select>
     </div>
-    <span class="hero-count"><strong id="heroCount">0</strong> Heroes</span>
   </div>
 
   <div class="table-wrap">
@@ -549,7 +336,17 @@ layout: null
       <table id="grid">
         <thead>
           <tr>
-            <th></th>
+            <th>
+              <div id="heroColHeader">
+                <div class="hero-col-icon-wrap" id="heroColIconWrap" title="Upload hero icon">
+                  <span id="heroColIconPlaceholder">✦</span>
+                  <img id="heroColIconImg" style="display:none">
+                  <input type="file" accept="image/*" class="hero-col-icon-file" onchange="handleHeroColIcon(event)">
+                </div>
+                <span id="heroColName">Heroes</span>
+                <span id="heroColBadge"></span>
+              </div>
+            </th>
             <th><span class="th-icon">⚔️</span>Weapon</th>
             <th><span class="th-icon">⛑️</span>Helm</th>
             <th><span class="th-icon">🥋</span>Body</th>
@@ -561,27 +358,24 @@ layout: null
       </table>
       <div id="emptyState">
         <div class="es-icon">🗡️</div>
-        <p>No heroes yet. Click <strong>+ Add Hero</strong> to get started.</p>
+        <p>No rows yet. Click <strong>+ Add Row</strong> to get started.</p>
       </div>
     </div>
   </div>
 
 </div>
 
-<!-- Context Menu -->
 <div id="ctxMenu">
-  <button onclick="ctxRename()">Rename hero</button>
   <button onclick="ctxClear()">Clear slot</button>
   <hr class="ctx-divider">
-  <button class="danger" onclick="ctxDelete()">Remove hero</button>
+  <button class="danger" onclick="ctxDelete()">Remove row</button>
 </div>
 
-<!-- Import Modal -->
 <div class="modal-overlay" id="importModal">
   <div class="modal">
     <h2>Import Builds</h2>
-    <p>Paste exported JSON data below. This will <strong>replace</strong> your current builds.</p>
-    <textarea id="importText" placeholder='[{"name":"Early","slots":{...}}]'></textarea>
+    <p>Paste exported JSON below. This will <strong>replace</strong> your current data.</p>
+    <textarea id="importText" placeholder='{"rows":[...],"builds":{...}}'></textarea>
     <div class="modal-actions">
       <button class="btn" onclick="closeImport()">Cancel</button>
       <button class="btn primary" onclick="doImport()">Import</button>
@@ -589,162 +383,314 @@ layout: null
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
-// ── Config ──────────────────────────────────────────────
-const COLS = ['weapon','helm','body','wings','accessory'];
-const LABELS = { weapon:'Weapon', helm:'Helm', body:'Body Armor', wings:'Wings', accessory:'Accessory' };
-const ICONS_PATH = 'twicons/';
-const STORAGE_KEY = 'twrpg_builds_v1';
+// ── Roster ───────────────────────────────────────────────
+const ROSTER = {
+  STR: ['Berserker','Blaster','Crusader','Dark Knight','Fighter','Knight','Lancer','Lightseeker','Merchant','Paladin','Sword Saint'],
+  AGI: ['Assassin','Bow Master','Gunner','Hermit','Martial Artist','Phantom Blade','Reaper','Shooter','Sniper','Sword Enchanter','Swordsman','Thunderer','Trickster'],
+  INT: ['Alchemist','Arcane Mage','Blood Weaver','Elementalist','Fire Mage','Lightning Mage','Priest','Shrine Priestess','Soul Weaver','Warlock','Water Mage','Wind Mage','Witch']
+};
+const BADGE_CLS = { STR:'badge-str', AGI:'badge-agi', INT:'badge-int' };
+const BADGE_BG  = { STR:'rgba(233,69,96,0.15)', AGI:'rgba(78,205,196,0.15)', INT:'rgba(147,112,219,0.18)' };
+const BADGE_COL = { STR:'#e94560', AGI:'#4ecdc4', INT:'#b39ddb' };
 
-const DEFAULT_HEROES = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
+function heroType(name) {
+  for (const [t, list] of Object.entries(ROSTER)) if (list.includes(name)) return t;
+  return null;
+}
 
-// ── State ───────────────────────────────────────────────
-let heroes = [];
-let uid = 0;
-let ctxHeroId = null;
-let ctxCol = null;
+// ── Config ───────────────────────────────────────────────
+const COLS        = ['weapon','helm','body','wings','accessory'];
+const LABELS      = { weapon:'Weapon', helm:'Helm', body:'Body Armor', wings:'Wings', accessory:'Accessory' };
+const ICONS_PATH  = 'twicons/';
+const STORAGE_KEY = 'twrpg_v4';
+const DEFAULT_ROWS = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
+
+// ── State ────────────────────────────────────────────────
+let rows          = [];   // [{ id, name }]
+let builds        = {};   // { className: { rowId: { col: slotData } } }
+let classIcons    = {};   // { className: dataURL }
+let selectedClass = null;
+let uid           = 0;
+let ctxRowId      = null;
+let ctxCol        = null;
+
+// drag state
+let dragSrcId     = null;
 
 // ── Init ─────────────────────────────────────────────────
 function init() {
+  buildClassSelect();
+
+  // check share link
   const params = new URLSearchParams(location.search);
   if (params.has('data')) {
     try {
-      const imported = JSON.parse(decodeURIComponent(atob(params.get('data'))));
-      if (Array.isArray(imported)) {
-        heroes = imported.map(h => ({ ...h, id: uid++ }));
-        save();
-        showToast('Builds loaded from share link!');
-        // clean URL
-        history.replaceState({}, '', location.pathname);
-        render();
-        return;
-      }
+      const d = JSON.parse(decodeURIComponent(atob(params.get('data'))));
+      rows = (d.rows||[]).map(r => ({...r, id: uid++}));
+      builds = d.builds || {};
+      classIcons = d.classIcons || {};
+      selectedClass = d.selectedClass || null;
+      save();
+      showToast('Builds loaded from share link!');
+      history.replaceState({}, '', location.pathname);
+      syncClassUI();
+      render();
+      return;
     } catch(e) {}
   }
+
   load();
-  if (heroes.length === 0) {
-    DEFAULT_HEROES.forEach(name => addRowWithName(name));
+  if (rows.length === 0) {
+    DEFAULT_ROWS.forEach(name => rows.push({ id: uid++, name }));
+    save();
   }
+  syncClassUI();
   render();
 }
 
-// ── Persistence ─────────────────────────────────────────
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(heroes)); } catch(e) {}
+// ── Class select ─────────────────────────────────────────
+function buildClassSelect() {
+  const sel = document.getElementById('classSelect');
+  for (const [type, list] of Object.entries(ROSTER)) {
+    const og = document.createElement('optgroup');
+    og.label = type;
+    list.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  }
 }
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      heroes = parsed.map(h => ({ ...h, id: uid++ }));
+
+function onClassChange() {
+  selectedClass = document.getElementById('classSelect').value || null;
+  save(); syncClassUI(); render();
+}
+
+function syncClassUI() {
+  const sel = document.getElementById('classSelect');
+  sel.value = selectedClass || '';
+
+  const type = selectedClass ? heroType(selectedClass) : null;
+
+  // column header name
+  const colName  = document.getElementById('heroColName');
+  const colBadge = document.getElementById('heroColBadge');
+  const iconWrap = document.getElementById('heroColIconWrap');
+
+  if (selectedClass) {
+    colName.textContent = selectedClass;
+    colName.classList.add('active');
+    iconWrap.classList.add('visible');
+    // restore saved icon for this class if any
+    const savedIcon = classIcons[selectedClass] || null;
+    const imgEl = document.getElementById('heroColIconImg');
+    const placeholder = document.getElementById('heroColIconPlaceholder');
+    if (savedIcon) {
+      imgEl.src = savedIcon; imgEl.style.display = 'block';
+      placeholder.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      placeholder.style.display = '';
     }
-  } catch(e) { heroes = []; }
+    if (type) {
+      colBadge.textContent = type;
+      colBadge.style.background = BADGE_BG[type];
+      colBadge.style.color = BADGE_COL[type];
+      colBadge.className = 'visible';
+    } else {
+      colBadge.className = '';
+    }
+  } else {
+    colName.textContent = 'Heroes';
+    colName.classList.remove('active');
+    colBadge.className = '';
+    iconWrap.classList.remove('visible');
+  }
 }
 
-// ── Hero CRUD ────────────────────────────────────────────
-function addRowWithName(name) {
-  heroes.push({ id: uid++, name, slots: {} });
-}
-function addRow() {
-  addRowWithName('Type here');
-  save();
-  render();
-  // focus last name input
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('.hero-name-input');
-    if (inputs.length) inputs[inputs.length-1].focus();
-  }, 50);
-}
-function deleteRow(id) {
-  heroes = heroes.filter(h => h.id !== id);
-  save(); render();
-}
-function renameHero(id, val) {
-  const h = heroes.find(h => h.id === id);
-  if (h && val.trim()) { h.name = val.trim(); save(); }
-}
-function clearSlot(heroId, col) {
-  const h = heroes.find(h => h.id === heroId);
-  if (h) { delete h.slots[col]; save(); render(); }
-}
-
-// ── File handling ────────────────────────────────────────
-function handleFile(e, heroId, col) {
+// ── Hero column icon upload ───────────────────────────────
+function handleHeroColIcon(e) {
+  if (!selectedClass) return;
   const file = e.target.files[0];
   if (!file) return;
-  const name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g,' ');
   const reader = new FileReader();
   reader.onload = ev => {
-    const h = heroes.find(h => h.id === heroId);
-    if (!h) return;
-    h.slots[col] = { type: 'upload', src: ev.target.result, name };
-    save(); render();
+    classIcons[selectedClass] = ev.target.result;
+    save(); syncClassUI();
   };
   reader.readAsDataURL(file);
 }
 
-// ── Icon path helper ─────────────────────────────────────
-// Attempts to load from twicons/ folder; falls back to uploaded data URL
-function iconSrc(slotData) {
-  if (!slotData) return null;
-  if (slotData.type === 'upload') return slotData.src;
-  return ICONS_PATH + slotData.name + '.jpg';
+// ── Tooltip positioning via mousemove ────────────────────
+document.addEventListener('mousemove', e => {
+  const tip = e.target.closest('.slot-drop')?.querySelector('.slot-tooltip');
+  if (tip) {
+    const rect = e.target.closest('.slot-drop').getBoundingClientRect();
+    tip.style.left = (rect.left + rect.width / 2) + 'px';
+    // show above by default, but if too close to top, show below
+    if (rect.top > 160) {
+      tip.style.top = (rect.top - 10) + 'px';
+      tip.style.transform = 'translateX(-50%) translateY(-100%)';
+    } else {
+      tip.style.top = (rect.bottom + 10) + 'px';
+      tip.style.transform = 'translateX(-50%)';
+    }
+  }
+});
+
+// ── Slot helpers ──────────────────────────────────────────
+function getSlotsFor(rowId) {
+  if (!selectedClass) return {};
+  return builds[selectedClass]?.[rowId] || {};
+}
+
+function setSlot(rowId, col, data) {
+  if (!selectedClass) { showToast('Select a hero class first!'); return; }
+  if (!builds[selectedClass]) builds[selectedClass] = {};
+  if (!builds[selectedClass][rowId]) builds[selectedClass][rowId] = {};
+  builds[selectedClass][rowId][col] = data;
+  save(); render();
+}
+
+function clearSlot(rowId, col) {
+  if (!selectedClass || !builds[selectedClass]?.[rowId]?.[col]) return;
+  delete builds[selectedClass][rowId][col];
+  save(); render();
+}
+
+// ── File upload ───────────────────────────────────────────
+function handleFile(e, rowId, col) {
+  if (!selectedClass) { showToast('Select a hero class first!'); return; }
+  const file = e.target.files[0];
+  if (!file) return;
+  const name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g,' ');
+  const reader = new FileReader();
+  reader.onload = ev => setSlot(rowId, col, { type:'upload', src: ev.target.result, name });
+  reader.readAsDataURL(file);
+}
+
+function iconSrc(slot) {
+  if (!slot) return null;
+  return slot.type === 'upload' ? slot.src : (ICONS_PATH + slot.name + '.jpg');
+}
+
+// ── Row CRUD ─────────────────────────────────────────────
+function addRow() {
+  rows.push({ id: uid++, name: 'New Row' });
+  save(); render();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.row-name-input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+function deleteRow(id) {
+  rows = rows.filter(r => r.id !== id);
+  for (const cls of Object.keys(builds)) {
+    if (builds[cls][id]) delete builds[cls][id];
+  }
+  save(); render();
+}
+
+function renameRow(id, val) {
+  const r = rows.find(r => r.id === id);
+  if (r && val.trim()) { r.name = val.trim(); save(); }
+}
+
+// ── Drag-to-reorder ───────────────────────────────────────
+function onDragStart(e, id) {
+  dragSrcId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) tr.classList.add('dragging');
+  }, 0);
+}
+
+function onDragOver(e, id) {
+  e.preventDefault();
+  document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('drag-over'));
+  if (id !== dragSrcId) {
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) tr.classList.add('drag-over');
+  }
+}
+
+function onDrop(e, id) {
+  e.preventDefault();
+  if (dragSrcId === null || dragSrcId === id) return;
+  const fromIdx = rows.findIndex(r => r.id === dragSrcId);
+  const toIdx   = rows.findIndex(r => r.id === id);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = rows.splice(fromIdx, 1);
+  rows.splice(toIdx, 0, moved);
+  dragSrcId = null;
+  save(); render();
+}
+
+function onDragEnd() {
+  dragSrcId = null;
+  document.querySelectorAll('tbody tr').forEach(tr => {
+    tr.classList.remove('dragging', 'drag-over');
+  });
 }
 
 // ── Render ───────────────────────────────────────────────
 function render() {
-  const q = (document.getElementById('searchInput').value || '').toLowerCase();
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
-  let visible = 0;
 
-  heroes.forEach(hero => {
-    const match = hero.name.toLowerCase().includes(q);
+  rows.forEach(row => {
+    const slots  = getSlotsFor(row.id);
+    const locked = !selectedClass;
+
     const tr = document.createElement('tr');
-    if (!match) tr.classList.add('hidden');
-    else visible++;
-    tr.dataset.id = hero.id;
+    tr.dataset.id = row.id;
+    tr.draggable = true;
+    tr.addEventListener('dragstart', e => onDragStart(e, row.id));
+    tr.addEventListener('dragover',  e => onDragOver(e, row.id));
+    tr.addEventListener('drop',      e => onDrop(e, row.id));
+    tr.addEventListener('dragend',   onDragEnd);
 
-    // Hero name cell
+    // row label
     const tdName = document.createElement('td');
-    tdName.className = 'hero-cell';
-    tdName.innerHTML = `<div class="hero-inner">
-      <input class="hero-name-input" value="${esc(hero.name)}" title="Click to rename"
-        onchange="renameHero(${hero.id}, this.value)"
-        onblur="renameHero(${hero.id}, this.value)">
-      <button class="del-btn" title="Remove Row" onclick="deleteRow(${hero.id})">✕</button>
+    tdName.className = 'row-cell';
+    tdName.innerHTML = `<div class="row-inner">
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <input class="row-name-input" value="${esc(row.name)}" title="Click to rename"
+        onchange="renameRow(${row.id}, this.value)"
+        onblur="renameRow(${row.id}, this.value)">
+      <button class="del-btn" onclick="deleteRow(${row.id})">✕</button>
     </div>`;
     tr.appendChild(tdName);
 
-    // Slot cells
+    // slot cells
     COLS.forEach(col => {
-      const td = document.createElement('td');
+      const td   = document.createElement('td');
       td.className = 'slot-cell';
-      const slot = hero.slots[col];
-      const src = slot ? iconSrc(slot) : null;
-      const filled = !!slot;
-      const label = LABELS[col];
+      const slot = slots[col];
+      const src  = slot ? iconSrc(slot) : null;
       const itemName = slot ? esc(slot.name) : '';
 
-      td.innerHTML = `<div class="slot-drop ${filled ? 'filled' : ''}"
-          data-heroid="${hero.id}" data-col="${col}"
-          oncontextmenu="openCtx(event,${hero.id},'${col}')">
-        ${filled
+      td.innerHTML = `<div class="slot-drop ${slot ? 'filled' : ''} ${locked ? 'locked' : ''}"
+          data-rowid="${row.id}" data-col="${col}"
+          oncontextmenu="openCtx(event,${row.id},'${col}')">
+        ${slot
           ? `<img class="slot-img" src="${src}" alt="${itemName}"
                onerror="this.src='';this.parentNode.classList.remove('filled')">
              <div class="slot-tooltip">
                <img src="${src}" onerror="this.style.display='none'">
                <div class="tt-name">${itemName}</div>
-               <div class="tt-slot">${label}</div>
+               <div class="tt-slot">${LABELS[col]}</div>
              </div>`
-          : `<span class="slot-plus">+</span>`
+          : `<span class="slot-plus">${locked ? '·' : '+'}</span>`
         }
-        <input type="file" accept="image/*" class="slot-file"
-          onchange="handleFile(event,${hero.id},'${col}')">
+        ${!locked ? `<input type="file" accept="image/*" class="slot-file" onchange="handleFile(event,${row.id},'${col}')">` : ''}
       </div>`;
       tr.appendChild(td);
     });
@@ -752,104 +698,88 @@ function render() {
     tbody.appendChild(tr);
   });
 
-  document.getElementById('emptyState').style.display = heroes.length === 0 ? 'block' : 'none';
-  document.getElementById('heroCount').textContent = visible;
+  document.getElementById('emptyState').style.display = rows.length === 0 ? 'block' : 'none';
 }
 
-// ── Filter ───────────────────────────────────────────────
-function filterHeroes() { render(); }
-
 // ── Context menu ─────────────────────────────────────────
-function openCtx(e, heroId, col) {
+function openCtx(e, rowId, col) {
   e.preventDefault();
-  ctxHeroId = heroId; ctxCol = col;
+  ctxRowId = rowId; ctxCol = col;
   const m = document.getElementById('ctxMenu');
   m.style.display = 'block';
   m.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
-  m.style.top = Math.min(e.clientY, window.innerHeight - 140) + 'px';
+  m.style.top  = Math.min(e.clientY, window.innerHeight - 100) + 'px';
 }
 function closeCtx() { document.getElementById('ctxMenu').style.display = 'none'; }
-function ctxRename() {
-  closeCtx();
-  const tr = document.querySelector(`tr[data-id="${ctxHeroId}"]`);
-  if (tr) { const inp = tr.querySelector('.hero-name-input'); if(inp) inp.focus(); }
-}
-function ctxClear() { clearSlot(ctxHeroId, ctxCol); closeCtx(); }
-function ctxDelete() { deleteRow(ctxHeroId); closeCtx(); }
+function ctxClear()  { clearSlot(ctxRowId, ctxCol); closeCtx(); }
+function ctxDelete() { deleteRow(ctxRowId); closeCtx(); }
 document.addEventListener('click', e => { if (!e.target.closest('#ctxMenu')) closeCtx(); });
+
+// ── Persist ───────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, classIcons, selectedClass })); } catch(e) {}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (d) {
+      rows = (d.rows||[]).map(r => ({...r, id: uid++}));
+      builds = d.builds || {};
+      classIcons = d.classIcons || {};
+      selectedClass = d.selectedClass || null;
+    }
+  } catch(e) {}
+}
 
 // ── Share ─────────────────────────────────────────────────
 function shareBuilds() {
-  // Serialize heroes (strip upload data URLs to keep URL short; keep named slots)
-  const shareable = heroes.map(h => ({
-    name: h.name,
-    slots: Object.fromEntries(
-      Object.entries(h.slots).map(([col, s]) => [
-        col,
-        s.type === 'upload'
-          ? { type: 'upload', src: s.src, name: s.name }
-          : s
-      ])
-    )
-  }));
-  const encoded = btoa(encodeURIComponent(JSON.stringify(shareable)));
+  const encoded = btoa(encodeURIComponent(JSON.stringify({ rows, builds, classIcons, selectedClass })));
   const url = location.origin + location.pathname + '?data=' + encoded;
   document.getElementById('shareUrl').value = url;
   document.getElementById('shareBanner').classList.add('show');
 }
 function copyShareUrl() {
-  const el = document.getElementById('shareUrl');
-  el.select();
+  document.getElementById('shareUrl').select();
   document.execCommand('copy');
-  showToast('Link copied to clipboard!');
+  showToast('Link copied!');
 }
 function closeBanner() { document.getElementById('shareBanner').classList.remove('show'); }
 
 // ── Export / Import ───────────────────────────────────────
 function exportData() {
-  const data = JSON.stringify(heroes.map(h => ({ name: h.name, slots: h.slots })), null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ rows, builds, classIcons, selectedClass }, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'twrpg-builds.json';
-  a.click();
-  showToast('Builds exported!');
+  a.href = URL.createObjectURL(blob); a.download = 'twrpg-builds.json'; a.click();
+  showToast('Exported!');
 }
-function openImport() { document.getElementById('importModal').classList.add('show'); }
+function openImport()  { document.getElementById('importModal').classList.add('show'); }
 function closeImport() { document.getElementById('importModal').classList.remove('show'); }
 function doImport() {
   try {
-    const raw = document.getElementById('importText').value.trim();
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error('Not an array');
-    heroes = parsed.map(h => ({ id: uid++, name: h.name || 'Hero', slots: h.slots || {} }));
-    save(); render(); closeImport();
-    showToast('Builds imported!');
-  } catch(e) {
-    showToast('Invalid JSON — check your data.');
-  }
+    const d = JSON.parse(document.getElementById('importText').value.trim());
+    rows = (d.rows||[]).map(r => ({...r, id: uid++}));
+    builds = d.builds || {};
+    classIcons = d.classIcons || {};
+    selectedClass = d.selectedClass || null;
+    save(); syncClassUI(); render(); closeImport();
+    showToast('Imported!');
+  } catch(e) { showToast('Invalid JSON.'); }
 }
 
 // ── Toast ─────────────────────────────────────────────────
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 // ── Utils ─────────────────────────────────────────────────
 function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Go ────────────────────────────────────────────────────
 init();
 </script>
 </body>
