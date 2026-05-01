@@ -522,7 +522,7 @@ layout: null
       <button class="btn" onclick="openImport()">Import</button>
       <button class="btn" onclick="exportData()">Export</button>
       <button class="btn teal" onclick="shareBuilds()">Share Builds</button>
-      <button class="btn primary" onclick="addHero()">+ Add Row</button>
+      <button class="btn primary" onclick="addRow()">+ Add Row</button>
     </div>
   </header>
 
@@ -626,7 +626,7 @@ function init() {
   }
   load();
   if (heroes.length === 0) {
-    DEFAULT_HEROES.forEach(name => addHeroWithName(name));
+    DEFAULT_HEROES.forEach(name => addRowWithName(name));
   }
   render();
 }
