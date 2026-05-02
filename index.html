@@ -82,20 +82,6 @@ layout: null
   .class-picker select option { background: #1c1c2e; color: var(--text); font-weight: 400; }
   .class-picker select optgroup { background: #11111e; color: var(--accent2); font-weight: 700; }
 
-  /* ── Share Banner ── */
-  #shareBanner {
-    display: none; background: var(--bg3); border: 1px solid var(--accent3);
-    border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
-    font-size: 13px; color: var(--muted2); align-items: center; gap: 12px; flex-wrap: wrap;
-  }
-  #shareBanner.show { display: flex; }
-  #shareBanner strong { color: var(--accent3); }
-  #shareUrl {
-    flex: 1; background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 12px; color: var(--text);
-    font-size: 12px; font-family: monospace; outline: none; min-width: 200px; cursor: text;
-  }
-
   /* ── Official builds panel ── */
   #officialPanel {
     background: var(--bg3); border: 1px solid var(--border2);
@@ -336,18 +322,9 @@ layout: null
     <div class="header-actions">
       <button class="btn" onclick="openImport()">Import</button>
       <button class="btn" onclick="exportData()">Export</button>
-      <button class="btn teal" onclick="shareBuilds()">Share Link</button>
       <button class="btn primary" onclick="addRow()">+ Add Row</button>
     </div>
   </header>
-
-  <div id="shareBanner">
-    <strong>Share link ready!</strong>
-    <span>Anyone with this link can view your builds:</span>
-    <input type="text" id="shareUrl" readonly onclick="this.select()">
-    <button class="btn teal" onclick="copyShareUrl()">Copy</button>
-    <button class="btn" onclick="closeBanner()">✕</button>
-  </div>
 
   <!-- Official builds panel — shown automatically when a class has published builds -->
   <div id="officialPanel">
@@ -506,48 +483,6 @@ let iconLibrary   = [];
 async function init() {
   buildClassSelect();
   await loadIconLibrary();
-
-  const params = new URLSearchParams(location.search);
-
-  // New compact format: ?s=
-  if (params.has('s')) {
-    try {
-      const compact = atob(params.get('s').replace(/-/g,'+').replace(/_/g,'/'));
-      const { cls, restoredBuilds } = decodeShare(compact);
-      selectedClass = cls;
-      builds = { ...builds, ...restoredBuilds };
-      save(); showToast('Builds loaded from share link!');
-      history.replaceState({}, '', location.pathname);
-      syncClassUI(); render();
-      if (selectedClass) fetchOfficialBuilds();
-      return;
-    } catch(e) {}
-  }
-
-  // Legacy format: ?data=
-  if (params.has('data')) {
-    try {
-      const d = JSON.parse(decodeURIComponent(atob(params.get('data'))));
-      rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-      // Reconstruct src from name for any slots that only have a name
-      builds = d.builds || {};
-      for (const cls of Object.keys(builds)) {
-        for (const rowId of Object.keys(builds[cls])) {
-          for (const col of Object.keys(builds[cls][rowId])) {
-            const s = builds[cls][rowId][col];
-            if (s && s.name && !s.src) s.src = ICONS_PATH + s.name + '.jpg';
-          }
-        }
-      }
-      selectedClass = d.selectedClass || null;
-      save(); showToast('Builds loaded from share link!');
-      history.replaceState({}, '', location.pathname);
-      syncClassUI(); render();
-      if (selectedClass) fetchOfficialBuilds();
-      return;
-    } catch(e) {}
-  }
-
   load();
   if (rows.length === 0) {
     DEFAULT_ROWS.forEach(name => rows.push({ id: uid++, name }));
@@ -942,62 +877,6 @@ function load() {
 }
 
 // ── Share ─────────────────────────────────────────────────
-// ── Compact share encoding ────────────────────────────────
-// Format: classIdx|rowSlots|rowSlots|...
-// rowSlots: w,h,b,wi,a  (icon library indices, empty = -)
-// e.g. "7|3,12,-,-,5|...|"
-// classIdx = index into flat ALL_CLASSES array
-const ALL_CLASSES = Object.values(ROSTER).flat();
-
-function encodeShare() {
-  const classIdx = selectedClass ? ALL_CLASSES.indexOf(selectedClass) : -1;
-  const classBuilds = builds[selectedClass] || {};
-  const rowParts = rows.map(r => {
-    const slots = classBuilds[r.id] || {};
-    return COLS.map(col => {
-      const s = slots[col];
-      if (!s?.name) return '-';
-      const idx = iconLibrary.findIndex(i => i.name === s.name);
-      return idx >= 0 ? String(idx) : '-';
-    }).join(',');
-  });
-  return classIdx + '|' + rowParts.join('|');
-}
-
-function decodeShare(str) {
-  const parts = str.split('|');
-  const classIdx = parseInt(parts[0]);
-  const cls = classIdx >= 0 ? (ALL_CLASSES[classIdx] || null) : null;
-  const restoredBuilds = {};
-  if (cls) {
-    restoredBuilds[cls] = {};
-    rows.forEach((r, ri) => {
-      const slotPart = parts[ri + 1] || '';
-      const indices  = slotPart.split(',');
-      restoredBuilds[cls][r.id] = {};
-      COLS.forEach((col, ci) => {
-        const idx = parseInt(indices[ci]);
-        if (!isNaN(idx) && iconLibrary[idx]) {
-          const icon = iconLibrary[idx];
-          restoredBuilds[cls][r.id][col] = { type: 'library', name: icon.name, src: icon.src };
-        }
-      });
-    });
-  }
-  return { cls, restoredBuilds };
-}
-
-function shareBuilds() {
-  const compact = encodeShare();
-  // Use URL-safe base64 to shorten further
-  const encoded = btoa(compact).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  const url = location.origin + location.pathname + '?s=' + encoded;
-  document.getElementById('shareUrl').value = url;
-  document.getElementById('shareBanner').classList.add('show');
-}
-function copyShareUrl() { document.getElementById('shareUrl').select(); document.execCommand('copy'); showToast('Link copied!'); }
-function closeBanner()  { document.getElementById('shareBanner').classList.remove('show'); }
-
 // ── Export / Import ───────────────────────────────────────
 function exportData() {
   // Export clean version (item names + paths, no base64 blobs) suitable for committing to builds/
@@ -1024,11 +903,36 @@ function closeImport() { document.getElementById('importModal').classList.remove
 function doImport() {
   try {
     const d = JSON.parse(document.getElementById('importText').value.trim());
-    rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-    builds = d.builds || {};
-    selectedClass = d.selectedClass || null;
-    save(); syncClassUI(); render(); closeImport(); showToast('Imported!');
-  } catch(e) { showToast('Invalid JSON.'); }
+
+    // Format A: internal full backup { rows, builds, selectedClass }
+    if (d.rows && d.builds) {
+      rows = (d.rows||[]).map(r => ({...r, id: uid++}));
+      builds = d.builds || {};
+      selectedClass = d.selectedClass || null;
+
+    // Format B: per-class export from builds/ folder { class, rows, publishedAt }
+    } else if (d.class && d.rows) {
+      const cls = d.class;
+      if (!builds[cls]) builds[cls] = {};
+      // match exported rows to local rows by name
+      d.rows.forEach(exportedRow => {
+        const local = rows.find(r => r.name === exportedRow.name);
+        if (!local) return;
+        builds[cls][local.id] = {};
+        COLS.forEach(col => {
+          const s = exportedRow.slots?.[col];
+          if (s?.name) builds[cls][local.id][col] = { type: 'library', name: s.name, src: s.src || (ICONS_PATH + s.name + '.jpg') };
+        });
+      });
+      selectedClass = cls;
+
+    } else {
+      showToast('Unrecognised format.'); return;
+    }
+
+    save(); syncClassUI(); render(); closeImport();
+    showToast('Imported!');
+  } catch(e) { showToast('Invalid JSON — check your data.'); }
 }
 
 // ── Toast ─────────────────────────────────────────────────
