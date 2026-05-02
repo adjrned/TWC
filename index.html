@@ -96,13 +96,45 @@ layout: null
     font-size: 12px; font-family: monospace; outline: none; min-width: 200px; cursor: text;
   }
 
+  /* ── Official builds panel ── */
+  #officialPanel {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 12px; margin-bottom: 20px; overflow: hidden; display: none;
+  }
+  #officialPanel.show { display: block; }
+  .official-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    background: rgba(78,205,196,0.05);
+  }
+  .official-header h3 { font-family: 'Cinzel', serif; font-size: 13px; color: var(--accent3); letter-spacing: 1px; }
+  .official-header span { font-size: 12px; color: var(--muted); }
+  .official-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 1px; background: var(--border); }
+  .official-row {
+    background: var(--card); padding: 12px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .official-row-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .official-row-slots { display: flex; gap: 4px; }
+  .official-slot-mini {
+    width: 28px; height: 28px; border-radius: 5px; border: 1px solid var(--border2);
+    overflow: hidden; background: var(--bg2); flex-shrink: 0;
+  }
+  .official-slot-mini img { width: 100%; height: 100%; object-fit: contain; }
+  .official-load-btn {
+    font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px;
+    border: 1px solid var(--accent3); color: var(--accent3); background: transparent;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
+  }
+  .official-load-btn:hover { background: var(--accent3); color: #0b0b14; }
+
   /* ── Table ── */
   .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: visible; }
   .table-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; min-width: 600px; }
   thead tr { background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border2); }
   thead tr th:first-child { border-top-left-radius: 16px; }
-  thead tr th:last-child { border-top-right-radius: 16px; }
+  thead tr th:last-child  { border-top-right-radius: 16px; }
   thead th {
     padding: 14px 10px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent2);
@@ -113,21 +145,16 @@ layout: null
 
   /* ── Hero column header ── */
   #heroColHeader { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
-
   .hero-col-icon-wrap {
     width: 56px; height: 56px; border-radius: 10px;
     border: 1.5px dashed rgba(255,255,255,0.2);
     background: rgba(255,255,255,0.04);
     display: none; align-items: center; justify-content: center;
-    cursor: pointer; position: relative; overflow: hidden;
+    overflow: hidden; font-size: 22px; color: var(--muted);
     transition: border-color 0.2s, background 0.2s;
-    font-size: 20px; color: var(--muted);
   }
   .hero-col-icon-wrap.visible { display: flex; }
-  .hero-col-icon-wrap:hover { border-color: var(--accent2); background: rgba(245,166,35,0.08); color: var(--accent2); }
   .hero-col-icon-wrap img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
-  .hero-col-icon-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
-
   #heroColName {
     font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
     letter-spacing: 1.5px; color: var(--muted); transition: color 0.2s;
@@ -146,9 +173,8 @@ layout: null
   .row-inner { display: flex; align-items: center; gap: 6px; }
   .drag-handle {
     display: flex; align-items: center; justify-content: center;
-    width: 20px; color: var(--muted); font-size: 14px;
-    cursor: grab; flex-shrink: 0; padding-left: 14px;
-    opacity: 0; transition: opacity 0.2s; user-select: none;
+    width: 20px; color: var(--muted); font-size: 14px; cursor: grab;
+    flex-shrink: 0; padding-left: 14px; opacity: 0; transition: opacity 0.2s; user-select: none;
   }
   tbody tr:hover .drag-handle { opacity: 1; }
   .row-name-input {
@@ -169,8 +195,7 @@ layout: null
   .slot-cell { text-align: center; vertical-align: middle; padding: 8px 6px; }
   .slot-drop {
     width: var(--cell); height: var(--cell); border-radius: 10px;
-    border: 1.5px dashed rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.02);
+    border: 1.5px dashed rgba(255,255,255,0.12); background: rgba(255,255,255,0.02);
     display: flex; align-items: center; justify-content: center;
     margin: 0 auto; cursor: pointer; position: relative;
     overflow: visible; transition: border-color 0.18s, background 0.18s, transform 0.12s;
@@ -184,7 +209,7 @@ layout: null
   .slot-plus { font-size: 20px; color: rgba(255,255,255,0.15); user-select: none; pointer-events: none; }
   .slot-drop:hover:not(.locked) .slot-plus { color: var(--accent); }
 
-  /* ── Floating tooltip (follows mouse, always on top) ── */
+  /* ── Floating tooltip ── */
   #floatTooltip {
     position: fixed; pointer-events: none; z-index: 99999;
     background: #0e0e1c; border: 1px solid var(--border2);
@@ -205,10 +230,9 @@ layout: null
   }
   #pickerOverlay.show { display: flex; }
   #pickerModal {
-    background: var(--card); border: 1px solid var(--border2);
-    border-radius: 18px; width: 90%; max-width: 680px;
-    max-height: 85vh; display: flex; flex-direction: column;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.8); overflow: hidden;
+    background: var(--card); border: 1px solid var(--border2); border-radius: 18px;
+    width: 90%; max-width: 680px; max-height: 85vh;
+    display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.8); overflow: hidden;
   }
   .picker-header {
     padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
@@ -218,8 +242,7 @@ layout: null
   .picker-search {
     display: flex; align-items: center; gap: 8px;
     background: var(--bg2); border: 1px solid var(--border2);
-    border-radius: 20px; padding: 6px 14px; flex: 1; max-width: 260px;
-    transition: border-color 0.2s;
+    border-radius: 20px; padding: 6px 14px; flex: 1; max-width: 260px; transition: border-color 0.2s;
   }
   .picker-search:focus-within { border-color: var(--accent); }
   .picker-search svg { opacity: 0.4; flex-shrink: 0; }
@@ -240,19 +263,12 @@ layout: null
   }
   .picker-item:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
   .picker-item img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; display: block; }
-  .picker-item .pi-name {
-    font-size: 10px; color: var(--muted2); font-weight: 600;
-    line-height: 1.2; word-break: break-word; letter-spacing: 0.2px;
-  }
+  .picker-item .pi-name { font-size: 10px; color: var(--muted2); font-weight: 600; line-height: 1.2; word-break: break-word; }
   .picker-item.hidden { display: none; }
-  .picker-empty {
-    grid-column: 1/-1; text-align: center;
-    padding: 40px 20px; color: var(--muted); font-size: 13px;
-  }
+  .picker-empty { grid-column: 1/-1; text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
   .picker-footer {
     padding: 12px 22px; border-top: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
   }
   .picker-footer span { font-size: 12px; color: var(--muted); }
   .picker-footer strong { color: var(--accent2); }
@@ -264,10 +280,9 @@ layout: null
     display: none; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
   }
   #ctxMenu button {
-    display: block; width: 100%; background: none; border: none;
-    color: var(--text); font-family: 'Nunito', sans-serif; font-size: 13px;
-    font-weight: 500; padding: 9px 14px; text-align: left;
-    border-radius: 7px; cursor: pointer; transition: background 0.13s;
+    display: block; width: 100%; background: none; border: none; color: var(--text);
+    font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 9px 14px; text-align: left; border-radius: 7px; cursor: pointer; transition: background 0.13s;
   }
   #ctxMenu button:hover { background: rgba(255,255,255,0.07); }
   #ctxMenu button.danger { color: var(--accent); }
@@ -283,11 +298,9 @@ layout: null
   #toast {
     position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: #14141f; border: 1px solid var(--accent3);
-    color: var(--accent3); font-size: 13px; font-weight: 600;
-    padding: 10px 22px; border-radius: 24px;
-    opacity: 0; transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none; z-index: 99999; white-space: nowrap;
+    background: #14141f; border: 1px solid var(--accent3); color: var(--accent3);
+    font-size: 13px; font-weight: 600; padding: 10px 22px; border-radius: 24px;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; z-index: 99999; white-space: nowrap;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -308,7 +321,7 @@ layout: null
   @media (max-width: 600px) {
     :root { --cell: 64px; }
     .btn { padding: 7px 12px; }
-    .picker-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); }
+    .picker-grid { grid-template-columns: repeat(auto-fill, minmax(74px,1fr)); }
   }
 </style>
 </head>
@@ -323,7 +336,7 @@ layout: null
     <div class="header-actions">
       <button class="btn" onclick="openImport()">Import</button>
       <button class="btn" onclick="exportData()">Export</button>
-      <button class="btn teal" onclick="shareBuilds()">Share Builds</button>
+      <button class="btn teal" onclick="shareBuilds()">Share Link</button>
       <button class="btn primary" onclick="addRow()">+ Add Row</button>
     </div>
   </header>
@@ -334,6 +347,15 @@ layout: null
     <input type="text" id="shareUrl" readonly onclick="this.select()">
     <button class="btn teal" onclick="copyShareUrl()">Copy</button>
     <button class="btn" onclick="closeBanner()">✕</button>
+  </div>
+
+  <!-- Official builds panel — shown automatically when a class has published builds -->
+  <div id="officialPanel">
+    <div class="official-header">
+      <h3>Official Builds — <span id="officialClass"></span></h3>
+      <span id="officialMeta"></span>
+    </div>
+    <div class="official-grid" id="officialGrid"></div>
   </div>
 
   <div class="toolbar">
@@ -354,10 +376,9 @@ layout: null
           <tr>
             <th>
               <div id="heroColHeader">
-                <div class="hero-col-icon-wrap" id="heroColIconWrap" title="Upload hero icon">
+                <div class="hero-col-icon-wrap" id="heroColIconWrap">
                   <span id="heroColIconPlaceholder">✦</span>
                   <img id="heroColIconImg" style="display:none" alt="">
-                  <input type="file" accept="image/*" class="hero-col-icon-file" onchange="handleHeroColIcon(event)">
                 </div>
                 <span id="heroColName">Heroes</span>
               </div>
@@ -377,7 +398,6 @@ layout: null
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- Floating tooltip -->
@@ -447,30 +467,40 @@ function heroType(name) {
 const COLS         = ['weapon','helm','body','wings','accessory'];
 const LABELS       = { weapon:'Weapon', helm:'Helm', body:'Body Armor', wings:'Wings', accessory:'Accessory' };
 const ICONS_PATH   = 'twicons/';
-const STORAGE_KEY  = 'twrpg_v5';
+const STORAGE_KEY  = 'twrpg_v6';
 const DEFAULT_ROWS = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
 
-// Item names read from twicons/ — the page fetches a directory listing.
-// Since GitHub Pages serves a directory index, we probe known names OR
-// use a manifest file. For maximum compatibility we generate the list
-// from any img that loads. The list below is populated at runtime via probing.
-// You can also create a twicons/manifest.json with ["ItemA","ItemB",...] to
-// avoid any probing delay.
-let iconLibrary = []; // [{ name, src }]
+// Auto-detect GitHub username and repo from the GitHub Pages URL.
+// Works for: https://username.github.io/repo-name/
+// Falls back gracefully if running locally.
+const _host    = location.hostname.split('.');
+const GH_USER  = (_host.length >= 3 && _host[1] === 'github') ? _host[0] : '';
+const GH_REPO  = location.pathname.split('/').filter(Boolean)[0] || '';
+const RAW_BASE = GH_USER && GH_REPO
+  ? `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/builds/`
+  : null;
+
+// Converts class name to icon filename: "Shrine Priestess" → "ShrinePriestessIcon.jpg"
+function classIconPath(name) {
+  return ICONS_PATH + name.replace(/\s+/g, '') + 'Icon.jpg';
+}
+
+// Converts class name to builds filename: "Sword Saint" → "Sword_Saint.json"
+function buildFileName(name) {
+  return name.replace(/\s+/g, '_') + '.json';
+}
 
 // ── State ────────────────────────────────────────────────
 let rows          = [];
 let builds        = {};
-let classIcons    = {};
 let selectedClass = null;
 let uid           = 0;
 let ctxRowId      = null;
 let ctxCol        = null;
 let dragSrcId     = null;
-
-// picker state
 let pickerTargetRow = null;
 let pickerTargetCol = null;
+let iconLibrary   = [];
 
 // ── Init ─────────────────────────────────────────────────
 async function init() {
@@ -478,16 +508,43 @@ async function init() {
   await loadIconLibrary();
 
   const params = new URLSearchParams(location.search);
+
+  // New compact format: ?s=
+  if (params.has('s')) {
+    try {
+      const compact = atob(params.get('s').replace(/-/g,'+').replace(/_/g,'/'));
+      const { cls, restoredBuilds } = decodeShare(compact);
+      selectedClass = cls;
+      builds = { ...builds, ...restoredBuilds };
+      save(); showToast('Builds loaded from share link!');
+      history.replaceState({}, '', location.pathname);
+      syncClassUI(); render();
+      if (selectedClass) fetchOfficialBuilds();
+      return;
+    } catch(e) {}
+  }
+
+  // Legacy format: ?data=
   if (params.has('data')) {
     try {
       const d = JSON.parse(decodeURIComponent(atob(params.get('data'))));
       rows = (d.rows||[]).map(r => ({...r, id: uid++}));
+      // Reconstruct src from name for any slots that only have a name
       builds = d.builds || {};
-      classIcons = d.classIcons || {};
+      for (const cls of Object.keys(builds)) {
+        for (const rowId of Object.keys(builds[cls])) {
+          for (const col of Object.keys(builds[cls][rowId])) {
+            const s = builds[cls][rowId][col];
+            if (s && s.name && !s.src) s.src = ICONS_PATH + s.name + '.jpg';
+          }
+        }
+      }
       selectedClass = d.selectedClass || null;
       save(); showToast('Builds loaded from share link!');
       history.replaceState({}, '', location.pathname);
-      syncClassUI(); render(); return;
+      syncClassUI(); render();
+      if (selectedClass) fetchOfficialBuilds();
+      return;
     } catch(e) {}
   }
 
@@ -497,19 +554,16 @@ async function init() {
     save();
   }
   syncClassUI(); render();
+  if (selectedClass) fetchOfficialBuilds();
 }
 
-// ── Icon library loader ───────────────────────────────────
-// Strategy 1: look for twicons/manifest.json (array of filenames without ext)
-// Strategy 2: fetch the directory listing HTML and parse <a href> links
-// Strategy 3: fall back to empty (user uploads manually)
+// ── Icon library ──────────────────────────────────────────
 async function loadIconLibrary() {
-  // Try manifest first
+  // Try manifest.json first
   try {
     const r = await fetch(ICONS_PATH + 'manifest.json');
     if (r.ok) {
-      const data = await r.json();
-      const names = data.files || (Array.isArray(data) ? data : null);
+      const names = await r.json();
       if (Array.isArray(names) && names.length) {
         iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + n + '.jpg' }));
         return;
@@ -522,25 +576,21 @@ async function loadIconLibrary() {
     const r = await fetch(ICONS_PATH);
     if (r.ok) {
       const html = await r.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+      const doc  = new DOMParser().parseFromString(html, 'text/html');
       const links = [...doc.querySelectorAll('a[href]')]
         .map(a => a.getAttribute('href'))
         .filter(h => h && h.toLowerCase().endsWith('.jpg') && !h.startsWith('?') && !h.startsWith('/'));
       if (links.length) {
         iconLibrary = links.map(h => {
           const file = h.split('/').pop();
-          const name = decodeURIComponent(file.replace(/\.jpg$/i, ''));
+          const name = decodeURIComponent(file.replace(/\.jpg$/i,''));
           return { name, src: ICONS_PATH + file };
-        });
-        iconLibrary.sort((a,b) => a.name.localeCompare(b.name));
+        }).sort((a,b) => a.name.localeCompare(b.name));
         return;
       }
     }
   } catch(e) {}
 
-  // Empty — user can still use context menu "Change icon" which falls through to the picker
-  // but picker will show a note
   iconLibrary = [];
 }
 
@@ -561,11 +611,14 @@ function buildClassSelect() {
 
 function onClassChange() {
   selectedClass = document.getElementById('classSelect').value || null;
+  document.getElementById('officialPanel').classList.remove('show');
   save(); syncClassUI(); render();
+  if (selectedClass) fetchOfficialBuilds();
 }
 
 function syncClassUI() {
   document.getElementById('classSelect').value = selectedClass || '';
+
   const colName  = document.getElementById('heroColName');
   const iconWrap = document.getElementById('heroColIconWrap');
   const imgEl    = document.getElementById('heroColIconImg');
@@ -575,9 +628,23 @@ function syncClassUI() {
     colName.textContent = selectedClass;
     colName.classList.add('active');
     iconWrap.classList.add('visible');
-    const saved = classIcons[selectedClass] || null;
-    if (saved) { imgEl.src = saved; imgEl.style.display = 'block'; ph.style.display = 'none'; }
-    else        { imgEl.style.display = 'none'; ph.style.display = ''; }
+
+    // Auto-load class icon from twicons/
+    const iconPath = classIconPath(selectedClass);
+    imgEl.style.display = 'none';
+    ph.style.display = '';
+    const testImg = new Image();
+    testImg.onload = () => {
+      imgEl.src = iconPath;
+      imgEl.style.display = 'block';
+      ph.style.display = 'none';
+    };
+    testImg.onerror = () => {
+      // Icon file not found — show placeholder
+      imgEl.style.display = 'none';
+      ph.style.display = '';
+    };
+    testImg.src = iconPath;
   } else {
     colName.textContent = 'Heroes';
     colName.classList.remove('active');
@@ -585,13 +652,63 @@ function syncClassUI() {
   }
 }
 
-// ── Hero column icon ──────────────────────────────────────
-function handleHeroColIcon(e) {
+// ── Official builds (read-only from public repo) ──────────
+async function fetchOfficialBuilds() {
+  if (!selectedClass || !RAW_BASE) return;
+  try {
+    const url = RAW_BASE + buildFileName(selectedClass);
+    const r   = await fetch(url);
+    if (!r.ok) { document.getElementById('officialPanel').classList.remove('show'); return; }
+    const data = await r.json();
+    renderOfficialPanel(data);
+  } catch(e) {
+    document.getElementById('officialPanel').classList.remove('show');
+  }
+}
+
+function renderOfficialPanel(data) {
+  const panel = document.getElementById('officialPanel');
+  document.getElementById('officialClass').textContent = data.class || selectedClass;
+  document.getElementById('officialMeta').textContent  = data.publishedAt
+    ? 'Updated ' + new Date(data.publishedAt).toLocaleDateString() : '';
+
+  const grid = document.getElementById('officialGrid');
+  grid.innerHTML = '';
+
+  (data.rows || []).forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'official-row';
+
+    const miniSlots = COLS.map(col => {
+      const s = row.slots?.[col];
+      return `<div class="official-slot-mini">${s?.src ? `<img src="${esc(s.src)}" alt="${esc(s.name||'')}">` : ''}</div>`;
+    }).join('');
+
+    div.innerHTML = `
+      <div>
+        <div class="official-row-name">${esc(row.name)}</div>
+        <div class="official-row-slots">${miniSlots}</div>
+      </div>
+      <button class="official-load-btn" onclick='loadOfficialRow(${JSON.stringify(row)})'>Load</button>`;
+    grid.appendChild(div);
+  });
+
+  panel.classList.add('show');
+}
+
+function loadOfficialRow(row) {
   if (!selectedClass) return;
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => { classIcons[selectedClass] = ev.target.result; save(); syncClassUI(); };
-  reader.readAsDataURL(file);
+  const target = rows.find(r => r.name === row.name);
+  if (!target) { showToast(`No local row named "${row.name}".`); return; }
+  if (!builds[selectedClass]) builds[selectedClass] = {};
+  if (!builds[selectedClass][target.id]) builds[selectedClass][target.id] = {};
+  COLS.forEach(col => {
+    const s = row.slots?.[col];
+    if (s?.name) builds[selectedClass][target.id][col] = { type: 'library', name: s.name, src: s.src || (ICONS_PATH + s.name + '.jpg') };
+    else         delete builds[selectedClass][target.id][col];
+  });
+  save(); render();
+  showToast(`Loaded ${row.name} build!`);
 }
 
 // ── Slot helpers ──────────────────────────────────────────
@@ -613,45 +730,37 @@ function clearSlot(rowId, col) {
 }
 function iconSrc(slot) {
   if (!slot) return null;
-  return slot.type === 'upload' ? slot.src : (ICONS_PATH + slot.name + '.jpg');
+  return slot.type === 'upload' ? slot.src : (slot.src || ICONS_PATH + slot.name + '.jpg');
 }
 
 // ── Icon picker ───────────────────────────────────────────
 function openPicker(rowId, col) {
   if (!selectedClass) { showToast('Select a hero class first!'); return; }
-  pickerTargetRow = rowId;
-  pickerTargetCol = col;
+  pickerTargetRow = rowId; pickerTargetCol = col;
   document.getElementById('pickerTitle').textContent = `Choose Icon — ${LABELS[col]}`;
   document.getElementById('pickerSearch').value = '';
   buildPickerGrid();
   document.getElementById('pickerOverlay').classList.add('show');
-  document.getElementById('pickerSearch').focus();
+  setTimeout(() => document.getElementById('pickerSearch').focus(), 50);
 }
 
 function buildPickerGrid() {
   const grid = document.getElementById('pickerGrid');
   grid.innerHTML = '';
-
   if (iconLibrary.length === 0) {
-    grid.innerHTML = `<div class="picker-empty">
-      No icons found in <code>twicons/</code>.<br><br>
-      Add a <code>twicons/manifest.json</code> file listing your item names,<br>
-      or ensure GitHub Pages serves directory listings.
-    </div>`;
+    grid.innerHTML = `<div class="picker-empty">No icons found in <code>twicons/</code>.<br><br>Add a <code>twicons/manifest.json</code> listing item names, or ensure the folder is accessible.</div>`;
     document.getElementById('pickerCount').textContent = '0';
     return;
   }
-
   iconLibrary.forEach(icon => {
     const div = document.createElement('div');
     div.className = 'picker-item';
     div.dataset.name = icon.name.toLowerCase();
-    div.innerHTML = `<img src="${icon.src}" alt="${esc(icon.name)}" onerror="this.parentNode.style.display='none'">
+    div.innerHTML = `<img src="${icon.src}" alt="${esc(icon.name)}" onerror="this.closest('.picker-item').style.display='none'">
                      <span class="pi-name">${esc(icon.name)}</span>`;
     div.addEventListener('click', () => pickIcon(icon));
     grid.appendChild(div);
   });
-
   document.getElementById('pickerCount').textContent = iconLibrary.length;
 }
 
@@ -670,43 +779,32 @@ function pickIcon(icon) {
   setSlot(pickerTargetRow, pickerTargetCol, { type: 'library', name: icon.name, src: icon.src });
   closePicker();
 }
-
 function closePicker() {
   document.getElementById('pickerOverlay').classList.remove('show');
   pickerTargetRow = null; pickerTargetCol = null;
 }
-
-function closePickerOnBg(e) {
-  if (e.target === document.getElementById('pickerOverlay')) closePicker();
-}
+function closePickerOnBg(e) { if (e.target === document.getElementById('pickerOverlay')) closePicker(); }
 
 // ── Floating tooltip ──────────────────────────────────────
 let tooltipTarget = null;
-const ftEl   = () => document.getElementById('floatTooltip');
-const ftImg  = () => document.getElementById('ftImg');
-const ftName = () => document.getElementById('ftName');
-const ftSlot = () => document.getElementById('ftSlot');
-
 document.addEventListener('mousemove', e => {
   const drop = e.target.closest('.slot-drop.filled');
   if (drop) {
-    const ft = ftEl();
+    const ft = document.getElementById('floatTooltip');
     ft.style.left = e.clientX + 'px';
     ft.style.top  = e.clientY + 'px';
     if (tooltipTarget !== drop) {
       tooltipTarget = drop;
-      const rowId = drop.dataset.rowid;
-      const col   = drop.dataset.col;
-      const slot  = getSlotsFor(parseInt(rowId))[col];
+      const slot = getSlotsFor(parseInt(drop.dataset.rowid))[drop.dataset.col];
       if (slot) {
-        ftImg().src = iconSrc(slot);
-        ftName().textContent = slot.name;
-        ftSlot().textContent = LABELS[col] || col;
+        document.getElementById('ftImg').src  = iconSrc(slot);
+        document.getElementById('ftName').textContent = slot.name;
+        document.getElementById('ftSlot').textContent = LABELS[drop.dataset.col] || drop.dataset.col;
       }
       ft.classList.add('show');
     }
   } else {
-    if (tooltipTarget) { ftEl().classList.remove('show'); tooltipTarget = null; }
+    if (tooltipTarget) { document.getElementById('floatTooltip').classList.remove('show'); tooltipTarget = null; }
   }
 });
 
@@ -755,7 +853,7 @@ function onDragEnd() {
 
 // ── Render ───────────────────────────────────────────────
 function render() {
-  const tbody = document.getElementById('tbody');
+  const tbody  = document.getElementById('tbody');
   tbody.innerHTML = '';
   const locked = !selectedClass;
 
@@ -785,32 +883,26 @@ function render() {
       const slot = slots[col];
       const src  = slot ? iconSrc(slot) : null;
 
-      const dropDiv = document.createElement('div');
-      dropDiv.className = `slot-drop${slot ? ' filled' : ''}${locked ? ' locked' : ''}`;
-      dropDiv.dataset.rowid = row.id;
-      dropDiv.dataset.col   = col;
-      dropDiv.addEventListener('contextmenu', e => openCtx(e, row.id, col));
+      const drop = document.createElement('div');
+      drop.className = `slot-drop${slot ? ' filled' : ''}${locked ? ' locked' : ''}`;
+      drop.dataset.rowid = row.id;
+      drop.dataset.col   = col;
+      drop.addEventListener('contextmenu', e => openCtx(e, row.id, col));
 
       if (slot) {
         const img = document.createElement('img');
         img.className = 'slot-img'; img.src = src; img.alt = slot.name;
-        img.onerror = () => { dropDiv.classList.remove('filled'); img.remove(); dropDiv.innerHTML = '<span class="slot-plus">+</span>'; };
-        dropDiv.appendChild(img);
+        img.onerror = () => { drop.classList.remove('filled'); img.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; drop.appendChild(p); };
+        drop.appendChild(img);
       } else {
         const plus = document.createElement('span');
-        plus.className = 'slot-plus';
-        plus.textContent = locked ? '·' : '+';
-        dropDiv.appendChild(plus);
+        plus.className = 'slot-plus'; plus.textContent = locked ? '·' : '+';
+        drop.appendChild(plus);
       }
 
-      if (!locked) {
-        dropDiv.addEventListener('click', e => {
-          if (!e.target.closest('.slot-drop')) return;
-          openPicker(row.id, col);
-        });
-      }
+      if (!locked) drop.addEventListener('click', () => openPicker(row.id, col));
 
-      td.appendChild(dropDiv);
+      td.appendChild(drop);
       tr.appendChild(td);
     });
 
@@ -822,14 +914,13 @@ function render() {
 
 // ── Context menu ─────────────────────────────────────────
 function openCtx(e, rowId, col) {
-  e.preventDefault();
-  ctxRowId = rowId; ctxCol = col;
+  e.preventDefault(); ctxRowId = rowId; ctxCol = col;
   const m = document.getElementById('ctxMenu');
   m.style.display = 'block';
   m.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
   m.style.top  = Math.min(e.clientY, window.innerHeight - 120) + 'px';
 }
-function closeCtx() { document.getElementById('ctxMenu').style.display = 'none'; }
+function closeCtx()      { document.getElementById('ctxMenu').style.display = 'none'; }
 function ctxOpenPicker() { closeCtx(); openPicker(ctxRowId, ctxCol); }
 function ctxClear()      { clearSlot(ctxRowId, ctxCol); closeCtx(); }
 function ctxDelete()     { deleteRow(ctxRowId); closeCtx(); }
@@ -837,23 +928,70 @@ document.addEventListener('click', e => { if (!e.target.closest('#ctxMenu')) clo
 
 // ── Persist ───────────────────────────────────────────────
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, classIcons, selectedClass })); } catch(e) {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, selectedClass })); } catch(e) {}
 }
 function load() {
   try {
     const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (d) {
       rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-      builds = d.builds || {}; classIcons = d.classIcons || {};
+      builds = d.builds || {};
       selectedClass = d.selectedClass || null;
     }
   } catch(e) {}
 }
 
 // ── Share ─────────────────────────────────────────────────
+// ── Compact share encoding ────────────────────────────────
+// Format: classIdx|rowSlots|rowSlots|...
+// rowSlots: w,h,b,wi,a  (icon library indices, empty = -)
+// e.g. "7|3,12,-,-,5|...|"
+// classIdx = index into flat ALL_CLASSES array
+const ALL_CLASSES = Object.values(ROSTER).flat();
+
+function encodeShare() {
+  const classIdx = selectedClass ? ALL_CLASSES.indexOf(selectedClass) : -1;
+  const classBuilds = builds[selectedClass] || {};
+  const rowParts = rows.map(r => {
+    const slots = classBuilds[r.id] || {};
+    return COLS.map(col => {
+      const s = slots[col];
+      if (!s?.name) return '-';
+      const idx = iconLibrary.findIndex(i => i.name === s.name);
+      return idx >= 0 ? String(idx) : '-';
+    }).join(',');
+  });
+  return classIdx + '|' + rowParts.join('|');
+}
+
+function decodeShare(str) {
+  const parts = str.split('|');
+  const classIdx = parseInt(parts[0]);
+  const cls = classIdx >= 0 ? (ALL_CLASSES[classIdx] || null) : null;
+  const restoredBuilds = {};
+  if (cls) {
+    restoredBuilds[cls] = {};
+    rows.forEach((r, ri) => {
+      const slotPart = parts[ri + 1] || '';
+      const indices  = slotPart.split(',');
+      restoredBuilds[cls][r.id] = {};
+      COLS.forEach((col, ci) => {
+        const idx = parseInt(indices[ci]);
+        if (!isNaN(idx) && iconLibrary[idx]) {
+          const icon = iconLibrary[idx];
+          restoredBuilds[cls][r.id][col] = { type: 'library', name: icon.name, src: icon.src };
+        }
+      });
+    });
+  }
+  return { cls, restoredBuilds };
+}
+
 function shareBuilds() {
-  const encoded = btoa(encodeURIComponent(JSON.stringify({ rows, builds, classIcons, selectedClass })));
-  const url = location.origin + location.pathname + '?data=' + encoded;
+  const compact = encodeShare();
+  // Use URL-safe base64 to shorten further
+  const encoded = btoa(compact).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const url = location.origin + location.pathname + '?s=' + encoded;
   document.getElementById('shareUrl').value = url;
   document.getElementById('shareBanner').classList.add('show');
 }
@@ -862,10 +1000,24 @@ function closeBanner()  { document.getElementById('shareBanner').classList.remov
 
 // ── Export / Import ───────────────────────────────────────
 function exportData() {
-  const blob = new Blob([JSON.stringify({ rows, builds, classIcons, selectedClass }, null, 2)], { type:'application/json' });
+  // Export clean version (item names + paths, no base64 blobs) suitable for committing to builds/
+  const out = {
+    class: selectedClass,
+    publishedAt: new Date().toISOString(),
+    rows: rows.map(r => ({
+      id: r.id, name: r.name,
+      slots: Object.fromEntries(COLS.map(col => {
+        const s = (builds[selectedClass]||{})[r.id]?.[col];
+        return [col, s ? { name: s.name, src: s.src || null } : null];
+      }))
+    }))
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'twrpg-builds.json'; a.click();
-  showToast('Exported!');
+  a.href = URL.createObjectURL(blob);
+  a.download = selectedClass ? buildFileName(selectedClass) : 'twrpg-builds.json';
+  a.click();
+  showToast('Exported! Commit to builds/ folder to publish.');
 }
 function openImport()  { document.getElementById('importModal').classList.add('show'); }
 function closeImport() { document.getElementById('importModal').classList.remove('show'); }
@@ -873,7 +1025,7 @@ function doImport() {
   try {
     const d = JSON.parse(document.getElementById('importText').value.trim());
     rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-    builds = d.builds || {}; classIcons = d.classIcons || {};
+    builds = d.builds || {};
     selectedClass = d.selectedClass || null;
     save(); syncClassUI(); render(); closeImport(); showToast('Imported!');
   } catch(e) { showToast('Invalid JSON.'); }
@@ -885,7 +1037,7 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 // ── Utils ─────────────────────────────────────────────────
