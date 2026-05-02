@@ -82,38 +82,6 @@ layout: null
   .class-picker select option { background: #1c1c2e; color: var(--text); font-weight: 400; }
   .class-picker select optgroup { background: #11111e; color: var(--accent2); font-weight: 700; }
 
-  /* ── Official builds panel ── */
-  #officialPanel {
-    background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: 12px; margin-bottom: 20px; overflow: hidden; display: none;
-  }
-  #officialPanel.show { display: block; }
-  .official-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 18px; border-bottom: 1px solid var(--border);
-    background: rgba(78,205,196,0.05);
-  }
-  .official-header h3 { font-family: 'Cinzel', serif; font-size: 13px; color: var(--accent3); letter-spacing: 1px; }
-  .official-header span { font-size: 12px; color: var(--muted); }
-  .official-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 1px; background: var(--border); }
-  .official-row {
-    background: var(--card); padding: 12px 18px;
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  }
-  .official-row-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-  .official-row-slots { display: flex; gap: 4px; }
-  .official-slot-mini {
-    width: 28px; height: 28px; border-radius: 5px; border: 1px solid var(--border2);
-    overflow: hidden; background: var(--bg2); flex-shrink: 0;
-  }
-  .official-slot-mini img { width: 100%; height: 100%; object-fit: contain; }
-  .official-load-btn {
-    font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px;
-    border: 1px solid var(--accent3); color: var(--accent3); background: transparent;
-    cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
-  }
-  .official-load-btn:hover { background: var(--accent3); color: #0b0b14; }
-
   /* ── Table ── */
   .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: visible; }
   .table-scroll { overflow-x: auto; }
@@ -326,15 +294,6 @@ layout: null
     </div>
   </header>
 
-  <!-- Official builds panel — shown automatically when a class has published builds -->
-  <div id="officialPanel">
-    <div class="official-header">
-      <h3>Official Builds — <span id="officialClass"></span></h3>
-      <span id="officialMeta"></span>
-    </div>
-    <div class="official-grid" id="officialGrid"></div>
-  </div>
-
   <div class="toolbar">
     <div class="class-picker">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -418,7 +377,8 @@ layout: null
   <div class="modal">
     <h2>Import Builds</h2>
     <p>Paste exported JSON below. This will <strong>replace</strong> your current data.</p>
-    <textarea id="importText" placeholder='{"rows":[...],"builds":{...}}'></textarea>
+    <p style="font-size:12px;color:var(--muted2);margin-bottom:10px;">Only the app export format is accepted: <code>{ class, rows, publishedAt }</code> with per-row <code>slots</code>.</p>
+    <textarea id="importText" placeholder='{"class":"Sniper","rows":[{"id":0,"name":"Early","slots":{...}}],"publishedAt":"..."}'></textarea>
     <div class="modal-actions">
       <button class="btn" onclick="closeImport()">Cancel</button>
       <button class="btn primary" onclick="doImport()">Import</button>
@@ -447,16 +407,6 @@ const ICONS_PATH   = 'twicons/';
 const STORAGE_KEY  = 'twrpg_v6';
 const DEFAULT_ROWS = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
 
-// Auto-detect GitHub username and repo from the GitHub Pages URL.
-// Works for: https://username.github.io/repo-name/
-// Falls back gracefully if running locally.
-const _host    = location.hostname.split('.');
-const GH_USER  = (_host.length >= 3 && _host[1] === 'github') ? _host[0] : '';
-const GH_REPO  = location.pathname.split('/').filter(Boolean)[0] || '';
-const RAW_BASE = GH_USER && GH_REPO
-  ? `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/builds/`
-  : null;
-
 // Converts class name to icon filename: "Shrine Priestess" → "ShrinePriestessIcon.jpg"
 function classIconPath(name) {
   return ICONS_PATH + name.replace(/\s+/g, '') + 'Icon.jpg';
@@ -465,6 +415,78 @@ function classIconPath(name) {
 // Converts class name to builds filename: "Sword Saint" → "Sword_Saint.json"
 function buildFileName(name) {
   return name.replace(/\s+/g, '_') + '.json';
+}
+
+function normalizeSlot(slot) {
+  if (!slot?.name) return null;
+  return {
+    type: slot.type || 'library',
+    name: slot.name,
+    src: slot.src || ICONS_PATH + encodeURIComponent(slot.name) + '.jpg'
+  };
+}
+
+function importExportBuildData(data) {
+  if (!data || typeof data !== 'object' || !data.class || !Array.isArray(data.rows)) return false;
+  const cls = data.class;
+  const rowsData = data.rows;
+  const importedRows = rowsData.map(r => ({ id: uid++, name: r.name || 'Row' }));
+  const importedBuilds = { [cls]: {} };
+
+  importedRows.forEach((localRow, index) => {
+    const rowData = rowsData[index] || {};
+    const slots = rowData.slots || {};
+    importedBuilds[cls][localRow.id] = {};
+    COLS.forEach(col => {
+      const slot = normalizeSlot(slots[col]);
+      if (slot) importedBuilds[cls][localRow.id][col] = slot;
+    });
+  });
+
+  rows = importedRows;
+  builds = importedBuilds;
+  selectedClass = cls;
+  return true;
+}
+
+function importLegacyBuildFile(data, className) {
+  if (!data || !Array.isArray(data.rows) || !data.builds || !data.builds[className]) return false;
+  const rowsData = data.rows;
+  const classBuilds = data.builds[className];
+  const importedRows = rowsData.map(r => ({ id: uid++, name: r.name || 'Row' }));
+  const idMap = new Map();
+  rowsData.forEach((r, index) => idMap.set(String(r.id), importedRows[index].id));
+
+  const importedBuilds = { [className]: {} };
+  for (const [oldId, slotGroup] of Object.entries(classBuilds)) {
+    const newId = idMap.get(String(oldId));
+    if (newId == null) continue;
+    importedBuilds[className][newId] = {};
+    COLS.forEach(col => {
+      const slot = normalizeSlot(slotGroup[col]);
+      if (slot) importedBuilds[className][newId][col] = slot;
+    });
+  }
+
+  rows = importedRows;
+  builds = importedBuilds;
+  selectedClass = className;
+  return true;
+}
+
+async function loadBuildFile(className) {
+  if (!className) return false;
+  try {
+    const url = 'builds/' + buildFileName(className);
+    const r = await fetch(url);
+    if (!r.ok) return false;
+    const data = await r.json();
+    if (importExportBuildData(data) || importLegacyBuildFile(data, className)) {
+      save();
+      return true;
+    }
+  } catch (e) {}
+  return false;
 }
 
 // ── State ────────────────────────────────────────────────
@@ -488,8 +510,8 @@ async function init() {
     DEFAULT_ROWS.forEach(name => rows.push({ id: uid++, name }));
     save();
   }
+  if (selectedClass) await loadBuildFile(selectedClass);
   syncClassUI(); render();
-  if (selectedClass) fetchOfficialBuilds();
 }
 
 // ── Icon library ──────────────────────────────────────────
@@ -500,7 +522,7 @@ async function loadIconLibrary() {
     if (r.ok) {
       const names = await r.json();
       if (Array.isArray(names) && names.length) {
-        iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + n + '.jpg' }));
+        iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + encodeURIComponent(n) + '.jpg' }));
         return;
       }
     }
@@ -519,7 +541,7 @@ async function loadIconLibrary() {
         iconLibrary = links.map(h => {
           const file = h.split('/').pop();
           const name = decodeURIComponent(file.replace(/\.jpg$/i,''));
-          return { name, src: ICONS_PATH + file };
+          return { name, src: ICONS_PATH + encodeURIComponent(file) };
         }).sort((a,b) => a.name.localeCompare(b.name));
         return;
       }
@@ -544,11 +566,10 @@ function buildClassSelect() {
   }
 }
 
-function onClassChange() {
+async function onClassChange() {
   selectedClass = document.getElementById('classSelect').value || null;
-  document.getElementById('officialPanel').classList.remove('show');
+  if (selectedClass) await loadBuildFile(selectedClass);
   save(); syncClassUI(); render();
-  if (selectedClass) fetchOfficialBuilds();
 }
 
 function syncClassUI() {
@@ -587,65 +608,6 @@ function syncClassUI() {
   }
 }
 
-// ── Official builds (read-only from public repo) ──────────
-async function fetchOfficialBuilds() {
-  if (!selectedClass || !RAW_BASE) return;
-  try {
-    const url = RAW_BASE + buildFileName(selectedClass);
-    const r   = await fetch(url);
-    if (!r.ok) { document.getElementById('officialPanel').classList.remove('show'); return; }
-    const data = await r.json();
-    renderOfficialPanel(data);
-  } catch(e) {
-    document.getElementById('officialPanel').classList.remove('show');
-  }
-}
-
-function renderOfficialPanel(data) {
-  const panel = document.getElementById('officialPanel');
-  document.getElementById('officialClass').textContent = data.class || selectedClass;
-  document.getElementById('officialMeta').textContent  = data.publishedAt
-    ? 'Updated ' + new Date(data.publishedAt).toLocaleDateString() : '';
-
-  const grid = document.getElementById('officialGrid');
-  grid.innerHTML = '';
-
-  (data.rows || []).forEach(row => {
-    const div = document.createElement('div');
-    div.className = 'official-row';
-
-    const miniSlots = COLS.map(col => {
-      const s = row.slots?.[col];
-      return `<div class="official-slot-mini">${s?.src ? `<img src="${esc(s.src)}" alt="${esc(s.name||'')}">` : ''}</div>`;
-    }).join('');
-
-    div.innerHTML = `
-      <div>
-        <div class="official-row-name">${esc(row.name)}</div>
-        <div class="official-row-slots">${miniSlots}</div>
-      </div>
-      <button class="official-load-btn" onclick='loadOfficialRow(${JSON.stringify(row)})'>Load</button>`;
-    grid.appendChild(div);
-  });
-
-  panel.classList.add('show');
-}
-
-function loadOfficialRow(row) {
-  if (!selectedClass) return;
-  const target = rows.find(r => r.name === row.name);
-  if (!target) { showToast(`No local row named "${row.name}".`); return; }
-  if (!builds[selectedClass]) builds[selectedClass] = {};
-  if (!builds[selectedClass][target.id]) builds[selectedClass][target.id] = {};
-  COLS.forEach(col => {
-    const s = row.slots?.[col];
-    if (s?.name) builds[selectedClass][target.id][col] = { type: 'library', name: s.name, src: s.src || (ICONS_PATH + s.name + '.jpg') };
-    else         delete builds[selectedClass][target.id][col];
-  });
-  save(); render();
-  showToast(`Loaded ${row.name} build!`);
-}
-
 // ── Slot helpers ──────────────────────────────────────────
 function getSlotsFor(rowId) {
   if (!selectedClass) return {};
@@ -665,7 +627,7 @@ function clearSlot(rowId, col) {
 }
 function iconSrc(slot) {
   if (!slot) return null;
-  return slot.type === 'upload' ? slot.src : (slot.src || ICONS_PATH + slot.name + '.jpg');
+  return slot.type === 'upload' ? slot.src : (slot.src || ICONS_PATH + encodeURIComponent(slot.name) + '.jpg');
 }
 
 // ── Icon picker ───────────────────────────────────────────
@@ -903,31 +865,9 @@ function closeImport() { document.getElementById('importModal').classList.remove
 function doImport() {
   try {
     const d = JSON.parse(document.getElementById('importText').value.trim());
-
-    // Format A: internal full backup { rows, builds, selectedClass }
-    if (d.rows && d.builds) {
-      rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-      builds = d.builds || {};
-      selectedClass = d.selectedClass || null;
-
-    // Format B: per-class export from builds/ folder { class, rows, publishedAt }
-    } else if (d.class && d.rows) {
-      const cls = d.class;
-      if (!builds[cls]) builds[cls] = {};
-      // match exported rows to local rows by name
-      d.rows.forEach(exportedRow => {
-        const local = rows.find(r => r.name === exportedRow.name);
-        if (!local) return;
-        builds[cls][local.id] = {};
-        COLS.forEach(col => {
-          const s = exportedRow.slots?.[col];
-          if (s?.name) builds[cls][local.id][col] = { type: 'library', name: s.name, src: s.src || (ICONS_PATH + s.name + '.jpg') };
-        });
-      });
-      selectedClass = cls;
-
-    } else {
-      showToast('Unrecognised format.'); return;
+    if (!importExportBuildData(d)) {
+      showToast('Unrecognised format. Use an exported build JSON.');
+      return;
     }
 
     save(); syncClassUI(); render(); closeImport();
