@@ -520,7 +520,8 @@ async function loadIconLibrary() {
   try {
     const r = await fetch(ICONS_PATH + 'manifest.json');
     if (r.ok) {
-      const names = await r.json();
+      const json = await r.json();
+      const names = Array.isArray(json) ? json : Array.isArray(json?.files) ? json.files : null;
       if (Array.isArray(names) && names.length) {
         iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + encodeURIComponent(n) + '.jpg' }));
         return;
