@@ -1,27 +1,27 @@
 {
-  "class": "Crusader",
-  "createdBy": "Nana",
-  "publishedAt": "2026-05-02T20:09:21.929Z",
+  "class": "Blood Weaver",
+  "createdBy": "IDK_Fear",
+  "publishedAt": "2026-05-02T20:13:17.116Z",
   "rows": [
     {
       "id": 0,
       "name": "Early",
       "slots": {
         "weapon": {
-          "name": "Bahanar, the True Sword of Illusion",
-          "src": "twicons/Bahanar%2C%20the%20True%20Sword%20of%20Illusion.jpg"
+          "name": "Deathbringer",
+          "src": "twicons/Deathbringer.jpg"
         },
         "helm": {
           "name": "Crown of Fervor",
           "src": "twicons/Crown%20of%20Fervor.jpg"
         },
         "body": {
-          "name": "Hellspike Armor",
-          "src": "twicons/Hellspike%20Armor.jpg"
+          "name": "Frozen Robe",
+          "src": "twicons/Frozen%20Robe.jpg"
         },
         "wings": {
-          "name": "Corrupt Crystal Wings",
-          "src": "twicons/Corrupt%20Crystal%20Wings.jpg"
+          "name": "Hungry Bat Wings",
+          "src": "twicons/Hungry%20Bat%20Wings.jpg"
         },
         "accessory": {
           "name": "Latea, the Ring of Chaos",
@@ -34,24 +34,24 @@
       "name": "SD",
       "slots": {
         "weapon": {
-          "name": "Meacronacer, the Sword of Thousand Illusions",
-          "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
+          "name": "Ruinbringer",
+          "src": "twicons/Ruinbringer.jpg"
         },
         "helm": {
           "name": "Crown of Composure",
           "src": "twicons/Crown%20of%20Composure.jpg"
         },
         "body": {
-          "name": "Frostshard Armor",
-          "src": "twicons/Frostshard%20Armor.jpg"
+          "name": "Medea, the Robe of the Witch",
+          "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
         },
         "wings": {
-          "name": "Pure Crystal Wings",
-          "src": "twicons/Pure%20Crystal%20Wings.jpg"
+          "name": "Wings of Blood Lord",
+          "src": "twicons/Wings%20of%20Blood%20Lord.jpg"
         },
         "accessory": {
-          "name": "Ring of Time",
-          "src": "twicons/Ring%20of%20Time.jpg"
+          "name": "Latea, the Ring of Chaos",
+          "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
         }
       }
     },
@@ -60,20 +60,20 @@
       "name": "Tower",
       "slots": {
         "weapon": {
-          "name": "Splitting of the Sky and Earth",
-          "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
+          "name": "The Ender",
+          "src": "twicons/The%20Ender.jpg"
         },
         "helm": {
           "name": "Crown of Composure",
           "src": "twicons/Crown%20of%20Composure.jpg"
         },
         "body": {
-          "name": "Felspike Armor",
-          "src": "twicons/Felspike%20Armor.jpg"
+          "name": "Robe of Storm",
+          "src": "twicons/Robe%20of%20Storm.jpg"
         },
         "wings": {
-          "name": "Archangel Wings",
-          "src": "twicons/Archangel%20Wings.jpg"
+          "name": "Wings of Blood Lord",
+          "src": "twicons/Wings%20of%20Blood%20Lord.jpg"
         },
         "accessory": {
           "name": "Ring of the One",
@@ -86,24 +86,24 @@
       "name": "Aga",
       "slots": {
         "weapon": {
-          "name": "Astra, the Sword of Moonlight",
-          "src": "twicons/Astra%2C%20the%20Sword%20of%20Moonlight.jpg"
+          "name": "Calamity",
+          "src": "twicons/Calamity.jpg"
         },
         "helm": {
           "name": "Crown of Absolute Zero",
           "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
         },
         "body": {
-          "name": "Voidshard Armor",
-          "src": "twicons/Voidshard%20Armor.jpg"
+          "name": "Thanatos, the Robe of Hell",
+          "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
         },
         "wings": {
-          "name": "Archangel Wings",
-          "src": "twicons/Archangel%20Wings.jpg"
+          "name": "Wings of Frost Lord",
+          "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
         },
         "accessory": {
-          "name": "Demonic Fist",
-          "src": "twicons/Demonic%20Fist.jpg"
+          "name": "Ring of the One",
+          "src": "twicons/Ring%20of%20the%20One.jpg"
         }
       }
     },
@@ -112,24 +112,24 @@
       "name": "Duke",
       "slots": {
         "weapon": {
-          "name": "Spear of Judgment",
-          "src": "twicons/Spear%20of%20Judgment.jpg"
+          "name": "Calamity",
+          "src": "twicons/Calamity.jpg"
         },
         "helm": {
           "name": "Crown of Absolute Zero",
           "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
         },
         "body": {
-          "name": "Felspike Armor",
-          "src": "twicons/Felspike%20Armor.jpg"
+          "name": "Sanguis, the Robe of Sacrifice",
+          "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
         },
         "wings": {
-          "name": "Archangel Wings",
-          "src": "twicons/Archangel%20Wings.jpg"
+          "name": "Wings of Frost Lord",
+          "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
         },
         "accessory": {
-          "name": "Heirloom of Lazarus",
-          "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          "name": "Ring of the One",
+          "src": "twicons/Ring%20of%20the%20One.jpg"
         }
       }
     },
@@ -138,24 +138,24 @@
       "name": "Gaia",
       "slots": {
         "weapon": {
-          "name": "Spear of Judgment",
-          "src": "twicons/Spear%20of%20Judgment.jpg"
+          "name": "Calamity",
+          "src": "twicons/Calamity.jpg"
         },
         "helm": {
           "name": "Crown of Transcendance",
           "src": "twicons/Crown%20of%20Transcendance.jpg"
         },
         "body": {
-          "name": "Titan's Plates",
-          "src": "twicons/Titan's%20Plates.jpg"
+          "name": "Sanguis, the Robe of Sacrifice",
+          "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
         },
         "wings": {
-          "name": "Wings of Cosmos",
-          "src": "twicons/Wings%20of%20Cosmos.jpg"
+          "name": "Wings of Frost Lord",
+          "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
         },
         "accessory": {
-          "name": "Ring of Eternity",
-          "src": "twicons/Ring%20of%20Eternity.jpg"
+          "name": "Ring of the One",
+          "src": "twicons/Ring%20of%20the%20One.jpg"
         }
       }
     },
@@ -164,24 +164,24 @@
       "name": "AC",
       "slots": {
         "weapon": {
-          "name": "Spear of Judgment",
-          "src": "twicons/Spear%20of%20Judgment.jpg"
+          "name": "Calamity",
+          "src": "twicons/Calamity.jpg"
         },
         "helm": {
           "name": "Crown of Transcendance",
           "src": "twicons/Crown%20of%20Transcendance.jpg"
         },
         "body": {
-          "name": "Dread Incarnate",
-          "src": "twicons/Dread%20Incarnate.jpg"
+          "name": "Call of Gehenna",
+          "src": "twicons/Call%20of%20Gehenna.jpg"
         },
         "wings": {
-          "name": "Wings of Cosmos",
-          "src": "twicons/Wings%20of%20Cosmos.jpg"
+          "name": "Wings of Frost Lord",
+          "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
         },
         "accessory": {
-          "name": "Ring of Eternity",
-          "src": "twicons/Ring%20of%20Eternity.jpg"
+          "name": "Ring of the One",
+          "src": "twicons/Ring%20of%20the%20One.jpg"
         }
       }
     },
@@ -190,20 +190,20 @@
       "name": "Styrix",
       "slots": {
         "weapon": {
-          "name": "Lightbringer",
-          "src": "twicons/Lightbringer.jpg"
+          "name": "World Sunderer",
+          "src": "twicons/World%20Sunderer.jpg"
         },
         "helm": {
           "name": "Crown of Transcendance",
           "src": "twicons/Crown%20of%20Transcendance.jpg"
         },
         "body": {
-          "name": "Dread Incarnate",
-          "src": "twicons/Dread%20Incarnate.jpg"
+          "name": "Call of Gehenna",
+          "src": "twicons/Call%20of%20Gehenna.jpg"
         },
         "wings": {
-          "name": "Wings of Cosmos",
-          "src": "twicons/Wings%20of%20Cosmos.jpg"
+          "name": "Embrace of Death",
+          "src": "twicons/Embrace%20of%20Death.jpg"
         },
         "accessory": {
           "name": "Ring of Genesis",
