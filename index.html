@@ -82,6 +82,22 @@ layout: null
   .class-picker select option { background: #1c1c2e; color: var(--text); font-weight: 400; }
   .class-picker select optgroup { background: #11111e; color: var(--accent2); font-weight: 700; }
 
+  /* ── Creator name input ── */
+  .creator-input {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 24px; padding: 7px 16px;
+    flex-shrink: 0; transition: border-color 0.2s;
+  }
+  .creator-input:focus-within { border-color: var(--accent); }
+  .creator-input label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .creator-input input {
+    background: transparent; border: none; color: var(--text);
+    font-family: 'Nunito', sans-serif; font-size: 12px; outline: none;
+    width: 100px; padding: 0;
+  }
+  .creator-input input::placeholder { color: var(--muted); }
+
   /* ── Table ── */
   .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: visible; }
   .table-scroll { overflow-x: auto; }
@@ -303,6 +319,10 @@ layout: null
         <option value="">— Select Hero Class —</option>
       </select>
     </div>
+    <div class="creator-input">
+      <label for="creatorName">By:</label>
+      <input type="text" id="creatorName" placeholder="Your name" onchange="onCreatorChange()">
+    </div>
   </div>
 
   <div class="table-wrap">
@@ -446,6 +466,7 @@ function importExportBuildData(data) {
   rows = importedRows;
   builds = importedBuilds;
   selectedClass = cls;
+  creatorName = data.createdBy || '';
   return true;
 }
 
@@ -471,6 +492,7 @@ function importLegacyBuildFile(data, className) {
   rows = importedRows;
   builds = importedBuilds;
   selectedClass = className;
+  creatorName = data.createdBy || '';
   return true;
 }
 
@@ -493,6 +515,7 @@ async function loadBuildFile(className) {
 let rows          = [];
 let builds        = {};
 let selectedClass = null;
+let creatorName   = '';
 let uid           = 0;
 let ctxRowId      = null;
 let ctxCol        = null;
@@ -573,8 +596,14 @@ async function onClassChange() {
   save(); syncClassUI(); render();
 }
 
+function onCreatorChange() {
+  creatorName = document.getElementById('creatorName').value.trim();
+  save();
+}
+
 function syncClassUI() {
   document.getElementById('classSelect').value = selectedClass || '';
+  document.getElementById('creatorName').value = creatorName || '';
 
   const colName  = document.getElementById('heroColName');
   const iconWrap = document.getElementById('heroColIconWrap');
@@ -582,7 +611,8 @@ function syncClassUI() {
   const ph       = document.getElementById('heroColIconPlaceholder');
 
   if (selectedClass) {
-    colName.textContent = selectedClass;
+    const displayName = creatorName ? `${selectedClass} by ${creatorName}` : selectedClass;
+    colName.textContent = displayName;
     colName.classList.add('active');
     iconWrap.classList.add('visible');
 
@@ -826,7 +856,7 @@ document.addEventListener('click', e => { if (!e.target.closest('#ctxMenu')) clo
 
 // ── Persist ───────────────────────────────────────────────
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, selectedClass })); } catch(e) {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, selectedClass, creatorName })); } catch(e) {}
 }
 function load() {
   try {
@@ -835,6 +865,7 @@ function load() {
       rows = (d.rows||[]).map(r => ({...r, id: uid++}));
       builds = d.builds || {};
       selectedClass = d.selectedClass || null;
+      creatorName = d.creatorName || '';
     }
   } catch(e) {}
 }
@@ -845,6 +876,7 @@ function exportData() {
   // Export clean version (item names + paths, no base64 blobs) suitable for committing to builds/
   const out = {
     class: selectedClass,
+    createdBy: creatorName || undefined,
     publishedAt: new Date().toISOString(),
     rows: rows.map(r => ({
       id: r.id, name: r.name,
