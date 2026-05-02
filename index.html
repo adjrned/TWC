@@ -29,16 +29,9 @@ layout: null
   }
 
   html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Nunito', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; min-height: 100vh; overflow-x: hidden; }
   body::before {
-    content: '';
-    position: fixed; inset: 0;
+    content: ''; position: fixed; inset: 0;
     background:
       radial-gradient(ellipse 60% 40% at 15% 20%, rgba(233,69,96,0.07) 0%, transparent 70%),
       radial-gradient(ellipse 50% 50% at 85% 80%, rgba(78,205,196,0.05) 0%, transparent 70%);
@@ -49,16 +42,11 @@ layout: null
 
   /* ── Header ── */
   header {
-    padding: 36px 0 24px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-    gap: 20px; flex-wrap: wrap;
+    padding: 36px 0 24px; display: flex; align-items: flex-end;
+    justify-content: space-between; gap: 20px; flex-wrap: wrap;
     border-bottom: 1px solid var(--border); margin-bottom: 24px;
   }
-  .logo-area h1 {
-    font-family: 'Cinzel', serif;
-    font-size: clamp(20px, 4vw, 30px); font-weight: 700;
-    letter-spacing: 3px; line-height: 1;
-  }
+  .logo-area h1 { font-family: 'Cinzel', serif; font-size: clamp(20px,4vw,30px); font-weight: 700; letter-spacing: 3px; line-height: 1; }
   .logo-area h1 span { color: var(--accent); }
   .logo-area p { font-size: 12px; color: var(--muted2); margin-top: 6px; letter-spacing: 1.5px; text-transform: uppercase; }
   .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -77,32 +65,22 @@ layout: null
   .btn.teal:hover { background: var(--accent3); color: #0b0b14; }
 
   /* ── Toolbar ── */
-  .toolbar {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 20px; flex-wrap: wrap;
-  }
-
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
   .class-picker {
     display: flex; align-items: center; gap: 10px;
     background: var(--bg3); border: 1px solid var(--border2);
     border-radius: 24px; padding: 7px 18px 7px 16px;
-    flex: 1; min-width: 220px; max-width: 380px;
-    transition: border-color 0.2s;
+    flex: 1; min-width: 220px; max-width: 380px; transition: border-color 0.2s;
   }
   .class-picker:focus-within { border-color: var(--accent); }
   .class-picker svg { opacity: 0.4; flex-shrink: 0; }
   .class-picker select {
-    flex: 1; background: transparent; border: none;
-    color: var(--text); font-family: 'Nunito', sans-serif;
-    font-size: 13px; font-weight: 600; outline: none;
-    cursor: pointer; appearance: none; -webkit-appearance: none;
+    flex: 1; background: transparent; border: none; color: var(--text);
+    font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 600;
+    outline: none; cursor: pointer; appearance: none; -webkit-appearance: none;
   }
   .class-picker select option { background: #1c1c2e; color: var(--text); font-weight: 400; }
   .class-picker select optgroup { background: #11111e; color: var(--accent2); font-weight: 700; }
-
-  .badge-str { background: rgba(233,69,96,0.15); color: #e94560; }
-  .badge-agi { background: rgba(78,205,196,0.15); color: #4ecdc4; }
-  .badge-int { background: rgba(147,112,219,0.18); color: #b39ddb; }
 
   /* ── Share Banner ── */
   #shareBanner {
@@ -122,54 +100,42 @@ layout: null
   .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: visible; }
   .table-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; min-width: 600px; }
-
   thead tr { background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border2); }
   thead tr th:first-child { border-top-left-radius: 16px; }
   thead tr th:last-child { border-top-right-radius: 16px; }
   thead th {
-    padding: 14px 10px;
-    font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
-    letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--accent2); text-align: center; white-space: nowrap;
+    padding: 14px 10px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent2);
+    text-align: center; white-space: nowrap;
   }
-  thead th:first-child { text-align: left; padding-left: 20px; width: 160px; }
+  thead th:first-child { text-align: left; padding-left: 16px; width: 170px; }
   .th-icon { font-size: 20px; display: block; margin-bottom: 4px; }
 
-  /* Dynamic hero column header */
-  #heroColHeader {
-    display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
-  }
+  /* ── Hero column header ── */
+  #heroColHeader { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+
   .hero-col-icon-wrap {
-    width: 36px; height: 36px; border-radius: 8px;
-    border: 1.5px dashed rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.03);
+    width: 56px; height: 56px; border-radius: 10px;
+    border: 1.5px dashed rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.04);
     display: none; align-items: center; justify-content: center;
     cursor: pointer; position: relative; overflow: hidden;
-    transition: border-color 0.2s; margin-bottom: 2px;
-    font-size: 14px; color: var(--muted);
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 20px; color: var(--muted);
   }
   .hero-col-icon-wrap.visible { display: flex; }
-  .hero-col-icon-wrap:hover { border-color: var(--accent2); color: var(--accent2); }
-  .hero-col-icon-wrap img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+  .hero-col-icon-wrap:hover { border-color: var(--accent2); background: rgba(245,166,35,0.08); color: var(--accent2); }
+  .hero-col-icon-wrap img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
   .hero-col-icon-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
+
   #heroColName {
     font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
     letter-spacing: 1.5px; color: var(--muted); transition: color 0.2s;
   }
   #heroColName.active { color: var(--text); }
-  #heroColBadge {
-    font-size: 9px; font-weight: 700; padding: 2px 7px;
-    border-radius: 8px; letter-spacing: 0.8px; text-transform: uppercase;
-    display: none;
-  }
-  #heroColBadge.visible { display: inline-block; }
 
   /* ── Body rows ── */
-  tbody tr {
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.15s;
-    cursor: grab;
-  }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: rgba(255,255,255,0.025); }
   tbody tr.dragging { opacity: 0.4; cursor: grabbing; }
@@ -178,24 +144,19 @@ layout: null
   /* ── Row label ── */
   .row-cell { padding: 10px 10px 10px 0; vertical-align: middle; white-space: nowrap; }
   .row-inner { display: flex; align-items: center; gap: 6px; }
-
   .drag-handle {
     display: flex; align-items: center; justify-content: center;
     width: 20px; color: var(--muted); font-size: 14px;
     cursor: grab; flex-shrink: 0; padding-left: 14px;
-    opacity: 0; transition: opacity 0.2s;
-    user-select: none;
+    opacity: 0; transition: opacity 0.2s; user-select: none;
   }
   tbody tr:hover .drag-handle { opacity: 1; }
-
   .row-name-input {
     background: transparent; border: none; border-bottom: 1px solid transparent;
-    color: var(--text); font-family: 'Nunito', sans-serif;
-    font-size: 13px; font-weight: 700; width: 100px;
-    outline: none; cursor: pointer; padding: 2px 0; transition: border-color 0.2s;
+    color: var(--text); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700;
+    width: 100px; outline: none; cursor: pointer; padding: 2px 0; transition: border-color 0.2s;
   }
   .row-name-input:focus { border-bottom-color: var(--accent); cursor: text; }
-
   .del-btn {
     background: none; border: none; color: var(--muted); cursor: pointer;
     font-size: 13px; padding: 2px 5px; border-radius: 4px;
@@ -206,7 +167,6 @@ layout: null
 
   /* ── Slot cells ── */
   .slot-cell { text-align: center; vertical-align: middle; padding: 8px 6px; }
-
   .slot-drop {
     width: var(--cell); height: var(--cell); border-radius: 10px;
     border: 1.5px dashed rgba(255,255,255,0.12);
@@ -218,29 +178,84 @@ layout: null
   .slot-drop:hover { border-color: var(--accent); background: rgba(233,69,96,0.07); transform: scale(1.06); z-index: 10; }
   .slot-drop.filled { border-style: solid; border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
   .slot-drop.filled:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
-  .slot-drop.locked { cursor: default; opacity: 0.4; }
+  .slot-drop.locked { cursor: default; opacity: 0.35; }
   .slot-drop.locked:hover { transform: none; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); }
-
   .slot-img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
   .slot-plus { font-size: 20px; color: rgba(255,255,255,0.15); user-select: none; pointer-events: none; }
   .slot-drop:hover:not(.locked) .slot-plus { color: var(--accent); }
 
-  .slot-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
-
-  /* ── Tooltip ── */
-  .slot-tooltip {
-    position: fixed;
-    background: #0e0e1c;
-    border: 1px solid var(--border2); border-radius: 10px;
-    padding: 10px 14px; min-width: 130px; pointer-events: none;
-    opacity: 0; transition: opacity 0.18s; z-index: 9000;
-    text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    transform: translateX(-50%);
+  /* ── Floating tooltip (follows mouse, always on top) ── */
+  #floatTooltip {
+    position: fixed; pointer-events: none; z-index: 99999;
+    background: #0e0e1c; border: 1px solid var(--border2);
+    border-radius: 10px; padding: 10px 14px; min-width: 130px;
+    text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+    opacity: 0; transition: opacity 0.15s;
+    transform: translate(-50%, calc(-100% - 14px));
   }
-  .slot-drop:hover .slot-tooltip { opacity: 1; }
-  .slot-tooltip img { width: 56px; height: 56px; object-fit: contain; border-radius: 6px; display: block; margin: 0 auto 6px; }
-  .slot-tooltip .tt-name { font-size: 12px; font-weight: 700; color: var(--accent2); margin-bottom: 2px; }
-  .slot-tooltip .tt-slot { font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; }
+  #floatTooltip.show { opacity: 1; }
+  #floatTooltip img { width: 56px; height: 56px; object-fit: contain; border-radius: 6px; display: block; margin: 0 auto 6px; }
+  #floatTooltip .tt-name { font-size: 12px; font-weight: 700; color: var(--accent2); margin-bottom: 2px; }
+  #floatTooltip .tt-slot { font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Icon Picker Modal ── */
+  #pickerOverlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    z-index: 9000; display: none; align-items: center; justify-content: center;
+  }
+  #pickerOverlay.show { display: flex; }
+  #pickerModal {
+    background: var(--card); border: 1px solid var(--border2);
+    border-radius: 18px; width: 90%; max-width: 680px;
+    max-height: 85vh; display: flex; flex-direction: column;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.8); overflow: hidden;
+  }
+  .picker-header {
+    padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .picker-header h2 { font-family: 'Cinzel', serif; font-size: 15px; color: var(--accent2); letter-spacing: 1px; flex: 1; }
+  .picker-search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 6px 14px; flex: 1; max-width: 260px;
+    transition: border-color 0.2s;
+  }
+  .picker-search:focus-within { border-color: var(--accent); }
+  .picker-search svg { opacity: 0.4; flex-shrink: 0; }
+  .picker-search input {
+    background: transparent; border: none; color: var(--text);
+    font-family: 'Nunito', sans-serif; font-size: 13px; outline: none; width: 100%;
+  }
+  .picker-search input::placeholder { color: var(--muted); }
+  .picker-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px; padding: 16px 22px; overflow-y: auto; flex: 1;
+  }
+  .picker-item {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 10px 6px; border-radius: 10px; cursor: pointer;
+    border: 1.5px solid transparent; background: rgba(255,255,255,0.03);
+    transition: all 0.15s; text-align: center;
+  }
+  .picker-item:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
+  .picker-item img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; display: block; }
+  .picker-item .pi-name {
+    font-size: 10px; color: var(--muted2); font-weight: 600;
+    line-height: 1.2; word-break: break-word; letter-spacing: 0.2px;
+  }
+  .picker-item.hidden { display: none; }
+  .picker-empty {
+    grid-column: 1/-1; text-align: center;
+    padding: 40px 20px; color: var(--muted); font-size: 13px;
+  }
+  .picker-footer {
+    padding: 12px 22px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .picker-footer span { font-size: 12px; color: var(--muted); }
+  .picker-footer strong { color: var(--accent2); }
 
   /* ── Context menu ── */
   #ctxMenu {
@@ -272,11 +287,11 @@ layout: null
     color: var(--accent3); font-size: 13px; font-weight: 600;
     padding: 10px 22px; border-radius: 24px;
     opacity: 0; transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none; z-index: 9999; white-space: nowrap;
+    pointer-events: none; z-index: 99999; white-space: nowrap;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ── Modal ── */
+  /* ── Import Modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9000; display: none; align-items: center; justify-content: center; }
   .modal-overlay.show { display: flex; }
   .modal { background: var(--card); border: 1px solid var(--border2); border-radius: 16px; padding: 28px 30px; width: 90%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
@@ -293,6 +308,7 @@ layout: null
   @media (max-width: 600px) {
     :root { --cell: 64px; }
     .btn { padding: 7px 12px; }
+    .picker-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); }
   }
 </style>
 </head>
@@ -340,11 +356,10 @@ layout: null
               <div id="heroColHeader">
                 <div class="hero-col-icon-wrap" id="heroColIconWrap" title="Upload hero icon">
                   <span id="heroColIconPlaceholder">✦</span>
-                  <img id="heroColIconImg" style="display:none">
+                  <img id="heroColIconImg" style="display:none" alt="">
                   <input type="file" accept="image/*" class="hero-col-icon-file" onchange="handleHeroColIcon(event)">
                 </div>
                 <span id="heroColName">Heroes</span>
-                <span id="heroColBadge"></span>
               </div>
             </th>
             <th><span class="th-icon">⚔️</span>Weapon</th>
@@ -365,12 +380,43 @@ layout: null
 
 </div>
 
+<!-- Floating tooltip -->
+<div id="floatTooltip">
+  <img id="ftImg" alt="">
+  <div class="tt-name" id="ftName"></div>
+  <div class="tt-slot" id="ftSlot"></div>
+</div>
+
+<!-- Icon Picker Modal -->
+<div id="pickerOverlay" onclick="closePickerOnBg(event)">
+  <div id="pickerModal">
+    <div class="picker-header">
+      <h2 id="pickerTitle">Choose Icon</h2>
+      <div class="picker-search">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="pickerSearch" placeholder="Search icons..." oninput="filterPicker()">
+      </div>
+      <button class="btn" onclick="closePicker()">✕</button>
+    </div>
+    <div class="picker-grid" id="pickerGrid"></div>
+    <div class="picker-footer">
+      <span>Showing <strong id="pickerCount">0</strong> icons from <code>twicons/</code></span>
+      <span style="font-size:11px;color:var(--muted)">Click to assign · Right-click slot to clear</span>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
 <div id="ctxMenu">
+  <button onclick="ctxOpenPicker()">Change icon</button>
   <button onclick="ctxClear()">Clear slot</button>
   <hr class="ctx-divider">
   <button class="danger" onclick="ctxDelete()">Remove row</button>
 </div>
 
+<!-- Import Modal -->
 <div class="modal-overlay" id="importModal">
   <div class="modal">
     <h2>Import Builds</h2>
@@ -392,39 +438,45 @@ const ROSTER = {
   AGI: ['Assassin','Bow Master','Gunner','Hermit','Martial Artist','Phantom Blade','Reaper','Shooter','Sniper','Sword Enchanter','Swordsman','Thunderer','Trickster'],
   INT: ['Alchemist','Arcane Mage','Blood Weaver','Elementalist','Fire Mage','Lightning Mage','Priest','Shrine Priestess','Soul Weaver','Warlock','Water Mage','Wind Mage','Witch']
 };
-const BADGE_CLS = { STR:'badge-str', AGI:'badge-agi', INT:'badge-int' };
-const BADGE_BG  = { STR:'rgba(233,69,96,0.15)', AGI:'rgba(78,205,196,0.15)', INT:'rgba(147,112,219,0.18)' };
-const BADGE_COL = { STR:'#e94560', AGI:'#4ecdc4', INT:'#b39ddb' };
-
 function heroType(name) {
   for (const [t, list] of Object.entries(ROSTER)) if (list.includes(name)) return t;
   return null;
 }
 
 // ── Config ───────────────────────────────────────────────
-const COLS        = ['weapon','helm','body','wings','accessory'];
-const LABELS      = { weapon:'Weapon', helm:'Helm', body:'Body Armor', wings:'Wings', accessory:'Accessory' };
-const ICONS_PATH  = 'twicons/';
-const STORAGE_KEY = 'twrpg_v4';
+const COLS         = ['weapon','helm','body','wings','accessory'];
+const LABELS       = { weapon:'Weapon', helm:'Helm', body:'Body Armor', wings:'Wings', accessory:'Accessory' };
+const ICONS_PATH   = 'twicons/';
+const STORAGE_KEY  = 'twrpg_v5';
 const DEFAULT_ROWS = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
 
+// Item names read from twicons/ — the page fetches a directory listing.
+// Since GitHub Pages serves a directory index, we probe known names OR
+// use a manifest file. For maximum compatibility we generate the list
+// from any img that loads. The list below is populated at runtime via probing.
+// You can also create a twicons/manifest.json with ["ItemA","ItemB",...] to
+// avoid any probing delay.
+let iconLibrary = []; // [{ name, src }]
+
 // ── State ────────────────────────────────────────────────
-let rows          = [];   // [{ id, name }]
-let builds        = {};   // { className: { rowId: { col: slotData } } }
-let classIcons    = {};   // { className: dataURL }
+let rows          = [];
+let builds        = {};
+let classIcons    = {};
 let selectedClass = null;
 let uid           = 0;
 let ctxRowId      = null;
 let ctxCol        = null;
-
-// drag state
 let dragSrcId     = null;
 
-// ── Init ─────────────────────────────────────────────────
-function init() {
-  buildClassSelect();
+// picker state
+let pickerTargetRow = null;
+let pickerTargetCol = null;
 
-  // check share link
+// ── Init ─────────────────────────────────────────────────
+async function init() {
+  buildClassSelect();
+  await loadIconLibrary();
+
   const params = new URLSearchParams(location.search);
   if (params.has('data')) {
     try {
@@ -433,12 +485,9 @@ function init() {
       builds = d.builds || {};
       classIcons = d.classIcons || {};
       selectedClass = d.selectedClass || null;
-      save();
-      showToast('Builds loaded from share link!');
+      save(); showToast('Builds loaded from share link!');
       history.replaceState({}, '', location.pathname);
-      syncClassUI();
-      render();
-      return;
+      syncClassUI(); render(); return;
     } catch(e) {}
   }
 
@@ -447,8 +496,51 @@ function init() {
     DEFAULT_ROWS.forEach(name => rows.push({ id: uid++, name }));
     save();
   }
-  syncClassUI();
-  render();
+  syncClassUI(); render();
+}
+
+// ── Icon library loader ───────────────────────────────────
+// Strategy 1: look for twicons/manifest.json (array of filenames without ext)
+// Strategy 2: fetch the directory listing HTML and parse <a href> links
+// Strategy 3: fall back to empty (user uploads manually)
+async function loadIconLibrary() {
+  // Try manifest first
+  try {
+    const r = await fetch(ICONS_PATH + 'manifest.json');
+    if (r.ok) {
+      const names = await r.json();
+      if (Array.isArray(names) && names.length) {
+        iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + n + '.jpg' }));
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Try directory listing
+  try {
+    const r = await fetch(ICONS_PATH);
+    if (r.ok) {
+      const html = await r.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const links = [...doc.querySelectorAll('a[href]')]
+        .map(a => a.getAttribute('href'))
+        .filter(h => h && h.toLowerCase().endsWith('.jpg') && !h.startsWith('?') && !h.startsWith('/'));
+      if (links.length) {
+        iconLibrary = links.map(h => {
+          const file = h.split('/').pop();
+          const name = decodeURIComponent(file.replace(/\.jpg$/i, ''));
+          return { name, src: ICONS_PATH + file };
+        });
+        iconLibrary.sort((a,b) => a.name.localeCompare(b.name));
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Empty — user can still use context menu "Change icon" which falls through to the picker
+  // but picker will show a note
+  iconLibrary = [];
 }
 
 // ── Class select ─────────────────────────────────────────
@@ -472,83 +564,40 @@ function onClassChange() {
 }
 
 function syncClassUI() {
-  const sel = document.getElementById('classSelect');
-  sel.value = selectedClass || '';
-
-  const type = selectedClass ? heroType(selectedClass) : null;
-
-  // column header name
+  document.getElementById('classSelect').value = selectedClass || '';
   const colName  = document.getElementById('heroColName');
-  const colBadge = document.getElementById('heroColBadge');
   const iconWrap = document.getElementById('heroColIconWrap');
+  const imgEl    = document.getElementById('heroColIconImg');
+  const ph       = document.getElementById('heroColIconPlaceholder');
 
   if (selectedClass) {
     colName.textContent = selectedClass;
     colName.classList.add('active');
     iconWrap.classList.add('visible');
-    // restore saved icon for this class if any
-    const savedIcon = classIcons[selectedClass] || null;
-    const imgEl = document.getElementById('heroColIconImg');
-    const placeholder = document.getElementById('heroColIconPlaceholder');
-    if (savedIcon) {
-      imgEl.src = savedIcon; imgEl.style.display = 'block';
-      placeholder.style.display = 'none';
-    } else {
-      imgEl.style.display = 'none';
-      placeholder.style.display = '';
-    }
-    if (type) {
-      colBadge.textContent = type;
-      colBadge.style.background = BADGE_BG[type];
-      colBadge.style.color = BADGE_COL[type];
-      colBadge.className = 'visible';
-    } else {
-      colBadge.className = '';
-    }
+    const saved = classIcons[selectedClass] || null;
+    if (saved) { imgEl.src = saved; imgEl.style.display = 'block'; ph.style.display = 'none'; }
+    else        { imgEl.style.display = 'none'; ph.style.display = ''; }
   } else {
     colName.textContent = 'Heroes';
     colName.classList.remove('active');
-    colBadge.className = '';
     iconWrap.classList.remove('visible');
   }
 }
 
-// ── Hero column icon upload ───────────────────────────────
+// ── Hero column icon ──────────────────────────────────────
 function handleHeroColIcon(e) {
   if (!selectedClass) return;
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
-    classIcons[selectedClass] = ev.target.result;
-    save(); syncClassUI();
-  };
+  reader.onload = ev => { classIcons[selectedClass] = ev.target.result; save(); syncClassUI(); };
   reader.readAsDataURL(file);
 }
-
-// ── Tooltip positioning via mousemove ────────────────────
-document.addEventListener('mousemove', e => {
-  const tip = e.target.closest('.slot-drop')?.querySelector('.slot-tooltip');
-  if (tip) {
-    const rect = e.target.closest('.slot-drop').getBoundingClientRect();
-    tip.style.left = (rect.left + rect.width / 2) + 'px';
-    // show above by default, but if too close to top, show below
-    if (rect.top > 160) {
-      tip.style.top = (rect.top - 10) + 'px';
-      tip.style.transform = 'translateX(-50%) translateY(-100%)';
-    } else {
-      tip.style.top = (rect.bottom + 10) + 'px';
-      tip.style.transform = 'translateX(-50%)';
-    }
-  }
-});
 
 // ── Slot helpers ──────────────────────────────────────────
 function getSlotsFor(rowId) {
   if (!selectedClass) return {};
   return builds[selectedClass]?.[rowId] || {};
 }
-
 function setSlot(rowId, col, data) {
   if (!selectedClass) { showToast('Select a hero class first!'); return; }
   if (!builds[selectedClass]) builds[selectedClass] = {};
@@ -556,28 +605,109 @@ function setSlot(rowId, col, data) {
   builds[selectedClass][rowId][col] = data;
   save(); render();
 }
-
 function clearSlot(rowId, col) {
   if (!selectedClass || !builds[selectedClass]?.[rowId]?.[col]) return;
   delete builds[selectedClass][rowId][col];
   save(); render();
 }
-
-// ── File upload ───────────────────────────────────────────
-function handleFile(e, rowId, col) {
-  if (!selectedClass) { showToast('Select a hero class first!'); return; }
-  const file = e.target.files[0];
-  if (!file) return;
-  const name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g,' ');
-  const reader = new FileReader();
-  reader.onload = ev => setSlot(rowId, col, { type:'upload', src: ev.target.result, name });
-  reader.readAsDataURL(file);
-}
-
 function iconSrc(slot) {
   if (!slot) return null;
   return slot.type === 'upload' ? slot.src : (ICONS_PATH + slot.name + '.jpg');
 }
+
+// ── Icon picker ───────────────────────────────────────────
+function openPicker(rowId, col) {
+  if (!selectedClass) { showToast('Select a hero class first!'); return; }
+  pickerTargetRow = rowId;
+  pickerTargetCol = col;
+  document.getElementById('pickerTitle').textContent = `Choose Icon — ${LABELS[col]}`;
+  document.getElementById('pickerSearch').value = '';
+  buildPickerGrid();
+  document.getElementById('pickerOverlay').classList.add('show');
+  document.getElementById('pickerSearch').focus();
+}
+
+function buildPickerGrid() {
+  const grid = document.getElementById('pickerGrid');
+  grid.innerHTML = '';
+
+  if (iconLibrary.length === 0) {
+    grid.innerHTML = `<div class="picker-empty">
+      No icons found in <code>twicons/</code>.<br><br>
+      Add a <code>twicons/manifest.json</code> file listing your item names,<br>
+      or ensure GitHub Pages serves directory listings.
+    </div>`;
+    document.getElementById('pickerCount').textContent = '0';
+    return;
+  }
+
+  iconLibrary.forEach(icon => {
+    const div = document.createElement('div');
+    div.className = 'picker-item';
+    div.dataset.name = icon.name.toLowerCase();
+    div.innerHTML = `<img src="${icon.src}" alt="${esc(icon.name)}" onerror="this.parentNode.style.display='none'">
+                     <span class="pi-name">${esc(icon.name)}</span>`;
+    div.addEventListener('click', () => pickIcon(icon));
+    grid.appendChild(div);
+  });
+
+  document.getElementById('pickerCount').textContent = iconLibrary.length;
+}
+
+function filterPicker() {
+  const q = document.getElementById('pickerSearch').value.toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('.picker-item').forEach(el => {
+    const match = el.dataset.name.includes(q);
+    el.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+  document.getElementById('pickerCount').textContent = visible;
+}
+
+function pickIcon(icon) {
+  setSlot(pickerTargetRow, pickerTargetCol, { type: 'library', name: icon.name, src: icon.src });
+  closePicker();
+}
+
+function closePicker() {
+  document.getElementById('pickerOverlay').classList.remove('show');
+  pickerTargetRow = null; pickerTargetCol = null;
+}
+
+function closePickerOnBg(e) {
+  if (e.target === document.getElementById('pickerOverlay')) closePicker();
+}
+
+// ── Floating tooltip ──────────────────────────────────────
+let tooltipTarget = null;
+const ftEl   = () => document.getElementById('floatTooltip');
+const ftImg  = () => document.getElementById('ftImg');
+const ftName = () => document.getElementById('ftName');
+const ftSlot = () => document.getElementById('ftSlot');
+
+document.addEventListener('mousemove', e => {
+  const drop = e.target.closest('.slot-drop.filled');
+  if (drop) {
+    const ft = ftEl();
+    ft.style.left = e.clientX + 'px';
+    ft.style.top  = e.clientY + 'px';
+    if (tooltipTarget !== drop) {
+      tooltipTarget = drop;
+      const rowId = drop.dataset.rowid;
+      const col   = drop.dataset.col;
+      const slot  = getSlotsFor(parseInt(rowId))[col];
+      if (slot) {
+        ftImg().src = iconSrc(slot);
+        ftName().textContent = slot.name;
+        ftSlot().textContent = LABELS[col] || col;
+      }
+      ft.classList.add('show');
+    }
+  } else {
+    if (tooltipTarget) { ftEl().classList.remove('show'); tooltipTarget = null; }
+  }
+});
 
 // ── Row CRUD ─────────────────────────────────────────────
 function addRow() {
@@ -588,15 +718,11 @@ function addRow() {
     if (inputs.length) inputs[inputs.length-1].focus();
   }, 50);
 }
-
 function deleteRow(id) {
   rows = rows.filter(r => r.id !== id);
-  for (const cls of Object.keys(builds)) {
-    if (builds[cls][id]) delete builds[cls][id];
-  }
+  for (const cls of Object.keys(builds)) delete builds[cls][id];
   save(); render();
 }
-
 function renameRow(id, val) {
   const r = rows.find(r => r.id === id);
   if (r && val.trim()) { r.name = val.trim(); save(); }
@@ -604,51 +730,36 @@ function renameRow(id, val) {
 
 // ── Drag-to-reorder ───────────────────────────────────────
 function onDragStart(e, id) {
-  dragSrcId = id;
-  e.dataTransfer.effectAllowed = 'move';
-  setTimeout(() => {
-    const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (tr) tr.classList.add('dragging');
-  }, 0);
+  dragSrcId = id; e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => document.querySelector(`tr[data-id="${id}"]`)?.classList.add('dragging'), 0);
 }
-
 function onDragOver(e, id) {
   e.preventDefault();
   document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('drag-over'));
-  if (id !== dragSrcId) {
-    const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (tr) tr.classList.add('drag-over');
-  }
+  if (id !== dragSrcId) document.querySelector(`tr[data-id="${id}"]`)?.classList.add('drag-over');
 }
-
 function onDrop(e, id) {
   e.preventDefault();
   if (dragSrcId === null || dragSrcId === id) return;
-  const fromIdx = rows.findIndex(r => r.id === dragSrcId);
-  const toIdx   = rows.findIndex(r => r.id === id);
-  if (fromIdx === -1 || toIdx === -1) return;
-  const [moved] = rows.splice(fromIdx, 1);
-  rows.splice(toIdx, 0, moved);
-  dragSrcId = null;
-  save(); render();
+  const fi = rows.findIndex(r => r.id === dragSrcId);
+  const ti = rows.findIndex(r => r.id === id);
+  if (fi === -1 || ti === -1) return;
+  const [m] = rows.splice(fi, 1); rows.splice(ti, 0, m);
+  dragSrcId = null; save(); render();
 }
-
 function onDragEnd() {
   dragSrcId = null;
-  document.querySelectorAll('tbody tr').forEach(tr => {
-    tr.classList.remove('dragging', 'drag-over');
-  });
+  document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('dragging','drag-over'));
 }
 
 // ── Render ───────────────────────────────────────────────
 function render() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
+  const locked = !selectedClass;
 
   rows.forEach(row => {
-    const slots  = getSlotsFor(row.id);
-    const locked = !selectedClass;
-
+    const slots = getSlotsFor(row.id);
     const tr = document.createElement('tr');
     tr.dataset.id = row.id;
     tr.draggable = true;
@@ -657,41 +768,48 @@ function render() {
     tr.addEventListener('drop',      e => onDrop(e, row.id));
     tr.addEventListener('dragend',   onDragEnd);
 
-    // row label
     const tdName = document.createElement('td');
     tdName.className = 'row-cell';
     tdName.innerHTML = `<div class="row-inner">
       <span class="drag-handle" title="Drag to reorder">⠿</span>
       <input class="row-name-input" value="${esc(row.name)}" title="Click to rename"
-        onchange="renameRow(${row.id}, this.value)"
-        onblur="renameRow(${row.id}, this.value)">
+        onchange="renameRow(${row.id}, this.value)" onblur="renameRow(${row.id}, this.value)">
       <button class="del-btn" onclick="deleteRow(${row.id})">✕</button>
     </div>`;
     tr.appendChild(tdName);
 
-    // slot cells
     COLS.forEach(col => {
       const td   = document.createElement('td');
       td.className = 'slot-cell';
       const slot = slots[col];
       const src  = slot ? iconSrc(slot) : null;
-      const itemName = slot ? esc(slot.name) : '';
 
-      td.innerHTML = `<div class="slot-drop ${slot ? 'filled' : ''} ${locked ? 'locked' : ''}"
-          data-rowid="${row.id}" data-col="${col}"
-          oncontextmenu="openCtx(event,${row.id},'${col}')">
-        ${slot
-          ? `<img class="slot-img" src="${src}" alt="${itemName}"
-               onerror="this.src='';this.parentNode.classList.remove('filled')">
-             <div class="slot-tooltip">
-               <img src="${src}" onerror="this.style.display='none'">
-               <div class="tt-name">${itemName}</div>
-               <div class="tt-slot">${LABELS[col]}</div>
-             </div>`
-          : `<span class="slot-plus">${locked ? '·' : '+'}</span>`
-        }
-        ${!locked ? `<input type="file" accept="image/*" class="slot-file" onchange="handleFile(event,${row.id},'${col}')">` : ''}
-      </div>`;
+      const dropDiv = document.createElement('div');
+      dropDiv.className = `slot-drop${slot ? ' filled' : ''}${locked ? ' locked' : ''}`;
+      dropDiv.dataset.rowid = row.id;
+      dropDiv.dataset.col   = col;
+      dropDiv.addEventListener('contextmenu', e => openCtx(e, row.id, col));
+
+      if (slot) {
+        const img = document.createElement('img');
+        img.className = 'slot-img'; img.src = src; img.alt = slot.name;
+        img.onerror = () => { dropDiv.classList.remove('filled'); img.remove(); dropDiv.innerHTML = '<span class="slot-plus">+</span>'; };
+        dropDiv.appendChild(img);
+      } else {
+        const plus = document.createElement('span');
+        plus.className = 'slot-plus';
+        plus.textContent = locked ? '·' : '+';
+        dropDiv.appendChild(plus);
+      }
+
+      if (!locked) {
+        dropDiv.addEventListener('click', e => {
+          if (!e.target.closest('.slot-drop')) return;
+          openPicker(row.id, col);
+        });
+      }
+
+      td.appendChild(dropDiv);
       tr.appendChild(td);
     });
 
@@ -708,11 +826,12 @@ function openCtx(e, rowId, col) {
   const m = document.getElementById('ctxMenu');
   m.style.display = 'block';
   m.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
-  m.style.top  = Math.min(e.clientY, window.innerHeight - 100) + 'px';
+  m.style.top  = Math.min(e.clientY, window.innerHeight - 120) + 'px';
 }
 function closeCtx() { document.getElementById('ctxMenu').style.display = 'none'; }
-function ctxClear()  { clearSlot(ctxRowId, ctxCol); closeCtx(); }
-function ctxDelete() { deleteRow(ctxRowId); closeCtx(); }
+function ctxOpenPicker() { closeCtx(); openPicker(ctxRowId, ctxCol); }
+function ctxClear()      { clearSlot(ctxRowId, ctxCol); closeCtx(); }
+function ctxDelete()     { deleteRow(ctxRowId); closeCtx(); }
 document.addEventListener('click', e => { if (!e.target.closest('#ctxMenu')) closeCtx(); });
 
 // ── Persist ───────────────────────────────────────────────
@@ -724,8 +843,7 @@ function load() {
     const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (d) {
       rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-      builds = d.builds || {};
-      classIcons = d.classIcons || {};
+      builds = d.builds || {}; classIcons = d.classIcons || {};
       selectedClass = d.selectedClass || null;
     }
   } catch(e) {}
@@ -738,12 +856,8 @@ function shareBuilds() {
   document.getElementById('shareUrl').value = url;
   document.getElementById('shareBanner').classList.add('show');
 }
-function copyShareUrl() {
-  document.getElementById('shareUrl').select();
-  document.execCommand('copy');
-  showToast('Link copied!');
-}
-function closeBanner() { document.getElementById('shareBanner').classList.remove('show'); }
+function copyShareUrl() { document.getElementById('shareUrl').select(); document.execCommand('copy'); showToast('Link copied!'); }
+function closeBanner()  { document.getElementById('shareBanner').classList.remove('show'); }
 
 // ── Export / Import ───────────────────────────────────────
 function exportData() {
@@ -758,11 +872,9 @@ function doImport() {
   try {
     const d = JSON.parse(document.getElementById('importText').value.trim());
     rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-    builds = d.builds || {};
-    classIcons = d.classIcons || {};
+    builds = d.builds || {}; classIcons = d.classIcons || {};
     selectedClass = d.selectedClass || null;
-    save(); syncClassUI(); render(); closeImport();
-    showToast('Imported!');
+    save(); syncClassUI(); render(); closeImport(); showToast('Imported!');
   } catch(e) { showToast('Invalid JSON.'); }
 }
 
