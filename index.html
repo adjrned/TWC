@@ -516,25 +516,44 @@ function buildFileNameForCreator(className, creator) {
 }
 
 // Probe builds/ for all creator variants of a class.
-// Tries the index.json manifest first, falls back to attempting known filenames.
-async function fetchCreatorsForClass(className) {
-  // Try builds/index.json — an optional manifest listing available files
+// Reads builds/index.json (cached after first fetch).
+let _buildsIndexCache = null;
+async function getBuildsIndex() {
+  if (_buildsIndexCache !== null) return _buildsIndexCache;
   try {
     const r = await fetch('builds/index.json');
-    if (r.ok) {
-      const files = await r.json(); // expects array of filenames, e.g. ["Crusader.json","Crusader.Nana.json"]
-      const prefix = className.replace(/\s+/g,'_') + '.';
-      const creators = files
-        .filter(f => f.startsWith(prefix) && f.endsWith('.json'))
-        .map(f => {
-          const stem = f.slice(prefix.length, -5); // strip prefix and .json
-          return stem === '' ? null : stem.replace(/_/g,' ');
-        })
-        .filter(Boolean);
-      return creators; // empty array = only legacy file exists
-    }
+    if (r.ok) { _buildsIndexCache = await r.json(); return _buildsIndexCache; }
   } catch(e) {}
-  return []; // can't probe — assume no named creators
+  _buildsIndexCache = [];
+  return _buildsIndexCache;
+}
+
+// Returns map of { className: count } for all classes that have at least one build file
+async function fetchBuildCountsForAllClasses() {
+  const files = await getBuildsIndex();
+  const counts = {};
+  for (const f of files) {
+    if (!f.endsWith('.json')) continue;
+    // Match ClassName.json or ClassName.Creator.json
+    const stem = f.slice(0, -5); // strip .json
+    const parts = stem.split('.');
+    if (parts.length < 1) continue;
+    const className = parts[0].replace(/_/g, ' ');
+    counts[className] = (counts[className] || 0) + 1;
+  }
+  return counts;
+}
+
+async function fetchCreatorsForClass(className) {
+  const files = await getBuildsIndex();
+  const prefix = className.replace(/\s+/g,'_') + '.';
+  return files
+    .filter(f => f.startsWith(prefix) && f.endsWith('.json'))
+    .map(f => {
+      const stem = f.slice(prefix.length, -5);
+      return stem ? stem.replace(/_/g,' ') : null;
+    })
+    .filter(Boolean);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -621,7 +640,7 @@ let activePopoverDrop = null;
 
 // ── Init ─────────────────────────────────────────────────
 async function init() {
-  buildClassSelect();
+  await buildClassSelect();
   await loadIconLibrary();
   load(); // restores rows, builds, selectedClass, selectedCreator from localStorage
   if (!rows.length) { DEFAULT_ROWS.forEach(n => rows.push({ id: uid++, name: n })); save(); }
@@ -675,14 +694,19 @@ async function loadIconLibrary() {
 }
 
 // ── Class select ─────────────────────────────────────────
-function buildClassSelect() {
+async function buildClassSelect() {
   const sel = document.getElementById('classSelect');
+  // Fetch build counts so we can annotate options
+  const counts = await fetchBuildCountsForAllClasses();
   for (const [type, list] of Object.entries(ROSTER)) {
     const og = document.createElement('optgroup');
     og.label = type;
     list.forEach(name => {
       const opt = document.createElement('option');
-      opt.value = name; opt.textContent = name; og.appendChild(opt);
+      opt.value = name;
+      const count = counts[name] || 0;
+      opt.textContent = count > 0 ? `${name}  · ${count} build${count > 1 ? 's' : ''}` : name;
+      og.appendChild(opt);
     });
     sel.appendChild(og);
   }
@@ -691,6 +715,7 @@ function buildClassSelect() {
 async function onClassChange() {
   selectedClass = document.getElementById('classSelect').value || null;
   selectedCreator = null;
+  creatorName = ''; // always wipe — will be set fresh if a template is loaded
   if (selectedClass && !hasLocalData(selectedClass)) {
     await loadBuildFile(selectedClass, null);
   }
