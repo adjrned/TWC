@@ -1,0 +1,309 @@
+{
+  "class": "Paladin",
+  "publishedAt": "2026-05-03T06:38:38.185Z",
+  "rows": [
+    {
+      "id": 36,
+      "name": "Early",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Deathbringer",
+            "src": "twicons/Deathbringer.jpg"
+          },
+          {
+            "name": "Aglaia, the Spear of Heavenly Flows",
+            "src": "twicons/Aglaia%2C%20the%20Spear%20of%20Heavenly%20Flows.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Reactive Armor",
+            "src": "twicons/Reactive%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wanderer's Cape",
+            "src": "twicons/Wanderer's%20Cape.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 37,
+      "name": "SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ruinbringer",
+            "src": "twicons/Ruinbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hellspike Armor",
+            "src": "twicons/Hellspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Phoenix",
+            "src": "twicons/Wings%20of%20Phoenix.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "The Ender",
+            "src": "twicons/The%20Ender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Lightning God",
+            "src": "twicons/Horn%20of%20Lightning%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Phoenix",
+            "src": "twicons/Wings%20of%20Phoenix.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heaven's Fist",
+            "src": "twicons/Heaven's%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Calamity",
+            "src": "twicons/Calamity.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Flame Lord",
+            "src": "twicons/Wings%20of%20Flame%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Insatiable Hunger",
+            "src": "twicons/Cape%20of%20Insatiable%20Hunger.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Insatiable Hunger",
+            "src": "twicons/Cape%20of%20Insatiable%20Hunger.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 42,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Insatiable Hunger",
+            "src": "twicons/Cape%20of%20Insatiable%20Hunger.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "World Sunderer",
+            "src": "twicons/World%20Sunderer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Living Flame",
+            "src": "twicons/Living%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 44,
+      "name": "Kam",
+      "slots": {
+        "weapon": null,
+        "helm": null,
+        "body": null,
+        "wings": null,
+        "accessory": null
+      }
+    }
+  ]
+}

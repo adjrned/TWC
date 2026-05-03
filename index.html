@@ -63,6 +63,8 @@ layout: null
   .btn.primary:hover { background: var(--accent); color: #fff; }
   .btn.teal { border-color: var(--accent3); color: var(--accent3); }
   .btn.teal:hover { background: var(--accent3); color: #0b0b14; }
+  .btn.danger-btn { border-color: rgba(233,69,96,0.4); color: var(--accent); }
+  .btn.danger-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   /* ── Toolbar ── */
   .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -372,7 +374,6 @@ layout: null
     <div class="header-actions">
       <button class="btn" onclick="openImport()">Import</button>
       <button class="btn" onclick="exportData()">Export</button>
-      <button class="btn primary" onclick="addRow()">+ Add Row</button>
     </div>
   </header>
 
@@ -385,7 +386,15 @@ layout: null
         <option value="">— Select Hero Class —</option>
       </select>
     </div>
+    <div class="class-picker" id="creatorPickerWrap" style="display:none; min-width:160px; max-width:220px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      <select id="creatorSelect" onchange="onCreatorChange()">
+      </select>
+    </div>
     <button class="btn" id="resetTemplateBtn" onclick="resetToTemplate()" style="display:none" title="Discard local edits and reload the published build">↺ Reset to template</button>
+    <button class="btn danger-btn" id="clearAllBtn" onclick="clearAllRows()" style="display:none" title="Clear all items from every row">🗑 Clear all rows</button>
   </div>
 
   <div class="table-wrap">
@@ -416,9 +425,13 @@ layout: null
       </table>
       <div id="emptyState">
         <div class="es-icon">🗡️</div>
-        <p>No rows yet. Click <strong>+ Add Row</strong> to get started.</p>
+        <p>No rows yet. Click <strong>+ Add Row</strong> below to get started.</p>
       </div>
     </div>
+  </div>
+
+  <div style="display:flex; justify-content:center; margin-top:14px;">
+    <button class="btn primary" onclick="addRow()" style="padding: 10px 32px; font-size:13px;">+ Add Row</button>
   </div>
 </div>
 
@@ -451,7 +464,7 @@ layout: null
   </div>
 </div>
 
-<!-- Context Menu (right-click fallback) -->
+<!-- Context Menu (right-click) -->
 <div id="ctxMenu">
   <button onclick="ctxOpenPicker(0)">Change main</button>
   <button id="ctxAddAltBtn"    onclick="ctxOpenPicker(1)">Add alternative</button>
@@ -495,7 +508,34 @@ const STORAGE_KEY = 'twrpg_v7';
 const DEFAULT_ROWS = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
 
 function classIconPath(name) { return ICONS_PATH + name.replace(/\s+/g,'') + 'Icon.jpg'; }
+// Primary (legacy) filename: Crusader.json
 function buildFileName(name) { return name.replace(/\s+/g,'_') + '.json'; }
+// Creator-specific filename: Crusader.Nana.json
+function buildFileNameForCreator(className, creator) {
+  return className.replace(/\s+/g,'_') + '.' + creator.replace(/\s+/g,'_') + '.json';
+}
+
+// Probe builds/ for all creator variants of a class.
+// Tries the index.json manifest first, falls back to attempting known filenames.
+async function fetchCreatorsForClass(className) {
+  // Try builds/index.json — an optional manifest listing available files
+  try {
+    const r = await fetch('builds/index.json');
+    if (r.ok) {
+      const files = await r.json(); // expects array of filenames, e.g. ["Crusader.json","Crusader.Nana.json"]
+      const prefix = className.replace(/\s+/g,'_') + '.';
+      const creators = files
+        .filter(f => f.startsWith(prefix) && f.endsWith('.json'))
+        .map(f => {
+          const stem = f.slice(prefix.length, -5); // strip prefix and .json
+          return stem === '' ? null : stem.replace(/_/g,' ');
+        })
+        .filter(Boolean);
+      return creators; // empty array = only legacy file exists
+    }
+  } catch(e) {}
+  return []; // can't probe — assume no named creators
+}
 
 // ─────────────────────────────────────────────────────────
 // Slot data model
@@ -553,37 +593,42 @@ function importLegacyBuildFile(data, className) {
   return true;
 }
 
-async function loadBuildFile(className) {
+async function loadBuildFile(className, creator) {
   if (!className) return false;
-  // Don't overwrite local edits — only load template into a blank slate
   if (hasLocalData(className)) return false;
-  try {
-    const r = await fetch('builds/' + buildFileName(className));
-    if (!r.ok) return false;
-    const data = await r.json();
-    if (importExportBuildData(data) || importLegacyBuildFile(data, className)) { save(); return true; }
-  } catch(e) {}
+  const urls = [];
+  if (creator) urls.push('builds/' + buildFileNameForCreator(className, creator));
+  urls.push('builds/' + buildFileName(className)); // legacy fallback
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (importExportBuildData(data) || importLegacyBuildFile(data, className)) { save(); return true; }
+    } catch(e) {}
+  }
   return false;
 }
 
 // ── State ────────────────────────────────────────────────
 let rows = [], builds = {}, selectedClass = null, creatorName = '';
+let selectedCreator = null; // currently selected creator name for multi-creator builds
 let uid = 0, dragSrcId = null;
 let pickerTargetRow = null, pickerTargetCol = null, pickerTargetIdx = 0;
 let ctxRowId = null, ctxCol = null;
 let iconLibrary = [];
-let activePopoverDrop = null; // the .slot-drop element whose popover is currently open
+let activePopoverDrop = null;
 
 // ── Init ─────────────────────────────────────────────────
 async function init() {
   buildClassSelect();
   await loadIconLibrary();
-  load(); // restores rows, builds, selectedClass from localStorage
+  load(); // restores rows, builds, selectedClass, selectedCreator from localStorage
   if (!rows.length) { DEFAULT_ROWS.forEach(n => rows.push({ id: uid++, name: n })); save(); }
-  // Only fetch the remote template on first-ever load for this class (no local data at all).
-  // If localStorage already had data, load() already restored it — don't clobber it.
-  if (selectedClass && !hasLocalData(selectedClass)) await loadBuildFile(selectedClass);
-  syncClassUI(); render();
+  if (selectedClass && !hasLocalData(selectedClass)) {
+    await loadBuildFile(selectedClass, selectedCreator);
+  }
+  await syncClassUI(); render();
   document.addEventListener('click',   onDocClick);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAllPopovers(); closeCtx(); } });
 }
@@ -645,33 +690,77 @@ function buildClassSelect() {
 
 async function onClassChange() {
   selectedClass = document.getElementById('classSelect').value || null;
+  selectedCreator = null;
   if (selectedClass && !hasLocalData(selectedClass)) {
-    // No local data yet — try loading the published template (sets rows + builds)
-    await loadBuildFile(selectedClass);
+    await loadBuildFile(selectedClass, null);
   }
+  save(); await syncClassUI(); render();
+}
+
+async function onCreatorChange() {
+  const val = document.getElementById('creatorSelect').value;
+  selectedCreator = val || null;
+  // Wipe existing data for this class so we can load fresh from the chosen creator
+  if (selectedClass && builds[selectedClass]) delete builds[selectedClass];
+  save();
+  await loadBuildFile(selectedClass, selectedCreator);
   save(); syncClassUI(); render();
 }
 
 async function resetToTemplate() {
   if (!selectedClass) return;
-  if (!confirm(`Reset to the published template for ${selectedClass}? Your local edits will be lost.`)) return;
-  // Wipe local data for this class so loadBuildFile will fetch fresh
+  const label = selectedCreator ? `${selectedClass} (${selectedCreator})` : selectedClass;
+  if (!confirm(`Reset to the published template for ${label}? Your local edits will be lost.`)) return;
   if (builds[selectedClass]) delete builds[selectedClass];
   save();
-  const loaded = await loadBuildFile(selectedClass);
+  const loaded = await loadBuildFile(selectedClass, selectedCreator);
   if (!loaded) showToast('No published template found for this class.');
   syncClassUI(); render();
 }
 
-function syncClassUI() {
+function clearAllRows() {
+  if (!selectedClass) return;
+  if (!confirm('Clear all items from every row? This cannot be undone.')) return;
+  if (builds[selectedClass]) {
+    for (const rowId of Object.keys(builds[selectedClass])) {
+      builds[selectedClass][rowId] = {};
+    }
+  }
+  save(); render(); showToast('All rows cleared.');
+}
+
+async function syncClassUI() {
   document.getElementById('classSelect').value = selectedClass || '';
   const colName     = document.getElementById('heroColName');
   const colSubtitle = document.getElementById('heroColSubtitle');
   const iconWrap    = document.getElementById('heroColIconWrap');
   const imgEl       = document.getElementById('heroColIconImg');
   const ph          = document.getElementById('heroColIconPlaceholder');
-  const resetBtn = document.getElementById('resetTemplateBtn');
+  const resetBtn    = document.getElementById('resetTemplateBtn');
+  const clearBtn    = document.getElementById('clearAllBtn');
+  const creatorWrap = document.getElementById('creatorPickerWrap');
+  const creatorSel  = document.getElementById('creatorSelect');
+
   if (selectedClass) {
+    // Probe for multiple creators
+    const creators = await fetchCreatorsForClass(selectedClass);
+    if (creators.length > 0) {
+      creatorSel.innerHTML = '';
+      // Add a "no creator" option that loads the legacy file
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = ''; defaultOpt.textContent = '— Choose build —';
+      creatorSel.appendChild(defaultOpt);
+      creators.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        creatorSel.appendChild(opt);
+      });
+      creatorSel.value = selectedCreator || '';
+      creatorWrap.style.display = '';
+    } else {
+      creatorWrap.style.display = 'none';
+    }
+
     colName.textContent = selectedClass;
     colSubtitle.textContent = creatorName ? `by ${creatorName}` : '';
     colName.classList.add('active'); iconWrap.classList.add('visible');
@@ -682,10 +771,13 @@ function syncClassUI() {
     t.onerror = () => { imgEl.style.display = 'none'; ph.style.display = ''; };
     t.src = p;
     resetBtn.style.display = '';
+    clearBtn.style.display = '';
   } else {
+    creatorWrap.style.display = 'none';
     colName.textContent = 'Heroes'; colSubtitle.textContent = '';
     colName.classList.remove('active'); iconWrap.classList.remove('visible');
     resetBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
   }
 }
 
@@ -737,85 +829,6 @@ function onDocClick(e) {
   if (activePopoverDrop && !e.target.closest('.slot-drop')) closeAllPopovers();
   // Close ctx menu when clicking outside it
   if (!e.target.closest('#ctxMenu')) closeCtx();
-}
-
-function openSlotPopover(e, dropEl, rowId, col) {
-  e.stopPropagation();
-
-  // Toggle: clicking same open slot closes it
-  if (activePopoverDrop === dropEl) { closeAllPopovers(); return; }
-  closeAllPopovers();
-
-  const arr     = getSlotArr(rowId, col);
-  const primary = arr[0] || null;
-  const alt     = arr[1] || null;
-
-  const pop = document.createElement('div');
-  pop.className = 'slot-popover open';
-
-  // Label
-  const lbl = document.createElement('span');
-  lbl.className = 'pop-label'; lbl.textContent = LABELS[col] || col;
-  pop.appendChild(lbl);
-
-  // ── Change main ──
-  pop.appendChild(makePopBtn('🖊', 'Change main', '', () => { closeAllPopovers(); openPicker(rowId, col, 0); }));
-
-  // ── Alt section ──
-  if (!alt) {
-    if (primary) {
-      pop.appendChild(makePopBtn('＋', 'Add alternative', 'teal', () => { closeAllPopovers(); openPicker(rowId, col, 1); }));
-    }
-  } else {
-    // Alt preview
-    const altRow = document.createElement('div');
-    altRow.className = 'pop-alt-row';
-    const thumb = document.createElement('div'); thumb.className = 'pop-alt-thumb';
-    const aImg  = document.createElement('img');
-    aImg.src = iconSrc(alt); aImg.alt = alt.name;
-    thumb.appendChild(aImg);
-    const nm = document.createElement('span'); nm.className = 'pop-alt-name'; nm.textContent = alt.name;
-    altRow.appendChild(thumb); altRow.appendChild(nm);
-    pop.appendChild(altRow);
-
-    pop.appendChild(makePopBtn('🖊', 'Change alternative', 'teal', () => { closeAllPopovers(); openPicker(rowId, col, 1); }));
-    const clearAlt = makePopBtn('✕', 'Clear alternative', 'danger', () => { closeAllPopovers(); clearSlotItem(rowId, col, 1); });
-    pop.appendChild(clearAlt);
-  }
-
-  // Divider + clear all
-  const hr = document.createElement('hr'); hr.className = 'pop-divider'; pop.appendChild(hr);
-  pop.appendChild(makePopBtn('🗑', 'Clear slot', 'danger', () => { closeAllPopovers(); clearSlot(rowId, col); }));
-
-  // Append into the anchor (escapes overflow:hidden), not directly into dropEl
-  const anchor = dropEl.querySelector('.slot-popover-anchor');
-  (anchor || dropEl).appendChild(pop);
-  activePopoverDrop = dropEl;
-  dropEl.classList.add('pop-open');
-
-  // Position: below by default, flip up if not enough room
-  requestAnimationFrame(() => {
-    const dropRect = dropEl.getBoundingClientRect();
-    const popH     = pop.offsetHeight || 180;
-    const spaceBelow = window.innerHeight - dropRect.bottom;
-    pop.style.left      = '50%';
-    pop.style.transform = 'translateX(-50%)';
-    if (spaceBelow >= popH + 12 || spaceBelow >= dropRect.top) {
-      pop.style.top    = 'calc(100% + 8px)';
-      pop.style.bottom = 'auto';
-    } else {
-      pop.style.bottom = 'calc(100% + 8px)';
-      pop.style.top    = 'auto';
-    }
-  });
-}
-
-function makePopBtn(icon, label, cls, onClick) {
-  const btn = document.createElement('button');
-  if (cls) btn.classList.add(cls);
-  btn.innerHTML = `<span class="pop-icon">${icon}</span>${esc(label)}`;
-  btn.addEventListener('click', ev => { ev.stopPropagation(); onClick(); });
-  return btn;
 }
 
 // ── Icon picker ───────────────────────────────────────────
@@ -1002,12 +1015,20 @@ function render() {
       }
 
       if (!locked) {
+        // Left-click on a tile → directly open picker for that tile's index (primary=0, alt=1)
+        // Left-click on the drop background (empty or single) → picker for primary
         drop.addEventListener('click', e => {
-          if (primary) openSlotPopover(e, drop, row.id, col);
-          else openPicker(row.id, col, 0);
+          const tile = e.target.closest('.slot-icon-tile');
+          if (tile) {
+            const idx = tile.classList.contains('tile-alt') ? 1 : 0;
+            openPicker(row.id, col, idx);
+          } else if (!primary) {
+            openPicker(row.id, col, 0);
+          }
+          // clicking the drop background when filled but not on a tile → do nothing (avoid accidental opens)
         });
         drop.addEventListener('contextmenu', e => openCtx(e, row.id, col));
-        // Invisible overflow:visible anchor — popover appends here to escape overflow:hidden
+        // Anchor so z-index works properly
         const anchor = document.createElement('div');
         anchor.className = 'slot-popover-anchor';
         drop.appendChild(anchor);
@@ -1044,16 +1065,14 @@ function ctxDelete()   { deleteRow(ctxRowId); closeCtx(); }
 
 // ── Persist ───────────────────────────────────────────────
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, selectedClass })); } catch(e) {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rows, builds, selectedClass, selectedCreator })); } catch(e) {}
 }
 function load() {
   try {
     let d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (!d) d = JSON.parse(localStorage.getItem('twrpg_v6') || 'null'); // migrate v6
     if (d) {
-      // Preserve original IDs — do NOT reassign with uid++
       rows = (d.rows || []).map(r => ({ ...r }));
-      // Advance uid past the highest existing ID so new rows never collide
       const maxId = rows.reduce((m, r) => Math.max(m, r.id ?? -1), -1);
       uid = maxId + 1;
       builds = {};
@@ -1067,7 +1086,8 @@ function load() {
           });
         }
       }
-      selectedClass = d.selectedClass || null;
+      selectedClass   = d.selectedClass   || null;
+      selectedCreator = d.selectedCreator || null;
     }
   } catch(e) {}
 }
@@ -1091,7 +1111,10 @@ function exportData() {
   const blob = new Blob([JSON.stringify(out,null,2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = selectedClass ? buildFileName(selectedClass) : 'twrpg-builds.json';
+  const dlName = selectedClass
+    ? (selectedCreator ? buildFileNameForCreator(selectedClass, selectedCreator) : buildFileName(selectedClass))
+    : 'twrpg-builds.json';
+  a.download = dlName;
   a.click();
   showToast('Exported! Commit to builds/ folder to publish.');
 }
