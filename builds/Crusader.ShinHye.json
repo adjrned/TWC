@@ -1,0 +1,275 @@
+{
+  "class": "Crusader",
+  "createdBy": "ShinHye",
+  "publishedAt": "2026-05-03T06:32:20.115Z",
+  "rows": [
+    {
+      "id": 27,
+      "name": "Minor",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Bahanar, the True Sword of Illusion",
+            "src": "twicons/Bahanar%2C%20the%20True%20Sword%20of%20Illusion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Archangel Halo",
+            "src": "twicons/Archangel%20Halo.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Flameshard Armor",
+            "src": "twicons/Flameshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Corrupt Crystal Wings",
+            "src": "twicons/Corrupt%20Crystal%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 28,
+      "name": "Shadow Dragon",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Meacronacer, the Sword of Thousand Illusions",
+            "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Crown of Rage",
+            "src": "twicons/Crown%20of%20Rage.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hellspike Armor",
+            "src": "twicons/Hellspike%20Armor.jpg"
+          },
+          {
+            "name": "Frostshard Armor",
+            "src": "twicons/Frostshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Pure Crystal Wings",
+            "src": "twicons/Pure%20Crystal%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 29,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Splitting of the Sky and Earth",
+            "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Crown of Great Rage",
+            "src": "twicons/Crown%20of%20Great%20Rage.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heaven's Fist",
+            "src": "twicons/Heaven's%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Astra, the Sword of Moonlight",
+            "src": "twicons/Astra%2C%20the%20Sword%20of%20Moonlight.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Radiance of the One",
+            "src": "twicons/Radiance%20of%20the%20One.jpg"
+          },
+          {
+            "name": "Crown of Extreme Anger",
+            "src": "twicons/Crown%20of%20Extreme%20Anger.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Voidshard Armor",
+            "src": "twicons/Voidshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 36,
+      "name": "Duke-AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cataclysm",
+            "src": "twicons/Crown%20of%20Cataclysm.jpg"
+          },
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 37,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cataclysm",
+            "src": "twicons/Crown%20of%20Cataclysm.jpg"
+          },
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          },
+          {
+            "name": "Living Flame",
+            "src": "twicons/Living%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          },
+          {
+            "name": "Ring of Genesis",
+            "src": "twicons/Ring%20of%20Genesis.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "name": "New Row",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": null,
+        "body": null,
+        "wings": null,
+        "accessory": null
+      }
+    }
+  ]
+}
