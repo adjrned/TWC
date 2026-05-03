@@ -168,6 +168,8 @@ layout: null
   }
   /* Invisible full-size div inside slot-drop that overflows — popover escapes overflow:hidden */
   .slot-popover-anchor { position: absolute; inset: 0; overflow: visible; pointer-events: none; z-index: 50; }
+  /* The popover itself must re-enable pointer events even though the anchor is none */
+  .slot-popover { pointer-events: auto; }
   .slot-drop:hover { border-color: var(--accent); background: rgba(233,69,96,0.07); transform: scale(1.06); z-index: 10; }
   .slot-drop.filled { border-style: solid; border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
   .slot-drop.filled:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
@@ -451,7 +453,7 @@ layout: null
 
 <!-- Context Menu (right-click fallback) -->
 <div id="ctxMenu">
-  <button onclick="ctxOpenPicker(0)">Change icon</button>
+  <button onclick="ctxOpenPicker(0)">Change main</button>
   <button id="ctxAddAltBtn"    onclick="ctxOpenPicker(1)">Add alternative</button>
   <button id="ctxChangeAltBtn" onclick="ctxOpenPicker(1)">Change alternative</button>
   <button id="ctxClearAltBtn"  onclick="ctxClearAlt()" class="danger">Clear alternative</button>
@@ -756,8 +758,8 @@ function openSlotPopover(e, dropEl, rowId, col) {
   lbl.className = 'pop-label'; lbl.textContent = LABELS[col] || col;
   pop.appendChild(lbl);
 
-  // ── Replace primary ──
-  pop.appendChild(makePopBtn('🖊', 'Replace icon', '', () => { closeAllPopovers(); openPicker(rowId, col, 0); }));
+  // ── Change main ──
+  pop.appendChild(makePopBtn('🖊', 'Change main', '', () => { closeAllPopovers(); openPicker(rowId, col, 0); }));
 
   // ── Alt section ──
   if (!alt) {
@@ -877,14 +879,20 @@ document.addEventListener('mousemove', e => {
   if (drop && !drop.classList.contains('pop-open')) {
     const ft = document.getElementById('floatTooltip');
     ft.style.left = e.clientX + 'px'; ft.style.top = e.clientY + 'px';
-    if (ttTarget !== drop) {
-      ttTarget = drop;
-      const arr  = getSlotArr(parseInt(drop.dataset.rowid), drop.dataset.col);
-      const prim = arr[0];
-      if (prim) {
-        document.getElementById('ftImg').src  = iconSrc(prim);
-        document.getElementById('ftName').textContent = prim.name;
-        document.getElementById('ftSlot').textContent = LABELS[drop.dataset.col] || drop.dataset.col;
+    // Determine which tile (primary or alt) the cursor is over
+    const tile = e.target.closest('.slot-icon-tile');
+    const isAlt = tile?.classList.contains('tile-alt');
+    const rowId = parseInt(drop.dataset.rowid);
+    const col   = drop.dataset.col;
+    const arr   = getSlotArr(rowId, col);
+    const item  = isAlt ? (arr[1] || arr[0]) : (arr[0] || null);
+    const hoverKey = drop.dataset.rowid + col + (isAlt ? '1' : '0');
+    if (ttTarget !== hoverKey) {
+      ttTarget = hoverKey;
+      if (item) {
+        document.getElementById('ftImg').src  = iconSrc(item);
+        document.getElementById('ftName').textContent = item.name;
+        document.getElementById('ftSlot').textContent = (isAlt ? 'Alt — ' : '') + (LABELS[col] || col);
         ft.classList.add('show');
       }
     }
@@ -1043,9 +1051,13 @@ function load() {
     let d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (!d) d = JSON.parse(localStorage.getItem('twrpg_v6') || 'null'); // migrate v6
     if (d) {
-      rows = (d.rows||[]).map(r => ({...r, id: uid++}));
+      // Preserve original IDs — do NOT reassign with uid++
+      rows = (d.rows || []).map(r => ({ ...r }));
+      // Advance uid past the highest existing ID so new rows never collide
+      const maxId = rows.reduce((m, r) => Math.max(m, r.id ?? -1), -1);
+      uid = maxId + 1;
       builds = {};
-      for (const [cls, rowMap] of Object.entries(d.builds||{})) {
+      for (const [cls, rowMap] of Object.entries(d.builds || {})) {
         builds[cls] = {};
         for (const [rowId, slotGroup] of Object.entries(rowMap)) {
           builds[cls][rowId] = {};
