@@ -184,8 +184,8 @@ layout: null
     position: relative;
   }
   /* Thin coloured border: green for primary, red for alt — only shown when both exist */
-  .slot-drop.has-alt .slot-icon-tile.tile-primary { box-shadow: inset 0 0 0 1.5px #4ade80; }
-  .slot-drop.has-alt .slot-icon-tile.tile-alt      { box-shadow: inset 0 0 0 1.5px #f87171; }
+  .slot-drop.has-alt .slot-icon-tile.tile-primary { box-shadow: inset 0 0 0 2.5px #4ade80; border-radius: 8px; }
+  .slot-drop.has-alt .slot-icon-tile.tile-alt      { box-shadow: inset 0 0 0 2.5px #f87171; border-radius: 8px; }
 
   .slot-img-primary { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
   .slot-img-alt     { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
@@ -553,14 +553,8 @@ function importLegacyBuildFile(data, className) {
 
 async function loadBuildFile(className) {
   if (!className) return false;
-  // If the user already has local data for this class, don't overwrite with the remote template.
-  // "Local data" means the class key exists in builds AND at least one row has at least one slot filled.
-  if (builds[className]) {
-    const hasLocalData = Object.values(builds[className]).some(
-      rowSlots => Object.values(rowSlots).some(arr => Array.isArray(arr) && arr.length > 0)
-    );
-    if (hasLocalData) return false; // preserve local edits
-  }
+  // Don't overwrite local edits — only load template into a blank slate
+  if (hasLocalData(className)) return false;
   try {
     const r = await fetch('builds/' + buildFileName(className));
     if (!r.ok) return false;
@@ -582,12 +576,21 @@ let activePopoverDrop = null; // the .slot-drop element whose popover is current
 async function init() {
   buildClassSelect();
   await loadIconLibrary();
-  load();
+  load(); // restores rows, builds, selectedClass from localStorage
   if (!rows.length) { DEFAULT_ROWS.forEach(n => rows.push({ id: uid++, name: n })); save(); }
-  if (selectedClass) await loadBuildFile(selectedClass);
+  // Only fetch the remote template on first-ever load for this class (no local data at all).
+  // If localStorage already had data, load() already restored it — don't clobber it.
+  if (selectedClass && !hasLocalData(selectedClass)) await loadBuildFile(selectedClass);
   syncClassUI(); render();
   document.addEventListener('click',   onDocClick);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAllPopovers(); closeCtx(); } });
+}
+
+function hasLocalData(className) {
+  if (!builds[className]) return false;
+  return Object.values(builds[className]).some(
+    rowSlots => rowSlots && Object.values(rowSlots).some(arr => Array.isArray(arr) && arr.length > 0)
+  );
 }
 
 // ── Icon library ──────────────────────────────────────────
@@ -640,7 +643,10 @@ function buildClassSelect() {
 
 async function onClassChange() {
   selectedClass = document.getElementById('classSelect').value || null;
-  if (selectedClass) await loadBuildFile(selectedClass);
+  if (selectedClass && !hasLocalData(selectedClass)) {
+    // No local data yet — try loading the published template (sets rows + builds)
+    await loadBuildFile(selectedClass);
+  }
   save(); syncClassUI(); render();
 }
 
