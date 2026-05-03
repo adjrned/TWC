@@ -151,44 +151,46 @@ layout: null
   .del-btn:hover { color: var(--accent); }
 
   /* ── Slot cells ── */
-  .slot-cell { text-align: center; vertical-align: middle; padding: 8px 6px; }
+  .slot-cell { text-align: center; vertical-align: middle; padding: 8px 3px; }
 
   .slot-drop {
+    /* base size = one cell; grows to two when alt is present */
     width: var(--cell); height: var(--cell); border-radius: 10px;
     border: 1.5px dashed rgba(255,255,255,0.12); background: rgba(255,255,255,0.02);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
     margin: 0 auto; cursor: pointer; position: relative;
-    overflow: hidden; /* keep alt badge clipped inside cell */
-    transition: border-color 0.18s, background 0.18s, transform 0.12s;
+    overflow: visible;
+    transition: border-color 0.18s, background 0.18s, transform 0.12s, width 0.15s;
   }
-  /* Invisible full-size div inside slot-drop that overflows — popover is appended here so it escapes overflow:hidden */
+  .slot-drop.has-alt {
+    width: calc(var(--cell) * 2 + 3px); /* two icons + gap */
+    border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.02);
+  }
+  /* Invisible full-size div inside slot-drop that overflows — popover escapes overflow:hidden */
   .slot-popover-anchor { position: absolute; inset: 0; overflow: visible; pointer-events: none; z-index: 50; }
   .slot-drop:hover { border-color: var(--accent); background: rgba(233,69,96,0.07); transform: scale(1.06); z-index: 10; }
   .slot-drop.filled { border-style: solid; border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
   .slot-drop.filled:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
-  /* Teal ring when alt is present */
-  .slot-drop.has-alt { border-color: rgba(78,205,196,0.5); background: rgba(78,205,196,0.04); }
-  .slot-drop.has-alt:hover { border-color: var(--accent3); background: rgba(78,205,196,0.09); }
+  .slot-drop.has-alt { border-style: solid; }
   .slot-drop.locked { cursor: default; opacity: 0.35; }
   .slot-drop.locked:hover { transform: none; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); }
-  /* Suppress hover transform while popover is open */
   .slot-drop.pop-open { transform: scale(1.06); z-index: 200; }
 
+  /* Individual icon tiles */
+  .slot-icon-tile {
+    width: var(--cell); height: var(--cell); flex-shrink: 0;
+    border-radius: 8px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  /* Thin coloured border: green for primary, red for alt — only shown when both exist */
+  .slot-drop.has-alt .slot-icon-tile.tile-primary { box-shadow: inset 0 0 0 1.5px #4ade80; }
+  .slot-drop.has-alt .slot-icon-tile.tile-alt      { box-shadow: inset 0 0 0 1.5px #f87171; }
+
   .slot-img-primary { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
+  .slot-img-alt     { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
   .slot-plus { font-size: 20px; color: rgba(255,255,255,0.15); user-select: none; pointer-events: none; }
   .slot-drop:hover:not(.locked) .slot-plus { color: var(--accent); }
-
-  /* Alt badge — small icon overlaid bottom-right, fully inside the cell */
-  .alt-icon-wrap {
-    position: absolute; bottom: 3px; right: 3px;
-    width: 22px; height: 22px; border-radius: 5px;
-    border: 1.5px solid var(--accent3);
-    background: rgba(11,11,20,0.85);
-    overflow: hidden; pointer-events: none;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.8);
-    z-index: 3;
-  }
-  .alt-icon-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
   /* ── Slot popover ── */
   .slot-popover {
@@ -960,18 +962,24 @@ function render() {
       drop.dataset.col   = col;
 
       if (primary) {
-        // Full-size primary image
-        const img = document.createElement('img');
-        img.className = 'slot-img-primary'; img.src = iconSrc(primary); img.alt = primary.name;
-        img.onerror = () => { img.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; drop.prepend(p); };
-        drop.appendChild(img);
+        // Primary tile
+        const tileP = document.createElement('div');
+        tileP.className = 'slot-icon-tile tile-primary';
+        const imgP = document.createElement('img');
+        imgP.className = 'slot-img-primary'; imgP.src = iconSrc(primary); imgP.alt = primary.name;
+        imgP.onerror = () => { imgP.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; tileP.appendChild(p); };
+        tileP.appendChild(imgP);
+        drop.appendChild(tileP);
 
-        // Alt badge (small overlay, bottom-right)
+        // Alt tile — same size, sits to the right
         if (alt) {
-          const wrap = document.createElement('div'); wrap.className = 'alt-icon-wrap';
-          const ai   = document.createElement('img'); ai.src = iconSrc(alt); ai.alt = alt.name;
-          ai.onerror = () => wrap.remove();
-          wrap.appendChild(ai); drop.appendChild(wrap);
+          const tileA = document.createElement('div');
+          tileA.className = 'slot-icon-tile tile-alt';
+          const imgA = document.createElement('img');
+          imgA.className = 'slot-img-alt'; imgA.src = iconSrc(alt); imgA.alt = alt.name;
+          imgA.onerror = () => { imgA.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; tileA.appendChild(p); };
+          tileA.appendChild(imgA);
+          drop.appendChild(tileA);
         }
       } else {
         const plus = document.createElement('span');
