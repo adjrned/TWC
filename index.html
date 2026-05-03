@@ -152,21 +152,63 @@ layout: null
 
   /* ── Slot cells ── */
   .slot-cell { text-align: center; vertical-align: middle; padding: 8px 6px; }
+
+  /*
+   * The slot-drop is now a split container: left half = primary, right half = alt.
+   * Width expands to fit two icons when both are present.
+   */
   .slot-drop {
-    width: var(--cell); height: var(--cell); border-radius: 10px;
-    border: 1.5px dashed rgba(255,255,255,0.12); background: rgba(255,255,255,0.02);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto; cursor: pointer; position: relative;
-    overflow: visible; transition: border-color 0.18s, background 0.18s, transform 0.12s;
+    display: inline-flex; align-items: stretch;
+    height: var(--cell); border-radius: 10px;
+    border: 1.5px dashed rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.02);
+    margin: 0 auto; position: relative; overflow: visible;
+    transition: border-color 0.18s, background 0.18s;
+    width: var(--cell); /* single-item default */
   }
-  .slot-drop:hover { border-color: var(--accent); background: rgba(233,69,96,0.07); transform: scale(1.06); z-index: 10; }
-  .slot-drop.filled { border-style: solid; border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
-  .slot-drop.filled:hover { border-color: var(--accent); background: rgba(233,69,96,0.08); }
+  .slot-drop.has-alt {
+    width: calc(var(--cell) * 2 + 2px); /* two icons + divider */
+    border-color: rgba(245,166,35,0.35);
+    background: rgba(245,166,35,0.04);
+  }
+  .slot-drop.filled:not(.has-alt) {
+    border-style: solid; border-color: rgba(245,166,35,0.35);
+    background: rgba(245,166,35,0.04);
+  }
   .slot-drop.locked { cursor: default; opacity: 0.35; }
-  .slot-drop.locked:hover { transform: none; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); }
+  .slot-drop.locked:hover .slot-half { cursor: default; }
+
+  /* Each half */
+  .slot-half {
+    flex: 0 0 var(--cell);
+    height: 100%; display: flex; align-items: center; justify-content: center;
+    position: relative; cursor: pointer; border-radius: 8px;
+    transition: background 0.15s, transform 0.12s;
+    overflow: hidden;
+  }
+  .slot-half:hover:not(.locked-half) { background: rgba(233,69,96,0.12); transform: scale(1.06); z-index: 10; }
+
+  /* Divider between primary and alt */
+  .slot-divider {
+    width: 2px; background: rgba(255,255,255,0.08); flex-shrink: 0; align-self: stretch;
+  }
+
+  /* Alt half when empty shows a subtle + */
+  .slot-half.alt-empty { opacity: 0.5; }
+  .slot-half.alt-empty:hover { opacity: 1; }
+
   .slot-img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: block; pointer-events: none; }
-  .slot-plus { font-size: 20px; color: rgba(255,255,255,0.15); user-select: none; pointer-events: none; }
-  .slot-drop:hover:not(.locked) .slot-plus { color: var(--accent); }
+  .slot-plus { font-size: 18px; color: rgba(255,255,255,0.15); user-select: none; pointer-events: none; }
+  .slot-half:hover:not(.locked-half) .slot-plus { color: var(--accent); }
+
+  /* Alt label badge */
+  .alt-badge {
+    position: absolute; bottom: 2px; right: 2px;
+    background: rgba(78,205,196,0.85); color: #0b0b14;
+    font-size: 7px; font-weight: 800; line-height: 1; padding: 1px 3px;
+    border-radius: 3px; letter-spacing: 0.5px; pointer-events: none;
+    text-transform: uppercase;
+  }
 
   /* ── Floating tooltip ── */
   #floatTooltip {
@@ -181,6 +223,7 @@ layout: null
   #floatTooltip img { width: 56px; height: 56px; object-fit: contain; border-radius: 6px; display: block; margin: 0 auto 6px; }
   #floatTooltip .tt-name { font-size: 12px; font-weight: 700; color: var(--accent2); margin-bottom: 2px; }
   #floatTooltip .tt-slot { font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; }
+  #floatTooltip .tt-tag { font-size: 9px; color: var(--accent3); margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
 
   /* ── Icon Picker Modal ── */
   #pickerOverlay {
@@ -227,15 +270,23 @@ layout: null
   .picker-empty { grid-column: 1/-1; text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
   .picker-footer {
     padding: 12px 22px; border-top: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 10px;
   }
   .picker-footer span { font-size: 12px; color: var(--muted); }
   .picker-footer strong { color: var(--accent2); }
+  /* Alt indicator in picker footer */
+  .picker-alt-pill {
+    background: rgba(78,205,196,0.15); border: 1px solid var(--accent3);
+    color: var(--accent3); font-size: 10px; font-weight: 700;
+    padding: 3px 10px; border-radius: 12px; white-space: nowrap;
+    display: none;
+  }
+  .picker-alt-pill.show { display: inline-block; }
 
   /* ── Context menu ── */
   #ctxMenu {
     position: fixed; background: #14141f; border: 1px solid var(--border2);
-    border-radius: 12px; padding: 6px; z-index: 9999; min-width: 160px;
+    border-radius: 12px; padding: 6px; z-index: 9999; min-width: 170px;
     display: none; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
   }
   #ctxMenu button {
@@ -245,7 +296,13 @@ layout: null
   }
   #ctxMenu button:hover { background: rgba(255,255,255,0.07); }
   #ctxMenu button.danger { color: var(--accent); }
+  #ctxMenu button:disabled { opacity: 0.35; cursor: default; }
+  #ctxMenu button:disabled:hover { background: none; }
   #ctxMenu .ctx-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+  #ctxMenu .ctx-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); padding: 6px 14px 2px; display: block;
+  }
 
   /* ── Empty state ── */
   #emptyState { display: none; text-align: center; padding: 60px 20px; color: var(--muted); }
@@ -279,7 +336,7 @@ layout: null
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
   @media (max-width: 600px) {
-    :root { --cell: 64px; }
+    :root { --cell: 56px; }
     .btn { padding: 7px 12px; }
     .picker-grid { grid-template-columns: repeat(auto-fill, minmax(74px,1fr)); }
   }
@@ -350,6 +407,7 @@ layout: null
   <img id="ftImg" alt="">
   <div class="tt-name" id="ftName"></div>
   <div class="tt-slot" id="ftSlot"></div>
+  <div class="tt-tag" id="ftTag"></div>
 </div>
 
 <!-- Icon Picker Modal -->
@@ -357,6 +415,7 @@ layout: null
   <div id="pickerModal">
     <div class="picker-header">
       <h2 id="pickerTitle">Choose Icon</h2>
+      <span class="picker-alt-pill" id="pickerAltPill">ALT SLOT</span>
       <div class="picker-search">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -367,16 +426,21 @@ layout: null
     </div>
     <div class="picker-grid" id="pickerGrid"></div>
     <div class="picker-footer">
-      <span>Showing <strong id="pickerCount">0</strong> icons from <code>twicons/</code></span>
-      <span style="font-size:11px;color:var(--muted)">Click to assign · Right-click slot to clear</span>
+      <span>Showing <strong id="pickerCount">0</strong> icons</span>
+      <span style="font-size:11px;color:var(--muted)">Click to assign · Right-click slot to manage</span>
     </div>
   </div>
 </div>
 
 <!-- Context Menu -->
 <div id="ctxMenu">
-  <button onclick="ctxOpenPicker()">Change icon</button>
-  <button onclick="ctxClear()">Clear slot</button>
+  <span class="ctx-label" id="ctxLabel">Slot</span>
+  <button id="ctxChangePrimary" onclick="ctxOpenPicker(0)">Change primary</button>
+  <button id="ctxChangeAlt"     onclick="ctxOpenPicker(1)">Change alternative</button>
+  <button id="ctxAddAlt"        onclick="ctxOpenPicker(1)">Add alternative</button>
+  <hr class="ctx-divider">
+  <button id="ctxClearPrimary"  onclick="ctxClearSlot(0)">Clear primary</button>
+  <button id="ctxClearAlt"      onclick="ctxClearSlot(1)" class="danger">Clear alternative</button>
   <hr class="ctx-divider">
   <button class="danger" onclick="ctxDelete()">Remove row</button>
 </div>
@@ -386,7 +450,7 @@ layout: null
   <div class="modal">
     <h2>Import Builds</h2>
     <p>Paste exported JSON below. This will <strong>replace</strong> your current data.</p>
-    <p style="font-size:12px;color:var(--muted2);margin-bottom:10px;">Only the app export format is accepted: <code>{ class, rows, publishedAt }</code> with per-row <code>slots</code>.</p>
+    <p style="font-size:12px;color:var(--muted2);margin-bottom:10px;">Accepts both single-item and dual-item (alt) slot formats.</p>
     <textarea id="importText" placeholder='{"class":"Sniper","rows":[{"id":0,"name":"Early","slots":{...}}],"publishedAt":"..."}'></textarea>
     <div class="modal-actions">
       <button class="btn" onclick="closeImport()">Cancel</button>
@@ -396,7 +460,6 @@ layout: null
 </div>
 
 <div class="footer">Made by Ruzai</div>
-
 <div id="toast"></div>
 
 <script>
@@ -406,37 +469,50 @@ const ROSTER = {
   AGI: ['Assassin','Bow Master','Gunner','Hermit','Martial Artist','Phantom Blade','Reaper','Shooter','Sniper','Sword Enchanter','Swordsman','Thunderer','Trickster'],
   INT: ['Alchemist','Arcane Mage','Blood Weaver','Elementalist','Fire Mage','Lightning Mage','Priest','Shrine Priestess','Soul Weaver','Warlock','Water Mage','Wind Mage','Witch']
 };
-function heroType(name) {
-  for (const [t, list] of Object.entries(ROSTER)) if (list.includes(name)) return t;
-  return null;
-}
 
 // ── Config ───────────────────────────────────────────────
 const COLS         = ['weapon','helm','body','wings','accessory'];
 const LABELS       = { weapon:'Weapon', helm:'Helm', body:'Body Armor', wings:'Wings', accessory:'Accessory' };
 const ICONS_PATH   = 'twicons/';
-const STORAGE_KEY  = 'twrpg_v6';
+const STORAGE_KEY  = 'twrpg_v7'; // bumped version to avoid conflicts with old format
 const DEFAULT_ROWS = ['Early','SD','Tower','Aga','Duke','Gaia','AC','Styrix','Kam'];
 
-// Converts class name to icon filename: "Shrine Priestess" → "ShrinePriestessIcon.jpg"
-function classIconPath(name) {
-  return ICONS_PATH + name.replace(/\s+/g, '') + 'Icon.jpg';
-}
+function classIconPath(name) { return ICONS_PATH + name.replace(/\s+/g, '') + 'Icon.jpg'; }
+function buildFileName(name) { return name.replace(/\s+/g, '_') + '.json'; }
 
-// Converts class name to builds filename: "Sword Saint" → "Sword_Saint.json"
-function buildFileName(name) {
-  return name.replace(/\s+/g, '_') + '.json';
-}
-
-function normalizeSlot(slot) {
-  if (!slot?.name) return null;
+// ── Slot data model ───────────────────────────────────────
+/*
+ * A "slot" is now an ARRAY of 0-2 item objects: [primary?, alt?]
+ * Each item: { type: 'library'|'upload', name: string, src: string }
+ *
+ * In storage/export the JSON shape is:
+ *   "weapon": [{ "name": "...", "src": "..." }]           ← single
+ *   "weapon": [{ "name": "..." }, { "name": "..." }]      ← with alt
+ *   "weapon": null                                         ← empty
+ *
+ * Old format (plain object) is normalised on load.
+ */
+function normalizeItem(raw) {
+  if (!raw?.name) return null;
   return {
-    type: slot.type || 'library',
-    name: slot.name,
-    src: slot.src || ICONS_PATH + encodeURIComponent(slot.name) + '.jpg'
+    type: raw.type || 'library',
+    name: raw.name,
+    src: raw.src || ICONS_PATH + encodeURIComponent(raw.name) + '.jpg'
   };
 }
 
+// Accepts old single-object OR new array format → always returns array (may be empty)
+function normalizeSlotToArray(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map(normalizeItem).filter(Boolean).slice(0, 2);
+  }
+  // Legacy: plain object
+  const item = normalizeItem(raw);
+  return item ? [item] : [];
+}
+
+// ── Import helpers ────────────────────────────────────────
 function importExportBuildData(data) {
   if (!data || typeof data !== 'object' || !data.class || !Array.isArray(data.rows)) return false;
   const cls = data.class;
@@ -449,8 +525,8 @@ function importExportBuildData(data) {
     const slots = rowData.slots || {};
     importedBuilds[cls][localRow.id] = {};
     COLS.forEach(col => {
-      const slot = normalizeSlot(slots[col]);
-      if (slot) importedBuilds[cls][localRow.id][col] = slot;
+      const arr = normalizeSlotToArray(slots[col]);
+      if (arr.length) importedBuilds[cls][localRow.id][col] = arr;
     });
   });
 
@@ -475,8 +551,8 @@ function importLegacyBuildFile(data, className) {
     if (newId == null) continue;
     importedBuilds[className][newId] = {};
     COLS.forEach(col => {
-      const slot = normalizeSlot(slotGroup[col]);
-      if (slot) importedBuilds[className][newId][col] = slot;
+      const arr = normalizeSlotToArray(slotGroup[col]);
+      if (arr.length) importedBuilds[className][newId][col] = arr;
     });
   }
 
@@ -494,11 +570,8 @@ async function loadBuildFile(className) {
     const r = await fetch(url);
     if (!r.ok) return false;
     const data = await r.json();
-    if (importExportBuildData(data) || importLegacyBuildFile(data, className)) {
-      save();
-      return true;
-    }
-  } catch (e) {}
+    if (importExportBuildData(data) || importLegacyBuildFile(data, className)) { save(); return true; }
+  } catch(e) {}
   return false;
 }
 
@@ -513,6 +586,7 @@ let ctxCol        = null;
 let dragSrcId     = null;
 let pickerTargetRow = null;
 let pickerTargetCol = null;
+let pickerTargetIdx = 0; // 0 = primary, 1 = alt
 let iconLibrary   = [];
 
 // ── Init ─────────────────────────────────────────────────
@@ -530,7 +604,6 @@ async function init() {
 
 // ── Icon library ──────────────────────────────────────────
 async function loadIconLibrary() {
-  // Try manifest.json first
   try {
     const r = await fetch(ICONS_PATH + 'manifest.json');
     if (r.ok) {
@@ -542,8 +615,6 @@ async function loadIconLibrary() {
       }
     }
   } catch(e) {}
-
-  // Try directory listing
   try {
     const r = await fetch(ICONS_PATH);
     if (r.ok) {
@@ -562,7 +633,6 @@ async function loadIconLibrary() {
       }
     }
   } catch(e) {}
-
   iconLibrary = [];
 }
 
@@ -589,7 +659,6 @@ async function onClassChange() {
 
 function syncClassUI() {
   document.getElementById('classSelect').value = selectedClass || '';
-
   const colName    = document.getElementById('heroColName');
   const colSubtitle = document.getElementById('heroColSubtitle');
   const iconWrap = document.getElementById('heroColIconWrap');
@@ -601,22 +670,11 @@ function syncClassUI() {
     colSubtitle.textContent = creatorName ? `by ${creatorName}` : '';
     colName.classList.add('active');
     iconWrap.classList.add('visible');
-
-    // Auto-load class icon from twicons/
     const iconPath = classIconPath(selectedClass);
-    imgEl.style.display = 'none';
-    ph.style.display = '';
+    imgEl.style.display = 'none'; ph.style.display = '';
     const testImg = new Image();
-    testImg.onload = () => {
-      imgEl.src = iconPath;
-      imgEl.style.display = 'block';
-      ph.style.display = 'none';
-    };
-    testImg.onerror = () => {
-      // Icon file not found — show placeholder
-      imgEl.style.display = 'none';
-      ph.style.display = '';
-    };
+    testImg.onload = () => { imgEl.src = iconPath; imgEl.style.display = 'block'; ph.style.display = 'none'; };
+    testImg.onerror = () => { imgEl.style.display = 'none'; ph.style.display = ''; };
     testImg.src = iconPath;
   } else {
     colName.textContent = 'Heroes';
@@ -627,32 +685,60 @@ function syncClassUI() {
 }
 
 // ── Slot helpers ──────────────────────────────────────────
+// Returns array [primary?, alt?] — always an array, never null
 function getSlotsFor(rowId) {
   if (!selectedClass) return {};
   return builds[selectedClass]?.[rowId] || {};
 }
-function setSlot(rowId, col, data) {
+
+function getSlotArr(rowId, col) {
+  return getSlotsFor(rowId)[col] || [];
+}
+
+// Set a specific index (0 = primary, 1 = alt) within a slot
+function setSlotItem(rowId, col, idx, item) {
   if (!selectedClass) { showToast('Select a hero class first!'); return; }
   if (!builds[selectedClass]) builds[selectedClass] = {};
   if (!builds[selectedClass][rowId]) builds[selectedClass][rowId] = {};
-  builds[selectedClass][rowId][col] = data;
+  const arr = builds[selectedClass][rowId][col] ? [...builds[selectedClass][rowId][col]] : [];
+  // Pad if needed
+  while (arr.length <= idx) arr.push(null);
+  arr[idx] = item;
+  // Trim trailing nulls
+  while (arr.length && !arr[arr.length-1]) arr.pop();
+  if (arr.length) builds[selectedClass][rowId][col] = arr;
+  else delete builds[selectedClass][rowId][col];
   save(); render();
 }
-function clearSlot(rowId, col) {
-  if (!selectedClass || !builds[selectedClass]?.[rowId]?.[col]) return;
-  delete builds[selectedClass][rowId][col];
+
+function clearSlotItem(rowId, col, idx) {
+  if (!selectedClass) return;
+  const arr = getSlotArr(rowId, col);
+  if (!arr[idx]) return;
+  const newArr = [...arr];
+  newArr[idx] = null;
+  // Trim trailing nulls
+  while (newArr.length && !newArr[newArr.length-1]) newArr.pop();
+  if (!builds[selectedClass]) builds[selectedClass] = {};
+  if (!builds[selectedClass][rowId]) builds[selectedClass][rowId] = {};
+  if (newArr.length) builds[selectedClass][rowId][col] = newArr;
+  else delete builds[selectedClass][rowId][col];
   save(); render();
 }
-function iconSrc(slot) {
-  if (!slot) return null;
-  return slot.type === 'upload' ? slot.src : (slot.src || ICONS_PATH + encodeURIComponent(slot.name) + '.jpg');
+
+function iconSrc(item) {
+  if (!item) return null;
+  return item.type === 'upload' ? item.src : (item.src || ICONS_PATH + encodeURIComponent(item.name) + '.jpg');
 }
 
 // ── Icon picker ───────────────────────────────────────────
-function openPicker(rowId, col) {
+// idx: 0 = primary, 1 = alt
+function openPicker(rowId, col, idx) {
   if (!selectedClass) { showToast('Select a hero class first!'); return; }
-  pickerTargetRow = rowId; pickerTargetCol = col;
+  pickerTargetRow = rowId; pickerTargetCol = col; pickerTargetIdx = idx;
+  const isAlt = idx === 1;
   document.getElementById('pickerTitle').textContent = `Choose Icon — ${LABELS[col]}`;
+  document.getElementById('pickerAltPill').classList.toggle('show', isAlt);
   document.getElementById('pickerSearch').value = '';
   buildPickerGrid();
   document.getElementById('pickerOverlay').classList.add('show');
@@ -691,32 +777,40 @@ function filterPicker() {
 }
 
 function pickIcon(icon) {
-  setSlot(pickerTargetRow, pickerTargetCol, { type: 'library', name: icon.name, src: icon.src });
+  const item = { type: 'library', name: icon.name, src: icon.src };
+  setSlotItem(pickerTargetRow, pickerTargetCol, pickerTargetIdx, item);
   closePicker();
 }
 function closePicker() {
   document.getElementById('pickerOverlay').classList.remove('show');
-  pickerTargetRow = null; pickerTargetCol = null;
+  pickerTargetRow = null; pickerTargetCol = null; pickerTargetIdx = 0;
 }
 function closePickerOnBg(e) { if (e.target === document.getElementById('pickerOverlay')) closePicker(); }
 
 // ── Floating tooltip ──────────────────────────────────────
 let tooltipTarget = null;
 document.addEventListener('mousemove', e => {
-  const drop = e.target.closest('.slot-drop.filled');
-  if (drop) {
+  const half = e.target.closest('.slot-half');
+  if (half && !half.classList.contains('locked-half')) {
     const ft = document.getElementById('floatTooltip');
     ft.style.left = e.clientX + 'px';
     ft.style.top  = e.clientY + 'px';
-    if (tooltipTarget !== drop) {
-      tooltipTarget = drop;
-      const slot = getSlotsFor(parseInt(drop.dataset.rowid))[drop.dataset.col];
-      if (slot) {
-        document.getElementById('ftImg').src  = iconSrc(slot);
-        document.getElementById('ftName').textContent = slot.name;
-        document.getElementById('ftSlot').textContent = LABELS[drop.dataset.col] || drop.dataset.col;
+    if (tooltipTarget !== half) {
+      tooltipTarget = half;
+      const rowId = parseInt(half.dataset.rowid);
+      const col   = half.dataset.col;
+      const idx   = parseInt(half.dataset.idx);
+      const arr   = getSlotArr(rowId, col);
+      const item  = arr[idx];
+      if (item) {
+        document.getElementById('ftImg').src  = iconSrc(item);
+        document.getElementById('ftName').textContent = item.name;
+        document.getElementById('ftSlot').textContent = LABELS[col] || col;
+        document.getElementById('ftTag').textContent  = idx === 1 ? '— Alternative —' : '';
+        ft.classList.add('show');
+      } else {
+        ft.classList.remove('show');
       }
-      ft.classList.add('show');
     }
   } else {
     if (tooltipTarget) { document.getElementById('floatTooltip').classList.remove('show'); tooltipTarget = null; }
@@ -773,7 +867,7 @@ function render() {
   const locked = !selectedClass;
 
   rows.forEach(row => {
-    const slots = getSlotsFor(row.id);
+    const slotMap = getSlotsFor(row.id);
     const tr = document.createElement('tr');
     tr.dataset.id = row.id;
     tr.draggable = true;
@@ -793,29 +887,84 @@ function render() {
     tr.appendChild(tdName);
 
     COLS.forEach(col => {
-      const td   = document.createElement('td');
+      const td = document.createElement('td');
       td.className = 'slot-cell';
-      const slot = slots[col];
-      const src  = slot ? iconSrc(slot) : null;
+      const arr = slotMap[col] || [];
+      const primary = arr[0] || null;
+      const alt     = arr[1] || null;
+      const hasAlt  = !!alt;
 
       const drop = document.createElement('div');
-      drop.className = `slot-drop${slot ? ' filled' : ''}${locked ? ' locked' : ''}`;
-      drop.dataset.rowid = row.id;
-      drop.dataset.col   = col;
-      drop.addEventListener('contextmenu', e => openCtx(e, row.id, col));
+      drop.className = [
+        'slot-drop',
+        primary ? 'filled' : '',
+        hasAlt ? 'has-alt' : '',
+        locked ? 'locked' : ''
+      ].filter(Boolean).join(' ');
 
-      if (slot) {
+      // ── Primary half ──
+      const halfPrimary = document.createElement('div');
+      halfPrimary.className = 'slot-half' + (locked ? ' locked-half' : '');
+      halfPrimary.dataset.rowid = row.id;
+      halfPrimary.dataset.col   = col;
+      halfPrimary.dataset.idx   = '0';
+
+      if (primary) {
         const img = document.createElement('img');
-        img.className = 'slot-img'; img.src = src; img.alt = slot.name;
-        img.onerror = () => { drop.classList.remove('filled'); img.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; drop.appendChild(p); };
-        drop.appendChild(img);
+        img.className = 'slot-img'; img.src = iconSrc(primary); img.alt = primary.name;
+        img.onerror = () => {
+          img.remove();
+          const p = document.createElement('span'); p.className = 'slot-plus'; p.textContent = '+';
+          halfPrimary.appendChild(p);
+        };
+        halfPrimary.appendChild(img);
       } else {
         const plus = document.createElement('span');
         plus.className = 'slot-plus'; plus.textContent = locked ? '·' : '+';
-        drop.appendChild(plus);
+        halfPrimary.appendChild(plus);
       }
 
-      if (!locked) drop.addEventListener('click', () => openPicker(row.id, col));
+      if (!locked) {
+        halfPrimary.addEventListener('click', () => openPicker(row.id, col, 0));
+        halfPrimary.addEventListener('contextmenu', e => openCtx(e, row.id, col));
+      }
+      drop.appendChild(halfPrimary);
+
+      // ── Divider + Alt half (always rendered when not locked, for discoverability) ──
+      if (!locked) {
+        const divider = document.createElement('div');
+        divider.className = 'slot-divider';
+        drop.appendChild(divider);
+
+        const halfAlt = document.createElement('div');
+        halfAlt.className = 'slot-half' + (!alt ? ' alt-empty' : '');
+        halfAlt.dataset.rowid = row.id;
+        halfAlt.dataset.col   = col;
+        halfAlt.dataset.idx   = '1';
+
+        if (alt) {
+          const img = document.createElement('img');
+          img.className = 'slot-img'; img.src = iconSrc(alt); img.alt = alt.name;
+          img.onerror = () => {
+            img.remove();
+            const p = document.createElement('span'); p.className = 'slot-plus'; p.textContent = '+';
+            halfAlt.appendChild(p);
+          };
+          halfAlt.appendChild(img);
+          // Alt badge
+          const badge = document.createElement('span');
+          badge.className = 'alt-badge'; badge.textContent = 'ALT';
+          halfAlt.appendChild(badge);
+        } else {
+          const plus = document.createElement('span');
+          plus.className = 'slot-plus'; plus.textContent = '+';
+          halfAlt.appendChild(plus);
+        }
+
+        halfAlt.addEventListener('click', () => openPicker(row.id, col, 1));
+        halfAlt.addEventListener('contextmenu', e => openCtx(e, row.id, col));
+        drop.appendChild(halfAlt);
+      }
 
       td.appendChild(drop);
       tr.appendChild(td);
@@ -829,16 +978,52 @@ function render() {
 
 // ── Context menu ─────────────────────────────────────────
 function openCtx(e, rowId, col) {
-  e.preventDefault(); ctxRowId = rowId; ctxCol = col;
+  e.preventDefault();
+  ctxRowId = rowId; ctxCol = col;
+  const arr     = getSlotArr(rowId, col);
+  const primary = arr[0];
+  const alt     = arr[1];
+
+  document.getElementById('ctxLabel').textContent = LABELS[col] || col;
+
+  const btnChangePrimary = document.getElementById('ctxChangePrimary');
+  const btnChangeAlt     = document.getElementById('ctxChangeAlt');
+  const btnAddAlt        = document.getElementById('ctxAddAlt');
+  const btnClearPrimary  = document.getElementById('ctxClearPrimary');
+  const btnClearAlt      = document.getElementById('ctxClearAlt');
+
+  // Change primary: always visible, disabled if empty
+  btnChangePrimary.style.display = '';
+  btnChangePrimary.disabled = !primary;
+
+  // Change alt: show only if alt exists
+  btnChangeAlt.style.display = alt ? '' : 'none';
+  // Add alt: show only if primary exists and no alt yet
+  btnAddAlt.style.display = (primary && !alt) ? '' : 'none';
+
+  btnClearPrimary.disabled = !primary;
+  btnClearAlt.style.display = alt ? '' : 'none';
+
   const m = document.getElementById('ctxMenu');
   m.style.display = 'block';
-  m.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
-  m.style.top  = Math.min(e.clientY, window.innerHeight - 120) + 'px';
+  m.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+  m.style.top  = Math.min(e.clientY, window.innerHeight - 220) + 'px';
 }
-function closeCtx()      { document.getElementById('ctxMenu').style.display = 'none'; }
-function ctxOpenPicker() { closeCtx(); openPicker(ctxRowId, ctxCol); }
-function ctxClear()      { clearSlot(ctxRowId, ctxCol); closeCtx(); }
-function ctxDelete()     { deleteRow(ctxRowId); closeCtx(); }
+
+function closeCtx() { document.getElementById('ctxMenu').style.display = 'none'; }
+
+function ctxOpenPicker(idx) {
+  closeCtx();
+  openPicker(ctxRowId, ctxCol, idx);
+}
+
+function ctxClearSlot(idx) {
+  clearSlotItem(ctxRowId, ctxCol, idx);
+  closeCtx();
+}
+
+function ctxDelete() { deleteRow(ctxRowId); closeCtx(); }
+
 document.addEventListener('click', e => { if (!e.target.closest('#ctxMenu')) closeCtx(); });
 
 // ── Persist ───────────────────────────────────────────────
@@ -847,19 +1032,31 @@ function save() {
 }
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    // Try new key first
+    let d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    // Fall back to old key and migrate
+    if (!d) d = JSON.parse(localStorage.getItem('twrpg_v6') || 'null');
     if (d) {
       rows = (d.rows||[]).map(r => ({...r, id: uid++}));
-      builds = d.builds || {};
+      // Migrate builds: normalize all slot values to arrays
+      builds = {};
+      for (const [cls, rowMap] of Object.entries(d.builds || {})) {
+        builds[cls] = {};
+        for (const [rowId, slotGroup] of Object.entries(rowMap)) {
+          builds[cls][rowId] = {};
+          COLS.forEach(col => {
+            const arr = normalizeSlotToArray(slotGroup[col]);
+            if (arr.length) builds[cls][rowId][col] = arr;
+          });
+        }
+      }
       selectedClass = d.selectedClass || null;
     }
   } catch(e) {}
 }
 
-// ── Share ─────────────────────────────────────────────────
 // ── Export / Import ───────────────────────────────────────
 function exportData() {
-  // Export clean version (item names + paths, no base64 blobs) suitable for committing to builds/
   const out = {
     class: selectedClass,
     createdBy: creatorName || undefined,
@@ -867,8 +1064,11 @@ function exportData() {
     rows: rows.map(r => ({
       id: r.id, name: r.name,
       slots: Object.fromEntries(COLS.map(col => {
-        const s = (builds[selectedClass]||{})[r.id]?.[col];
-        return [col, s ? { name: s.name, src: s.src || null } : null];
+        const arr = ((builds[selectedClass]||{})[r.id]||{})[col];
+        if (!arr || !arr.length) return [col, null];
+        // Export as array always; single-item is [item], dual is [item, item]
+        const exported = arr.map(item => item ? { name: item.name, src: item.src || null } : null).filter(Boolean);
+        return [col, exported.length ? exported : null];
       }))
     }))
   };
@@ -879,6 +1079,7 @@ function exportData() {
   a.click();
   showToast('Exported! Commit to builds/ folder to publish.');
 }
+
 function openImport()  { document.getElementById('importModal').classList.add('show'); }
 function closeImport() { document.getElementById('importModal').classList.remove('show'); }
 function doImport() {
@@ -888,7 +1089,6 @@ function doImport() {
       showToast('Unrecognised format. Use an exported build JSON.');
       return;
     }
-
     save(); syncClassUI(); render(); closeImport();
     showToast('Imported!');
   } catch(e) { showToast('Invalid JSON — check your data.'); }
