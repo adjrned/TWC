@@ -1,225 +1,498 @@
 {
   "class": "Crusader",
   "createdBy": "Nana",
-  "publishedAt": "2026-05-02T20:09:21.929Z",
+  "publishedAt": "2026-05-04T03:17:07.739Z",
   "rows": [
     {
-      "id": 0,
+      "id": 50,
       "name": "Early",
       "slots": {
-        "weapon": {
-          "name": "Bahanar, the True Sword of Illusion",
-          "src": "twicons/Bahanar%2C%20the%20True%20Sword%20of%20Illusion.jpg"
-        },
-        "helm": {
-          "name": "Crown of Fervor",
-          "src": "twicons/Crown%20of%20Fervor.jpg"
-        },
-        "body": {
-          "name": "Hellspike Armor",
-          "src": "twicons/Hellspike%20Armor.jpg"
-        },
-        "wings": {
-          "name": "Corrupt Crystal Wings",
-          "src": "twicons/Corrupt%20Crystal%20Wings.jpg"
-        },
-        "accessory": {
-          "name": "Latea, the Ring of Chaos",
-          "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Bahanar, the True Sword of Illusion",
+            "src": "twicons/Bahanar%2C%20the%20True%20Sword%20of%20Illusion.jpg"
+          },
+          {
+            "name": "Aglaia, the Spear of Heavenly Flows",
+            "src": "twicons/Aglaia%2C%20the%20Spear%20of%20Heavenly%20Flows.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Fervor",
+            "src": "twicons/Crown%20of%20Fervor.jpg"
+          },
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Reactive Armor",
+            "src": "twicons/Reactive%20Armor.jpg"
+          },
+          {
+            "name": "Flameshard Armor",
+            "src": "twicons/Flameshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Corrupt Crystal Wings",
+            "src": "twicons/Corrupt%20Crystal%20Wings.jpg"
+          },
+          {
+            "name": "Cape of Corrupt Flame",
+            "src": "twicons/Cape%20of%20Corrupt%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Purefrost Gauntlet",
+            "src": "twicons/Purefrost%20Gauntlet.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 1,
-      "name": "SD",
+      "id": 51,
+      "name": "SD-DF",
       "slots": {
-        "weapon": {
-          "name": "Meacronacer, the Sword of Thousand Illusions",
-          "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
-        },
-        "helm": {
-          "name": "Crown of Composure",
-          "src": "twicons/Crown%20of%20Composure.jpg"
-        },
-        "body": {
-          "name": "Frostshard Armor",
-          "src": "twicons/Frostshard%20Armor.jpg"
-        },
-        "wings": {
-          "name": "Pure Crystal Wings",
-          "src": "twicons/Pure%20Crystal%20Wings.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Time",
-          "src": "twicons/Ring%20of%20Time.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Meacronacer, the Sword of Thousand Illusions",
+            "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
+          },
+          {
+            "name": "The Ender",
+            "src": "twicons/The%20Ender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          },
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hellspike Armor",
+            "src": "twicons/Hellspike%20Armor.jpg"
+          },
+          {
+            "name": "Frostshard Armor",
+            "src": "twicons/Frostshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Pure Crystal Wings",
+            "src": "twicons/Pure%20Crystal%20Wings.jpg"
+          },
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Overlord",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Overlord.jpg"
+          },
+          {
+            "name": "Ring of Time",
+            "src": "twicons/Ring%20of%20Time.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 2,
+      "id": 52,
       "name": "Tower",
       "slots": {
-        "weapon": {
-          "name": "Splitting of the Sky and Earth",
-          "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
-        },
-        "helm": {
-          "name": "Crown of Composure",
-          "src": "twicons/Crown%20of%20Composure.jpg"
-        },
-        "body": {
-          "name": "Felspike Armor",
-          "src": "twicons/Felspike%20Armor.jpg"
-        },
-        "wings": {
-          "name": "Archangel Wings",
-          "src": "twicons/Archangel%20Wings.jpg"
-        },
-        "accessory": {
-          "name": "Ring of the One",
-          "src": "twicons/Ring%20of%20the%20One.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Splitting of the Sky and Earth",
+            "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
+          },
+          {
+            "name": "Meacronacer, the Sword of Thousand Illusions",
+            "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Lightning God",
+            "src": "twicons/Horn%20of%20Lightning%20God.jpg"
+          },
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          },
+          {
+            "name": "Frostshard Armor",
+            "src": "twicons/Frostshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          },
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          },
+          {
+            "name": "Ring of Fate",
+            "src": "twicons/Ring%20of%20Fate.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 3,
+      "id": 53,
       "name": "Aga",
       "slots": {
-        "weapon": {
-          "name": "Astra, the Sword of Moonlight",
-          "src": "twicons/Astra%2C%20the%20Sword%20of%20Moonlight.jpg"
-        },
-        "helm": {
-          "name": "Crown of Absolute Zero",
-          "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
-        },
-        "body": {
-          "name": "Voidshard Armor",
-          "src": "twicons/Voidshard%20Armor.jpg"
-        },
-        "wings": {
-          "name": "Archangel Wings",
-          "src": "twicons/Archangel%20Wings.jpg"
-        },
-        "accessory": {
-          "name": "Demonic Fist",
-          "src": "twicons/Demonic%20Fist.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Astra, the Sword of Moonlight",
+            "src": "twicons/Astra%2C%20the%20Sword%20of%20Moonlight.jpg"
+          },
+          {
+            "name": "Splitting of the Sky and Earth",
+            "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
+          },
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          },
+          {
+            "name": "Voidshard Armor",
+            "src": "twicons/Voidshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          },
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          },
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 4,
+      "id": 54,
       "name": "Duke",
       "slots": {
-        "weapon": {
-          "name": "Spear of Judgment",
-          "src": "twicons/Spear%20of%20Judgment.jpg"
-        },
-        "helm": {
-          "name": "Crown of Absolute Zero",
-          "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
-        },
-        "body": {
-          "name": "Felspike Armor",
-          "src": "twicons/Felspike%20Armor.jpg"
-        },
-        "wings": {
-          "name": "Archangel Wings",
-          "src": "twicons/Archangel%20Wings.jpg"
-        },
-        "accessory": {
-          "name": "Heirloom of Lazarus",
-          "src": "twicons/Heirloom%20of%20Lazarus.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
+          },
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          },
+          {
+            "name": "Voidshard Armor",
+            "src": "twicons/Voidshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          },
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          },
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 5,
+      "id": 55,
       "name": "Gaia",
       "slots": {
-        "weapon": {
-          "name": "Spear of Judgment",
-          "src": "twicons/Spear%20of%20Judgment.jpg"
-        },
-        "helm": {
-          "name": "Crown of Transcendance",
-          "src": "twicons/Crown%20of%20Transcendance.jpg"
-        },
-        "body": {
-          "name": "Titan's Plates",
-          "src": "twicons/Titan's%20Plates.jpg"
-        },
-        "wings": {
-          "name": "Wings of Cosmos",
-          "src": "twicons/Wings%20of%20Cosmos.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Eternity",
-          "src": "twicons/Ring%20of%20Eternity.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          },
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          },
+          {
+            "name": "Voidshard Armor",
+            "src": "twicons/Voidshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          },
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Eternity",
+            "src": "twicons/Ring%20of%20Eternity.jpg"
+          },
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 6,
+      "id": 56,
       "name": "AC",
       "slots": {
-        "weapon": {
-          "name": "Spear of Judgment",
-          "src": "twicons/Spear%20of%20Judgment.jpg"
-        },
-        "helm": {
-          "name": "Crown of Transcendance",
-          "src": "twicons/Crown%20of%20Transcendance.jpg"
-        },
-        "body": {
-          "name": "Dread Incarnate",
-          "src": "twicons/Dread%20Incarnate.jpg"
-        },
-        "wings": {
-          "name": "Wings of Cosmos",
-          "src": "twicons/Wings%20of%20Cosmos.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Eternity",
-          "src": "twicons/Ring%20of%20Eternity.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          },
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Dread Incarnate",
+            "src": "twicons/Dread%20Incarnate.jpg"
+          },
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          },
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Eternity",
+            "src": "twicons/Ring%20of%20Eternity.jpg"
+          },
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 7,
+      "id": 57,
       "name": "Styrix",
       "slots": {
-        "weapon": {
-          "name": "Lightbringer",
-          "src": "twicons/Lightbringer.jpg"
-        },
-        "helm": {
-          "name": "Crown of Transcendance",
-          "src": "twicons/Crown%20of%20Transcendance.jpg"
-        },
-        "body": {
-          "name": "Dread Incarnate",
-          "src": "twicons/Dread%20Incarnate.jpg"
-        },
-        "wings": {
-          "name": "Wings of Cosmos",
-          "src": "twicons/Wings%20of%20Cosmos.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Genesis",
-          "src": "twicons/Ring%20of%20Genesis.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          },
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Dread Incarnate",
+            "src": "twicons/Dread%20Incarnate.jpg"
+          },
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          },
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Genesis",
+            "src": "twicons/Ring%20of%20Genesis.jpg"
+          },
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 8,
+      "id": 58,
       "name": "Kam",
       "slots": {
-        "weapon": null,
-        "helm": null,
-        "body": null,
-        "wings": null,
-        "accessory": null
+        "weapon": [
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          },
+          {
+            "name": "Righteous Flame",
+            "src": "twicons/Righteous%20Flame.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Dawn",
+            "src": "twicons/Plates%20of%20Dawn.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "The Coil of Ouroboros",
+            "src": "twicons/The%20Coil%20of%20Ouroboros.jpg"
+          },
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.jpg"
+          },
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
       }
     }
   ]

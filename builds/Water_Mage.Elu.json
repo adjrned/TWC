@@ -1,19 +1,27 @@
 {
-  "class": "Blood Weaver",
-  "createdBy": "IDK_Fear",
-  "publishedAt": "2026-05-04T03:14:37.811Z",
+  "class": "Water Mage",
+  "createdBy": "Elu",
+  "publishedAt": "2026-05-04T03:06:46.910Z",
   "rows": [
     {
-      "id": 518,
-      "name": "Neptinos",
+      "id": 46,
+      "name": "Minor-Coin",
       "slots": {
         "weapon": [
           {
-            "name": "Deathbringer",
-            "src": "twicons/Deathbringer.jpg"
+            "name": "Twin Snow",
+            "src": "twicons/Twin%20Snow.jpg"
+          },
+          {
+            "name": "Belius, the Archdevil's Staff",
+            "src": "twicons/Belius%2C%20the%20Archdevil's%20Staff.jpg"
           }
         ],
         "helm": [
+          {
+            "name": "Prophetia, the Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Source%20of%20Mana.jpg"
+          },
           {
             "name": "Crown of Fervor",
             "src": "twicons/Crown%20of%20Fervor.jpg"
@@ -27,29 +35,41 @@
         ],
         "wings": [
           {
-            "name": "Hungry Bat Wings",
-            "src": "twicons/Hungry%20Bat%20Wings.jpg"
+            "name": "Fairy Wings",
+            "src": "twicons/Fairy%20Wings.jpg"
           }
         ],
         "accessory": [
           {
             "name": "Latea, the Ring of Chaos",
             "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
           }
         ]
       }
     },
     {
-      "id": 519,
-      "name": "SD",
+      "id": 54,
+      "name": "SK-SD",
       "slots": {
         "weapon": [
           {
-            "name": "Ruinbringer",
-            "src": "twicons/Ruinbringer.jpg"
+            "name": "Triple Snow",
+            "src": "twicons/Triple%20Snow.jpg"
+          },
+          {
+            "name": "Ethenos, the Staff of Space",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Space.jpg"
           }
         ],
         "helm": [
+          {
+            "name": "Prophetia, the Greater Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Greater%20Source%20of%20Mana.jpg"
+          },
           {
             "name": "Crown of Composure",
             "src": "twicons/Crown%20of%20Composure.jpg"
@@ -63,65 +83,33 @@
         ],
         "wings": [
           {
-            "name": "Pure Crystal Wings",
-            "src": "twicons/Pure%20Crystal%20Wings.jpg"
+            "name": "Frost Fairy Wings",
+            "src": "twicons/Frost%20Fairy%20Wings.jpg"
           }
         ],
         "accessory": [
           {
-            "name": "Latea, the Ring of Chaos",
-            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
           }
         ]
       }
     },
     {
-      "id": 527,
-      "name": "DF",
-      "slots": {
-        "weapon": [
-          {
-            "name": "The Ender",
-            "src": "twicons/The%20Ender.jpg"
-          }
-        ],
-        "helm": [
-          {
-            "name": "Crown of Composure",
-            "src": "twicons/Crown%20of%20Composure.jpg"
-          }
-        ],
-        "body": [
-          {
-            "name": "Medea, the Robe of the Witch",
-            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
-          }
-        ],
-        "wings": [
-          {
-            "name": "Pure Crystal Wings",
-            "src": "twicons/Pure%20Crystal%20Wings.jpg"
-          }
-        ],
-        "accessory": [
-          {
-            "name": "Latea, the Ring of Overlord",
-            "src": "twicons/Latea%2C%20the%20Ring%20of%20Overlord.jpg"
-          }
-        ]
-      }
-    },
-    {
-      "id": 520,
+      "id": 47,
       "name": "Tower",
       "slots": {
         "weapon": [
           {
-            "name": "The Ender",
-            "src": "twicons/The%20Ender.jpg"
+            "name": "Ethenos, the True Staff of Space",
+            "src": "twicons/Ethenos%2C%20the%20True%20Staff%20of%20Space.jpg"
           }
         ],
         "helm": [
+          {
+            "name": "Prophetia, the Greater Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Greater%20Source%20of%20Mana.jpg"
+          },
           {
             "name": "Crown of Composure",
             "src": "twicons/Crown%20of%20Composure.jpg"
@@ -135,8 +123,8 @@
         ],
         "wings": [
           {
-            "name": "Archangel Wings",
-            "src": "twicons/Archangel%20Wings.jpg"
+            "name": "Frost Fairy Wings",
+            "src": "twicons/Frost%20Fairy%20Wings.jpg"
           }
         ],
         "accessory": [
@@ -148,16 +136,20 @@
       }
     },
     {
-      "id": 521,
-      "name": "Aga",
+      "id": 48,
+      "name": "Agareth",
       "slots": {
         "weapon": [
           {
-            "name": "Calamity",
-            "src": "twicons/Calamity.jpg"
+            "name": "Ethenos, the Staff of Chaos",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Chaos.jpg"
           }
         ],
         "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          },
           {
             "name": "Crown of Absolute Zero",
             "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
@@ -173,31 +165,35 @@
           {
             "name": "Wings of Frost Lord",
             "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
-          },
-          {
-            "name": "Cape of Deep Abyss",
-            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
           }
         ],
         "accessory": [
           {
             "name": "Ring of the One",
             "src": "twicons/Ring%20of%20the%20One.jpg"
+          },
+          {
+            "name": "Ring of Frozen Soul",
+            "src": "twicons/Ring%20of%20Frozen%20Soul.jpg"
           }
         ]
       }
     },
     {
-      "id": 522,
+      "id": 49,
       "name": "Duke",
       "slots": {
         "weapon": [
           {
-            "name": "Calamity",
-            "src": "twicons/Calamity.jpg"
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
           }
         ],
         "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          },
           {
             "name": "Crown of Absolute Zero",
             "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
@@ -205,6 +201,10 @@
         ],
         "body": [
           {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          },
+          {
             "name": "Sanguis, the Robe of Sacrifice",
             "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
           }
@@ -213,28 +213,28 @@
           {
             "name": "Wings of Frost Lord",
             "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
-          },
-          {
-            "name": "Cape of Deep Abyss",
-            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
           }
         ],
         "accessory": [
           {
-            "name": "Ring of the One",
-            "src": "twicons/Ring%20of%20the%20One.jpg"
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
           }
         ]
       }
     },
     {
-      "id": 523,
+      "id": 50,
       "name": "Gaia",
       "slots": {
         "weapon": [
           {
-            "name": "Calamity",
-            "src": "twicons/Calamity.jpg"
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
           }
         ],
         "helm": [
@@ -244,6 +244,10 @@
           }
         ],
         "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          },
           {
             "name": "Sanguis, the Robe of Sacrifice",
             "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
@@ -253,28 +257,28 @@
           {
             "name": "Wings of Frost Lord",
             "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
-          },
-          {
-            "name": "Cape of Deep Abyss",
-            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
           }
         ],
         "accessory": [
           {
-            "name": "Ring of the One",
-            "src": "twicons/Ring%20of%20the%20One.jpg"
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
           }
         ]
       }
     },
     {
-      "id": 524,
+      "id": 51,
       "name": "AC",
       "slots": {
         "weapon": [
           {
-            "name": "Calamity",
-            "src": "twicons/Calamity.jpg"
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
           }
         ],
         "helm": [
@@ -293,34 +297,38 @@
           {
             "name": "Wings of Frost Lord",
             "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
-          },
-          {
-            "name": "Cape of Deep Abyss",
-            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
           }
         ],
         "accessory": [
           {
-            "name": "Ring of the One",
-            "src": "twicons/Ring%20of%20the%20One.jpg"
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
           }
         ]
       }
     },
     {
-      "id": 525,
+      "id": 52,
       "name": "Styrix",
       "slots": {
         "weapon": [
           {
-            "name": "World Sunderer",
-            "src": "twicons/World%20Sunderer.jpg"
+            "name": "Grim Scythe",
+            "src": "twicons/Grim%20Scythe.jpg"
+          },
+          {
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
           }
         ],
         "helm": [
           {
-            "name": "Crown of Transcendance",
-            "src": "twicons/Crown%20of%20Transcendance.jpg"
+            "name": "Prophetia, the Forbidden Truth",
+            "src": "twicons/Prophetia%2C%20the%20Forbidden%20Truth.jpg"
           }
         ],
         "body": [
@@ -331,8 +339,8 @@
         ],
         "wings": [
           {
-            "name": "Embrace of Death",
-            "src": "twicons/Embrace%20of%20Death.jpg"
+            "name": "Soul Breath",
+            "src": "twicons/Soul%20Breath.jpg"
           }
         ],
         "accessory": [
@@ -344,17 +352,13 @@
       }
     },
     {
-      "id": 526,
-      "name": "Kamael",
+      "id": 53,
+      "name": "Kam",
       "slots": {
         "weapon": [
           {
-            "name": "Soulrender",
-            "src": "twicons/Soulrender.jpg"
-          },
-          {
-            "name": "World Sunderer",
-            "src": "twicons/World%20Sunderer.jpg"
+            "name": "PrimalShard",
+            "src": "twicons/PrimalShard.jpg"
           }
         ],
         "helm": [
@@ -367,20 +371,12 @@
           {
             "name": "Animus, the Robe of Souls",
             "src": "twicons/Animus%2C%20the%20Robe%20of%20Souls.jpg"
-          },
-          {
-            "name": "Plates of Divine Blood",
-            "src": "twicons/Plates%20of%20Divine%20Blood.jpg"
           }
         ],
         "wings": [
           {
-            "name": "The Coil of Ouroboros",
-            "src": "twicons/The%20Coil%20of%20Ouroboros.jpg"
-          },
-          {
-            "name": "Embrace of Death",
-            "src": "twicons/Embrace%20of%20Death.jpg"
+            "name": "Soul Breath",
+            "src": "twicons/Soul%20Breath.jpg"
           }
         ],
         "accessory": [
@@ -389,8 +385,8 @@
             "src": "twicons/Primal%20Flame.jpg"
           },
           {
-            "name": "Ring of Genesis",
-            "src": "twicons/Ring%20of%20Genesis.jpg"
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
           }
         ]
       }
