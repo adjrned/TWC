@@ -418,6 +418,7 @@ layout: null
     <div class="header-actions">
       <button class="btn" onclick="openImport()">Import</button>
       <button class="btn" onclick="exportData()">Export</button>
+      <button class="btn teal" onclick="copyToClipboard()">Copy JSON</button>
     </div>
   </header>
 
@@ -1231,8 +1232,8 @@ function load() {
 }
 
 // ── Export / Import ───────────────────────────────────────
-function exportData() {
-  const out = {
+function buildExportJson() {
+  return {
     class: selectedClass,
     createdBy: creatorName || undefined,
     publishedAt: new Date().toISOString(),
@@ -1246,6 +1247,10 @@ function exportData() {
       }))
     }))
   };
+}
+
+function exportData() {
+  const out = buildExportJson();
   const blob = new Blob([JSON.stringify(out,null,2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1255,6 +1260,25 @@ function exportData() {
   a.download = dlName;
   a.click();
   showToast('Exported! Commit to builds/ folder to publish.');
+}
+
+async function copyToClipboard() {
+  if (!selectedClass) { showToast('Select a hero class first!'); return; }
+  const json = JSON.stringify(buildExportJson(), null, 2);
+  try {
+    await navigator.clipboard.writeText(json);
+    showToast('JSON copied to clipboard!');
+  } catch(e) {
+    // Fallback for browsers that block clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = json;
+    ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('JSON copied to clipboard!');
+  }
 }
 function openImport()  { document.getElementById('importModal').classList.add('show'); }
 function closeImport() { document.getElementById('importModal').classList.remove('show'); }
