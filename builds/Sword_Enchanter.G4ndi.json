@@ -1,0 +1,375 @@
+{
+  "class": "Sword Enchanter",
+  "createdBy": "G4ndi",
+  "publishedAt": "2026-05-04T16:53:20.560Z",
+  "rows": [
+    {
+      "id": 51,
+      "name": "Early",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Eternity.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Death Visage",
+            "src": "twicons/Death%20Visage.jpg"
+          },
+          {
+            "name": "Helm of Battle",
+            "src": "twicons/Helm%20of%20Battle.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Guardian Vest",
+            "src": "twicons/Guardian%20Vest.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wanderer's Cape",
+            "src": "twicons/Wanderer's%20Cape.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Purefrost Gauntlet",
+            "src": "twicons/Purefrost%20Gauntlet.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "name": "SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Eternity.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          },
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Phoenix",
+            "src": "twicons/Wings%20of%20Phoenix.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Purefrost Gauntlet",
+            "src": "twicons/Purefrost%20Gauntlet.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 53,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Eternity.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          },
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Phoenix",
+            "src": "twicons/Wings%20of%20Phoenix.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heaven's Fist",
+            "src": "twicons/Heaven's%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Radiance of the One",
+            "src": "twicons/Radiance%20of%20the%20One.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Flame Lord",
+            "src": "twicons/Wings%20of%20Flame%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 55,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Visage of Vengeance",
+            "src": "twicons/Visage%20of%20Vengeance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Flame Lord",
+            "src": "twicons/Wings%20of%20Flame%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 56,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Visage of Vengeance",
+            "src": "twicons/Visage%20of%20Vengeance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Flame Lord",
+            "src": "twicons/Wings%20of%20Flame%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 57,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Visage of Vengeance",
+            "src": "twicons/Visage%20of%20Vengeance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Flame Lord",
+            "src": "twicons/Wings%20of%20Flame%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 58,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Shadow Waltz",
+            "src": "twicons/Shadow%20Waltz.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Harvester's Mask",
+            "src": "twicons/Harvester's%20Mask.jpg"
+          },
+          {
+            "name": "Diabolic Mask",
+            "src": "twicons/Diabolic%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Living Flame",
+            "src": "twicons/Living%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 59,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heart of Lion",
+            "src": "twicons/Heart%20of%20Lion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Truth",
+            "src": "twicons/Eye%20of%20Truth.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Descender",
+            "src": "twicons/Wings%20of%20Descender.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}

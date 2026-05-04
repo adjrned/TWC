@@ -1,10 +1,10 @@
 {
   "class": "Crusader",
   "createdBy": "ShinHye",
-  "publishedAt": "2026-05-03T06:32:20.115Z",
+  "publishedAt": "2026-05-04T12:34:34.223Z",
   "rows": [
     {
-      "id": 27,
+      "id": 48,
       "name": "Minor",
       "slots": {
         "weapon": [
@@ -44,7 +44,7 @@
       }
     },
     {
-      "id": 28,
+      "id": 49,
       "name": "Shadow Dragon",
       "slots": {
         "weapon": [
@@ -88,7 +88,7 @@
       }
     },
     {
-      "id": 29,
+      "id": 50,
       "name": "Tower",
       "slots": {
         "weapon": [
@@ -128,7 +128,7 @@
       }
     },
     {
-      "id": 30,
+      "id": 51,
       "name": "Agareth",
       "slots": {
         "weapon": [
@@ -168,7 +168,7 @@
       }
     },
     {
-      "id": 36,
+      "id": 52,
       "name": "Duke-AC",
       "slots": {
         "weapon": [
@@ -208,7 +208,7 @@
       }
     },
     {
-      "id": 37,
+      "id": 53,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -256,7 +256,7 @@
       }
     },
     {
-      "id": 38,
+      "id": 54,
       "name": "New Row",
       "slots": {
         "weapon": [
@@ -265,10 +265,30 @@
             "src": "twicons/Lightbringer.jpg"
           }
         ],
-        "helm": null,
-        "body": null,
-        "wings": null,
-        "accessory": null
+        "helm": [
+          {
+            "name": "Righteous Flame",
+            "src": "twicons/Righteous%20Flame.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Dawn",
+            "src": "twicons/Plates%20of%20Dawn.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "The Coil of Ouroboros",
+            "src": "twicons/The%20Coil%20of%20Ouroboros.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.jpg"
+          }
+        ]
       }
     }
   ]

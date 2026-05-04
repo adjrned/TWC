@@ -1,0 +1,291 @@
+{
+  "class": "Elementalist",
+  "createdBy": "Cuanhham",
+  "publishedAt": "2026-05-04T03:38:06.669Z",
+  "rows": [
+    {
+      "id": 186,
+      "name": "Minor",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Benziena, the Earthen Soul",
+            "src": "twicons/Benziena%2C%20the%20Earthen%20Soul.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Void Eye",
+            "src": "twicons/Void%20Eye.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Fairy Garment",
+            "src": "twicons/Fairy%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Frozen Heart",
+            "src": "twicons/Frozen%20Heart.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Azathos, the Pipe of Chaos",
+            "src": "twicons/Azathos%2C%20the%20Pipe%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 187,
+      "name": "Shadow Dragon",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Benziena, the Earthen Heart",
+            "src": "twicons/Benziena%2C%20the%20Earthen%20Heart.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Serenity",
+            "src": "twicons/Crown%20of%20Serenity.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Diana, the Robe of Holy Maiden",
+            "src": "twicons/Diana%2C%20the%20Robe%20of%20Holy%20Maiden.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul of the Dead",
+            "src": "twicons/Soul%20of%20the%20Dead.jpg"
+          },
+          {
+            "name": "Embrace of Nature",
+            "src": "twicons/Embrace%20of%20Nature.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Azathos, the Pipe of Chaos",
+            "src": "twicons/Azathos%2C%20the%20Pipe%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 188,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Harmonia, the Sparkle of Life",
+            "src": "twicons/Harmonia%2C%20the%20Sparkle%20of%20Life.jpg"
+          },
+          {
+            "name": "Soul of Abyss",
+            "src": "twicons/Soul%20of%20Abyss.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Serenity",
+            "src": "twicons/Crown%20of%20Serenity.jpg"
+          },
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Diana, the Robe of Holy Maiden",
+            "src": "twicons/Diana%2C%20the%20Robe%20of%20Holy%20Maiden.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Horn of God",
+            "src": "twicons/Horn%20of%20God.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 189,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          },
+          {
+            "name": "Harmonia, the Sparkle of Life",
+            "src": "twicons/Harmonia%2C%20the%20Sparkle%20of%20Life.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Serenity",
+            "src": "twicons/Crown%20of%20Serenity.jpg"
+          },
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Jupiter, the Robe of Heavens",
+            "src": "twicons/Jupiter%2C%20the%20Robe%20of%20Heavens.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Horn of God",
+            "src": "twicons/Horn%20of%20God.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 190,
+      "name": "Duke-AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Gate of Abyss",
+            "src": "twicons/Gate%20of%20Abyss.jpg"
+          },
+          {
+            "name": "Harmonia, the Sparkle of Life",
+            "src": "twicons/Harmonia%2C%20the%20Sparkle%20of%20Life.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cleansing",
+            "src": "twicons/Crown%20of%20Cleansing.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Frost Herald's Garment",
+            "src": "twicons/Frost%20Herald's%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          },
+          {
+            "name": "Heart of Life",
+            "src": "twicons/Heart%20of%20Life.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 191,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Aeon Sphere",
+            "src": "twicons/Aeon%20Sphere.jpg"
+          },
+          {
+            "name": "Harmonia, the Sparkle of Life",
+            "src": "twicons/Harmonia%2C%20the%20Sparkle%20of%20Life.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cleansing",
+            "src": "twicons/Crown%20of%20Cleansing.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Arch Druid Robe",
+            "src": "twicons/Arch%20Druid%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Divine Rose",
+            "src": "twicons/Divine%20Rose.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 192,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Illumination",
+            "src": "twicons/Illumination.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Celestial Crown",
+            "src": "twicons/Celestial%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Arch Druid Robe",
+            "src": "twicons/Arch%20Druid%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Divine Rose",
+            "src": "twicons/Divine%20Rose.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}

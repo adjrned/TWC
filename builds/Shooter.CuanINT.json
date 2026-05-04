@@ -1,0 +1,299 @@
+{
+  "class": "Shooter",
+  "createdBy": "Cuanhham",
+  "publishedAt": "2026-05-04T03:33:30.909Z",
+  "rows": [
+    {
+      "id": 186,
+      "name": "Minor",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Cross",
+            "src": "twicons/Crimson%20Cross.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Void Eye",
+            "src": "twicons/Void%20Eye.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Fairy Garment",
+            "src": "twicons/Fairy%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Frozen Heart",
+            "src": "twicons/Frozen%20Heart.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Azathos, the Pipe of Chaos",
+            "src": "twicons/Azathos%2C%20the%20Pipe%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 187,
+      "name": "Shadow Dragon",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Star",
+            "src": "twicons/Crimson%20Star.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Serenity",
+            "src": "twicons/Crown%20of%20Serenity.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Diana, the Robe of Holy Maiden",
+            "src": "twicons/Diana%2C%20the%20Robe%20of%20Holy%20Maiden.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul of the Dead",
+            "src": "twicons/Soul%20of%20the%20Dead.jpg"
+          },
+          {
+            "name": "Embrace of Nature",
+            "src": "twicons/Embrace%20of%20Nature.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Azathos, the Pipe of Chaos",
+            "src": "twicons/Azathos%2C%20the%20Pipe%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 188,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Cosmic Star",
+            "src": "twicons/Cosmic%20Star.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Serenity",
+            "src": "twicons/Crown%20of%20Serenity.jpg"
+          },
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Diana, the Robe of Holy Maiden",
+            "src": "twicons/Diana%2C%20the%20Robe%20of%20Holy%20Maiden.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Horn of God",
+            "src": "twicons/Horn%20of%20God.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 189,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Cosmic Star",
+            "src": "twicons/Cosmic%20Star.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Serenity",
+            "src": "twicons/Crown%20of%20Serenity.jpg"
+          },
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Jupiter, the Robe of Heavens",
+            "src": "twicons/Jupiter%2C%20the%20Robe%20of%20Heavens.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Horn of God",
+            "src": "twicons/Horn%20of%20God.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 190,
+      "name": "Duke-AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Abyss Fall",
+            "src": "twicons/Abyss%20Fall.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cleansing",
+            "src": "twicons/Crown%20of%20Cleansing.jpg"
+          },
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Jupiter, the Robe of Heavens",
+            "src": "twicons/Jupiter%2C%20the%20Robe%20of%20Heavens.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          },
+          {
+            "name": "Heart of Life",
+            "src": "twicons/Heart%20of%20Life.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 191,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Abyss Fall",
+            "src": "twicons/Abyss%20Fall.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cleansing",
+            "src": "twicons/Crown%20of%20Cleansing.jpg"
+          },
+          {
+            "name": "Eye of the Blood God",
+            "src": "twicons/Eye%20of%20the%20Blood%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Arch Druid Robe",
+            "src": "twicons/Arch%20Druid%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Divine Rose",
+            "src": "twicons/Divine%20Rose.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 192,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heaven's Fall",
+            "src": "twicons/Heaven's%20Fall.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Celestial Crown",
+            "src": "twicons/Celestial%20Crown.jpg"
+          },
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Arch Druid Robe",
+            "src": "twicons/Arch%20Druid%20Robe.jpg"
+          },
+          {
+            "name": "Guardian of Sky and Earth",
+            "src": "twicons/Guardian%20of%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          },
+          {
+            "name": "Cape of the Saint",
+            "src": "twicons/Cape%20of%20the%20Saint.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Divine Rose",
+            "src": "twicons/Divine%20Rose.jpg"
+          },
+          {
+            "name": "Primordial Heart",
+            "src": "twicons/Primordial%20Heart.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
