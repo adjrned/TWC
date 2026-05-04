@@ -1,10 +1,10 @@
 {
   "class": "Paladin",
   "createdBy": "Cuanhham",
-  "publishedAt": "2026-05-03T06:38:38.185Z",
+  "publishedAt": "2026-05-04T02:28:32.111Z",
   "rows": [
     {
-      "id": 36,
+      "id": 143,
       "name": "Early",
       "slots": {
         "weapon": [
@@ -44,7 +44,7 @@
       }
     },
     {
-      "id": 37,
+      "id": 144,
       "name": "SD",
       "slots": {
         "weapon": [
@@ -80,7 +80,7 @@
       }
     },
     {
-      "id": 38,
+      "id": 145,
       "name": "Tower",
       "slots": {
         "weapon": [
@@ -116,7 +116,7 @@
       }
     },
     {
-      "id": 39,
+      "id": 146,
       "name": "Aga",
       "slots": {
         "weapon": [
@@ -152,7 +152,7 @@
       }
     },
     {
-      "id": 40,
+      "id": 147,
       "name": "Duke",
       "slots": {
         "weapon": [
@@ -188,7 +188,7 @@
       }
     },
     {
-      "id": 41,
+      "id": 148,
       "name": "Gaia",
       "slots": {
         "weapon": [
@@ -224,7 +224,7 @@
       }
     },
     {
-      "id": 42,
+      "id": 149,
       "name": "AC",
       "slots": {
         "weapon": [
@@ -260,7 +260,7 @@
       }
     },
     {
-      "id": 43,
+      "id": 150,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -296,14 +296,39 @@
       }
     },
     {
-      "id": 44,
+      "id": 151,
       "name": "Kam",
       "slots": {
-        "weapon": null,
-        "helm": null,
-        "body": null,
-        "wings": null,
-        "accessory": null
+        "weapon": [
+          {
+            "name": "Heart of Lion",
+            "src": "twicons/Heart%20of%20Lion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Dawn",
+            "src": "twicons/Plates%20of%20Dawn.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Descender",
+            "src": "twicons/Wings%20of%20Descender.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
       }
     }
   ]
