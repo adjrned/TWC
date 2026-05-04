@@ -1,0 +1,335 @@
+{
+  "class": "Lancer",
+  "createdBy": "G4ndi",
+  "publishedAt": "2026-05-04T01:24:15.440Z",
+  "rows": [
+    {
+      "id": 0,
+      "name": "Early",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Aglaia, the Spear of Heavenly Flows",
+            "src": "twicons/Aglaia%2C%20the%20Spear%20of%20Heavenly%20Flows.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Protection",
+            "src": "twicons/Vest%20of%20Protection.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "name": "SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Tiberius, the Spear of Lightning",
+            "src": "twicons/Tiberius%2C%20the%20Spear%20of%20Lightning.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hellspike Armor",
+            "src": "twicons/Hellspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Splitting of the Sky and Earth",
+            "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Lightning God",
+            "src": "twicons/Horn%20of%20Lightning%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Overlord",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Overlord.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Splitting of the Sky and Earth",
+            "src": "twicons/Splitting%20of%20the%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Frozen Soul",
+            "src": "twicons/Ring%20of%20Frozen%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Spear of Judgment",
+            "src": "twicons/Spear%20of%20Judgment.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ordius, the Divine Lance",
+            "src": "twicons/Ordius%2C%20the%20Divine%20Lance.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Righteous Flame",
+            "src": "twicons/Righteous%20Flame.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Dawn",
+            "src": "twicons/Plates%20of%20Dawn.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
+          },
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
