@@ -1,0 +1,379 @@
+{
+  "class": "Assassin",
+  "createdBy": "Elu",
+  "publishedAt": "2026-05-04T03:18:41.531Z",
+  "rows": [
+    {
+      "id": 46,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Storm Reaver",
+            "src": "twicons/Storm%20Reaver.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Grim Visage",
+            "src": "twicons/Grim%20Visage.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cruoris, the Armor of Blood",
+            "src": "twicons/Cruoris%2C%20the%20Armor%20of%20Blood.jpg"
+          },
+          {
+            "name": "Vest of Cyclone",
+            "src": "twicons/Vest%20of%20Cyclone.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Reaper",
+            "src": "twicons/Crimson%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          },
+          {
+            "name": "Dragon Mask",
+            "src": "twicons/Dragon%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Benedict, the Crimson Armor of Blood",
+            "src": "twicons/Benedict%2C%20the%20Crimson%20Armor%20of%20Blood.jpg"
+          },
+          {
+            "name": "Grandine, the Plates of Wraith",
+            "src": "twicons/Grandine%2C%20the%20Plates%20of%20Wraith.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 47,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Cosmic Reaper",
+            "src": "twicons/Cosmic%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Benedict, the Crimson Armor of Blood",
+            "src": "twicons/Benedict%2C%20the%20Crimson%20Armor%20of%20Blood.jpg"
+          },
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 48,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Cosmic Reaper",
+            "src": "twicons/Cosmic%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Mask of Demigod",
+            "src": "twicons/Mask%20of%20Demigod.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Nevedium, the Armor of Demonblood",
+            "src": "twicons/Nevedium%2C%20the%20Armor%20of%20Demonblood.jpg"
+          },
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Frozen Soul",
+            "src": "twicons/Ring%20of%20Frozen%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 49,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Divine Slayer",
+            "src": "twicons/Divine%20Slayer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Nevedium, the Armor of Demonblood",
+            "src": "twicons/Nevedium%2C%20the%20Armor%20of%20Demonblood.jpg"
+          },
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 50,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Divine Slayer",
+            "src": "twicons/Divine%20Slayer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Exitium, the Armor of Ruin",
+            "src": "twicons/Exitium%2C%20the%20Armor%20of%20Ruin.jpg"
+          },
+          {
+            "name": "Nevedium, the Armor of Demonblood",
+            "src": "twicons/Nevedium%2C%20the%20Armor%20of%20Demonblood.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 51,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Divine Slayer",
+            "src": "twicons/Divine%20Slayer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          },
+          {
+            "name": "Exitium, the Armor of Ruin",
+            "src": "twicons/Exitium%2C%20the%20Armor%20of%20Ruin.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Duskblade",
+            "src": "twicons/Duskblade.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Harvester's Mask",
+            "src": "twicons/Harvester's%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          },
+          {
+            "name": "Exitium, the Armor of Ruin",
+            "src": "twicons/Exitium%2C%20the%20Armor%20of%20Ruin.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 53,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Duskblade",
+            "src": "twicons/Duskblade.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Madness of Old Gods",
+            "src": "twicons/Madness%20of%20Old%20Gods.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Herald of the Void",
+            "src": "twicons/Herald%20of%20the%20Void.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
