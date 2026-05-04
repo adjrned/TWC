@@ -1,0 +1,259 @@
+{
+  "class": "Soul Weaver",
+  "createdBy": "Weirman",
+  "publishedAt": "2026-05-04T02:42:29.703Z",
+  "rows": [
+    {
+      "id": 10,
+      "name": "Gnosis",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Benziena, the Earthen Heart",
+            "src": "twicons/Benziena%2C%20the%20Earthen%20Heart.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Hood of Apocrypha",
+            "src": "twicons/Hood%20of%20Apocrypha.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Druid's Mantle",
+            "src": "twicons/Druid's%20Mantle.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Eater",
+            "src": "twicons/Soul%20Eater.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Composure",
+            "src": "twicons/Ring%20of%20Composure.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "name": "Alteia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Hood of Apocalypse",
+            "src": "twicons/Hood%20of%20Apocalypse.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hades, the Armor of Despair",
+            "src": "twicons/Hades%2C%20the%20Armor%20of%20Despair.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Devourer",
+            "src": "twicons/Soul%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "name": "Alteia (not Dark)",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Harmony of Sky and Earth",
+            "src": "twicons/Harmony%20of%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Immortal",
+            "src": "twicons/Wings%20of%20Immortal.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Horn of God",
+            "src": "twicons/Horn%20of%20God.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "name": "Arcana",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Echoes of the Void",
+            "src": "twicons/Echoes%20of%20the%20Void.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Blood Devourer",
+            "src": "twicons/Blood%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "name": "Arcana (not Dark)",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Gate of Abyss",
+            "src": "twicons/Gate%20of%20Abyss.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Arch Druid Robe",
+            "src": "twicons/Arch%20Druid%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Guardian Angel",
+            "src": "twicons/Guardian%20Angel.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heart of Life",
+            "src": "twicons/Heart%20of%20Life.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "name": "Kamael",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Echoes of the Void",
+            "src": "twicons/Echoes%20of%20the%20Void.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Shadow Fiend",
+            "src": "twicons/Cage%20of%20Shadow%20Fiend.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Void Seraph",
+            "src": "twicons/Void%20Seraph.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Dark Lotus",
+            "src": "twicons/Dark%20Lotus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "name": "My DPS Build",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soulrender",
+            "src": "twicons/Soulrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Animus, the Robe of Souls",
+            "src": "twicons/Animus%2C%20the%20Robe%20of%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Void Seraph",
+            "src": "twicons/Void%20Seraph.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Noble Soul",
+            "src": "twicons/Ring%20of%20Noble%20Soul.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
