@@ -1,10 +1,10 @@
 {
   "class": "Paladin",
   "createdBy": "Cuanhham",
-  "publishedAt": "2026-05-03T06:35:23.896Z",
+  "publishedAt": "2026-05-04T02:12:48.384Z",
   "rows": [
     {
-      "id": 9,
+      "id": 108,
       "name": "Early",
       "slots": {
         "weapon": [
@@ -40,7 +40,7 @@
       }
     },
     {
-      "id": 10,
+      "id": 109,
       "name": "SD",
       "slots": {
         "weapon": [
@@ -80,7 +80,7 @@
       }
     },
     {
-      "id": 11,
+      "id": 110,
       "name": "Tower",
       "slots": {
         "weapon": [
@@ -116,7 +116,7 @@
       }
     },
     {
-      "id": 12,
+      "id": 111,
       "name": "Aga",
       "slots": {
         "weapon": [
@@ -152,7 +152,7 @@
       }
     },
     {
-      "id": 13,
+      "id": 112,
       "name": "Duke",
       "slots": {
         "weapon": [
@@ -204,7 +204,7 @@
       }
     },
     {
-      "id": 14,
+      "id": 113,
       "name": "Gaia",
       "slots": {
         "weapon": [
@@ -256,7 +256,7 @@
       }
     },
     {
-      "id": 15,
+      "id": 114,
       "name": "AC",
       "slots": {
         "weapon": [
@@ -300,7 +300,7 @@
       }
     },
     {
-      "id": 16,
+      "id": 115,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -340,14 +340,39 @@
       }
     },
     {
-      "id": 17,
+      "id": 116,
       "name": "Kam",
       "slots": {
-        "weapon": null,
-        "helm": null,
-        "body": null,
-        "wings": null,
-        "accessory": null
+        "weapon": [
+          {
+            "name": "Aeon Sphere",
+            "src": "twicons/Aeon%20Sphere.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Blood God",
+            "src": "twicons/Eye%20of%20the%20Blood%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Divine Aegis",
+            "src": "twicons/Divine%20Aegis.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Aegis of Avalon",
+            "src": "twicons/Aegis%20of%20Avalon.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Codex of Light",
+            "src": "twicons/Codex%20of%20Light.jpg"
+          }
+        ]
       }
     }
   ]
