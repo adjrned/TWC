@@ -84,6 +84,50 @@ layout: null
   .class-picker select option { background: #1c1c2e; color: var(--text); font-weight: 400; }
   .class-picker select optgroup { background: #11111e; color: var(--accent2); font-weight: 700; }
 
+  /* ── Custom class dropdown ── */
+  .custom-select-wrap { position: relative; flex: 1; min-width: 220px; max-width: 380px; }
+  .custom-select-trigger {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 24px; padding: 7px 18px 7px 16px;
+    cursor: pointer; transition: border-color 0.2s; user-select: none;
+  }
+  .custom-select-trigger:hover,
+  .custom-select-wrap.open .custom-select-trigger { border-color: var(--accent); }
+  .custom-select-trigger svg { opacity: 0.4; flex-shrink: 0; }
+  .custom-select-label { flex: 1; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .custom-select-label.placeholder { color: var(--muted2); }
+  .custom-select-chevron { opacity: 0.4; flex-shrink: 0; transition: transform 0.18s; }
+  .custom-select-wrap.open .custom-select-chevron { transform: rotate(180deg); }
+
+  .custom-select-dropdown {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: #1c1c2e; border: 1px solid var(--border2);
+    border-radius: 12px; z-index: 8000;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+    display: none; overflow: hidden; max-height: 320px; overflow-y: auto;
+  }
+  .custom-select-wrap.open .custom-select-dropdown { display: block; }
+
+  .custom-select-group-label {
+    padding: 8px 14px 4px; font-family: 'Cinzel', serif; font-size: 9px;
+    font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent2); background: #11111e;
+  }
+  .custom-select-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; cursor: pointer; font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    transition: background 0.12s; gap: 12px;
+  }
+  .custom-select-option:hover { background: rgba(255,255,255,0.06); }
+  .custom-select-option.selected { background: rgba(233,69,96,0.1); color: var(--accent); font-weight: 700; }
+  .custom-select-option .opt-name { flex: 1; }
+  .custom-select-option .opt-count {
+    font-size: 10px; font-weight: 700; color: var(--accent);
+    white-space: nowrap; flex-shrink: 0; letter-spacing: 0.3px;
+  }
+
   /* ── Table ── */
   .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: visible; }
   .table-scroll { overflow-x: auto; }
@@ -378,14 +422,20 @@ layout: null
   </header>
 
   <div class="toolbar">
-    <div class="class-picker">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <select id="classSelect" onchange="onClassChange()">
-        <option value="">— Select Hero Class —</option>
-      </select>
+    <div class="custom-select-wrap" id="classPickerWrap">
+      <div class="custom-select-trigger" id="classPickerTrigger" onclick="toggleClassDropdown()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span class="custom-select-label placeholder" id="classPickerLabel">— Select Hero Class —</span>
+        <svg class="custom-select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="custom-select-dropdown" id="classPickerDropdown"></div>
     </div>
+    <!-- Hidden native select keeps value accessible for legacy code paths -->
+    <select id="classSelect" style="display:none"></select>
     <div class="class-picker" id="creatorPickerWrap" style="display:none; min-width:160px; max-width:220px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
@@ -695,27 +745,82 @@ async function loadIconLibrary() {
 
 // ── Class select ─────────────────────────────────────────
 async function buildClassSelect() {
-  const sel = document.getElementById('classSelect');
-  // Fetch build counts so we can annotate options
+  const dropdown = document.getElementById('classPickerDropdown');
+  const hiddenSel = document.getElementById('classSelect');
+  dropdown.innerHTML = '';
+  hiddenSel.innerHTML = '<option value=""></option>';
+
   const counts = await fetchBuildCountsForAllClasses();
+
   for (const [type, list] of Object.entries(ROSTER)) {
-    const og = document.createElement('optgroup');
-    og.label = type;
+    const groupLabel = document.createElement('div');
+    groupLabel.className = 'custom-select-group-label';
+    groupLabel.textContent = type;
+    dropdown.appendChild(groupLabel);
+
     list.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
       const count = counts[name] || 0;
-      opt.textContent = count > 0 ? `${name}  · ${count} build${count > 1 ? 's' : ''}` : name;
-      og.appendChild(opt);
+
+      // Custom option div
+      const opt = document.createElement('div');
+      opt.className = 'custom-select-option';
+      opt.dataset.value = name;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'opt-name'; nameSpan.textContent = name;
+      opt.appendChild(nameSpan);
+      if (count > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'opt-count';
+        badge.textContent = `${count} build${count > 1 ? 's' : ''}`;
+        opt.appendChild(badge);
+      }
+      opt.addEventListener('click', () => selectClass(name));
+      dropdown.appendChild(opt);
+
+      // Keep hidden select in sync
+      const hiddenOpt = document.createElement('option');
+      hiddenOpt.value = name; hiddenOpt.textContent = name;
+      hiddenSel.appendChild(hiddenOpt);
     });
-    sel.appendChild(og);
   }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#classPickerWrap')) closeClassDropdown();
+  });
+}
+
+function toggleClassDropdown() {
+  document.getElementById('classPickerWrap').classList.toggle('open');
+}
+function closeClassDropdown() {
+  document.getElementById('classPickerWrap').classList.remove('open');
+}
+
+async function selectClass(name) {
+  closeClassDropdown();
+  // Update trigger label and selected state
+  const label = document.getElementById('classPickerLabel');
+  label.textContent = name;
+  label.classList.remove('placeholder');
+  document.querySelectorAll('.custom-select-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.value === name);
+  });
+  // Sync hidden select
+  document.getElementById('classSelect').value = name;
+  // Run the class change logic
+  selectedClass = name;
+  selectedCreator = null;
+  creatorName = '';
+  if (!hasLocalData(selectedClass)) await loadBuildFile(selectedClass, null);
+  save(); await syncClassUI(); render();
 }
 
 async function onClassChange() {
+  // This is now only called programmatically (not by native select onchange)
   selectedClass = document.getElementById('classSelect').value || null;
   selectedCreator = null;
-  creatorName = ''; // always wipe — will be set fresh if a template is loaded
+  creatorName = '';
   if (selectedClass && !hasLocalData(selectedClass)) {
     await loadBuildFile(selectedClass, null);
   }
@@ -767,11 +872,16 @@ async function syncClassUI() {
   const creatorSel  = document.getElementById('creatorSelect');
 
   if (selectedClass) {
+    // Sync custom dropdown trigger label
+    const label = document.getElementById('classPickerLabel');
+    label.textContent = selectedClass; label.classList.remove('placeholder');
+    document.querySelectorAll('.custom-select-option').forEach(el =>
+      el.classList.toggle('selected', el.dataset.value === selectedClass)
+    );
     // Probe for multiple creators
     const creators = await fetchCreatorsForClass(selectedClass);
     if (creators.length > 0) {
       creatorSel.innerHTML = '';
-      // Add a "no creator" option that loads the legacy file
       const defaultOpt = document.createElement('option');
       defaultOpt.value = ''; defaultOpt.textContent = '— Choose build —';
       creatorSel.appendChild(defaultOpt);
@@ -798,6 +908,9 @@ async function syncClassUI() {
     resetBtn.style.display = '';
     clearBtn.style.display = '';
   } else {
+    const label = document.getElementById('classPickerLabel');
+    label.textContent = '— Select Hero Class —'; label.classList.add('placeholder');
+    document.querySelectorAll('.custom-select-option').forEach(el => el.classList.remove('selected'));
     creatorWrap.style.display = 'none';
     colName.textContent = 'Heroes'; colSubtitle.textContent = '';
     colName.classList.remove('active'); iconWrap.classList.remove('visible');
