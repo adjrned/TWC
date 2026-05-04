@@ -1,10 +1,10 @@
 {
   "class": "Sniper",
   "createdBy": "Ruzai",
-  "publishedAt": "2026-05-03T01:48:21.150Z",
+  "publishedAt": "2026-05-04T00:42:55.791Z",
   "rows": [
     {
-      "id": 18,
+      "id": 50,
       "name": "Early",
       "slots": {
         "weapon": [
@@ -44,10 +44,14 @@
       }
     },
     {
-      "id": 19,
+      "id": 51,
       "name": "SD",
       "slots": {
         "weapon": [
+          {
+            "name": "Hellflame",
+            "src": "twicons/Hellflame.jpg"
+          },
           {
             "name": "Soulstalker",
             "src": "twicons/Soulstalker.jpg"
@@ -80,13 +84,13 @@
       }
     },
     {
-      "id": 20,
+      "id": 52,
       "name": "Tower",
       "slots": {
         "weapon": [
           {
-            "name": "Soulstalker",
-            "src": "twicons/Soulstalker.jpg"
+            "name": "Eternal Flame",
+            "src": "twicons/Eternal%20Flame.jpg"
           },
           {
             "name": "Pheles, the Bow of God",
@@ -120,7 +124,7 @@
       }
     },
     {
-      "id": 21,
+      "id": 53,
       "name": "Aga",
       "slots": {
         "weapon": [
@@ -156,7 +160,7 @@
       }
     },
     {
-      "id": 22,
+      "id": 54,
       "name": "Duke",
       "slots": {
         "weapon": [
@@ -196,13 +200,17 @@
       }
     },
     {
-      "id": 23,
+      "id": 55,
       "name": "Gaia",
       "slots": {
         "weapon": [
           {
             "name": "Agnitus, the Bow of Divine Fury",
             "src": "twicons/Agnitus, the Bow of Divine Fury.jpg"
+          },
+          {
+            "name": "Spirit Flame",
+            "src": "twicons/Spirit%20Flame.jpg"
           }
         ],
         "helm": [
@@ -232,13 +240,17 @@
       }
     },
     {
-      "id": 24,
+      "id": 56,
       "name": "AC",
       "slots": {
         "weapon": [
           {
             "name": "Agnitus, the Bow of Divine Fury",
             "src": "twicons/Agnitus, the Bow of Divine Fury.jpg"
+          },
+          {
+            "name": "Spirit Flame",
+            "src": "twicons/Spirit%20Flame.jpg"
           }
         ],
         "helm": [
@@ -268,7 +280,7 @@
       }
     },
     {
-      "id": 25,
+      "id": 57,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -308,19 +320,39 @@
       }
     },
     {
-      "id": 26,
+      "id": 58,
       "name": "Kam",
       "slots": {
-        "weapon": null,
-        "helm": null,
-        "body": null,
+        "weapon": [
+          {
+            "name": "Crimson Whisper",
+            "src": "twicons/Crimson%20Whisper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
         "wings": [
           {
             "name": "Embrace of Death",
             "src": "twicons/Embrace of Death.jpg"
           }
         ],
-        "accessory": null
+        "accessory": [
+          {
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
+          }
+        ]
       }
     }
   ]
