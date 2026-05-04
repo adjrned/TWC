@@ -1,10 +1,10 @@
 {
   "class": "Lightning Mage",
   "createdBy": "Ruzai",
-  "publishedAt": "2026-05-04T01:31:05.421Z",
+  "publishedAt": "2026-05-04T01:51:38.236Z",
   "rows": [
     {
-      "id": 469,
+      "id": 512,
       "name": "Early",
       "slots": {
         "weapon": [
@@ -40,7 +40,7 @@
       }
     },
     {
-      "id": 470,
+      "id": 513,
       "name": "SD",
       "slots": {
         "weapon": [
@@ -76,7 +76,7 @@
       }
     },
     {
-      "id": 471,
+      "id": 514,
       "name": "Tower",
       "slots": {
         "weapon": [
@@ -116,7 +116,7 @@
       }
     },
     {
-      "id": 472,
+      "id": 515,
       "name": "Aga",
       "slots": {
         "weapon": [
@@ -152,7 +152,7 @@
       }
     },
     {
-      "id": 473,
+      "id": 516,
       "name": "Duke",
       "slots": {
         "weapon": [
@@ -192,7 +192,7 @@
       }
     },
     {
-      "id": 474,
+      "id": 517,
       "name": "Gaia",
       "slots": {
         "weapon": [
@@ -232,7 +232,7 @@
       }
     },
     {
-      "id": 475,
+      "id": 518,
       "name": "AC",
       "slots": {
         "weapon": [
@@ -249,12 +249,8 @@
         ],
         "body": [
           {
-            "name": "Sanguis, the Robe of Sacrifice",
-            "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
-          },
-          {
-            "name": "Thanatos, the Robe of Hell",
-            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
           }
         ],
         "wings": [
@@ -272,7 +268,7 @@
       }
     },
     {
-      "id": 476,
+      "id": 519,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -312,7 +308,7 @@
       }
     },
     {
-      "id": 477,
+      "id": 520,
       "name": "Kam",
       "slots": {
         "weapon": [
