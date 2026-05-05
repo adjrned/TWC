@@ -1,0 +1,395 @@
+{
+  "class": "Soul Weaver",
+  "createdBy": "Elu",
+  "publishedAt": "2026-05-04T03:41:50.505Z",
+  "rows": [
+    {
+      "id": 189,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Staff of Madness",
+            "src": "twicons/Staff%20of%20Madness.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Void Eye",
+            "src": "twicons/Void%20Eye.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Fairy Garment",
+            "src": "twicons/Fairy%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Purification",
+            "src": "twicons/Wings%20of%20Purification.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Azathos, the Pipe of Chaos",
+            "src": "twicons/Azathos%2C%20the%20Pipe%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 190,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Hell Riser",
+            "src": "twicons/Hell%20Riser.jpg"
+          },
+          {
+            "name": "Staff of Abyss",
+            "src": "twicons/Staff%20of%20Abyss.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Void Eye",
+            "src": "twicons/Void%20Eye.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Diana, the Robe of Holy Maiden",
+            "src": "twicons/Diana%2C%20the%20Robe%20of%20Holy%20Maiden.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          },
+          {
+            "name": "Soul Eater",
+            "src": "twicons/Soul%20Eater.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Composure",
+            "src": "twicons/Ring%20of%20Composure.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 191,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Hell Riser",
+            "src": "twicons/Hell%20Riser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hades, the Armor of Despair",
+            "src": "twicons/Hades%2C%20the%20Armor%20of%20Despair.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          },
+          {
+            "name": "Soul Eater",
+            "src": "twicons/Soul%20Eater.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Composure",
+            "src": "twicons/Ring%20of%20Composure.jpg"
+          },
+          {
+            "name": "Horn of God",
+            "src": "twicons/Horn%20of%20God.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 192,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          },
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hades, the Armor of Despair",
+            "src": "twicons/Hades%2C%20the%20Armor%20of%20Despair.jpg"
+          },
+          {
+            "name": "Jupiter, the Robe of Heavens",
+            "src": "twicons/Jupiter%2C%20the%20Robe%20of%20Heavens.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 193,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          },
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          },
+          {
+            "name": "Guardian Angel",
+            "src": "twicons/Guardian%20Angel.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          },
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 194,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Gate of Abyss",
+            "src": "twicons/Gate%20of%20Abyss.jpg"
+          },
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          },
+          {
+            "name": "Guardian Angel",
+            "src": "twicons/Guardian%20Angel.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          },
+          {
+            "name": "Heart of Life",
+            "src": "twicons/Heart%20of%20Life.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 195,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Gate of Abyss",
+            "src": "twicons/Gate%20of%20Abyss.jpg"
+          },
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Blood Devourer",
+            "src": "twicons/Blood%20Devourer.jpg"
+          },
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 196,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          },
+          {
+            "name": "Aeon Sphere",
+            "src": "twicons/Aeon%20Sphere.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Echoes of the Void",
+            "src": "twicons/Echoes%20of%20the%20Void.jpg"
+          },
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 197,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Echoes of the Void",
+            "src": "twicons/Echoes%20of%20the%20Void.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Shadow Fiend",
+            "src": "twicons/Cage%20of%20Shadow%20Fiend.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Void Seraph",
+            "src": "twicons/Void%20Seraph.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Dark Lotus",
+            "src": "twicons/Dark%20Lotus.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
