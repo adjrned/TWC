@@ -1,225 +1,346 @@
 {
   "class": "Gunner",
   "createdBy": "ItsMiiHerpaDerp",
-  "publishedAt": "2026-05-02T06:50:18.607Z",
+  "publishedAt": "2026-05-05T00:13:14.114Z",
   "rows": [
     {
-      "id": 0,
+      "id": 16,
       "name": "Early",
       "slots": {
-        "weapon": {
-          "name": "Bullet of Ruin",
-          "src": "twicons/Bullet%20of%20Ruin.jpg"
-        },
-        "helm": {
-          "name": "Grim Visage",
-          "src": "twicons/Grim%20Visage.jpg"
-        },
-        "body": {
-          "name": "Vest of Cyclone",
-          "src": "twicons/Vest%20of%20Cyclone.jpg"
-        },
-        "wings": {
-          "name": "Slayer Boots",
-          "src": "twicons/Slayer%20Boots.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Nightmare",
-          "src": "twicons/Ring%20of%20Nightmare.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Bullet of Ruin",
+            "src": "twicons/Bullet%20of%20Ruin.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Grim Visage",
+            "src": "twicons/Grim%20Visage.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Cyclone",
+            "src": "twicons/Vest%20of%20Cyclone.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Nightmare",
+            "src": "twicons/Ring%20of%20Nightmare.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 1,
+      "id": 17,
       "name": "SD",
       "slots": {
-        "weapon": {
-          "name": "Punisher",
-          "src": "twicons/Punisher.jpg"
-        },
-        "helm": {
-          "name": "Eye of Wallachia",
-          "src": "twicons/Eye%20of%20Wallachia.jpg"
-        },
-        "body": {
-          "name": "Vest of Storm",
-          "src": "twicons/Vest%20of%20Storm.jpg"
-        },
-        "wings": {
-          "name": "Wings of Phoenix",
-          "src": "twicons/Wings%20of%20Phoenix.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Strike",
-          "src": "twicons/Ring%20of%20Strike.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Punisher",
+            "src": "twicons/Punisher.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Phoenix",
+            "src": "twicons/Wings%20of%20Phoenix.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Strike",
+            "src": "twicons/Ring%20of%20Strike.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 2,
+      "id": 18,
       "name": "Tower",
       "slots": {
-        "weapon": {
-          "name": "Punisher",
-          "src": "twicons/Punisher.jpg"
-        },
-        "helm": {
-          "name": "Eye of Wallachia",
-          "src": "twicons/Eye%20of%20Wallachia.jpg"
-        },
-        "body": {
-          "name": "Vest of Storm",
-          "src": "twicons/Vest%20of%20Storm.jpg"
-        },
-        "wings": {
-          "name": "Storm",
-          "src": "twicons/Storm.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Insanity",
-          "src": "twicons/Ring%20of%20Insanity.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Punisher",
+            "src": "twicons/Punisher.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 3,
+      "id": 19,
       "name": "Aga",
       "slots": {
-        "weapon": {
-          "name": "Last Word",
-          "src": "twicons/Last%20Word.jpg"
-        },
-        "helm": {
-          "name": "Eye of the Reaper",
-          "src": "twicons/Eye%20of%20the%20Reaper.jpg"
-        },
-        "body": {
-          "name": "Vest of Divine Winds",
-          "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
-        },
-        "wings": {
-          "name": "Storm",
-          "src": "twicons/Storm.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Insanity",
-          "src": "twicons/Ring%20of%20Insanity.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Last Word",
+            "src": "twicons/Last%20Word.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 4,
+      "id": 20,
       "name": "Duke",
       "slots": {
-        "weapon": {
-          "name": "Last Word",
-          "src": "twicons/Last%20Word.jpg"
-        },
-        "helm": {
-          "name": "Eye of the Reaper",
-          "src": "twicons/Eye%20of%20the%20Reaper.jpg"
-        },
-        "body": {
-          "name": "Vest of Divine Winds",
-          "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
-        },
-        "wings": {
-          "name": "Bloodstorm",
-          "src": "twicons/Bloodstorm.jpg"
-        },
-        "accessory": {
-          "name": "Ring of Insanity",
-          "src": "twicons/Ring%20of%20Insanity.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Last Word",
+            "src": "twicons/Last%20Word.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 5,
+      "id": 21,
       "name": "Gaia",
       "slots": {
-        "weapon": {
-          "name": "Final Omen",
-          "src": "twicons/Final%20Omen.jpg"
-        },
-        "helm": {
-          "name": "Eye of the Reaper",
-          "src": "twicons/Eye%20of%20the%20Reaper.jpg"
-        },
-        "body": {
-          "name": "Vest of Divine Winds",
-          "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
-        },
-        "wings": {
-          "name": "Bloodstorm",
-          "src": "twicons/Bloodstorm.jpg"
-        },
-        "accessory": {
-          "name": "Crimson Curse",
-          "src": "twicons/Crimson%20Curse.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Final Omen",
+            "src": "twicons/Final%20Omen.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 6,
+      "id": 22,
       "name": "AC",
       "slots": {
-        "weapon": {
-          "name": "Final Omen",
-          "src": "twicons/Final%20Omen.jpg"
-        },
-        "helm": {
-          "name": "Eye of the Reaper",
-          "src": "twicons/Eye%20of%20the%20Reaper.jpg"
-        },
-        "body": {
-          "name": "Astral Fury",
-          "src": "twicons/Astral%20Fury.jpg"
-        },
-        "wings": {
-          "name": "Bloodstorm",
-          "src": "twicons/Bloodstorm.jpg"
-        },
-        "accessory": {
-          "name": "Crimson Curse",
-          "src": "twicons/Crimson%20Curse.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Final Omen",
+            "src": "twicons/Final%20Omen.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          },
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 7,
+      "id": 23,
       "name": "Styrix",
       "slots": {
-        "weapon": {
-          "name": "Final Omen",
-          "src": "twicons/Final%20Omen.jpg"
-        },
-        "helm": {
-          "name": "Harvester's Mask",
-          "src": "twicons/Harvester's%20Mask.jpg"
-        },
-        "body": {
-          "name": "Astral Fury",
-          "src": "twicons/Astral%20Fury.jpg"
-        },
-        "wings": {
-          "name": "Soulstorm",
-          "src": "twicons/Soulstorm.jpg"
-        },
-        "accessory": {
-          "name": "Crimson Curse",
-          "src": "twicons/Crimson%20Curse.jpg"
-        }
+        "weapon": [
+          {
+            "name": "Final Omen",
+            "src": "twicons/Final%20Omen.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Harvester's Mask",
+            "src": "twicons/Harvester's%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          },
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
       }
     },
     {
-      "id": 8,
-      "name": "Kam",
+      "id": 25,
+      "name": "Kamael",
       "slots": {
-        "weapon": null,
-        "helm": null,
-        "body": null,
-        "wings": null,
-        "accessory": null
+        "weapon": [
+          {
+            "name": "Apocalypse Prime",
+            "src": "twicons/Apocalypse%20Prime.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Harvester's Mask",
+            "src": "twicons/Harvester's%20Mask.jpg"
+          },
+          {
+            "name": "Madness of Old Gods",
+            "src": "twicons/Madness%20of%20Old%20Gods.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          },
+          {
+            "name": "Herald of the Void",
+            "src": "twicons/Herald%20of%20the%20Void.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Godslayer Signet",
+            "src": "twicons/Godslayer%20Signet.jpg"
+          }
+        ]
       }
     }
   ]
