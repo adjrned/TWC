@@ -1,0 +1,335 @@
+{
+  "class": "Fire Mage",
+  "createdBy": "Elu",
+  "publishedAt": "2026-05-07T03:26:16.633Z",
+  "rows": [
+    {
+      "id": 589,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Hatred",
+            "src": "twicons/Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Fervor",
+            "src": "twicons/Crown%20of%20Fervor.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Frozen Robe",
+            "src": "twicons/Frozen%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Corrupt Crystal Wings",
+            "src": "twicons/Corrupt%20Crystal%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 590,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Bloody Hatred",
+            "src": "twicons/Bloody%20Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Rage",
+            "src": "twicons/Crown%20of%20Rage.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Pure Crystal Wings",
+            "src": "twicons/Pure%20Crystal%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 591,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Hatred",
+            "src": "twicons/Crimson%20Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Great Rage",
+            "src": "twicons/Crown%20of%20Great%20Rage.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 592,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Hatred",
+            "src": "twicons/Crimson%20Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Extreme Anger",
+            "src": "twicons/Crown%20of%20Extreme%20Anger.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 593,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Hatred",
+            "src": "twicons/Crimson%20Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Extreme Anger",
+            "src": "twicons/Crown%20of%20Extreme%20Anger.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          },
+          {
+            "name": "Sanguis, the Robe of Sacrifice",
+            "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 594,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Hatred",
+            "src": "twicons/Crimson%20Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cataclysm",
+            "src": "twicons/Crown%20of%20Cataclysm.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Sacred Provenance",
+            "src": "twicons/Wings%20of%20Sacred%20Provenance.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 595,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Hatred",
+            "src": "twicons/Crimson%20Hatred.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cataclysm",
+            "src": "twicons/Crown%20of%20Cataclysm.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Sacred Provenance",
+            "src": "twicons/Wings%20of%20Sacred%20Provenance.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 596,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul Torch",
+            "src": "twicons/Soul%20Torch.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Cataclysm",
+            "src": "twicons/Crown%20of%20Cataclysm.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Sacred Provenance",
+            "src": "twicons/Wings%20of%20Sacred%20Provenance.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Genesis",
+            "src": "twicons/Ring%20of%20Genesis.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 597,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul Torch",
+            "src": "twicons/Soul%20Torch.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Righteous Flame",
+            "src": "twicons/Righteous%20Flame.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Animus, the Robe of Souls",
+            "src": "twicons/Animus%2C%20the%20Robe%20of%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Void Seraph",
+            "src": "twicons/Void%20Seraph.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}

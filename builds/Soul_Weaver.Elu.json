@@ -1,10 +1,10 @@
 {
   "class": "Soul Weaver",
   "createdBy": "Elu",
-  "publishedAt": "2026-05-04T03:41:50.505Z",
+  "publishedAt": "2026-05-08T18:33:08.062Z",
   "rows": [
     {
-      "id": 189,
+      "id": 728,
       "name": "Minor-Coin",
       "slots": {
         "weapon": [
@@ -40,7 +40,7 @@
       }
     },
     {
-      "id": 190,
+      "id": 729,
       "name": "SK-SD",
       "slots": {
         "weapon": [
@@ -84,7 +84,7 @@
       }
     },
     {
-      "id": 191,
+      "id": 730,
       "name": "Tower",
       "slots": {
         "weapon": [
@@ -128,7 +128,7 @@
       }
     },
     {
-      "id": 192,
+      "id": 731,
       "name": "Agareth",
       "slots": {
         "weapon": [
@@ -172,7 +172,7 @@
       }
     },
     {
-      "id": 193,
+      "id": 732,
       "name": "Duke",
       "slots": {
         "weapon": [
@@ -220,7 +220,7 @@
       }
     },
     {
-      "id": 194,
+      "id": 733,
       "name": "Gaia",
       "slots": {
         "weapon": [
@@ -243,6 +243,10 @@
           {
             "name": "Cage of Twisted Souls",
             "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          },
+          {
+            "name": "Frost Herald's Garment",
+            "src": "twicons/Frost%20Herald's%20Garment.jpg"
           }
         ],
         "wings": [
@@ -268,7 +272,7 @@
       }
     },
     {
-      "id": 195,
+      "id": 734,
       "name": "AC",
       "slots": {
         "weapon": [
@@ -312,7 +316,7 @@
       }
     },
     {
-      "id": 196,
+      "id": 735,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -356,7 +360,7 @@
       }
     },
     {
-      "id": 197,
+      "id": 736,
       "name": "Kam",
       "slots": {
         "weapon": [

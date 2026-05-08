@@ -1,0 +1,343 @@
+{
+  "class": "Swordsman",
+  "createdBy": "Elu",
+  "publishedAt": "2026-05-07T03:09:08.564Z",
+  "rows": [
+    {
+      "id": 530,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Laksha, the Ancient Sword of Poison",
+            "src": "twicons/Laksha%2C%20the%20Ancient%20Sword%20of%20Poison.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Grim Visage",
+            "src": "twicons/Grim%20Visage.jpg"
+          },
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Cyclone",
+            "src": "twicons/Vest%20of%20Cyclone.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Fury",
+            "src": "twicons/Wings%20of%20Fury.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 531,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Oceanus, the Sword of Light",
+            "src": "twicons/Oceanus%2C%20the%20Sword%20of%20Light.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Dragon Mask",
+            "src": "twicons/Dragon%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Slayer",
+            "src": "twicons/Wings%20of%20Slayer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 532,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Atricia, the Sword of Dreams",
+            "src": "twicons/Atricia%2C%20the%20Sword%20of%20Dreams.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Lightning God",
+            "src": "twicons/Horn%20of%20Lightning%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Slayer",
+            "src": "twicons/Wings%20of%20Slayer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 533,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Atricia, the True Sword of Dreams",
+            "src": "twicons/Atricia%2C%20the%20True%20Sword%20of%20Dreams.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          },
+          {
+            "name": "Mask of Demigod",
+            "src": "twicons/Mask%20of%20Demigod.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Night Lord",
+            "src": "twicons/Wings%20of%20Night%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Frozen Soul",
+            "src": "twicons/Ring%20of%20Frozen%20Soul.jpg"
+          },
+          {
+            "name": "Ring of Divine Winds",
+            "src": "twicons/Ring%20of%20Divine%20Winds.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 534,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Atricia, the True Sword of Dreams",
+            "src": "twicons/Atricia%2C%20the%20True%20Sword%20of%20Dreams.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Night Lord",
+            "src": "twicons/Wings%20of%20Night%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 535,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Atricia, the Sword of Nightmares",
+            "src": "twicons/Atricia%2C%20the%20Sword%20of%20Nightmares.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Night Lord",
+            "src": "twicons/Wings%20of%20Night%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 536,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Atricia, the Sword of Nightmares",
+            "src": "twicons/Atricia%2C%20the%20Sword%20of%20Nightmares.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Night Lord",
+            "src": "twicons/Wings%20of%20Night%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 537,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Duskblade",
+            "src": "twicons/Duskblade.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Annihilation",
+            "src": "twicons/Eye%20of%20Annihilation.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Embrace of Death",
+            "src": "twicons/Embrace%20of%20Death.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 538,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Duskblade",
+            "src": "twicons/Duskblade.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Madness of Old Gods",
+            "src": "twicons/Madness%20of%20Old%20Gods.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Herald of the Void",
+            "src": "twicons/Herald%20of%20the%20Void.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Embrace of Death",
+            "src": "twicons/Embrace%20of%20Death.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
