@@ -1,0 +1,243 @@
+{
+  "class": "Berserker",
+  "createdBy": "Mizu",
+  "publishedAt": "2026-05-08T23:49:20.561Z",
+  "rows": [
+    {
+      "id": 88,
+      "name": "Minor",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Anger",
+            "src": "twicons/Anger.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Archangel Halo",
+            "src": "twicons/Archangel%20Halo.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Flameshard Armor",
+            "src": "twicons/Flameshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Corrupt Flame",
+            "src": "twicons/Cape%20of%20Corrupt%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Nightmare",
+            "src": "twicons/Ring%20of%20Nightmare.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 95,
+      "name": "Mid",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Oblivion",
+            "src": "twicons/Oblivion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Frostshard Armor",
+            "src": "twicons/Frostshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Strike",
+            "src": "twicons/Ring%20of%20Strike.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 91,
+      "name": "Late",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Chaos",
+            "src": "twicons/Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Radiance of the One",
+            "src": "twicons/Radiance%20of%20the%20One.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Voidshard Armor",
+            "src": "twicons/Voidshard%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 92,
+      "name": "Duke-AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Visage of Vengeance",
+            "src": "twicons/Visage%20of%20Vengeance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 93,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Blazing Sun",
+            "src": "twicons/Blazing%20Sun.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Diabolic Mask",
+            "src": "twicons/Diabolic%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.jpg"
+          },
+          {
+            "name": "Dread Incarnate",
+            "src": "twicons/Dread%20Incarnate.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          },
+          {
+            "name": "Embrace of Death",
+            "src": "twicons/Embrace%20of%20Death.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          },
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 100,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soulrender",
+            "src": "twicons/Soulrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          },
+          {
+            "name": "Righteous Flame",
+            "src": "twicons/Righteous%20Flame.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Dawn",
+            "src": "twicons/Plates%20of%20Dawn.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          },
+          {
+            "name": "Wings of Descender",
+            "src": "twicons/Wings%20of%20Descender.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Godslayer Signet",
+            "src": "twicons/Godslayer%20Signet.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
