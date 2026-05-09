@@ -1,0 +1,359 @@
+{
+  "class": "Thunderer",
+  "createdBy": "manta._.1",
+  "publishedAt": "2026-05-09T13:12:03.093Z",
+  "rows": [
+    {
+      "id": 546,
+      "name": "early game",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Asmodeus, the Archdevil's Greatsword",
+            "src": "twicons/Asmodeus%2C%20the%20Archdevil's%20Greatsword.jpg"
+          },
+          {
+            "name": "Bahanar, the True Sword of Illusion",
+            "src": "twicons/Bahanar%2C%20the%20True%20Sword%20of%20Illusion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Archangel Halo",
+            "src": "twicons/Archangel%20Halo.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Tunic of the Wraith",
+            "src": "twicons/Tunic%20of%20the%20Wraith.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Corrupt Flame",
+            "src": "twicons/Cape%20of%20Corrupt%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Nightmare",
+            "src": "twicons/Ring%20of%20Nightmare.jpg"
+          },
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 547,
+      "name": "SD-DF",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Eternity.jpg"
+          },
+          {
+            "name": "Meacronacer, the Sword of Thousand Illusions",
+            "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Lightning",
+            "src": "twicons/Plates%20of%20Lightning.jpg"
+          },
+          {
+            "name": "Grandine, the Plates of Wraith",
+            "src": "twicons/Grandine%2C%20the%20Plates%20of%20Wraith.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          },
+          {
+            "name": "Guardian of the Skies",
+            "src": "twicons/Guardian%20of%20the%20Skies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Strike",
+            "src": "twicons/Ring%20of%20Strike.jpg"
+          },
+          {
+            "name": "Latea, the Ring of Overlord",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Overlord.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 548,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Eternity.jpg"
+          },
+          {
+            "name": "Meacronacer, the Sword of Thousand Illusions",
+            "src": "twicons/Meacronacer%2C%20the%20Sword%20of%20Thousand%20Illusions.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          },
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Plates of Lightning",
+            "src": "twicons/Plates%20of%20Lightning.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          },
+          {
+            "name": "Ruler of the Skies",
+            "src": "twicons/Ruler%20of%20the%20Skies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          },
+          {
+            "name": "Heaven's Fist",
+            "src": "twicons/Heaven's%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 549,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Astra, the Sword of Moonlight",
+            "src": "twicons/Astra%2C%20the%20Sword%20of%20Moonlight.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Radiance of the One",
+            "src": "twicons/Radiance%20of%20the%20One.jpg"
+          },
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Plates of Lightning",
+            "src": "twicons/Plates%20of%20Lightning.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          },
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 550,
+      "name": "Duke-Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Visage of Vengeance",
+            "src": "twicons/Visage%20of%20Vengeance.jpg"
+          },
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Sanguine Fury",
+            "src": "twicons/Plates%20of%20Sanguine%20Fury.jpg"
+          },
+          {
+            "name": "Exitium, the Armor of Ruin",
+            "src": "twicons/Exitium%2C%20the%20Armor%20of%20Ruin.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          },
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 551,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Shadow Waltz",
+            "src": "twicons/Shadow%20Waltz.jpg"
+          },
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Diabolic Mask",
+            "src": "twicons/Diabolic%20Mask.jpg"
+          },
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Sanguine Fury",
+            "src": "twicons/Plates%20of%20Sanguine%20Fury.jpg"
+          },
+          {
+            "name": "Exitium, the Armor of Ruin",
+            "src": "twicons/Exitium%2C%20the%20Armor%20of%20Ruin.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          },
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 552,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Shadow Waltz",
+            "src": "twicons/Shadow%20Waltz.jpg"
+          },
+          {
+            "name": "Lightbringer",
+            "src": "twicons/Lightbringer.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Divine Blood",
+            "src": "twicons/Plates%20of%20Divine%20Blood.jpg"
+          },
+          {
+            "name": "Exsolus, the Armor of the Absolute",
+            "src": "twicons/Exsolus%2C%20the%20Armor%20of%20the%20Absolute.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Godslayer Signet",
+            "src": "twicons/Godslayer%20Signet.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
