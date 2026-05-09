@@ -1,5 +1,6 @@
 [
   "Assassin.Elu.json",
+  "Berserker.Mizu.json",
   "Blood_Weaver.IDK_Fear.json",
   "Crusader.Nana.json",
   "Crusader.ShinHye.json",
@@ -22,5 +23,6 @@
   "Sword_Saint.Ruzai.json",
   "Swordsman.Elu.json",
   "Water_Mage.Elu.json",
-  "Wind_Mage.Cuanhham.json"
+  "Wind_Mage.Cuanhham.json",
+  "Witch.mizu.json"
 ]
