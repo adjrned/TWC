@@ -1,0 +1,259 @@
+{
+  "class": "Martial Artist",
+  "createdBy": "Miranda",
+  "publishedAt": "2026-05-12T02:17:39.427Z",
+  "rows": [
+    {
+      "id": 108,
+      "name": "Minor",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Asmodeus, the Archdevil's Greatsword",
+            "src": "twicons/Asmodeus%2C%20the%20Archdevil's%20Greatsword.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Archangel Halo",
+            "src": "twicons/Archangel%20Halo.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Guardian Vest",
+            "src": "twicons/Guardian%20Vest.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Corrupt Flame",
+            "src": "twicons/Cape%20of%20Corrupt%20Flame.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Purefrost Gauntlet",
+            "src": "twicons/Purefrost%20Gauntlet.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 109,
+      "name": "Shadow Dragon",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Eternity.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Grandine, the Plates of Wraith",
+            "src": "twicons/Grandine%2C%20the%20Plates%20of%20Wraith.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Purefrost Gauntlet",
+            "src": "twicons/Purefrost%20Gauntlet.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 110,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Eternity",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Eternity.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Halo of Judgment",
+            "src": "twicons/Halo%20of%20Judgment.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cloak of the Fallen Shadows",
+            "src": "twicons/Cloak%20of%20the%20Fallen%20Shadows.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heaven's Fist",
+            "src": "twicons/Heaven's%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 111,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20Sword%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Radiance of the One",
+            "src": "twicons/Radiance%20of%20the%20One.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 112,
+      "name": "Duke-AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Espishu, the True Sword of Chaos",
+            "src": "twicons/Espishu%2C%20the%20True%20Sword%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Visage of Vengeance",
+            "src": "twicons/Visage%20of%20Vengeance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Cape of Deep Abyss",
+            "src": "twicons/Cape%20of%20Deep%20Abyss.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Demonic Fist",
+            "src": "twicons/Demonic%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 113,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Shadow Waltz",
+            "src": "twicons/Shadow%20Waltz.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Diabolic Mask",
+            "src": "twicons/Diabolic%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Exitium, the Armor of Ruin",
+            "src": "twicons/Exitium%2C%20the%20Armor%20of%20Ruin.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of the Void",
+            "src": "twicons/Wings%20of%20the%20Void.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 114,
+      "name": "Kamael",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heart of Lion",
+            "src": "twicons/Heart%20of%20Lion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Truth",
+            "src": "twicons/Eye%20of%20Truth.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Exsolus, the Armor of the Absolute",
+            "src": "twicons/Exsolus%2C%20the%20Armor%20of%20the%20Absolute.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Descender",
+            "src": "twicons/Wings%20of%20Descender.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Soul Fist",
+            "src": "twicons/Soul%20Fist.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
