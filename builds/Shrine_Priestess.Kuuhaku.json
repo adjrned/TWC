@@ -1,0 +1,363 @@
+{
+  "class": "Shrine Priestess",
+  "createdBy": "Kuuhaku",
+  "publishedAt": "2026-05-12T03:03:03.217Z",
+  "rows": [
+    {
+      "id": 132,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Twin Snow",
+            "src": "twicons/Twin%20Snow.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Fervor",
+            "src": "twicons/Crown%20of%20Fervor.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Frozen Robe",
+            "src": "twicons/Frozen%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Fairy Wings",
+            "src": "twicons/Fairy%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 133,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Triple Snow",
+            "src": "twicons/Triple%20Snow.jpg"
+          },
+          {
+            "name": "Ethenos, the Staff of Space",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Space.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Frost Fairy Wings",
+            "src": "twicons/Frost%20Fairy%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 134,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the True Staff of Space",
+            "src": "twicons/Ethenos%2C%20the%20True%20Staff%20of%20Space.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 135,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the Staff of Chaos",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Frost Lord",
+            "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          },
+          {
+            "name": "Ring of Frozen Soul",
+            "src": "twicons/Ring%20of%20Frozen%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 136,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Frost Lord",
+            "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 137,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 138,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 139,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Endless Snow",
+            "src": "twicons/Endless%20Snow.jpg"
+          },
+          {
+            "name": "Grim Scythe",
+            "src": "twicons/Grim%20Scythe.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Star of Apotheosis",
+            "src": "twicons/Star%20of%20Apotheosis.jpg"
+          },
+          {
+            "name": "Ring of Noble Soul",
+            "src": "twicons/Ring%20of%20Noble%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 140,
+      "name": "Kamael",
+      "slots": {
+        "weapon": [
+          {
+            "name": "PrimalShard",
+            "src": "twicons/PrimalShard.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "The Coil of Ouroboros",
+            "src": "twicons/The%20Coil%20of%20Ouroboros.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
