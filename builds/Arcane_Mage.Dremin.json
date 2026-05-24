@@ -1,0 +1,375 @@
+{
+  "class": "Arcane Mage",
+  "createdBy": "Dremin",
+  "publishedAt": "2026-05-24T21:02:24.407Z",
+  "rows": [
+    {
+      "id": 88,
+      "name": "Early",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Belius, the Archdevil's Staff",
+            "src": "twicons/Belius%2C%20the%20Archdevil's%20Staff.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Fervor",
+            "src": "twicons/Crown%20of%20Fervor.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Frozen Robe",
+            "src": "twicons/Frozen%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Fairy Wings",
+            "src": "twicons/Fairy%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Ring of Intrusion",
+            "src": "twicons/Ring%20of%20Intrusion.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 89,
+      "name": "SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the Staff of Space",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Space.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Greater Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Greater%20Source%20of%20Mana.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Frost Fairy Wings",
+            "src": "twicons/Frost%20Fairy%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          },
+          {
+            "name": "Ring of Time",
+            "src": "twicons/Ring%20of%20Time.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 90,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the True Staff of Space",
+            "src": "twicons/Ethenos%2C%20the%20True%20Staff%20of%20Space.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Greater Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Greater%20Source%20of%20Mana.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          },
+          {
+            "name": "Frost Fairy Wings",
+            "src": "twicons/Frost%20Fairy%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 91,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the Staff of Chaos",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Frost Lord",
+            "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 92,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the Staff of Chaos",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          },
+          {
+            "name": "Sanguis, the Robe of Sacrifice",
+            "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Frost Lord",
+            "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 93,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the Staff of Chaos",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          },
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          },
+          {
+            "name": "Sanguis, the Robe of Sacrifice",
+            "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          },
+          {
+            "name": "Wings of Frost Lord",
+            "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 94,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ethenos, the Staff of Chaos",
+            "src": "twicons/Ethenos%2C%20the%20Staff%20of%20Chaos.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          },
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          },
+          {
+            "name": "Wings of Frost Lord",
+            "src": "twicons/Wings%20of%20Frost%20Lord.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 95,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Grim Scythe",
+            "src": "twicons/Grim%20Scythe.jpg"
+          },
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Forbidden Truth",
+            "src": "twicons/Prophetia%2C%20the%20Forbidden%20Truth.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Breath",
+            "src": "twicons/Soul%20Breath.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Chains of Torment",
+            "src": "twicons/Chains%20of%20Torment.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 96,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "PrimalShard",
+            "src": "twicons/PrimalShard.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Animus, the Robe of Souls",
+            "src": "twicons/Animus%2C%20the%20Robe%20of%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Breath",
+            "src": "twicons/Soul%20Breath.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.jpg"
+          },
+          {
+            "name": "Chains of Torment",
+            "src": "twicons/Chains%20of%20Torment.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
