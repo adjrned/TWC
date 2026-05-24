@@ -1,10 +1,10 @@
 {
   "class": "Arcane Mage",
   "createdBy": "Zoom",
-  "publishedAt": "2026-05-24T16:08:42.488Z",
+  "publishedAt": "2026-05-24T20:13:38.282Z",
   "rows": [
     {
-      "id": 79,
+      "id": 1192,
       "name": "Minor-Coin",
       "slots": {
         "weapon": [
@@ -40,7 +40,7 @@
       }
     },
     {
-      "id": 80,
+      "id": 1193,
       "name": "SK-SD",
       "slots": {
         "weapon": [
@@ -76,7 +76,7 @@
       }
     },
     {
-      "id": 81,
+      "id": 1194,
       "name": "Tower",
       "slots": {
         "weapon": [
@@ -112,7 +112,7 @@
       }
     },
     {
-      "id": 82,
+      "id": 1195,
       "name": "Agareth",
       "slots": {
         "weapon": [
@@ -148,7 +148,7 @@
       }
     },
     {
-      "id": 83,
+      "id": 1196,
       "name": "Duke",
       "slots": {
         "weapon": [
@@ -184,7 +184,7 @@
       }
     },
     {
-      "id": 84,
+      "id": 1197,
       "name": "Gaia",
       "slots": {
         "weapon": [
@@ -220,7 +220,7 @@
       }
     },
     {
-      "id": 85,
+      "id": 1198,
       "name": "AC",
       "slots": {
         "weapon": [
@@ -256,7 +256,7 @@
       }
     },
     {
-      "id": 86,
+      "id": 1199,
       "name": "Styrix",
       "slots": {
         "weapon": [
@@ -292,13 +292,17 @@
       }
     },
     {
-      "id": 87,
+      "id": 1200,
       "name": "Kam",
       "slots": {
         "weapon": [
           {
             "name": "Soulrender",
             "src": "twicons/Soulrender.jpg"
+          },
+          {
+            "name": "PrimalShard",
+            "src": "twicons/PrimalShard.jpg"
           }
         ],
         "helm": [
