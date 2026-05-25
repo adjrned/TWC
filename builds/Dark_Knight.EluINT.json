@@ -1,0 +1,403 @@
+{
+  "class": "Dark Knight",
+  "createdBy": "Elu",
+  "publishedAt": "2026-05-25T03:15:06.723Z",
+  "rows": [
+    {
+      "id": 1011,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Staff of Madness",
+            "src": "twicons/Staff%20of%20Madness.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Void Eye",
+            "src": "twicons/Void%20Eye.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Purelight Armor",
+            "src": "twicons/Purelight%20Armor.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Purification",
+            "src": "twicons/Wings%20of%20Purification.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Oath of Courage",
+            "src": "twicons/Oath%20of%20Courage.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1012,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Hell Riser",
+            "src": "twicons/Hell%20Riser.jpg"
+          },
+          {
+            "name": "Staff of Abyss",
+            "src": "twicons/Staff%20of%20Abyss.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Void Eye",
+            "src": "twicons/Void%20Eye.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Requiem, the Armor of Lamentation",
+            "src": "twicons/Requiem%2C%20the%20Armor%20of%20Lamentation.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul of the Dead",
+            "src": "twicons/Soul%20of%20the%20Dead.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ispion, the Runed Ring",
+            "src": "twicons/Ispion%2C%20the%20Runed%20Ring.jpg"
+          },
+          {
+            "name": "Ring of Composure",
+            "src": "twicons/Ring%20of%20Composure.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1013,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul of Abyss",
+            "src": "twicons/Soul%20of%20Abyss.jpg"
+          },
+          {
+            "name": "Hell Riser",
+            "src": "twicons/Hell%20Riser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hades, the Armor of Despair",
+            "src": "twicons/Hades%2C%20the%20Armor%20of%20Despair.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ispion, the Runed Ring",
+            "src": "twicons/Ispion%2C%20the%20Runed%20Ring.jpg"
+          },
+          {
+            "name": "Ring of Composure",
+            "src": "twicons/Ring%20of%20Composure.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1020,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          },
+          {
+            "name": "Hood of Apocalypse",
+            "src": "twicons/Hood%20of%20Apocalypse.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hades, the Armor of Despair",
+            "src": "twicons/Hades%2C%20the%20Armor%20of%20Despair.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1015,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Guardian Angel",
+            "src": "twicons/Guardian%20Angel.jpg"
+          },
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          },
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1016,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Gate of Abyss",
+            "src": "twicons/Gate%20of%20Abyss.jpg"
+          },
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Flame Lord",
+            "src": "twicons/Eye%20of%20the%20Flame%20Lord.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          },
+          {
+            "name": "Frost Herald's Garment",
+            "src": "twicons/Frost%20Herald's%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Guardian Angel",
+            "src": "twicons/Guardian%20Angel.jpg"
+          },
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          },
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1017,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Gate of Abyss",
+            "src": "twicons/Gate%20of%20Abyss.jpg"
+          },
+          {
+            "name": "Armageddon",
+            "src": "twicons/Armageddon.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          },
+          {
+            "name": "Frost Herald's Garment",
+            "src": "twicons/Frost%20Herald's%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          },
+          {
+            "name": "Blood Devourer",
+            "src": "twicons/Blood%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          },
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1018,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Echoes of the Void",
+            "src": "twicons/Echoes%20of%20the%20Void.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Twisted Souls",
+            "src": "twicons/Cage%20of%20Twisted%20Souls.jpg"
+          },
+          {
+            "name": "Frost Herald's Garment",
+            "src": "twicons/Frost%20Herald's%20Garment.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          },
+          {
+            "name": "Blood Devourer",
+            "src": "twicons/Blood%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Despair",
+            "src": "twicons/Ring%20of%20Despair.jpg"
+          },
+          {
+            "name": "Divine Rose",
+            "src": "twicons/Divine%20Rose.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1019,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Prelude to Demise",
+            "src": "twicons/Prelude%20to%20Demise.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Echoes of the Void",
+            "src": "twicons/Echoes%20of%20the%20Void.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Cage of Shadow Fiend",
+            "src": "twicons/Cage%20of%20Shadow%20Fiend.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Void Seraph",
+            "src": "twicons/Void%20Seraph.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Dark Lotus",
+            "src": "twicons/Dark%20Lotus.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
