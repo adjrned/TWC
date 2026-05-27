@@ -1,0 +1,331 @@
+{
+  "class": "Warlock",
+  "createdBy": "Zoom",
+  "publishedAt": "2026-05-27T16:03:48.586Z",
+  "rows": [
+    {
+      "id": 126,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Staff of Contagion",
+            "src": "twicons/Staff%20of%20Contagion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Source%20of%20Mana.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Frozen Robe",
+            "src": "twicons/Frozen%20Robe.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Drinker",
+            "src": "twicons/Soul%20Drinker.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Deep Darkness",
+            "src": "twicons/Ring%20of%20Deep%20Darkness.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 127,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Parasitic Staff",
+            "src": "twicons/Parasitic%20Staff.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Greater Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Greater%20Source%20of%20Mana.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Eater",
+            "src": "twicons/Soul%20Eater.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Grimoire of Darkness",
+            "src": "twicons/Grimoire%20of%20Darkness.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 128,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Staff of Plague",
+            "src": "twicons/Staff%20of%20Plague.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Greater Source of Mana",
+            "src": "twicons/Prophetia%2C%20the%20Greater%20Source%20of%20Mana.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Medea, the Robe of the Witch",
+            "src": "twicons/Medea%2C%20the%20Robe%20of%20the%20Witch.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Eater",
+            "src": "twicons/Soul%20Eater.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Mark of Sin",
+            "src": "twicons/Mark%20of%20Sin.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 129,
+      "name": "Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Staff of Plague",
+            "src": "twicons/Staff%20of%20Plague.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Origin of Knowledge",
+            "src": "twicons/Prophetia%2C%20the%20Origin%20of%20Knowledge.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Thanatos, the Robe of Hell",
+            "src": "twicons/Thanatos%2C%20the%20Robe%20of%20Hell.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Devourer",
+            "src": "twicons/Soul%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Seed of Malice",
+            "src": "twicons/Seed%20of%20Malice.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 130,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crescendo of Madness",
+            "src": "twicons/Crescendo%20of%20Madness.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Sanguis, the Robe of Sacrifice",
+            "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Devourer",
+            "src": "twicons/Soul%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Seed of Malice",
+            "src": "twicons/Seed%20of%20Malice.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 131,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crescendo of Madness",
+            "src": "twicons/Crescendo%20of%20Madness.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Sanguis, the Robe of Sacrifice",
+            "src": "twicons/Sanguis%2C%20the%20Robe%20of%20Sacrifice.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soul Devourer",
+            "src": "twicons/Soul%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Seed of Malice",
+            "src": "twicons/Seed%20of%20Malice.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 132,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heartrender",
+            "src": "twicons/Heartrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crescendo of Madness",
+            "src": "twicons/Crescendo%20of%20Madness.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Blood Devourer",
+            "src": "twicons/Blood%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Seed of Malice",
+            "src": "twicons/Seed%20of%20Malice.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 133,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul Torch",
+            "src": "twicons/Soul%20Torch.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Prophetia, the Forbidden Truth",
+            "src": "twicons/Prophetia%2C%20the%20Forbidden%20Truth.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Call of Gehenna",
+            "src": "twicons/Call%20of%20Gehenna.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Blood Devourer",
+            "src": "twicons/Blood%20Devourer.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Chains of Torment",
+            "src": "twicons/Chains%20of%20Torment.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 134,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soulrender",
+            "src": "twicons/Soulrender.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Animus, the Robe of Souls",
+            "src": "twicons/Animus%2C%20the%20Robe%20of%20Souls.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Void Seraph",
+            "src": "twicons/Void%20Seraph.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Chains of Torment",
+            "src": "twicons/Chains%20of%20Torment.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
