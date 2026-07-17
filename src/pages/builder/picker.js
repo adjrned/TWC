@@ -2,7 +2,6 @@ import { state } from '../../state.js';
 import { LABELS, COLS, ROSTER } from '../../constants.js';
 import { iconLibrary } from '../../data/icons.js';
 import { showToast } from '../../ui/toast.js';
-import { esc } from '../../ui/escape.js';
 import { setSlotItem } from './slots.js';
 import { t } from '../../i18n.js';
 
@@ -12,6 +11,7 @@ let rendered = 0;
 let observer = null;
 let activeCategory = 'all';
 let itemIcons = [];
+let searchIndex = [];
 let itemsBySlot = {};
 let initialized = false;
 
@@ -24,16 +24,22 @@ const CLASS_PATTERNS = (() => {
 })();
 
 function isClassIcon(name) {
-  return CLASS_PATTERNS.some(p =>
-    name.startsWith(p) && (name.length === p.length || name[p.length] === '_' || /^[A-Z]/.test(name.slice(p.length)))
-  );
+  for (let i = 0; i < CLASS_PATTERNS.length; i++) {
+    const p = CLASS_PATTERNS[i];
+    if (name.startsWith(p) && (name.length === p.length || name[p.length] === '_' || (name.charCodeAt(p.length) >= 65 && name.charCodeAt(p.length) <= 90))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 async function initItemIcons() {
   if (initialized) return;
   itemIcons = iconLibrary.filter(icon => !isClassIcon(icon.name));
 
-  // Load item data for slot categorization
+  // Pre-compute lowercase names for fast searching
+  searchIndex = itemIcons.map(icon => icon.name.toLowerCase());
+
   try {
     const r = await fetch('data/items.json');
     if (r.ok) {
@@ -123,25 +129,39 @@ function showSearchPrompt() {
 }
 
 function getFilteredIcons(query, respectCategory) {
-  let pool = itemIcons;
+  let indices;
 
-  // Only filter by category when there's no search query
   if (respectCategory && activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
     const slotNames = new Set(itemsBySlot[activeCategory].map(n => n.toLowerCase()));
-    pool = pool.filter(icon => slotNames.has(icon.name.toLowerCase()));
+    indices = [];
+    for (let i = 0; i < itemIcons.length; i++) {
+      if (slotNames.has(searchIndex[i])) indices.push(i);
+    }
+  } else {
+    indices = null;
   }
 
   if (query) {
-    pool = pool.filter(icon => icon.name.toLowerCase().includes(query));
+    const result = [];
+    if (indices) {
+      for (let i = 0; i < indices.length; i++) {
+        if (searchIndex[indices[i]].includes(query)) result.push(itemIcons[indices[i]]);
+      }
+    } else {
+      for (let i = 0; i < searchIndex.length; i++) {
+        if (searchIndex[i].includes(query)) result.push(itemIcons[i]);
+      }
+    }
+    return result;
   }
 
-  return pool;
+  if (indices) return indices.map(i => itemIcons[i]);
+  return itemIcons;
 }
 
 function applyFilter() {
   const q = document.getElementById('pickerSearch').value.toLowerCase();
 
-  // When searching, always search ALL items regardless of active tab
   if (q) {
     filtered = getFilteredIcons(q, false);
   } else if (activeCategory === 'all') {
@@ -150,7 +170,6 @@ function applyFilter() {
   } else if (itemsBySlot[activeCategory]?.length) {
     filtered = getFilteredIcons('', true);
   } else {
-    // No item data for this category — show prompt
     const catIcon = activeCategory === 'weapon' ? '⚔️' : activeCategory === 'helm' ? '⛑️' : activeCategory === 'body' ? '🥋' : activeCategory === 'wings' ? '🪽' : '💍';
     const grid = document.getElementById('pickerGrid');
     grid.innerHTML = `<div class="picker-empty">
@@ -172,11 +191,22 @@ function applyFilter() {
     return;
   }
 
+  // Event delegation — single listener on grid
+  grid.onclick = handleGridClick;
+
   renderBatch(grid);
   setupInfiniteScroll(grid);
   document.getElementById('pickerCount').textContent = filtered.length <= BATCH_SIZE
     ? `${filtered.length} ${t('picker.items')}`
     : `${rendered} / ${filtered.length}`;
+}
+
+function handleGridClick(e) {
+  const item = e.target.closest('.picker-item');
+  if (!item) return;
+  const idx = parseInt(item.dataset.idx, 10);
+  if (isNaN(idx) || !filtered[idx]) return;
+  pickIcon(filtered[idx]);
 }
 
 export function buildPickerGrid() {
@@ -185,11 +215,12 @@ export function buildPickerGrid() {
 
 function renderBatch(grid) {
   const end = Math.min(rendered + BATCH_SIZE, filtered.length);
+  const frag = document.createDocumentFragment();
   for (let i = rendered; i < end; i++) {
     const icon = filtered[i];
     const div = document.createElement('div');
     div.className = 'picker-item';
-    div.dataset.name = icon.name.toLowerCase();
+    div.dataset.idx = i;
     const img = document.createElement('img');
     img.src = icon.src;
     img.alt = icon.name;
@@ -201,9 +232,9 @@ function renderBatch(grid) {
     label.textContent = icon.name;
     div.appendChild(img);
     div.appendChild(label);
-    div.addEventListener('click', () => pickIcon(icon));
-    grid.appendChild(div);
+    frag.appendChild(div);
   }
+  grid.appendChild(frag);
   rendered = end;
 }
 
@@ -233,7 +264,7 @@ function setupInfiniteScroll(grid) {
 let searchTimeout = null;
 export function filterPicker() {
   clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => applyFilter(), 150);
+  searchTimeout = setTimeout(() => applyFilter(), 50);
 }
 
 export function pickIcon(icon) {
