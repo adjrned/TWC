@@ -14,6 +14,7 @@ let activeCategory = 'all';
 let itemIcons = [];
 let searchIndex = [];
 let localizedSearchIndex = [];
+let cachedLocale = null;
 let itemsBySlot = {};
 let initialized = false;
 
@@ -65,6 +66,8 @@ async function initItemIcons() {
 
 function rebuildLocalizedIndex() {
   const locale = getLocale();
+  if (cachedLocale === locale && localizedSearchIndex.length) return;
+  cachedLocale = locale;
   localizedSearchIndex = buildLocalizedSearchIndex(itemIcons, locale);
 }
 
@@ -78,6 +81,7 @@ export async function openPicker(rowId, col, idx) {
   rebuildLocalizedIndex();
 
   const pill = document.getElementById('pickerModePill');
+
   if (idx === 1) { pill.textContent = 'ALT'; pill.className = 'picker-mode-pill mode-alt'; }
   else { pill.textContent = 'PRIMARY'; pill.className = 'picker-mode-pill mode-primary'; }
 
@@ -93,6 +97,8 @@ export async function openPicker(rowId, col, idx) {
   setTimeout(() => document.getElementById('pickerSearch').focus(), 50);
 }
 
+let tabsBuilt = false;
+
 function buildCategoryTabs() {
   let tabs = document.getElementById('pickerTabs');
   if (!tabs) {
@@ -103,32 +109,37 @@ function buildCategoryTabs() {
     header.parentNode.insertBefore(tabs, header.nextSibling);
   }
 
-  const categories = [
-    { key: 'all', label: t('picker.allItems'), icon: '📦' },
-    { key: 'weapon', label: t('col.weapon'), icon: '⚔️' },
-    { key: 'helm', label: t('col.helm'), icon: '⛑️' },
-    { key: 'body', label: t('col.body'), icon: '🥋' },
-    { key: 'wings', label: t('col.wings'), icon: '🪽' },
-    { key: 'accessory', label: t('col.accessory'), icon: '💍' },
-  ];
+  if (!tabsBuilt || cachedLocale !== getLocale()) {
+    const categories = [
+      { key: 'all', label: t('picker.allItems'), icon: '📦' },
+      { key: 'weapon', label: t('col.weapon'), icon: '⚔️' },
+      { key: 'helm', label: t('col.helm'), icon: '⛑️' },
+      { key: 'body', label: t('col.body'), icon: '🥋' },
+      { key: 'wings', label: t('col.wings'), icon: '🪽' },
+      { key: 'accessory', label: t('col.accessory'), icon: '💍' },
+    ];
 
-  tabs.innerHTML = categories.map(cat => {
-    const count = cat.key === 'all' ? '' : (itemsBySlot[cat.key]?.length || '');
-    return `<button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">
-      <span class="picker-tab-icon">${cat.icon}</span>
-      ${cat.label}
-      ${count ? `<span class="picker-tab-count">${count}</span>` : ''}
-    </button>`;
-  }).join('');
+    tabs.innerHTML = categories.map(cat => {
+      const count = cat.key === 'all' ? '' : (itemsBySlot[cat.key]?.length || '');
+      return `<button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">
+        <span class="picker-tab-icon">${cat.icon}</span>
+        ${cat.label}
+        ${count ? `<span class="picker-tab-count">${count}</span>` : ''}
+      </button>`;
+    }).join('');
 
-  tabs.querySelectorAll('.picker-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
+    tabs.onclick = (e) => {
+      const btn = e.target.closest('.picker-tab');
+      if (!btn) return;
       activeCategory = btn.dataset.cat;
       tabs.querySelectorAll('.picker-tab').forEach(b => b.classList.toggle('active', b === btn));
       document.getElementById('pickerSearch').value = '';
       applyFilter();
-    });
-  });
+    };
+    tabsBuilt = true;
+  } else {
+    tabs.querySelectorAll('.picker-tab').forEach(b => b.classList.toggle('active', b.dataset.cat === activeCategory));
+  }
 }
 
 function showSearchPrompt() {
