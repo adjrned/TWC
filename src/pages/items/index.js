@@ -1,4 +1,5 @@
 import { esc } from '../../ui/escape.js';
+import { t, getItemName } from '../../i18n.js';
 
 let itemData = null;
 let bossData = null;
@@ -50,8 +51,8 @@ function renderItemList(items, query) {
 
   return `
     <div class="page-header">
-      <h1>Item Repository</h1>
-      <p class="page-subtitle">Full item database — stats, recipes, and drop sources</p>
+      <h1>${t('items.title')}</h1>
+      <p class="page-subtitle">${t('items.subtitle')}</p>
     </div>
 
     <div class="item-filters">

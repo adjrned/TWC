@@ -200,7 +200,7 @@ export function getItemName(item) {
 export function getAvailableLocales() {
   return [
     { code: 'en', label: 'English', flag: 'EN' },
-    { code: 'ko', label: '한국어', flag: 'KO' },
-    { code: 'zh', label: '中文', flag: 'ZH' },
+    { code: 'ko', label: '한국어', flag: 'KR' },
+    { code: 'zh', label: '中文', flag: 'CN' },
   ];
 }

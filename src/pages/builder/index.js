@@ -17,7 +17,7 @@ let docKeyHandler = null;
 
 export async function initBuilder(ctx) {
   const app = document.getElementById('app');
-  app.innerHTML = builderHTML;
+  app.innerHTML = builderHTML();
 
   await buildClassSelect();
   await loadIconLibrary();

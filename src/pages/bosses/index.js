@@ -1,5 +1,6 @@
 import { esc } from '../../ui/escape.js';
 import { navigate } from '../../router.js';
+import { t } from '../../i18n.js';
 
 let bossData = null;
 
@@ -16,8 +17,8 @@ async function loadBossData() {
 function renderBossList(bosses) {
   return `
     <div class="page-header">
-      <h1>Boss Guides</h1>
-      <p class="page-subtitle">Strategies, phases, and drop tables for every boss</p>
+      <h1>${t('bosses.title')}</h1>
+      <p class="page-subtitle">${t('bosses.subtitle')}</p>
     </div>
     <div class="boss-grid">
       ${bosses.map(boss => `

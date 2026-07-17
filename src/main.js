@@ -8,7 +8,27 @@ import { registerRoute, initRouter } from './router.js';
 import { initBuilder } from './pages/builder/index.js';
 import { getLocale, setLocale } from './i18n.js';
 
-// Locale switcher
+import { t } from './i18n.js';
+
+function updateNavText() {
+  const links = document.querySelectorAll('.sidebar .nav-link');
+  const labels = ['nav.builder', 'nav.items', 'nav.bosses'];
+  links.forEach((link, i) => {
+    const textNodes = [...link.childNodes].filter(n => n.nodeType === 3);
+    textNodes.forEach(n => { if (n.textContent.trim()) n.textContent = '\n        ' + t(labels[i]) + '\n        '; });
+  });
+
+  const mobileLinks = document.querySelectorAll('.bottom-nav .nav-link');
+  const shortLabels = ['nav.builder.short', 'nav.items.short', 'nav.bosses.short'];
+  mobileLinks.forEach((link, i) => {
+    const textNodes = [...link.childNodes].filter(n => n.nodeType === 3);
+    textNodes.forEach(n => { if (n.textContent.trim()) n.textContent = '\n    ' + t(shortLabels[i]) + '\n  '; });
+  });
+
+  const footer = document.querySelector('.sidebar-footer > p');
+  if (footer) footer.textContent = t('common.madeBy');
+}
+
 function initLocaleSwitcher() {
   const switcher = document.getElementById('localeSwitcher');
   if (!switcher) return;
@@ -18,10 +38,11 @@ function initLocaleSwitcher() {
     btn.addEventListener('click', () => {
       setLocale(btn.dataset.locale);
       switcher.querySelectorAll('.locale-btn').forEach(b => b.classList.toggle('active', b === btn));
-      // Re-navigate to reload current page with new locale
+      updateNavText();
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
   });
+  updateNavText();
 }
 
 initLocaleSwitcher();
