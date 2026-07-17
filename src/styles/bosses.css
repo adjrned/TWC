@@ -602,3 +602,104 @@
     display: none;
   }
 }
+
+/* ── New category additions (Creep / Field / Mid / High) ── */
+
+/* Filter pill — Creep */
+.filter-pill.boss-tier-creep { border-color: rgba(150,150,150,0.3); color: #9a9a9a; }
+.filter-pill.boss-tier-creep.active { background: rgba(150,150,150,0.10); border-color: #9a9a9a; }
+
+/* Filter pill — Field */
+.filter-pill.boss-tier-field { border-color: rgba(134,197,134,0.3); color: #86c586; }
+.filter-pill.boss-tier-field.active { background: rgba(134,197,134,0.10); border-color: #86c586; }
+
+/* Tier badges — Creep & Field */
+.boss-tier-badge.tier-creep  { background: rgba(150,150,150,0.08); color: #9a9a9a; border-color: rgba(150,150,150,0.25); }
+.boss-tier-badge.tier-field  { background: rgba(134,197,134,0.10); color: #86c586; border-color: rgba(134,197,134,0.30); }
+
+/* Type badge */
+.boss-type-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: var(--muted2);
+}
+.boss-type-badge.type-boss     { background: rgba(233,69,96,0.10); color: var(--accent);  border-color: rgba(233,69,96,0.30); }
+.boss-type-badge.type-miniboss { background: rgba(245,158,11,0.10); color: #f59e0b;       border-color: rgba(245,158,11,0.30); }
+.boss-type-badge.type-mob      { background: rgba(150,150,150,0.08); color: #9a9a9a;      border-color: rgba(150,150,150,0.22); }
+.boss-type-badge.type-minion   { background: rgba(96,165,250,0.08); color: var(--rarity-magic); border-color: rgba(96,165,250,0.22); }
+.boss-type-badge.type-mechanic { background: rgba(78,205,196,0.08); color: var(--accent3); border-color: rgba(78,205,196,0.22); }
+
+/* Boss card layout adjustments for new fields */
+.boss-card-info {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+.boss-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.boss-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.boss-level-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.boss-card-location {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  letter-spacing: 0.2px;
+}
+
+/* Stats table */
+.boss-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.boss-stats-table .stat-row:nth-child(odd) {
+  background: rgba(255,255,255,0.02);
+}
+.boss-stats-table .stat-row:hover {
+  background: rgba(255,255,255,0.05);
+}
+.boss-stats-table .stat-label {
+  padding: 9px 16px;
+  color: var(--muted2);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border);
+  width: 45%;
+}
+.boss-stats-table .stat-value {
+  padding: 9px 16px;
+  color: var(--text);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
