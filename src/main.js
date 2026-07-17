@@ -4,6 +4,7 @@ import './styles/builder.css';
 import './styles/layout.css';
 import './styles/bosses.css';
 import './styles/items.css';
+import './styles/heroes.css';
 import { registerRoute, initRouter } from './router.js';
 import { initBuilder } from './pages/builder/index.js';
 import { getLocale, setLocale } from './i18n.js';
@@ -64,6 +65,11 @@ registerRoute('/bosses/:id', async (ctx) => {
 });
 
 registerRoute('/heroes', async (ctx) => {
+  const { initHeroes } = await import('./pages/heroes/index.js');
+  return await initHeroes(ctx);
+});
+
+registerRoute('/heroes/:id', async (ctx) => {
   const { initHeroes } = await import('./pages/heroes/index.js');
   return await initHeroes(ctx);
 });
