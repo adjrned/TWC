@@ -1,0 +1,163 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ── Base palette ── */
+  --bg:      #060610;
+  --bg2:     #0c0c1e;
+  --bg3:     #121228;
+  --card:    rgba(16, 14, 38, 0.65);
+  --card-solid: #10102a;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+
+  /* ── Accent colors ── */
+  --accent:  #e94560;
+  --accent2: #f5a623;
+  --accent3: #4ecdc4;
+  --accent4: #c084fc;
+
+  /* ── Text ── */
+  --text:    #eef0f8;
+  --muted:   #6a6a8a;
+  --muted2:  #9898be;
+
+  /* ── Component tokens ── */
+  --cell:      80px;
+  --glass:     rgba(12, 10, 30, 0.72);
+  --glass-border: rgba(255,255,255,0.08);
+  --blur:      20px;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --shadow:    0 8px 32px rgba(0,0,0,0.55);
+  --shadow-lg: 0 20px 64px rgba(0,0,0,0.75);
+
+  /* ── Glow helpers ── */
+  --glow-accent:  0 0 16px rgba(233,69,96,0.5), 0 0 40px rgba(233,69,96,0.18);
+  --glow-accent2: 0 0 16px rgba(245,166,35,0.5), 0 0 40px rgba(245,166,35,0.18);
+  --glow-accent3: 0 0 16px rgba(78,205,196,0.5), 0 0 40px rgba(78,205,196,0.18);
+  --glow-sm:      0 0 10px rgba(233,69,96,0.4);
+  --glow-purple:  0 0 16px rgba(192,132,252,0.45), 0 0 36px rgba(192,132,252,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Animated gradient mesh ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -30%;
+  width: 160%;
+  height: 160%;
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 18%, rgba(233,69,96,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 65% at 82% 78%, rgba(78,205,196,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 45% at 60% 35%, rgba(192,132,252,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 55% 38% at 28% 80%, rgba(245,166,35,0.05) 0%, transparent 50%);
+  animation: mesh-drift 22s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+/* ── Noise / grain overlay ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  opacity: 0.032;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: overlay;
+}
+
+@keyframes mesh-drift {
+  0%   { transform: translate(0,     0)     scale(1);    }
+  20%  { transform: translate(2%,   -1.5%)  scale(1.02); }
+  40%  { transform: translate(-1.5%, 2%)    scale(1.01); }
+  60%  { transform: translate(1.5%,  1.5%)  scale(0.99); }
+  80%  { transform: translate(-2%,  -1%)    scale(1.01); }
+  100% { transform: translate(0,     0)     scale(1);    }
+}
+
+/* ── Header ── */
+header {
+  padding: 28px 0 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0.75;
+}
+
+.logo-area h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(18px,3.5vw,26px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(233,69,96,0.25);
+}
+.logo-area h1 span {
+  color: var(--accent);
+  text-shadow: var(--glow-sm);
+}
+.logo-area p {
+  font-size: 11px;
+  color: var(--muted2);
+  margin-top: 5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(233,69,96,0.4), rgba(78,205,196,0.28));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(233,69,96,0.65), rgba(78,205,196,0.45));
+  box-shadow: 0 0 6px rgba(233,69,96,0.3);
+}
+
+/* ── Selection color ── */
+::selection {
+  background: rgba(233,69,96,0.28);
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  :root { --cell: 64px; }
+}
