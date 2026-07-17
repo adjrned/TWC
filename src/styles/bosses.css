@@ -70,128 +70,68 @@
   opacity: 1;
 }
 
-/* ── Boss categories ── */
-.boss-category {
-  margin-bottom: 32px;
+/* ── Boss filters ── */
+.boss-filters {
+  margin-bottom: 24px;
 }
-.boss-category-title {
-  font-family: 'Cinzel', serif;
+.boss-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
   font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--accent2);
-  margin-bottom: 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-  text-shadow: 0 0 12px rgba(245,166,35,0.3);
 }
+
+/* Tier filter pill colors */
+.filter-pill.boss-tier-minor { border-color: rgba(176,176,176,0.3); color: #b0b0b0; }
+.filter-pill.boss-tier-minor.active { background: rgba(176,176,176,0.12); border-color: #b0b0b0; }
+.filter-pill.boss-tier-coins { border-color: rgba(96,165,250,0.3); color: var(--rarity-magic); }
+.filter-pill.boss-tier-coins.active { background: rgba(96,165,250,0.12); border-color: var(--rarity-magic); }
+.filter-pill.boss-tier-mids { border-color: rgba(184,160,224,0.35); color: var(--rarity-deltirama); }
+.filter-pill.boss-tier-mids.active { background: rgba(184,160,224,0.15); border-color: var(--rarity-deltirama); }
+.filter-pill.boss-tier-late { border-color: rgba(45,158,110,0.35); color: var(--rarity-neptinos); }
+.filter-pill.boss-tier-late.active { background: rgba(45,158,110,0.15); border-color: var(--rarity-neptinos); }
+.filter-pill.boss-tier-tower { border-color: rgba(78,205,196,0.35); color: var(--rarity-alteia); }
+.filter-pill.boss-tier-tower.active { background: rgba(78,205,196,0.15); border-color: var(--rarity-alteia); }
+.filter-pill.boss-tier-endgame { border-color: rgba(155,89,182,0.35); color: var(--rarity-arcana); }
+.filter-pill.boss-tier-endgame.active { background: rgba(155,89,182,0.15); border-color: var(--rarity-arcana); }
 
 /* ── Boss grid ── */
 .boss-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
 }
 
 .boss-card {
   display: flex;
-  gap: 0;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   text-decoration: none;
   color: var(--text);
-  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
-  overflow: hidden;
-  position: relative;
-  animation: boss-glow-in 0.38s ease both;
 }
-
-/* Tier-colored gradient left overlay */
-.boss-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background: var(--accent2);
-  transition: width 0.28s ease, opacity 0.28s ease;
-  opacity: 0.8;
-  z-index: 2;
-}
-.boss-card::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.07;
-  transition: opacity 0.28s ease;
-}
-
-.boss-card[data-tier="S"]::before { background: linear-gradient(180deg, #f59e0b 0%, #ef4444 100%); }
-.boss-card[data-tier="S"]::after  { background: linear-gradient(90deg, #f59e0b, transparent); }
-.boss-card[data-tier="A"]::before { background: linear-gradient(180deg, #c084fc 0%, #818cf8 100%); }
-.boss-card[data-tier="A"]::after  { background: linear-gradient(90deg, #c084fc, transparent); }
-.boss-card[data-tier="B"]::before { background: linear-gradient(180deg, #60a5fa 0%, #4ecdc4 100%); }
-.boss-card[data-tier="B"]::after  { background: linear-gradient(90deg, #60a5fa, transparent); }
-.boss-card[data-tier="C"]::before { background: linear-gradient(180deg, #4ade80 0%, #4ecdc4 100%); }
-.boss-card[data-tier="C"]::after  { background: linear-gradient(90deg, #4ade80, transparent); }
-
 .boss-card:hover {
-  border-color: rgba(233,69,96,0.55);
-  background: rgba(20,20,48,0.85);
-  transform: translateY(-6px) scale(1.015);
-  box-shadow:
-    0 20px 56px rgba(233,69,96,0.22),
-    0 6px 18px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    0 0 0 1px rgba(233,69,96,0.2);
-}
-.boss-card:hover::before {
-  width: 7px;
-  opacity: 1;
-}
-.boss-card:hover::after {
-  opacity: 0.14;
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.15);
+  box-shadow: var(--shadow);
 }
 
-.boss-card-inner {
-  display: flex;
-  gap: 16px;
-  padding: 18px 18px 18px 22px;
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  z-index: 3;
-}
-
-/* Boss icon with glow ring */
 .boss-card-icon {
-  width: 68px;
-  height: 68px;
-  border-radius: 14px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   background: rgba(255,255,255,0.04);
-  border: 2px solid rgba(233,69,96,0.28);
+  border: 1.5px solid var(--border2);
   overflow: hidden;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: all 0.28s ease;
-  box-shadow: 0 0 0 0 rgba(233,69,96,0);
-}
-.boss-card:hover .boss-card-icon {
-  border-color: rgba(233,69,96,0.7);
-  box-shadow: 0 0 0 3px rgba(233,69,96,0.22), 0 0 24px rgba(233,69,96,0.3);
-  animation: icon-ring-pulse 1.8s ease-in-out infinite;
 }
 .boss-card-icon img {
   width: 115%;
@@ -203,83 +143,41 @@
 .boss-card-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .boss-card-info h3 {
-  font-family: 'Cinzel', serif;
-  font-size: 15px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 7px;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Tier badge — element-style with pulse for high tiers */
+/* Tier badge colors matching item repo */
 .boss-tier-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 10px;
-  background: rgba(245,166,35,0.12);
-  color: var(--accent2);
-  border: 1px solid rgba(245,166,35,0.35);
-  position: relative;
-  transition: all 0.2s ease;
-}
-.boss-tier-badge[data-tier="S"] {
-  background: rgba(245,158,11,0.18);
-  color: #fbbf24;
-  border-color: rgba(245,158,11,0.55);
-  text-shadow: 0 0 10px rgba(245,158,11,0.6);
-  animation: tier-pulse 2.2s ease-in-out infinite;
-}
-.boss-tier-badge[data-tier="A"] {
-  background: rgba(192,132,252,0.15);
-  color: #d8b4fe;
-  border-color: rgba(192,132,252,0.45);
-  text-shadow: 0 0 10px rgba(192,132,252,0.5);
-  animation: tier-pulse 2.8s ease-in-out infinite;
-}
-.boss-tier-badge[data-tier="B"] {
-  background: rgba(96,165,250,0.12);
-  color: #93c5fd;
-  border-color: rgba(96,165,250,0.35);
-}
-.boss-tier-badge[data-tier="C"] {
-  background: rgba(74,222,128,0.08);
-  color: #86efac;
-  border-color: rgba(74,222,128,0.28);
-}
-
-.boss-card-location {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.boss-card-desc {
-  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.05);
   color: var(--muted2);
-  margin-top: 6px;
-  line-height: 1.48;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
+.boss-tier-badge.tier-minor { background: rgba(176,176,176,0.1); color: #b0b0b0; border-color: rgba(176,176,176,0.3); }
+.boss-tier-badge.tier-coins { background: rgba(96,165,250,0.1); color: var(--rarity-magic); border-color: rgba(96,165,250,0.3); }
+.boss-tier-badge.tier-mids { background: rgba(184,160,224,0.12); color: var(--rarity-deltirama); border-color: rgba(184,160,224,0.35); }
+.boss-tier-badge.tier-late { background: rgba(45,158,110,0.12); color: var(--rarity-neptinos); border-color: rgba(45,158,110,0.35); }
+.boss-tier-badge.tier-tower { background: rgba(78,205,196,0.12); color: var(--rarity-alteia); border-color: rgba(78,205,196,0.35); }
+.boss-tier-badge.tier-endgame { background: rgba(155,89,182,0.12); color: var(--rarity-arcana); border-color: rgba(155,89,182,0.35); }
 
-.boss-card-drops {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 10px;
-}
 .drop-preview {
   font-size: 10px;
   padding: 2px 8px;
