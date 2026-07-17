@@ -166,6 +166,17 @@ const STRINGS = {
   }
 };
 
+const ROW_NAMES = {
+  ko: {
+    'Early': '초반', 'SD': 'SD', 'Tower': '탑', 'Aga': '아가',
+    'Duke': '공작', 'Gaia': '가이아', 'AC': 'AC', 'Styrix': '스타릭스', 'Kam': '캄',
+  },
+  zh: {
+    'Early': '前期', 'SD': 'SD', 'Tower': '塔', 'Aga': '阿加',
+    'Duke': '公爵', 'Gaia': '盖亚', 'AC': 'AC', 'Styrix': '斯泰里克斯', 'Kam': '卡姆',
+  }
+};
+
 const CLASS_NAMES = {
   ko: {
     'Berserker': '버서커', 'Blaster': '블래스터', 'Crusader': '크루세이더',
@@ -233,6 +244,26 @@ export function getItemName(item) {
 export function getClassName(name) {
   if (currentLocale === 'en') return name;
   return CLASS_NAMES[currentLocale]?.[name] || name;
+}
+
+export function getRowName(name) {
+  if (currentLocale === 'en') return name;
+  return ROW_NAMES[currentLocale]?.[name] || name;
+}
+
+let itemTranslations = { ko: {}, zh: {} };
+
+export function loadItemTranslations(items) {
+  itemTranslations = { ko: {}, zh: {} };
+  items.forEach(item => {
+    if (item.nameKo) itemTranslations.ko[item.name] = item.nameKo;
+    if (item.nameZh) itemTranslations.zh[item.name] = item.nameZh;
+  });
+}
+
+export function getIconName(name) {
+  if (currentLocale === 'en') return name;
+  return itemTranslations[currentLocale]?.[name] || name;
 }
 
 export function getAvailableLocales() {

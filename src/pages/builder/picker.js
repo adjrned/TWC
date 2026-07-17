@@ -3,7 +3,7 @@ import { LABELS, COLS, ROSTER } from '../../constants.js';
 import { iconLibrary } from '../../data/icons.js';
 import { showToast } from '../../ui/toast.js';
 import { setSlotItem } from './slots.js';
-import { t } from '../../i18n.js';
+import { t, getIconName, loadItemTranslations } from '../../i18n.js';
 
 const BATCH_SIZE = 48;
 let filtered = [];
@@ -51,6 +51,7 @@ async function initItemIcons() {
           itemsBySlot[item.slot].push(item.name);
         }
       });
+      loadItemTranslations(items);
     }
   } catch(e) {}
 
@@ -230,7 +231,7 @@ function renderBatch(grid) {
     img.onerror = () => { div.style.display = 'none'; };
     const label = document.createElement('span');
     label.className = 'pi-name';
-    label.textContent = icon.name;
+    label.textContent = getIconName(icon.name);
     div.appendChild(img);
     div.appendChild(label);
     frag.appendChild(div);

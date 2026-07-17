@@ -5,6 +5,7 @@ import { getSlotsFor, iconSrc } from './slots.js';
 import { deleteRow, renameRow, onDragStart, onDragOver, onDrop, onDragEnd } from './rows.js';
 import { openPicker } from './picker.js';
 import { openCtx } from './contextMenu.js';
+import { getRowName } from '../../i18n.js';
 
 export function render() {
   const tbody = document.getElementById('tbody');
@@ -25,7 +26,7 @@ export function render() {
     tdName.className = 'row-cell';
     tdName.innerHTML = `<div class="row-inner">
       <span class="drag-handle" title="Drag to reorder">⠿</span>
-      <input class="row-name-input" value="${esc(row.name)}" title="Click to rename">
+      <input class="row-name-input" value="${esc(getRowName(row.name))}" title="Click to rename">
       <button class="del-btn">✕</button>
     </div>`;
     const nameInput = tdName.querySelector('.row-name-input');

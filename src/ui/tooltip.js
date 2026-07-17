@@ -1,6 +1,7 @@
 import { state } from '../state.js';
 import { LABELS } from '../constants.js';
 import { getSlotArr, iconSrc } from '../pages/builder/slots.js';
+import { getIconName, t } from '../i18n.js';
 
 let ttTarget = null;
 
@@ -22,8 +23,8 @@ export function initTooltip() {
         ttTarget = hoverKey;
         if (item) {
           document.getElementById('ftImg').src = iconSrc(item);
-          document.getElementById('ftName').textContent = item.name;
-          document.getElementById('ftSlot').textContent = (isAlt ? 'Alt — ' : '') + (LABELS[col] || col);
+          document.getElementById('ftName').textContent = getIconName(item.name);
+          document.getElementById('ftSlot').textContent = (isAlt ? 'Alt — ' : '') + t('col.' + col);
           ft.classList.add('show');
         }
       }
