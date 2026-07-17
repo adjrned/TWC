@@ -6,12 +6,12 @@ import { esc } from '../../ui/escape.js';
 import { setSlotItem } from './slots.js';
 
 const BATCH_SIZE = 48;
-const SEARCH_MIN_CHARS = 2;
 let filtered = [];
 let rendered = 0;
 let observer = null;
 let activeCategory = 'all';
 let itemIcons = [];
+let itemsBySlot = {};
 let initialized = false;
 
 const CLASS_PATTERNS = (() => {
@@ -28,19 +28,35 @@ function isClassIcon(name) {
   );
 }
 
-function initItemIcons() {
+async function initItemIcons() {
   if (initialized) return;
   itemIcons = iconLibrary.filter(icon => !isClassIcon(icon.name));
+
+  // Load item data for slot categorization
+  try {
+    const r = await fetch('data/items.json');
+    if (r.ok) {
+      const items = await r.json();
+      itemsBySlot = {};
+      COLS.forEach(c => { itemsBySlot[c] = []; });
+      items.forEach(item => {
+        if (item.slot && itemsBySlot[item.slot]) {
+          itemsBySlot[item.slot].push(item.name);
+        }
+      });
+    }
+  } catch(e) {}
+
   initialized = true;
 }
 
-export function openPicker(rowId, col, idx) {
+export async function openPicker(rowId, col, idx) {
   if (!state.selectedClass) { showToast('Select a hero class first!'); return; }
   state.pickerTargetRow = rowId;
   state.pickerTargetCol = col;
   state.pickerTargetIdx = idx;
 
-  initItemIcons();
+  await initItemIcons();
 
   const pill = document.getElementById('pickerModePill');
   if (idx === 1) { pill.textContent = 'ALT'; pill.className = 'picker-mode-pill mode-alt'; }
@@ -51,7 +67,7 @@ export function openPicker(rowId, col, idx) {
 
   activeCategory = col;
   buildCategoryTabs();
-  showSearchPrompt();
+  applyFilter();
 
   document.getElementById('pickerOverlay').classList.add('show');
   setTimeout(() => document.getElementById('pickerSearch').focus(), 50);
@@ -68,18 +84,28 @@ function buildCategoryTabs() {
   }
 
   const categories = [
-    { key: 'all', label: 'All Items' },
-    ...COLS.map(c => ({ key: c, label: LABELS[c] }))
+    { key: 'all', label: 'All Items', icon: '📦' },
+    { key: 'weapon', label: 'Weapon', icon: '⚔️' },
+    { key: 'helm', label: 'Helm', icon: '⛑️' },
+    { key: 'body', label: 'Body', icon: '🥋' },
+    { key: 'wings', label: 'Wings', icon: '🪽' },
+    { key: 'accessory', label: 'Accessory', icon: '💍' },
   ];
 
-  tabs.innerHTML = categories.map(cat =>
-    `<button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">${cat.label}</button>`
-  ).join('');
+  tabs.innerHTML = categories.map(cat => {
+    const count = cat.key === 'all' ? '' : (itemsBySlot[cat.key]?.length || '');
+    return `<button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">
+      <span class="picker-tab-icon">${cat.icon}</span>
+      ${cat.label}
+      ${count ? `<span class="picker-tab-count">${count}</span>` : ''}
+    </button>`;
+  }).join('');
 
   tabs.querySelectorAll('.picker-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       activeCategory = btn.dataset.cat;
       tabs.querySelectorAll('.picker-tab').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('pickerSearch').value = '';
       applyFilter();
     });
   });
@@ -89,18 +115,20 @@ function showSearchPrompt() {
   const grid = document.getElementById('pickerGrid');
   grid.innerHTML = `<div class="picker-empty">
     <div style="font-size: 28px; margin-bottom: 12px;">🔍</div>
-    <p>Type to search for an item</p>
-    <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">Or click "All Items" to browse everything</p>
+    <p>Search for an item by name</p>
+    <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">${itemIcons.length} items available</p>
   </div>`;
-  document.getElementById('pickerCount').textContent = `${itemIcons.length} available`;
+  document.getElementById('pickerCount').textContent = `${itemIcons.length} items`;
 }
 
 function getFilteredIcons(query) {
   let pool = itemIcons;
 
-  // Category filtering will use item data when available
-  // For now, categories just affect the initial tab highlight
-  // and will be functional once items.json has full slot data
+  // Filter by slot category if item data is available
+  if (activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
+    const slotNames = new Set(itemsBySlot[activeCategory].map(n => n.toLowerCase()));
+    pool = pool.filter(icon => slotNames.has(icon.name.toLowerCase()));
+  }
 
   if (query) {
     pool = pool.filter(icon => icon.name.toLowerCase().includes(query));
@@ -112,14 +140,25 @@ function getFilteredIcons(query) {
 function applyFilter() {
   const q = document.getElementById('pickerSearch').value.toLowerCase();
 
+  // If no search and "All Items" tab — show search prompt
   if (!q && activeCategory === 'all') {
     showSearchPrompt();
     return;
   }
 
-  if (!q && activeCategory !== 'all') {
-    // Show all items for now (category filtering needs item data)
-    filtered = itemIcons.slice();
+  // If a specific category tab is selected with item data, show those items
+  if (!q && activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
+    filtered = getFilteredIcons('');
+  } else if (!q && activeCategory !== 'all') {
+    // No item data for this category yet — show search prompt
+    const grid = document.getElementById('pickerGrid');
+    grid.innerHTML = `<div class="picker-empty">
+      <div style="font-size: 28px; margin-bottom: 12px;">${LABELS[activeCategory] === 'Weapon' ? '⚔️' : activeCategory === 'helm' ? '⛑️' : activeCategory === 'body' ? '🥋' : activeCategory === 'wings' ? '🪽' : '💍'}</div>
+      <p>No ${LABELS[activeCategory].toLowerCase()} data yet</p>
+      <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">Use search to find items by name</p>
+    </div>`;
+    document.getElementById('pickerCount').textContent = '—';
+    return;
   } else {
     filtered = getFilteredIcons(q);
   }
@@ -129,14 +168,16 @@ function applyFilter() {
   grid.innerHTML = '';
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="picker-empty">No icons match your search.</div>`;
+    grid.innerHTML = `<div class="picker-empty">No items match your search.</div>`;
     document.getElementById('pickerCount').textContent = '0';
     return;
   }
 
   renderBatch(grid);
   setupInfiniteScroll(grid);
-  document.getElementById('pickerCount').textContent = `${Math.min(rendered, filtered.length)} / ${filtered.length}`;
+  document.getElementById('pickerCount').textContent = filtered.length <= BATCH_SIZE
+    ? `${filtered.length} items`
+    : `${rendered} / ${filtered.length}`;
 }
 
 export function buildPickerGrid() {
