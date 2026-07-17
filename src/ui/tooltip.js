@@ -24,19 +24,62 @@ function findItem(name) {
   return itemDb.find(i => i.name.toLowerCase() === name.toLowerCase());
 }
 
+const STAT_LABELS = {
+  damage: 'Damage', armor: 'Armor', hp: 'HP', mp: 'MP',
+  str: 'STR', agi: 'AGI', int: 'INT', allstat: 'All Stats',
+  mainstat: 'Main Stat', hpregen: 'HP Regen', mpregen: 'MP Regen',
+  movespeed: 'Move Speed', critchancepercent: 'Crit Chance',
+  critmultiplier: 'Crit Multi', attackspeedpercent: 'Attack Speed',
+  skilldamagepercent: 'Skill Damage', periodicdamagepercent: 'Periodic Damage',
+  procdamagepercent: 'Proc Damage', damagedealtpercent: 'Damage Dealt',
+  healingpercent: 'Healing', healreceivedpercent: 'Heal Received',
+  dodgechancepercent: 'Dodge', drpercent: 'Damage Resist',
+  dtpercent: 'Damage Taken', mdpercent: 'Magic Resist',
+  aadamagepercent: 'AA Damage', expgainpercent: 'EXP Gain',
+  revivaltimepercent: 'Revival Time',
+  affinityflamepercent: 'Fire Affinity', affinityearthpercent: 'Earth Affinity',
+  affinitylightpercent: 'Light Affinity', affinitydarkpercent: 'Dark Affinity',
+  affinityiwpercent: 'Ice/Wind Affinity', affinitywlpercent: 'Water/Lightning Affinity',
+};
+
+function formatStat(key, val) {
+  if (key.endsWith('percent')) return `+${Math.round(val * 100)}%`;
+  if (key === 'critmultiplier') return `x${val}`;
+  return `+${val}`;
+}
+
 function buildStatsHtml(dbItem) {
   if (!dbItem) return '';
   const parts = [];
-  if (dbItem.description) {
-    parts.push(`<div class="tt-desc">${dbItem.description}</div>`);
-  }
+
   const tierLabel = getTierLabel(dbItem);
   if (tierLabel) {
     parts.push(`<div class="tt-tier">${tierLabel}</div>`);
   }
-  if (dbItem.koreanname) {
-    parts.push(`<div class="tt-korean">${dbItem.koreanname}</div>`);
+
+  if (dbItem.stats) {
+    const statLines = [];
+    for (const [key, val] of Object.entries(dbItem.stats)) {
+      if (key === 'passive' || key === 'active' || key === 'spec') continue;
+      const label = STAT_LABELS[key] || key;
+      statLines.push(`<div class="tt-stat-line"><span class="tt-stat-label">${label}</span><span class="tt-stat-val">${formatStat(key, val)}</span></div>`);
+    }
+    if (statLines.length) {
+      parts.push(`<div class="tt-stat-block">${statLines.join('')}</div>`);
+    }
+
+    if (dbItem.stats.passive?.length) {
+      parts.push(`<div class="tt-passive">${dbItem.stats.passive.map(l => `<div>• ${l}</div>`).join('')}</div>`);
+    }
+    if (dbItem.stats.active?.length) {
+      parts.push(`<div class="tt-active"><span class="tt-active-label">Active:</span>${dbItem.stats.active.map(l => `<div>• ${l}</div>`).join('')}</div>`);
+    }
   }
+
+  if (dbItem.description && !dbItem.stats) {
+    parts.push(`<div class="tt-desc">${dbItem.description}</div>`);
+  }
+
   return parts.join('');
 }
 
