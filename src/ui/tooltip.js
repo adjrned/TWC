@@ -1,7 +1,8 @@
 import { state } from '../state.js';
 import { LABELS } from '../constants.js';
 import { getSlotArr, iconSrc } from '../pages/builder/slots.js';
-import { getIconName, t } from '../i18n.js';
+import { t, getLocale } from '../i18n.js';
+import { translateItemName } from '../data/translate.js';
 
 let ttTarget = null;
 
@@ -23,7 +24,7 @@ export function initTooltip() {
         ttTarget = hoverKey;
         if (item) {
           document.getElementById('ftImg').src = iconSrc(item);
-          document.getElementById('ftName').textContent = getIconName(item.name);
+          document.getElementById('ftName').textContent = translateItemName(item.name, getLocale());
           document.getElementById('ftSlot').textContent = (isAlt ? 'Alt — ' : '') + t('col.' + col);
           ft.classList.add('show');
         }

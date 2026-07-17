@@ -3,7 +3,8 @@ import { LABELS, COLS, ROSTER } from '../../constants.js';
 import { iconLibrary } from '../../data/icons.js';
 import { showToast } from '../../ui/toast.js';
 import { setSlotItem } from './slots.js';
-import { t, getIconName, loadItemTranslations } from '../../i18n.js';
+import { t, loadItemTranslations, getLocale } from '../../i18n.js';
+import { translateItemName, buildLocalizedSearchIndex, loadTranslationData } from '../../data/translate.js';
 
 const BATCH_SIZE = 48;
 let filtered = [];
@@ -12,6 +13,7 @@ let observer = null;
 let activeCategory = 'all';
 let itemIcons = [];
 let searchIndex = [];
+let localizedSearchIndex = [];
 let itemsBySlot = {};
 let initialized = false;
 
@@ -55,7 +57,14 @@ async function initItemIcons() {
     }
   } catch(e) {}
 
+  await loadTranslationData();
+  rebuildLocalizedIndex();
   initialized = true;
+}
+
+function rebuildLocalizedIndex() {
+  const locale = getLocale();
+  localizedSearchIndex = buildLocalizedSearchIndex(itemIcons, locale);
 }
 
 export async function openPicker(rowId, col, idx) {
@@ -65,6 +74,7 @@ export async function openPicker(rowId, col, idx) {
   state.pickerTargetIdx = idx;
 
   await initItemIcons();
+  rebuildLocalizedIndex();
 
   const pill = document.getElementById('pickerModePill');
   if (idx === 1) { pill.textContent = 'ALT'; pill.className = 'picker-mode-pill mode-alt'; }
@@ -145,13 +155,14 @@ function getFilteredIcons(query, respectCategory) {
 
   if (query) {
     const result = [];
+    const idx = localizedSearchIndex.length ? localizedSearchIndex : searchIndex;
     if (indices) {
       for (let i = 0; i < indices.length; i++) {
-        if (searchIndex[indices[i]].includes(query)) result.push(itemIcons[indices[i]]);
+        if (idx[indices[i]].includes(query)) result.push(itemIcons[indices[i]]);
       }
     } else {
-      for (let i = 0; i < searchIndex.length; i++) {
-        if (searchIndex[i].includes(query)) result.push(itemIcons[i]);
+      for (let i = 0; i < idx.length; i++) {
+        if (idx[i].includes(query)) result.push(itemIcons[i]);
       }
     }
     return result;
@@ -231,7 +242,7 @@ function renderBatch(grid) {
     img.onerror = () => { div.style.display = 'none'; };
     const label = document.createElement('span');
     label.className = 'pi-name';
-    label.textContent = getIconName(icon.name);
+    label.textContent = translateItemName(icon.name, getLocale());
     div.appendChild(img);
     div.appendChild(label);
     frag.appendChild(div);
