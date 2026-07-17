@@ -12,15 +12,17 @@ import { t } from './i18n.js';
 
 function updateNavText() {
   const links = document.querySelectorAll('.sidebar .nav-link');
-  const labels = ['nav.builder', 'nav.items', 'nav.bosses'];
+  const labels = ['nav.builder', 'nav.heroes', 'nav.items', 'nav.bosses', 'nav.awakening'];
   links.forEach((link, i) => {
+    if (!labels[i]) return;
     const textNodes = [...link.childNodes].filter(n => n.nodeType === 3);
     textNodes.forEach(n => { if (n.textContent.trim()) n.textContent = '\n        ' + t(labels[i]) + '\n        '; });
   });
 
   const mobileLinks = document.querySelectorAll('.bottom-nav .nav-link');
-  const shortLabels = ['nav.builder.short', 'nav.items.short', 'nav.bosses.short'];
+  const shortLabels = ['nav.builder.short', 'nav.heroes.short', 'nav.items.short', 'nav.bosses.short', 'nav.awakening.short'];
   mobileLinks.forEach((link, i) => {
+    if (!shortLabels[i]) return;
     const textNodes = [...link.childNodes].filter(n => n.nodeType === 3);
     textNodes.forEach(n => { if (n.textContent.trim()) n.textContent = '\n    ' + t(shortLabels[i]) + '\n  '; });
   });
@@ -59,6 +61,16 @@ registerRoute('/bosses', async (ctx) => {
 registerRoute('/bosses/:id', async (ctx) => {
   const { initBosses } = await import('./pages/bosses/index.js');
   return await initBosses(ctx);
+});
+
+registerRoute('/heroes', async (ctx) => {
+  const { initHeroes } = await import('./pages/heroes/index.js');
+  return await initHeroes(ctx);
+});
+
+registerRoute('/awakening', async (ctx) => {
+  const { initAwakening } = await import('./pages/awakening/index.js');
+  return await initAwakening(ctx);
 });
 
 registerRoute('/items', async (ctx) => {

@@ -3,10 +3,14 @@ const STRINGS = {
     // Nav
     'nav.builder': 'Loadout Builder',
     'nav.items': 'Item Repository',
+    'nav.heroes': 'Heroes',
     'nav.bosses': 'Boss Info',
+    'nav.awakening': 'Awakening',
     'nav.builder.short': 'Builder',
     'nav.items.short': 'Items',
+    'nav.heroes.short': 'Heroes',
     'nav.bosses.short': 'Boss',
+    'nav.awakening.short': 'Awaken',
 
     // Builder
     'builder.title': 'TWRPG Loadout Builder',
@@ -62,10 +66,14 @@ const STRINGS = {
   ko: {
     'nav.builder': '장비 빌더',
     'nav.items': '아이템 도감',
+    'nav.heroes': '영웅',
     'nav.bosses': '보스 정보',
+    'nav.awakening': '각성',
     'nav.builder.short': '빌더',
+    'nav.heroes.short': '영웅',
     'nav.items.short': '아이템',
     'nav.bosses.short': '보스',
+    'nav.awakening.short': '각성',
 
     'builder.title': 'TWRPG 장비 빌더',
     'builder.subtitle': '빌드 플래너',
@@ -115,10 +123,14 @@ const STRINGS = {
   zh: {
     'nav.builder': '装备搭配',
     'nav.items': '物品图鉴',
+    'nav.heroes': '英雄',
     'nav.bosses': 'Boss信息',
+    'nav.awakening': '觉醒',
     'nav.builder.short': '搭配',
+    'nav.heroes.short': '英雄',
     'nav.items.short': '物品',
     'nav.bosses.short': 'Boss',
+    'nav.awakening.short': '觉醒',
 
     'builder.title': 'TWRPG 装备搭配',
     'builder.subtitle': '构建规划器',
