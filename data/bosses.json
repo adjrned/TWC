@@ -1,0 +1,127 @@
+[
+  {
+    "id": "styrix",
+    "name": "Styrix",
+    "iconSrc": "twicons/StyrixIcon.jpg",
+    "tier": "End-game",
+    "location": "Abyssal Depths",
+    "hp": "50,000,000",
+    "description": "An ancient void entity that feeds on despair. Styrix unleashes devastating dark magic and summons tentacles from the void to impale its foes.",
+    "strategy": "Stay mobile to avoid tentacle spawns. Focus DPS during Phase 2 when Styrix channels its void aura — this is the window where it takes bonus damage. Healers must cleanse the despair debuff within 3 seconds or the target is stunned for 5s.",
+    "phases": [
+      {
+        "name": "Phase 1 — Void Awakening",
+        "hp": "100% - 60%",
+        "notes": "Styrix uses basic dark bolts and spawns void tentacles every 15s. Dodge the ground indicators. Tank should face boss away from the group."
+      },
+      {
+        "name": "Phase 2 — Abyssal Channel",
+        "hp": "60% - 30%",
+        "notes": "Styrix channels a void aura dealing constant AoE damage. It takes 25% increased damage during this phase. Healers must sustain through the damage. Tentacle spawns increase to every 8s."
+      },
+      {
+        "name": "Phase 3 — Despair Incarnate",
+        "hp": "30% - 0%",
+        "notes": "Styrix enrages. Tentacles spawn continuously. Dark bolts become homing. Must burn down quickly — survival becomes impossible after 45s in this phase."
+      }
+    ],
+    "drops": [
+      { "itemName": "Dread Incarnate", "dropRate": "5%", "slot": "body" },
+      { "itemName": "Voidshard Armor", "dropRate": "15%", "slot": "body" },
+      { "itemName": "Twisted Fragment of Ruins", "dropRate": "30%", "slot": "accessory" },
+      { "itemName": "Soul Blossom", "dropRate": "25%", "slot": "accessory" }
+    ],
+    "recommendedClasses": ["Arcane Mage", "Soul Weaver", "Priest", "Crusader"]
+  },
+  {
+    "id": "duke",
+    "name": "Duke Alarion",
+    "iconSrc": "twicons/DukeAlarionIcon.jpg",
+    "tier": "Mid-game",
+    "location": "Crimson Fortress",
+    "hp": "15,000,000",
+    "description": "A fallen knight who commands an army of undead. Duke Alarion wields a massive cursed blade and can summon skeletal warriors to overwhelm attackers.",
+    "strategy": "Clear skeleton adds immediately — they buff the Duke's attack speed per add alive. Interrupt his Cursed Slash (1.5s cast) or the tank takes 80% max HP damage. Save burst cooldowns for Phase 2.",
+    "phases": [
+      {
+        "name": "Phase 1 — The Crimson Court",
+        "hp": "100% - 50%",
+        "notes": "Duke Alarion summons 3 skeleton warriors every 20s. Each add alive gives the Duke +15% attack speed. Kill adds first. He uses Cursed Slash (interruptible, 1.5s cast) targeting the tank."
+      },
+      {
+        "name": "Phase 2 — Undying Rage",
+        "hp": "50% - 0%",
+        "notes": "Duke Alarion stops summoning adds but enters a frenzy. Attack speed doubles permanently. Cursed Slash cast time reduces to 0.8s — much harder to interrupt. Pure DPS race."
+      }
+    ],
+    "drops": [
+      { "itemName": "Crimson Greatsword", "dropRate": "10%", "slot": "weapon" },
+      { "itemName": "Duke's Signet", "dropRate": "20%", "slot": "accessory" },
+      { "itemName": "Undead Plate", "dropRate": "15%", "slot": "body" }
+    ],
+    "recommendedClasses": ["Dark Knight", "Berserker", "Sword Saint", "Lancer"]
+  },
+  {
+    "id": "gaia",
+    "name": "Gaia, World Tree",
+    "iconSrc": "twicons/GaiaIcon.jpg",
+    "tier": "Mid-game",
+    "location": "Verdant Sanctum",
+    "hp": "25,000,000",
+    "description": "The corrupted World Tree awakened by dark magic. Gaia lashes with massive roots and unleashes waves of toxic pollen that blanket the battlefield.",
+    "strategy": "Spread out to minimize pollen overlap. Destroy Root Anchors quickly — if all 4 anchor simultaneously, Gaia becomes immune and heals 10% HP. Ranged DPS has an advantage as melee must dodge root slams.",
+    "phases": [
+      {
+        "name": "Phase 1 — Root Awakening",
+        "hp": "100% - 65%",
+        "notes": "Gaia slams with roots targeting random players. Spawns Root Anchors (destructible, 500k HP) at compass positions. Destroy anchors before all 4 are active or Gaia heals."
+      },
+      {
+        "name": "Phase 2 — Toxic Bloom",
+        "hp": "65% - 30%",
+        "notes": "Pollen clouds spawn on player positions every 10s. These persist for 15s dealing heavy DoT to anyone standing in them. Keep moving and don't overlap positions. Root slams become faster."
+      },
+      {
+        "name": "Phase 3 — Overgrowth",
+        "hp": "30% - 0%",
+        "notes": "All mechanics overlap. Root Anchors respawn, pollen intensifies, and Gaia gains a vine grab that pulls a random player into melee range. Chaotic — requires excellent coordination."
+      }
+    ],
+    "drops": [
+      { "itemName": "Bark of the Ancient", "dropRate": "12%", "slot": "body" },
+      { "itemName": "Pollen Crown", "dropRate": "18%", "slot": "helm" },
+      { "itemName": "Root Tendril Wings", "dropRate": "8%", "slot": "wings" },
+      { "itemName": "Ancient Tome", "dropRate": "30%", "slot": "accessory" }
+    ],
+    "recommendedClasses": ["Bow Master", "Sniper", "Elementalist", "Wind Mage"]
+  },
+  {
+    "id": "kamael",
+    "name": "Kamael the Fallen",
+    "iconSrc": "twicons/KamaelIcon.jpg",
+    "tier": "End-game",
+    "location": "Heaven's Edge",
+    "hp": "80,000,000",
+    "description": "Once a celestial guardian, Kamael fell from grace after absorbing forbidden power. He wields both holy and dark energy, switching between forms unpredictably.",
+    "strategy": "Kamael switches between Light Form (holy AoE, heals himself) and Dark Form (single-target burst, debuffs). In Light Form, spread and interrupt his heal. In Dark Form, stack on the marked player to split damage. Transition between forms is the safest DPS window.",
+    "phases": [
+      {
+        "name": "Phase 1 — Dual Aspect",
+        "hp": "100% - 40%",
+        "notes": "Kamael alternates between Light and Dark form every 30s. Light Form: AoE pulses + self-heal cast (interrupt!). Dark Form: marks one player for massive damage — stack to split. Transition window (3s) = safe DPS."
+      },
+      {
+        "name": "Phase 2 — Convergence",
+        "hp": "40% - 0%",
+        "notes": "Both forms merge. All mechanics happen simultaneously — AoE pulses, mark splits, and self-heal casts overlap. Form switches stop but the combined pressure is extreme. This is a gear check."
+      }
+    ],
+    "drops": [
+      { "itemName": "Wings of the Fallen", "dropRate": "3%", "slot": "wings" },
+      { "itemName": "Celestial Halo", "dropRate": "7%", "slot": "helm" },
+      { "itemName": "Mask of Truth", "dropRate": "20%", "slot": "helm" },
+      { "itemName": "Divine Fragment", "dropRate": "25%", "slot": "accessory" }
+    ],
+    "recommendedClasses": ["Paladin", "Priest", "Shrine Priestess", "Lightseeker"]
+  }
+]

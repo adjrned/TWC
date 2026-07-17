@@ -1,0 +1,277 @@
+[
+  {
+    "name": "Dread Incarnate",
+    "nameKo": "공포의 현신",
+    "iconSrc": "twicons/Dread Incarnate.jpg",
+    "rarity": "Epic",
+    "category": "Arcana Grade Armor",
+    "slot": "body",
+    "description": "It makes you tremble with fear.",
+    "stats": [
+      "+300 Armor",
+      "+575 STR",
+      "+15% Skill Damage",
+      "+10% Periodic Damage"
+    ],
+    "passive": [
+      "On skill cast, builds Dread",
+      "Upon reaching 4 stacks, gains 400 STR and 3% HP regen for 5 seconds",
+      "Damaging an enemy will summon a tentacle that deals 50000 magic damage in line (cooldown: 5s)",
+      "Once it expires, has 5 second cooldown until it can start stacking again"
+    ],
+    "active": {
+      "name": "Mayhem",
+      "effects": [
+        "Sets ablaze a large area for 10 seconds, dealing 25000 damage per second",
+        "While the user is standing in the area, Dread will be set to max stacks and your skills will deal 10% bonus damage"
+      ],
+      "cooldown": 75
+    },
+    "recipe": [
+      { "itemName": "Voidshard Armor" },
+      { "itemName": "Mask of Truth" },
+      { "itemName": "Ancient Tome" },
+      { "itemName": "Twisted Fragment of Ruins" },
+      { "itemName": "Soul Blossom" }
+    ],
+    "dropSources": []
+  },
+  {
+    "name": "Voidshard Armor",
+    "nameKo": "공허 파편 갑옷",
+    "iconSrc": "twicons/Voidshard Armor.jpg",
+    "rarity": "Rare",
+    "category": "Heavy Armor",
+    "slot": "body",
+    "description": "Forged from crystallized void energy. Hums with dark resonance.",
+    "stats": [
+      "+180 Armor",
+      "+300 STR",
+      "+8% Skill Damage"
+    ],
+    "passive": [
+      "Taking damage has a 10% chance to release a void pulse, dealing 15000 magic damage to nearby enemies"
+    ],
+    "dropSources": [
+      { "bossId": "styrix", "dropRate": "15%" }
+    ]
+  },
+  {
+    "name": "Mask of Truth",
+    "nameKo": "진실의 가면",
+    "iconSrc": "twicons/Mask of Truth.jpg",
+    "rarity": "Rare",
+    "category": "Helm",
+    "slot": "helm",
+    "description": "Reveals what the wearer wishes to remain hidden.",
+    "stats": [
+      "+120 Armor",
+      "+250 INT",
+      "+10% Cooldown Reduction"
+    ],
+    "passive": [
+      "Skills reveal invisible enemies for 3 seconds",
+      "Gain 5% bonus damage against revealed targets"
+    ],
+    "dropSources": [
+      { "bossId": "kamael", "dropRate": "20%" }
+    ]
+  },
+  {
+    "name": "Ancient Tome",
+    "nameKo": "고대의 서적",
+    "iconSrc": "twicons/Ancient Tome.jpg",
+    "rarity": "Uncommon",
+    "category": "Material",
+    "slot": "accessory",
+    "description": "A book of forgotten knowledge. Its pages glow faintly.",
+    "stats": [
+      "+100 INT",
+      "+5% Skill Damage"
+    ],
+    "dropSources": [
+      { "bossId": "gaia", "dropRate": "30%" }
+    ]
+  },
+  {
+    "name": "Twisted Fragment of Ruins",
+    "nameKo": "폐허의 뒤틀린 파편",
+    "iconSrc": "twicons/Twisted Fragment of Ruins.jpg",
+    "rarity": "Uncommon",
+    "category": "Material",
+    "slot": "accessory",
+    "description": "A shard of a destroyed dimension, still warping space around it.",
+    "stats": [
+      "+80 STR",
+      "+80 AGI",
+      "+80 INT"
+    ],
+    "dropSources": [
+      { "bossId": "styrix", "dropRate": "30%" }
+    ]
+  },
+  {
+    "name": "Soul Blossom",
+    "nameKo": "영혼의 꽃",
+    "iconSrc": "twicons/Soul Blossom.jpg",
+    "rarity": "Uncommon",
+    "category": "Material",
+    "slot": "accessory",
+    "description": "A flower that blooms only where souls have departed. Radiates gentle warmth.",
+    "stats": [
+      "+150 INT",
+      "+3% HP Regen"
+    ],
+    "dropSources": [
+      { "bossId": "styrix", "dropRate": "25%" }
+    ]
+  },
+  {
+    "name": "Crimson Greatsword",
+    "nameKo": "핏빛 대검",
+    "iconSrc": "twicons/Crimson Greatsword.jpg",
+    "rarity": "Epic",
+    "category": "Two-Handed Sword",
+    "slot": "weapon",
+    "description": "A massive blade stained by the blood of countless undead. Its edge never dulls.",
+    "stats": [
+      "+450 ATK",
+      "+400 STR",
+      "+12% Critical Rate",
+      "+20% Damage to Undead"
+    ],
+    "passive": [
+      "Basic attacks have a 15% chance to inflict Bleed (3000 damage/s for 5s)",
+      "Killing a bleeding target restores 5% max HP"
+    ],
+    "active": {
+      "name": "Crimson Execution",
+      "effects": [
+        "Delivers a massive overhead slash dealing 80000 physical damage",
+        "Targets below 30% HP take double damage"
+      ],
+      "cooldown": 45
+    },
+    "dropSources": [
+      { "bossId": "duke", "dropRate": "10%" }
+    ]
+  },
+  {
+    "name": "Wings of the Fallen",
+    "nameKo": "타락한 자의 날개",
+    "iconSrc": "twicons/Wings of the Fallen.jpg",
+    "rarity": "Legendary",
+    "category": "Celestial Wings",
+    "slot": "wings",
+    "description": "Once pure white, these wings now shimmer between light and shadow. They carry the weight of a broken oath.",
+    "stats": [
+      "+200 Armor",
+      "+350 STR",
+      "+350 INT",
+      "+20% Movement Speed",
+      "+15% All Damage"
+    ],
+    "passive": [
+      "Every 10 seconds, alternate between Light Aura (+20% healing received) and Dark Aura (+20% damage dealt)",
+      "On taking fatal damage, enter Fallen Grace: become invulnerable for 2 seconds and heal 30% HP (cooldown: 180s)"
+    ],
+    "dropSources": [
+      { "bossId": "kamael", "dropRate": "3%" }
+    ]
+  },
+  {
+    "name": "Pollen Crown",
+    "nameKo": "꽃가루 왕관",
+    "iconSrc": "twicons/Pollen Crown.jpg",
+    "rarity": "Rare",
+    "category": "Helm",
+    "slot": "helm",
+    "description": "Woven from enchanted vines and perpetually blooming flowers. Spreads healing pollen to allies.",
+    "stats": [
+      "+100 Armor",
+      "+280 INT",
+      "+8% Healing Power",
+      "+5% HP Regen"
+    ],
+    "passive": [
+      "Healing skills also apply a HoT (2% max HP/s for 4s) to targets within 5m of the healed ally"
+    ],
+    "dropSources": [
+      { "bossId": "gaia", "dropRate": "18%" }
+    ]
+  },
+  {
+    "name": "Root Tendril Wings",
+    "nameKo": "뿌리 덩굴 날개",
+    "iconSrc": "twicons/Root Tendril Wings.jpg",
+    "rarity": "Epic",
+    "category": "Nature Wings",
+    "slot": "wings",
+    "description": "Living roots that have taken the shape of wings. They pulse with the heartbeat of the earth.",
+    "stats": [
+      "+150 Armor",
+      "+300 STR",
+      "+200 INT",
+      "+12% Movement Speed",
+      "+10% Periodic Damage"
+    ],
+    "passive": [
+      "While moving, leave a trail of vines that slow enemies by 30% for 2s",
+      "Standing still for 3s roots you in place but grants +25% damage reduction"
+    ],
+    "active": {
+      "name": "Overgrowth Burst",
+      "effects": [
+        "Slam roots into the ground, dealing 40000 nature damage in a large area",
+        "Rooted enemies take 50% more damage for 4 seconds"
+      ],
+      "cooldown": 60
+    },
+    "dropSources": [
+      { "bossId": "gaia", "dropRate": "8%" }
+    ]
+  },
+  {
+    "name": "Duke's Signet",
+    "nameKo": "공작의 인장",
+    "iconSrc": "twicons/Duke's Signet.jpg",
+    "rarity": "Rare",
+    "category": "Ring",
+    "slot": "accessory",
+    "description": "The Duke's personal seal. Still warm with cursed energy.",
+    "stats": [
+      "+200 STR",
+      "+150 AGI",
+      "+10% Attack Speed"
+    ],
+    "passive": [
+      "Basic attacks deal bonus 5000 dark damage",
+      "Every 5th hit applies a curse reducing enemy healing received by 50% for 3s"
+    ],
+    "dropSources": [
+      { "bossId": "duke", "dropRate": "20%" }
+    ]
+  },
+  {
+    "name": "Celestial Halo",
+    "nameKo": "천상의 후광",
+    "iconSrc": "twicons/Celestial Halo.jpg",
+    "rarity": "Epic",
+    "category": "Helm",
+    "slot": "helm",
+    "description": "A ring of solidified divine light. Bestows clarity of purpose upon its wearer.",
+    "stats": [
+      "+160 Armor",
+      "+400 INT",
+      "+15% Cooldown Reduction",
+      "+12% Healing Power"
+    ],
+    "passive": [
+      "Skills have a 20% chance to trigger Divine Echo, repeating the skill at 30% effectiveness after 1s",
+      "While above 80% HP, gain +10% All Damage"
+    ],
+    "dropSources": [
+      { "bossId": "kamael", "dropRate": "7%" }
+    ]
+  }
+]

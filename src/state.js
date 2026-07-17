@@ -1,0 +1,15 @@
+export const state = {
+  rows: [],
+  builds: {},
+  selectedClass: null,
+  selectedCreator: null,
+  creatorName: '',
+  uid: 0,
+  dragSrcId: null,
+  pickerTargetRow: null,
+  pickerTargetCol: null,
+  pickerTargetIdx: 0,
+  ctxRowId: null,
+  ctxCol: null,
+  activePopoverDrop: null,
+};
