@@ -1,12 +1,12 @@
 /* ── Rarity/tier colors ── */
 :root {
   --rarity-magic: #60a5fa;
-  --rarity-rare: #4ade80;
-  --rarity-deltirama: #f59e0b;
-  --rarity-neptinos: #c084fc;
-  --rarity-gnosis: #f472b6;
-  --rarity-alteia: #fb923c;
-  --rarity-arcana: #e94560;
+  --rarity-rare: #c4a46c;
+  --rarity-deltirama: #b8a0e0;
+  --rarity-neptinos: #2d9e6e;
+  --rarity-gnosis: #f0806a;
+  --rarity-alteia: #4ecdc4;
+  --rarity-arcana: #9b59b6;
   /* Legacy aliases */
   --rarity-common: #b0b0b0;
   --rarity-uncommon: #4ade80;
@@ -122,41 +122,41 @@
   background: rgba(96,165,250,0.15); border-color: var(--rarity-magic);
   box-shadow: 0 0 12px rgba(96,165,250,0.22); text-shadow: 0 0 10px rgba(96,165,250,0.5);
 }
-.filter-pill.rarity-rare { border-color: rgba(74,222,128,0.28); color: var(--rarity-rare); }
-.filter-pill.rarity-rare:hover { background: rgba(74,222,128,0.1); border-color: var(--rarity-rare); }
+.filter-pill.rarity-rare { border-color: rgba(196,164,108,0.35); color: var(--rarity-rare); }
+.filter-pill.rarity-rare:hover { background: rgba(196,164,108,0.1); border-color: var(--rarity-rare); }
 .filter-pill.rarity-rare.active {
-  background: rgba(74,222,128,0.14); border-color: var(--rarity-rare);
-  box-shadow: 0 0 12px rgba(74,222,128,0.2); text-shadow: 0 0 10px rgba(74,222,128,0.5);
+  background: rgba(196,164,108,0.15); border-color: var(--rarity-rare);
+  box-shadow: 0 0 12px rgba(196,164,108,0.25); text-shadow: 0 0 10px rgba(196,164,108,0.5);
 }
-.filter-pill.rarity-deltirama { border-color: rgba(245,158,11,0.35); color: var(--rarity-deltirama); }
-.filter-pill.rarity-deltirama:hover { background: rgba(245,158,11,0.1); border-color: var(--rarity-deltirama); }
+.filter-pill.rarity-deltirama { border-color: rgba(184,160,224,0.35); color: var(--rarity-deltirama); }
+.filter-pill.rarity-deltirama:hover { background: rgba(184,160,224,0.1); border-color: var(--rarity-deltirama); }
 .filter-pill.rarity-deltirama.active {
-  background: rgba(245,158,11,0.18); border-color: var(--rarity-deltirama);
-  box-shadow: 0 0 14px rgba(245,158,11,0.28); text-shadow: 0 0 10px rgba(245,158,11,0.6);
+  background: rgba(184,160,224,0.18); border-color: var(--rarity-deltirama);
+  box-shadow: 0 0 14px rgba(184,160,224,0.28); text-shadow: 0 0 10px rgba(184,160,224,0.55);
 }
-.filter-pill.rarity-neptinos { border-color: rgba(192,132,252,0.32); color: var(--rarity-neptinos); }
-.filter-pill.rarity-neptinos:hover { background: rgba(192,132,252,0.1); border-color: var(--rarity-neptinos); }
+.filter-pill.rarity-neptinos { border-color: rgba(45,158,110,0.35); color: var(--rarity-neptinos); }
+.filter-pill.rarity-neptinos:hover { background: rgba(45,158,110,0.1); border-color: var(--rarity-neptinos); }
 .filter-pill.rarity-neptinos.active {
-  background: rgba(192,132,252,0.18); border-color: var(--rarity-neptinos);
-  box-shadow: 0 0 14px rgba(192,132,252,0.25); text-shadow: 0 0 10px rgba(192,132,252,0.55);
+  background: rgba(45,158,110,0.18); border-color: var(--rarity-neptinos);
+  box-shadow: 0 0 14px rgba(45,158,110,0.28); text-shadow: 0 0 10px rgba(45,158,110,0.55);
 }
-.filter-pill.rarity-gnosis { border-color: rgba(244,114,182,0.32); color: var(--rarity-gnosis); }
-.filter-pill.rarity-gnosis:hover { background: rgba(244,114,182,0.1); border-color: var(--rarity-gnosis); }
+.filter-pill.rarity-gnosis { border-color: rgba(240,128,106,0.35); color: var(--rarity-gnosis); }
+.filter-pill.rarity-gnosis:hover { background: rgba(240,128,106,0.1); border-color: var(--rarity-gnosis); }
 .filter-pill.rarity-gnosis.active {
-  background: rgba(244,114,182,0.18); border-color: var(--rarity-gnosis);
-  box-shadow: 0 0 14px rgba(244,114,182,0.25); text-shadow: 0 0 10px rgba(244,114,182,0.55);
+  background: rgba(240,128,106,0.18); border-color: var(--rarity-gnosis);
+  box-shadow: 0 0 14px rgba(240,128,106,0.28); text-shadow: 0 0 10px rgba(240,128,106,0.55);
 }
-.filter-pill.rarity-alteia { border-color: rgba(251,146,60,0.35); color: var(--rarity-alteia); }
-.filter-pill.rarity-alteia:hover { background: rgba(251,146,60,0.1); border-color: var(--rarity-alteia); }
+.filter-pill.rarity-alteia { border-color: rgba(78,205,196,0.35); color: var(--rarity-alteia); }
+.filter-pill.rarity-alteia:hover { background: rgba(78,205,196,0.1); border-color: var(--rarity-alteia); }
 .filter-pill.rarity-alteia.active {
-  background: rgba(251,146,60,0.18); border-color: var(--rarity-alteia);
-  box-shadow: 0 0 14px rgba(251,146,60,0.28); text-shadow: 0 0 10px rgba(251,146,60,0.6);
+  background: rgba(78,205,196,0.18); border-color: var(--rarity-alteia);
+  box-shadow: 0 0 14px rgba(78,205,196,0.28); text-shadow: 0 0 10px rgba(78,205,196,0.55);
 }
-.filter-pill.rarity-arcana { border-color: rgba(233,69,96,0.35); color: var(--rarity-arcana); }
-.filter-pill.rarity-arcana:hover { background: rgba(233,69,96,0.1); border-color: var(--rarity-arcana); }
+.filter-pill.rarity-arcana { border-color: rgba(155,89,182,0.35); color: var(--rarity-arcana); }
+.filter-pill.rarity-arcana:hover { background: rgba(155,89,182,0.1); border-color: var(--rarity-arcana); }
 .filter-pill.rarity-arcana.active {
-  background: rgba(233,69,96,0.18); border-color: var(--rarity-arcana);
-  box-shadow: 0 0 14px rgba(233,69,96,0.3); text-shadow: 0 0 10px rgba(233,69,96,0.6);
+  background: rgba(155,89,182,0.18); border-color: var(--rarity-arcana);
+  box-shadow: 0 0 14px rgba(155,89,182,0.3); text-shadow: 0 0 10px rgba(155,89,182,0.55);
 }
 
 /* ── Item grid ── */
