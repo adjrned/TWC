@@ -14,31 +14,49 @@ async function loadBossData() {
   return bossData;
 }
 
+const BOSS_CATEGORIES = ['Minor', 'Coins', 'Mids', 'Late', 'Tower', 'End-game'];
+
 function renderBossList(bosses) {
+  const grouped = {};
+  BOSS_CATEGORIES.forEach(cat => { grouped[cat] = []; });
+  bosses.forEach(boss => {
+    const cat = BOSS_CATEGORIES.includes(boss.tier) ? boss.tier : 'Minor';
+    grouped[cat].push(boss);
+  });
+
+  const sections = BOSS_CATEGORIES
+    .filter(cat => grouped[cat].length > 0)
+    .map(cat => `
+      <div class="boss-category">
+        <h2 class="boss-category-title">${esc(cat)}</h2>
+        <div class="boss-grid">
+          ${grouped[cat].map(boss => `
+            <a href="#/bosses/${boss.id}" class="boss-card" data-tier="${boss.tier}">
+              <div class="boss-card-icon">
+                <img src="${boss.iconSrc}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
+              </div>
+              <div class="boss-card-info">
+                <h3>${esc(boss.name)}</h3>
+                <span class="boss-tier-badge">${esc(boss.tier)}</span>
+                <p class="boss-card-location">${esc(boss.location)}</p>
+                <p class="boss-card-desc">${esc(boss.description).slice(0, 80)}...</p>
+                <div class="boss-card-drops">
+                  ${boss.drops.slice(0, 3).map(d => `<span class="drop-preview">${esc(d.itemName)}</span>`).join('')}
+                  ${boss.drops.length > 3 ? `<span class="drop-more">+${boss.drops.length - 3} more</span>` : ''}
+                </div>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
   return `
     <div class="page-header">
       <h1>${t('bosses.title')}</h1>
       <p class="page-subtitle">${t('bosses.subtitle')}</p>
     </div>
-    <div class="boss-grid">
-      ${bosses.map(boss => `
-        <a href="#/bosses/${boss.id}" class="boss-card" data-tier="${boss.tier}">
-          <div class="boss-card-icon">
-            <img src="${boss.iconSrc}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
-          </div>
-          <div class="boss-card-info">
-            <h3>${esc(boss.name)}</h3>
-            <span class="boss-tier-badge">${esc(boss.tier)}</span>
-            <p class="boss-card-location">${esc(boss.location)}</p>
-            <p class="boss-card-desc">${esc(boss.description).slice(0, 80)}...</p>
-            <div class="boss-card-drops">
-              ${boss.drops.slice(0, 3).map(d => `<span class="drop-preview">${esc(d.itemName)}</span>`).join('')}
-              ${boss.drops.length > 3 ? `<span class="drop-more">+${boss.drops.length - 3} more</span>` : ''}
-            </div>
-          </div>
-        </a>
-      `).join('')}
-    </div>
+    ${sections}
   `;
 }
 

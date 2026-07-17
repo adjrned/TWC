@@ -70,6 +70,23 @@
   opacity: 1;
 }
 
+/* ── Boss categories ── */
+.boss-category {
+  margin-bottom: 32px;
+}
+.boss-category-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  text-shadow: 0 0 12px rgba(245,166,35,0.3);
+}
+
 /* ── Boss grid ── */
 .boss-grid {
   display: grid;
