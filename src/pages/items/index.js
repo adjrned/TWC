@@ -69,10 +69,13 @@ function renderItemList(items, query) {
       </div>
       <div class="filter-pills">
         <button class="filter-pill ${!filterRarity ? 'active' : ''}" onclick="window._itemFilterRarity('')">All</button>
-        <button class="filter-pill rarity-legendary ${filterRarity === 'legendary' ? 'active' : ''}" onclick="window._itemFilterRarity('legendary')">Legendary</button>
-        <button class="filter-pill rarity-epic ${filterRarity === 'epic' ? 'active' : ''}" onclick="window._itemFilterRarity('epic')">Epic</button>
+        <button class="filter-pill rarity-magic ${filterRarity === 'magic' ? 'active' : ''}" onclick="window._itemFilterRarity('magic')">Magic</button>
         <button class="filter-pill rarity-rare ${filterRarity === 'rare' ? 'active' : ''}" onclick="window._itemFilterRarity('rare')">Rare</button>
-        <button class="filter-pill rarity-uncommon ${filterRarity === 'uncommon' ? 'active' : ''}" onclick="window._itemFilterRarity('uncommon')">Uncommon</button>
+        <button class="filter-pill rarity-deltirama ${filterRarity === 'deltirama' ? 'active' : ''}" onclick="window._itemFilterRarity('deltirama')">Deltirama</button>
+        <button class="filter-pill rarity-neptinos ${filterRarity === 'neptinos' ? 'active' : ''}" onclick="window._itemFilterRarity('neptinos')">Neptinos</button>
+        <button class="filter-pill rarity-gnosis ${filterRarity === 'gnosis' ? 'active' : ''}" onclick="window._itemFilterRarity('gnosis')">Gnosis</button>
+        <button class="filter-pill rarity-alteia ${filterRarity === 'alteia' ? 'active' : ''}" onclick="window._itemFilterRarity('alteia')">Alteia</button>
+        <button class="filter-pill rarity-arcana ${filterRarity === 'arcana' ? 'active' : ''}" onclick="window._itemFilterRarity('arcana')">Arcana</button>
       </div>
     </div>
 
