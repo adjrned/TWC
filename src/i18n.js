@@ -166,6 +166,39 @@ const STRINGS = {
   }
 };
 
+const CLASS_NAMES = {
+  ko: {
+    'Berserker': '버서커', 'Blaster': '블래스터', 'Crusader': '크루세이더',
+    'Dark Knight': '다크나이트', 'Fighter': '파이터', 'Knight': '나이트',
+    'Lancer': '랜서', 'Lightseeker': '라이트시커', 'Merchant': '상인',
+    'Paladin': '팔라딘', 'Sword Saint': '검성',
+    'Assassin': '어쌔신', 'Bow Master': '보우마스터', 'Gunner': '거너',
+    'Hermit': '은둔자', 'Martial Artist': '무도가', 'Phantom Blade': '팬텀블레이드',
+    'Reaper': '리퍼', 'Shooter': '슈터', 'Sniper': '스나이퍼',
+    'Sword Enchanter': '소드인챈터', 'Swordsman': '검사', 'Thunderer': '썬더러',
+    'Trickster': '트릭스터',
+    'Alchemist': '연금술사', 'Arcane Mage': '아케인메이지', 'Blood Weaver': '블러드위버',
+    'Elementalist': '엘리멘탈리스트', 'Fire Mage': '화염술사', 'Lightning Mage': '번개술사',
+    'Priest': '사제', 'Shrine Priestess': '무녀', 'Soul Weaver': '소울위버',
+    'Warlock': '워록', 'Water Mage': '수마법사', 'Wind Mage': '풍마법사', 'Witch': '마녀',
+  },
+  zh: {
+    'Berserker': '狂战士', 'Blaster': '爆破者', 'Crusader': '十字军',
+    'Dark Knight': '暗黑骑士', 'Fighter': '格斗家', 'Knight': '骑士',
+    'Lancer': '枪骑士', 'Lightseeker': '光明追寻者', 'Merchant': '商人',
+    'Paladin': '圣骑士', 'Sword Saint': '剑圣',
+    'Assassin': '刺客', 'Bow Master': '弓箭大师', 'Gunner': '枪手',
+    'Hermit': '隐士', 'Martial Artist': '武术家', 'Phantom Blade': '幻影之刃',
+    'Reaper': '死神', 'Shooter': '射手', 'Sniper': '狙击手',
+    'Sword Enchanter': '剑魔', 'Swordsman': '剑士', 'Thunderer': '雷霆使者',
+    'Trickster': '诡术师',
+    'Alchemist': '炼金术士', 'Arcane Mage': '奥术法师', 'Blood Weaver': '血织者',
+    'Elementalist': '元素使', 'Fire Mage': '火法师', 'Lightning Mage': '雷法师',
+    'Priest': '牧师', 'Shrine Priestess': '巫女', 'Soul Weaver': '灵魂编织者',
+    'Warlock': '术士', 'Water Mage': '水法师', 'Wind Mage': '风法师', 'Witch': '女巫',
+  }
+};
+
 const STORAGE_KEY = 'twrpg_locale';
 let currentLocale = localStorage.getItem(STORAGE_KEY) || 'en';
 
@@ -195,6 +228,11 @@ export function getItemName(item) {
   if (currentLocale === 'ko' && item.nameKo) return item.nameKo;
   if (currentLocale === 'zh' && item.nameZh) return item.nameZh;
   return item.name;
+}
+
+export function getClassName(name) {
+  if (currentLocale === 'en') return name;
+  return CLASS_NAMES[currentLocale]?.[name] || name;
 }
 
 export function getAvailableLocales() {

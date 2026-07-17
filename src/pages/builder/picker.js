@@ -69,8 +69,9 @@ export async function openPicker(rowId, col, idx) {
   if (idx === 1) { pill.textContent = 'ALT'; pill.className = 'picker-mode-pill mode-alt'; }
   else { pill.textContent = 'PRIMARY'; pill.className = 'picker-mode-pill mode-primary'; }
 
-  document.getElementById('pickerTitle').textContent = `Choose Icon — ${LABELS[col]}`;
+  document.getElementById('pickerTitle').textContent = `${t('picker.title')} — ${t('col.' + col)}`;
   document.getElementById('pickerSearch').value = '';
+  document.getElementById('pickerSearch').placeholder = t('picker.search');
 
   activeCategory = col;
   buildCategoryTabs();
@@ -91,12 +92,12 @@ function buildCategoryTabs() {
   }
 
   const categories = [
-    { key: 'all', label: 'All Items', icon: '📦' },
-    { key: 'weapon', label: 'Weapon', icon: '⚔️' },
-    { key: 'helm', label: 'Helm', icon: '⛑️' },
-    { key: 'body', label: 'Body', icon: '🥋' },
-    { key: 'wings', label: 'Wings', icon: '🪽' },
-    { key: 'accessory', label: 'Accessory', icon: '💍' },
+    { key: 'all', label: t('picker.allItems'), icon: '📦' },
+    { key: 'weapon', label: t('col.weapon'), icon: '⚔️' },
+    { key: 'helm', label: t('col.helm'), icon: '⛑️' },
+    { key: 'body', label: t('col.body'), icon: '🥋' },
+    { key: 'wings', label: t('col.wings'), icon: '🪽' },
+    { key: 'accessory', label: t('col.accessory'), icon: '💍' },
   ];
 
   tabs.innerHTML = categories.map(cat => {
