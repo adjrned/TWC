@@ -281,8 +281,9 @@
   padding: 11px 6px 8px; border-radius: 11px; cursor: pointer;
   border: 1.5px solid transparent;
   background: rgba(255,255,255,0.025);
-  transition: all 0.18s cubic-bezier(0.34,1.56,0.64,1); text-align: center;
-  position: relative; overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  text-align: center; position: relative; overflow: hidden;
+  will-change: transform;
 }
 .picker-item::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit;
