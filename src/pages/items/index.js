@@ -224,12 +224,24 @@ export async function initItems({ params, query }) {
 
     // Wire up filter handlers
     window._itemSearch = (val) => {
-      const params = new URLSearchParams();
-      if (query.slot) params.set('slot', query.slot);
-      if (query.rarity) params.set('rarity', query.rarity);
-      if (val) params.set('search', val);
-      const qs = params.toString();
-      location.hash = '#/items' + (qs ? '?' + qs : '');
+      const q = val.toLowerCase();
+      const cards = document.querySelectorAll('.item-grid .item-card');
+      let visible = 0;
+      cards.forEach(card => {
+        const name = card.querySelector('.item-card-name').textContent.toLowerCase();
+        const match = !q || name.includes(q);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      const empty = document.querySelector('.item-grid .item-empty');
+      if (empty) empty.style.display = visible === 0 ? '' : 'none';
+      if (visible === 0 && !empty) {
+        const grid = document.querySelector('.item-grid');
+        const msg = document.createElement('div');
+        msg.className = 'item-empty';
+        msg.textContent = 'No items match your filters.';
+        grid.appendChild(msg);
+      }
     };
     window._itemFilterSlot = (slot) => {
       const params = new URLSearchParams();
