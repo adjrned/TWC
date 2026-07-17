@@ -112,6 +112,15 @@ const WORD_MAP = {
 };
 
 let exactNames = {};
+const translationCache = { ko: {}, zh: {} };
+let sortedWords = { ko: null, zh: null };
+
+function getSortedWords(locale) {
+  if (!sortedWords[locale]) {
+    sortedWords[locale] = Object.keys(WORD_MAP[locale]).sort((a, b) => b.length - a.length);
+  }
+  return sortedWords[locale];
+}
 
 export async function loadTranslationData() {
   try {
@@ -122,43 +131,47 @@ export async function loadTranslationData() {
   } catch(e) {}
 }
 
-export function translateItemName(name, locale) {
-  if (locale === 'en') return name;
-
-  // Check exact translation first
+function computeTranslation(name, locale) {
   if (exactNames[name]?.[locale]) return exactNames[name][locale];
 
-  // Compositional translation
   const map = WORD_MAP[locale];
   if (!map) return name;
 
-  // Try longest word matches first
   let result = name;
-  const words = Object.keys(map).sort((a, b) => b.length - a.length);
+  const words = getSortedWords(locale);
 
-  for (const word of words) {
-    const regex = new RegExp('\\b' + word + '\\b', 'g');
-    if (regex.test(result)) {
-      result = result.replace(regex, map[word]);
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    if (result.includes(word)) {
+      result = result.split(word).join(map[word]);
     }
   }
 
-  // Clean up: remove extra spaces, "의 의" patterns
   result = result.replace(/\s+/g, ' ').trim();
-  result = result.replace(/의 의/g, '의');
+  if (locale === 'ko') result = result.replace(/의 의/g, '의');
 
-  // If nothing changed, return original
-  if (result === name) return name;
+  return result === name ? name : result;
+}
 
+export function translateItemName(name, locale) {
+  if (locale === 'en') return name;
+  if (translationCache[locale][name] !== undefined) return translationCache[locale][name];
+  const result = computeTranslation(name, locale);
+  translationCache[locale][name] = result;
   return result;
 }
 
-// Build search index for a locale
 export function buildLocalizedSearchIndex(itemIcons, locale) {
   if (locale === 'en') return itemIcons.map(icon => icon.name.toLowerCase());
   return itemIcons.map(icon => {
     const translated = translateItemName(icon.name, locale);
-    // Include both original and translated for search
     return (icon.name + ' ' + translated).toLowerCase();
   });
+}
+
+export function precomputeTranslations(itemIcons, locale) {
+  if (locale === 'en') return;
+  for (let i = 0; i < itemIcons.length; i++) {
+    translateItemName(itemIcons[i].name, locale);
+  }
 }

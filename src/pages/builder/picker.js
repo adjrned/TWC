@@ -4,7 +4,7 @@ import { iconLibrary } from '../../data/icons.js';
 import { showToast } from '../../ui/toast.js';
 import { setSlotItem } from './slots.js';
 import { t, loadItemTranslations, getLocale } from '../../i18n.js';
-import { translateItemName, buildLocalizedSearchIndex, loadTranslationData } from '../../data/translate.js';
+import { translateItemName, buildLocalizedSearchIndex, loadTranslationData, precomputeTranslations } from '../../data/translate.js';
 
 const BATCH_SIZE = 48;
 let filtered = [];
@@ -58,6 +58,7 @@ async function initItemIcons() {
   } catch(e) {}
 
   await loadTranslationData();
+  precomputeTranslations(itemIcons, getLocale());
   rebuildLocalizedIndex();
   initialized = true;
 }
