@@ -4,6 +4,7 @@ import { fetchBuildCountsForAllClasses, fetchCreatorsForClass, hasLocalData, loa
 import { save } from '../../data/storage.js';
 import { showToast } from '../../ui/toast.js';
 import { render } from './render.js';
+import { t, getClassName } from '../../i18n.js';
 
 export async function buildClassSelect() {
   const dropdown = document.getElementById('classPickerDropdown');
@@ -17,7 +18,7 @@ export async function buildClassSelect() {
     const groupLabel = document.createElement('div');
     groupLabel.className = 'custom-select-group-label';
     groupLabel.dataset.stat = type;
-    groupLabel.textContent = type;
+    groupLabel.textContent = t('stat.' + type);
     dropdown.appendChild(groupLabel);
 
     list.forEach(name => {
@@ -27,7 +28,7 @@ export async function buildClassSelect() {
       opt.dataset.value = name;
       const nameSpan = document.createElement('span');
       nameSpan.className = 'opt-name';
-      nameSpan.textContent = name;
+      nameSpan.textContent = getClassName(name);
       opt.appendChild(nameSpan);
       if (count > 0) {
         const badge = document.createElement('span');
@@ -72,7 +73,7 @@ export function closeCreatorDropdown() {
 export async function selectClass(name) {
   closeClassDropdown();
   const label = document.getElementById('classPickerLabel');
-  label.textContent = name;
+  label.textContent = getClassName(name);
   label.classList.remove('placeholder');
   document.querySelectorAll('.custom-select-option').forEach(el => {
     el.classList.toggle('selected', el.dataset.value === name);
@@ -146,7 +147,7 @@ export async function syncClassUI() {
 
   if (state.selectedClass) {
     const label = document.getElementById('classPickerLabel');
-    label.textContent = state.selectedClass;
+    label.textContent = getClassName(state.selectedClass);
     label.classList.remove('placeholder');
     document.querySelectorAll('.custom-select-option').forEach(el =>
       el.classList.toggle('selected', el.dataset.value === state.selectedClass)
@@ -182,7 +183,7 @@ export async function syncClassUI() {
       });
 
       const creatorLabel = document.getElementById('creatorPickerLabel');
-      creatorLabel.textContent = state.selectedCreator || '— Choose build —';
+      creatorLabel.textContent = state.selectedCreator || t('builder.chooseBuild');
       creatorLabel.classList.toggle('placeholder', !state.selectedCreator);
 
       creatorWrap.style.display = '';
@@ -190,22 +191,22 @@ export async function syncClassUI() {
       creatorWrap.style.display = 'none';
     }
 
-    colName.textContent = state.selectedClass;
+    colName.textContent = getClassName(state.selectedClass);
     colSubtitle.textContent = state.creatorName ? `by ${state.creatorName}` : '';
     colName.classList.add('active');
     iconWrap.classList.add('visible');
     const p = classIconPath(state.selectedClass);
     imgEl.style.display = 'none';
     ph.style.display = '';
-    const t = new Image();
-    t.onload = () => { imgEl.src = p; imgEl.style.display = 'block'; ph.style.display = 'none'; };
-    t.onerror = () => { imgEl.style.display = 'none'; ph.style.display = ''; };
-    t.src = p;
+    const testImg = new Image();
+    testImg.onload = () => { imgEl.src = p; imgEl.style.display = 'block'; ph.style.display = 'none'; };
+    testImg.onerror = () => { imgEl.style.display = 'none'; ph.style.display = ''; };
+    testImg.src = p;
     resetBtn.style.display = '';
     clearBtn.style.display = '';
   } else {
     const label = document.getElementById('classPickerLabel');
-    label.textContent = '— Select Hero Class —';
+    label.textContent = t('builder.selectClass');
     label.classList.add('placeholder');
     document.querySelectorAll('.custom-select-option').forEach(el => el.classList.remove('selected'));
     creatorWrap.style.display = 'none';
