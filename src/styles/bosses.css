@@ -27,8 +27,6 @@
   align-items: center;
   gap: 8px;
   background: var(--glass);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   color: var(--muted2);
   font-family: 'Nunito', sans-serif;
@@ -83,8 +81,6 @@
   display: flex;
   gap: 0;
   background: var(--glass);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   text-decoration: none;
@@ -307,8 +303,6 @@
   overflow: hidden;
   background:
     linear-gradient(135deg, rgba(233,69,96,0.08) 0%, rgba(16,16,32,0.72) 45%, rgba(245,166,35,0.05) 100%);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .boss-detail-header::before {
@@ -385,8 +379,6 @@
   padding: 5px 12px;
   border-radius: 10px;
   letter-spacing: 0.5px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   transition: all 0.2s ease;
 }
 .boss-meta-item:hover {
@@ -434,8 +426,6 @@
   color: var(--text);
   line-height: 1.8;
   background: var(--glass);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
@@ -470,8 +460,6 @@
   display: flex;
   gap: 20px;
   background: var(--glass);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-left: 3px solid transparent;
   border-radius: var(--radius);
