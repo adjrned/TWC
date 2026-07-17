@@ -16,47 +16,42 @@ async function loadBossData() {
 
 const BOSS_CATEGORIES = ['Minor', 'Coins', 'Mids', 'Late', 'Tower', 'End-game'];
 
-function renderBossList(bosses) {
-  const grouped = {};
-  BOSS_CATEGORIES.forEach(cat => { grouped[cat] = []; });
-  bosses.forEach(boss => {
-    const cat = BOSS_CATEGORIES.includes(boss.tier) ? boss.tier : 'Minor';
-    grouped[cat].push(boss);
-  });
+function renderBossList(bosses, query) {
+  const activeCat = query.tier || '';
 
-  const sections = BOSS_CATEGORIES
-    .filter(cat => grouped[cat].length > 0)
-    .map(cat => `
-      <div class="boss-category">
-        <h2 class="boss-category-title">${esc(cat)}</h2>
-        <div class="boss-grid">
-          ${grouped[cat].map(boss => `
-            <a href="#/bosses/${boss.id}" class="boss-card" data-tier="${boss.tier}">
-              <div class="boss-card-icon">
-                <img src="${boss.iconSrc}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
-              </div>
-              <div class="boss-card-info">
-                <h3>${esc(boss.name)}</h3>
-                <span class="boss-tier-badge">${esc(boss.tier)}</span>
-                <p class="boss-card-location">${esc(boss.location)}</p>
-                <p class="boss-card-desc">${esc(boss.description).slice(0, 80)}...</p>
-                <div class="boss-card-drops">
-                  ${boss.drops.slice(0, 3).map(d => `<span class="drop-preview">${esc(d.itemName)}</span>`).join('')}
-                  ${boss.drops.length > 3 ? `<span class="drop-more">+${boss.drops.length - 3} more</span>` : ''}
-                </div>
-              </div>
-            </a>
-          `).join('')}
-        </div>
-      </div>
-    `).join('');
+  const filtered = activeCat
+    ? bosses.filter(b => b.tier === activeCat)
+    : bosses;
 
   return `
     <div class="page-header">
       <h1>${t('bosses.title')}</h1>
       <p class="page-subtitle">${t('bosses.subtitle')}</p>
     </div>
-    ${sections}
+
+    <div class="boss-filters">
+      <div class="filter-pills">
+        <button class="filter-pill ${!activeCat ? 'active' : ''}" onclick="window._bossFilterTier('')">All</button>
+        ${BOSS_CATEGORIES.map(cat => `
+          <button class="filter-pill boss-tier-${cat.toLowerCase().replace('-', '')} ${activeCat === cat ? 'active' : ''}" onclick="window._bossFilterTier('${cat}')">${esc(cat)}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="boss-grid">
+      ${filtered.length === 0 ? `<div class="boss-empty">No bosses in this category yet.</div>` : ''}
+      ${filtered.map(boss => `
+        <a href="#/bosses/${boss.id}" class="boss-card" data-tier="${boss.tier}">
+          <div class="boss-card-icon">
+            <img src="${boss.iconSrc}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
+          </div>
+          <div class="boss-card-info">
+            <h3>${esc(boss.name)}</h3>
+            <span class="boss-tier-badge tier-${boss.tier.toLowerCase().replace('-', '')}">${esc(boss.tier)}</span>
+          </div>
+        </a>
+      `).join('')}
+    </div>
   `;
 }
 
@@ -148,6 +143,17 @@ export async function initBosses({ params, query }) {
       `;
     }
   } else {
-    app.innerHTML = renderBossList(bosses);
+    app.innerHTML = renderBossList(bosses, query);
+
+    window._bossFilterTier = (tier) => {
+      const params = new URLSearchParams();
+      if (tier) params.set('tier', tier);
+      const qs = params.toString();
+      location.hash = '#/bosses' + (qs ? '?' + qs : '');
+    };
+
+    return function cleanup() {
+      delete window._bossFilterTier;
+    };
   }
 }
