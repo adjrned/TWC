@@ -332,6 +332,18 @@
 }
 .picker-item:hover img { filter: drop-shadow(0 0 8px rgba(233,69,96,0.35)); }
 .picker-item .pi-name { font-size: 10px; color: var(--muted2); font-weight: 600; line-height: 1.2; word-break: break-word; }
+.picker-item .pi-tier {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 4px; margin-top: 2px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+}
+.picker-item .pi-tier.rarity-arcana { color: var(--rarity-arcana); border-color: rgba(155,89,182,0.35); background: rgba(155,89,182,0.1); }
+.picker-item .pi-tier.rarity-alteia { color: var(--rarity-alteia); border-color: rgba(78,205,196,0.35); background: rgba(78,205,196,0.1); }
+.picker-item .pi-tier.rarity-gnosis { color: var(--rarity-gnosis); border-color: rgba(240,128,106,0.35); background: rgba(240,128,106,0.1); }
+.picker-item .pi-tier.rarity-neptinos { color: var(--rarity-neptinos); border-color: rgba(45,158,110,0.35); background: rgba(45,158,110,0.1); }
+.picker-item .pi-tier.rarity-deltirama { color: var(--rarity-deltirama); border-color: rgba(184,160,224,0.35); background: rgba(184,160,224,0.1); }
+.picker-item .pi-tier.rarity-rare { color: var(--rarity-rare); border-color: rgba(196,164,108,0.35); background: rgba(196,164,108,0.1); }
+.picker-item .pi-tier.rarity-magic { color: var(--rarity-magic); border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.1); }
 .picker-item.hidden { display: none; }
 .picker-empty { grid-column: 1/-1; text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
 .picker-sentinel { grid-column: 1/-1; height: 1px; }

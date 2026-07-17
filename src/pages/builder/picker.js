@@ -15,8 +15,45 @@ let itemIcons = [];
 let searchIndex = [];
 let localizedSearchIndex = [];
 let cachedLocale = null;
-let itemsBySlot = {};
+let itemDb = [];
+let itemsByType = {};
 let initialized = false;
+
+// Tier ordering: highest first
+const GRADE_TO_TIER = { 5: 'arcana', 4: 'alteia', 3: 'gnosis', 2: 'neptinos', 1: 'deltirama' };
+const RANK_TO_TIER = { '[Rare]': 'rare', '[Magic]': 'magic', '[Normal]': 'normal', 'none': 'none' };
+
+function getItemTier(item) {
+  if (item.rank === '[Epic]' && item.grade >= 1) return GRADE_TO_TIER[item.grade] || 'deltirama';
+  return RANK_TO_TIER[item.rank] || 'none';
+}
+
+const TIER_ORDER = ['arcana', 'alteia', 'gnosis', 'neptinos', 'deltirama', 'rare', 'magic', 'normal', 'none'];
+
+function tierSortValue(item) {
+  return TIER_ORDER.indexOf(getItemTier(item));
+}
+
+// Map item types to builder columns
+function typeToCategory(type) {
+  if (!type) return 'other';
+  const l = type.toLowerCase();
+  if (l.startsWith('weapon') || l === 'pickaxe') return 'weapon';
+  if (l === 'armor') return 'armor';
+  if (l === 'headwear') return 'headwear';
+  if (l === 'wings') return 'wings';
+  if (l === 'accessory') return 'accessory';
+  return 'other';
+}
+
+// Map builder columns to item type categories
+const COL_TO_CATEGORY = {
+  weapon: 'weapon',
+  helm: 'headwear',
+  body: 'armor',
+  wings: 'wings',
+  accessory: 'accessory',
+};
 
 const CLASS_PATTERNS = (() => {
   const all = [];
@@ -39,22 +76,23 @@ function isClassIcon(name) {
 async function initItemIcons() {
   if (initialized) return;
   itemIcons = iconLibrary.filter(icon => !isClassIcon(icon.name));
-
-  // Pre-compute lowercase names for fast searching
   searchIndex = itemIcons.map(icon => icon.name.toLowerCase());
 
   try {
     const r = await fetch('data/items.json');
     if (r.ok) {
-      const items = await r.json();
-      itemsBySlot = {};
-      COLS.forEach(c => { itemsBySlot[c] = []; });
-      items.forEach(item => {
-        if (item.slot && itemsBySlot[item.slot]) {
-          itemsBySlot[item.slot].push(item.name);
-        }
+      itemDb = await r.json();
+      // Group items by type category
+      itemsByType = { weapon: [], headwear: [], armor: [], wings: [], accessory: [], other: [] };
+      itemDb.forEach(item => {
+        const cat = typeToCategory(item.type);
+        if (itemsByType[cat]) itemsByType[cat].push(item);
       });
-      loadItemTranslations(items);
+      // Sort each category by tier (highest first)
+      for (const cat of Object.keys(itemsByType)) {
+        itemsByType[cat].sort((a, b) => tierSortValue(a) - tierSortValue(b));
+      }
+      loadItemTranslations(itemDb);
     }
   } catch(e) {}
 
@@ -81,7 +119,6 @@ export async function openPicker(rowId, col, idx) {
   rebuildLocalizedIndex();
 
   const pill = document.getElementById('pickerModePill');
-
   if (idx === 1) { pill.textContent = 'ALT'; pill.className = 'picker-mode-pill mode-alt'; }
   else { pill.textContent = 'PRIMARY'; pill.className = 'picker-mode-pill mode-primary'; }
 
@@ -89,7 +126,8 @@ export async function openPicker(rowId, col, idx) {
   document.getElementById('pickerSearch').value = '';
   document.getElementById('pickerSearch').placeholder = t('picker.search');
 
-  activeCategory = col;
+  // Auto-select the category matching the column
+  activeCategory = COL_TO_CATEGORY[col] || 'all';
   buildCategoryTabs();
   applyFilter();
 
@@ -112,21 +150,20 @@ function buildCategoryTabs() {
   if (!tabsBuilt || cachedLocale !== getLocale()) {
     const categories = [
       { key: 'all', label: t('picker.allItems'), icon: '📦' },
-      { key: 'weapon', label: t('col.weapon'), icon: '⚔️' },
-      { key: 'helm', label: t('col.helm'), icon: '⛑️' },
-      { key: 'body', label: t('col.body'), icon: '🥋' },
-      { key: 'wings', label: t('col.wings'), icon: '🪽' },
-      { key: 'accessory', label: t('col.accessory'), icon: '💍' },
+      { key: 'weapon', label: t('col.weapon'), icon: '⚔️', count: itemsByType.weapon?.length || 0 },
+      { key: 'headwear', label: t('col.helm'), icon: '⛑️', count: itemsByType.headwear?.length || 0 },
+      { key: 'armor', label: t('col.body'), icon: '🥋', count: itemsByType.armor?.length || 0 },
+      { key: 'wings', label: t('col.wings'), icon: '🪽', count: itemsByType.wings?.length || 0 },
+      { key: 'accessory', label: t('col.accessory'), icon: '💍', count: itemsByType.accessory?.length || 0 },
     ];
 
-    tabs.innerHTML = categories.map(cat => {
-      const count = cat.key === 'all' ? '' : (itemsBySlot[cat.key]?.length || '');
-      return `<button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">
+    tabs.innerHTML = categories.map(cat => `
+      <button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">
         <span class="picker-tab-icon">${cat.icon}</span>
         ${cat.label}
-        ${count ? `<span class="picker-tab-count">${count}</span>` : ''}
-      </button>`;
-    }).join('');
+        ${cat.count ? `<span class="picker-tab-count">${cat.count}</span>` : ''}
+      </button>
+    `).join('');
 
     tabs.onclick = (e) => {
       const btn = e.target.closest('.picker-tab');
@@ -142,82 +179,66 @@ function buildCategoryTabs() {
   }
 }
 
-function showSearchPrompt() {
-  const grid = document.getElementById('pickerGrid');
-  grid.innerHTML = `<div class="picker-empty">
-    <div style="font-size: 28px; margin-bottom: 12px;">🔍</div>
-    <p>${t('picker.searchPrompt')}</p>
-    <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">${itemIcons.length} ${t('picker.available')}</p>
-  </div>`;
-  document.getElementById('pickerCount').textContent = `${itemIcons.length} ${t('picker.items')}`;
-}
+const TIER_LABELS = {
+  arcana: 'Arcana', alteia: 'Alteia', gnosis: 'Gnosis',
+  neptinos: 'Neptinos', deltirama: 'Deltirama', rare: 'Rare', magic: 'Magic', normal: 'Normal', none: ''
+};
 
-function getFilteredIcons(query, respectCategory) {
-  let indices;
+const TIER_CSS = {
+  arcana: 'rarity-arcana', alteia: 'rarity-alteia', gnosis: 'rarity-gnosis',
+  neptinos: 'rarity-neptinos', deltirama: 'rarity-deltirama', rare: 'rarity-rare', magic: 'rarity-magic',
+};
 
-  if (respectCategory && activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
-    const slotNames = new Set(itemsBySlot[activeCategory].map(n => n.toLowerCase()));
-    indices = [];
-    for (let i = 0; i < itemIcons.length; i++) {
-      if (slotNames.has(searchIndex[i])) indices.push(i);
-    }
-  } else {
-    indices = null;
+function getItemsForCategory(cat) {
+  if (cat === 'all') {
+    // All equippable items, sorted by tier
+    const all = [...(itemsByType.weapon || []), ...(itemsByType.headwear || []),
+      ...(itemsByType.armor || []), ...(itemsByType.wings || []), ...(itemsByType.accessory || [])];
+    all.sort((a, b) => tierSortValue(a) - tierSortValue(b));
+    return all;
   }
-
-  if (query) {
-    const result = [];
-    const idx = localizedSearchIndex.length ? localizedSearchIndex : searchIndex;
-    if (indices) {
-      for (let i = 0; i < indices.length; i++) {
-        if (idx[indices[i]].includes(query)) result.push(itemIcons[indices[i]]);
-      }
-    } else {
-      for (let i = 0; i < idx.length; i++) {
-        if (idx[i].includes(query)) result.push(itemIcons[i]);
-      }
-    }
-    return result;
-  }
-
-  if (indices) return indices.map(i => itemIcons[i]);
-  return itemIcons;
+  return itemsByType[cat] || [];
 }
 
 function applyFilter() {
   const q = document.getElementById('pickerSearch').value.toLowerCase();
 
   if (q) {
-    filtered = getFilteredIcons(q, false);
-  } else if (activeCategory === 'all') {
-    showSearchPrompt();
-    return;
-  } else if (itemsBySlot[activeCategory]?.length) {
-    filtered = getFilteredIcons('', true);
+    // Search overrides category — search all items
+    const idx = localizedSearchIndex.length ? localizedSearchIndex : searchIndex;
+    const results = [];
+    for (let i = 0; i < idx.length; i++) {
+      if (idx[i].includes(q)) {
+        const dbItem = itemDb.find(d => d.name.toLowerCase() === searchIndex[i]);
+        results.push({ icon: itemIcons[i], dbItem });
+      }
+    }
+    // Sort search results by tier
+    results.sort((a, b) => {
+      const ta = a.dbItem ? tierSortValue(a.dbItem) : 99;
+      const tb = b.dbItem ? tierSortValue(b.dbItem) : 99;
+      return ta - tb;
+    });
+    filtered = results;
   } else {
-    const catIcon = activeCategory === 'weapon' ? '⚔️' : activeCategory === 'helm' ? '⛑️' : activeCategory === 'body' ? '🥋' : activeCategory === 'wings' ? '🪽' : '💍';
-    const grid = document.getElementById('pickerGrid');
-    grid.innerHTML = `<div class="picker-empty">
-      <div style="font-size: 28px; margin-bottom: 12px;">${catIcon}</div>
-      <p>${t('picker.noData', { slot: t('col.' + activeCategory) })}</p>
-      <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">${t('picker.useSearch')}</p>
-    </div>`;
-    document.getElementById('pickerCount').textContent = '—';
-    return;
+    // Show category items from the database
+    const catItems = getItemsForCategory(activeCategory);
+    filtered = catItems.map(dbItem => {
+      const icon = itemIcons.find(ic => ic.name.toLowerCase() === dbItem.name.toLowerCase());
+      return { icon: icon || { name: dbItem.name, src: `twicons/${encodeURIComponent(dbItem.name)}.jpg` }, dbItem };
+    });
   }
 
   rendered = 0;
   const grid = document.getElementById('pickerGrid');
   grid.innerHTML = '';
+  grid.onclick = handleGridClick;
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="picker-empty">${t('picker.noMatch')}</div>`;
+    grid.innerHTML = `<div class="picker-empty">${q ? t('picker.noMatch') : 'No items in this category.'}</div>`;
     document.getElementById('pickerCount').textContent = '0';
     return;
   }
-
-  // Event delegation — single listener on grid
-  grid.onclick = handleGridClick;
 
   renderBatch(grid);
   setupInfiniteScroll(grid);
@@ -231,7 +252,7 @@ function handleGridClick(e) {
   if (!item) return;
   const idx = parseInt(item.dataset.idx, 10);
   if (isNaN(idx) || !filtered[idx]) return;
-  pickIcon(filtered[idx]);
+  pickIcon(filtered[idx].icon);
 }
 
 export function buildPickerGrid() {
@@ -241,10 +262,15 @@ export function buildPickerGrid() {
 function renderBatch(grid) {
   const end = Math.min(rendered + BATCH_SIZE, filtered.length);
   const frag = document.createDocumentFragment();
+  const locale = getLocale();
   for (let i = rendered; i < end; i++) {
-    const icon = filtered[i];
+    const { icon, dbItem } = filtered[i];
+    const tier = dbItem ? getItemTier(dbItem) : 'none';
+    const tierCss = TIER_CSS[tier] || '';
+    const tierLabel = TIER_LABELS[tier] || '';
+
     const div = document.createElement('div');
-    div.className = 'picker-item';
+    div.className = 'picker-item' + (tierCss ? ' ' + tierCss : '');
     div.dataset.idx = i;
     const img = document.createElement('img');
     img.src = icon.src;
@@ -252,11 +278,21 @@ function renderBatch(grid) {
     img.loading = 'lazy';
     img.decoding = 'async';
     img.onerror = () => { div.style.display = 'none'; };
+
     const label = document.createElement('span');
     label.className = 'pi-name';
-    label.textContent = translateItemName(icon.name, getLocale());
+    label.textContent = translateItemName(icon.name, locale);
+
     div.appendChild(img);
     div.appendChild(label);
+
+    if (tierLabel) {
+      const badge = document.createElement('span');
+      badge.className = 'pi-tier ' + tierCss;
+      badge.textContent = tierLabel;
+      div.appendChild(badge);
+    }
+
     frag.appendChild(div);
   }
   grid.appendChild(frag);
@@ -265,7 +301,6 @@ function renderBatch(grid) {
 
 function setupInfiniteScroll(grid) {
   if (observer) observer.disconnect();
-
   if (rendered >= filtered.length) return;
 
   const sentinel = document.createElement('div');
