@@ -231,41 +231,35 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .picker-header {
-  padding: 0;
+  padding: 16px 22px 12px;
   border-bottom: 1px solid var(--border);
-  display: flex; flex-direction: column; flex-shrink: 0;
-  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  flex-wrap: wrap;
+  position: relative;
 }
 .picker-header::before {
-  content: ''; display: block; height: 3px;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
 }
-.picker-header > .picker-header-inner {
-  padding: 14px 22px 12px;
-  display: flex; align-items: center; gap: 12px;
-}
-/* fallback: if header-inner wrapper doesn't exist, style direct children */
 .picker-header h2 {
-  font-family: 'Cinzel', serif; font-size: 15px; color: var(--accent2);
-  letter-spacing: 1.2px; flex: 1;
+  font-family: 'Cinzel', serif; font-size: 14px; color: var(--accent2);
+  letter-spacing: 1px; white-space: nowrap; flex-shrink: 0;
   text-shadow: 0 0 20px rgba(245,166,35,0.3);
 }
 .picker-mode-pill {
-  font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-  padding: 4px 12px; border-radius: 12px; white-space: nowrap; flex-shrink: 0;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
 }
 .picker-mode-pill.mode-primary {
   background: rgba(233,69,96,0.18); border: 1px solid var(--accent); color: var(--accent);
-  box-shadow: 0 0 10px rgba(233,69,96,0.2);
 }
 .picker-mode-pill.mode-alt {
   background: rgba(78,205,196,0.18); border: 1px solid var(--accent3); color: var(--accent3);
-  box-shadow: 0 0 10px rgba(78,205,196,0.2);
 }
 .picker-search {
   display: flex; align-items: center; gap: 8px;
   background: rgba(255,255,255,0.04); border: 1px solid var(--border2);
-  border-radius: 20px; padding: 7px 16px; flex: 1; max-width: 280px;
+  border-radius: 20px; padding: 7px 16px; flex: 1; min-width: 160px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .picker-search:focus-within {
