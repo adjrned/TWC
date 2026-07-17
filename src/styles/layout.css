@@ -83,7 +83,7 @@
 
 /* ── Logo area ── */
 .sidebar-logo {
-  padding: 20px 16px 20px;
+  padding: 12px 16px 20px;
   margin-bottom: 16px;
   position: relative;
   text-align: center;
@@ -106,8 +106,8 @@
 }
 
 .logo-emblem {
-  font-size: 24px;
-  margin-bottom: 6px;
+  font-size: 28px;
+  margin-bottom: 8px;
   opacity: 0.6;
   filter: drop-shadow(0 0 6px rgba(233,69,96,0.4));
   position: relative;
@@ -116,7 +116,7 @@
 
 .sidebar-logo h1 {
   font-family: 'Cinzel', serif;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: 3px;
   line-height: 1.2;
