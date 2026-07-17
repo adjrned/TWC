@@ -3,10 +3,10 @@ const STRINGS = {
     // Nav
     'nav.builder': 'Loadout Builder',
     'nav.items': 'Item Repository',
-    'nav.bosses': 'Boss Guides',
+    'nav.bosses': 'Boss Info',
     'nav.builder.short': 'Builder',
     'nav.items.short': 'Items',
-    'nav.bosses.short': 'Bosses',
+    'nav.bosses.short': 'Boss',
 
     // Builder
     'builder.title': 'TWRPG Loadout Builder',
@@ -48,7 +48,7 @@ const STRINGS = {
     'stat.INT': 'INT',
 
     // Pages
-    'bosses.title': 'Boss Guides',
+    'bosses.title': 'Boss Info',
     'bosses.subtitle': 'Strategies, phases, and drop tables for every boss',
     'items.title': 'Item Repository',
     'items.subtitle': 'Full item database — stats, recipes, and drop sources',
@@ -62,7 +62,7 @@ const STRINGS = {
   ko: {
     'nav.builder': '장비 빌더',
     'nav.items': '아이템 도감',
-    'nav.bosses': '보스 공략',
+    'nav.bosses': '보스 정보',
     'nav.builder.short': '빌더',
     'nav.items.short': '아이템',
     'nav.bosses.short': '보스',
@@ -102,7 +102,7 @@ const STRINGS = {
     'stat.AGI': '민첩',
     'stat.INT': '지능',
 
-    'bosses.title': '보스 공략',
+    'bosses.title': '보스 정보',
     'bosses.subtitle': '모든 보스의 전략, 페이즈, 드롭 테이블',
     'items.title': '아이템 도감',
     'items.subtitle': '전체 아이템 데이터베이스 — 스탯, 레시피, 드롭 출처',
@@ -115,7 +115,7 @@ const STRINGS = {
   zh: {
     'nav.builder': '装备搭配',
     'nav.items': '物品图鉴',
-    'nav.bosses': 'Boss攻略',
+    'nav.bosses': 'Boss信息',
     'nav.builder.short': '搭配',
     'nav.items.short': '物品',
     'nav.bosses.short': 'Boss',
@@ -155,7 +155,7 @@ const STRINGS = {
     'stat.AGI': '敏捷',
     'stat.INT': '智力',
 
-    'bosses.title': 'Boss攻略',
+    'bosses.title': 'Boss信息',
     'bosses.subtitle': '所有Boss的策略、阶段和掉落表',
     'items.title': '物品图鉴',
     'items.subtitle': '完整物品数据库 — 属性、配方、掉落来源',

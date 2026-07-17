@@ -1,8 +1,8 @@
 [
   {
     "id": "styrix",
-    "name": "Styrix",
-    "iconSrc": "twicons/StyrixIcon.jpg",
+    "name": "Styrix, the Harvester of Souls",
+    "iconSrc": "twicons/Styrix, the Harvester of Souls Icon.jpg",
     "tier": "End-game",
     "location": "Abyssal Depths",
     "hp": "50,000,000",
@@ -34,41 +34,40 @@
     "recommendedClasses": ["Arcane Mage", "Soul Weaver", "Priest", "Crusader"]
   },
   {
-    "id": "duke",
-    "name": "Duke Alarion",
-    "iconSrc": "twicons/DukeAlarionIcon.jpg",
+    "id": "duke-lazarus",
+    "name": "Duke Lazarus",
+    "iconSrc": "twicons/Duke Lazarus Icon.jpg",
     "tier": "Mid-game",
     "location": "Crimson Fortress",
     "hp": "15,000,000",
-    "description": "A fallen knight who commands an army of undead. Duke Alarion wields a massive cursed blade and can summon skeletal warriors to overwhelm attackers.",
+    "description": "A fallen knight who commands an army of undead. Duke Lazarus wields a massive cursed blade and can summon skeletal warriors to overwhelm attackers.",
     "strategy": "Clear skeleton adds immediately — they buff the Duke's attack speed per add alive. Interrupt his Cursed Slash (1.5s cast) or the tank takes 80% max HP damage. Save burst cooldowns for Phase 2.",
     "phases": [
       {
         "name": "Phase 1 — The Crimson Court",
         "hp": "100% - 50%",
-        "notes": "Duke Alarion summons 3 skeleton warriors every 20s. Each add alive gives the Duke +15% attack speed. Kill adds first. He uses Cursed Slash (interruptible, 1.5s cast) targeting the tank."
+        "notes": "Duke Lazarus summons 3 skeleton warriors every 20s. Each add alive gives the Duke +15% attack speed. Kill adds first. He uses Cursed Slash (interruptible, 1.5s cast) targeting the tank."
       },
       {
         "name": "Phase 2 — Undying Rage",
         "hp": "50% - 0%",
-        "notes": "Duke Alarion stops summoning adds but enters a frenzy. Attack speed doubles permanently. Cursed Slash cast time reduces to 0.8s — much harder to interrupt. Pure DPS race."
+        "notes": "Duke Lazarus stops summoning adds but enters a frenzy. Attack speed doubles permanently. Cursed Slash cast time reduces to 0.8s — much harder to interrupt. Pure DPS race."
       }
     ],
     "drops": [
       { "itemName": "Crimson Greatsword", "dropRate": "10%", "slot": "weapon" },
-      { "itemName": "Duke's Signet", "dropRate": "20%", "slot": "accessory" },
-      { "itemName": "Undead Plate", "dropRate": "15%", "slot": "body" }
+      { "itemName": "Duke's Signet", "dropRate": "20%", "slot": "accessory" }
     ],
     "recommendedClasses": ["Dark Knight", "Berserker", "Sword Saint", "Lancer"]
   },
   {
     "id": "gaia",
-    "name": "Gaia, World Tree",
-    "iconSrc": "twicons/GaiaIcon.jpg",
+    "name": "Gaia, the Earth Goddess",
+    "iconSrc": "twicons/Gaia Icon.jpg",
     "tier": "Mid-game",
     "location": "Verdant Sanctum",
     "hp": "25,000,000",
-    "description": "The corrupted World Tree awakened by dark magic. Gaia lashes with massive roots and unleashes waves of toxic pollen that blanket the battlefield.",
+    "description": "The corrupted Earth Goddess awakened by dark magic. Gaia lashes with massive roots and unleashes waves of toxic pollen that blanket the battlefield.",
     "strategy": "Spread out to minimize pollen overlap. Destroy Root Anchors quickly — if all 4 anchor simultaneously, Gaia becomes immune and heals 10% HP. Ranged DPS has an advantage as melee must dodge root slams.",
     "phases": [
       {
@@ -88,7 +87,6 @@
       }
     ],
     "drops": [
-      { "itemName": "Bark of the Ancient", "dropRate": "12%", "slot": "body" },
       { "itemName": "Pollen Crown", "dropRate": "18%", "slot": "helm" },
       { "itemName": "Root Tendril Wings", "dropRate": "8%", "slot": "wings" },
       { "itemName": "Ancient Tome", "dropRate": "30%", "slot": "accessory" }
@@ -96,13 +94,39 @@
     "recommendedClasses": ["Bow Master", "Sniper", "Elementalist", "Wind Mage"]
   },
   {
+    "id": "arcane-construct",
+    "name": "Arcane Construct",
+    "iconSrc": "twicons/Arcane Construct Icon.jpg",
+    "tier": "Mid-game",
+    "location": "Shattered Laboratory",
+    "hp": "20,000,000",
+    "description": "A massive golem forged from pure arcane energy. The Arcane Construct fires devastating beams and creates unstable energy fields that detonate after a delay.",
+    "strategy": "Avoid standing in energy fields — they detonate after 4 seconds for lethal damage. The Construct's beam attack is telegraphed by a 2s charge-up. Position behind pillars to break line of sight during beam phases.",
+    "phases": [
+      {
+        "name": "Phase 1 — Activation",
+        "hp": "100% - 50%",
+        "notes": "The Construct fires arcane bolts and places energy fields on random locations. Fields detonate after 4s. Beam attack every 30s — hide behind pillars."
+      },
+      {
+        "name": "Phase 2 — Overcharge",
+        "hp": "50% - 0%",
+        "notes": "The Construct overcharges. Energy fields spawn faster and the beam sweeps in an arc instead of a line. Pillars are destroyed one by one — fight becomes progressively harder."
+      }
+    ],
+    "drops": [
+      { "itemName": "Arcane Core", "dropRate": "15%", "slot": "accessory" }
+    ],
+    "recommendedClasses": ["Assassin", "Phantom Blade", "Gunner", "Trickster"]
+  },
+  {
     "id": "kamael",
-    "name": "Kamael the Fallen",
-    "iconSrc": "twicons/KamaelIcon.jpg",
+    "name": "Lightbringer Kamael",
+    "iconSrc": "twicons/Lightbringer.jpg",
     "tier": "End-game",
     "location": "Heaven's Edge",
     "hp": "80,000,000",
-    "description": "Once a celestial guardian, Kamael fell from grace after absorbing forbidden power. He wields both holy and dark energy, switching between forms unpredictably.",
+    "description": "Once a celestial guardian, Kamael wields both holy and dark energy, switching between forms unpredictably. His divine power can heal or destroy in equal measure.",
     "strategy": "Kamael switches between Light Form (holy AoE, heals himself) and Dark Form (single-target burst, debuffs). In Light Form, spread and interrupt his heal. In Dark Form, stack on the marked player to split damage. Transition between forms is the safest DPS window.",
     "phases": [
       {
@@ -119,9 +143,40 @@
     "drops": [
       { "itemName": "Wings of the Fallen", "dropRate": "3%", "slot": "wings" },
       { "itemName": "Celestial Halo", "dropRate": "7%", "slot": "helm" },
-      { "itemName": "Mask of Truth", "dropRate": "20%", "slot": "helm" },
-      { "itemName": "Divine Fragment", "dropRate": "25%", "slot": "accessory" }
+      { "itemName": "Mask of Truth", "dropRate": "20%", "slot": "helm" }
     ],
     "recommendedClasses": ["Paladin", "Priest", "Shrine Priestess", "Lightseeker"]
+  },
+  {
+    "id": "agareth",
+    "name": "Underlord Agareth",
+    "iconSrc": "twicons/Underlord Agareth Icon.jpg",
+    "tier": "End-game",
+    "location": "The Infernal Throne",
+    "hp": "100,000,000",
+    "description": "The Underlord of the demonic realm. Agareth commands hellfire and shadow, summoning infernal minions and raining destruction upon all who challenge his throne.",
+    "strategy": "The hardest boss in the game. Agareth combines summoning, area denial, and massive single-target damage. Coordination between tank swaps, add control, and avoiding fire patches is essential. Enrage timer is tight — bring maximum DPS.",
+    "phases": [
+      {
+        "name": "Phase 1 — Infernal Reign",
+        "hp": "100% - 60%",
+        "notes": "Agareth rains hellfire on random positions and summons Infernal Imps every 20s. Imps explode on death — kill them away from the group. Hellfire patches persist for 10s."
+      },
+      {
+        "name": "Phase 2 — Shadow Dominion",
+        "hp": "60% - 30%",
+        "notes": "Agareth cloaks in shadow, becoming briefly untargetable. Shadow clones appear — only one is real. Attack the wrong one and it explodes. The real Agareth has a faint red glow."
+      },
+      {
+        "name": "Phase 3 — The Underlord Unleashed",
+        "hp": "30% - 0%",
+        "notes": "All mechanics combine. Hellfire, imps, and shadow clones overlap. Agareth gains a tank-buster that requires a swap. Enrage at 3 minutes — must burn through 30% HP before then."
+      }
+    ],
+    "drops": [
+      { "itemName": "Agareth's Crown", "dropRate": "2%", "slot": "helm" },
+      { "itemName": "Infernal Wings", "dropRate": "5%", "slot": "wings" }
+    ],
+    "recommendedClasses": ["Warlock", "Blood Weaver", "Dark Knight", "Reaper"]
   }
 ]
