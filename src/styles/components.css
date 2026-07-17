@@ -315,20 +315,28 @@
 
 /* ── Picker category tabs ── */
 .picker-tabs {
-  display: flex; gap: 4px; padding: 10px 22px 0; flex-shrink: 0;
+  display: flex; gap: 2px; padding: 8px 22px 0; flex-shrink: 0;
   border-bottom: 1px solid var(--border); overflow-x: auto;
 }
+.picker-tabs::-webkit-scrollbar { height: 0; }
 .picker-tab {
   font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 700;
-  padding: 8px 14px; border: none; background: none;
+  padding: 8px 12px; border: none; background: none;
   color: var(--muted2); cursor: pointer; border-radius: 8px 8px 0 0;
   transition: all 0.15s; white-space: nowrap;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
+  display: flex; align-items: center; gap: 5px;
 }
 .picker-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
 .picker-tab.active {
   color: var(--accent); border-bottom-color: var(--accent);
   background: rgba(233,69,96,0.06);
+}
+.picker-tab-icon { font-size: 13px; }
+.picker-tab-count {
+  font-size: 9px; font-weight: 800; color: var(--accent);
+  background: rgba(233,69,96,0.12); padding: 1px 5px;
+  border-radius: 8px; margin-left: 2px;
 }
 .picker-footer {
   padding: 13px 22px; border-top: 1px solid var(--border);
