@@ -243,6 +243,35 @@
   color: var(--muted);
 }
 
+/* ── Locale switcher ── */
+.locale-switcher {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.locale-btn {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.locale-btn:hover {
+  color: var(--text);
+  border-color: var(--accent3);
+}
+.locale-btn.active {
+  background: rgba(78,205,196,0.12);
+  border-color: var(--accent3);
+  color: var(--accent3);
+}
+
 /* ════════════════════════════════
    Main content
    ════════════════════════════════ */

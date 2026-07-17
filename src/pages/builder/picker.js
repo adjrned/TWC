@@ -4,6 +4,7 @@ import { iconLibrary } from '../../data/icons.js';
 import { showToast } from '../../ui/toast.js';
 import { esc } from '../../ui/escape.js';
 import { setSlotItem } from './slots.js';
+import { t } from '../../i18n.js';
 
 const BATCH_SIZE = 48;
 let filtered = [];
@@ -115,17 +116,17 @@ function showSearchPrompt() {
   const grid = document.getElementById('pickerGrid');
   grid.innerHTML = `<div class="picker-empty">
     <div style="font-size: 28px; margin-bottom: 12px;">🔍</div>
-    <p>Search for an item by name</p>
-    <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">${itemIcons.length} items available</p>
+    <p>${t('picker.searchPrompt')}</p>
+    <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">${itemIcons.length} ${t('picker.available')}</p>
   </div>`;
-  document.getElementById('pickerCount').textContent = `${itemIcons.length} items`;
+  document.getElementById('pickerCount').textContent = `${itemIcons.length} ${t('picker.items')}`;
 }
 
-function getFilteredIcons(query) {
+function getFilteredIcons(query, respectCategory) {
   let pool = itemIcons;
 
-  // Filter by slot category if item data is available
-  if (activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
+  // Only filter by category when there's no search query
+  if (respectCategory && activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
     const slotNames = new Set(itemsBySlot[activeCategory].map(n => n.toLowerCase()));
     pool = pool.filter(icon => slotNames.has(icon.name.toLowerCase()));
   }
@@ -140,27 +141,25 @@ function getFilteredIcons(query) {
 function applyFilter() {
   const q = document.getElementById('pickerSearch').value.toLowerCase();
 
-  // If no search and "All Items" tab — show search prompt
-  if (!q && activeCategory === 'all') {
+  // When searching, always search ALL items regardless of active tab
+  if (q) {
+    filtered = getFilteredIcons(q, false);
+  } else if (activeCategory === 'all') {
     showSearchPrompt();
     return;
-  }
-
-  // If a specific category tab is selected with item data, show those items
-  if (!q && activeCategory !== 'all' && itemsBySlot[activeCategory]?.length) {
-    filtered = getFilteredIcons('');
-  } else if (!q && activeCategory !== 'all') {
-    // No item data for this category yet — show search prompt
+  } else if (itemsBySlot[activeCategory]?.length) {
+    filtered = getFilteredIcons('', true);
+  } else {
+    // No item data for this category — show prompt
+    const catIcon = activeCategory === 'weapon' ? '⚔️' : activeCategory === 'helm' ? '⛑️' : activeCategory === 'body' ? '🥋' : activeCategory === 'wings' ? '🪽' : '💍';
     const grid = document.getElementById('pickerGrid');
     grid.innerHTML = `<div class="picker-empty">
-      <div style="font-size: 28px; margin-bottom: 12px;">${LABELS[activeCategory] === 'Weapon' ? '⚔️' : activeCategory === 'helm' ? '⛑️' : activeCategory === 'body' ? '🥋' : activeCategory === 'wings' ? '🪽' : '💍'}</div>
-      <p>No ${LABELS[activeCategory].toLowerCase()} data yet</p>
-      <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">Use search to find items by name</p>
+      <div style="font-size: 28px; margin-bottom: 12px;">${catIcon}</div>
+      <p>${t('picker.noData', { slot: t('col.' + activeCategory) })}</p>
+      <p style="font-size: 11px; margin-top: 8px; color: var(--muted);">${t('picker.useSearch')}</p>
     </div>`;
     document.getElementById('pickerCount').textContent = '—';
     return;
-  } else {
-    filtered = getFilteredIcons(q);
   }
 
   rendered = 0;
@@ -168,7 +167,7 @@ function applyFilter() {
   grid.innerHTML = '';
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="picker-empty">No items match your search.</div>`;
+    grid.innerHTML = `<div class="picker-empty">${t('picker.noMatch')}</div>`;
     document.getElementById('pickerCount').textContent = '0';
     return;
   }
@@ -176,7 +175,7 @@ function applyFilter() {
   renderBatch(grid);
   setupInfiniteScroll(grid);
   document.getElementById('pickerCount').textContent = filtered.length <= BATCH_SIZE
-    ? `${filtered.length} items`
+    ? `${filtered.length} ${t('picker.items')}`
     : `${rendered} / ${filtered.length}`;
 }
 
