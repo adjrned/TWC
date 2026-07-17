@@ -1,7 +1,6 @@
 /* ── Table wrapper ── */
 .table-wrap {
   background: linear-gradient(160deg, rgba(22,22,44,0.75) 0%, rgba(10,10,24,0.8) 100%);
-  backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: var(--radius-lg); overflow: visible;
   box-shadow:

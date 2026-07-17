@@ -216,8 +216,7 @@
   to   { opacity: 1; }
 }
 #pickerModal {
-  background: linear-gradient(160deg, rgba(22,22,42,0.96) 0%, rgba(12,12,26,0.98) 100%);
-  backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  background: linear-gradient(160deg, rgba(22,22,42,0.99) 0%, rgba(12,12,26,0.99) 100%);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg);
   width: 90%; max-width: 700px; max-height: 88vh;
@@ -283,7 +282,6 @@
   background: rgba(255,255,255,0.025);
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   text-align: center; position: relative; overflow: hidden;
-  will-change: transform;
 }
 .picker-item::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit;
@@ -344,8 +342,7 @@
 /* ── Context menu (right-click) ── */
 #ctxMenu {
   position: fixed;
-  background: linear-gradient(160deg, rgba(20,20,40,0.97) 0%, rgba(13,13,26,0.98) 100%);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  background: linear-gradient(160deg, rgba(20,20,40,0.99) 0%, rgba(13,13,26,0.99) 100%);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius); padding: 5px; z-index: 9999; min-width: 176px;
   display: none;
@@ -387,8 +384,7 @@
 #toast {
   position: fixed; bottom: 30px; left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: linear-gradient(135deg, rgba(14,14,28,0.97) 0%, rgba(10,10,22,0.98) 100%);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(135deg, rgba(14,14,28,0.99) 0%, rgba(10,10,22,0.99) 100%);
   border: 1px solid var(--accent3); color: var(--accent3);
   font-size: 13px; font-weight: 700; padding: 11px 26px; border-radius: 24px;
   opacity: 0; transition: opacity 0.3s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
@@ -409,8 +405,7 @@
 }
 .modal-overlay.show { display: flex; animation: overlayIn 0.22s ease forwards; }
 .modal {
-  background: linear-gradient(160deg, rgba(22,22,44,0.97) 0%, rgba(12,12,26,0.99) 100%);
-  backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  background: linear-gradient(160deg, rgba(22,22,44,0.99) 0%, rgba(12,12,26,0.99) 100%);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg); padding: 28px 30px; width: 90%; max-width: 440px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(233,69,96,0.1) inset;

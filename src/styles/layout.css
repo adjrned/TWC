@@ -20,8 +20,6 @@
       rgba(10, 10, 28, 0.96) 40%,
       rgba(8, 6, 22, 0.98) 100%
     );
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   display: flex;
   flex-direction: column;
   padding: 24px 0;
@@ -356,8 +354,6 @@
   text-align: center;
   padding: 80px 20px;
   background: var(--glass);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
@@ -431,8 +427,6 @@
       rgba(10, 8, 28, 0.82) 0%,
       rgba(8, 6, 22, 0.92) 100%
     );
-    backdrop-filter: blur(28px) saturate(1.4);
-    -webkit-backdrop-filter: blur(28px) saturate(1.4);
     /* Gradient border-top instead of flat line */
     border-top: 1px solid transparent;
     background-clip: padding-box;
