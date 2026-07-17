@@ -53,6 +53,7 @@ export function render() {
         imgP.className = 'slot-img-primary';
         imgP.src = iconSrc(primary);
         imgP.alt = primary.name;
+        imgP.loading = 'lazy';
         imgP.onerror = () => { imgP.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; tileP.appendChild(p); };
         tileP.appendChild(imgP);
         drop.appendChild(tileP);
@@ -64,6 +65,7 @@ export function render() {
           imgA.className = 'slot-img-alt';
           imgA.src = iconSrc(alt);
           imgA.alt = alt.name;
+          imgA.loading = 'lazy';
           imgA.onerror = () => { imgA.remove(); const p = document.createElement('span'); p.className='slot-plus'; p.textContent='+'; tileA.appendChild(p); };
           tileA.appendChild(imgA);
           drop.appendChild(tileA);

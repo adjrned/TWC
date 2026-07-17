@@ -223,6 +223,16 @@ tbody tr:hover .del-btn { opacity: 1; }
   box-shadow: inset 0 0 0 2.5px #4ade80;
   border-radius: 8px;
 }
+.slot-drop.has-alt .slot-icon-tile.tile-primary::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 20%;
+  height: 60%;
+  width: 1.5px;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.2), transparent);
+  z-index: 1;
+}
 .slot-drop.has-alt .slot-icon-tile.tile-alt {
   box-shadow: inset 0 0 0 2.5px #f87171;
   border-radius: 8px;
