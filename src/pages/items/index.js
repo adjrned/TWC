@@ -3,19 +3,29 @@ import { t } from '../../i18n.js';
 
 let itemData = null;
 
-// ── Rank helpers ─────────────────────────────────────────────────────────────
-// Actual data uses "[Magic]", "[Rare]", "[Epic]", "[Normal]", "none".
-// Map each to a stable key, display label, and CSS rarity class.
-const RANK_MAP = {
-  'none':     { key: 'none',   label: 'None',   css: ''                 },
-  '[Normal]': { key: 'normal', label: 'Normal', css: 'rarity-magic'     },
-  '[Magic]':  { key: 'magic',  label: 'Magic',  css: 'rarity-rare'      },
-  '[Rare]':   { key: 'rare',   label: 'Rare',   css: 'rarity-deltirama' },
-  '[Epic]':   { key: 'epic',   label: 'Epic',   css: 'rarity-arcana'    },
+// ── Tier helpers ─────────────────────────────────────────────────────────────
+// Tier is determined by rank + grade together.
+// Grade 0: none/Normal/Magic/Rare. Grade 1-5 (all [Epic]): Deltirama→Arcana.
+const TIER_INFO = {
+  none:      { key: 'none',      label: 'None',      css: '' },
+  normal:    { key: 'normal',    label: 'Normal',    css: '' },
+  magic:     { key: 'magic',     label: 'Magic',     css: 'rarity-magic' },
+  rare:      { key: 'rare',      label: 'Rare',      css: 'rarity-rare' },
+  deltirama: { key: 'deltirama', label: 'Deltirama', css: 'rarity-deltirama' },
+  neptinos:  { key: 'neptinos',  label: 'Neptinos',  css: 'rarity-neptinos' },
+  gnosis:    { key: 'gnosis',    label: 'Gnosis',    css: 'rarity-gnosis' },
+  alteia:    { key: 'alteia',    label: 'Alteia',    css: 'rarity-alteia' },
+  arcana:    { key: 'arcana',    label: 'Arcana',    css: 'rarity-arcana' },
 };
 
-function rankInfo(rank) {
-  return RANK_MAP[rank] || { key: 'none', label: rank || 'None', css: '' };
+const GRADE_TO_TIER = { 1: 'deltirama', 2: 'neptinos', 3: 'gnosis', 4: 'alteia', 5: 'arcana' };
+const RANK_TO_TIER = { 'none': 'none', '[Normal]': 'normal', '[Magic]': 'magic', '[Rare]': 'rare' };
+
+function rankInfo(item) {
+  if (item.rank === '[Epic]' && item.grade >= 1) {
+    return TIER_INFO[GRADE_TO_TIER[item.grade]] || TIER_INFO.deltirama;
+  }
+  return TIER_INFO[RANK_TO_TIER[item.rank]] || TIER_INFO.none;
 }
 
 // ── Type grouping ─────────────────────────────────────────────────────────────
@@ -43,12 +53,14 @@ const TYPE_FILTERS = [
 ];
 
 const RANK_FILTERS = [
-  { key: '',       label: 'All',    css: ''                 },
-  { key: 'none',   label: 'None',   css: ''                 },
-  { key: 'normal', label: 'Normal', css: 'rarity-magic'     },
-  { key: 'magic',  label: 'Magic',  css: 'rarity-rare'      },
-  { key: 'rare',   label: 'Rare',   css: 'rarity-deltirama' },
-  { key: 'epic',   label: 'Epic',   css: 'rarity-arcana'    },
+  { key: '',          label: 'All',       css: '' },
+  { key: 'magic',     label: 'Magic',     css: 'rarity-magic' },
+  { key: 'rare',      label: 'Rare',      css: 'rarity-rare' },
+  { key: 'deltirama', label: 'Deltirama', css: 'rarity-deltirama' },
+  { key: 'neptinos',  label: 'Neptinos',  css: 'rarity-neptinos' },
+  { key: 'gnosis',    label: 'Gnosis',    css: 'rarity-gnosis' },
+  { key: 'alteia',    label: 'Alteia',    css: 'rarity-alteia' },
+  { key: 'arcana',    label: 'Arcana',    css: 'rarity-arcana' },
 ];
 
 // ── Data loading ──────────────────────────────────────────────────────────────
@@ -74,7 +86,7 @@ function renderItemList(items, query) {
 
   let filtered = items;
   if (filterType) filtered = filtered.filter(i => typeGroup(i.type) === filterType);
-  if (filterRank) filtered = filtered.filter(i => rankInfo(i.rank).key === filterRank);
+  if (filterRank) filtered = filtered.filter(i => rankInfo(i).key === filterRank);
 
   return `
     <div class="page-header">
@@ -114,7 +126,7 @@ function renderItemList(items, query) {
     <div class="item-grid" id="itemGrid">
       ${filtered.length === 0 ? `<div class="item-empty">No items match your filters.</div>` : ''}
       ${filtered.map(item => {
-        const ri      = rankInfo(item.rank);
+        const ri      = rankInfo(item);
         const nameLow = item.name.toLowerCase();
         const koLow   = (item.koreanname || '').toLowerCase();
         const hidden  = search && !nameLow.includes(search) && !koLow.includes(search);
@@ -142,7 +154,7 @@ function renderItemList(items, query) {
 
 // ── Detail view ───────────────────────────────────────────────────────────────
 function renderItemDetail(item) {
-  const ri = rankInfo(item.rank);
+  const ri = rankInfo(item);
 
   const requiredByHtml = (item.required_by || []).length ? `
     <div class="item-section">
@@ -150,7 +162,7 @@ function renderItemDetail(item) {
       <div class="item-recipe-list">
         ${item.required_by.map(name => {
           const target = itemData.find(i => i.name === name);
-          const tri    = target ? rankInfo(target.rank) : { css: '' };
+          const tri    = target ? rankInfo(target || {}) : { css: '' };
           return `
             <a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
               <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
