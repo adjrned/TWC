@@ -192,12 +192,10 @@
 }
 #floatTooltip.show { opacity: 1; }
 #floatTooltip img {
-  width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
-  display: block; margin: 0 0 8px;
-  transform: scale(1.12);
+  display: none;
   box-shadow: 0 0 14px rgba(245,166,35,0.2);
 }
-#floatTooltip .tt-name { font-size: 12px; font-weight: 700; color: var(--accent2); margin-bottom: 3px; }
+#floatTooltip .tt-name { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 2px; }
 #floatTooltip .tt-slot {
   font-size: 10px; color: var(--muted2); text-transform: uppercase;
   letter-spacing: 1px;
