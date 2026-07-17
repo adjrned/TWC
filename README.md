@@ -1,1 +1,1 @@
-adjrned.github.io/TWRPG-Loadout-Builder
+adjrned.github.io/TWC
