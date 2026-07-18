@@ -1,73 +1,4 @@
 {
-  "Skeleton King Desperia": {
-    "name": "Skeleton King Desperia",
-    "iconType": "Legend",
-    "items": [
-      {
-        "name": "Death Scythe",
-        "base": 1.25,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Staff of Souls",
-        "base": 1.25,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Robe of the Reaper",
-        "base": 1.75,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Bone Necklace",
-        "base": 1.75,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Skeleton Bone",
-        "base": 2.5,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Orb of Oblivion",
-        "base": 2.5,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Spirit of Abyss",
-        "base": 2.5,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
-        "iconMult": 1.5
-      },
-      {
-        "name": "Prius Gold Coin",
-        "base": 0.76190476,
-        "wishMult": null,
-        "wishIconMult": null,
-        "iconMult": 1
-      },
-      {
-        "name": "Skeleton Token",
-        "base": 0.005,
-        "wishMult": null,
-        "wishIconMult": null,
-        "iconMult": 1
-      }
-    ]
-  },
   "Zombie Lord": {
     "name": "Zombie Lord",
     "iconType": "Legend",
@@ -866,6 +797,75 @@
       {
         "name": "Lightbringer's Token",
         "base": 0.01,
+        "wishMult": null,
+        "wishIconMult": null,
+        "iconMult": 1
+      }
+    ]
+  },
+  "Skeletal King Desperia": {
+    "name": "Skeleton King Desperia",
+    "iconType": "Legend",
+    "items": [
+      {
+        "name": "Death Scythe",
+        "base": 1.25,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Staff of Souls",
+        "base": 1.25,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Robe of the Reaper",
+        "base": 1.75,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Bone Necklace",
+        "base": 1.75,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Skeleton Bone",
+        "base": 2.5,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Orb of Oblivion",
+        "base": 2.5,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Spirit of Abyss",
+        "base": 2.5,
+        "wishMult": 2.5,
+        "wishIconMult": 3.75,
+        "iconMult": 1.5
+      },
+      {
+        "name": "Prius Gold Coin",
+        "base": 0.76190476,
+        "wishMult": null,
+        "wishIconMult": null,
+        "iconMult": 1
+      },
+      {
+        "name": "Skeleton Token",
+        "base": 0.005,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
