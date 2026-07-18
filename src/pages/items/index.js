@@ -203,6 +203,15 @@ function findBoss(name) {
   return bossData.find(b => b.name === name);
 }
 
+const BOSS_CATEGORY_LABELS = {
+  'Creep': 'Creep', 'Field': 'Field', 'Minor': 'Deltirama',
+  'Coins': 'Neptinos', 'High': 'Gnosis', 'Late': 'Alteia', 'Endgame': 'Arcana',
+};
+const BOSS_CATEGORY_CSS = {
+  'Creep': 'creep', 'Field': 'field', 'Minor': 'deltirama',
+  'Coins': 'neptinos', 'High': 'gnosis', 'Late': 'alteia', 'Endgame': 'arcana',
+};
+
 // ── Detail view ───────────────────────────────────────────────────────────────
 function renderItemDetail(item) {
   const ri = rankInfo(item);
@@ -249,7 +258,7 @@ function renderItemDetail(item) {
         return `<a href="#/bosses/${esc(boss.id)}" class="item-drop-source-link">
           <div class="item-drop-boss-icon"><img src="${bossIconSrc}" alt="${esc(name)}" onerror="this.style.display='none'"></div>
           <span class="item-drop-boss-name">${esc(name)}</span>
-          ${boss.category ? `<span class="boss-tier-badge tier-${boss.category.toLowerCase()}">${esc(boss.category)}</span>` : ''}
+          ${boss.category ? `<span class="boss-tier-badge tier-${BOSS_CATEGORY_CSS[boss.category] || boss.category.toLowerCase()}">${esc(BOSS_CATEGORY_LABELS[boss.category] || boss.category)}</span>` : ''}
           ${item.droprate ? `<span class="item-drop-rate">${item.droprate * 100}%</span>` : ''}
         </a>`;
       }
