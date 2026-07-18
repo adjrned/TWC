@@ -1,0 +1,875 @@
+{
+  "Skeleton King Desperia": {
+    "name": "Skeleton King Desperia",
+    "items": [
+      {
+        "name": "Death Scythe",
+        "wish": 3.28125,
+        "wishLegend": 4.921875,
+        "noWish": 1.3125,
+        "noWishLegend": 1.96875
+      },
+      {
+        "name": "Staff of Souls",
+        "wish": 3.28125,
+        "wishLegend": 4.921875,
+        "noWish": 1.3125,
+        "noWishLegend": 1.96875
+      },
+      {
+        "name": "Robe of the Reaper",
+        "wish": 4.59375,
+        "wishLegend": 6.890625,
+        "noWish": 1.8375,
+        "noWishLegend": 2.75625
+      },
+      {
+        "name": "Bone Necklace",
+        "wish": 4.59375,
+        "wishLegend": 6.890625,
+        "noWish": 1.8375,
+        "noWishLegend": 2.75625
+      },
+      {
+        "name": "Skeleton Bone",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Orb of Oblivion",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Spirit of Abyss",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Prius Gold Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.8,
+        "noWishLegend": 0.8
+      },
+      {
+        "name": "Skeleton Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Zombie Lord": {
+    "name": "Zombie Lord",
+    "items": [
+      {
+        "name": "Parasitic Staff",
+        "wish": 6.453125,
+        "wishLegend": 9.6796875,
+        "noWish": 2.58125,
+        "noWishLegend": 3.871875
+      },
+      {
+        "name": "Hood of the Fallen",
+        "wish": 6.453125,
+        "wishLegend": 9.6796875,
+        "noWish": 2.58125,
+        "noWishLegend": 3.871875
+      },
+      {
+        "name": "Shroud of Perservance",
+        "wish": 4.609375,
+        "wishLegend": 6.9140625,
+        "noWish": 1.84375,
+        "noWishLegend": 2.765625
+      },
+      {
+        "name": "Proof of Purification",
+        "wish": 9.21875,
+        "wishLegend": 13.828125,
+        "noWish": 3.6875,
+        "noWishLegend": 5.53125
+      },
+      {
+        "name": "Heart of Fire",
+        "wish": 9.21875,
+        "wishLegend": 13.828125,
+        "noWish": 3.6875,
+        "noWishLegend": 5.53125
+      },
+      {
+        "name": "Dark Crystal",
+        "wish": 9.21875,
+        "wishLegend": 13.828125,
+        "noWish": 3.6875,
+        "noWishLegend": 5.53125
+      },
+      {
+        "name": "Prius Gold Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.9,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Zombie Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Bone Dragon": {
+    "name": "Bone Dragon",
+    "items": [
+      {
+        "name": "Dragonic Orb",
+        "wish": 12.90625,
+        "wishLegend": 19.359375,
+        "noWish": 5.1625,
+        "noWishLegend": 7.74375
+      },
+      {
+        "name": "Ancient Hourglass",
+        "wish": 12.90625,
+        "wishLegend": 19.359375,
+        "noWish": 5.1625,
+        "noWishLegend": 7.74375
+      },
+      {
+        "name": "Burning Bone Fragment",
+        "wish": 18.4375,
+        "wishLegend": 27.65625,
+        "noWish": 7.375,
+        "noWishLegend": 11.0625
+      },
+      {
+        "name": "Dragon's Eye",
+        "wish": 18.4375,
+        "wishLegend": 27.65625,
+        "noWish": 7.375,
+        "noWishLegend": 11.0625
+      },
+      {
+        "name": "Bone Dragon Icon",
+        "wish": 1.84375,
+        "wishLegend": 2.765625,
+        "noWish": 0.7375,
+        "noWishLegend": 1.10625
+      },
+      {
+        "name": "Prius Gold Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.8,
+        "noWishLegend": 0.8
+      },
+      {
+        "name": "Bone Dragon Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Ancient Ent": {
+    "name": "Ancient Ent",
+    "items": [
+      {
+        "name": "Griseus, the Sword of Protection",
+        "wish": 4.59375,
+        "wishLegend": 6.890625,
+        "noWish": 1.8375,
+        "noWishLegend": 2.75625
+      },
+      {
+        "name": "Ring of the Storm",
+        "wish": 4.59375,
+        "wishLegend": 6.890625,
+        "noWish": 1.8375,
+        "noWishLegend": 2.75625
+      },
+      {
+        "name": "Embrace of Nature",
+        "wish": 3.28125,
+        "wishLegend": 4.921875,
+        "noWish": 1.3125,
+        "noWishLegend": 1.96875
+      },
+      {
+        "name": "Purified Water of Nature",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Fragment of the Wind",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Prius Gold Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.9,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Ent Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Archangel Samael": {
+    "name": "Archangel Samael",
+    "items": [
+      {
+        "name": "Guardian of the Skies",
+        "wish": 4.609375,
+        "wishLegend": 6.9140625,
+        "noWish": 1.84375,
+        "noWishLegend": 2.765625
+      },
+      {
+        "name": "Steel of God",
+        "wish": 9.21875,
+        "wishLegend": 13.828125,
+        "noWish": 3.6875,
+        "noWishLegend": 5.53125
+      },
+      {
+        "name": "God's Page",
+        "wish": 9.21875,
+        "wishLegend": 13.828125,
+        "noWish": 3.6875,
+        "noWishLegend": 5.53125
+      },
+      {
+        "name": "Essence of Light",
+        "wish": 9.21875,
+        "wishLegend": 13.828125,
+        "noWish": 3.6875,
+        "noWishLegend": 5.53125
+      },
+      {
+        "name": "Prius Gold Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 1,
+        "noWishLegend": 1
+      },
+      {
+        "name": "Archangel Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Shadow Dragon Irbert": {
+    "name": "Shadow Dragon Irbert",
+    "items": [
+      {
+        "name": "Levante, the Sword of Love and Hate",
+        "wish": 2.625,
+        "wishLegend": 3.9375,
+        "noWish": 1.05,
+        "noWishLegend": 1.575
+      },
+      {
+        "name": "Draconic Skin Rusalka",
+        "wish": 3.9375,
+        "wishLegend": 5.90625,
+        "noWish": 1.575,
+        "noWishLegend": 2.3625
+      },
+      {
+        "name": "Nephthys, the Engraved Ring",
+        "wish": 3.9375,
+        "wishLegend": 5.90625,
+        "noWish": 1.575,
+        "noWishLegend": 2.3625
+      },
+      {
+        "name": "Essence of Darkness",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Antimatter",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Frozen Debris",
+        "wish": 6.5625,
+        "wishLegend": 9.84375,
+        "noWish": 2.625,
+        "noWishLegend": 3.9375
+      },
+      {
+        "name": "Prius Gold Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 1.2,
+        "noWishLegend": 1.2
+      },
+      {
+        "name": "Token of Darkness",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Death Fiend": {
+    "name": "Death Fiend",
+    "items": [
+      {
+        "name": "The Ender",
+        "wish": 1.875,
+        "wishLegend": 2.8125,
+        "noWish": 0.75,
+        "noWishLegend": 1.125
+      },
+      {
+        "name": "Armor of Grudge",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Eyes of the Watcher",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Ring of Destruction",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Spearhead of Death",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Fragment of Chaos",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Death Fiend Icon",
+        "wish": 0.375,
+        "wishLegend": 0.5625,
+        "noWish": 0.15,
+        "noWishLegend": 0.225
+      },
+      {
+        "name": "Prius Platinum Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.4,
+        "noWishLegend": 0.4
+      },
+      {
+        "name": "Fiend Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Lightning God Valtora": {
+    "name": "Lightning God Valtora",
+    "items": [
+      {
+        "name": "Shackles of Heaven",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Aegis of Storm",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Essence of Storm",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Shining Fragment of Ruins",
+        "wish": 1.875,
+        "wishLegend": 2.8125,
+        "noWish": 0.75,
+        "noWishLegend": 1.125
+      },
+      {
+        "name": "Valtora Icon",
+        "wish": 0.375,
+        "wishLegend": 0.5625,
+        "noWish": 0.15,
+        "noWishLegend": 0.225
+      },
+      {
+        "name": "Prius Platinum Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.4,
+        "noWishLegend": 0.4
+      },
+      {
+        "name": "Lightning God Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Ifrit": {
+    "name": "Ifrit",
+    "items": [
+      {
+        "name": "Heart of Volcano",
+        "wish": 3.75,
+        "wishLegend": 5.625,
+        "noWish": 1.5,
+        "noWishLegend": 2.25
+      },
+      {
+        "name": "Aegis of Flame",
+        "wish": 4.6875,
+        "wishLegend": 7.03125,
+        "noWish": 1.875,
+        "noWishLegend": 2.8125
+      },
+      {
+        "name": "Essence of Flame",
+        "wish": 4.6875,
+        "wishLegend": 7.03125,
+        "noWish": 1.875,
+        "noWishLegend": 2.8125
+      },
+      {
+        "name": "Shining Fragment of Ruins",
+        "wish": 3.75,
+        "wishLegend": 5.625,
+        "noWish": 1.5,
+        "noWishLegend": 2.25
+      },
+      {
+        "name": "Ifrit Icon",
+        "wish": 0.5625,
+        "wishLegend": 0.84375,
+        "noWish": 0.225,
+        "noWishLegend": 0.3375
+      },
+      {
+        "name": "Prius Platinum Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.4,
+        "noWishLegend": 0.4
+      },
+      {
+        "name": "Flame God Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Nereid": {
+    "name": "Nereid",
+    "items": [
+      {
+        "name": "Grail of Eternity",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Aegis of Sea",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Essence of Sea",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Shining Fragment of Ruins",
+        "wish": 3.125,
+        "wishLegend": 4.6875,
+        "noWish": 1.25,
+        "noWishLegend": 1.875
+      },
+      {
+        "name": "Nereid Icon",
+        "wish": 0.375,
+        "wishLegend": 0.5625,
+        "noWish": 0.15,
+        "noWishLegend": 0.225
+      },
+      {
+        "name": "Prius Platinum Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.5,
+        "noWishLegend": 0.5
+      },
+      {
+        "name": "Sea God Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Underlord Agareth": {
+    "name": "Underlord Agareth",
+    "items": [
+      {
+        "name": "Curse of Greed",
+        "wish": 1.875,
+        "wishLegend": 2.8125,
+        "noWish": 0.75,
+        "noWishLegend": 1.125
+      },
+      {
+        "name": "Fragment of Soul",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Fragment of Hell",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Mark of Lord",
+        "wish": 2.5,
+        "wishLegend": 3.75,
+        "noWish": 1,
+        "noWishLegend": 1.5
+      },
+      {
+        "name": "Agareth Icon",
+        "wish": 0.375,
+        "wishLegend": 0.5625,
+        "noWish": 0.15,
+        "noWishLegend": 0.225
+      },
+      {
+        "name": "Prius Platinum Coin",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.6,
+        "noWishLegend": 0.6
+      },
+      {
+        "name": "Underlord Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Duke Lazarus": {
+    "name": "Duke Lazarus",
+    "items": [
+      {
+        "name": "Crimson Rose",
+        "wish": 1.2,
+        "wishLegend": 1.8,
+        "noWish": 0.345,
+        "noWishLegend": 0.5175
+      },
+      {
+        "name": "Blood Essence",
+        "wish": 1.5,
+        "wishLegend": 2.25,
+        "noWish": 0.43125,
+        "noWishLegend": 0.646875
+      },
+      {
+        "name": "Emblem of Sacrifice",
+        "wish": 1.5,
+        "wishLegend": 2.25,
+        "noWish": 0.43125,
+        "noWishLegend": 0.646875
+      },
+      {
+        "name": "Soul Blossom",
+        "wish": 1.5,
+        "wishLegend": 2.25,
+        "noWish": 0.43125,
+        "noWishLegend": 0.646875
+      },
+      {
+        "name": "Duke's Soulstone",
+        "wish": 0.25,
+        "wishLegend": 0.375,
+        "noWish": 0.25,
+        "noWishLegend": 0.25
+      },
+      {
+        "name": "Duke Token",
+        "wish": 0.005,
+        "wishLegend": 0.005,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Immortal"
+  },
+  "Arcane Construct": {
+    "name": "Arcane Construct",
+    "items": [
+      {
+        "name": "Mask of Truth",
+        "wish": 0.6,
+        "wishLegend": 0.9,
+        "noWish": 0.23,
+        "noWishLegend": 0.345
+      },
+      {
+        "name": "Arcane Core",
+        "wish": 0.8,
+        "wishLegend": 1.2,
+        "noWish": 0.3066666667,
+        "noWishLegend": 0.46
+      },
+      {
+        "name": "Ancient Tome",
+        "wish": 0.8,
+        "wishLegend": 1.2,
+        "noWish": 0.3066666667,
+        "noWishLegend": 0.46
+      },
+      {
+        "name": "Construct's Soulstone",
+        "wish": 0.15,
+        "wishLegend": 0.15,
+        "noWish": 0.15,
+        "noWishLegend": 0.15
+      },
+      {
+        "name": "Construct Token",
+        "wish": 0.005,
+        "wishLegend": 0.005,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Immortal"
+  },
+  "Styrix, the Harvester of Souls": {
+    "name": "Styrix, the Harvester of Souls",
+    "items": [
+      {
+        "name": "Grim Scythe",
+        "wish": 1,
+        "wishLegend": 1.2,
+        "noWish": 0.4,
+        "noWishLegend": 0.6
+      },
+      {
+        "name": "Sinister Skull",
+        "wish": 1.5,
+        "wishLegend": 1.8,
+        "noWish": 0.6,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Lantern of Souls",
+        "wish": 1.5,
+        "wishLegend": 1.8,
+        "noWish": 0.6,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Spirit of Damnation",
+        "wish": 1.5,
+        "wishLegend": 1.8,
+        "noWish": 0.6,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Styrix' Soulstone",
+        "wish": 0.375,
+        "wishLegend": 0.45,
+        "noWish": 0.15,
+        "noWishLegend": 0.225
+      },
+      {
+        "name": "Soul Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.01,
+        "noWishLegend": 0.01
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Lightbringer Kamael": {
+    "name": "Lightbringer Kamael",
+    "items": [
+      {
+        "name": "Sunstone",
+        "wish": 1,
+        "wishLegend": 1.2,
+        "noWish": 0.4,
+        "noWishLegend": 0.6
+      },
+      {
+        "name": "Dew of Paradise",
+        "wish": 1.5,
+        "wishLegend": 1.8,
+        "noWish": 0.6,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Divine Lotus",
+        "wish": 1.5,
+        "wishLegend": 1.8,
+        "noWish": 0.6,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Holy Thread",
+        "wish": 1.5,
+        "wishLegend": 1.8,
+        "noWish": 0.6,
+        "noWishLegend": 0.9
+      },
+      {
+        "name": "Kamael's Soulstone",
+        "wish": 0.375,
+        "wishLegend": 0.45,
+        "noWish": 0.15,
+        "noWishLegend": 0.225
+      },
+      {
+        "name": "Lightbringer's Token",
+        "wish": 0,
+        "wishLegend": 0,
+        "noWish": 0.01,
+        "noWishLegend": 0.01
+      }
+    ],
+    "iconType": "Legend"
+  },
+  "Gaia, the Earth Goddess": {
+    "name": "Gaia",
+    "items": [
+      {
+        "name": "Gown of Life",
+        "wish": 1,
+        "wishLegend": 1.5,
+        "noWish": 0.2875,
+        "noWishLegend": 0.43125
+      },
+      {
+        "name": "Essence of Earth",
+        "wish": 1.25,
+        "wishLegend": 1.875,
+        "noWish": 0.359375,
+        "noWishLegend": 0.5390625
+      },
+      {
+        "name": "Aegis of Earth",
+        "wish": 1.25,
+        "wishLegend": 1.875,
+        "noWish": 0.359375,
+        "noWishLegend": 0.5390625
+      },
+      {
+        "name": "Twisted Fragment of Ruins",
+        "wish": 1.25,
+        "wishLegend": 1.875,
+        "noWish": 0.359375,
+        "noWishLegend": 0.5390625
+      },
+      {
+        "name": "Gaia's Soulstone",
+        "wish": 0.2,
+        "wishLegend": 0.2,
+        "noWish": 0.2,
+        "noWishLegend": 0.2
+      },
+      {
+        "name": "Gaia Token",
+        "wish": 0.005,
+        "wishLegend": 0.005,
+        "noWish": 0.005,
+        "noWishLegend": 0.005
+      }
+    ],
+    "iconType": "Immortal"
+  }
+}
