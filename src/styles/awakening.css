@@ -1,0 +1,120 @@
+/* ── Awakening page ── */
+.awk-progress {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.awk-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.awk-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--awk-color, var(--accent));
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  transition: background 0.15s;
+}
+.awk-card:hover {
+  background: rgba(16,16,40,0.85);
+}
+
+.awk-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.awk-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border2);
+  background: rgba(255,255,255,0.04);
+}
+.awk-card-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.3);
+}
+
+.awk-card-title h3 {
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.awk-card-skill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.awk-original {
+  color: var(--muted2);
+}
+.awk-arrow {
+  color: var(--muted);
+  font-size: 11px;
+}
+.awk-awakened {
+  color: var(--accent3);
+  font-weight: 700;
+}
+
+.awk-card-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.awk-effect {
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.awk-effect-type {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin-bottom: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+}
+.awk-type-str { color: #e94560; border-color: rgba(233,69,96,0.3); background: rgba(233,69,96,0.08); }
+.awk-type-agi { color: #4ade80; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.awk-type-int { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+.awk-type-passive { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.awk-type-skill { color: var(--accent3); border-color: rgba(78,205,196,0.3); background: rgba(78,205,196,0.08); }
+.awk-type-active { color: var(--accent); border-color: rgba(233,69,96,0.3); background: rgba(233,69,96,0.08); }
+
+.awk-effect-desc {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .awk-card {
+    padding: 14px 14px;
+  }
+  .awk-card-header {
+    gap: 10px;
+  }
+}

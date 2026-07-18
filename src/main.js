@@ -5,6 +5,7 @@ import './styles/layout.css';
 import './styles/bosses.css';
 import './styles/items.css';
 import './styles/heroes.css';
+import './styles/awakening.css';
 import { registerRoute, initRouter } from './router.js';
 import { initBuilder } from './pages/builder/index.js';
 import { getLocale, setLocale } from './i18n.js';
