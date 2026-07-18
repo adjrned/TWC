@@ -167,15 +167,20 @@ const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
 // Boss-specific player scaling rules
 const BOSS_PLAYER_RULES = {
-  'Styrix, the Harvester of Souls': { min: 5, max: 10 },
-  'Lightbringer Kamael': { min: 5, max: 10 },
-  'Arcane Construct': { min: 3, max: 6 },
+  'Styrix, the Harvester of Souls': { min: 5, max: 10, perPlayer: 5 },
+  'Lightbringer Kamael': { min: 5, max: 10, perPlayer: 5 },
+  'Arcane Construct': { min: 3, max: 6, perPlayer: 10 },
 };
-const DEFAULT_PLAYER_RULES = { min: 1, max: 10 };
+const DEFAULT_PLAYER_RULES = { min: 1, max: 10, perPlayer: 5, bonusStart: 3 };
 
 function getPlayerBonus(playerCount, bossName) {
-  const rules = BOSS_PLAYER_RULES[bossName] || DEFAULT_PLAYER_RULES;
-  const effectivePlayers = Math.max(0, playerCount - rules.min);
+  const rules = BOSS_PLAYER_RULES[bossName];
+  if (rules) {
+    const effectivePlayers = Math.max(0, playerCount - rules.min);
+    return effectivePlayers * rules.perPlayer;
+  }
+  // Default: bonus starts at 3 players, +5% per player from 3 onwards
+  const effectivePlayers = Math.max(0, playerCount - 2);
   return effectivePlayers * 5;
 }
 
