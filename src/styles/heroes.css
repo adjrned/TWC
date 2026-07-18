@@ -235,12 +235,20 @@
 }
 .hero-detail-title h1 {
   font-family: 'Cinzel', serif;
-  font-size: clamp(20px, 4vw, 30px);
+  font-size: clamp(22px, 4vw, 32px);
   font-weight: 700;
-  letter-spacing: 1.5px;
-  margin-bottom: 12px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
   line-height: 1.15;
   text-shadow: 0 2px 16px rgba(0,0,0,0.6);
+}
+.hero-detail-class {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted2);
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 10px;
 }
 
 .hero-detail-meta {
@@ -248,23 +256,6 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin-bottom: 10px;
-}
-.hero-meta-item {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted2);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 4px 12px;
-  border-radius: 10px;
-  letter-spacing: 0.5px;
-}
-
-.hero-detail-roles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   margin-bottom: 12px;
 }
 .hero-role-badge {
@@ -278,15 +269,10 @@
   letter-spacing: 0.3px;
 }
 
-.hero-desc-lines {
-  margin-top: 4px;
-}
-.hero-desc-lines p {
+.hero-detail-desc {
   font-size: 13px;
   color: var(--muted2);
   line-height: 1.7;
-}
-.hero-desc-lines p + p {
   margin-top: 4px;
 }
 
@@ -317,20 +303,21 @@
   border-radius: 2px;
 }
 
-/* Wearable */
-.hero-wearable-list {
+/* Wearable (inline compact) */
+.hero-wearable-inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  margin-bottom: 28px;
 }
-.hero-wearable-item {
-  font-size: 12px;
+.hero-wearable-tag {
+  font-size: 10px;
   font-weight: 600;
-  color: var(--muted2);
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  padding: 5px 14px;
+  color: var(--muted);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
   letter-spacing: 0.3px;
 }
 
@@ -338,34 +325,34 @@
 .hero-spec-list {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 .hero-spec-item {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
   color: var(--text);
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  border-left: 3px solid rgba(245,166,35,0.45);
-  border-radius: var(--radius);
-  padding: 10px 16px;
-  transition: border-left-color 0.18s, background 0.18s;
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: background 0.15s;
 }
 .hero-spec-item:hover {
   background: rgba(16,16,40,0.85);
-  border-left-color: var(--accent2);
 }
-.hero-spec-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent2);
-  opacity: 0.7;
-  flex-shrink: 0;
-  margin-top: 5px;
+.hero-spec-weapon {
+  font-weight: 700;
+  color: var(--accent2);
+}
+.hero-spec-arrow {
+  color: var(--muted);
+  font-size: 11px;
+}
+.hero-spec-ability {
+  color: var(--accent3);
+  font-weight: 600;
 }
 
 /* ── Skill cards ── */
@@ -419,19 +406,19 @@
   min-width: 0;
 }
 
-.skill-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .skill-name {
   font-family: 'Nunito', sans-serif;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.3px;
   color: var(--text);
+  margin-bottom: 4px;
+}
+
+.skill-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .skill-hotkey {
