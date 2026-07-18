@@ -2,15 +2,26 @@ import { esc } from '../../ui/escape.js';
 import { t } from '../../i18n.js';
 
 let bossData = null;
+let itemData = null;
 
 async function loadBossData() {
   if (bossData) return bossData;
   try {
-    const r = await fetch('data/bosses.json');
-    if (r.ok) bossData = await r.json();
+    const [br, ir] = await Promise.all([
+      fetch('data/bosses.json'),
+      fetch('data/items.json'),
+    ]);
+    if (br.ok) bossData = await br.json();
+    if (ir.ok) itemData = await ir.json();
   } catch (e) {}
   if (!bossData) bossData = [];
+  if (!itemData) itemData = [];
   return bossData;
+}
+
+function getDropsForBoss(bossName) {
+  if (!itemData) return [];
+  return itemData.filter(i => (i.dropped_by || []).includes(bossName));
 }
 
 // Categories as they appear in the data
@@ -113,11 +124,11 @@ function renderBossList(bosses, query) {
             <div class="boss-card-info">
               <div class="boss-card-name-row">
                 <h3>${esc(boss.name)}</h3>
-                ${boss.level ? `<span class="boss-level-badge">Lv ${esc(boss.level)}</span>` : ''}
               </div>
               <div class="boss-card-badges">
                 <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(boss.category || '')}</span>
                 ${typeBadge(boss.type)}
+                ${boss.level ? `<span class="boss-level-badge">Lv ${esc(boss.level)}</span>` : ''}
               </div>
               ${boss.location ? `<div class="boss-card-location">${esc(boss.location)}</div>` : ''}
             </div>
@@ -129,6 +140,32 @@ function renderBossList(bosses, query) {
 
 // ── Detail view ───────────────────────────────────────────────────────────────
 function renderBossDetail(boss) {
+  const drops = getDropsForBoss(boss.name);
+
+  let dropsHtml = '';
+  if (drops.length) {
+    dropsHtml = `
+      <div class="boss-section">
+        <h2>Drops</h2>
+        <div class="boss-drops-list">
+          ${drops.map(item => {
+            const rate = item.droprate ? Math.round(item.droprate * 100) + '%' : '';
+            return `
+              <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item">
+                <div class="boss-drop-icon">
+                  <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
+                </div>
+                <span class="boss-drop-name">${esc(item.name)}</span>
+                <span class="boss-drop-type">${esc(item.type || '')}</span>
+                ${rate ? `<span class="boss-drop-rate">${rate}</span>` : ''}
+              </a>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <button class="back-btn" onclick="location.hash='#/bosses'">Back to Bosses</button>
     <div class="boss-detail">
@@ -147,10 +184,14 @@ function renderBossDetail(boss) {
         </div>
       </div>
 
-      <div class="boss-section">
-        <h2>Stats</h2>
-        ${renderStatTable(boss.stats)}
-      </div>
+      ${dropsHtml}
+
+      ${boss.stats && Object.keys(boss.stats).length ? `
+        <div class="boss-section">
+          <h2>Stats</h2>
+          ${renderStatTable(boss.stats)}
+        </div>
+      ` : ''}
     </div>
   `;
 }
