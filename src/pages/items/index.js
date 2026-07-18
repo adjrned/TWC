@@ -179,7 +179,7 @@ const STAT_LABELS = {
   affinitylightpercent: 'Light Affinity', affinitydarkpercent: 'Dark Affinity',
   affinitywindpercent: 'Wind Affinity', affinitywaterpercent: 'Water Affinity',
   affinityiwpercent: 'Ice/Wind Affinity', affinitywlpercent: 'Water/Lightning Affinity',
-  allaffinitypercent: 'All Affinity',
+  allaffinitypercent: 'All Affinities',
 };
 
 function formatStat(key, val) {
