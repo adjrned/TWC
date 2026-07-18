@@ -149,34 +149,116 @@ function renderBossList(bosses, query) {
   `;
 }
 
-// ── Detail view ───────────────────────────────────────────────────────────────
-function renderBossDetail(boss) {
-  const drops = getDropsForBoss(boss.name);
+// ── Drop rate calculator ──────────────────────────────────────────────────────
+let bossDropData = null;
 
-  let dropsHtml = '';
-  if (drops.length) {
-    dropsHtml = `
-      <div class="boss-section">
-        <h2>Drops</h2>
-        <div class="boss-drops-list">
-          ${drops.map(item => {
-            const rate = item.droprate ? (item.droprate * 100) + '%' : '';
-            return `
-              <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item">
-                <div class="boss-drop-icon">
-                  <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
-                </div>
-                <span class="boss-drop-name">${esc(item.name)}</span>
-                <span class="boss-drop-type">${esc(item.type || '')}</span>
-                ${rate ? `<span class="boss-drop-rate">${rate}</span>` : ''}
-              </a>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
+async function loadBossDropData() {
+  if (bossDropData) return;
+  try {
+    const r = await fetch('data/boss-drops.json');
+    if (r.ok) bossDropData = await r.json();
+  } catch(e) {}
+  if (!bossDropData) bossDropData = {};
+}
+
+const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer Kamael']);
+
+const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
+
+function calcDropRate(baseRate, { wishing, hasIcon, hardmode, seasonal, playerCount }, iconType, bossName) {
+  if (NO_WISH_BOSSES.has(bossName)) {
+    // Styrix/Kamael: only player count and seasonal affect drops
+    const playerPct = PLAYER_BONUS[Math.min(playerCount, 10)] || 0;
+    const seasonalMult = seasonal ? 2 : 1;
+    const combined = (1 + playerPct / 100) * seasonalMult;
+    return baseRate * combined;
   }
 
+  const playerPct = PLAYER_BONUS[Math.min(playerCount, 10)] || 0;
+  const hardmodeMult = hardmode ? 1 : 1; // placeholder — hardmode currently ×1
+  const seasonalMult = seasonal ? 2 : 1;
+  const combined = (1 + playerPct / 100) * seasonalMult * hardmodeMult;
+
+  let wishMult = 1;
+  if (wishing && hasIcon) {
+    // Wish + Legend/Immortal
+    if (iconType === 'Immortal') wishMult = 5.217391304;
+    else wishMult = 3.75;
+  } else if (wishing) {
+    if (iconType === 'Immortal') wishMult = 3.478260869;
+    else wishMult = 2.5;
+  } else if (hasIcon) {
+    wishMult = 1.5;
+  }
+
+  return baseRate * combined * wishMult;
+}
+
+function renderDropCalculator(boss) {
+  const dropInfo = bossDropData?.[boss.name];
+  if (!dropInfo) return '';
+
+  const isNoWish = NO_WISH_BOSSES.has(boss.name);
+  const iconLabel = dropInfo.iconType === 'Immortal' ? 'Immortal' : 'Legend';
+
+  return `
+    <div class="boss-section">
+      <h2>Drop Rates</h2>
+      <div class="drop-calc-controls">
+        ${!isNoWish ? `
+          <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>Wishing</span></label>
+          <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon</span></label>
+        ` : ''}
+        <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal Buff</span></label>
+        <div class="drop-calc-player">
+          <span>Players:</span>
+          <input type="range" id="calcPlayers" min="0" max="10" value="1">
+          <span id="calcPlayersVal">1</span>
+        </div>
+      </div>
+      <div class="boss-drops-list" id="dropCalcList">
+        ${dropInfo.items.map((item, i) => `
+          <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item" data-idx="${i}">
+            <div class="boss-drop-icon">
+              <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
+            </div>
+            <span class="boss-drop-name">${esc(item.name)}</span>
+            <span class="boss-drop-rate" data-base="${item.noWish}">${item.noWish.toFixed ? item.noWish.toFixed(4) : item.noWish}%</span>
+          </a>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function initDropCalc(boss) {
+  const dropInfo = bossDropData?.[boss.name];
+  if (!dropInfo) return;
+
+  const isNoWish = NO_WISH_BOSSES.has(boss.name);
+  const update = () => {
+    const wishing = !isNoWish && document.getElementById('calcWish')?.checked;
+    const hasIcon = !isNoWish && document.getElementById('calcIcon')?.checked;
+    const seasonal = document.getElementById('calcSeasonal')?.checked;
+    const playerCount = parseInt(document.getElementById('calcPlayers')?.value || '1');
+    document.getElementById('calcPlayersVal').textContent = playerCount;
+
+    const rates = document.querySelectorAll('#dropCalcList .boss-drop-rate');
+    rates.forEach((el, i) => {
+      const baseRate = parseFloat(el.dataset.base);
+      const calc = calcDropRate(baseRate, { wishing, hasIcon, hardmode: false, seasonal, playerCount }, dropInfo.iconType, boss.name);
+      el.textContent = calc.toFixed(4) + '%';
+    });
+  };
+
+  ['calcWish', 'calcIcon', 'calcSeasonal', 'calcPlayers'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', update);
+  });
+}
+
+// ── Detail view ───────────────────────────────────────────────────────────────
+function renderBossDetail(boss) {
   return `
     <button class="back-btn" onclick="history.back()">Back</button>
     <div class="boss-detail">
@@ -195,7 +277,7 @@ function renderBossDetail(boss) {
         </div>
       </div>
 
-      ${dropsHtml}
+      ${renderDropCalculator(boss)}
 
       ${boss.stats && Object.keys(boss.stats).length ? `
         <div class="boss-section">
@@ -211,11 +293,13 @@ function renderBossDetail(boss) {
 export async function initBosses({ params, query }) {
   const app = document.getElementById('app');
   const bosses = await loadBossData();
+  await loadBossDropData();
 
   if (params.id) {
     const boss = bosses.find(b => b.id === params.id);
     if (boss) {
       app.innerHTML = renderBossDetail(boss);
+      initDropCalc(boss);
     } else {
       app.innerHTML = `
         <button class="back-btn" onclick="history.back()">Back</button>
