@@ -4515,10 +4515,7 @@
     ]
   },
   {
-    "id": [
-      "h077",
-      "h078"
-    ],
+    "id": "h077",
     "name": "Underlord Agareth",
     "color": "883333",
     "quote": "The end is nigh!",
@@ -4721,10 +4718,7 @@
     }
   },
   {
-    "id": [
-      "h08K",
-      "h08L"
-    ],
+    "id": "h08K",
     "name": "Duke Lazarus",
     "color": "883333",
     "quote": "Dance Mortals and delight me further!",
