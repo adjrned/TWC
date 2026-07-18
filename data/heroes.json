@@ -1,895 +1,906 @@
 [
-    {
-        "id": "H015",
-        "name": "Lyrio Farn",
-        "heroClass": "Sniper",
-        "mainstat": "AGI",
-        "color": "A2F76F",
-        "icon": "SniperIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Bow)"
-        ],
-        "role": [
-            "Long-range Burst DPS"
-        ],
-        "description": [
-            "Long-range damage dealer.",
-            "Has good mobility."
-        ],
-        "spec": [
-            "Soulstalker - Cursed Arrow",
-            "Soulbane - Cursed Arrow",
-            "Agnitus, the Bow of Divine Fury - Arrow of Judgment",
-            "Divine Vein - Divine Arrow"
-        ]
-    },
-    {
-        "id": "H008",
-        "name": "Stella Livve",
-        "heroClass": "Soul Weaver",
-        "mainstat": "INT",
-        "color": "3A8732",
-        "icon": "SoulWeaverIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "Buffer/Debuffer"
-        ],
-        "description": [
-            "Supporter. Focused on debuffs and utility skills."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H01I",
-        "name": "Elric",
-        "heroClass": "Alchemist",
-        "mainstat": "INT",
-        "color": "C4C099",
-        "icon": "AlchemistIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Versatile Invoker. Has DPS, DoT, Support, Buffs, Debuffs"
-        ],
-        "description": [
-            "Ranged damage dealer. Focused on casting skills.",
-            "Requires more control compared to other characters, and skill combos are long."
-        ],
-        "spec": [
-            "Potion of Corruption - Mad Alchemist",
-            "Benziena, the Rod of Earth - Enhanced Conjure Golem",
-            "Benziena, the Earthen Pillar - Enhanced Conjure Golem",
-            "Benziena, the Earthen Soul - Enhanced Conjure Golem",
-            "Benziena, the Earthen Heart - Enhanced Conjure Golem",
-            "Harmonia, the Sparkle of Life - Enhanced Conjure Golem"
-        ]
-    },
-    {
-        "id": "H00J",
-        "name": "Haran Tenebras",
-        "heroClass": "Warlock",
-        "mainstat": "INT",
-        "color": "C3C3E1",
-        "icon": "WarlockIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "DoT/DPS"
-        ],
-        "description": [
-            "Ranged damage dealer. Good at burst damage."
-        ],
-        "spec": [
-            "Soul Eater - Soul Devour"
-        ]
-    },
-    {
-        "id": "H02M",
-        "name": "Loriro Livve",
-        "heroClass": "Blood Weaver",
-        "mainstat": "INT",
-        "secondary": ["STR"],
-        "color": "FF6666",
-        "icon": "BloodWeaverIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Sustain/DoT/Tank"
-        ],
-        "description": [
-            "Melee damage dealer. Uses a good mix of auto attacks and skill casts.",
-            "Uses HP as resource to cast skills. Has excellent mobility."
-        ],
-        "spec": [
-            "Teperua, the Ring of Blood - Blood Shield",
-            "Trueblood Ring - Blood Shield"
-        ]
-    },
-    {
-        "id": "H005",
-        "name": "Rin T.",
-        "heroClass": "Fire Mage",
-        "mainstat": "INT",
-        "color": "E4AFAF",
-        "icon": "FireMageIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Combo Burster"
-        ],
-        "description": [
-            "Ranged damage dealer. Has high burst damage."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H00K",
-        "name": "Rainbow R.",
-        "heroClass": "Shooter",
-        "mainstat": "AGI",
-        "secondary": ["INT"],
-        "color": "99FFDD",
-        "icon": "ShooterIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Gun)"
-        ],
-        "role": [
-            "AGI: DPS with medium healing",
-            "INT: Support/Healer with medium damage"
-        ],
-        "description": [
-            "Ranged damage dealer.",
-            "If setup around INT-based items/stats, can also be utilized as a healer that excels in small parties."
-        ],
-        "spec": [
-            "Red Cross - Bloody Protection",
-            "Crimson Cross - Bloody Protection",
-            "Crimson Star - Crimson Star",
-            "Cosmic Star - Cosmic Star",
-            "Abyss Fall - Abyss Fall",
-            "Water Cannon - Purging Water",
-            "Hydro Buster - Purging Water",
-            "Rainmaker - Purging Water",
-            "Devil Chaser - Evil Chaser",
-            "Fiend Chaser - Evil Chaser",
-            "Chrono Chaser - Evil Chaser",
-            "Dante's Inferno - Abandon All Hope",
-            "Punisher - Abandon All Hope",
-            "Last Word - Abandon All Hope",
-            "Final Omen - Abandon All Hope"
-        ]
-    },
-    {
-        "id": "H04R",
-        "name": "Shiro",
-        "heroClass": "Sword Enchanter",
-        "mainstat": "AGI",
-        "color": "DFDFDF",
-        "icon": "SwordEnchanterIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Pure DoT/Slight Debuffer"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on auto-attacks.",
-            "Playstyle is simple compared to most other characters."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H05B",
-        "name": "Lucicree",
-        "heroClass": "Gunner",
-        "mainstat": "AGI",
-        "color": "DFBE9F",
-        "icon": "GunnerIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Gun)"
-        ],
-        "role": [
-            "High Mobility with mid-ranged DoT DPS"
-        ],
-        "description": [
-            "Ranged damage dealer. Uses a good mix of auto attacks and skill casts."
-        ],
-        "spec": [
-            "Dante's Inferno - Abandon All Hope",
-            "Punisher - Abandon All Hope",
-            "Last Word - Abandon All Hope",
-            "Final Omen - Abandon All Hope"
-        ]
-    },
-    {
-        "id": "H001",
-        "name": "Louis Arcienne",
-        "heroClass": "Swordsman",
-        "mainstat": "AGI",
-        "color": "869DD2",
-        "icon": "SwordsmanIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "High sustained damage (DoT dps), and strong stunner"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on casting skills, but it weaves auto-attacks in between skill casts."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H009",
-        "name": "Dorothy de Merrian",
-        "heroClass": "Elementalist",
-        "mainstat": "INT",
-        "color": "FF69B4",
-        "icon": "ElementalistIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "Summoner: Tank/Support/Debuff"
-        ],
-        "description": [
-            "Ranged damage dealer & support. Focused on summons."
-        ],
-        "spec": [
-            "Ripple Snow - Water Mastery",
-            "Twin Snow - Water Mastery",
-            "Triple Snow - Water Mastery",
-            "Endless Snow - Water Mastery",
-            "Benziena, the Earthen Pillar - Earth Mastery",
-            "Benziena, the Earthen Soul - Earth Mastery",
-            "Benziena, the Earthen Heart - Earth Mastery",
-            "Harmonia, the Sparkle of Life - Earth Mastery"
-        ]
-    },
-    {
-        "id": "H021",
-        "name": "Sasuke",
-        "heroClass": "Lightning Mage",
-        "mainstat": "INT",
-        "color": "B9F9F8",
-        "icon": "LightningMageIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Melee to Mid-ranged Burst DPS"
-        ],
-        "description": [
-            "Melee damaged dealer. Requires precision with casting skills."
-        ],
-        "spec": [
-            "Spiritus, the Sword of Elements - Spirits",
-            "Spirit Dagger - Spirits"
-        ]
-    },
-    {
-        "id": "H01V",
-        "name": "Astarte",
-        "heroClass": "Crusader",
-        "mainstat": "STR",
-        "color": "F7FC98",
-        "icon": "CrusaderIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Survivability/DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on casting skills.",
-            "Has good survivability and offensive support for allies."
-        ],
-        "spec": [
-            "Bahanar, the Sword of Illusion - Sword of Illusion",
-            "Bahanar, the True Sword of Illusion - Sword of Illusion",
-            "Meacronacer, the Sword of Thousand Illusions - Sword of Thousand Illusions",
-            "Astra, the Sword of Moonlight - Flash of Moonlight"
-        ]
-    },
-    {
-        "id": "H00E",
-        "name": "Kenneth Deracoon",
-        "heroClass": "Martial Artist",
-        "mainstat": "AGI",
-        "color": "C0C0C0",
-        "icon": "MartialArtistIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Close-range burst DPS, decent DoT dps"
-        ],
-        "description": [
-            "Melee damage dealer. Focused HEAVILY on auto attacks, and has almost no skill casts.",
-            "Playstyle is simple compared to most other characters."
-        ],
-        "spec": [
-            "Wanderer's Cape - Wanderer",
-            "Wings of Phoenix - Phoenix",
-            "Wings of Flame Lord - Phoenix",
-            "Guardian Vest - Nature's Protection",
-            "Grandine, the Plates of Wraith - Wraith Possession",
-            "Athanasia, the Armor of the Reaper - Reaper Possession",
-            "Exitium, the Armor of Ruin - Bringer of Ruin"
-        ]
-    },
-    {
-        "id": "Hblm",
-        "name": "Naomi Mercedes",
-        "heroClass": "Lancer",
-        "mainstat": "STR",
-        "color": "84F9D2",
-        "icon": "LancerIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Shield Breaker/DPS/Medium survival"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on skill casts.",
-            "Provides a bit of offensive support."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H04S",
-        "name": "Aurelia",
-        "heroClass": "Reaper",
-        "mainstat": "AGI",
-        "color": "FF9999",
-        "icon": "ReaperIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Burst DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on skill casts.",
-            "Skill combos are more complex compared to other characters."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H004",
-        "name": "Ayame",
-        "heroClass": "Assassin",
-        "mainstat": "AGI",
-        "color": "ffff80",
-        "icon": "AssassinIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Short Burst Melee DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on casting skills.",
-            "Has stealth abilities."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H01N",
-        "name": "Aisha",
-        "heroClass": "Wind Mage",
-        "mainstat": "INT",
-        "color": "caffca",
-        "icon": "WindMageIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "AOE Healer"
-        ],
-        "description": [
-            "Supporter. Has various healing and supportive abilities."
-        ],
-        "spec": [
-            "Fairy Garment - Fairy Blessing",
-            "Diana, the Robe of Holy Maiden - Maiden's Blessing",
-            "Crown of Serenity - Protector of Wind",
-            "Crown of Cleansing - Protector of Wind"
-        ]
-    },
-    {
-        "id": "H04Q",
-        "name": "Catherine Yoi",
-        "heroClass": "Merchant",
-        "mainstat": "STR",
-        "color": "c3c388",
-        "icon": "MerchantIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)",
-            "Weapon (Bag)"
-        ],
-        "role": [
-            "Tank Support"
-        ],
-        "description": [
-            "Supporter. Excels in adventurous parties where deaths are frequent."
-        ],
-        "spec": [
-            "Bag of Strength - Heavy Bag",
-            "Bag of Mighty Strength - Heavy Bag",
-            "Bag of Mighty Strength +1 - Heavy Bag",
-            "Bag of Hell - Very Heavy Bag",
-            "Bag of Corruption - Very Heavy Bag",
-            "Bag of Destruction - Very Heavy Bag",
-            "Bag of Demise - Very Heavy Bag",
-            "Bag of All Evils - Very Heavy Bag",
-            "Bag of Explosion - Dangerous Bag",
-            "Bag of Despair - Dangerous Bag",
-            "Fruit-filled Bag - Light Bag",
-            "Candy-filled Bag - Light Bag",
-            "Candy-filled Bag +1 - Light Bag",
-            "Bag of Heaven - Very Light Bag",
-            "Bag of Life - Very Light Bag",
-            "Bag of Mother Nature - Very Light Bag",
-            "Bag of Universe - Very Light Bag"
-        ]
-    },
-    {
-        "id": "H01H",
-        "name": "Esteria",
-        "heroClass": "Thunderer",
-        "mainstat": "AGI",
-        "color": "fe2101",
-        "icon": "ThundererIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Shield Breaker/DoT DPS with small Burst DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on auto-attacks."
-        ],
-        "spec": [
-            "Guardian of the Skies - Improved Magnetic Field",
-            "Ruler of the Skies - Improved Magnetic Field"
-        ]
-    },
-    {
-        "id": "H00H",
-        "name": "Elena",
-        "heroClass": "Berserker",
-        "mainstat": "STR",
-        "color": "f75b40",
-        "icon": "BerserkerIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "DPS/Survivability"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on auto attacks.",
-            "Instead of MP, she uses HP to cast skills."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H00Z",
-        "name": "Iris Millen",
-        "heroClass": "Bow Master",
-        "mainstat": "AGI",
-        "color": "d9bfa8",
-        "icon": "BowMasterIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Bow)"
-        ],
-        "role": [
-            "Burst DPS, with small support"
-        ],
-        "description": [
-            "Ranged damage dealer.",
-            "Provides some support for allies."
-        ],
-        "spec": [
-            "Stalker - Improved Arrow Rain",
-            "Heartseeker - Heartseeker",
-            "Frostbane - Improved Freezing Shot",
-            "Everfrostbane - Improved Freezing Shot",
-            "Soulbane - Improved Freezing Shot",
-            "Divine Vein - Improved Freezing Shot"
-        ]
-    },
-    {
-        "id": "H000",
-        "name": "Isabelle che Nyderre",
-        "heroClass": "Knight",
-        "mainstat": "STR",
-        "secondary": ["INT"],
-        "color": "87cefa",
-        "icon": "KnightIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Shield Breaker/Sustain/DoT/Tank"
-        ],
-        "description": [
-            "Melee all-rounder class. Quite tanky.Has supportive abilities such as moving/breaking monsters or providing shields to allies."
-        ],
-        "spec": [
-            "Winter's Heart - Absolute Zero",
-            "Eternal Winter - Absolute Zero",
-            "Guardian Ring - Improved Seal of Mana",
-            "True Guardian Ring - Improved Seal of Mana",
-            "Ispion, the Runed Ring - Improved Seal of Mana",
-            "Heirloom of Lazarus - Improved Seal of Mana"
-        ]
-    },
-    {
-        "id": "Hmkg",
-        "name": "Karad Erin",
-        "heroClass": "Dark Knight",
-        "mainstat": "STR",
-        "secondary": ["INT"],
-        "color": "bc8bf1",
-        "icon": "DarkKnightIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "STR: Burst DPS",
-            "INT: Support Utility and AoE Healer"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on skill casts."
-        ],
-        "spec": [
-            "Seal of Deceiver - Power of Inversion"
-        ]
-    },
-    {
-        "id": "H006",
-        "name": "Eustia",
-        "heroClass": "Arcane Mage",
-        "mainstat": "INT",
-        "color": "f9cdfe",
-        "icon": "ArcaneMageIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "Burst DPS/Semi-support"
-        ],
-        "description": [
-            "Ranged damage dealer. Has high burst damage but skill combo is complex."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H002",
-        "name": "Sherry P.",
-        "heroClass": "Water Mage",
-        "mainstat": "INT",
-        "color": "bec6fa",
-        "icon": "WaterMageIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "Support with Burst Capabilities"
-        ],
-        "description": [
-            "Ranged damage dealer & support. Good with CC effects."
-        ],
-        "spec": [
-            "Frozen Robe - Improved Frozen Emotion",
-            "Winter Robe - Improved Frozen Emotion",
-            "Frost Herald's Garment - Improved Frozen Emotion"
-        ]
-    },
-    {
-        "id": "H007",
-        "name": "Alice Dorneea",
-        "heroClass": "Priest",
-        "mainstat": "INT",
-        "color": "fffacd",
-        "icon": "PriestIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "Support/Healer"
-        ],
-        "description": [
-            "Supporter. Focused on healing skills. Excels in large parties."
-        ],
-        "spec": [
-            "Ring of Deep Darkness - Transmission of Darkness",
-            "Grimoire of Darkness - Transmission of Darkness",
-            "Seed of Malice - Transmission of Darkness"
-        ]
-    },
-    {
-        "id": "H003",
-        "name": "Frederic Kassia",
-        "heroClass": "Paladin",
-        "mainstat": "STR",
-        "color": "7b68ee",
-        "icon": "PaladinIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "DPS/Semi-Support"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on casting skills.",
-            "Has good mobility and support for allies."
-        ],
-        "spec": [
-            "Ruinbringer - Darkened Light",
-            "Calamity - Darkened Light",
-            "Visvire, the Hammer of Storm - Improved Genesis",
-            "Blazing Soul - Improved Genesis",
-            "Blazing Heart - Improved Genesis",
-            "Heaven's Fist - Summary Judgment",
-            "Demonic Fist - Demon's Grasp"
-        ]
-    },
-    {
-        "id": "H05T",
-        "name": "Harang",
-        "heroClass": "Phantom Blade",
-        "mainstat": "AGI",
-        "color": "99ffbb",
-        "icon": "PhantomBladeIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "DoT/DPS"
-        ],
-        "description": [
-            "Ranged damage dealer. Focused on skill casts.",
-            "Requires constant input of keys; not recommended if you have a bad wrist."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H065",
-        "name": "The Nameless One",
-        "heroClass": "Hermit",
-        "mainstat": "AGI",
-        "secondary": ["STR", "INT"],
-        "color": "4faaae",
-        "icon": "HermitIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)",
-            "Weapon (Melee)",
-            "Weapon (Bag)"
-        ],
-        "role": [
-            "Shield Breaker/DPS/Support depends on stat"
-        ],
-        "description": [
-            "Supporter. Focused on healing skills."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H066",
-        "name": "Yue Tenebras",
-        "heroClass": "Witch",
-        "mainstat": "INT",
-        "color": "b1a6d2",
-        "icon": "WitchIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "Shield Breaker/DPS/Support"
-        ],
-        "description": [
-            "Supporter. Focused on utility skills."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H076",
-        "name": "Noface",
-        "heroClass": "Fighter",
-        "mainstat": "STR",
-        "color": "995c00",
-        "icon": "FighterIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Pure DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Focused on skill casts, and relies heavily on combos.",
-            "Requires constant input of keys; not recommended if you have a bad wrist."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H07X",
-        "name": "Luk",
-        "heroClass": "Trickster",
-        "mainstat": "AGI",
-        "color": "39ac73",
-        "icon": "TricksterIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "Pure DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Difficult as it requires controlling two characters at once."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H08G",
-        "name": "Mina",
-        "heroClass": "Shrine Priestess",
-        "mainstat": "INT",
-        "color": "d3f9f8",
-        "icon": "ShrinePriestessIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Staff)"
-        ],
-        "role": [
-            "DPS",
-            "Semi-support"
-        ],
-        "description": [
-            "Ranged damage dealer. Has some supportive abilities."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H09M",
-        "name": "Maru",
-        "heroClass": "Lightseeker",
-        "mainstat": "STR",
-        "color": "f2f7b9",
-        "icon": "LightseekerIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "DPS"
-        ],
-        "description": [
-            "Damage dealer. Relies on numerous skill casts."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H09N",
-        "name": "Yuzuka",
-        "heroClass": "Blaster",
-        "mainstat": "STR",
-        "color": "c57372",
-        "icon": "BlasterIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Gun)"
-        ],
-        "role": [
-            "DPS"
-        ],
-        "description": [
-            "Ranged damage dealer. Relies greatly on attacks."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    },
-    {
-        "id": "H019",
-        "name": "Celeste",
-        "heroClass": "Sword Saint",
-        "mainstat": "STR",
-        "color": "e1c4ed",
-        "icon": "SwordSaintIcon",
-        "wearable": [
-            "Weapon (Shared)",
-            "Weapon (Melee)"
-        ],
-        "role": [
-            "DPS"
-        ],
-        "description": [
-            "Melee damage dealer. Unleashes fast combos using her sword and arcane magic."
-        ],
-        "spec": [
-            "No Specs!"
-        ]
-    }
+  {
+    "id": "H015",
+    "name": "Lyrio Farn",
+    "heroClass": "Sniper",
+    "mainstat": "AGI",
+    "color": "A2F76F",
+    "icon": "SniperIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Bow)"
+    ],
+    "role": [
+      "Long-range Burst DPS"
+    ],
+    "description": [
+      "Long-range damage dealer.",
+      "Has good mobility."
+    ],
+    "spec": [
+      "Soulstalker - Cursed Arrow",
+      "Soulbane - Cursed Arrow",
+      "Agnitus, the Bow of Divine Fury - Arrow of Judgment",
+      "Divine Vein - Divine Arrow"
+    ]
+  },
+  {
+    "id": "H008",
+    "name": "Stella Livve",
+    "heroClass": "Soul Weaver",
+    "mainstat": "INT",
+    "color": "3A8732",
+    "icon": "SoulWeaverIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "Buffer/Debuffer"
+    ],
+    "description": [
+      "Supporter. Focused on debuffs and utility skills."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H01I",
+    "name": "Elric",
+    "heroClass": "Alchemist",
+    "mainstat": "INT",
+    "color": "C4C099",
+    "icon": "AlchemistIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Versatile Invoker. Has DPS, DoT, Support, Buffs, Debuffs"
+    ],
+    "description": [
+      "Ranged damage dealer. Focused on casting skills.",
+      "Requires more control compared to other characters, and skill combos are long."
+    ],
+    "spec": [
+      "Potion of Corruption - Mad Alchemist",
+      "Benziena, the Rod of Earth - Enhanced Conjure Golem",
+      "Benziena, the Earthen Pillar - Enhanced Conjure Golem",
+      "Benziena, the Earthen Soul - Enhanced Conjure Golem",
+      "Benziena, the Earthen Heart - Enhanced Conjure Golem",
+      "Harmonia, the Sparkle of Life - Enhanced Conjure Golem"
+    ]
+  },
+  {
+    "id": "H00J",
+    "name": "Haran Tenebras",
+    "heroClass": "Warlock",
+    "mainstat": "INT",
+    "color": "C3C3E1",
+    "icon": "WarlockIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "DoT/DPS"
+    ],
+    "description": [
+      "Ranged damage dealer. Good at burst damage."
+    ],
+    "spec": [
+      "Soul Eater - Soul Devour"
+    ]
+  },
+  {
+    "id": "H02M",
+    "name": "Loriro Livve",
+    "heroClass": "Blood Weaver",
+    "mainstat": "INT",
+    "secondary": [
+      "STR"
+    ],
+    "color": "FF6666",
+    "icon": "BloodWeaverIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Sustain/DoT/Tank"
+    ],
+    "description": [
+      "Melee damage dealer. Uses a good mix of auto attacks and skill casts.",
+      "Uses HP as resource to cast skills. Has excellent mobility."
+    ],
+    "spec": [
+      "Teperua, the Ring of Blood - Blood Shield",
+      "Trueblood Ring - Blood Shield"
+    ]
+  },
+  {
+    "id": "H005",
+    "name": "Rin T.",
+    "heroClass": "Fire Mage",
+    "mainstat": "INT",
+    "color": "E4AFAF",
+    "icon": "FireMageIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Combo Burster"
+    ],
+    "description": [
+      "Ranged damage dealer. Has high burst damage."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H00K",
+    "name": "Rainbow R.",
+    "heroClass": "Shooter",
+    "mainstat": "AGI",
+    "secondary": [
+      "INT"
+    ],
+    "color": "99FFDD",
+    "icon": "ShooterIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Gun)"
+    ],
+    "role": [
+      "AGI: DPS with medium healing",
+      "INT: Support/Healer with medium damage"
+    ],
+    "description": [
+      "Ranged damage dealer.",
+      "If setup around INT-based items/stats, can also be utilized as a healer that excels in small parties."
+    ],
+    "spec": [
+      "Red Cross - Bloody Protection",
+      "Crimson Cross - Bloody Protection",
+      "Crimson Star - Crimson Star",
+      "Cosmic Star - Cosmic Star",
+      "Abyss Fall - Abyss Fall",
+      "Water Cannon - Purging Water",
+      "Hydro Buster - Purging Water",
+      "Rainmaker - Purging Water",
+      "Devil Chaser - Evil Chaser",
+      "Fiend Chaser - Evil Chaser",
+      "Chrono Chaser - Evil Chaser",
+      "Dante's Inferno - Abandon All Hope",
+      "Punisher - Abandon All Hope",
+      "Last Word - Abandon All Hope",
+      "Final Omen - Abandon All Hope"
+    ]
+  },
+  {
+    "id": "H04R",
+    "name": "Shiro",
+    "heroClass": "Sword Enchanter",
+    "mainstat": "AGI",
+    "color": "DFDFDF",
+    "icon": "SwordEnchanterIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Pure DoT/Slight Debuffer"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on auto-attacks.",
+      "Playstyle is simple compared to most other characters."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H05B",
+    "name": "Lucicree",
+    "heroClass": "Gunner",
+    "mainstat": "AGI",
+    "color": "DFBE9F",
+    "icon": "GunnerIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Gun)"
+    ],
+    "role": [
+      "High Mobility with mid-ranged DoT DPS"
+    ],
+    "description": [
+      "Ranged damage dealer. Uses a good mix of auto attacks and skill casts."
+    ],
+    "spec": [
+      "Dante's Inferno - Abandon All Hope",
+      "Punisher - Abandon All Hope",
+      "Last Word - Abandon All Hope",
+      "Final Omen - Abandon All Hope"
+    ]
+  },
+  {
+    "id": "H001",
+    "name": "Louis Arcienne",
+    "heroClass": "Swordsman",
+    "mainstat": "AGI",
+    "color": "869DD2",
+    "icon": "SwordsmanIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "High sustained damage (DoT dps), and strong stunner"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on casting skills, but it weaves auto-attacks in between skill casts."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H009",
+    "name": "Dorothy de Merrian",
+    "heroClass": "Elementalist",
+    "mainstat": "INT",
+    "color": "FF69B4",
+    "icon": "ElementalistIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "Summoner: Tank/Support/Debuff"
+    ],
+    "description": [
+      "Ranged damage dealer & support. Focused on summons."
+    ],
+    "spec": [
+      "Ripple Snow - Water Mastery",
+      "Twin Snow - Water Mastery",
+      "Triple Snow - Water Mastery",
+      "Endless Snow - Water Mastery",
+      "Benziena, the Earthen Pillar - Earth Mastery",
+      "Benziena, the Earthen Soul - Earth Mastery",
+      "Benziena, the Earthen Heart - Earth Mastery",
+      "Harmonia, the Sparkle of Life - Earth Mastery"
+    ]
+  },
+  {
+    "id": "H021",
+    "name": "Sasuke",
+    "heroClass": "Lightning Mage",
+    "mainstat": "INT",
+    "color": "B9F9F8",
+    "icon": "LightningMageIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Melee to Mid-ranged Burst DPS"
+    ],
+    "description": [
+      "Melee damaged dealer. Requires precision with casting skills."
+    ],
+    "spec": [
+      "Spiritus, the Sword of Elements - Spirits",
+      "Spirit Dagger - Spirits"
+    ]
+  },
+  {
+    "id": "H01V",
+    "name": "Astarte",
+    "heroClass": "Crusader",
+    "mainstat": "STR",
+    "color": "F7FC98",
+    "icon": "CrusaderIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Survivability/DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on casting skills.",
+      "Has good survivability and offensive support for allies."
+    ],
+    "spec": [
+      "Bahanar, the Sword of Illusion - Sword of Illusion",
+      "Bahanar, the True Sword of Illusion - Sword of Illusion",
+      "Meacronacer, the Sword of Thousand Illusions - Sword of Thousand Illusions",
+      "Astra, the Sword of Moonlight - Flash of Moonlight"
+    ]
+  },
+  {
+    "id": "H00E",
+    "name": "Kenneth Deracoon",
+    "heroClass": "Martial Artist",
+    "mainstat": "AGI",
+    "color": "C0C0C0",
+    "icon": "MartialArtistIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Close-range burst DPS, decent DoT dps"
+    ],
+    "description": [
+      "Melee damage dealer. Focused HEAVILY on auto attacks, and has almost no skill casts.",
+      "Playstyle is simple compared to most other characters."
+    ],
+    "spec": [
+      "Wanderer's Cape - Wanderer",
+      "Wings of Phoenix - Phoenix",
+      "Wings of Flame Lord - Phoenix",
+      "Guardian Vest - Nature's Protection",
+      "Grandine, the Plates of Wraith - Wraith Possession",
+      "Athanasia, the Armor of the Reaper - Reaper Possession",
+      "Exitium, the Armor of Ruin - Bringer of Ruin"
+    ]
+  },
+  {
+    "id": "Hblm",
+    "name": "Naomi Mercedes",
+    "heroClass": "Lancer",
+    "mainstat": "STR",
+    "color": "84F9D2",
+    "icon": "LancerIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Shield Breaker/DPS/Medium survival"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on skill casts.",
+      "Provides a bit of offensive support."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H04S",
+    "name": "Aurelia",
+    "heroClass": "Reaper",
+    "mainstat": "AGI",
+    "color": "FF9999",
+    "icon": "ReaperIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Burst DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on skill casts.",
+      "Skill combos are more complex compared to other characters."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H004",
+    "name": "Ayame",
+    "heroClass": "Assassin",
+    "mainstat": "AGI",
+    "color": "ffff80",
+    "icon": "AssassinIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Short Burst Melee DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on casting skills.",
+      "Has stealth abilities."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H01N",
+    "name": "Aisha",
+    "heroClass": "Wind Mage",
+    "mainstat": "INT",
+    "color": "caffca",
+    "icon": "WindMageIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "AOE Healer"
+    ],
+    "description": [
+      "Supporter. Has various healing and supportive abilities."
+    ],
+    "spec": [
+      "Fairy Garment - Fairy Blessing",
+      "Diana, the Robe of Holy Maiden - Maiden's Blessing",
+      "Crown of Serenity - Protector of Wind",
+      "Crown of Cleansing - Protector of Wind"
+    ]
+  },
+  {
+    "id": "H04Q",
+    "name": "Catherine Yoi",
+    "heroClass": "Merchant",
+    "mainstat": "STR",
+    "color": "c3c388",
+    "icon": "MerchantIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)",
+      "Weapon (Bag)"
+    ],
+    "role": [
+      "Tank Support"
+    ],
+    "description": [
+      "Supporter. Excels in adventurous parties where deaths are frequent."
+    ],
+    "spec": [
+      "Bag of Strength - Heavy Bag",
+      "Bag of Mighty Strength - Heavy Bag",
+      "Bag of Mighty Strength +1 - Heavy Bag",
+      "Bag of Hell - Very Heavy Bag",
+      "Bag of Corruption - Very Heavy Bag",
+      "Bag of Destruction - Very Heavy Bag",
+      "Bag of Demise - Very Heavy Bag",
+      "Bag of All Evils - Very Heavy Bag",
+      "Bag of Explosion - Dangerous Bag",
+      "Bag of Despair - Dangerous Bag",
+      "Fruit-filled Bag - Light Bag",
+      "Candy-filled Bag - Light Bag",
+      "Candy-filled Bag +1 - Light Bag",
+      "Bag of Heaven - Very Light Bag",
+      "Bag of Life - Very Light Bag",
+      "Bag of Mother Nature - Very Light Bag",
+      "Bag of Universe - Very Light Bag"
+    ]
+  },
+  {
+    "id": "H01H",
+    "name": "Esteria",
+    "heroClass": "Thunderer",
+    "mainstat": "AGI",
+    "color": "fe2101",
+    "icon": "ThundererIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Shield Breaker/DoT DPS with small Burst DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on auto-attacks."
+    ],
+    "spec": [
+      "Guardian of the Skies - Improved Magnetic Field",
+      "Ruler of the Skies - Improved Magnetic Field"
+    ]
+  },
+  {
+    "id": "H00H",
+    "name": "Elena",
+    "heroClass": "Berserker",
+    "mainstat": "STR",
+    "color": "f75b40",
+    "icon": "BerserkerIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "DPS/Survivability"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on auto attacks.",
+      "Instead of MP, she uses HP to cast skills."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H00Z",
+    "name": "Iris Millen",
+    "heroClass": "Bow Master",
+    "mainstat": "AGI",
+    "color": "d9bfa8",
+    "icon": "BowMasterIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Bow)"
+    ],
+    "role": [
+      "Burst DPS, with small support"
+    ],
+    "description": [
+      "Ranged damage dealer.",
+      "Provides some support for allies."
+    ],
+    "spec": [
+      "Stalker - Improved Arrow Rain",
+      "Heartseeker - Heartseeker",
+      "Frostbane - Improved Freezing Shot",
+      "Everfrostbane - Improved Freezing Shot",
+      "Soulbane - Improved Freezing Shot",
+      "Divine Vein - Improved Freezing Shot"
+    ]
+  },
+  {
+    "id": "H000",
+    "name": "Isabelle che Nyderre",
+    "heroClass": "Knight",
+    "mainstat": "STR",
+    "secondary": [
+      "INT"
+    ],
+    "color": "87cefa",
+    "icon": "KnightIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Shield Breaker/Sustain/DoT/Tank"
+    ],
+    "description": [
+      "Melee all-rounder class. Quite tanky.Has supportive abilities such as moving/breaking monsters or providing shields to allies."
+    ],
+    "spec": [
+      "Winter's Heart - Absolute Zero",
+      "Eternal Winter - Absolute Zero",
+      "Guardian Ring - Improved Seal of Mana",
+      "True Guardian Ring - Improved Seal of Mana",
+      "Ispion, the Runed Ring - Improved Seal of Mana",
+      "Heirloom of Lazarus - Improved Seal of Mana"
+    ]
+  },
+  {
+    "id": "Hmkg",
+    "name": "Karad Erin",
+    "heroClass": "Dark Knight",
+    "mainstat": "STR",
+    "secondary": [
+      "INT"
+    ],
+    "color": "bc8bf1",
+    "icon": "DarkKnightIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "STR: Burst DPS",
+      "INT: Support Utility and AoE Healer"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on skill casts."
+    ],
+    "spec": [
+      "Seal of Deceiver - Power of Inversion"
+    ]
+  },
+  {
+    "id": "H006",
+    "name": "Eustia",
+    "heroClass": "Arcane Mage",
+    "mainstat": "INT",
+    "color": "f9cdfe",
+    "icon": "ArcaneMageIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "Burst DPS/Semi-support"
+    ],
+    "description": [
+      "Ranged damage dealer. Has high burst damage but skill combo is complex."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H002",
+    "name": "Sherry P.",
+    "heroClass": "Water Mage",
+    "mainstat": "INT",
+    "color": "bec6fa",
+    "icon": "WaterMageIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "Burst with a Buff"
+    ],
+    "description": [
+      "Ranged damage dealer & support. Good with CC effects."
+    ],
+    "spec": [
+      "Frozen Robe - Improved Frozen Emotion",
+      "Winter Robe - Improved Frozen Emotion",
+      "Frost Herald's Garment - Improved Frozen Emotion"
+    ]
+  },
+  {
+    "id": "H007",
+    "name": "Alice Dorneea",
+    "heroClass": "Priest",
+    "mainstat": "INT",
+    "color": "fffacd",
+    "icon": "PriestIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "Support/Healer"
+    ],
+    "description": [
+      "Supporter. Focused on healing skills. Excels in large parties."
+    ],
+    "spec": [
+      "Ring of Deep Darkness - Transmission of Darkness",
+      "Grimoire of Darkness - Transmission of Darkness",
+      "Seed of Malice - Transmission of Darkness"
+    ]
+  },
+  {
+    "id": "H003",
+    "name": "Frederic Kassia",
+    "heroClass": "Paladin",
+    "mainstat": "STR",
+    "color": "7b68ee",
+    "icon": "PaladinIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "DPS/Semi-Support"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on casting skills.",
+      "Has good mobility and support for allies."
+    ],
+    "spec": [
+      "Ruinbringer - Darkened Light",
+      "Calamity - Darkened Light",
+      "Visvire, the Hammer of Storm - Improved Genesis",
+      "Blazing Soul - Improved Genesis",
+      "Blazing Heart - Improved Genesis",
+      "Heaven's Fist - Summary Judgment",
+      "Demonic Fist - Demon's Grasp"
+    ]
+  },
+  {
+    "id": "H05T",
+    "name": "Harang",
+    "heroClass": "Phantom Blade",
+    "mainstat": "AGI",
+    "color": "99ffbb",
+    "icon": "PhantomBladeIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "DoT/DPS"
+    ],
+    "description": [
+      "Ranged damage dealer. Focused on skill casts.",
+      "Requires constant input of keys; not recommended if you have a bad wrist."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H065",
+    "name": "The Nameless One",
+    "heroClass": "Hermit",
+    "mainstat": "AGI",
+    "secondary": [
+      "STR",
+      "INT"
+    ],
+    "color": "4faaae",
+    "icon": "HermitIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)",
+      "Weapon (Melee)",
+      "Weapon (Bag)"
+    ],
+    "role": [
+      "Shield Breaker/DPS/Support depends on stat"
+    ],
+    "description": [
+      "Supporter. Focused on healing skills."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H066",
+    "name": "Yue Tenebras",
+    "heroClass": "Witch",
+    "mainstat": "INT",
+    "color": "b1a6d2",
+    "icon": "WitchIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "Shield Breaker/DPS/Support"
+    ],
+    "description": [
+      "Supporter. Focused on utility skills."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H076",
+    "name": "Noface",
+    "heroClass": "Fighter",
+    "mainstat": "STR",
+    "color": "995c00",
+    "icon": "FighterIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Pure DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Focused on skill casts, and relies heavily on combos.",
+      "Requires constant input of keys; not recommended if you have a bad wrist."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H07X",
+    "name": "Luk",
+    "heroClass": "Trickster",
+    "mainstat": "AGI",
+    "color": "39ac73",
+    "icon": "TricksterIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "Pure DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Difficult as it requires controlling two characters at once."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H08G",
+    "name": "Mina",
+    "heroClass": "Shrine Priestess",
+    "mainstat": "INT",
+    "color": "d3f9f8",
+    "icon": "ShrinePriestessIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Staff)"
+    ],
+    "role": [
+      "DPS",
+      "Semi-support"
+    ],
+    "description": [
+      "Ranged damage dealer. Has some supportive abilities."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H09M",
+    "name": "Maru",
+    "heroClass": "Lightseeker",
+    "mainstat": "STR",
+    "color": "f2f7b9",
+    "icon": "LightseekerIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "DPS"
+    ],
+    "description": [
+      "Damage dealer. Relies on numerous skill casts."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H09N",
+    "name": "Yuzuka",
+    "heroClass": "Blaster",
+    "mainstat": "STR",
+    "color": "c57372",
+    "icon": "BlasterIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Gun)"
+    ],
+    "role": [
+      "DPS"
+    ],
+    "description": [
+      "Ranged damage dealer. Relies greatly on attacks."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  },
+  {
+    "id": "H019",
+    "name": "Celeste",
+    "heroClass": "Sword Saint",
+    "mainstat": "STR",
+    "color": "e1c4ed",
+    "icon": "SwordSaintIcon",
+    "wearable": [
+      "Weapon (Shared)",
+      "Weapon (Melee)"
+    ],
+    "role": [
+      "DPS"
+    ],
+    "description": [
+      "Melee damage dealer. Unleashes fast combos using her sword and arcane magic."
+    ],
+    "spec": [
+      "No Specs!"
+    ]
+  }
 ]
