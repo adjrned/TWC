@@ -165,8 +165,22 @@ const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer 
 
 const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
+// Boss-specific player scaling rules
+const BOSS_PLAYER_RULES = {
+  'Styrix, the Harvester of Souls': { min: 5, max: 10 },
+  'Lightbringer Kamael': { min: 5, max: 10 },
+  'Arcane Construct': { min: 3, max: 6 },
+};
+const DEFAULT_PLAYER_RULES = { min: 1, max: 10 };
+
+function getPlayerBonus(playerCount, bossName) {
+  const rules = BOSS_PLAYER_RULES[bossName] || DEFAULT_PLAYER_RULES;
+  const effectivePlayers = Math.max(0, playerCount - rules.min);
+  return effectivePlayers * 5;
+}
+
 function calcDropRate(item, { wishing, hasIcon, seasonal, playerCount }, bossName) {
-  const playerPct = PLAYER_BONUS[Math.min(playerCount, 10)] || 0;
+  const playerPct = getPlayerBonus(playerCount, bossName);
   const seasonalMult = seasonal ? 2 : 1;
   const combined = (1 + playerPct / 100) * seasonalMult;
 
@@ -186,6 +200,7 @@ function renderDropCalculator(boss) {
 
   const isNoWish = NO_WISH_BOSSES.has(boss.name);
   const iconLabel = dropInfo.iconType === 'Immortal' ? 'Immortal' : 'Legend';
+  const rules = BOSS_PLAYER_RULES[boss.name] || DEFAULT_PLAYER_RULES;
 
   return `
     <div class="boss-section">
@@ -198,13 +213,13 @@ function renderDropCalculator(boss) {
         <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal Buff</span></label>
         <div class="drop-calc-player">
           <span>Players:</span>
-          <input type="range" id="calcPlayers" min="0" max="10" value="1">
-          <span id="calcPlayersVal">1</span>
+          <input type="range" id="calcPlayers" min="${rules.min}" max="${rules.max}" value="${rules.min}">
+          <span id="calcPlayersVal">${rules.min}</span>
         </div>
       </div>
       <div class="boss-drops-list" id="dropCalcList">
         ${dropInfo.items.map((item, i) => {
-          const defaultRate = item.base * 1.05; // 1 player, no season
+          const defaultRate = item.base; // base rate at min players (no bonus)
           return `
           <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item" data-idx="${i}">
             <div class="boss-drop-icon">
