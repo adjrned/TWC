@@ -28540,6 +28540,7 @@
       "mainstat": 500,
       "hp": 2000,
       "passive": [
+        "All attribute efficiency +5%",
         "Activates the power of the saint when equipped",
         "Skill damage increases by 10%, damage taken decreases by 15% [Type-A], movement speed increases by 75",
         "When HP drops below 1, Saint's Blessing is activated, regenerating 40% HP per second for 5 seconds and blocking harmful effects except instant death (Cooldown: 180 seconds)"
