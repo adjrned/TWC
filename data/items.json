@@ -28216,10 +28216,10 @@
       "agi": 550,
       "hp": 2000,
       "skilldamagepercent": 0.15,
-      "critmultiplier": 0.1,
+      "critmultiplier": 0.15,
       "passive": [
         "Destruction triggers when a skill critically hits",
-        "Deals 60,000 additional damage and recovers 3% HP.",
+        "Deals 70,000 additional damage and recovers 3% HP.",
         "1 charge every 3 seconds (maximum 3 charges)"
       ],
       "active": [
