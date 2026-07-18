@@ -34,7 +34,7 @@ function iconSrc(name) {
 // ── Role classification ───────────────────────────────────────
 const SUPPORT_CLASSES = new Set([
   'Soul Weaver', 'Wind Mage', 'Priest', 'Merchant',
-  'Elementalist', 'Dark Knight', 'Paladin', 'Hermit', 'Shooter',
+  'Elementalist', 'Dark Knight', 'Paladin', 'Hermit', 'Shooter', 'Witch',
 ]);
 const DPS_CLASSES = new Set([
   'Sniper', 'Fire Mage', 'Lightning Mage', 'Reaper', 'Assassin',
@@ -125,6 +125,7 @@ function renderHeroDetail(hero, skills) {
 
   const colorHex = '#' + hero.color;
   const statInfo = STAT_COLOR[hero.mainstat] || {};
+  const roles = (hero.role || []).join(' / ');
 
   return `
     <button class="back-btn" onclick="location.hash='#/heroes'">Back to Heroes</button>
@@ -136,38 +137,38 @@ function renderHeroDetail(hero, skills) {
         </div>
         <div class="hero-detail-title">
           <h1>${esc(hero.name)}</h1>
+          <span class="hero-detail-class">${esc(hero.heroClass)}</span>
           <div class="hero-detail-meta">
             <span class="hero-stat-badge ${statInfo.pill || ''}">${esc(hero.mainstat)}</span>
-            <span class="hero-meta-item">${esc(hero.heroClass)}</span>
+            ${roles ? `<span class="hero-role-badge">${esc(roles)}</span>` : ''}
           </div>
-          <div class="hero-detail-roles">
-            ${(hero.role || []).map(r => `<span class="hero-role-badge">${esc(r)}</span>`).join('')}
-          </div>
-          <div class="hero-desc-lines">
-            ${(hero.description || []).map(d => `<p>${esc(d)}</p>`).join('')}
-          </div>
+          ${hero.description?.length ? `
+            <p class="hero-detail-desc">${hero.description.map(d => esc(d)).join(' ')}</p>
+          ` : ''}
         </div>
       </div>
 
       ${hero.wearable?.length ? `
-        <div class="hero-section">
-          <h2>Wearable</h2>
-          <div class="hero-wearable-list">
-            ${hero.wearable.map(w => `<span class="hero-wearable-item">${esc(w)}</span>`).join('')}
-          </div>
+        <div class="hero-wearable-inline">
+          ${hero.wearable.map(w => `<span class="hero-wearable-tag">${esc(w)}</span>`).join('')}
         </div>
       ` : ''}
 
       ${hero.spec?.length && hero.spec[0] !== 'No Specs!' ? `
         <div class="hero-section">
-          <h2>Specs</h2>
+          <h2>Specializations</h2>
           <div class="hero-spec-list">
-            ${hero.spec.map(s => `
-              <div class="hero-spec-item">
-                <span class="hero-spec-dot"></span>
-                <span>${esc(s)}</span>
-              </div>
-            `).join('')}
+            ${hero.spec.map(s => {
+              const parts = s.split(' - ');
+              const weapon = parts[0] || '';
+              const ability = parts[1] || '';
+              return `
+                <div class="hero-spec-item">
+                  <span class="hero-spec-weapon">${esc(weapon)}</span>
+                  ${ability ? `<span class="hero-spec-arrow">→</span><span class="hero-spec-ability">${esc(ability)}</span>` : ''}
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       ` : ''}
@@ -196,34 +197,32 @@ function renderSkillCard(skill) {
           <img src="${iconSrc(skill.icon)}" alt="${esc(skill.name)}" onerror="this.style.display='none'">
         </div>
         <div class="skill-info">
-          <div class="skill-title-row">
-            <h3 class="skill-name">${esc(skill.name)}</h3>
+          <h3 class="skill-name">${esc(skill.name)}</h3>
+          <div class="skill-meta">
             <span class="skill-hotkey">${esc(skill.hotkey)}</span>
             ${skill.cooldown != null
-              ? `<span class="skill-cooldown">${esc(skill.cooldown)}s</span>`
+              ? `<span class="skill-cooldown">${skill.cooldown}s CD</span>`
               : skill.proc_rate != null
-                ? `<span class="skill-cooldown">Proc: ${esc(skill.proc_rate * 100)}%</span>`
+                ? `<span class="skill-cooldown">${Math.round(skill.proc_rate * 100)}% Proc</span>`
                 : ''
             }
           </div>
         </div>
       </div>
-
       <div class="skill-body">
         ${hasPassive ? `
-          <div class="skill-section-label">Passive</div>
+          ${hasActive ? `<div class="skill-section-label">Passive</div>` : ''}
           <ul class="skill-desc-list">
             ${skill.passive.map((line, i) => `
               <li class="${i === 0 ? 'skill-flavor' : ''}">${esc(line)}</li>
             `).join('')}
           </ul>
         ` : ''}
-
         ${hasActive ? `
           ${hasPassive ? `<div class="skill-section-label">Active</div>` : ''}
           <ul class="skill-desc-list">
             ${skill.active.map((line, i) => `
-              <li class="${i === 0 ? 'skill-flavor' : ''}">${esc(line)}</li>
+              <li class="${!hasPassive && i === 0 ? 'skill-flavor' : ''}">${esc(line)}</li>
             `).join('')}
           </ul>
         ` : ''}
