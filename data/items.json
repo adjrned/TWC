@@ -28075,9 +28075,9 @@
         "Removes debuffs from allies within a 900 range and grants Clearness for 10 seconds.",
         "Cooldown: 75 seconds"
       ],
-      "affinitylightpercent": 0.08,
-      "affinitywlpercent": 0.12,
-      "affinityiwpercent": 0.08
+      "affinitywindpercent": 0.12,
+      "affinitywaterpercent": 0.08,
+      "affinitylightpercent": 0.08
     },
     "recipe": [
       {
@@ -28179,7 +28179,7 @@
         "Cooldown: 60 seconds / Cooldown decreases by 3 seconds each time Darkfrost is activated"
       ],
       "affinitydarkpercent": 0.05,
-      "affinityiwpercent": 0.125
+      "affinitywaterpercent": 0.125
     },
     "recipe": [
       {
@@ -28371,7 +28371,7 @@
         "Cooldown: 30 seconds"
       ],
       "affinitylightpercent": 0.1,
-      "affinitywlpercent": 0.05
+      "affinitywindpercent": 0.05
     },
     "recipe": [
       {
