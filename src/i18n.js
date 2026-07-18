@@ -13,7 +13,7 @@ const STRINGS = {
     'nav.awakening.short': 'Awaken',
 
     // Builder
-    'builder.title': 'TWRPG Loadout Builder',
+    'builder.title': 'TWRPG Build Planner',
     'builder.subtitle': 'Loadout per Phase',
     'builder.import': 'Import',
     'builder.export': 'Export',
