@@ -346,7 +346,7 @@
 
 /* ── Page headers ── */
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
   position: relative;
 }
 .page-header h1 {
