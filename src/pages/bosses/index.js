@@ -165,33 +165,19 @@ const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer 
 
 const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
-function calcDropRate(baseRate, { wishing, hasIcon, hardmode, seasonal, playerCount }, iconType, bossName) {
-  if (NO_WISH_BOSSES.has(bossName)) {
-    // Styrix/Kamael: only player count and seasonal affect drops
-    const playerPct = PLAYER_BONUS[Math.min(playerCount, 10)] || 0;
-    const seasonalMult = seasonal ? 2 : 1;
-    const combined = (1 + playerPct / 100) * seasonalMult;
-    return baseRate * combined;
-  }
-
+function calcDropRate(item, { wishing, hasIcon, seasonal, playerCount }, bossName) {
   const playerPct = PLAYER_BONUS[Math.min(playerCount, 10)] || 0;
-  const hardmodeMult = hardmode ? 1 : 1; // placeholder — hardmode currently ×1
   const seasonalMult = seasonal ? 2 : 1;
-  const combined = (1 + playerPct / 100) * seasonalMult * hardmodeMult;
+  const combined = (1 + playerPct / 100) * seasonalMult;
 
   let wishMult = 1;
-  if (wishing && hasIcon) {
-    // Wish + Legend/Immortal
-    if (iconType === 'Immortal') wishMult = 5.217391304;
-    else wishMult = 3.75;
-  } else if (wishing) {
-    if (iconType === 'Immortal') wishMult = 3.478260869;
-    else wishMult = 2.5;
-  } else if (hasIcon) {
-    wishMult = 1.5;
+  if (!NO_WISH_BOSSES.has(bossName)) {
+    if (wishing && hasIcon) wishMult = item.wishIconMult;
+    else if (wishing) wishMult = item.wishMult;
+    else if (hasIcon) wishMult = item.iconMult;
   }
 
-  return baseRate * combined * wishMult;
+  return item.base * combined * wishMult;
 }
 
 function renderDropCalculator(boss) {
@@ -217,15 +203,17 @@ function renderDropCalculator(boss) {
         </div>
       </div>
       <div class="boss-drops-list" id="dropCalcList">
-        ${dropInfo.items.map((item, i) => `
+        ${dropInfo.items.map((item, i) => {
+          const defaultRate = item.base * 1.05; // 1 player, no season
+          return `
           <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item" data-idx="${i}">
             <div class="boss-drop-icon">
               <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
             </div>
             <span class="boss-drop-name">${esc(item.name)}</span>
-            <span class="boss-drop-rate" data-base="${item.noWish}">${item.noWish.toFixed ? item.noWish.toFixed(4) : item.noWish}%</span>
+            <span class="boss-drop-rate" data-idx="${i}">${defaultRate.toFixed(4)}%</span>
           </a>
-        `).join('')}
+        `;}).join('')}
       </div>
     </div>
   `;
@@ -244,9 +232,11 @@ function initDropCalc(boss) {
     document.getElementById('calcPlayersVal').textContent = playerCount;
 
     const rates = document.querySelectorAll('#dropCalcList .boss-drop-rate');
-    rates.forEach((el, i) => {
-      const baseRate = parseFloat(el.dataset.base);
-      const calc = calcDropRate(baseRate, { wishing, hasIcon, hardmode: false, seasonal, playerCount }, dropInfo.iconType, boss.name);
+    rates.forEach(el => {
+      const idx = parseInt(el.dataset.idx);
+      const item = dropInfo.items[idx];
+      if (!item) return;
+      const calc = calcDropRate(item, { wishing, hasIcon, seasonal, playerCount }, boss.name);
       el.textContent = calc.toFixed(4) + '%';
     });
   };
