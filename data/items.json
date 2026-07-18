@@ -20285,8 +20285,7 @@
     "level": 100,
     "required_by": [
       "Dread Incarnate",
-      "Cage of Shadow Fiend",
-      "Plates of Dawn"
+      "Cage of Shadow Fiend"
     ],
     "recipe": [
       {
@@ -23994,7 +23993,9 @@
         "Cooldown: 45 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Plates of Dawn"
+    ]
   },
   {
     "id": "I0IL",
@@ -27983,7 +27984,7 @@
     },
     "recipe": [
       {
-        "Voidshard Armor": 1
+        "Titan's Plates": 1
       },
       {
         "Sunstone": 1
