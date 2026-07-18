@@ -27631,7 +27631,7 @@
         "It's not a bag decoration! (D) -> This bag is a bit dangerous! (D)",
         "Throwable Healing Potion (W) -> Throw Bomb (W)",
         "Throws a bomb that explodes after 30 seconds or upon colliding with an enemy or another bomb (maximum 10 can be placed).",
-        "When it explodes, it deals 8x Strength magic damage and leaves a mark that deals 4x Strength magic damage every 0.6 seconds for 3 seconds. It also causes a chain explosion of nearby bombs, adding a 0.5 second stun effect and increasing damage by 75% (max 300%).",
+        "Deals Strength x 7.5 magic damage on explosion and leaves a mark that deals Strength x 4 magic damage every 0.6 seconds for 3 seconds. Triggers chain explosions of nearby bombs, adding a 0.5 second stun and increasing damage by 75% (max 300%).",
         "Life Shield Scroll (E) -> Soul Bomb (E)",
         "Holy Water of Resurrection (T) -> Cursed Doll (T)"
       ]
