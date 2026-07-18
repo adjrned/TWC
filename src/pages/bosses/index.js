@@ -186,7 +186,15 @@ function getPlayerBonus(playerCount, bossName) {
   return effectivePlayers * 5;
 }
 
+function isCurrencyItem(name) {
+  const l = name.toLowerCase();
+  return l.includes('soulstone') || l.includes('token') || l.includes('coin');
+}
+
 function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount }, bossName) {
+  // Soulstones, tokens, and coins are not affected by any modifiers
+  if (isCurrencyItem(item.name)) return item.base;
+
   const playerPct = getPlayerBonus(playerCount, bossName);
   const seasonalMult = seasonal ? 2 : 1;
   const hardmodeMult = (hardmode && HARDMODE_BOSSES.has(bossName)) ? 1.5 : 1;
