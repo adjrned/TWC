@@ -286,8 +286,38 @@ function initDropCalc(boss) {
   });
 }
 
+// ── Simple drops list (for bosses without calculator data) ───────────────────
+function renderSimpleDrops(bossName) {
+  if (!itemData) return '';
+  const drops = itemData.filter(i => (i.dropped_by || []).includes(bossName));
+  if (!drops.length) return '';
+
+  return `
+    <div class="boss-section">
+      <h2>Drops</h2>
+      <div class="boss-drops-list">
+        ${drops.map(item => {
+          const rate = item.droprate ? (item.droprate * 100) + '%' : '';
+          return `
+            <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item">
+              <div class="boss-drop-icon">
+                <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
+              </div>
+              <span class="boss-drop-name">${esc(item.name)}</span>
+              <span class="boss-drop-type">${esc(item.type || '')}</span>
+              ${rate ? `<span class="boss-drop-rate">${rate}</span>` : ''}
+            </a>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
 // ── Detail view ───────────────────────────────────────────────────────────────
 function renderBossDetail(boss) {
+  const hasCalcData = !!bossDropData?.[boss.name];
+
   return `
     <button class="back-btn" onclick="history.back()">Back</button>
     <div class="boss-detail">
@@ -306,7 +336,7 @@ function renderBossDetail(boss) {
         </div>
       </div>
 
-      ${renderDropCalculator(boss)}
+      ${hasCalcData ? renderDropCalculator(boss) : renderSimpleDrops(boss.name)}
 
       ${boss.stats && Object.keys(boss.stats).length ? `
         <div class="boss-section">
