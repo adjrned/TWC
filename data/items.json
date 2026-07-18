@@ -28564,6 +28564,8 @@
     "stats": {
       "allstat": 425,
       "mdpercent": 0.1,
+      "affinityearthpercent": 0.05,
+      "affinitylightpercent": 0.05,
       "passive": [
         "Light Reverberation activates when equipped",
         "Nearby allies' stats increase by 160 + 4% [Type-A]",
