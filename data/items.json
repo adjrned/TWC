@@ -26827,5 +26827,1230 @@
     ],
     "droprate": 0.0001,
     "required_by": []
+  },
+  {
+    "id": "I1770",
+    "name": "Apocalypse Prime",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Firearms",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 14500,
+      "agi": 1050,
+      "hp": 2500,
+      "critmultiplier": 0.5
+    },
+    "recipe": [
+      {
+        "Final Omen": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "Sinister Skull (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1771",
+    "name": "Bag of Sentience",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Backpack",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 8000,
+      "allstat": 750,
+      "healingpercent": 0.15,
+      "mdpercent": 0.15
+    },
+    "recipe": [
+      {
+        "Backpack of All Things": 1
+      },
+      {
+        "The Gown of Life (Gaia)": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Blood Crystal (Duke Lazarus)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Sacred Lotus (Kamael, Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1772",
+    "name": "Crimson Whisper",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Bow",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 13000,
+      "str": 500,
+      "agi": 1050,
+      "attackspeedpercent": 0.4,
+      "skilldamagepercent": 0.05
+    },
+    "recipe": [
+      {
+        "Lion's Bow Agnitus": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "Crystal of the Earth (Earth God Gaia)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Sinister Skull (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Celestial Knot (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1773",
+    "name": "Heart of Lion",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Melee",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 15500,
+      "mainstat": 700,
+      "skilldamagepercent": 0.125,
+      "movespeed": 75
+    },
+    "recipe": [
+      {
+        "Caedis, the Sword of Slaughter": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "Guardian of the Earth (Gaia)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Celestial Knot (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1774",
+    "name": "Heaven's Fall",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Firearms",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 9500,
+      "agi": 450,
+      "int": 950,
+      "attackspeedpercent": 0.35
+    },
+    "recipe": [
+      {
+        "Abyss Fall": 1
+      },
+      {
+        "Heaven's Door": 1
+      },
+      {
+        "Grim Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "Crystal of the Earth (Earth God Gaia)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1775",
+    "name": "Illumination",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Staff",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 9000,
+      "int": 1000,
+      "hp": 3000
+    },
+    "recipe": [
+      {
+        "Gate of Abyss": 1
+      },
+      {
+        "Harmonia, the Flame of Life": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Blessing of the Earth (Earth Goddess Gaia)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Sacred Lotus (Kamael, Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1776",
+    "name": "Ordius, the Divine Lance",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Melee",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 13500,
+      "str": 1250,
+      "agi": 350,
+      "int": 1000,
+      "skilldamagepercent": 0.2,
+      "critmultiplier": 0.2
+    },
+    "recipe": [
+      {
+        "Window of Judgment": 1
+      },
+      {
+        "Pulminata, the Guide of Thunder": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "The Sun Stone (Kamael, the Guide of Light)": 1
+      },
+      {
+        "Guardian of the Earth (Gaia)": 1
+      },
+      {
+        "Sacred Lotus (Kamael, Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1777",
+    "name": "Primal Shard",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Staff",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 10000,
+      "int": 1100,
+      "hp": 2000,
+      "skilldamagepercent": 0.15
+    },
+    "recipe": [
+      {
+        "Endless Snow": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "Guardian of the Earth (Gaia)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      },
+      {
+        "Celestial Knot (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1778",
+    "name": "Soul Rift",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Backpack",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 10500,
+      "str": 1000,
+      "skilldamagepercent": 0.2,
+      "drpercent": 0.1
+    },
+    "recipe": [
+      {
+        "Backpack of Despair": 1
+      },
+      {
+        "Blood Rose (Duke Lazarus)": 1
+      },
+      {
+        "The Gown of Life (Gaia)": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "The Sun Stone (Kamael, the Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1779",
+    "name": "Soulrender",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Weapon - Common",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 13000,
+      "mainstat": 1150,
+      "attackspeedpercent": 0.35,
+      "skilldamagepercent": 0.125
+    },
+    "recipe": [
+      {
+        "Heart Render": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "The Sun Stone (Kamael, the Guide of Light)": 1
+      },
+      {
+        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1780",
+    "name": "Animus, the Robe of Souls",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 240,
+      "int": 650,
+      "movespeed": 50,
+      "skilldamagepercent": 0.2
+    },
+    "recipe": [
+      {
+        "Robe of Sacrifice Sangis": 1
+      },
+      {
+        "The Gown of Life (Gaia)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      },
+      {
+        "Celestial Knot (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1781",
+    "name": "Cage of Shadow Fiend",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 300,
+      "allstat": 400,
+      "mdpercent": 0.1
+    },
+    "recipe": [
+      {
+        "Twisted Soul Armor": 1
+      },
+      {
+        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1782",
+    "name": "Exsolus, the Armor of the Absolute",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 275,
+      "str": 200,
+      "agi": 575,
+      "skilldamagepercent": 0.18,
+      "critchancepercent": 0.15
+    },
+    "recipe": [
+      {
+        "Exitium, Armor of Destruction": 1
+      },
+      {
+        "Crystal of the Earth (Earth God Gaia)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      },
+      {
+        "Celestial Knot (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1783",
+    "name": "Guardian of Sky and Earth",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 350,
+      "str": 550,
+      "agi": 250,
+      "int": 250,
+      "drpercent": -0.12,
+      "earthattributeefficiency": 0.05
+    },
+    "recipe": [
+      {
+        "Harmony of Heaven and Earth": 1
+      },
+      {
+        "Flower of the Soul (Duke Lazarus)": 1
+      },
+      {
+        "Guardian of the Earth (Gaia)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1784",
+    "name": "Herald of the Void",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 240,
+      "agi": 550,
+      "movespeed": 50,
+      "skilldamagepercent": 0.18
+    },
+    "recipe": [
+      {
+        "Nebedium, Armor of the Demon Blood": 1
+      },
+      {
+        "The Gown of Life (Gaia)": 1
+      },
+      {
+        "Blood Crystal (Duke Lazarus)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Sinister Skull (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Sacred Lotus (Kamael, Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1785",
+    "name": "Plates of Dawn",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 300,
+      "str": 600,
+      "skilldamagepercent": 0.2
+    },
+    "recipe": [
+      {
+        "Giant's Armor": 1
+      },
+      {
+        "The Sun Stone (Kamael, the Guide of Light)": 1
+      },
+      {
+        "Sentence of Sacrifice (Duke Lazarus)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1786",
+    "name": "Plates of Divine Blood",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 300,
+      "allstat": 500,
+      "movespeed": 50,
+      "skilldamagepercent": 0.15,
+      "drpercent": -0.1,
+      "allattributeefficiency": 0.05
+    },
+    "recipe": [
+      {
+        "Armor of Bloody Fury": 1
+      },
+      {
+        "Blood Demon Armor": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Guardian of the Earth (Gaia)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1787",
+    "name": "Celestial Crown",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Headgear",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 150,
+      "allstat": 375,
+      "critchancepercent": 0.1,
+      "windattributeefficiency": 0.12,
+      "waterattributeefficiency": 0.08,
+      "lightattributeefficiency": 0.08
+    },
+    "recipe": [
+      {
+        "Crown of Purification": 1
+      },
+      {
+        "The Sun Stone (Kamael, the Guide of Light)": 1
+      },
+      {
+        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      },
+      {
+        "Sinister Skull OR Cursed Soul (Styrix the Soul Harvester)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1788",
+    "name": "Eye of Truth",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Headgear",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 175,
+      "allstat": 250,
+      "mainstat": 250,
+      "skilldamagepercent": 0.1,
+      "drpercent": -0.05
+    },
+    "recipe": [
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "The Gown of Life (Gaia)": 1
+      },
+      {
+        "The Sun Stone (Kamael, the Guide of Light)": 1
+      },
+      {
+        "Flower of the Soul (Duke Lazarus)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1789",
+    "name": "Frostmoon Crown",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Headgear",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 165,
+      "allstat": 400,
+      "skilldamagepercent": 0.2,
+      "hp": 1500,
+      "mp": 1500,
+      "waterattributeefficiency": 0.125,
+      "darkattributeefficiency": 0.05
+    },
+    "recipe": [
+      {
+        "Crown of Transcendence": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Blood Crystal (Duke Lazarus)": 1
+      },
+      {
+        "Sinister Skull (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1790",
+    "name": "Madness of Old Gods",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Headgear",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 150,
+      "agi": 550,
+      "hp": 2000,
+      "skilldamagepercent": 0.15,
+      "critmultiplier": 0.1
+    },
+    "recipe": [
+      {
+        "Mask of the Demigod": 1
+      },
+      {
+        "Picture Side (Soul Reaper Styrix)": 1
+      },
+      {
+        "Flower of the Soul (Duke Lazarus)": 1
+      },
+      {
+        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+      },
+      {
+        "Magic Core (Ancient Magic Machine)": 1
+      },
+      {
+        "Dew of Paradise (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1791",
+    "name": "Righteous Flame",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Headgear",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "armor": 180,
+      "allstat": 450,
+      "skilldamagepercent": 0.15,
+      "attackspeedpercent": 0.1,
+      "fireattributeefficiency": 0.1,
+      "lightattributeefficiency": 0.05
+    },
+    "recipe": [
+      {
+        "Crown of Cataclysm": 1
+      },
+      {
+        "Sentence of Sacrifice (Duke Lazarus)": 1
+      },
+      {
+        "Ancient Secretary (Ancient Magic Machine)": 1
+      },
+      {
+        "Soul Servant (Soul Reaper Styrix)": 1
+      },
+      {
+        "Sacred Lotus (Kamael, Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1792",
+    "name": "Celestial Wind",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "mainstat": 700,
+      "attackspeedpercent": 0.4,
+      "skilldamagepercent": 0.15,
+      "critmultiplier": 0.25
+    },
+    "recipe": [
+      {
+        "Ring of the Divine Wind": 1
+      },
+      {
+        "Ring of Malice": 1
+      },
+      {
+        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+      },
+      {
+        "Cursed Soul OR Sinister Skeleton (Soulreaper Styrix)": 1
+      },
+      {
+        "Celestial Knot (Kamael, the Lightbringer)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1793",
+    "name": "Codex of Light",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "allstat": 525,
+      "movespeed": 50,
+      "windattributeefficiency": 0.05,
+      "lightattributeefficiency": 0.1
+    },
+    "recipe": [
+      {
+        "Servant of the Divine": 1
+      },
+      {
+        "Mask of Truth (Ancient Magic Machine)": 1
+      },
+      {
+        "Guardian of the Earth (Gaia)": 1
+      },
+      {
+        "Cursed Soul (Styrix the Soul Harvester)": 1
+      },
+      {
+        "Sacred Lotus (Kamael, Guide of Light)": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1794",
+    "name": "Dark Lotus",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "allstat": 500,
+      "mpregen": 35
+    },
+    "recipe": [],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1795",
+    "name": "Godslayer Signet",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "str": 575,
+      "agi": 550,
+      "periodicdamagepercent": 0.4,
+      "healingpercent": -0.4
+    },
+    "recipe": [],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1796",
+    "name": "Primal Flame",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "allstat": 550,
+      "attackspeedpercent": 0.25,
+      "skilldamagepercent": 0.15
+    },
+    "recipe": [],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1797",
+    "name": "Primordial Heart",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "mainstat": 600,
+      "hp": 2500,
+      "attackspeedpercent": 0.15
+    },
+    "recipe": [],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1798",
+    "name": "Sunstone",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "allstat": 450,
+      "skilldamagepercent": 0.1,
+      "attackspeedpercent": 0.2
+    },
+    "recipe": [],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1799",
+    "name": "Aegis of Avalon",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Wings",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "allstat": 425,
+      "mdpercent": 0.1
+    },
+    "recipe": [
+      {
+        "itemName": "Guardian Angel",
+        "qty": 1
+      },
+      {
+        "itemName": "Sentence of Sacrifice (Duke Lazarus)",
+        "qty": 1
+      },
+      {
+        "itemName": "Guardian of the Earth (Gaia)",
+        "qty": 1
+      },
+      {
+        "itemName": "Ancient Secretary (Ancient Magic Machine)",
+        "qty": 1
+      },
+      {
+        "itemName": "Sinister Skull (Styrix the Soul Harvester)",
+        "qty": 1
+      },
+      {
+        "itemName": "Celestial Knot (Kamael, the Lightbringer)",
+        "qty": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1800",
+    "name": "Cape of the Saint",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Wings",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "mainstat": 500,
+      "hp": 2000
+    },
+    "recipe": [
+      {
+        "itemName": "Wings of the Immortal",
+        "qty": 1
+      },
+      {
+        "itemName": "Lazarus's Heirloom",
+        "qty": 1
+      },
+      {
+        "itemName": "The Sun Stone (Kamael, the Guide of Light)",
+        "qty": 1
+      },
+      {
+        "itemName": "Crystal of the Earth (Earth God Gaia)",
+        "qty": 1
+      },
+      {
+        "itemName": "Ancient Secretary (Ancient Magic Machine)",
+        "qty": 1
+      },
+      {
+        "itemName": "Cursed Soul (Styrix the Soul Harvester)",
+        "qty": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1801",
+    "name": "Coil of Ouroboros",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Wings",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "allstat": 450,
+      "attackspeedpercent": 0.15,
+      "skilldamagepercent": 0.2,
+      "movespeed": 50
+    },
+    "recipe": [
+      {
+        "itemName": "Wings of Creation",
+        "qty": 1
+      },
+      {
+        "itemName": "Ring of Eternity",
+        "qty": 1
+      },
+      {
+        "itemName": "Mask of Truth (Ancient Magic Machine)",
+        "qty": 1
+      },
+      {
+        "itemName": "Sinister Skull (Styrix the Soul Harvester)",
+        "qty": 1
+      },
+      {
+        "itemName": "Dew of Paradise (Kamael, the Lightbringer)",
+        "qty": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1802",
+    "name": "Void Seraph",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Wings",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "mainstat": 550,
+      "hp": 2000,
+      "attackspeedpercent": 0.15,
+      "skilldamagepercent": 0.15
+    },
+    "recipe": [
+      {
+        "itemName": "Wings of Divine Origin",
+        "qty": 1
+      },
+      {
+        "itemName": "Blood Devourer",
+        "qty": 1
+      },
+      {
+        "itemName": "Sinister Skull (Styrix the Soul Harvester)",
+        "qty": 1
+      },
+      {
+        "itemName": "Celestial Knot (Kamael, the Lightbringer)",
+        "qty": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
+  },
+  {
+    "id": "I1803",
+    "name": "Wings of Descender",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Wings",
+    "color": "733CBE",
+    "level": 100,
+    "stats": {
+      "damage": 4000,
+      "allstat": 350,
+      "movespeed": 50,
+      "skilldamagepercent": 0.15,
+      "mdpercent": 0.075
+    },
+    "recipe": [
+      {
+        "itemName": "Cloak of Endless Longing",
+        "qty": 1
+      },
+      {
+        "itemName": "Ruler of the Sky",
+        "qty": 1
+      },
+      {
+        "itemName": "Flower of the Soul (Duke Lazarus)",
+        "qty": 1
+      },
+      {
+        "itemName": "Crystal of the Earth (Earth God Gaia)",
+        "qty": 1
+      },
+      {
+        "itemName": "Soul Servant (Soul Reaper Styrix)",
+        "qty": 1
+      },
+      {
+        "itemName": "Sacred Lotus (Kamael, Guide of Light)",
+        "qty": 1
+      }
+    ],
+    "required_by": [],
+    "dropped_by": []
   }
 ]
