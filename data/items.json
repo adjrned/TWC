@@ -27419,8 +27419,8 @@
       "attackspeedpercent": 0.35,
       "passive": [
         "Blessing activates when an ally recovers",
-        "Increases target's skill damage and recovery amount by 15% for 6 seconds.",
-        "When healing others 20 times, grants an awakening effect, increasing skill damage by an additional 10% for 6 seconds."
+        "Increases target's skill damage and recovery amount by 12% for 6 seconds.",
+        "When healing others 20 times, grants an awakening effect, increasing skill damage by an additional 8% for 6 seconds."
       ],
       "active": [
         "Heaven's Fall activates when used",
