@@ -1412,10 +1412,7 @@
       "str": 32,
       "agi": 32
     },
-    "required_by": [
-      "Herald of the Void",
-      "Plates of Divine Blood"
-    ]
+    "required_by": []
   },
   {
     "id": "I041",
@@ -9381,7 +9378,8 @@
       "Cape of Insatiable Hunger",
       "Wings of Cosmos",
       "Plates of Dawn",
-      "Righteous Flame"
+      "Righteous Flame",
+      "Aegis of Avalon"
     ],
     "recipe": [
       {
@@ -9426,7 +9424,8 @@
       "Soul Breath",
       "Guardian of Sky and Earth",
       "Eye of Truth",
-      "Madness of Old Gods"
+      "Madness of Old Gods",
+      "Wings of Descender"
     ],
     "recipe": [
       {
@@ -9552,7 +9551,9 @@
       "Crimson Whisper",
       "Heaven's Fall",
       "Illumination",
-      "Exsolus, the Armor of the Absolute"
+      "Exsolus, the Armor of the Absolute",
+      "Cape of the Saint",
+      "Wings of Descender"
     ],
     "recipe": [
       {
@@ -9593,7 +9594,8 @@
       "Primal Shard",
       "Guardian of Sky and Earth",
       "Plates of Divine Blood",
-      "Codex of Light"
+      "Codex of Light",
+      "Aegis of Avalon"
     ],
     "recipe": [
       {
@@ -9710,7 +9712,8 @@
       "Plates of Divine Blood",
       "Eye of Truth",
       "Frostmoon Crown",
-      "Codex of Light"
+      "Codex of Light",
+      "Coil of Ouroboros"
     ],
     "recipe": [
       {
@@ -9806,7 +9809,9 @@
       "Cage of Shadow Fiend",
       "Herald of the Void",
       "Eye of Truth",
-      "Righteous Flame"
+      "Righteous Flame",
+      "Aegis of Avalon",
+      "Cape of the Saint"
     ],
     "recipe": [
       {
@@ -9924,7 +9929,10 @@
       "Crimson Whisper",
       "Herald of the Void",
       "Celestial Crown",
-      "Frostmoon Crown"
+      "Frostmoon Crown",
+      "Aegis of Avalon",
+      "Coil of Ouroboros",
+      "Void Seraph"
     ],
     "recipe": [
       {
@@ -9959,7 +9967,8 @@
       "Cage of Shadow Fiend",
       "Exsolus, the Armor of the Absolute",
       "Celestial Crown",
-      "Righteous Flame"
+      "Righteous Flame",
+      "Wings of Descender"
     ],
     "recipe": [
       {
@@ -9996,7 +10005,8 @@
       "Plates of Divine Blood",
       "Eye of Truth",
       "Celestial Wind",
-      "Codex of Light"
+      "Codex of Light",
+      "Cape of the Saint"
     ],
     "recipe": [
       {
@@ -20112,7 +20122,9 @@
         "Merchant - Life Shield Scroll: Duration increased by 5 seconds and reduces damage taken by target by 15%."
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Bag of Sentience"
+    ]
   },
   {
     "id": "I0NS",
@@ -20207,7 +20219,9 @@
         "Cooldown: 90 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Guardian of Sky and Earth"
+    ]
   },
   {
     "id": "I0NH",
@@ -20371,7 +20385,9 @@
         "Cooldown: 90 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Herald of the Void"
+    ]
   },
   {
     "id": "I0NJ",
@@ -21018,8 +21034,7 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Crown of Extreme Anger",
-      "Frostmoon Crown"
+      "Crown of Extreme Anger"
     ],
     "recipe": [
       {
@@ -21506,9 +21521,7 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "required_by": [
-      "Celestial Wind"
-    ]
+    "required_by": []
   },
   {
     "id": "I0LW",
@@ -22258,7 +22271,9 @@
         "Thunderer - When Power of Skies activates, magnetic field is recharged by 33%."
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Wings of Descender"
+    ]
   },
   {
     "id": "I0OK",
@@ -22496,7 +22511,9 @@
         "Cooldown: 180 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Cape of the Saint"
+    ]
   },
   {
     "id": "I0OI",
@@ -22606,7 +22623,9 @@
         "Cooldown: 20 seconds (minimum 10 seconds per cast)"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Soulrender"
+    ]
   },
   {
     "id": "I078",
@@ -23871,7 +23890,9 @@
         "Cooldown: 60 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Plates of Divine Blood"
+    ]
   },
   {
     "id": "I019",
@@ -23924,7 +23945,9 @@
         "3 range settings are provided: close, medium, and far (250, 600, 800)"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Animus, the Robe of Souls"
+    ]
   },
   {
     "id": "I0CT",
@@ -24591,7 +24614,9 @@
         "Cooldown: 100 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Frostmoon Crown"
+    ]
   },
   {
     "id": "I01J",
@@ -25014,7 +25039,9 @@
         "Knight - Improved Seal of Mana: Radius is increased by 30%."
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Cape of the Saint"
+    ]
   },
   {
     "id": "I0GR",
@@ -25202,7 +25229,9 @@
         "Grants 7% skill damage, 1000 HP and 200 MP regen, and CC immunity for 10 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Coil of Ouroboros"
+    ]
   },
   {
     "id": "I0BE",
@@ -25290,7 +25319,9 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Codex of Light"
+    ]
   },
   {
     "id": "I01H",
@@ -25331,7 +25362,9 @@
         "Increases total damage by 10% [Type-B] for 5 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Celestial Wind"
+    ]
   },
   {
     "id": "I01M",
@@ -25572,7 +25605,8 @@
     "color": "733CBE",
     "level": 100,
     "required_by": [
-      "Embrace of Death"
+      "Embrace of Death",
+      "Wings of Descender"
     ],
     "recipe": [
       {
@@ -25720,7 +25754,9 @@
         "Cooldown: 40 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Aegis of Avalon"
+    ]
   },
   {
     "id": "I0EJ",
@@ -25771,7 +25807,9 @@
         "Cooldown: 45 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Coil of Ouroboros"
+    ]
   },
   {
     "id": "I0EI",
@@ -25825,7 +25863,9 @@
         "Cooldown: 90 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Void Seraph"
+    ]
   },
   {
     "id": "I0A2",
@@ -25911,7 +25951,9 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Void Seraph"
+    ]
   },
   {
     "id": "I0EX",
@@ -27235,6 +27277,9 @@
     },
     "recipe": [
       {
+        "Bag of Universe": 1
+      },
+      {
         "Gown of Life": 1
       },
       {
@@ -27645,6 +27690,9 @@
     },
     "recipe": [
       {
+        "Heartrender": 1
+      },
+      {
         "Grim Scythe": 1
       },
       {
@@ -27688,6 +27736,9 @@
       ]
     },
     "recipe": [
+      {
+        "Sanguis, the Robe of Sacrifice": 1
+      },
       {
         "Gown of Life": 1
       },
@@ -27831,6 +27882,9 @@
     },
     "recipe": [
       {
+        "Harmony of Sky and Earth": 1
+      },
+      {
         "Soul Blossom": 1
       },
       {
@@ -27877,7 +27931,7 @@
     },
     "recipe": [
       {
-        "Armor of Darkness": 1
+        "Nevedium, the Armor of Demonblood": 1
       },
       {
         "Gown of Life": 1
@@ -27977,7 +28031,7 @@
     },
     "recipe": [
       {
-        "Armor of Darkness": 1
+        "Plates of Sanguine Fury": 1
       },
       {
         "Dread Incarnate": 1
@@ -28022,9 +28076,9 @@
         "Removes debuffs from allies within a 900 range and grants Clearness for 10 seconds.",
         "Cooldown: 75 seconds"
       ],
-      "affinitywindpercent": 0.12,
-      "affinitywaterpercent": 0.08,
-      "affinitylightpercent": 0.08
+      "affinitylightpercent": 0.08,
+      "affinitywlpercent": 0.12,
+      "affinityiwpercent": 0.08
     },
     "recipe": [
       {
@@ -28125,12 +28179,12 @@
         "While active, become immune to CC effects, double the chance of Darkfrost activating, and reduce its cooldown by 50%.",
         "Cooldown: 60 seconds / Cooldown decreases by 3 seconds each time Darkfrost is activated"
       ],
-      "affinitywaterpercent": 0.125,
-      "affinitydarkpercent": 0.05
+      "affinitydarkpercent": 0.05,
+      "affinityiwpercent": 0.125
     },
     "recipe": [
       {
-        "Crown of Great Rage": 1
+        "Crown of Transcendance": 1
       },
       {
         "Mask of Truth": 1
@@ -28277,7 +28331,7 @@
         "Ring of Divine Winds": 1
       },
       {
-        "Ring of Despair": 1
+        "Ring of Malevolence": 1
       },
       {
         "Twisted Fragment of Ruins": 1
@@ -28317,8 +28371,8 @@
         "Reduces damage taken by 20% for 5 seconds and temporarily increases movement speed.",
         "Cooldown: 30 seconds"
       ],
-      "affinitywindpercent": 0.05,
-      "affinitylightpercent": 0.1
+      "affinitylightpercent": 0.1,
+      "affinitywlpercent": 0.05
     },
     "recipe": [
       {
@@ -28492,7 +28546,8 @@
       "Soulrender",
       "Plates of Dawn",
       "Celestial Crown",
-      "Eye of Truth"
+      "Eye of Truth",
+      "Cape of the Saint"
     ],
     "dropped_by": []
   },
@@ -28522,7 +28577,26 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Guardian Angel": 1
+      },
+      {
+        "Emblem of Sacrifice": 1
+      },
+      {
+        "Aegis of Earth": 1
+      },
+      {
+        "Ancient Tome": 1
+      },
+      {
+        "Sinister Skull": 1
+      },
+      {
+        "Holy Thread": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28552,7 +28626,26 @@
         "Cooldown: 15 seconds (cannot be changed while Saint's Blessing is on cooldown)"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Wings of Immortal": 1
+      },
+      {
+        "Heirloom of Lazarus": 1
+      },
+      {
+        "Sunstone": 1
+      },
+      {
+        "Essence of Earth": 1
+      },
+      {
+        "Ancient Tome": 1
+      },
+      {
+        "Spirit of Damnation": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28583,7 +28676,23 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Wings of Cosmos": 1
+      },
+      {
+        "Ring of Eternity": 1
+      },
+      {
+        "Mask of Truth": 1
+      },
+      {
+        "Sinister Skull": 1
+      },
+      {
+        "Dew of Paradise": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28614,7 +28723,20 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Wings of Sacred Provenance": 1
+      },
+      {
+        "Blood Devourer": 1
+      },
+      {
+        "Sinister Skull": 1
+      },
+      {
+        "Holy Thread": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28646,7 +28768,26 @@
         "Cooldown: 60 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Cape of Insatiable Hunger": 1
+      },
+      {
+        "Ruler of the Skies": 1
+      },
+      {
+        "Soul Blossom": 1
+      },
+      {
+        "Essence of Earth": 1
+      },
+      {
+        "Lantern of Souls": 1
+      },
+      {
+        "Divine Lotus": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28671,7 +28812,8 @@
       "Guardian of Sky and Earth",
       "Plates of Divine Blood",
       "Frostmoon Crown",
-      "Madness of Old Gods"
+      "Madness of Old Gods",
+      "Coil of Ouroboros"
     ],
     "stats": {}
   },
@@ -28695,7 +28837,8 @@
       "Ordius, the Divine Lance",
       "Herald of the Void",
       "Righteous Flame",
-      "Codex of Light"
+      "Codex of Light",
+      "Wings of Descender"
     ],
     "stats": {}
   },
@@ -28719,7 +28862,9 @@
       "Primal Shard",
       "Animus, the Robe of Souls",
       "Exsolus, the Armor of the Absolute",
-      "Celestial Wind"
+      "Celestial Wind",
+      "Aegis of Avalon",
+      "Void Seraph"
     ],
     "stats": {}
   }
