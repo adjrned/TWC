@@ -3,19 +3,32 @@ import { t } from '../../i18n.js';
 
 let heroData = null;
 let skillData = null;
+let itemData = null;
 
 async function loadData() {
   if (heroData && skillData) return;
   try {
-    const [hr, sr] = await Promise.all([
+    const [hr, sr, ir] = await Promise.all([
       fetch('data/heroes.json'),
       fetch('data/skills.json'),
+      fetch('data/items.json'),
     ]);
     if (hr.ok) heroData = await hr.json();
     if (sr.ok) skillData = await sr.json();
+    if (ir.ok) itemData = await ir.json();
   } catch (e) {}
   if (!heroData) heroData = [];
   if (!skillData) skillData = [];
+  if (!itemData) itemData = [];
+}
+
+function getSpecDescription(weaponName, heroClass) {
+  const item = itemData.find(i => i.name === weaponName);
+  if (!item?.stats?.spec) return '';
+  const specLine = item.stats.spec.find(s => s.startsWith(heroClass + ' - '));
+  if (specLine) return specLine.slice(heroClass.length + 3);
+  if (item.stats.spec.length > 1) return item.stats.spec[1].replace(/^[^-]+ - /, '');
+  return '';
 }
 
 // ── Colors per mainstat ──────────────────────────────────────
@@ -126,6 +139,7 @@ function renderHeroDetail(hero, skills) {
   const colorHex = '#' + hero.color;
   const statInfo = STAT_COLOR[hero.mainstat] || {};
   const roles = (hero.role || []).join(' / ');
+  const weaponTypes = (hero.wearable || []).filter(w => w.startsWith('Weapon')).map(w => w.replace('Weapon (', '').replace(')', '')).join(', ');
 
   return `
     <button class="back-btn" onclick="location.hash='#/heroes'">Back to Heroes</button>
@@ -141,6 +155,7 @@ function renderHeroDetail(hero, skills) {
           <div class="hero-detail-meta">
             <span class="hero-stat-badge ${statInfo.pill || ''}">${esc(hero.mainstat)}</span>
             ${roles ? `<span class="hero-role-badge">${esc(roles)}</span>` : ''}
+            ${weaponTypes ? `<span class="hero-weapon-badge">${esc(weaponTypes)}</span>` : ''}
           </div>
           ${hero.description?.length ? `
             <p class="hero-detail-desc">${hero.description.map(d => esc(d)).join(' ')}</p>
@@ -162,10 +177,14 @@ function renderHeroDetail(hero, skills) {
               const parts = s.split(' - ');
               const weapon = parts[0] || '';
               const ability = parts[1] || '';
+              const desc = getSpecDescription(weapon, hero.heroClass);
               return `
                 <div class="hero-spec-item">
-                  <span class="hero-spec-weapon">${esc(weapon)}</span>
-                  ${ability ? `<span class="hero-spec-arrow">→</span><span class="hero-spec-ability">${esc(ability)}</span>` : ''}
+                  <div class="hero-spec-header">
+                    <span class="hero-spec-weapon">${esc(weapon)}</span>
+                    ${ability ? `<span class="hero-spec-arrow">→</span><span class="hero-spec-ability">${esc(ability)}</span>` : ''}
+                  </div>
+                  ${desc ? `<p class="hero-spec-desc">${esc(desc)}</p>` : ''}
                 </div>
               `;
             }).join('')}
