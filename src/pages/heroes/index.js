@@ -33,15 +33,16 @@ function iconSrc(name) {
 
 // ── Role classification ───────────────────────────────────────
 const SUPPORT_CLASSES = new Set([
-  'Soul Weaver', 'Wind Mage', 'Priest', 'Merchant', 'Water Mage',
-  'Elementalist', 'Shooter',
+  'Soul Weaver', 'Wind Mage', 'Priest', 'Merchant',
+  'Elementalist', 'Dark Knight', 'Paladin', 'Hermit', 'Shooter',
 ]);
 const DPS_CLASSES = new Set([
   'Sniper', 'Fire Mage', 'Lightning Mage', 'Reaper', 'Assassin',
   'Martial Artist', 'Thunderer', 'Berserker', 'Bow Master', 'Fighter',
   'Trickster', 'Lightseeker', 'Blaster', 'Sword Saint', 'Phantom Blade',
   'Swordsman', 'Gunner', 'Sword Enchanter', 'Lancer', 'Crusader',
-  'Warlock', 'Dark Knight', 'Knight', 'Blood Weaver',
+  'Warlock', 'Dark Knight', 'Paladin', 'Knight', 'Blood Weaver',
+  'Water Mage', 'Hermit', 'Shooter',
 ]);
 
 function heroMatchesRole(hero, role) {
@@ -263,7 +264,7 @@ export async function initHeroes({ params, query }) {
     window._heroFilterRole = (role) => {
       const ps = new URLSearchParams();
       if (query.stat) ps.set('stat', query.stat);
-      if (role) ps.set('role', role);
+      if (role && role !== query.role) ps.set('role', role);
       const qs = ps.toString();
       location.hash = '#/heroes' + (qs ? '?' + qs : '');
     };
