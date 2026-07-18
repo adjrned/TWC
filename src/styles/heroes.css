@@ -104,8 +104,8 @@
   justify-content: center;
 }
 .hero-card-icon img {
-  width: 115%;
-  height: 115%;
+  width: 130%;
+  height: 130%;
   object-fit: cover;
   border-radius: 12px;
 }
@@ -205,8 +205,8 @@
     0 8px 32px rgba(0,0,0,0.5);
 }
 .hero-detail-icon img {
-  width: 115%;
-  height: 115%;
+  width: 130%;
+  height: 130%;
   object-fit: cover;
 }
 

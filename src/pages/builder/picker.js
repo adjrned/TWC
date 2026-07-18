@@ -386,9 +386,13 @@ const TIER_COLOR_CSS = {
   magic: 'color: var(--rarity-magic)',
 };
 
-function showPickerTooltip(e, dbItem) {
-  const tt = ensurePickerTooltip();
-  if (!dbItem) { tt.classList.remove('show'); return; }
+let lastTooltipIdx = -1;
+let tooltipHtmlCache = {};
+
+function buildTooltipHtml(dbItem) {
+  if (!dbItem) return '';
+  const id = dbItem.id;
+  if (tooltipHtmlCache[id]) return tooltipHtmlCache[id];
 
   const tier = getItemTier(dbItem);
   const tierLabel = TIER_LABELS[tier] || '';
@@ -414,16 +418,22 @@ function showPickerTooltip(e, dbItem) {
     }
   }
 
-  tt.innerHTML = html;
-  tt.classList.add('show');
-  positionPickerTooltip(e, tt);
+  tooltipHtmlCache[id] = html;
+  return html;
 }
 
-function positionPickerTooltip(e, tt) {
-  const x = e.clientX + 16;
-  const y = e.clientY - 10;
-  tt.style.left = Math.min(x, window.innerWidth - 280) + 'px';
-  tt.style.top = Math.min(y, window.innerHeight - tt.offsetHeight - 10) + 'px';
+function showPickerTooltip(e, dbItem, idx) {
+  const tt = ensurePickerTooltip();
+  if (!dbItem) { tt.classList.remove('show'); lastTooltipIdx = -1; return; }
+
+  if (idx !== lastTooltipIdx) {
+    lastTooltipIdx = idx;
+    tt.innerHTML = buildTooltipHtml(dbItem);
+  }
+
+  tt.style.left = Math.min(e.clientX + 16, window.innerWidth - 280) + 'px';
+  tt.style.top = Math.min(e.clientY - 10, window.innerHeight - tt.offsetHeight - 10) + 'px';
+  tt.classList.add('show');
 }
 
 function hidePickerTooltip() {
@@ -433,14 +443,14 @@ function hidePickerTooltip() {
 
 function initPickerHover() {
   const grid = document.getElementById('pickerGrid');
-  grid.addEventListener('mousemove', (e) => {
+  grid.onmousemove = (e) => {
     const item = e.target.closest('.picker-item');
     if (!item) { hidePickerTooltip(); return; }
     const idx = parseInt(item.dataset.idx, 10);
     if (isNaN(idx) || !filtered[idx]) { hidePickerTooltip(); return; }
-    showPickerTooltip(e, filtered[idx].dbItem);
-  });
-  grid.addEventListener('mouseleave', hidePickerTooltip);
+    showPickerTooltip(e, filtered[idx].dbItem, idx);
+  };
+  grid.onmouseleave = hidePickerTooltip;
 }
 
 export function closePickerOnBg(e) {

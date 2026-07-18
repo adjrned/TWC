@@ -134,8 +134,8 @@
   justify-content: center;
 }
 .boss-card-icon img {
-  width: 115%;
-  height: 115%;
+  width: 130%;
+  height: 130%;
   object-fit: cover;
   border-radius: 12px;
 }
@@ -257,8 +257,8 @@
   animation: icon-ring-pulse 3s ease-in-out infinite;
 }
 .boss-detail-icon img {
-  width: 115%;
-  height: 115%;
+  width: 130%;
+  height: 130%;
   object-fit: cover;
 }
 
