@@ -8330,7 +8330,7 @@
     ],
     "dropped_by": [
       "Death Fiend",
-      "Valtora",
+      "Lightning God Valtora",
       "Ifrit",
       "Nereid",
       "Underlord Agareth"
@@ -8415,7 +8415,7 @@
     "koreanname": "하늘의 족쇄",
     "description": "Shackles used by the Lightning God to tie his cows",
     "dropped_by": [
-      "Valtora"
+      "Lightning God Valtora"
     ],
     "rank": "[Epic]",
     "grade": 4,
@@ -8457,7 +8457,7 @@
     "name": "Aegis of Storm",
     "koreanname": "폭풍의 가호",
     "dropped_by": [
-      "Valtora"
+      "Lightning God Valtora"
     ],
     "rank": "[Epic]",
     "grade": 4,
@@ -8492,7 +8492,7 @@
     "name": "Essence of Storm",
     "koreanname": "폭풍의 결정",
     "dropped_by": [
-      "Valtora"
+      "Lightning God Valtora"
     ],
     "rank": "[Epic]",
     "grade": 4,
@@ -8532,7 +8532,7 @@
     "name": "Shining Fragment of Ruins",
     "koreanname": "빛나는 유적의 조각",
     "dropped_by": [
-      "Valtora",
+      "Lightning God Valtora",
       "Ifrit",
       "Nereid"
     ],
@@ -8600,7 +8600,7 @@
     "koreanname": "발토라 아이콘",
     "description": "!Warning! Please save a replay of this game.",
     "dropped_by": [
-      "Valtora"
+      "Lightning God Valtora"
     ],
     "rank": "none",
     "grade": 0,
@@ -8629,7 +8629,7 @@
     "name": "Lightning God Token",
     "koreanname": "뇌신의 토큰",
     "dropped_by": [
-      "Valtora"
+      "Lightning God Valtora"
     ],
     "rank": "none",
     "grade": 0,
@@ -9384,7 +9384,7 @@
     "koreanname": "생명의 가운",
     "description": "The mother nature embraces all.",
     "dropped_by": [
-      "Gaia"
+      "Gaia, the Earth Goddess"
     ],
     "rank": "[Epic]",
     "grade": 5,
@@ -9426,7 +9426,7 @@
     "name": "Essence of Earth",
     "koreanname": "대지의 결정",
     "dropped_by": [
-      "Gaia"
+      "Gaia, the Earth Goddess"
     ],
     "rank": "[Epic]",
     "grade": 5,
@@ -9467,7 +9467,7 @@
     "name": "Aegis of Earth",
     "koreanname": "대지의 가호",
     "dropped_by": [
-      "Gaia"
+      "Gaia, the Earth Goddess"
     ],
     "rank": "[Epic]",
     "grade": 5,
@@ -9505,7 +9505,7 @@
     "name": "Twisted Fragment of Ruins",
     "koreanname": "뒤틀린 유적의 조각",
     "dropped_by": [
-      "Gaia"
+      "Gaia, the Earth Goddess"
     ],
     "rank": "[Epic]",
     "grade": 5,
@@ -9543,7 +9543,7 @@
     "name": "Gaia's Soulstone",
     "koreanname": "지신의 영혼석",
     "dropped_by": [
-      "Gaia"
+      "Gaia, the Earth Goddess"
     ],
     "rank": "[Epic]",
     "grade": 5,
@@ -9562,7 +9562,7 @@
     "name": "Gaia Token",
     "koreanname": "지신의 토큰",
     "dropped_by": [
-      "Gaia"
+      "Gaia, the Earth Goddess"
     ],
     "rank": "none",
     "grade": 0,
