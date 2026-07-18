@@ -53,9 +53,9 @@ const STRINGS = {
 
     // Pages
     'bosses.title': 'Monster Database',
-    'bosses.subtitle': 'Drops, info, and more',
+    'bosses.subtitle': 'Stats, drops, and locations',
     'items.title': 'Item Database',
-    'items.subtitle': 'Stats, recipes, and drop sources',
+    'items.subtitle': 'Stats, effects, and recipes',
     'items.search': 'Search items...',
 
     // Common
