@@ -241,7 +241,7 @@ function renderDropCalculator(boss) {
         </div>
       <div class="boss-drops-list" id="dropCalcList">
         ${dropInfo.items.map((item, i) => {
-          const defaultRate = item.base; // base rate at min players (no bonus)
+          const defaultRate = calcDropRate(item, { wishing: false, hasIcon: false, seasonal: false, hardmode: false, playerCount: rules.min }, boss.name);
           return `
           <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item" data-idx="${i}">
             <div class="boss-drop-icon">
