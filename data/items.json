@@ -28712,6 +28712,8 @@
       "hp": 2000,
       "attackspeedpercent": 0.15,
       "skilldamagepercent": 0.15,
+      "affinityflamepercent": 0.1,
+      "affinitydarkpercent": 0.05,
       "passive": [
         "Dark Flame activates when skill hits",
         "Deals 15,000 additional damage, increases fire Affinity by 1%, debuff skill effectiveness by 3%, and MP regeneration rate by 5 for 3 seconds (stacks up to 5 times)",
