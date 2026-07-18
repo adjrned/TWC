@@ -167,11 +167,13 @@ const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
 // Boss-specific player scaling rules
 const BOSS_PLAYER_RULES = {
-  'Styrix, the Harvester of Souls': { min: 5, max: 10, perPlayer: 5 },
-  'Lightbringer Kamael': { min: 5, max: 10, perPlayer: 5 },
-  'Arcane Construct': { min: 3, max: 6, perPlayer: 10 },
+  'Styrix, the Harvester of Souls': { min: 5, max: 10, perPlayer: 20 },
+  'Lightbringer Kamael': { min: 5, max: 10, perPlayer: 20 },
+  'Arcane Construct': { min: 3, max: 6, perPlayer: 7.5 },
 };
-const DEFAULT_PLAYER_RULES = { min: 1, max: 10, perPlayer: 5, bonusStart: 3 };
+const DEFAULT_PLAYER_RULES = { min: 1, max: 10 };
+
+const HARDMODE_BOSSES = new Set(['Ifrit', 'Death Fiend', 'Lightning God Valtora', 'Nereid', 'Underlord Agareth']);
 
 function getPlayerBonus(playerCount, bossName) {
   const rules = BOSS_PLAYER_RULES[bossName];
@@ -184,10 +186,11 @@ function getPlayerBonus(playerCount, bossName) {
   return effectivePlayers * 5;
 }
 
-function calcDropRate(item, { wishing, hasIcon, seasonal, playerCount }, bossName) {
+function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount }, bossName) {
   const playerPct = getPlayerBonus(playerCount, bossName);
   const seasonalMult = seasonal ? 2 : 1;
-  const combined = (1 + playerPct / 100) * seasonalMult;
+  const hardmodeMult = (hardmode && HARDMODE_BOSSES.has(bossName)) ? 1.5 : 1;
+  const combined = (1 + playerPct / 100) * seasonalMult * hardmodeMult;
 
   let wishMult = 1;
   if (!NO_WISH_BOSSES.has(bossName)) {
@@ -215,6 +218,9 @@ function renderDropCalculator(boss) {
           ${!isNoWish ? `
             <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>${dropInfo.iconType === 'Immortal' ? 'Target Item' : 'Wishing'}</span></label>
             <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon (+50%)</span></label>
+          ` : ''}
+          ${HARDMODE_BOSSES.has(boss.name) ? `
+            <label class="drop-calc-toggle"><input type="checkbox" id="calcHardmode"><span>Hard Mode (+50%)</span></label>
           ` : ''}
           <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal (×2)</span></label>
           <div class="drop-calc-player">
@@ -251,6 +257,7 @@ function initDropCalc(boss) {
   const update = () => {
     const wishing = !isNoWish && document.getElementById('calcWish')?.checked;
     const hasIcon = !isNoWish && document.getElementById('calcIcon')?.checked;
+    const hardmode = document.getElementById('calcHardmode')?.checked || false;
     const seasonal = document.getElementById('calcSeasonal')?.checked;
     const playerCount = parseInt(document.getElementById('calcPlayers')?.value || '1');
     document.getElementById('calcPlayersVal').textContent = playerCount;
@@ -260,12 +267,12 @@ function initDropCalc(boss) {
       const idx = parseInt(el.dataset.idx);
       const item = dropInfo.items[idx];
       if (!item) return;
-      const calc = calcDropRate(item, { wishing, hasIcon, seasonal, playerCount }, boss.name);
+      const calc = calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount }, boss.name);
       el.textContent = calc.toFixed(4) + '%';
     });
   };
 
-  ['calcWish', 'calcIcon', 'calcSeasonal', 'calcPlayers'].forEach(id => {
+  ['calcWish', 'calcIcon', 'calcHardmode', 'calcSeasonal', 'calcPlayers'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', update);
   });
