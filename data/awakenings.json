@@ -1,0 +1,212 @@
+[
+  {
+    "heroClass": "Dark Knight",
+    "original": "Requiem",
+    "awakened": "Pandemonium",
+    "effects": [
+      {
+        "type": "STR",
+        "description": "Even when the skill is on cooldown, soul consumption stacks accumulate. Casting D at 3 stacks consumes the stacks instead of souls, increasing damage and range by 50%."
+      },
+      {
+        "type": "INT",
+        "description": "Summons 4 giant souls around you. When the souls are hit by darkness, the cooldown resets and 4 souls are recovered."
+      }
+    ]
+  },
+  {
+    "heroClass": "Swordsman",
+    "original": "Sword of the Remnant",
+    "awakened": "Sword of the Heavenly Spirit",
+    "effects": [
+      {
+        "type": "Passive",
+        "description": "When casting Ilseom or Sunbo, summons the Heavenly Sword at the current location."
+      },
+      {
+        "type": "Skill",
+        "description": "When casting Welcome Dance (T), consumes the Heavenly Sword and deals additional damage."
+      }
+    ]
+  },
+  {
+    "heroClass": "Phantom Blade",
+    "original": "Sea",
+    "awakened": "Manhae",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "When an attack hits, combo gauge accumulates. Final damage slightly increases per combo gauge."
+      },
+      {
+        "type": "Active",
+        "description": "Reusing T while active deals 1 slash proportional to accumulated combo gauge (can only activate once)."
+      }
+    ]
+  },
+  {
+    "heroClass": "Martial Artist",
+    "original": "Bodap",
+    "awakened": "Cheonryeobo",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Moving for 1 second increases movement speed by 50 and the next attack deals additional damage (5s cooldown)."
+      },
+      {
+        "type": "Skill",
+        "description": "When a counterattack triggers, Nameless Fist activates for 0.5 seconds. If already active, its duration is extended instead."
+      }
+    ]
+  },
+  {
+    "heroClass": "Sword Enchanter",
+    "original": "Ultimate Enchant",
+    "awakened": "Akashic Enchant",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Summons 3 magic swords at the location where the sword fell. Right-clicking a magic sword moves it to the location and activates weapon enchantment."
+      }
+    ]
+  },
+  {
+    "heroClass": "Reaper",
+    "original": "Death Sentence",
+    "awakened": "Final Sentence",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "When Death Spin (Q) hits an enemy with Death March (E) active, a scythe falls dealing damage proportional to stacks."
+      },
+      {
+        "type": "Active",
+        "description": "Reusing while Final Sentence is active drops a giant scythe, consuming all combo gauge and increasing damage by 2% per stack."
+      }
+    ]
+  },
+  {
+    "heroClass": "Hermit",
+    "original": "Harmony",
+    "awakened": "Resonance of Heaven and Earth",
+    "effects": [
+      {
+        "type": "AGI",
+        "description": "When a skill hits, energy of purification stacks up to 50. Casting Sweep consumes all stacks, increasing damage by 1% per stack."
+      },
+      {
+        "type": "INT",
+        "description": "When Sweep and Purify hit, grants nearby allies immunity to debuffs for 1.5 seconds."
+      },
+      {
+        "type": "Active",
+        "description": "When channeling, meditates for up to 1.5 seconds, reducing damage taken and quickly recovering energy."
+      },
+      {
+        "type": "AGI",
+        "description": "Resets the cooldown of all skills after casting."
+      },
+      {
+        "type": "INT",
+        "description": "While in use, applies 50% of the damage reduction effect to nearby allies."
+      }
+    ]
+  },
+  {
+    "heroClass": "Water Mage",
+    "original": "Frozen Mastery",
+    "awakened": "Eternal Frost",
+    "effects": [
+      {
+        "type": "Passive",
+        "description": "Frozen Orb (T) — When linked with Q, the sphere does not disappear but bounces out in a smaller form and can be linked again. Re-linked additional damage is reduced to 100%."
+      }
+    ]
+  },
+  {
+    "heroClass": "Wind Mage",
+    "original": "Guardian of the Wind",
+    "awakened": "Incarnation of the Divine Wind",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Guardian of the Wind is changed to Guardian of the Divine Wind."
+      },
+      {
+        "type": "Active",
+        "description": "Divine Wind (F) — Consumes 25 MP to remove debuffs from nearby allies and grant them a stat increase effect for 6 seconds."
+      }
+    ]
+  },
+  {
+    "heroClass": "Priest",
+    "original": "Heaven's Gate",
+    "awakened": "Celestial Gate",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Summons Raphael instead of Raguel."
+      },
+      {
+        "type": "Skill",
+        "description": "Holy Light (Q) — Grants the target the Heaven Field effect for 5 seconds when cast."
+      },
+      {
+        "type": "Active",
+        "description": "Judgement of Light (F) — Strikes the target with a holy sword, destroying shields, dealing 75×INT pure damage, and applying stillness for 1.5 seconds."
+      }
+    ]
+  },
+  {
+    "heroClass": "Blood Weaver",
+    "original": "Blood Mastery",
+    "awakened": "Blood Dominion",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Crimson Filler (T) — Generates Blood Boil for 1.5 seconds when cast."
+      },
+      {
+        "type": "Skill",
+        "description": "Sacrifice (F) — No longer requires channeling. Restores 30 health per second while on the field."
+      }
+    ]
+  },
+  {
+    "heroClass": "Soul Weaver",
+    "original": "Soul Mastery",
+    "awakened": "Soul Dominion",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Unholy Blast (Q) — Adds a small ally recovery effect."
+      },
+      {
+        "type": "Skill",
+        "description": "Infinite Void (F) — When activated, pressing D pulls up the sphere and surrounding enemies, then slams them to the target location, causing an instant explosion for 20% additional damage and increasing damage taken by 5% for 6 seconds."
+      }
+    ]
+  },
+  {
+    "heroClass": "Witch",
+    "original": "Hell Gate",
+    "awakened": "Abyss Gate",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "Arrow of Destruction (Q) — Changed to 'Gungnir'. Increases damage and range, dealing additional damage proportional to lost HP."
+      }
+    ]
+  },
+  {
+    "heroClass": "Elementalist",
+    "original": "Imprint of Chaos",
+    "awakened": "Imprint of Light",
+    "effects": [
+      {
+        "type": "Skill",
+        "description": "When Chaos Imprint is on cooldown, the skill is replaced with Light Imprint."
+      }
+    ]
+  }
+]
