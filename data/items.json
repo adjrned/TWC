@@ -27229,7 +27229,7 @@
         "Money Splash: Changed to Pandora's Box",
         "[Passive] Every 2 seconds, there is a low probability that the cooldown of a random skill of an ally affected by your skill will be reset (except for ultimate skills). (Once reset, the cooldown of an ally cannot be reset again for 30 seconds.)",
         "[Active] Channels for up to 2.5 seconds, reducing damage taken by allies within a 650 range by 70% and granting immunity to damage, debuffs, and CC.",
-        "[Active] Grants Pandora's Blessing to affected allies, increasing all stats by (350 + 2.5 X sum of the 3 highest attribute efficiencies) for 7.5 seconds.",
+        "[Active] Grants Pandora's Blessing to affected allies, increasing all stats by (350 + 2.5 X sum of the 3 highest Affinities) for 7.5 seconds.",
         "[Active] Cooldown: 30 seconds"
       ]
     },
@@ -27427,7 +27427,7 @@
       "int": 1000,
       "hp": 3000,
       "passive": [
-        "All attribute efficiency +5%",
+        "All Affinity +5%",
         "Activate revelation upon equipping",
         "When casting the skill, reduce damage taken by allies within a 500 radius by 5% for 6 seconds and restore (Intelligence x 0.2) HP every 2 seconds.",
         "When healing an ally, increase the target's skill damage by 17.5% for 8 seconds [Type-B]"
@@ -27528,8 +27528,8 @@
       "hp": 2000,
       "skilldamagepercent": 0.15,
       "passive": [
-        "Water attribute efficiency +15%",
-        "Dark attribute efficiency +10%",
+        "Water Affinity +15%",
+        "Dark Affinity +10%",
         "Eternal Frost activates upon 5 consecutive skill hits",
         "Increases the damage of the next 5 skills dealt to the target by (Intelligence x 9) for 3 seconds.",
         "Cooldown: 6 seconds"
@@ -27579,7 +27579,7 @@
       "skilldamagepercent": 0.2,
       "drpercent": 0.1,
       "passive": [
-        "Fire attribute efficiency +5%"
+        "Fire Affinity +5%"
       ],
       "spec": [
         "Exclusive effect",
@@ -27719,7 +27719,7 @@
       "allstat": 400,
       "mdpercent": 0.1,
       "passive": [
-        "Dark attribute efficiency +5%",
+        "Dark Affinity +5%",
         "Activates Shadow Lord's Power upon equipping",
         "Increases the stats of surrounding allies by 8% [Type-A] and increases damage received by surrounding enemies by 4% [Type-B]",
         "Absorbs the energy of surrounding enemies every 3 seconds, dealing 40,000 magic damage and absorbing (3 + 1 X absorbed enemies) stacks (maximum 60 stacks)",
@@ -28219,9 +28219,9 @@
       "active": [
         "Activates Holy Fire upon use",
         "Consumes 50% of current HP",
-        "For 15 seconds, all stats increase by 1.5% of consumed HP (Main stats by 2%) and Fire attribute efficiency increases by 10%.",
+        "For 15 seconds, all stats increase by 1.5% of consumed HP (Main stats by 2%) and Fire Affinity increases by 10%.",
         "When dealing magic damage while active, envelop the target in flames, dealing 15,000 additional magic damage and stacking Holy Fire (Cooldown: 0.75 sec)",
-        "Holy Fire: Skill damage increases by 1%, Fire/Light attribute efficiency increases by 0.3% (Stacks up to 10 times)",
+        "Holy Fire: Skill damage increases by 1%, Fire/Light Affinity increases by 0.3% (Stacks up to 10 times)",
         "Upon reuse, deals 40-60 damage to the target area equal to the main stat (proportional to the number of stacked Holy Flames). Can only be activated once during duration.",
         "Cooldown: 30 seconds"
       ]
@@ -28447,7 +28447,7 @@
       "passive": [
         "Enhance nearby allies with primordial energy",
         "Increases attack power by 0.7 (maximum 3000) and attack speed by 25%",
-        "When an ally recovers, increases the target's skill damage by 1.5% and all attribute efficiency by 0.3% for 3 seconds (stacks up to 5 times)"
+        "When an ally recovers, increases the target's skill damage by 1.5% and All Affinity by 0.3% for 3 seconds (stacks up to 5 times)"
       ],
       "active": [
         "Activates Healing Pulse upon use",
@@ -28540,7 +28540,7 @@
       "mainstat": 500,
       "hp": 2000,
       "passive": [
-        "All attribute efficiency +5%",
+        "All Affinity +5%",
         "Activates the power of the saint when equipped",
         "Skill damage increases by 10%, damage taken decreases by 15% [Type-A], movement speed increases by 75",
         "When HP drops below 1, Saint's Blessing is activated, regenerating 40% HP per second for 5 seconds and blocking harmful effects except instant death (Cooldown: 180 seconds)"
@@ -28604,7 +28604,7 @@
       "skilldamagepercent": 0.15,
       "passive": [
         "Dark Flame activates when skill hits",
-        "Deals 15,000 additional damage, increases fire attribute effectiveness by 1%, debuff skill effectiveness by 3%, and MP regeneration rate by 5 for 3 seconds (stacks up to 5 times)",
+        "Deals 15,000 additional damage, increases fire Affinity by 1%, debuff skill effectiveness by 3%, and MP regeneration rate by 5 for 3 seconds (stacks up to 5 times)",
         "Cooldown: 0.4 seconds"
       ],
       "active": [
