@@ -26948,7 +26948,7 @@
       ],
       "spec": [
         "Exclusive effect",
-        "Peddler - Very light bag",
+        "Merchant - Very light bag",
         "This isn't a bag decoration!: Take out 2 of these when casting.",
         "Throwable Healing Potion: Charge cycle reduced to 2 seconds, maximum number of installations increased by 3.",
         "Life Shield Scroll: Increases duration by 5 seconds, reduces damage taken by the target by 15%.",
@@ -27309,7 +27309,7 @@
       ],
       "spec": [
         "Exclusive effect",
-        "Peddler - Very Dangerous Backpack",
+        "Merchant - Very Dangerous Backpack",
         "It's not a bag decoration! (D) -> This bag is a bit dangerous! (D)",
         "Throwable Healing Potion (W) -> Throw Bomb (W)",
         "Throws a bomb that explodes after 30 seconds or upon colliding with an enemy or another bomb (maximum 10 can be placed).",
@@ -27505,7 +27505,7 @@
       ],
       "spec": [
         "Exclusive effect",
-        "dancer - During the duration of Nameless Fist, damage taken is reduced by 20%, and you become immune to instant death attacks."
+        "Martial Artist - During the duration of Nameless Fist, damage taken is reduced by 20%, and you become immune to instant death attacks."
       ]
     },
     "recipe": [
@@ -27793,7 +27793,7 @@
       "drpercent": -0.05,
       "passive": [
         "Insight triggers when attacking",
-        "Increases Attack Power by 500 and Activation Damage by 5% for 3 seconds (Stacks up to 3 times; Activation Cooldown: 1 second)",
+        "Increases Attack Power by 500 and Proc Damage by 5% for 3 seconds (Stacks up to 3 times; Activation Cooldown: 1 second)",
         "Deals 3,000 additional damage when attacking at maximum stacks"
       ],
       "active": [
@@ -27990,7 +27990,7 @@
       "passive": [
         "Heavenly Wind activates upon skill casting",
         "For 1.5 seconds, primary stat increases by 200, movement speed increases slightly, and when a skill hits, there is a 25% chance to inflict 20% additional damage.",
-        "(7.5 X activation constant)% chance to reset the cooldown of the skill"
+        "(7.5 X skill coefficient)% chance to reset the cooldown of the skill"
       ],
       "active": [
         "Activates Wind Blessing when used",
@@ -28297,7 +28297,7 @@
       "active": [
         "Activates Infinite Ring when used",
         "Increases primary stat by 250 for 10 seconds, increases skill damage by 5%",
-        "When casting a skill while in effect, the effect is amplified by (15 X casting constant)% up to 100%, and when the maximum is reached, resources are recovered by 33%.",
+        "When casting a skill while in effect, the effect is amplified by (15 X skill coefficient)% up to 100%, and when the maximum is reached, resources are recovered by 33%.",
         "Cooldown: 30 seconds"
       ]
     },
@@ -28354,7 +28354,7 @@
       "mdpercent": 0.075,
       "passive": [
         "Activate the power of the descendant when moving 500 distances",
-        "Increases activation damage by 5% and deals (Attack Power X 0.4 + Primary Stat X 5) pure damage on the next attack (Minimum cooldown: 0.1 sec)",
+        "Increases proc damage by 5% and deals (Attack Power X 0.4 + Primary Stat X 5) pure damage on the next attack (Minimum cooldown: 0.1 sec)",
         "The buff deactivates 4 seconds after the attack."
       ],
       "active": [
