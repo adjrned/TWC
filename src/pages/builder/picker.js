@@ -367,7 +367,7 @@ const STAT_LABELS = {
 };
 
 function formatStatVal(key, val) {
-  if (key.endsWith('percent')) return `+${Math.round(val * 100)}%`;
+  if (key.endsWith('percent')) return `+${parseFloat((val * 100).toFixed(2))}%`;
   if (key === 'critmultiplier') return `x${val}`;
   return `+${val}`;
 }
