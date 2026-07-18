@@ -28175,8 +28175,8 @@
       "active": [
         "Dark Eclipse activates when used",
         "Increases all stats by 400 and skill damage by 15% for 10 seconds.",
-        "While active, become immune to CC effects, double the chance of Darkfrost activating, and reduce its cooldown by 50%.",
-        "Cooldown: 60 seconds / Cooldown decreases by 3 seconds each time Darkfrost is activated"
+        "While active, become immune to CC effects, double the chance of Dark Frost activating, and reduce its cooldown by 50%.",
+        "Cooldown: 60 seconds / Cooldown decreases by 3 seconds each time Dark Frost is activated"
       ],
       "affinitydarkpercent": 0.05,
       "affinitywaterpercent": 0.125
