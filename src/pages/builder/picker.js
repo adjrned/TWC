@@ -94,9 +94,12 @@ async function initItemIcons() {
         const cat = typeToCategory(item.type);
         if (itemsByType[cat]) itemsByType[cat].push(item);
       });
-      // Sort each category by tier (highest first)
+      // Sort each category by tier (highest first), then alphabetically
       for (const cat of Object.keys(itemsByType)) {
-        itemsByType[cat].sort((a, b) => tierSortValue(a) - tierSortValue(b));
+        itemsByType[cat].sort((a, b) => {
+          const t = tierSortValue(a) - tierSortValue(b);
+          return t !== 0 ? t : a.name.localeCompare(b.name);
+        });
       }
       loadItemTranslations(itemDb);
     }
@@ -199,7 +202,10 @@ function getItemsForCategory(cat) {
     // All equippable items, sorted by tier
     const all = [...(itemsByType.weapon || []), ...(itemsByType.headwear || []),
       ...(itemsByType.armor || []), ...(itemsByType.wings || []), ...(itemsByType.accessory || [])];
-    all.sort((a, b) => tierSortValue(a) - tierSortValue(b));
+    all.sort((a, b) => {
+      const t = tierSortValue(a) - tierSortValue(b);
+      return t !== 0 ? t : a.name.localeCompare(b.name);
+    });
     return all;
   }
   return itemsByType[cat] || [];
@@ -221,7 +227,8 @@ function applyFilter() {
     results.sort((a, b) => {
       const ta = a.dbItem ? tierSortValue(a.dbItem) : 99;
       const tb = b.dbItem ? tierSortValue(b.dbItem) : 99;
-      return ta - tb;
+      if (ta !== tb) return ta - tb;
+      return a.icon.name.localeCompare(b.icon.name);
     });
     filtered = results;
   } else {
