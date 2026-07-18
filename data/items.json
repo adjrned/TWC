@@ -26910,16 +26910,16 @@
         "Final Omen": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "Sinister Skull (Styrix the Soul Harvester)": 1
+        "Sinister Skull": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -26964,19 +26964,19 @@
         "Backpack of All Things": 1
       },
       {
-        "The Gown of Life (Gaia)": 1
+        "Gown of Life": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Blood Crystal (Duke Lazarus)": 1
+        "Blood Essence": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Sacred Lotus (Kamael, Guide of Light)": 1
+        "Divine Lotus": 1
       }
     ],
     "required_by": [],
@@ -27017,19 +27017,19 @@
         "Lion's Bow Agnitus": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "Crystal of the Earth (Earth God Gaia)": 1
+        "Essence of Earth": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Sinister Skull (Styrix the Soul Harvester)": 1
+        "Sinister Skull": 1
       },
       {
-        "Celestial Knot (Kamael, the Lightbringer)": 1
+        "Holy Thread": 1
       }
     ],
     "required_by": [],
@@ -27068,19 +27068,19 @@
         "Caedis, the Sword of Slaughter": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "Guardian of the Earth (Gaia)": 1
+        "Aegis of Earth": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Celestial Knot (Kamael, the Lightbringer)": 1
+        "Holy Thread": 1
       }
     ],
     "required_by": [],
@@ -27126,16 +27126,16 @@
         "Heaven's Door": 1
       },
       {
-        "Grim Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "Crystal of the Earth (Earth God Gaia)": 1
+        "Essence of Earth": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -27175,16 +27175,16 @@
         "Harmonia, the Flame of Life": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Blessing of the Earth (Earth Goddess Gaia)": 1
+        "Essence of Earth": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Sacred Lotus (Kamael, Guide of Light)": 1
+        "Divine Lotus": 1
       }
     ],
     "required_by": [],
@@ -27220,22 +27220,22 @@
     },
     "recipe": [
       {
-        "Window of Judgment": 1
+        "Spear of Judgement": 1
       },
       {
-        "Pulminata, the Guide of Thunder": 1
+        "Fulminata, the Guide of Thunder": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "The Sun Stone (Kamael, the Guide of Light)": 1
+        "Sunstone": 1
       },
       {
-        "Guardian of the Earth (Gaia)": 1
+        "Aegis of Earth": 1
       },
       {
-        "Sacred Lotus (Kamael, Guide of Light)": 1
+        "Divine Lotus": 1
       }
     ],
     "required_by": [],
@@ -27274,19 +27274,19 @@
         "Endless Snow": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "Guardian of the Earth (Gaia)": 1
+        "Aegis of Earth": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       },
       {
-        "Celestial Knot (Kamael, the Lightbringer)": 1
+        "Holy Thread": 1
       }
     ],
     "required_by": [],
@@ -27326,19 +27326,19 @@
         "Backpack of Despair": 1
       },
       {
-        "Blood Rose (Duke Lazarus)": 1
+        "Crimson Rose": 1
       },
       {
-        "The Gown of Life (Gaia)": 1
+        "Gown of Life": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "The Sun Stone (Kamael, the Guide of Light)": 1
+        "Sunstone": 1
       }
     ],
     "required_by": [],
@@ -27377,19 +27377,19 @@
         "Heart Render": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "The Sun Stone (Kamael, the Guide of Light)": 1
+        "Sunstone": 1
       },
       {
-        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+        "Twisted Fragment of Ruins": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       }
     ],
     "required_by": [],
@@ -27424,16 +27424,16 @@
         "Robe of Sacrifice Sangis": 1
       },
       {
-        "The Gown of Life (Gaia)": 1
+        "Gown of Life": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       },
       {
-        "Celestial Knot (Kamael, the Lightbringer)": 1
+        "Holy Thread": 1
       }
     ],
     "required_by": [],
@@ -27470,16 +27470,16 @@
         "Twisted Soul Armor": 1
       },
       {
-        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+        "Twisted Fragment of Ruins": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -27522,16 +27522,16 @@
         "Exitium, Armor of Destruction": 1
       },
       {
-        "Crystal of the Earth (Earth God Gaia)": 1
+        "Essence of Earth": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       },
       {
-        "Celestial Knot (Kamael, the Lightbringer)": 1
+        "Holy Thread": 1
       }
     ],
     "required_by": [],
@@ -27569,16 +27569,16 @@
         "Harmony of Heaven and Earth": 1
       },
       {
-        "Flower of the Soul (Duke Lazarus)": 1
+        "Soul Blossom": 1
       },
       {
-        "Guardian of the Earth (Gaia)": 1
+        "Aegis of Earth": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -27618,19 +27618,19 @@
         "Nebedium, Armor of the Demon Blood": 1
       },
       {
-        "The Gown of Life (Gaia)": 1
+        "Gown of Life": 1
       },
       {
-        "Blood Crystal (Duke Lazarus)": 1
+        "Blood Essence": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Sinister Skull (Styrix the Soul Harvester)": 1
+        "Sinister Skull": 1
       },
       {
-        "Sacred Lotus (Kamael, Guide of Light)": 1
+        "Divine Lotus": 1
       }
     ],
     "required_by": [],
@@ -27670,16 +27670,16 @@
         "Giant's Armor": 1
       },
       {
-        "The Sun Stone (Kamael, the Guide of Light)": 1
+        "Sunstone": 1
       },
       {
-        "Sentence of Sacrifice (Duke Lazarus)": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       }
     ],
     "required_by": [],
@@ -27721,16 +27721,16 @@
         "Blood Demon Armor": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Guardian of the Earth (Gaia)": 1
+        "Aegis of Earth": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -27769,19 +27769,19 @@
         "Crown of Purification": 1
       },
       {
-        "The Sun Stone (Kamael, the Guide of Light)": 1
+        "Sunstone": 1
       },
       {
-        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+        "Twisted Fragment of Ruins": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       },
       {
-        "Sinister Skull OR Cursed Soul (Styrix the Soul Harvester)": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": [],
@@ -27815,22 +27815,22 @@
     },
     "recipe": [
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "The Gown of Life (Gaia)": 1
+        "Gown of Life": 1
       },
       {
-        "The Sun Stone (Kamael, the Guide of Light)": 1
+        "Sunstone": 1
       },
       {
-        "Flower of the Soul (Duke Lazarus)": 1
+        "Soul Blossom": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       }
     ],
     "required_by": [],
@@ -27871,16 +27871,16 @@
         "Crown of Transcendence": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Blood Crystal (Duke Lazarus)": 1
+        "Blood Essence": 1
       },
       {
-        "Sinister Skull (Styrix the Soul Harvester)": 1
+        "Sinister Skull": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -27919,19 +27919,19 @@
         "Mask of the Demigod": 1
       },
       {
-        "Picture Side (Soul Reaper Styrix)": 1
+        "Grim Scythe": 1
       },
       {
-        "Flower of the Soul (Duke Lazarus)": 1
+        "Soul Blossom": 1
       },
       {
-        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+        "Twisted Fragment of Ruins": 1
       },
       {
-        "Magic Core (Ancient Magic Machine)": 1
+        "Arcane Core": 1
       },
       {
-        "Dew of Paradise (Kamael, the Lightbringer)": 1
+        "Dew of Paradise": 1
       }
     ],
     "required_by": [],
@@ -27969,16 +27969,16 @@
         "Crown of Cataclysm": 1
       },
       {
-        "Sentence of Sacrifice (Duke Lazarus)": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Ancient Secretary (Ancient Magic Machine)": 1
+        "Ancient Tome": 1
       },
       {
-        "Soul Servant (Soul Reaper Styrix)": 1
+        "Lantern of Souls": 1
       },
       {
-        "Sacred Lotus (Kamael, Guide of Light)": 1
+        "Divine Lotus": 1
       }
     ],
     "required_by": [],
@@ -28018,13 +28018,13 @@
         "Ring of Malice": 1
       },
       {
-        "Fragment of the Twisted Ruins (Earth God Gaia)": 1
+        "Twisted Fragment of Ruins": 1
       },
       {
-        "Cursed Soul OR Sinister Skeleton (Soulreaper Styrix)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Celestial Knot (Kamael, the Lightbringer)": 1
+        "Holy Thread": 1
       }
     ],
     "required_by": [],
@@ -28063,16 +28063,16 @@
         "Servant of the Divine": 1
       },
       {
-        "Mask of Truth (Ancient Magic Machine)": 1
+        "Mask of Truth": 1
       },
       {
-        "Guardian of the Earth (Gaia)": 1
+        "Aegis of Earth": 1
       },
       {
-        "Cursed Soul (Styrix the Soul Harvester)": 1
+        "Spirit of Damnation": 1
       },
       {
-        "Sacred Lotus (Kamael, Guide of Light)": 1
+        "Divine Lotus": 1
       }
     ],
     "required_by": [],
@@ -28253,32 +28253,7 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [
-      {
-        "itemName": "Guardian Angel",
-        "qty": 1
-      },
-      {
-        "itemName": "Sentence of Sacrifice (Duke Lazarus)",
-        "qty": 1
-      },
-      {
-        "itemName": "Guardian of the Earth (Gaia)",
-        "qty": 1
-      },
-      {
-        "itemName": "Ancient Secretary (Ancient Magic Machine)",
-        "qty": 1
-      },
-      {
-        "itemName": "Sinister Skull (Styrix the Soul Harvester)",
-        "qty": 1
-      },
-      {
-        "itemName": "Celestial Knot (Kamael, the Lightbringer)",
-        "qty": 1
-      }
-    ],
+    "recipe": [],
     "required_by": [],
     "dropped_by": []
   },
@@ -28307,32 +28282,7 @@
         "Cooldown: 15 seconds (cannot be changed while Saint's Blessing is on cooldown)"
       ]
     },
-    "recipe": [
-      {
-        "itemName": "Wings of the Immortal",
-        "qty": 1
-      },
-      {
-        "itemName": "Lazarus's Heirloom",
-        "qty": 1
-      },
-      {
-        "itemName": "The Sun Stone (Kamael, the Guide of Light)",
-        "qty": 1
-      },
-      {
-        "itemName": "Crystal of the Earth (Earth God Gaia)",
-        "qty": 1
-      },
-      {
-        "itemName": "Ancient Secretary (Ancient Magic Machine)",
-        "qty": 1
-      },
-      {
-        "itemName": "Cursed Soul (Styrix the Soul Harvester)",
-        "qty": 1
-      }
-    ],
+    "recipe": [],
     "required_by": [],
     "dropped_by": []
   },
@@ -28363,28 +28313,7 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [
-      {
-        "itemName": "Wings of Creation",
-        "qty": 1
-      },
-      {
-        "itemName": "Ring of Eternity",
-        "qty": 1
-      },
-      {
-        "itemName": "Mask of Truth (Ancient Magic Machine)",
-        "qty": 1
-      },
-      {
-        "itemName": "Sinister Skull (Styrix the Soul Harvester)",
-        "qty": 1
-      },
-      {
-        "itemName": "Dew of Paradise (Kamael, the Lightbringer)",
-        "qty": 1
-      }
-    ],
+    "recipe": [],
     "required_by": [],
     "dropped_by": []
   },
@@ -28415,24 +28344,7 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [
-      {
-        "itemName": "Wings of Divine Origin",
-        "qty": 1
-      },
-      {
-        "itemName": "Blood Devourer",
-        "qty": 1
-      },
-      {
-        "itemName": "Sinister Skull (Styrix the Soul Harvester)",
-        "qty": 1
-      },
-      {
-        "itemName": "Celestial Knot (Kamael, the Lightbringer)",
-        "qty": 1
-      }
-    ],
+    "recipe": [],
     "required_by": [],
     "dropped_by": []
   },
@@ -28464,33 +28376,59 @@
         "Cooldown: 60 seconds"
       ]
     },
-    "recipe": [
-      {
-        "itemName": "Cloak of Endless Longing",
-        "qty": 1
-      },
-      {
-        "itemName": "Ruler of the Sky",
-        "qty": 1
-      },
-      {
-        "itemName": "Flower of the Soul (Duke Lazarus)",
-        "qty": 1
-      },
-      {
-        "itemName": "Crystal of the Earth (Earth God Gaia)",
-        "qty": 1
-      },
-      {
-        "itemName": "Soul Servant (Soul Reaper Styrix)",
-        "qty": 1
-      },
-      {
-        "itemName": "Sacred Lotus (Kamael, Guide of Light)",
-        "qty": 1
-      }
-    ],
+    "recipe": [],
     "required_by": [],
     "dropped_by": []
+  },
+  {
+    "id": "I1A1",
+    "name": "Dew of Paradise",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Material",
+    "color": "733CBE",
+    "level": 100,
+    "dropped_by": [
+      "Lightbringer Kamael"
+    ],
+    "droprate": 0.006,
+    "required_by": [],
+    "stats": {}
+  },
+  {
+    "id": "I1A2",
+    "name": "Divine Lotus",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Material",
+    "color": "733CBE",
+    "level": 100,
+    "dropped_by": [
+      "Lightbringer Kamael"
+    ],
+    "droprate": 0.006,
+    "required_by": [],
+    "stats": {}
+  },
+  {
+    "id": "I1A3",
+    "name": "Holy Thread",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Material",
+    "color": "733CBE",
+    "level": 100,
+    "dropped_by": [
+      "Lightbringer Kamael"
+    ],
+    "droprate": 0.006,
+    "required_by": [],
+    "stats": {}
   }
 ]
