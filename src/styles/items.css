@@ -755,6 +755,21 @@ a.item-drop-source-link:hover {
   border-color: var(--accent);
   background: rgba(233,69,96,0.04);
 }
+.item-drop-boss-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+}
+.item-drop-boss-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.3);
+}
 .item-drop-boss-name {
   font-size: 13px;
   font-weight: 600;

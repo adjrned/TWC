@@ -20,6 +20,7 @@ const TIER_INFO = {
 
 const GRADE_TO_TIER = { 1: 'deltirama', 2: 'neptinos', 3: 'gnosis', 4: 'alteia', 5: 'arcana' };
 const RANK_TO_TIER = { 'none': 'none', '[Normal]': 'normal', '[Magic]': 'magic', '[Rare]': 'rare' };
+const TIER_ORDER = ['arcana', 'alteia', 'gnosis', 'neptinos', 'deltirama', 'rare', 'magic', 'normal', 'none'];
 
 function rankInfo(item) {
   if (item.rank === '[Epic]' && item.grade >= 1) {
@@ -87,6 +88,14 @@ function renderItemList(items, query) {
   let filtered = items;
   if (filterType) filtered = filtered.filter(i => typeGroup(i.type) === filterType);
   if (filterRank) filtered = filtered.filter(i => rankInfo(i).key === filterRank);
+
+  // Sort by tier (highest first), then alphabetically
+  filtered = [...filtered].sort((a, b) => {
+    const ta = TIER_ORDER.indexOf(rankInfo(a).key);
+    const tb = TIER_ORDER.indexOf(rankInfo(b).key);
+    if (ta !== tb) return ta - tb;
+    return a.name.localeCompare(b.name);
+  });
 
   return `
     <div class="page-header">
@@ -230,28 +239,42 @@ function renderItemDetail(item) {
     specHtml = `<div class="item-section"><h2>Specialization</h2><p class="item-spec-text">${esc(item.stats.spec[1])}</p></div>`;
   }
 
-  // Drop sources (linked to bosses)
+  // Drop sources (linked to bosses with icons)
   let dropsHtml = '';
   if (item.dropped_by?.length) {
     dropsHtml = `<div class="item-section"><h2>Drops From</h2><div class="item-drop-sources">${item.dropped_by.map(name => {
       const boss = findBoss(name);
+      const bossIconSrc = `twicons/${encodeURIComponent(name + ' Icon')}.jpg`;
       if (boss) {
         return `<a href="#/bosses/${esc(boss.id)}" class="item-drop-source-link">
+          <div class="item-drop-boss-icon"><img src="${bossIconSrc}" alt="${esc(name)}" onerror="this.style.display='none'"></div>
           <span class="item-drop-boss-name">${esc(name)}</span>
           ${boss.category ? `<span class="boss-tier-badge tier-${boss.category.toLowerCase()}">${esc(boss.category)}</span>` : ''}
           ${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}
         </a>`;
       }
-      return `<div class="item-drop-source-link"><span class="item-drop-boss-name">${esc(name)}</span>${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}</div>`;
+      return `<div class="item-drop-source-link">
+        <div class="item-drop-boss-icon"><img src="${bossIconSrc}" alt="${esc(name)}" onerror="this.style.display='none'"></div>
+        <span class="item-drop-boss-name">${esc(name)}</span>
+        ${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}
+      </div>`;
     }).join('')}</div></div>`;
   }
 
-  // Recipe
+  // Recipe (sorted by tier then alpha)
   let recipeHtml = '';
   if (item.recipe?.length) {
-    recipeHtml = `<div class="item-section"><h2>Recipe</h2><div class="item-recipe-list">${item.recipe.map(mat => {
+    const recipeSorted = item.recipe.map(mat => {
       const [name, qty] = Object.entries(mat)[0];
       const target = itemData.find(i => i.name === name);
+      return { name, qty, target };
+    }).sort((a, b) => {
+      const ta = a.target ? TIER_ORDER.indexOf(rankInfo(a.target).key) : 99;
+      const tb = b.target ? TIER_ORDER.indexOf(rankInfo(b.target).key) : 99;
+      if (ta !== tb) return ta - tb;
+      return a.name.localeCompare(b.name);
+    });
+    recipeHtml = `<div class="item-section"><h2>Recipe</h2><div class="item-recipe-list">${recipeSorted.map(({ name, qty, target }) => {
       const tri = target ? rankInfo(target) : { css: '' };
       return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
         <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
@@ -261,11 +284,19 @@ function renderItemDetail(item) {
     }).join('')}</div></div>`;
   }
 
-  // Required by (crafts into)
+  // Required by (crafts into, sorted by tier then alpha)
   let requiredByHtml = '';
   if (item.required_by?.length) {
-    requiredByHtml = `<div class="item-section"><h2>Used In</h2><div class="item-recipe-list">${item.required_by.map(name => {
+    const usedInSorted = item.required_by.map(name => {
       const target = itemData.find(i => i.name === name);
+      return { name, target };
+    }).sort((a, b) => {
+      const ta = a.target ? TIER_ORDER.indexOf(rankInfo(a.target).key) : 99;
+      const tb = b.target ? TIER_ORDER.indexOf(rankInfo(b.target).key) : 99;
+      if (ta !== tb) return ta - tb;
+      return a.name.localeCompare(b.name);
+    });
+    requiredByHtml = `<div class="item-section"><h2>Used In</h2><div class="item-recipe-list">${usedInSorted.map(({ name, target }) => {
       const tri = target ? rankInfo(target) : { css: '' };
       return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
         <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
