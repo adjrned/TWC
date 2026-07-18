@@ -28269,11 +28269,11 @@
       "attackspeedpercent": 0.1,
       "active": [
         "Activates Holy Fire upon use",
-        "Consumes 50% of current HP",
-        "For 15 seconds, all stats increase by 1.5% of consumed HP (Main stats by 2%) and Fire Affinity increases by 10%.",
-        "When dealing magic damage while active, envelop the target in flames, dealing 15,000 additional magic damage and stacking Holy Fire (Cooldown: 0.75 sec)",
-        "Holy Fire: Skill damage increases by 1%, Fire/Light Affinity increases by 0.3% (Stacks up to 10 times)",
-        "Upon reuse, deals 40-60 damage to the target area equal to the main stat (proportional to the number of stacked Holy Flames). Can only be activated once during duration.",
+        "Consumes 50% of current HP.",
+        "For 15 seconds, all stats increase by 1.5% of consumed HP (Main Stat by 2%) and Fire Affinity increases by 10%.",
+        "When dealing magic damage while active, envelops the target in flames, dealing 15,000 additional magic damage and stacking Holy Fire (Cooldown: 0.75 sec).",
+        "Holy Fire: Skill damage increases by 1%, Fire/Light Affinity increases by 0.3% (stacks up to 10 times).",
+        "Upon reuse, deals Main Stat x 40-60 magic damage to the target area (proportional to the number of Holy Fire stacks). Can only be activated once during duration.",
         "Cooldown: 30 seconds"
       ],
       "affinityflamepercent": 0.1,
