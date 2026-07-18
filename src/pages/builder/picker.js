@@ -122,7 +122,7 @@ export async function openPicker(rowId, col, idx) {
   if (idx === 1) { pill.textContent = 'ALT'; pill.className = 'picker-mode-pill mode-alt'; }
   else { pill.textContent = 'PRIMARY'; pill.className = 'picker-mode-pill mode-primary'; }
 
-  document.getElementById('pickerTitle').textContent = `${t('picker.title')} — ${t('col.' + col)}`;
+  document.getElementById('pickerTitle').textContent = 'Select Item';
   document.getElementById('pickerSearch').value = '';
   document.getElementById('pickerSearch').placeholder = t('picker.search');
 
@@ -150,18 +150,17 @@ function buildCategoryTabs() {
   if (!tabsBuilt || cachedLocale !== getLocale()) {
     const categories = [
       { key: 'all', label: t('picker.allItems'), icon: '📦' },
-      { key: 'weapon', label: t('col.weapon'), icon: '⚔️', count: itemsByType.weapon?.length || 0 },
-      { key: 'headwear', label: t('col.helm'), icon: '⛑️', count: itemsByType.headwear?.length || 0 },
-      { key: 'armor', label: t('col.body'), icon: '🥋', count: itemsByType.armor?.length || 0 },
-      { key: 'wings', label: t('col.wings'), icon: '🪽', count: itemsByType.wings?.length || 0 },
-      { key: 'accessory', label: t('col.accessory'), icon: '💍', count: itemsByType.accessory?.length || 0 },
+      { key: 'weapon', label: t('col.weapon'), icon: '⚔️' },
+      { key: 'headwear', label: t('col.helm'), icon: '⛑️' },
+      { key: 'armor', label: t('col.body'), icon: '🥋' },
+      { key: 'wings', label: t('col.wings'), icon: '🪽' },
+      { key: 'accessory', label: t('col.accessory'), icon: '💍' },
     ];
 
     tabs.innerHTML = categories.map(cat => `
       <button class="picker-tab ${cat.key === activeCategory ? 'active' : ''}" data-cat="${cat.key}">
         <span class="picker-tab-icon">${cat.icon}</span>
         ${cat.label}
-        ${cat.count ? `<span class="picker-tab-count">${cat.count}</span>` : ''}
       </button>
     `).join('');
 
