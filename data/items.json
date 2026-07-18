@@ -41,7 +41,8 @@
       "active": [
         "Restores HP & MP by 30%"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I04V",
@@ -102,7 +103,8 @@
     "rank": "none",
     "grade": 0,
     "type": "Misc",
-    "color": "D8C1BA"
+    "color": "D8C1BA",
+    "required_by": []
   },
   {
     "id": "I0IO",
@@ -144,7 +146,8 @@
         "Expands your storage by 1 slot",
         "Can only be used up to 12 times"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01E",
@@ -240,9 +243,7 @@
     "color": "AFC3FF",
     "level": 5,
     "droprate": 1,
-    "required_by": [
-      "Bloody Fang"
-    ],
+    "required_by": [],
     "stats": {
       "armor": 18,
       "mainstat": 10,
@@ -284,9 +285,7 @@
     "color": "AFAFAF",
     "level": 10,
     "droprate": 0.03,
-    "required_by": [
-      "Berserker Axe"
-    ],
+    "required_by": [],
     "stats": {
       "armor": 20,
       "mainstat": 8,
@@ -310,7 +309,8 @@
       "armor": 10,
       "mainstat": 5,
       "attackspeedpercent": 0.1
-    }
+    },
+    "required_by": []
   },
   {
     "id": "tbar",
@@ -350,7 +350,8 @@
     "stats": {
       "mainstat": 10,
       "movespeed": 50
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I013",
@@ -386,7 +387,8 @@
       "armor": 25,
       "str": 12,
       "agi": 12
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0PY",
@@ -429,7 +431,8 @@
     "stats": {
       "armor": 12,
       "allstat": 8
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01F",
@@ -448,7 +451,8 @@
       "armor": 18,
       "int": 18,
       "mp": 100
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0DW",
@@ -510,7 +514,8 @@
         "On attack, 8% chance to activate Force Blast",
         "Deals 500 magic damage in an AoE"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00E",
@@ -533,7 +538,8 @@
         "Deals 4000 magic damage up to 6 targets",
         "Cooldown: 15 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0AJ",
@@ -555,7 +561,8 @@
         "On attack, chance to activate Force Blast",
         "Deals 500 magic damage in an AoE"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00I",
@@ -577,7 +584,8 @@
         "On attack, chance to activate Force Blast",
         "Deals 500 magic damage in an AoE"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "pclr",
@@ -612,7 +620,8 @@
     "stats": {
       "damage": 150,
       "mainstat": 20
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I038",
@@ -631,7 +640,8 @@
     "stats": {
       "damage": 90,
       "int": 30
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09B",
@@ -650,7 +660,8 @@
     "stats": {
       "damage": 120,
       "agi": 25
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EU",
@@ -669,7 +680,8 @@
     "stats": {
       "damage": 120,
       "agi": 25
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I03B",
@@ -689,7 +701,8 @@
       "armor": 32,
       "str": 17,
       "agi": 17
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I039",
@@ -709,7 +722,8 @@
       "armor": 22,
       "int": 22,
       "mp": 150
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I03C",
@@ -728,7 +742,8 @@
     "stats": {
       "armor": 15,
       "mainstat": 10
-    }
+    },
+    "required_by": []
   },
   {
     "id": "vddl",
@@ -793,7 +808,8 @@
       "active": [
         "Summons a field boss"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "pmna",
@@ -893,7 +909,8 @@
       "passive": [
         "On attack, deals 300 bonus magic damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "wneg",
@@ -955,7 +972,8 @@
     "stats": {
       "damage": 250,
       "mainstat": 30
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I03H",
@@ -973,7 +991,8 @@
     "stats": {
       "damage": 150,
       "int": 45
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09H",
@@ -991,7 +1010,8 @@
     "stats": {
       "damage": 200,
       "agi": 38
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EW",
@@ -1009,7 +1029,8 @@
     "stats": {
       "damage": 200,
       "agi": 38
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I03I",
@@ -1028,7 +1049,8 @@
       "armor": 40,
       "str": 24,
       "agi": 24
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I03F",
@@ -1047,7 +1069,8 @@
       "armor": 30,
       "int": 30,
       "mp": 200
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I03L",
@@ -1065,7 +1088,8 @@
     "stats": {
       "armor": 22,
       "mainstat": 15
-    }
+    },
+    "required_by": []
   },
   {
     "id": "rnsp",
@@ -1132,7 +1156,8 @@
       "active": [
         "Summons a field boss"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "prvt",
@@ -1155,7 +1180,8 @@
         "Each basic attack deals an additional 200~400 magic damage and applies slow",
         "Slow lasts for 0.75 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "lgdh",
@@ -1177,7 +1203,8 @@
       "passive": [
         "10% chance to freeze nearby enemies on being hit for 1.5 seconds and deal 3000 magic damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "ssil",
@@ -1204,7 +1231,8 @@
         "Snowman's attack has a 15% chance to deal (INT X 0.475) + 250 magic damage",
         "Cooldown: 120 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0DU",
@@ -1246,8 +1274,8 @@
     "level": 40,
     "droprate": 1,
     "required_by": [
-      "Precious Wind-Protection Clothing",
-      "Very Silky Bag"
+      "Very Silky Bag",
+      "Precious Wind-Protection Clothing"
     ],
     "stats": {
       "armor": 40,
@@ -1303,7 +1331,8 @@
     "stats": {
       "damage": 400,
       "mainstat": 45
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EZ",
@@ -1322,7 +1351,8 @@
     "stats": {
       "damage": 320,
       "agi": 60
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I045",
@@ -1341,7 +1371,8 @@
     "stats": {
       "damage": 240,
       "int": 70
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09J",
@@ -1360,7 +1391,8 @@
     "stats": {
       "damage": 320,
       "agi": 60
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I040",
@@ -1379,7 +1411,11 @@
       "armor": 50,
       "str": 32,
       "agi": 32
-    }
+    },
+    "required_by": [
+      "Herald of the Void",
+      "Plates of Divine Blood"
+    ]
   },
   {
     "id": "I041",
@@ -1397,7 +1433,8 @@
     "stats": {
       "armor": 38,
       "int": 40
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I046",
@@ -1415,7 +1452,8 @@
     "stats": {
       "armor": 30,
       "mainstat": 20
-    }
+    },
+    "required_by": []
   },
   {
     "id": "sor1",
@@ -1458,7 +1496,8 @@
       "active": [
         "On attack, 10% chance to activate Dark Lightning"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I05S",
@@ -1479,7 +1518,8 @@
       "active": [
         "On attack, 10% chance to activate Dark Lightning"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09G",
@@ -1500,7 +1540,8 @@
       "passive": [
         "10% Chance to amplify ATK DMG by 2x for 5 seconds on attack"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0F0",
@@ -1521,7 +1562,8 @@
       "passive": [
         "10% Chance to amplify ATK DMG by 2x for 5 seconds on attack"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "sand",
@@ -1534,7 +1576,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "mnst",
@@ -1560,7 +1603,8 @@
       "active": [
         "Summons a field boss"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BQ",
@@ -1576,8 +1620,8 @@
     "level": 50,
     "droprate": 0.25,
     "required_by": [
-      "Tepethia, the Crimson Sword of Requiem",
       "Bahanar, the Sword of Illusion",
+      "Tepethia, the Crimson Sword of Requiem",
       "Sanguiel, the Bloodspear of Requiem"
     ],
     "stats": {
@@ -1640,8 +1684,8 @@
     "required_by": [
       "True Blood Cannon Tepes",
       "Aglaia, the Spear of Heavenly Flows",
-      "Bloody Hatred",
-      "Soul Drinker"
+      "Soul Drinker",
+      "Bloody Hatred"
     ],
     "stats": {
       "int": 150,
@@ -1669,9 +1713,9 @@
     "level": 50,
     "droprate": 0.25,
     "required_by": [
+      "Wings of Fury",
       "Tunic of the Wraith",
-      "Robe of the Necromancer",
-      "Wings of Fury"
+      "Robe of the Necromancer"
     ],
     "stats": {
       "armor": 60,
@@ -1700,8 +1744,8 @@
     "droprate": 0.25,
     "required_by": [
       "Ring of the Reaper",
-      "Soul of the Dead",
-      "Ring of Composure"
+      "Ring of Composure",
+      "Soul of the Dead"
     ],
     "stats": {
       "agi": 85,
@@ -1806,8 +1850,8 @@
     "level": 50,
     "droprate": 0.25,
     "required_by": [
-      "Hungry Bat Wings",
-      "Horn of Devil"
+      "Horn of Devil",
+      "Hungry Bat Wings"
     ],
     "stats": {
       "agi": 60,
@@ -1838,7 +1882,8 @@
     "stats": {
       "damage": 600,
       "mainstat": 60
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I05D",
@@ -1857,7 +1902,8 @@
     "stats": {
       "damage": 400,
       "int": 95
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09L",
@@ -1876,7 +1922,8 @@
     "stats": {
       "damage": 500,
       "agi": 80
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0F1",
@@ -1895,7 +1942,8 @@
     "stats": {
       "damage": 500,
       "agi": 80
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I049",
@@ -1914,7 +1962,8 @@
       "armor": 60,
       "str": 40,
       "agi": 40
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I059",
@@ -1932,7 +1981,8 @@
     "stats": {
       "armor": 45,
       "int": 50
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I05F",
@@ -1950,7 +2000,8 @@
     "stats": {
       "armor": 35,
       "mainstat": 25
-    }
+    },
+    "required_by": []
   },
   {
     "id": "dsum",
@@ -1998,7 +2049,8 @@
         "On attack, 8% chance to activate Blessing of Flame",
         "Increases damage by 500 and MAIN STAT by 50 for 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I05W",
@@ -2020,7 +2072,8 @@
         "On attack, 8% chance to activate Blessing of Flame",
         "Increases damage by 500 and MAIN STAT by 50 for 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09E",
@@ -2042,7 +2095,8 @@
         "On attack, 8% chance to activate Blessing of Flame",
         "Increases damage by 500 and MAIN STAT by 50 for 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0F4",
@@ -2064,7 +2118,8 @@
         "On attack, 8% chance to activate Blessing of Flame",
         "Increases damage by 500 and MAIN STAT by 50 for 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0G5",
@@ -2101,7 +2156,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "I0CF",
@@ -2129,7 +2185,8 @@
         "May be used without Magic Stones to summon Evil Lava Spawn",
         "If used together with Red Magic Stone x8, summons a powerful boss"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "shcw",
@@ -2246,9 +2303,9 @@
     "level": 60,
     "droprate": 0.25,
     "required_by": [
+      "Grim Visage",
       "Crimson Reaper",
-      "Hellflame",
-      "Grim Visage"
+      "Hellflame"
     ],
     "stats": {
       "str": 90,
@@ -2278,7 +2335,8 @@
       "armor": 70,
       "str": 50,
       "agi": 50
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BV",
@@ -2297,7 +2355,8 @@
     "stats": {
       "armor": 50,
       "int": 75
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BW",
@@ -2315,7 +2374,8 @@
     "stats": {
       "armor": 40,
       "mainstat": 40
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BZ",
@@ -2361,7 +2421,8 @@
         "On attack, 20% chance to activate Abyss Tentacle",
         "Deals (0.01 X ATK DMG X 2) splash damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BP",
@@ -2408,7 +2469,8 @@
         "On attack, 20% chance to activate Abyss Tentacle",
         "Deals (0.01 X ATK DMG X 2) splash damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0F6",
@@ -2430,7 +2492,8 @@
         "On attack, 20% chance to activate Abyss Tentacle",
         "Deals (0.01 X ATK DMG X 2) splash damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BY",
@@ -2490,7 +2553,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "pnvu",
@@ -2517,7 +2581,8 @@
         "May be used without Magic Stones to summon Sea Guardian",
         "Dedicating 4 Green Magic Stones, and 4 Blue Magic Stones will summon a much stronger boss"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OS",
@@ -2539,7 +2604,8 @@
       "passive": [
         "On skill cast, empowers next 3 attacks"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OT",
@@ -2561,7 +2627,8 @@
       "passive": [
         "On being damaged, restores 1200 HP over 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OU",
@@ -2586,7 +2653,8 @@
         "Increases the user's MAGIC DEF by 90%",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OV",
@@ -2630,7 +2698,8 @@
       "armor": 80,
       "str": 65,
       "agi": 65
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A4",
@@ -2649,7 +2718,8 @@
     "stats": {
       "armor": 50,
       "int": 90
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A1",
@@ -2668,7 +2738,8 @@
     "stats": {
       "armor": 48,
       "mainstat": 45
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0AA",
@@ -2720,7 +2791,8 @@
         "On attack, 10% chance to activate Corrupt Spike",
         "Deals 260 magic damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A8",
@@ -2742,7 +2814,8 @@
         "On attack, 10% chance to activate Corrupt Spike",
         "Deals 260 magic damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A9",
@@ -2764,7 +2837,8 @@
         "On attack, 10% chance to activate Corrupt Spike",
         "Deals 260 magic damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0F5",
@@ -2786,7 +2860,8 @@
         "On attack, 10% chance to activate Corrupt Spike",
         "Deals 260 magic damage"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0AB",
@@ -2813,9 +2888,9 @@
       "Retus, the Bullet of Judgment",
       "Wanderer's Cape",
       "Hood of Apocrypha",
-      "Soul Eater",
+      "Ring of Strike",
       "Grimoire of Darkness",
-      "Ring of Strike"
+      "Soul Eater"
     ]
   },
   {
@@ -2853,7 +2928,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "sor2",
@@ -3014,7 +3090,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I08X",
@@ -3168,7 +3245,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "woms",
@@ -3187,7 +3265,8 @@
       "Droprate increases every 5 minutes that it does not drop from mobs",
       "However, it is 100% drop rate from Mana Ancient",
       "Bring this to Ancient Ent to break its seal"
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "I077",
@@ -3232,7 +3311,8 @@
       "passive": [
         "On attack, inflicts target with poison that deals 1500 magic damage per second for 10 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09D",
@@ -3253,7 +3333,8 @@
       "passive": [
         "On attack, inflicts target with poison that deals 1500 magic damage per second for 10 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0F2",
@@ -3274,7 +3355,8 @@
       "passive": [
         "On attack, inflicts target with poison that deals 1500 magic damage per second for 10 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I074",
@@ -3293,7 +3375,8 @@
       "armor": 80,
       "str": 70,
       "agi": 70
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I072",
@@ -3311,7 +3394,8 @@
     "stats": {
       "armor": 60,
       "int": 110
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I075",
@@ -3329,7 +3413,8 @@
     "stats": {
       "armor": 48,
       "mainstat": 45
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I073",
@@ -3408,7 +3493,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "ajen",
@@ -3547,7 +3633,8 @@
     "stats": {
       "armor": 60,
       "mainstat": 55
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I07H",
@@ -3588,8 +3675,7 @@
       "Tepethia, the Bloodsword of Domination",
       "Bag of Mighty Strength",
       "Crimson Pumpkin Rod",
-      "Cruoris, the Armor of Blood",
-      "Horns of Destruction"
+      "Cruoris, the Armor of Blood"
     ]
   },
   {
@@ -3625,7 +3711,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I07O",
@@ -3719,8 +3806,8 @@
     "level": 60,
     "droprate": 0.075,
     "required_by": [
-      "Fruit Candy Pouch",
-      "Candy-filled Bag"
+      "Candy-filled Bag",
+      "Fruit Candy Pouch"
     ],
     "stats": {
       "allstat": 80,
@@ -3801,7 +3888,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I06F",
@@ -3826,7 +3914,8 @@
       "Pheles, the Bow of Wind",
       "Benziena, the Rod of Earth",
       "Retus, the Iron Bullet"
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "I081",
@@ -4069,9 +4158,9 @@
       "Robe of the Sage",
       "Archangel Halo",
       "True Guardian Ring",
-      "Mithril Pickaxe",
+      "Mage Lord Icon",
       "Glasses",
-      "Mage Lord Icon"
+      "Mithril Pickaxe"
     ]
   },
   {
@@ -4093,6 +4182,7 @@
       "Benziena, the Earthen Pillar",
       "Alkate, the True Unholy Bow",
       "Eana, the True Holy Cannon",
+      "Red Cross",
       "Bag of Mighty Strength +1",
       "Candy-filled Bag +1",
       "Ring of the Sage",
@@ -4102,8 +4192,7 @@
       "Staff of Madness",
       "Mana Heart Frost",
       "Cape of Corrupt Flame",
-      "Wanderer's Cape",
-      "Red Cross"
+      "Wanderer's Cape"
     ]
   },
   {
@@ -4133,7 +4222,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I07R",
@@ -4328,7 +4418,6 @@
       "True Dragon Armor Magron",
       "True Dragon Helm Agron",
       "Dragon Wings",
-      "Horns of Destruction",
       "Spirit Dagger",
       "Tunic of the Wraith"
     ]
@@ -4367,7 +4456,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0BJ",
@@ -4434,7 +4524,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I085",
@@ -4630,7 +4721,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0C4",
@@ -4776,12 +4868,12 @@
     "color": "FFFFFF",
     "droprate": 0.125,
     "required_by": [
+      "Red Cross",
       "Ring of Darkness",
       "Asmodeus, the Archdevil's Greatsword",
       "Belius, the Archdevil's Staff",
       "Staff of Madness",
       "Yggrect, the Archdevil's Bow",
-      "Red Cross",
       "Retus, the Bullet of Judgment",
       "Alchatratz, the Archdevil's Cannon",
       "Void Eye",
@@ -4800,7 +4892,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "rhth",
@@ -4825,7 +4918,8 @@
         "13% chance to activate Frost effect on attack",
         "Deals (MAIN STAT X 3) magic damage and reduces enemy's movement speed by 20% for 3 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0D6",
@@ -4850,7 +4944,8 @@
         "On attack, 13% chance to activate Frost Strike",
         "Deals (MAIN STAT X 3) magic damage and reduces enemy's movement speed by 20% for 3 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0FE",
@@ -4872,7 +4967,8 @@
       "agi": 425,
       "attackspeedpercent": -0.2,
       "critmultiplier": 0.2
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I08D",
@@ -4890,9 +4986,9 @@
     "level": 90,
     "droprate": 0.075,
     "required_by": [
-      "Everfrost Icon",
       "Frozen Robe",
-      "Frost Fairy Wings"
+      "Frost Fairy Wings",
+      "Everfrost Icon"
     ],
     "stats": {
       "armor": 165,
@@ -4946,10 +5042,7 @@
     "color": "9BE1E1",
     "level": 90,
     "droprate": 0.075,
-    "required_by": [
-      "Crown of Composure",
-      "Everfrost Icon"
-    ],
+    "required_by": [],
     "stats": {
       "armor": 75,
       "int": 95,
@@ -5005,7 +5098,6 @@
     "level": 90,
     "droprate": 0.075,
     "required_by": [
-      "Everfrost Gauntlet",
       "Heart of Ifrit"
     ],
     "stats": {
@@ -5086,7 +5178,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "olig",
@@ -5099,7 +5192,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I067",
@@ -5116,8 +5210,8 @@
     "level": 90,
     "droprate": 0.05,
     "required_by": [
-      "Spider Lord Icon",
-      "Winter's Heart"
+      "Winter's Heart",
+      "Spider Lord Icon"
     ],
     "stats": {
       "damage": 5100,
@@ -5256,8 +5350,8 @@
       "Frozen Heart",
       "Spirit Dagger",
       "Meacronacer, the Sword of Thousand Illusions",
-      "Glasses",
-      "Spider Lord Icon"
+      "Spider Lord Icon",
+      "Glasses"
     ]
   },
   {
@@ -5287,7 +5381,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "kysn",
@@ -5364,9 +5459,9 @@
     "droprate": 0.075,
     "required_by": [
       "Devil Blaster",
-      "Staff of Domination",
+      "Bag of Corruption",
       "Void Eye",
-      "Bag of Corruption"
+      "Staff of Domination"
     ],
     "stats": {
       "armor": 70,
@@ -5429,15 +5524,14 @@
       "Bag of Hell",
       "Bag of Heaven",
       "Purelight Armor",
-      "Horns of Destruction",
       "Archangel Halo",
       "Prophetia, the Source of Mana",
       "Demonis, the Devil Lord's Ring",
       "Living Dragon Heart",
       "Staff of Abyss",
       "Halo of Judgment",
-      "Abyssal Pickaxe",
-      "Demon Lord Icon"
+      "Demon Lord Icon",
+      "Abyssal Pickaxe"
     ]
   },
   {
@@ -5497,7 +5591,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "odef",
@@ -5708,7 +5803,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "phlt",
@@ -5874,10 +5970,10 @@
     "level": 100,
     "droprate": 0.0375,
     "required_by": [
+      "Deathbringer",
       "Hood of Grim Reaper",
       "Ring of the Reaper",
       "Seal of Deceiver",
-      "Deathbringer",
       "Corruptor Icon"
     ],
     "worth": 1,
@@ -5910,14 +6006,14 @@
     "level": 100,
     "droprate": 0.0375,
     "required_by": [
-      "Corruptor Icon",
-      "Soul Drinker",
-      "Ring of Revival",
-      "Cloak of the Fallen Shadows",
       "Bag of Corruption",
-      "Grimoire of Darkness",
+      "Soul Drinker",
+      "Hungry Bat Wings",
       "Ring of Fervor",
-      "Hungry Bat Wings"
+      "Grimoire of Darkness",
+      "Cloak of the Fallen Shadows",
+      "Ring of Revival",
+      "Corruptor Icon"
     ],
     "worth": 1,
     "recipe": [
@@ -6022,12 +6118,12 @@
     "color": "FFFFFF",
     "droprate": 0.05,
     "required_by": [
+      "Vest of Cyclone",
+      "Ring of Intrusion",
       "Hydro Buster",
       "Plates of Lightning",
       "Ring of Fervor",
-      "Ring of Intrusion",
-      "Wings of Blood Lord",
-      "Vest of Cyclone"
+      "Wings of Blood Lord"
     ],
     "worth": 1,
     "recipe": [
@@ -6047,7 +6143,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "I0CA",
@@ -6103,8 +6200,8 @@
     "level": 100,
     "droprate": 0.05,
     "required_by": [
-      "Bloodsoul Plates",
       "Frostshard Armor",
+      "Bloodsoul Plates",
       "Flame Nightmare Icon"
     ],
     "worth": 1,
@@ -6215,8 +6312,8 @@
     "level": 100,
     "droprate": 0.025,
     "required_by": [
-      "Crown of Composure",
       "Crown of Rage",
+      "Crown of Composure",
       "Flame Nightmare Icon"
     ],
     "worth": 2,
@@ -6248,18 +6345,18 @@
     "color": "FFFFFF",
     "droprate": 0.05,
     "required_by": [
-      "Laksha, the Ancient Sword of Poison",
-      "Bahanar, the True Sword of Illusion",
       "Aglaia, the Spear of Heavenly Flows",
-      "Meacronacer, the Sword of Thousand Illusions",
-      "Soulstalker",
+      "Bahanar, the True Sword of Illusion",
+      "Laksha, the Ancient Sword of Poison",
+      "Vest of Cyclone",
       "Void Eye",
       "Heart of Ifrit",
-      "Soul of the Dead",
-      "Cloak of the Fallen Shadows",
-      "Flame Nightmare Icon",
+      "Meacronacer, the Sword of Thousand Illusions",
+      "Soulstalker",
       "Ring of Composure",
-      "Vest of Cyclone"
+      "Cloak of the Fallen Shadows",
+      "Soul of the Dead",
+      "Flame Nightmare Icon"
     ],
     "worth": 2,
     "recipe": [
@@ -6283,20 +6380,20 @@
     "required_by": [
       "Anger",
       "Flame Explosion",
-      "Devil Chaser",
-      "Staff of Abyss",
-      "Staff of Domination",
-      "Hell Riser",
-      "Eye of the Flame Lord",
-      "Creation of the Sky and Earth",
-      "Benedict, the Crimson Armor of Blood",
-      "Medea, the Robe of the Witch",
+      "Bag of Life",
       "Latea, the Ring of Chaos",
       "Trueblood Ring",
       "Wings of Fury",
-      "Flame Nightmare Icon",
-      "Bag of Life",
-      "Ring of Fervor"
+      "Staff of Domination",
+      "Staff of Abyss",
+      "Hell Riser",
+      "Devil Chaser",
+      "Creation of the Sky and Earth",
+      "Benedict, the Crimson Armor of Blood",
+      "Medea, the Robe of the Witch",
+      "Ring of Fervor",
+      "Eye of the Flame Lord",
+      "Flame Nightmare Icon"
     ],
     "worth": 2,
     "recipe": [
@@ -6316,7 +6413,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "skul",
@@ -6406,11 +6504,11 @@
     "droprate": 0.05,
     "required_by": [
       "Staff of Madness",
-      "Eternal Rose",
-      "Ring of Revival",
       "Bag of Life",
-      "Ring of Composure",
       "Druid's Mantle",
+      "Eternal Rose",
+      "Ring of Composure",
+      "Ring of Revival",
       "Turtle Lord Icon"
     ],
     "worth": 1,
@@ -6484,8 +6582,8 @@
     "required_by": [
       "Blazing Heart",
       "Eternal Rose",
-      "Bell of Light",
       "Ispion, the Runed Ring",
+      "Bell of Light",
       "Heaven's Fist",
       "Turtle Lord Icon"
     ],
@@ -6523,16 +6621,16 @@
     "droprate": 0.05,
     "required_by": [
       "Deathbringer",
-      "Oceanus, the Sword of Light",
+      "Reactive Armor",
+      "Robe of the Sage",
+      "Trueblood Ring",
+      "Purefrost Gauntlet",
+      "Maw of Greed",
       "Meacronacer, the Sword of Thousand Illusions",
+      "Oceanus, the Sword of Light",
       "Crimson Star",
       "Ring of Strike",
       "Horn of Lightning God",
-      "Reactive Armor",
-      "Robe of the Sage",
-      "Purefrost Gauntlet",
-      "Trueblood Ring",
-      "Maw of Greed",
       "Turtle Lord Icon"
     ],
     "worth": 2,
@@ -6555,15 +6653,15 @@
     "color": "FFFFFF",
     "droprate": 0.05,
     "required_by": [
-      "Storm Reaver",
       "Aglaia, the Spear of Heavenly Flows",
-      "Pheles, the Bow of Skies",
-      "Tiberius, the Spear of Lightning",
-      "Protector's Will",
-      "Wanderer's Cape",
+      "Storm Reaver",
       "Horn of Devil",
-      "Plates of Lightning",
       "Hungry Bat Wings",
+      "Wanderer's Cape",
+      "Tiberius, the Spear of Lightning",
+      "Pheles, the Bow of Skies",
+      "Plates of Lightning",
+      "Protector's Will",
       "Turtle Lord Icon"
     ],
     "worth": 2,
@@ -6586,18 +6684,18 @@
     "color": "FFFFFF",
     "droprate": 0.05,
     "required_by": [
-      "Spirit Dagger",
       "Twin Snow",
+      "Benziena, the Earthen Soul",
+      "Ring of Intrusion",
+      "Spirit Dagger",
+      "Winter's Heart",
       "Espishu, the Sword of Eternity",
+      "Triple Snow",
       "Ethenos, the Staff of Space",
       "Griveddon, the Bow of Certain Destruction",
       "Chronos, the Cannon of Time",
-      "Winter's Heart",
-      "Benziena, the Earthen Soul",
-      "Triple Snow",
       "Creation of the Sky and Earth",
       "Bloodsoul Plates",
-      "Ring of Intrusion",
       "Turtle Lord Icon"
     ],
     "worth": 2,
@@ -6618,7 +6716,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "I0LN",
@@ -6638,6 +6737,11 @@
       "Ghostly Thread",
       "Soul Stone",
       "Mad Symbol",
+      "Spiritus, the Sword of Elements",
+      "Storm Headdress",
+      "Visvire, the Hammer of Storm",
+      "Spirit Orb",
+      "Spirit of Forest",
       "Corruptor",
       "Stalker",
       "Avenger",
@@ -6647,11 +6751,6 @@
       "Staff of Contagion",
       "Essence of Corruption",
       "Ancient Fragment of Ruins",
-      "Spiritus, the Sword of Elements",
-      "Storm Headdress",
-      "Visvire, the Hammer of Storm",
-      "Spirit Orb",
-      "Spirit of Forest",
       "Hatred",
       "Flameshard Armor",
       "Ring of Nightmare",
@@ -6700,17 +6799,17 @@
     "required_by": [
       "Ragnaar Icon",
       "Tentacle Lord Icon",
-      "Gatekeeper Icon",
       "Giant Golem Icon",
       "Mad Clown Icon",
       "Mana Ancient Icon",
+      "Gatekeeper Icon",
       "Spirit Beast Icon",
-      "Bone Dragon Icon",
-      "Coin of Effort",
       "Ancient Hourglass",
       "Dragonic Orb",
       "Burning Bone Fragments",
       "Dragon's Eye",
+      "Coin of Effort",
+      "Bone Dragon Icon",
       "Death Scythe",
       "Staff of Souls",
       "Robe of the Reaper",
@@ -6726,10 +6825,10 @@
       "Heart of Fire",
       "Dark Crystal",
       "Embrace of Nature",
-      "Purified Water of Nature",
-      "Fragment of the Wind",
       "Griseus, the Sword of Protection",
       "Ring of the Storm",
+      "Purified Water of Nature",
+      "Fragment of the Wind",
       "Guardian of the Skies",
       "Steel of God",
       "God's Page",
@@ -6792,17 +6891,16 @@
     "level": 100,
     "droprate": 0.0175,
     "required_by": [
-      "Ethenos, the Staff of Space",
       "Triple Snow",
-      "Crimson Hatred",
+      "Benziena, the Earthen Heart",
+      "Ethenos, the Staff of Space",
       "Druid's Mantle",
-      "Staff of Abyss",
       "Bloodsoul Plates",
+      "Heaven's Door",
+      "Crimson Hatred",
       "Bag of Universe",
       "Wings of Flame Lord",
-      "Wings of Frost Lord",
-      "Heaven's Door",
-      "Benziena, the Earthen Heart"
+      "Wings of Frost Lord"
     ],
     "recipe": [
       {
@@ -6839,13 +6937,13 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Griveddon, the Bow of Certain Destruction",
       "Ruinbringer",
+      "Griveddon, the Bow of Certain Destruction",
+      "Bag of Destruction",
       "Hellspike Armor",
       "Wings of Phoenix",
-      "Archangel Wings",
-      "Bag of Destruction",
-      "Hood of Apocalypse"
+      "Hood of Apocalypse",
+      "Archangel Wings"
     ],
     "recipe": [
       {
@@ -6866,21 +6964,21 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Claws of Beriel",
-      "Chronos, the Cannon of Time",
-      "Hellflame",
-      "Dragon Mask",
-      "Eye of the Flame Lord",
-      "Hellspike Armor",
-      "Hades, the Armor of Despair",
       "Maw of Greed",
-      "Ring of Fervor",
       "Oblivion",
+      "Claws of Beriel",
+      "Hellflame",
       "Fiend Chaser",
       "Punisher",
+      "Chronos, the Cannon of Time",
       "Bag of Explosion",
+      "Hellspike Armor",
+      "Dragon Mask",
+      "Ring of Fervor",
+      "Hades, the Armor of Despair",
       "Radiance of the One",
-      "Crown of Great Rage"
+      "Crown of Great Rage",
+      "Eye of the Flame Lord"
     ],
     "recipe": [
       {
@@ -6955,7 +7053,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "ratc",
@@ -7086,7 +7185,10 @@
     "stats": {
       "mainstat": 390,
       "skilldamagepercent": 0.12
-    }
+    },
+    "required_by": [
+      "Cold Ring of Death"
+    ]
   },
   {
     "id": "rat9",
@@ -7103,7 +7205,6 @@
     "level": 100,
     "droprate": 0.0175,
     "required_by": [
-      "Cold Ring of Death",
       "Requiem, the Armor of Lamentation",
       "Skeletal King Icon"
     ],
@@ -7145,21 +7246,16 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
+      "Ruinbringer",
+      "Devil Chaser",
+      "Bag of Destruction",
+      "Hellspike Armor",
       "Bell of Light",
       "Pure Crystal Wings",
       "Wings of Slayer",
-      "Griveddon, the Bow of Certain Destruction",
-      "Chronos, the Cannon of Time",
-      "Devil Chaser",
-      "Ruinbringer",
-      "Soulstalker",
-      "Eye of the Flame Lord",
-      "Requiem, the Armor of Lamentation",
-      "Benedict, the Crimson Armor of Blood",
-      "Hellspike Armor",
-      "Hades, the Armor of Despair",
       "Soul of the Dead",
-      "Bag of Destruction",
+      "Hades, the Armor of Despair",
+      "Eye of the Flame Lord",
       "Skeletal King Icon"
     ]
   },
@@ -7177,22 +7273,22 @@
     "droprate": 0.025,
     "required_by": [
       "Oblivion",
-      "Bag of Explosion",
       "Espishu, the Sword of Eternity",
-      "Ethenos, the Staff of Space",
-      "Griveddon, the Bow of Certain Destruction",
-      "Chronos, the Cannon of Time",
-      "Dante's Inferno",
       "Laktrisha, the Illusional Sword of Poison",
-      "Soulstalker",
+      "Ethenos, the Staff of Space",
       "Everfrostbane",
-      "Crown of Serenity",
+      "Soulstalker",
+      "Griveddon, the Bow of Certain Destruction",
+      "Dante's Inferno",
+      "Chronos, the Cannon of Time",
+      "Bag of Explosion",
       "Requiem, the Armor of Lamentation",
       "Benedict, the Crimson Armor of Blood",
       "Bloodsoul Plates",
-      "Frost Fairy Wings",
-      "Ring of Composure",
+      "Crown of Serenity",
       "Ring of Time",
+      "Ring of Composure",
+      "Frost Fairy Wings",
       "Skeletal King Icon"
     ],
     "recipe": [
@@ -7214,18 +7310,17 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Hellflame",
       "Claws of Beriel",
       "Crimson Reaper",
       "Staff of Abyss",
+      "Hellflame",
       "Heartseeker",
       "Crimson Star",
-      "Hood of Apocrypha",
+      "Bag of Mother Nature",
       "Grandine, the Plates of Wraith",
+      "Hood of Apocrypha",
       "Ispion, the Runed Ring",
       "Seal of Deceiver",
-      "Soul of the Dead",
-      "Bag of Mother Nature",
       "Eye of the Reaper",
       "Skeletal King Icon"
     ],
@@ -7246,7 +7341,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "belv",
@@ -7338,11 +7434,11 @@
     "droprate": 0.0125,
     "required_by": [
       "Blazing Heart",
-      "Ring of Revival",
       "Wings of Phoenix",
       "Wings of Slayer",
-      "Brave Heart",
       "Eternal Flame",
+      "Ring of Revival",
+      "Brave Heart",
       "Wings of Immortal",
       "Cape of Insatiable Hunger",
       "Zombie Lord Icon"
@@ -7376,20 +7472,20 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Oceanus, the Sword of Light",
       "Tiberius, the Spear of Lightning",
+      "Oceanus, the Sword of Light",
       "Hellflame",
-      "Halo of Judgment",
-      "Bell of Light",
-      "Latea, the Ring of Overlord",
-      "Diana, the Robe of Holy Maiden",
-      "Medea, the Robe of the Witch",
-      "Protection of the Fairies",
-      "Grimoire of Darkness",
       "Hydro Buster",
       "Bag of Explosion",
-      "Spirit of Protector",
+      "Diana, the Robe of Holy Maiden",
+      "Medea, the Robe of the Witch",
+      "Halo of Judgment",
+      "Bell of Light",
+      "Grimoire of Darkness",
       "Robe of Storm",
+      "Spirit of Protector",
+      "Latea, the Ring of Overlord",
+      "Protection of the Fairies",
       "Zombie Lord Icon"
     ],
     "recipe": [
@@ -7411,21 +7507,21 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Crimson Reaper",
       "Winter's Heart",
+      "Crimson Reaper",
       "Staff of Domination",
+      "Benziena, the Earthen Heart",
       "Heartseeker",
+      "Punisher",
+      "Bag of Mother Nature",
       "Tunic of the Wraith",
       "Benedict, the Crimson Armor of Blood",
       "Eternal Rose",
-      "Ring of Time",
       "Ispion, the Runed Ring",
+      "Ring of Time",
       "Soul Eater",
-      "Bag of Mother Nature",
       "Splitting of the Sky and Earth",
-      "Punisher",
       "Felspike Armor",
-      "Benziena, the Earthen Heart",
       "Abyss Fall",
       "Zombie Lord Icon"
     ],
@@ -7448,21 +7544,21 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Crown of Composure",
-      "Bloody Hatred",
-      "Staff of Abyss",
-      "Hell Riser",
-      "Eye of Wallachia",
-      "Frostshard Armor",
-      "Robe of the Necromancer",
-      "Grim Heart",
-      "Wings of Slayer",
-      "Crown of Rage",
-      "Bag of Destruction",
-      "Plates of Lightning",
-      "Wings of Blood Lord",
       "Oblivion",
+      "Staff of Abyss",
+      "Bloody Hatred",
+      "Hell Riser",
       "Fiend Chaser",
+      "Bag of Destruction",
+      "Frostshard Armor",
+      "Plates of Lightning",
+      "Robe of the Necromancer",
+      "Eye of Wallachia",
+      "Crown of Rage",
+      "Crown of Composure",
+      "Wings of Blood Lord",
+      "Wings of Slayer",
+      "Grim Heart",
       "Zombie Lord Icon"
     ],
     "recipe": [
@@ -7482,7 +7578,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0D2",
@@ -7499,11 +7596,11 @@
     "level": 100,
     "droprate": 0.0125,
     "required_by": [
-      "Protection of the Fairies",
+      "Benziena, the Earthen Heart",
       "Bag of Mother Nature",
       "Wings of Blood Lord",
       "Harmony of Sky and Earth",
-      "Benziena, the Earthen Heart",
+      "Protection of the Fairies",
       "Ancient Ent Icon"
     ],
     "recipe": [
@@ -7540,8 +7637,8 @@
     "level": 100,
     "droprate": 0.0175,
     "required_by": [
-      "Oceanus, the Sword of Light",
       "Winter's Heart",
+      "Oceanus, the Sword of Light",
       "Ancient Ent Icon"
     ],
     "recipe": [
@@ -7577,16 +7674,16 @@
     "level": 100,
     "droprate": 0.0175,
     "required_by": [
-      "Latea, the Ring of Overlord",
+      "Oblivion",
       "Hydro Buster",
       "Plates of Lightning",
-      "Ring of Fervor",
-      "Nebula Rose",
       "Vest of Storm",
-      "Storm",
-      "Oblivion",
-      "Ring of Divine Winds",
+      "Ring of Fervor",
       "Robe of Storm",
+      "Ring of Divine Winds",
+      "Latea, the Ring of Overlord",
+      "Nebula Rose",
+      "Storm",
       "Ancient Ent Icon"
     ],
     "recipe": [
@@ -7620,24 +7717,23 @@
     "droprate": 0.025,
     "required_by": [
       "Espishu, the Sword of Eternity",
+      "Meacronacer, the Sword of Thousand Illusions",
+      "Laktrisha, the Illusional Sword of Poison",
+      "Staff of Domination",
       "Ethenos, the Staff of Space",
+      "Hellflame",
       "Griveddon, the Bow of Certain Destruction",
       "Chronos, the Cannon of Time",
-      "Laktrisha, the Illusional Sword of Poison",
-      "Meacronacer, the Sword of Thousand Illusions",
-      "Staff of Domination",
-      "Hellflame",
-      "Dragon Mask",
+      "Bag of Explosion",
+      "Druid's Mantle",
       "Protector's Will",
+      "Dragon Mask",
       "Prophetia, the Greater Source of Mana",
       "Crown of Rage",
-      "Creation of the Sky and Earth",
-      "Frost Fairy Wings",
       "Ring of Composure",
-      "Druid's Mantle",
-      "Bag of Explosion",
-      "Ruler of the Skies",
+      "Frost Fairy Wings",
       "Rainmaker",
+      "Ruler of the Skies",
       "Ancient Ent Icon"
     ],
     "recipe": [
@@ -7662,20 +7758,18 @@
     "droprate": 0.025,
     "required_by": [
       "Spirit Dagger",
-      "Pheles, the Bow of Skies",
-      "Pheles, the Bow of God",
       "Tiberius, the Spear of Lightning",
-      "Espishu, the Sword of Eternity",
-      "Crown of Serenity",
-      "Crown of Rage",
+      "Pheles, the Bow of Skies",
+      "Bag of Destruction",
       "Creation of the Sky and Earth",
       "Medea, the Robe of the Witch",
-      "Ring of Strike",
+      "Crown of Serenity",
       "Ispion, the Runed Ring",
+      "Ring of Strike",
       "Soul Eater",
-      "Bag of Destruction",
-      "Horn of God",
+      "Pheles, the Bow of God",
       "Mask of Demigod",
+      "Horn of God",
       "Ancient Ent Icon"
     ],
     "recipe": [
@@ -7695,7 +7789,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0EG",
@@ -7712,10 +7807,10 @@
     "level": 100,
     "droprate": 0.0125,
     "required_by": [
+      "Vest of Divine Winds",
+      "Ruler of the Skies",
       "Archangel Wings",
       "Brave Heart",
-      "Ruler of the Skies",
-      "Vest of Divine Winds",
       "Archangel Icon"
     ],
     "recipe": [
@@ -7759,20 +7854,20 @@
     "color": "FFFFFF",
     "droprate": 0.025,
     "required_by": [
-      "Claws of Beriel",
-      "Tiberius, the Spear of Lightning",
       "Blazing Heart",
-      "Atricia, the Sword of Dreams",
-      "Horn of Lightning God",
+      "Tiberius, the Spear of Lightning",
+      "Claws of Beriel",
+      "Benziena, the Earthen Heart",
+      "Punisher",
       "Creation of the Sky and Earth",
       "Benedict, the Crimson Armor of Blood",
       "Ring of Time",
-      "Horn of God",
-      "Robe of Archlich",
-      "Punisher",
-      "Rainmaker",
       "Astra, the Sword of Moonlight",
-      "Benziena, the Earthen Heart",
+      "Atricia, the Sword of Dreams",
+      "Rainmaker",
+      "Robe of Archlich",
+      "Horn of Lightning God",
+      "Horn of God",
       "Agnitus, the Bow of Divine Fury",
       "Archangel Icon"
     ],
@@ -7797,19 +7892,18 @@
     "required_by": [
       "Ruinbringer",
       "Hell Riser",
-      "Staff of Plague",
-      "Crimson Hatred",
+      "Fiend Chaser",
       "Grandine, the Plates of Wraith",
       "Cold Ring of Death",
       "Grimoire of Darkness",
-      "Ring of Time",
-      "Fiend Chaser",
+      "Heaven's Door",
+      "Eternal Winter",
       "Desolation",
       "Espishu, the True Sword of Eternity",
-      "Radiance of the One",
-      "Eternal Winter",
-      "Heaven's Door",
+      "Crimson Hatred",
+      "Staff of Plague",
       "Bloodseeker Plates",
+      "Radiance of the One",
       "Archangel Icon"
     ],
     "recipe": [
@@ -7832,18 +7926,18 @@
     "droprate": 0.025,
     "required_by": [
       "Oceanus, the Sword of Light",
-      "Halo of Judgment",
-      "Bell of Light",
-      "Seal of Deceiver",
-      "Cosmic Star",
-      "Nebula Rose",
       "Vest of Storm",
-      "Storm",
-      "Bag of Universe",
-      "Soul of Abyss",
+      "Halo of Judgment",
+      "Seal of Deceiver",
+      "Bell of Light",
       "Cosmic Reaper",
+      "Cosmic Star",
+      "Soul of Abyss",
       "Ethenos, the True Staff of Space",
       "Harmonia, the Sparkle of Life",
+      "Bag of Universe",
+      "Nebula Rose",
+      "Storm",
       "Star of Apotheosis",
       "Guardian Angel",
       "Archangel Icon"
@@ -7865,7 +7959,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "kymn",
@@ -7957,8 +8052,8 @@
     "level": 100,
     "droprate": 0.015,
     "required_by": [
-      "Ring of Time",
       "Ispion, the Runed Ring",
+      "Ring of Time",
       "Crown of Absolute Zero",
       "Wings of Flame Lord",
       "Ring of Malevolence",
@@ -7994,23 +8089,22 @@
     "color": "FFFFFF",
     "droprate": 0.02,
     "required_by": [
-      "Crimson Reaper",
       "Ruinbringer",
+      "Crimson Reaper",
       "Soulstalker",
-      "Atricia, the Sword of Dreams",
-      "Crimson Hatred",
-      "Latea, the Ring of Overlord",
-      "Cloak of the Fallen Shadows",
-      "Grim Heart",
-      "Wings of Blood Lord",
-      "Bag of Universe",
-      "Soul of Abyss",
       "Fiend Chaser",
       "Punisher",
-      "Ethenos, the Staff of Chaos",
+      "Wings of Blood Lord",
+      "Cloak of the Fallen Shadows",
+      "Grim Heart",
+      "Atricia, the Sword of Dreams",
+      "Crimson Hatred",
+      "Soul of Abyss",
       "Armageddon",
+      "Ethenos, the Staff of Chaos",
+      "Bag of Universe",
       "Voidshard Armor",
-      "Staff of Plague",
+      "Latea, the Ring of Overlord",
       "Bloodstorm",
       "Shadow Dragon Icon"
     ],
@@ -8033,28 +8127,28 @@
     "color": "FFFFFF",
     "droprate": 0.02,
     "required_by": [
-      "Staff of Plague",
-      "Pheles, the Bow of God",
-      "Eye of Wallachia",
+      "Vest of Storm",
+      "Diana, the Robe of Holy Maiden",
       "Protector's Will",
+      "Eye of Wallachia",
       "Prophetia, the Greater Source of Mana",
       "Ring of Strike",
       "Seal of Deceiver",
-      "Horn of God",
       "Wings of Slayer",
-      "Cosmic Star",
-      "Vest of Storm",
-      "Storm",
       "Splitting of the Sky and Earth",
-      "Robe of Archlich",
       "Cosmic Reaper",
+      "Pheles, the Bow of God",
+      "Cosmic Star",
       "Rainmaker",
+      "Staff of Plague",
       "Bag of Demise",
-      "Diana, the Robe of Holy Maiden",
+      "Robe of Archlich",
+      "Horn of Demon God",
+      "Ring of Divine Winds",
+      "Horn of God",
+      "Storm",
       "Cape of Deep Abyss",
       "Soul Devourer",
-      "Ring of Divine Winds",
-      "Horn of Demon God",
       "Shadow Dragon Icon"
     ],
     "recipe": [
@@ -8080,21 +8174,19 @@
       "Meacronacer, the Sword of Thousand Illusions",
       "Triple Snow",
       "Everfrostbane",
-      "Crown of Serenity",
-      "Crown of Composure",
-      "Vest of Storm",
       "Frostshard Armor",
       "Winter Robe",
       "Medea, the Robe of the Witch",
-      "Hades, the Armor of Despair",
+      "Crown of Composure",
+      "Crown of Serenity",
       "Cold Ring of Death",
-      "Ruler of the Skies",
-      "Wings of Frost Lord",
-      "Maw of Beriel",
       "Calamity",
-      "Wings of Night Lord",
-      "Grim Heart",
+      "Maw of Beriel",
+      "Hades, the Armor of Despair",
       "Demonic Fist",
+      "Wings of Frost Lord",
+      "Wings of Night Lord",
+      "Ruler of the Skies",
       "Shadow Dragon Icon"
     ],
     "recipe": [
@@ -8114,7 +8206,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "srbd",
@@ -8131,14 +8224,14 @@
     "level": 100,
     "droprate": 0.005,
     "required_by": [
-      "Calamity",
       "Astra, the Sword of Moonlight",
+      "Calamity",
       "Heartrender",
-      "Agnitus, the Bow of Divine Fury",
-      "Fulminata, the Bringer of Storms",
-      "Abyss Fall",
       "Divine Slayer",
+      "Agnitus, the Bow of Divine Fury",
+      "Abyss Fall",
       "Final Omen",
+      "Fulminata, the Bringer of Storms",
       "Gate of Abyss"
     ],
     "stats": {
@@ -8167,10 +8260,10 @@
     "level": 100,
     "droprate": 0.0075,
     "required_by": [
-      "Hades, the Armor of Despair",
-      "Athanasia, the Armor of the Reaper",
       "Felspike Armor",
       "Nevedium, the Armor of Demonblood",
+      "Athanasia, the Armor of the Reaper",
+      "Hades, the Armor of Despair",
       "Bloodseeker Plates",
       "Plates of Sanguine Fury"
     ],
@@ -8201,13 +8294,13 @@
     "level": 100,
     "droprate": 0.0075,
     "required_by": [
+      "Heaven's Door",
       "Cosmic Star",
       "Bag of Despair",
-      "Hood of Apocalypse",
+      "Spirit of Protector",
       "Eye of the Reaper",
       "Crown of Extreme Anger",
-      "Heaven's Door",
-      "Spirit of Protector",
+      "Hood of Apocalypse",
       "Cage of Twisted Souls",
       "Crescendo of Madness",
       "Bloodstorm"
@@ -8240,11 +8333,11 @@
     "level": 100,
     "droprate": 0.0075,
     "required_by": [
-      "Latea, the Ring of Overlord",
-      "Ring of Insanity",
-      "Eternal Flame",
       "Power of Beriel",
+      "Eternal Flame",
       "Bag of Demise",
+      "Ring of Insanity",
+      "Latea, the Ring of Overlord",
       "Heartrender"
     ],
     "stats": {
@@ -8268,29 +8361,29 @@
     "color": "FFFFFF",
     "droprate": 0.0075,
     "required_by": [
-      "Staff of Plague",
-      "Crimson Hatred",
-      "Pheles, the Bow of God",
-      "Atricia, the Sword of Dreams",
-      "Splitting of the Sky and Earth",
-      "Cosmic Reaper",
-      "Soul of Abyss",
-      "Desolation",
-      "Espishu, the Sword of Chaos",
-      "Eternal Winter",
-      "Soulbane",
-      "Last Word",
-      "Bag of Demise",
-      "Chrono Chaser",
-      "Thanatos, the Robe of Hell",
-      "Ethenos, the Staff of Chaos",
-      "Armageddon",
       "Ethereal Dagger",
-      "Cape of Deep Abyss",
+      "Eternal Winter",
+      "Splitting of the Sky and Earth",
+      "Desolation",
+      "Cosmic Reaper",
+      "Espishu, the Sword of Chaos",
+      "Atricia, the Sword of Dreams",
+      "Pheles, the Bow of God",
+      "Soulbane",
+      "Chrono Chaser",
+      "Last Word",
+      "Crimson Hatred",
+      "Staff of Plague",
+      "Soul of Abyss",
+      "Armageddon",
+      "Ethenos, the Staff of Chaos",
+      "Harmonia, the Sparkle of Life",
+      "Bag of Demise",
+      "Voidshard Armor",
+      "Thanatos, the Robe of Hell",
       "Horn of Demon God",
       "Seed of Malice",
-      "Voidshard Armor",
-      "Harmonia, the Sparkle of Life",
+      "Cape of Deep Abyss",
       "Archangel Wings",
       "Protection of the Fairies"
     ]
@@ -8311,24 +8404,22 @@
     "color": "FFFFFF",
     "droprate": 0.0075,
     "required_by": [
-      "Protection of the Fairies",
-      "Archangel Wings",
-      "Nebula Rose",
-      "Storm",
-      "Bag of Universe",
-      "Ruler of the Skies",
+      "Chaos Dagger",
       "Chaos",
       "Espishu, the True Sword of Eternity",
       "Ethenos, the True Staff of Space",
+      "Bag of Universe",
+      "Prophetia, the Origin of Knowledge",
+      "Nebula Rose",
       "Wings of Flame Lord",
       "Wings of Frost Lord",
       "Wings of Night Lord",
-      "Chaos Dagger",
-      "Prophetia, the Origin of Knowledge",
+      "Storm",
+      "Ruler of the Skies",
       "Agnitus, the Bow of Divine Fury",
+      "Sanguis, the Robe of Sacrifice",
       "Crescendo of Madness",
       "Cape of Insatiable Hunger",
-      "Sanguis, the Robe of Sacrifice",
       "Chaos Pickaxe"
     ]
   },
@@ -8358,30 +8449,7 @@
       0.0025,
       0.003
     ],
-    "required_by": [
-      "Prius Gold Coin",
-      "Coin of Effort",
-      "The Ender",
-      "Armor of Grudge",
-      "Eyes of the Watcher",
-      "Ring of Destruction",
-      "Spearhead of Death",
-      "Fragment of Chaos",
-      "Shining Fragment of Ruins",
-      "Shackles of Heaven",
-      "Aegis of Storm",
-      "Essence of Storm",
-      "Heart of Volcano",
-      "Aegis of Flame",
-      "Essence of Flame",
-      "Grail of Eternity",
-      "Aegis of Sea",
-      "Essence of Sea",
-      "Curse of Greed",
-      "Fragment of Soul",
-      "Fragment of Hell",
-      "Mark of Lord"
-    ]
+    "required_by": []
   },
   {
     "id": "I0QH",
@@ -8419,7 +8487,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "ocor",
@@ -8436,18 +8505,18 @@
     "level": 100,
     "droprate": 0.006,
     "required_by": [
-      "Staff of Plague",
-      "Heaven's Fist",
-      "Archangel Wings",
-      "Soul of Abyss",
-      "Ruler of the Skies",
+      "Eternal Winter",
       "Desolation",
       "Espishu, the True Sword of Eternity",
+      "Staff of Plague",
+      "Soul of Abyss",
       "Bag of Despair",
-      "Eternal Winter",
       "Jupiter, the Robe of Heavens",
-      "Wings of Immortal",
+      "Heaven's Fist",
       "Ring of the One",
+      "Ruler of the Skies",
+      "Archangel Wings",
+      "Wings of Immortal",
       "Spear of Judgment",
       "Caedis, the Sword of Slaughter"
     ],
@@ -8477,26 +8546,26 @@
     "color": "FFFFFF",
     "droprate": 0.008,
     "required_by": [
-      "Horn of Lightning God",
-      "Protection of the Fairies",
-      "Nebula Rose",
-      "Storm",
       "Splitting of the Sky and Earth",
-      "Brave Heart",
-      "Ring of Insanity",
-      "Athanasia, the Armor of the Reaper",
-      "Radiance of the One",
       "Harmony of Sky and Earth",
-      "Wings of Night Lord",
-      "Mask of Demigod",
+      "Athanasia, the Armor of the Reaper",
       "Bloodseeker Plates",
+      "Robe of Storm",
+      "Horn of Lightning God",
+      "Mask of Demigod",
+      "Radiance of the One",
       "Prophetia, the Origin of Knowledge",
+      "Ring of Insanity",
       "Ring of Frozen Soul",
+      "Nebula Rose",
+      "Wings of Night Lord",
+      "Storm",
+      "Protection of the Fairies",
+      "Brave Heart",
       "Caedis, the Sword of Slaughter",
       "Plates of Sanguine Fury",
-      "Heirloom of Lazarus",
-      "Robe of Storm",
-      "Sanguis, the Robe of Sacrifice"
+      "Sanguis, the Robe of Sacrifice",
+      "Heirloom of Lazarus"
     ]
   },
   {
@@ -8513,25 +8582,24 @@
     "color": "FFFFFF",
     "droprate": 0.008,
     "required_by": [
+      "Heaven's Door",
+      "Cosmic Reaper",
+      "Astra, the Sword of Moonlight",
+      "Calamity",
       "Atricia, the Sword of Dreams",
       "Pheles, the Bow of God",
-      "Horn of Lightning God",
-      "Horn of God",
-      "Ring of Fate",
-      "Cosmic Reaper",
-      "Calamity",
       "Soulbane",
-      "Bag of Demise",
-      "Eye of the Reaper",
       "Chrono Chaser",
       "Armageddon",
-      "Heaven's Door",
-      "Soul Devourer",
-      "Ring of Divine Winds",
-      "Vest of Divine Winds",
-      "Astra, the Sword of Moonlight",
       "Harmonia, the Sparkle of Life",
+      "Bag of Demise",
+      "Vest of Divine Winds",
+      "Eye of the Reaper",
+      "Ring of Divine Winds",
+      "Ring of Fate",
+      "Horn of God",
       "Ring of the One",
+      "Soul Devourer",
       "Heartrender",
       "Spear of Judgment",
       "Fulminata, the Bringer of Storms",
@@ -8559,52 +8627,52 @@
       0.006
     ],
     "required_by": [
-      "Pheles, the Bow of God",
-      "Horn of God",
-      "Cosmic Star",
-      "Storm",
+      "Ethereal Dagger",
+      "Eternal Winter",
       "Splitting of the Sky and Earth",
+      "Chaos",
+      "Espishu, the Sword of Chaos",
+      "Pheles, the Bow of God",
+      "Soulbane",
+      "Eternal Flame",
+      "Chrono Chaser",
+      "Last Word",
+      "Cosmic Star",
+      "Rainmaker",
+      "Harmonia, the Sparkle of Life",
+      "Bag of Despair",
+      "Harmony of Sky and Earth",
+      "Felspike Armor",
+      "Nevedium, the Armor of Demonblood",
+      "Athanasia, the Armor of the Reaper",
       "Robe of Archlich",
-      "Brave Heart",
+      "Jupiter, the Robe of Heavens",
+      "Thanatos, the Robe of Hell",
+      "Bloodseeker Plates",
+      "Spirit of Protector",
+      "Radiance of the One",
+      "Crown of Extreme Anger",
+      "Crown of Absolute Zero",
+      "Ring of Divine Winds",
       "Ring of Hope",
       "Ring of Despair",
-      "Athanasia, the Armor of the Reaper",
-      "Felspike Armor",
+      "Horn of God",
+      "Storm",
       "Ruler of the Skies",
-      "Eternal Flame",
-      "Chaos",
-      "Rainmaker",
-      "Espishu, the Sword of Chaos",
-      "Bag of Despair",
-      "Radiance of the One",
-      "Crown of Absolute Zero",
-      "Eternal Winter",
-      "Soulbane",
-      "Last Word",
-      "Crown of Extreme Anger",
-      "Harmony of Sky and Earth",
-      "Nevedium, the Armor of Demonblood",
-      "Chrono Chaser",
-      "Thanatos, the Robe of Hell",
-      "Jupiter, the Robe of Heavens",
-      "Ethereal Dagger",
-      "Spirit of Protector",
-      "Bloodseeker Plates",
-      "Ring of Divine Winds",
-      "Chaos Pickaxe",
-      "Harmonia, the Sparkle of Life",
+      "Brave Heart",
+      "Divine Slayer",
+      "Lightbringer",
+      "Spirit Flame",
       "Endless Snow",
+      "Exitium, the Armor of Ruin",
       "Crescendo of Madness",
       "Crown of Cleansing",
-      "Ring of Desolate Soul",
       "Visage of Vengeance",
-      "Divine Slayer",
-      "Exitium, the Armor of Ruin",
+      "Ring of Desolate Soul",
       "Crimson Curse",
       "Ring of Eternity",
       "Wings of Sacred Provenance",
-      "Spirit Flame",
-      "Lightbringer"
+      "Chaos Pickaxe"
     ]
   },
   {
@@ -8648,7 +8716,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0JS",
@@ -8665,21 +8734,21 @@
     "level": 100,
     "droprate": 0.006,
     "required_by": [
-      "Ring of Revival",
-      "Robe of Archlich",
-      "Felspike Armor",
       "Eternal Flame",
-      "Bag of Despair",
-      "Wings of Flame Lord",
-      "Crown of Great Rage",
-      "Thanatos, the Robe of Hell",
       "Armageddon",
-      "Wings of Immortal",
       "Harmonia, the Sparkle of Life",
+      "Bag of Despair",
+      "Felspike Armor",
+      "Robe of Archlich",
+      "Thanatos, the Robe of Hell",
+      "Crown of Great Rage",
+      "Ring of Revival",
+      "Wings of Flame Lord",
+      "Wings of Immortal",
       "Heartrender",
+      "Sanguis, the Robe of Sacrifice",
       "Crown of Cleansing",
       "Star of Apotheosis",
-      "Sanguis, the Robe of Sacrifice",
       "Wings of Sacred Provenance"
     ],
     "stats": {
@@ -8710,21 +8779,21 @@
     "color": "FFFFFF",
     "droprate": 0.008,
     "required_by": [
-      "Eye of the Flame Lord",
-      "Protection of the Fairies",
-      "Archangel Wings",
-      "Brave Heart",
-      "Ring of Insanity",
-      "Wings of Flame Lord",
       "Harmony of Sky and Earth",
+      "Voidshard Armor",
       "Nevedium, the Armor of Demonblood",
-      "Mask of Demigod",
-      "Thanatos, the Robe of Hell",
       "Jupiter, the Robe of Heavens",
+      "Thanatos, the Robe of Hell",
+      "Mask of Demigod",
+      "Eye of the Flame Lord",
       "Prophetia, the Origin of Knowledge",
+      "Ring of Insanity",
       "Ring of Frozen Soul",
       "Mark of Sin",
-      "Voidshard Armor",
+      "Wings of Flame Lord",
+      "Archangel Wings",
+      "Protection of the Fairies",
+      "Brave Heart",
       "Caedis, the Sword of Slaughter",
       "Endless Snow",
       "Heirloom of Lazarus"
@@ -8743,32 +8812,31 @@
     "color": "FFFFFF",
     "droprate": 0.008,
     "required_by": [
-      "Atricia, the Sword of Dreams",
-      "Staff of Plague",
-      "Crimson Hatred",
-      "Eye of the Flame Lord",
-      "Cosmic Star",
-      "Ring of Fate",
-      "Bag of Universe",
-      "Soul of Abyss",
-      "Cosmic Reaper",
+      "Heaven's Door",
       "Eternal Winter",
-      "Maw of Beriel",
+      "Cosmic Reaper",
+      "Astra, the Sword of Moonlight",
       "Calamity",
+      "Atricia, the Sword of Dreams",
+      "Maw of Beriel",
       "Soulbane",
       "Last Word",
+      "Cosmic Star",
+      "Crimson Hatred",
+      "Staff of Plague",
+      "Soul of Abyss",
       "Ethenos, the True Staff of Space",
-      "Heaven's Door",
+      "Bag of Universe",
+      "Vest of Divine Winds",
+      "Horn of Demon God",
+      "Ring of Fate",
+      "Ring of the One",
       "Cape of Deep Abyss",
       "Soul Devourer",
-      "Horn of Demon God",
-      "Vest of Divine Winds",
-      "Astra, the Sword of Moonlight",
-      "Ring of the One",
       "Spear of Judgment",
       "Fulminata, the Bringer of Storms",
-      "Bloodstorm",
-      "Akhelius, the Staff of Duality"
+      "Akhelius, the Staff of Duality",
+      "Bloodstorm"
     ]
   },
   {
@@ -8812,7 +8880,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0LX",
@@ -8829,19 +8898,19 @@
     "level": 100,
     "droprate": 0.006,
     "required_by": [
-      "Ring of Fate",
+      "Heaven's Door",
       "Eternal Flame",
       "Rainmaker",
-      "Wings of Frost Lord",
       "Jupiter, the Robe of Heavens",
-      "Heaven's Door",
-      "Wings of Immortal",
       "Prophetia, the Origin of Knowledge",
+      "Ring of Fate",
       "Ring of Frozen Soul",
+      "Wings of Frost Lord",
+      "Wings of Immortal",
       "Endless Snow",
+      "Soul Torch",
       "Heirloom of Lazarus",
       "Crimson Curse",
-      "Soul Torch",
       "Wings of the Void"
     ],
     "stats": {
@@ -8867,33 +8936,33 @@
     "color": "FFFFFF",
     "droprate": 0.008,
     "required_by": [
-      "Robe of Archlich",
-      "Brave Heart",
-      "Athanasia, the Armor of the Reaper",
-      "Felspike Armor",
-      "Wings of Frost Lord",
-      "Eye of the Reaper",
       "Harmony of Sky and Earth",
-      "Nevedium, the Armor of Demonblood",
-      "Wings of Night Lord",
-      "Mask of Demigod",
-      "Thanatos, the Robe of Hell",
-      "Jupiter, the Robe of Heavens",
-      "Spirit of Protector",
-      "Bloodseeker Plates",
-      "Prophetia, the Origin of Knowledge",
-      "Horn of Demon God",
-      "Vest of Divine Winds",
+      "Felspike Armor",
       "Voidshard Armor",
+      "Nevedium, the Armor of Demonblood",
+      "Athanasia, the Armor of the Reaper",
+      "Vest of Divine Winds",
+      "Robe of Archlich",
+      "Jupiter, the Robe of Heavens",
+      "Thanatos, the Robe of Hell",
+      "Bloodseeker Plates",
+      "Spirit of Protector",
+      "Eye of the Reaper",
+      "Mask of Demigod",
+      "Horn of Demon God",
+      "Prophetia, the Origin of Knowledge",
+      "Wings of Frost Lord",
+      "Wings of Night Lord",
+      "Brave Heart",
       "Caedis, the Sword of Slaughter",
+      "Divine Slayer",
       "Agnitus, the Bow of Divine Fury",
       "Endless Snow",
       "Crescendo of Madness",
-      "Cape of Insatiable Hunger",
       "Visage of Vengeance",
-      "Divine Slayer",
       "Seal of Corruption",
-      "Heart of Life"
+      "Heart of Life",
+      "Cape of Insatiable Hunger"
     ]
   },
   {
@@ -8909,37 +8978,37 @@
     "color": "FFFFFF",
     "droprate": 0.008,
     "required_by": [
-      "Ring of Fate",
-      "Bag of Universe",
+      "Chaos Dagger",
+      "Astra, the Sword of Moonlight",
+      "Calamity",
+      "Atricia, the True Sword of Dreams",
+      "Power of Beriel",
+      "Chrono Chaser",
+      "Last Word",
       "Soul of Abyss",
+      "Bag of Demise",
+      "Bag of Universe",
+      "Crown of Absolute Zero",
       "Ring of Hope",
       "Ring of Despair",
+      "Ring of Fate",
       "Ring of Insanity",
-      "Ruler of the Skies",
-      "Crown of Absolute Zero",
-      "Power of Beriel",
-      "Calamity",
-      "Last Word",
-      "Bag of Demise",
-      "Chrono Chaser",
-      "Chaos Dagger",
-      "Cape of Deep Abyss",
-      "Soul Devourer",
-      "Demonic Fist",
-      "Astra, the Sword of Moonlight",
       "Ring of Frozen Soul",
       "Ring of the One",
+      "Demonic Fist",
+      "Ruler of the Skies",
+      "Cape of Deep Abyss",
+      "Soul Devourer",
       "Spear of Judgment",
+      "Abyss Fall",
       "Fulminata, the Bringer of Storms",
+      "Akhelius, the Staff of Duality",
       "Cage of Twisted Souls",
       "Plates of Sanguine Fury",
       "Star of Apotheosis",
       "Bloodstorm",
       "Guardian Angel",
-      "Abyss Fall",
-      "Atricia, the True Sword of Dreams",
-      "Wings of Cosmos",
-      "Akhelius, the Staff of Duality"
+      "Wings of Cosmos"
     ]
   },
   {
@@ -8983,7 +9052,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I0O3",
@@ -9003,20 +9073,21 @@
       "Bag of Despair",
       "Nevedium, the Armor of Demonblood",
       "Bloodseeker Plates",
+      "Demonic Fist",
       "Wings of Immortal",
       "Soul Devourer",
-      "Demonic Fist",
+      "Aeon Sphere",
       "Fulminata, the Bringer of Storms",
       "Endless Snow",
       "Cage of Twisted Souls",
-      "Crown of Cleansing",
-      "Cape of Insatiable Hunger",
       "Exitium, the Armor of Ruin",
-      "Ring of Eternity",
-      "Wings of Cosmos",
+      "Crown of Cleansing",
       "Crown of Cataclysm",
       "Diabolic Mask",
-      "Prophetia, the Forbidden Truth"
+      "Prophetia, the Forbidden Truth",
+      "Ring of Eternity",
+      "Cape of Insatiable Hunger",
+      "Wings of Cosmos"
     ],
     "stats": {
       "mainstat": 405,
@@ -9045,32 +9116,31 @@
     "color": "FFFFFF",
     "droprate": 0.0066,
     "required_by": [
-      "Ring of Hope",
-      "Ring of Despair",
-      "Chaos",
-      "Ethenos, the Staff of Chaos",
-      "Eternal Winter",
-      "Soulbane",
-      "Last Word",
-      "Harmony of Sky and Earth",
-      "Chrono Chaser",
-      "Jupiter, the Robe of Heavens",
       "Heaven's Door",
       "Chaos Dagger",
+      "Eternal Winter",
+      "Chaos",
+      "Espishu, the Sword of Chaos",
+      "Astra, the Sword of Moonlight",
+      "Atricia, the True Sword of Dreams",
+      "Soulbane",
+      "Chrono Chaser",
+      "Last Word",
+      "Ethenos, the Staff of Chaos",
+      "Harmony of Sky and Earth",
+      "Vest of Divine Winds",
+      "Jupiter, the Robe of Heavens",
+      "Ring of Divine Winds",
+      "Ring of Hope",
+      "Ring of Despair",
       "Wings of Immortal",
       "Soul Devourer",
-      "Ring of Divine Winds",
-      "Vest of Divine Winds",
-      "Astra, the Sword of Moonlight",
       "Heartrender",
       "Caedis, the Sword of Slaughter",
       "Fulminata, the Bringer of Storms",
-      "Star of Apotheosis",
-      "Atricia, the True Sword of Dreams",
-      "Wings of Sacred Provenance",
       "Crescendo of Madness",
-      "Bloodstorm",
-      "Espishu, the Sword of Chaos"
+      "Star of Apotheosis",
+      "Wings of Sacred Provenance"
     ]
   },
   {
@@ -9086,30 +9156,27 @@
     "color": "FFFFFF",
     "droprate": 0.0066,
     "required_by": [
-      "Hood of Apocalypse",
-      "Power of Beriel",
       "Calamity",
+      "Power of Beriel",
+      "Armageddon",
+      "Bag of Demise",
+      "Voidshard Armor",
+      "Vest of Divine Winds",
+      "Thanatos, the Robe of Hell",
       "Eye of the Reaper",
       "Crown of Extreme Anger",
-      "Bag of Demise",
-      "Thanatos, the Robe of Hell",
-      "Armageddon",
-      "Cape of Deep Abyss",
+      "Hood of Apocalypse",
       "Demonic Fist",
-      "Vest of Divine Winds",
       "Seed of Malice",
-      "Voidshard Armor",
+      "Cape of Deep Abyss",
       "Agnitus, the Bow of Divine Fury",
-      "Cape of Insatiable Hunger",
-      "Sanguis, the Robe of Sacrifice",
-      "Abyss Fall",
-      "Crescendo of Madness",
-      "Titan's Plates",
-      "Heart of Life",
-      "Horn of Dragon",
       "Spirit Flame",
-      "Horn of Demon God",
-      "Crown of Absolute Zero"
+      "Abyss Fall",
+      "Sanguis, the Robe of Sacrifice",
+      "Titan's Plates",
+      "Horn of Dragon",
+      "Heart of Life",
+      "Cape of Insatiable Hunger"
     ]
   },
   {
@@ -9125,27 +9192,27 @@
     "color": "FFFFFF",
     "droprate": 0.0066,
     "required_by": [
+      "Voidshard Armor",
+      "Nevedium, the Armor of Demonblood",
+      "Spirit of Protector",
+      "Mask of Demigod",
       "Radiance of the One",
       "Crown of Absolute Zero",
+      "Horn of Demon God",
+      "Prophetia, the Origin of Knowledge",
+      "Ring of Frozen Soul",
       "Wings of Flame Lord",
       "Wings of Frost Lord",
-      "Nevedium, the Armor of Demonblood",
       "Wings of Night Lord",
-      "Mask of Demigod",
-      "Spirit of Protector",
-      "Prophetia, the Origin of Knowledge",
-      "Horn of Demon God",
-      "Ring of Frozen Soul",
-      "Voidshard Armor",
       "Spear of Judgment",
-      "Plates of Sanguine Fury",
-      "Heirloom of Lazarus",
-      "Guardian Angel",
       "Divine Slayer",
-      "Seal of Corruption",
       "Gate of Abyss",
+      "Plates of Sanguine Fury",
       "Crown of Transcendance",
+      "Heirloom of Lazarus",
+      "Seal of Corruption",
       "Bloodstorm",
+      "Guardian Angel",
       "Wings of the Void"
     ]
   },
@@ -9185,7 +9252,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.00005
+    "droprate": 0.00005,
+    "required_by": []
   },
   {
     "id": "I014",
@@ -9202,20 +9270,20 @@
     "level": 100,
     "droprate": 0.007,
     "required_by": [
+      "Bag of All Evils",
       "Heartrender",
-      "Plates of Sanguine Fury",
-      "Crown of Cleansing",
-      "Guardian Angel",
       "Abyss Fall",
+      "Akhelius, the Staff of Duality",
+      "Plates of Sanguine Fury",
       "Titan's Plates",
+      "Crown of Cleansing",
+      "Crown of Cataclysm",
       "Crimson Curse",
       "Seal of Corruption",
-      "Akhelius, the Staff of Duality",
-      "Crown of Cataclysm",
+      "Divine Rose",
       "Thread of Life",
-      "Bag of All Evils",
       "Soulstorm",
-      "Divine Rose"
+      "Soul Rift"
     ],
     "recipe": [
       {
@@ -9250,27 +9318,28 @@
     "droprate": 0.01,
     "required_by": [
       "Caedis, the Sword of Slaughter",
-      "Endless Snow",
-      "Cage of Twisted Souls",
-      "Bloodstorm",
-      "Guardian Angel",
-      "Heartrender",
-      "Abyss Fall",
-      "Ring of Desolate Soul",
-      "Visage of Vengeance",
       "Atricia, the Sword of Nightmares",
-      "Exitium, the Armor of Ruin",
-      "Wings of Sacred Provenance",
+      "Duskblade",
+      "Espishu, the True Sword of Chaos",
+      "Spirit Flame",
+      "Abyss Fall",
+      "Endless Snow",
       "Gate of Abyss",
       "Akhelius, the Staff of Duality",
-      "Spirit Flame",
-      "Blood Devourer",
-      "Call of Gehenna",
-      "Duskblade",
       "Prelude to Demise",
+      "Cage of Twisted Souls",
+      "Exitium, the Armor of Ruin",
+      "Call of Gehenna",
+      "Visage of Vengeance",
       "Harvester's Mask",
-      "Espishu, the True Sword of Chaos",
-      "Eye of the Blood God"
+      "Eye of the Blood God",
+      "Bloodstorm",
+      "Guardian Angel",
+      "Wings of Sacred Provenance",
+      "Blood Devourer",
+      "Bag of Sentience",
+      "Herald of the Void",
+      "Frostmoon Crown"
     ],
     "recipe": [
       {
@@ -9292,28 +9361,27 @@
     "droprate": 0.01,
     "required_by": [
       "Spear of Judgment",
-      "Agnitus, the Bow of Divine Fury",
-      "Fulminata, the Bringer of Storms",
-      "Crescendo of Madness",
-      "Star of Apotheosis",
-      "Heirloom of Lazarus",
-      "Cape of Insatiable Hunger",
-      "Sanguis, the Robe of Sacrifice",
-      "Plates of Sanguine Fury",
-      "Heartrender",
       "Atricia, the Sword of Nightmares",
-      "Ring of Eternity",
-      "Heart of Life",
-      "Wings of Cosmos",
-      "Crown of Transcendance",
-      "Ring of Malevolence",
-      "Astral Fury",
-      "Wings of Sacred Provenance",
       "Lightbringer",
       "Blazing Sun",
+      "Agnitus, the Bow of Divine Fury",
+      "Divine Vein",
+      "Fulminata, the Bringer of Storms",
       "Soul Torch",
+      "Sanguis, the Robe of Sacrifice",
+      "Astral Fury",
       "Divine Aegis",
-      "Divine Vein"
+      "Crescendo of Madness",
+      "Crown of Transcendance",
+      "Star of Apotheosis",
+      "Heirloom of Lazarus",
+      "Ring of Eternity",
+      "Heart of Life",
+      "Ring of Malevolence",
+      "Cape of Insatiable Hunger",
+      "Wings of Cosmos",
+      "Plates of Dawn",
+      "Righteous Flame"
     ],
     "recipe": [
       {
@@ -9335,25 +9403,30 @@
     "droprate": 0.01,
     "required_by": [
       "Heartrender",
-      "Cage of Twisted Souls",
-      "Plates of Sanguine Fury",
-      "Crown of Cleansing",
-      "Star of Apotheosis",
-      "Guardian Angel",
-      "Sanguis, the Robe of Sacrifice",
-      "Ring of Desolate Soul",
+      "Aeon Sphere",
       "Divine Slayer",
       "Final Omen",
-      "Seal of Corruption",
-      "Frost Herald's Garment",
-      "Horn of Dragon",
-      "Bell of Divinity",
-      "Living Flame",
       "Soul Chaser",
-      "Exitium, the Armor of Ruin",
+      "Cage of Twisted Souls",
+      "Plates of Sanguine Fury",
+      "Sanguis, the Robe of Sacrifice",
+      "Frost Herald's Garment",
+      "Dread Incarnate",
       "Arch Druid Robe",
+      "Crown of Cleansing",
+      "Horn of Dragon",
+      "Star of Apotheosis",
+      "Ring of Desolate Soul",
+      "Seal of Corruption",
+      "Bell of Divinity",
+      "Soul Fist",
+      "Divine Rose",
+      "Guardian Angel",
+      "Living Flame",
       "Soul Breath",
-      "Divine Rose"
+      "Guardian of Sky and Earth",
+      "Eye of Truth",
+      "Madness of Old Gods"
     ],
     "recipe": [
       {
@@ -9391,7 +9464,8 @@
     "grade": 0,
     "type": "Token",
     "color": "DAA520",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "I01Z",
@@ -9409,16 +9483,21 @@
     "droprate": 0.006,
     "required_by": [
       "Titan's Plates",
+      "Astral Fury",
+      "Crown of Cataclysm",
+      "Keeper of the Grove",
+      "Ring of Noble Soul",
+      "Divine Rose",
       "Wings of Cosmos",
       "Wings of Sacred Provenance",
-      "Crown of Cataclysm",
       "Thread of Life",
-      "Keeper of the Grove",
-      "Astral Fury",
       "Living Flame",
       "Soul Breath",
-      "Ring of Noble Soul",
-      "Divine Rose"
+      "Bag of Sentience",
+      "Soul Rift",
+      "Animus, the Robe of Souls",
+      "Herald of the Void",
+      "Eye of Truth"
     ],
     "recipe": [
       {
@@ -9449,27 +9528,31 @@
     "color": "733CBE",
     "droprate": 0.008,
     "required_by": [
+      "Bag of All Evils",
+      "Aeon Sphere",
+      "Blazing Sun",
+      "Duskblade",
+      "Espishu, the True Sword of Chaos",
+      "Spirit Flame",
       "Final Omen",
-      "Ring of Eternity",
-      "Wings of Cosmos",
-      "Wings of Sacred Provenance",
-      "Horn of Dragon",
+      "Soul Chaser",
       "Gate of Abyss",
       "Akhelius, the Staff of Duality",
-      "Spirit Flame",
       "Prelude to Demise",
-      "Keeper of the Grove",
-      "Call of Gehenna",
-      "Soul Chaser",
-      "Bag of All Evils",
-      "Duskblade",
-      "Blazing Sun",
       "Soul Torch",
+      "Horn of Dragon",
+      "Keeper of the Grove",
+      "Ring of Eternity",
       "Ring of Genesis",
-      "Soulstorm",
+      "Wings of Cosmos",
+      "Wings of Sacred Provenance",
       "Living Flame",
-      "Espishu, the True Sword of Chaos",
-      "Embrace of Death"
+      "Soulstorm",
+      "Embrace of Death",
+      "Crimson Whisper",
+      "Heaven's Fall",
+      "Illumination",
+      "Exsolus, the Armor of the Absolute"
     ],
     "recipe": [
       {
@@ -9490,24 +9573,27 @@
     "color": "733CBE",
     "droprate": 0.008,
     "required_by": [
+      "Lightbringer",
+      "Divine Vein",
       "Titan's Plates",
-      "Heart of Life",
       "Frost Herald's Garment",
-      "Seal of Corruption",
-      "Horn of Dragon",
-      "Crown of Transcendance",
       "Call of Gehenna",
-      "Ring of Malevolence",
-      "Keeper of the Grove",
+      "Divine Aegis",
+      "Arch Druid Robe",
+      "Crown of Transcendance",
       "Diabolic Mask",
       "Prophetia, the Forbidden Truth",
-      "Lightbringer",
-      "Divine Aegis",
-      "Wings of the Void",
-      "Arch Druid Robe",
-      "Ring of Genesis",
+      "Seal of Corruption",
+      "Heart of Life",
+      "Ring of Malevolence",
       "Ring of Noble Soul",
-      "Divine Vein"
+      "Wings of the Void",
+      "Heart of Lion",
+      "Ordius, the Divine Lance",
+      "Primal Shard",
+      "Guardian of Sky and Earth",
+      "Plates of Divine Blood",
+      "Codex of Light"
     ],
     "recipe": [
       {
@@ -9528,24 +9614,30 @@
     "color": "733CBE",
     "droprate": 0.008,
     "required_by": [
-      "Atricia, the Sword of Nightmares",
-      "Final Omen",
-      "Exitium, the Armor of Ruin",
-      "Crimson Curse",
-      "Frost Herald's Garment",
-      "Spirit Flame",
-      "Bell of Divinity",
-      "Dread Incarnate",
-      "Blood Devourer",
       "Aeon Sphere",
-      "Soul Chaser",
+      "Atricia, the Sword of Nightmares",
       "Duskblade",
       "World Sunderer",
+      "Spirit Flame",
+      "Final Omen",
+      "Soul Chaser",
+      "Exitium, the Armor of Ruin",
+      "Frost Herald's Garment",
+      "Dread Incarnate",
       "Harvester's Mask",
       "Echoes of the Void",
-      "Soul Breath",
       "Eye of Annihilation",
-      "Eye of the Blood God"
+      "Eye of the Blood God",
+      "Crimson Curse",
+      "Bell of Divinity",
+      "Soul Fist",
+      "Blood Devourer",
+      "Soul Breath",
+      "Soulrender",
+      "Cage of Shadow Fiend",
+      "Celestial Crown",
+      "Madness of Old Gods",
+      "Celestial Wind"
     ],
     "recipe": [
       {
@@ -9583,7 +9675,8 @@
     "grade": 0,
     "type": "Token",
     "color": "733CBE",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "I095",
@@ -9600,16 +9693,24 @@
     "level": 100,
     "droprate": 0.005,
     "required_by": [
-      "Call of Gehenna",
-      "Keeper of the Grove",
-      "Thread of Life",
-      "Dread Incarnate",
       "Lightbringer",
+      "Divine Vein",
+      "Call of Gehenna",
+      "Dread Incarnate",
+      "Keeper of the Grove",
       "Harvester's Mask",
       "Eye of Annihilation",
+      "Eye of the Blood God",
       "Ring of Noble Soul",
-      "Divine Vein",
-      "Eye of the Blood God"
+      "Thread of Life",
+      "Apocalypse Prime",
+      "Bag of Sentience",
+      "Illumination",
+      "Soul Rift",
+      "Plates of Divine Blood",
+      "Eye of Truth",
+      "Frostmoon Crown",
+      "Codex of Light"
     ],
     "recipe": [
       {
@@ -9639,22 +9740,30 @@
     "color": "733CBE",
     "droprate": 0.006,
     "required_by": [
-      "Thread of Life",
-      "Ring of Malevolence",
-      "Blood Devourer",
-      "Shadow Waltz",
-      "Astral Fury",
       "Bag of All Evils",
-      "Diabolic Mask",
-      "Chains of Torment",
+      "Aeon Sphere",
+      "Shadow Waltz",
+      "Blazing Sun",
       "World Sunderer",
       "Prelude to Demise",
-      "Blazing Sun",
+      "Astral Fury",
       "Divine Aegis",
+      "Diabolic Mask",
+      "Ring of Malevolence",
       "Ring of Genesis",
-      "Soulstorm",
+      "Chains of Torment",
+      "Divine Rose",
+      "Thread of Life",
+      "Blood Devourer",
       "Soul Breath",
-      "Divine Rose"
+      "Soulstorm",
+      "Heart of Lion",
+      "Primal Shard",
+      "Animus, the Robe of Souls",
+      "Exsolus, the Armor of the Absolute",
+      "Plates of Dawn",
+      "Celestial Crown",
+      "Madness of Old Gods"
     ],
     "recipe": [
       {
@@ -9675,23 +9784,29 @@
     "color": "733CBE",
     "droprate": 0.006,
     "required_by": [
-      "Bell of Divinity",
-      "Dread Incarnate",
-      "Prelude to Demise",
-      "Aeon Sphere",
-      "Living Flame",
-      "Call of Gehenna",
-      "Astral Fury",
-      "Soul Chaser",
       "Bag of All Evils",
       "Duskblade",
-      "Prophetia, the Forbidden Truth",
+      "Soul Chaser",
+      "Prelude to Demise",
       "Soul Torch",
-      "Soulstorm",
-      "Wings of the Void",
+      "Call of Gehenna",
+      "Dread Incarnate",
+      "Astral Fury",
       "Arch Druid Robe",
       "Echoes of the Void",
-      "Embrace of Death"
+      "Prophetia, the Forbidden Truth",
+      "Bell of Divinity",
+      "Soul Fist",
+      "Living Flame",
+      "Wings of the Void",
+      "Embrace of Death",
+      "Crimson Whisper",
+      "Heaven's Fall",
+      "Soulrender",
+      "Cage of Shadow Fiend",
+      "Herald of the Void",
+      "Eye of Truth",
+      "Righteous Flame"
     ],
     "recipe": [
       {
@@ -9728,7 +9843,8 @@
     "grade": 0,
     "type": "Token",
     "color": "733CBE",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "rlif",
@@ -9746,9 +9862,18 @@
     "droprate": 0.004,
     "required_by": [
       "Lightbringer",
-      "World Sunderer",
       "Duskblade",
-      "Prelude to Demise"
+      "World Sunderer",
+      "Prelude to Demise",
+      "Apocalypse Prime",
+      "Crimson Whisper",
+      "Heart of Lion",
+      "Heaven's Fall",
+      "Ordius, the Divine Lance",
+      "Primal Shard",
+      "Soul Rift",
+      "Soulrender",
+      "Madness of Old Gods"
     ],
     "recipe": [
       {
@@ -9789,12 +9914,17 @@
       "Shadow Waltz",
       "Diabolic Mask",
       "Prophetia, the Forbidden Truth",
-      "Soul Fist",
-      "Chains of Torment",
       "Eye of Annihilation",
-      "Ring of Noble Soul",
       "Eye of the Blood God",
-      "Embrace of Death"
+      "Chains of Torment",
+      "Soul Fist",
+      "Ring of Noble Soul",
+      "Embrace of Death",
+      "Apocalypse Prime",
+      "Crimson Whisper",
+      "Herald of the Void",
+      "Celestial Crown",
+      "Frostmoon Crown"
     ],
     "recipe": [
       {
@@ -9816,13 +9946,20 @@
     "droprate": 0.006,
     "required_by": [
       "Blazing Sun",
+      "Divine Vein",
       "Soul Torch",
       "Divine Aegis",
       "Ring of Genesis",
-      "Soulstorm",
+      "Divine Rose",
       "Wings of the Void",
-      "Divine Vein",
-      "Divine Rose"
+      "Soulstorm",
+      "Primal Shard",
+      "Soulrender",
+      "Animus, the Robe of Souls",
+      "Cage of Shadow Fiend",
+      "Exsolus, the Armor of the Absolute",
+      "Celestial Crown",
+      "Righteous Flame"
     ],
     "recipe": [
       {
@@ -9845,14 +9982,21 @@
     "required_by": [
       "Aeon Sphere",
       "Shadow Waltz",
+      "Divine Vein",
       "Arch Druid Robe",
       "Harvester's Mask",
       "Echoes of the Void",
       "Living Flame",
       "Soul Breath",
-      "Ring of Noble Soul",
-      "Divine Vein",
-      "Embrace of Death"
+      "Bag of Sentience",
+      "Heart of Lion",
+      "Illumination",
+      "Guardian of Sky and Earth",
+      "Plates of Dawn",
+      "Plates of Divine Blood",
+      "Eye of Truth",
+      "Celestial Wind",
+      "Codex of Light"
     ],
     "recipe": [
       {
@@ -9890,7 +10034,8 @@
     "grade": 0,
     "type": "Token",
     "color": "733CBE",
-    "droprate": 0.0001
+    "droprate": 0.0001,
+    "required_by": []
   },
   {
     "id": "I0IZ",
@@ -9908,7 +10053,8 @@
       {
         "Chaos Magic Stone": 3
       }
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "I0JQ",
@@ -9926,7 +10072,8 @@
       {
         "Chaos Magic Stone": 3
       }
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "I0LS",
@@ -9944,7 +10091,8 @@
       {
         "Chaos Magic Stone": 3
       }
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "gldo",
@@ -9970,7 +10118,8 @@
       {
         "White Crystal Golem Token": 1
       }
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "I00U",
@@ -9998,7 +10147,8 @@
         "Stuns non-boss units for 2 seconds",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0Q2",
@@ -10024,7 +10174,8 @@
       "active": [
         "On attack, restores 10 HP"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00C",
@@ -10047,7 +10198,8 @@
       "damage": 130,
       "mainstat": 15,
       "attackspeedpercent": 0.15
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01D",
@@ -10071,7 +10223,8 @@
       "allstat": 15,
       "hpregen": 5,
       "mpregen": 5
-    }
+    },
+    "required_by": []
   },
   {
     "id": "tbsm",
@@ -10161,7 +10314,8 @@
       "active": [
         "On use, summons a portal that connects to Alfon Village"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "wlsd",
@@ -10675,9 +10829,7 @@
     "type": "Weapon (Melee)",
     "color": "C39BE1",
     "level": 80,
-    "required_by": [
-      "Asmodeus, the Archdevil's Greatsword"
-    ],
+    "required_by": [],
     "recipe": [
       {
         "Eximelia, the Unholy Sword": 1
@@ -11185,8 +11337,8 @@
     "color": "C39BE1",
     "level": 70,
     "required_by": [
-      "Hydro Buster",
-      "Devil Blaster"
+      "Devil Blaster",
+      "Hydro Buster"
     ],
     "recipe": [
       {
@@ -11902,7 +12054,6 @@
     "color": "C39BE1",
     "level": 80,
     "required_by": [
-      "Demonis, the Devil Lord's Ring",
       "Ring of Deep Darkness"
     ],
     "recipe": [
@@ -12172,7 +12323,8 @@
     "color": "9BE1E1",
     "level": 100,
     "required_by": [
-      "Splitting of the Sky and Earth"
+      "Splitting of the Sky and Earth",
+      "Ordius, the Divine Lance"
     ],
     "recipe": [
       {
@@ -13927,8 +14079,8 @@
     "color": "9BE1E1",
     "level": 100,
     "required_by": [
-      "Frostshard Armor",
-      "Purefrost Gauntlet"
+      "Purefrost Gauntlet",
+      "Frostshard Armor"
     ],
     "recipe": [
       {
@@ -14138,8 +14290,8 @@
     "level": 100,
     "required_by": [
       "Crimson Star",
-      "Ring of Revival",
-      "Wings of Blood Lord"
+      "Wings of Blood Lord",
+      "Ring of Revival"
     ],
     "recipe": [
       {
@@ -14210,8 +14362,8 @@
     "color": "9BE1E1",
     "level": 100,
     "required_by": [
-      "Heaven's Fist",
-      "Wings of Phoenix"
+      "Wings of Phoenix",
+      "Heaven's Fist"
     ],
     "recipe": [
       {
@@ -16156,8 +16308,8 @@
     "color": "DC143C",
     "level": 100,
     "required_by": [
-      "Last Word",
-      "Chrono Chaser"
+      "Chrono Chaser",
+      "Last Word"
     ],
     "recipe": [
       {
@@ -17157,7 +17309,8 @@
     "color": "DC143C",
     "level": 100,
     "required_by": [
-      "Mask of Demigod"
+      "Mask of Demigod",
+      "Madness of Old Gods"
     ],
     "recipe": [
       {
@@ -17325,7 +17478,8 @@
     "color": "DC143C",
     "level": 100,
     "required_by": [
-      "Crown of Absolute Zero"
+      "Crown of Absolute Zero",
+      "Celestial Crown"
     ],
     "recipe": [
       {
@@ -17701,8 +17855,8 @@
     "color": "DC143C",
     "level": 100,
     "required_by": [
-      "Ring of Fate",
-      "Ring of Divine Winds"
+      "Ring of Divine Winds",
+      "Ring of Fate"
     ],
     "recipe": [
       {
@@ -18206,8 +18360,8 @@
     "color": "DC143C",
     "level": 100,
     "required_by": [
-      "Brave Heart",
-      "Cape of Deep Abyss"
+      "Cape of Deep Abyss",
+      "Brave Heart"
     ],
     "recipe": [
       {
@@ -18305,7 +18459,8 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Aeon Sphere"
+      "Aeon Sphere",
+      "Heaven's Fall"
     ],
     "recipe": [
       {
@@ -18426,7 +18581,8 @@
         "On use, summons Servant of Chaos",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0N3",
@@ -18485,7 +18641,8 @@
         "Specialty - Absolute Zero",
         "Knight - Shield Break effect is added to Excalibur."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "pams",
@@ -19446,7 +19603,8 @@
         "Shooter - Twin Star: Changed to Water Bullet",
         "Shooter - Nanomachine Injection: Healing speed decreased by 50% but heal amount increased by 75% and heals all allies within 400 range"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0JY",
@@ -19735,7 +19893,8 @@
         "Stuns for 2.5 seconds",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0PA",
@@ -19794,7 +19953,10 @@
         "Elementalist - Earthen Link: Cooldown reduced by 10 seconds",
         "Alchemist - Golem's HP increased by 50%, armor is increased by 50, and is permanently affected by Sparkle of Life. Also periodically heals nearby allies."
       ]
-    }
+    },
+    "required_by": [
+      "Illumination"
+    ]
   },
   {
     "id": "I0NR",
@@ -19895,7 +20057,8 @@
         "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 12.5%",
         "Merchant - Throw Money: Changed into Devour"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0LU",
@@ -19948,7 +20111,8 @@
         "Merchant - Throwing Healing Potion: Refill period is reduced to 2 seconds, max placeable count increased by 5, and increases target's magic defense by 15%.",
         "Merchant - Life Shield Scroll: Duration increased by 5 seconds and reduces damage taken by target by 15%."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0NS",
@@ -19990,7 +20154,10 @@
         "Merchant - Throwing Healing Potion: Changed to Throw Bomb",
         "Merchant - Holy Water of Resurrection: Changed to Cursed Doll"
       ]
-    }
+    },
+    "required_by": [
+      "Soul Rift"
+    ]
   },
   {
     "id": "I0OD",
@@ -20039,7 +20206,8 @@
         "Heals (25% max HP) per second",
         "Cooldown: 90 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0NH",
@@ -20103,7 +20271,9 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Dread Incarnate"
+      "Dread Incarnate",
+      "Cage of Shadow Fiend",
+      "Plates of Dawn"
     ],
     "recipe": [
       {
@@ -20200,7 +20370,8 @@
         "Increases AGI by 20% and damage output by 5% for 12 seconds",
         "Cooldown: 90 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0NJ",
@@ -20266,7 +20437,8 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Astral Fury"
+      "Astral Fury",
+      "Codex of Light"
     ],
     "recipe": [
       {
@@ -20314,7 +20486,8 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Cage of Twisted Souls"
+      "Cage of Twisted Souls",
+      "Exsolus, the Armor of the Absolute"
     ],
     "recipe": [
       {
@@ -20560,7 +20733,8 @@
         "Heals HP and MP equal to absorbed damage",
         "Cooldown: 20 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I027",
@@ -20782,7 +20956,8 @@
         "Use again to teleport (up to 800 distance, up to 3 times)",
         "Cooldown: 40 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0NA",
@@ -20843,7 +21018,8 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Crown of Extreme Anger"
+      "Crown of Extreme Anger",
+      "Frostmoon Crown"
     ],
     "recipe": [
       {
@@ -21237,7 +21413,10 @@
         "On use, teleports to target location (up to 1200 distance)",
         "Cooldown: 25 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Celestial Wind"
+    ]
   },
   {
     "id": "I0NK",
@@ -21326,7 +21505,10 @@
         "Increases enemy damage taken by 5% for 2 seconds",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Celestial Wind"
+    ]
   },
   {
     "id": "I0LW",
@@ -21684,7 +21866,10 @@
         "Specialties - Demon's Grasp",
         "Paladin - Divine Cross' damage is increased by 20%"
       ]
-    }
+    },
+    "required_by": [
+      "Soul Fist"
+    ]
   },
   {
     "id": "I0PO",
@@ -21816,7 +22001,8 @@
         "Restores 50% of HP and MP",
         "Cooldown: 45 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0NN",
@@ -22071,7 +22257,8 @@
         "Specialty",
         "Thunderer - When Power of Skies activates, magnetic field is recharged by 33%."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OK",
@@ -22262,7 +22449,8 @@
         "Stuns nearby enemies for 1.5 seconds",
         "Cooldown: 40 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OJ",
@@ -22307,7 +22495,8 @@
         "Revives upon dying",
         "Cooldown: 180 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0OI",
@@ -22416,7 +22605,8 @@
         "If the marked target dies, the cooldown of this effect will be reset",
         "Cooldown: 20 seconds (minimum 10 seconds per cast)"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I078",
@@ -22469,7 +22659,8 @@
         "Every 17.5 seconds, a random skill will be reset on the target",
         "Cooldown: 3 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I015",
@@ -22575,7 +22766,10 @@
         "If all marks are procced, deals 300000 magic damage and stuns target for 2 seconds",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Heart of Lion"
+    ]
   },
   {
     "id": "I0GS",
@@ -22669,7 +22863,8 @@
         "Becomes immune to damage and CC for 3 seconds",
         "Cooldown: 75 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I07F",
@@ -22713,7 +22908,8 @@
         "While not on cooldown, gains 1 stack every 5 seconds (up to 4 stacks)",
         "Cooldown: 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BD",
@@ -22762,7 +22958,8 @@
         "Per sword, Stuns for 1.5s and increases next skill damage against target by 25%",
         "1 sword is charged every 15s, 3 swords on ultimate"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I020",
@@ -22811,7 +23008,8 @@
         "Deals STR X (40 + 4 X stack) magic damage in 800 radius",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01O",
@@ -22853,7 +23051,8 @@
         "Deals (90000 + AGI X 30) magic damage to target and takes 10% bonus skill damage for 4 seconds",
         "Cooldown: 12 seconds, reduced by 1 second on each skill crit"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A5",
@@ -22902,7 +23101,8 @@
         "Specialty - Darkened Light",
         "Paladin - Holy Divide deals 50% more damage."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01K",
@@ -22992,7 +23192,10 @@
         "Specialty - Arrow of Judgment",
         "Sniper - Storm Shaft's max stack is increased by 3"
       ]
-    }
+    },
+    "required_by": [
+      "Crimson Whisper"
+    ]
   },
   {
     "id": "I0AW",
@@ -23037,7 +23240,8 @@
         "Accumulates Heat while in combat",
         "Every 4 seconds, increases skill damage and flame affinity by 1% (up to 15 stacks)"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01L",
@@ -23089,7 +23293,8 @@
         "Bow Master - Improved Freezing Shot: Fires an enhanced version.",
         "Sniper - Divine Arrow: Snipe's damage is increased by 30% and cooldown is reduced by 50%."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BG",
@@ -23146,7 +23351,10 @@
         "Shooter - Twin Star: Heals allies hit for (INT X 0.5 + Target's Max HP X 15%)",
         "Shooter - Nanomachine Injection: Healing speed increased by 60% and duration increased by 100%; while buff is active, target is immune to debuffs"
       ]
-    }
+    },
+    "required_by": [
+      "Heaven's Fall"
+    ]
   },
   {
     "id": "I0IK",
@@ -23192,7 +23400,10 @@
         "Shooter - Casting Break Shot loads one Bullet of Omen",
         "Gunner - Casting Tumble loads one Bullet of Omen"
       ]
-    }
+    },
+    "required_by": [
+      "Apocalypse Prime"
+    ]
   },
   {
     "id": "I09K",
@@ -23239,7 +23450,8 @@
         "Empowered: Deals 25% bonus damage and increases your skill damage dealt to target by 10% for 6 seconds. Consumes all Soul Gauge and becomes unable to accumulate it for 15 seconds.",
         "Cooldown: 45 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "rwat",
@@ -23290,7 +23502,10 @@
         "Damage: INT X 7.5 X (100 + charge%), crit is guaranteed",
         "Cooldown: 15 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Ordius, the Divine Lance"
+    ]
   },
   {
     "id": "I005",
@@ -23350,7 +23565,10 @@
         "Elementalist - Water Bolt: Max target count increased by 1",
         "Elementalist - Purify: Cast cost reduced by 10"
       ]
-    }
+    },
+    "required_by": [
+      "Primal Shard"
+    ]
   },
   {
     "id": "I0BF",
@@ -23394,7 +23612,10 @@
         "Increases damage output of heroes by 10% and HP regen by (15% max HP) for 10 seconds",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Illumination"
+    ]
   },
   {
     "id": "shea",
@@ -23443,7 +23664,8 @@
         "Water spirit periodically heal target if target is missing HP, up to INT X 2.5 HP",
         "Cooldown: 75 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I079",
@@ -23492,7 +23714,8 @@
         "Breaks any shields effects",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01I",
@@ -23537,7 +23760,8 @@
         "When used, sends a spirit flame to target area to deal (INT X 20) magic damage and amplifying your skill damage against enemies hit by 10% for 4 seconds",
         "Can maintain up to 3 spirits"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00F",
@@ -23589,7 +23813,8 @@
         "Deals 200% bonus damage to non-boss units",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00G",
@@ -23645,7 +23870,8 @@
         "Blood Nova will be active for the duration with 100% increased potency",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I019",
@@ -23697,7 +23923,8 @@
         "On use, adjusts the radius of Ring of Blood",
         "3 range settings are provided: close, medium, and far (250, 600, 800)"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0CT",
@@ -23744,7 +23971,8 @@
         "Each roar deals 150% damage",
         "Cooldown: 45 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0IL",
@@ -23792,7 +24020,8 @@
         "Specialties - Bringer of Ruin",
         "Martial Artist - Nameless Arts reduces damage taken by 20% while active. Also grants immunity to instant death spell"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I018",
@@ -23845,7 +24074,8 @@
         "Specialty",
         "Water Mage - Improved Frozen Emotion: Reduces target's damage taken by 12%."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00Q",
@@ -23891,7 +24121,8 @@
         "Afterwards, drops a large Hellspear dealing (INT X 75) magic damage",
         "Cooldown: 75 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EY",
@@ -23937,7 +24168,10 @@
         "While the user is standing in the area, Dread will be set to max stacks and your skills will deal 10% bonus damage",
         "Cooldown: 75 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Plates of Divine Blood"
+    ]
   },
   {
     "id": "I09F",
@@ -23978,7 +24212,8 @@
         "On 3rd consecutive proc, increases damage dealt by skills by 5% for 4 seconds and next 3 attacks calls down comets, each dealing 12500 magic damage (can critically strike)",
         "Proc cooldown: 0.5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01S",
@@ -24020,7 +24255,8 @@
         "Prevents HP from dropping below 1",
         "Cooldown: 75 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I017",
@@ -24069,7 +24305,8 @@
         "If target is an ally, heals target for Main Stat X 2.5 and additionally heals for Main Stat X 0.3 every 2 seconds for 10 seconds",
         "1 Spirit is spawned every 5 seconds (up to 4)"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00H",
@@ -24171,7 +24408,8 @@
         "Specialty - Protector of Wind",
         "Wind Mage - Judgment: Damage increased by 7.5%."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0D7",
@@ -24304,7 +24542,10 @@
         "On reuse, sends down an inferno in target area, dealing Main Stat X 40 magic damage, increased by 2.5% for each time the proc occurred. Can only be used once per active.",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": [
+      "Righteous Flame"
+    ]
   },
   {
     "id": "I0AX",
@@ -24349,7 +24590,8 @@
         "Overrides Eclipse",
         "Cooldown: 100 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01J",
@@ -24397,7 +24639,8 @@
         "Grants 40% dr in 1000 radius around you for 10 seconds",
         "Cooldown: 90 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01U",
@@ -24438,7 +24681,8 @@
         "While active, critical hits grant 1% bonus in skill damage (up to 10%)",
         "Cooldown: 15 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01V",
@@ -24484,7 +24728,8 @@
         "While active, Diabolic Flame's cooldown is reduced to 0.4 seconds",
         "Cooldown: 60s"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I07C",
@@ -24533,7 +24778,8 @@
         "Creates a field for 3 seconds, periodically silencing enemies and regenerating allies for 10% HP",
         "Cooldown: 45s"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01Q",
@@ -24578,7 +24824,8 @@
         "Increases INT by 250 and SKD by 5% per stack for 6 seconds",
         "Consumes all stacks of Forbidden Truth, increasing stat gain by 10% per stack"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01T",
@@ -24618,7 +24865,8 @@
         "Can activate up to 2 more times within 5 seconds, dealing 25% of original damage and extending debuff by 1 second",
         "Cooldown: 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0B8",
@@ -24664,7 +24912,8 @@
         "Accumulates your healing done to the summon or the attached ally (Max Amount: Max HP x 125%).",
         "Upon max accumulation, deals (Accumulated Amount X 6) magic damage to nearby enemies (reactivation cooldown: 3 seconds)"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00J",
@@ -24764,7 +25013,8 @@
         "Specialty",
         "Knight - Improved Seal of Mana: Radius is increased by 30%."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0GR",
@@ -24847,7 +25097,8 @@
         "Consumes 75% of your current HP to activate Lunacy",
         "Cooldown: 90 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00V",
@@ -24950,7 +25201,8 @@
         "Refreshes the cooldown of the last used non-ultimate skill",
         "Grants 7% skill damage, 1000 HP and 200 MP regen, and CC immunity for 10 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0BE",
@@ -24996,7 +25248,8 @@
         "Has 2 charges",
         "Cooldown: 20 seconds (to gain a charge)"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "tstr",
@@ -25036,7 +25289,8 @@
         "Heals them for (Max HP X 50%), increases HP regen by 500, and movement speed by 75 for 5 seconds",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01H",
@@ -25076,7 +25330,8 @@
         "Activates Malevolence when damaging boss units below 50% HP",
         "Increases total damage by 10% [Type-B] for 5 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01M",
@@ -25115,7 +25370,8 @@
         "On ultimate cast, increases damage dealt by skills by 5% for 10 seconds",
         "On being damaged, 10% chance to activate Absolute Protection"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A6",
@@ -25160,7 +25416,8 @@
         "Activates Torment without MP consumption on every 3rd skill hit (up to 5 times)",
         "Cooldown: 15 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I09C",
@@ -25206,7 +25463,8 @@
         "Soul Grasp will be enabled every 2 seconds",
         "Cooldown: 10 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01X",
@@ -25251,7 +25509,8 @@
         "On expiration, deals (Damage Taken X 15) pure damage to nearby enemies (max damage: Max HP X 15) and heals for (Max HP X 50%)",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I05G",
@@ -25299,7 +25558,8 @@
         "If the shield successfully blocks damage, increases main stat by 200 for 20 seconds",
         "Cooldown: 40 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I00W",
@@ -25459,7 +25719,8 @@
         "Casting any other skills will deactivate the transformation",
         "Cooldown: 40 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EJ",
@@ -25509,7 +25770,8 @@
         "Increases MAIN STAT by 150, skill damage by 5%, and damage reduction by 25% for 6 seconds",
         "Cooldown: 45 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EI",
@@ -25562,7 +25824,8 @@
         "Lasts 12 seconds",
         "Cooldown: 90 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0A2",
@@ -25606,7 +25869,8 @@
         "Revived ally gains immunity to harmful effects for 5s",
         "Cooldown: 240 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I076",
@@ -25646,7 +25910,8 @@
         "Clears all debuffs and heals you for 40% of max HP",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EX",
@@ -25693,7 +25958,8 @@
         "Jumps and lands in target area, activating Burning Soul that inflicts 200% damage and stuns nearby enemies",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I01N",
@@ -25740,7 +26006,8 @@
         "For 8 seconds, your skills will deal 7.5% more damage",
         "Soul Fragment will spawn every second"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I07D",
@@ -25786,7 +26053,8 @@
         "Detonates any active Void Corrosion, dealing (1.15 X remaining damage) magic damage instantly",
         "Cooldown: 30 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EE",
@@ -25831,7 +26099,8 @@
         "Empowers next attack, dealing 40000 + Main Stat X 6 magic damage (lands as critical strike)",
         "Cooldown: 10 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0EV",
@@ -25872,7 +26141,8 @@
         "Increases main stat by 50 for 8 seconds (can stack up to 8 times)",
         "Upon reaching max stacks, the duration is no longer refreshed, but increases total damage by 10% for the duration of the buff"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0FU",
@@ -26683,7 +26953,8 @@
         "Requires 1 second cooldown interval for checking the proc",
         "Increases MAIN STAT by 2% for 30 seconds"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0HJ",
@@ -26708,7 +26979,8 @@
       "passive": [
         "Your night vision becomes better."
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I05X",
@@ -26785,7 +27057,8 @@
         "Mining Speed: Once every 4 seconds",
         "Can mine Giant Deposit and Chaos Deposit"
       ]
-    }
+    },
+    "required_by": []
   },
   {
     "id": "I0HN",
@@ -26797,7 +27070,8 @@
     "color": "FFFFFF",
     "notes": [
       "General Recipe: Wing + Wing Frame"
-    ]
+    ],
+    "required_by": []
   },
   {
     "id": "I0Z1",
@@ -28212,7 +28486,14 @@
       ]
     },
     "recipe": [],
-    "required_by": [],
+    "required_by": [
+      "Ordius, the Divine Lance",
+      "Soul Rift",
+      "Soulrender",
+      "Plates of Dawn",
+      "Celestial Crown",
+      "Eye of Truth"
+    ],
     "dropped_by": []
   },
   {
@@ -28382,7 +28663,15 @@
       "Lightbringer Kamael"
     ],
     "droprate": 0.006,
-    "required_by": [],
+    "required_by": [
+      "Apocalypse Prime",
+      "Heaven's Fall",
+      "Cage of Shadow Fiend",
+      "Guardian of Sky and Earth",
+      "Plates of Divine Blood",
+      "Frostmoon Crown",
+      "Madness of Old Gods"
+    ],
     "stats": {}
   },
   {
@@ -28399,7 +28688,14 @@
       "Lightbringer Kamael"
     ],
     "droprate": 0.006,
-    "required_by": [],
+    "required_by": [
+      "Bag of Sentience",
+      "Illumination",
+      "Ordius, the Divine Lance",
+      "Herald of the Void",
+      "Righteous Flame",
+      "Codex of Light"
+    ],
     "stats": {}
   },
   {
@@ -28416,7 +28712,14 @@
       "Lightbringer Kamael"
     ],
     "droprate": 0.006,
-    "required_by": [],
+    "required_by": [
+      "Crimson Whisper",
+      "Heart of Lion",
+      "Primal Shard",
+      "Animus, the Robe of Souls",
+      "Exsolus, the Armor of the Absolute",
+      "Celestial Wind"
+    ],
     "stats": {}
   }
 ]
