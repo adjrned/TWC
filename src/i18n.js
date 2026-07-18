@@ -1,7 +1,7 @@
 const STRINGS = {
   en: {
     // Nav
-    'nav.builder': 'Loadout Builder',
+    'nav.builder': 'Build Planner',
     'nav.items': 'Item Repository',
     'nav.heroes': 'Heroes',
     'nav.bosses': 'Boss Info',
@@ -14,7 +14,7 @@ const STRINGS = {
 
     // Builder
     'builder.title': 'TWRPG Loadout Builder',
-    'builder.subtitle': 'Build Planner',
+    'builder.subtitle': 'Loadout per Phase',
     'builder.import': 'Import',
     'builder.export': 'Export',
     'builder.copyJson': 'Copy JSON',
@@ -64,7 +64,7 @@ const STRINGS = {
   },
 
   ko: {
-    'nav.builder': '장비 빌더',
+    'nav.builder': '빌드 플래너',
     'nav.items': '아이템 도감',
     'nav.heroes': '영웅',
     'nav.bosses': '보스 정보',
@@ -75,8 +75,8 @@ const STRINGS = {
     'nav.bosses.short': '보스',
     'nav.awakening.short': '각성',
 
-    'builder.title': 'TWRPG 장비 빌더',
-    'builder.subtitle': '빌드 플래너',
+    'builder.title': 'TWRPG 빌드 플래너',
+    'builder.subtitle': '페이즈별 장비',
     'builder.import': '가져오기',
     'builder.export': '내보내기',
     'builder.copyJson': 'JSON 복사',
@@ -121,7 +121,7 @@ const STRINGS = {
   },
 
   zh: {
-    'nav.builder': '装备搭配',
+    'nav.builder': '构建规划',
     'nav.items': '物品图鉴',
     'nav.heroes': '英雄',
     'nav.bosses': 'Boss信息',
@@ -132,8 +132,8 @@ const STRINGS = {
     'nav.bosses.short': 'Boss',
     'nav.awakening.short': '觉醒',
 
-    'builder.title': 'TWRPG 装备搭配',
-    'builder.subtitle': '构建规划器',
+    'builder.title': 'TWRPG 构建规划',
+    'builder.subtitle': '每阶段装备',
     'builder.import': '导入',
     'builder.export': '导出',
     'builder.copyJson': '复制JSON',
