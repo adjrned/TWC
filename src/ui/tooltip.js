@@ -48,13 +48,20 @@ function formatStat(key, val) {
   return `+${val}`;
 }
 
+const TIER_COLORS = {
+  Arcana: 'var(--rarity-arcana)', Alteia: 'var(--rarity-alteia)',
+  Gnosis: 'var(--rarity-gnosis)', Neptinos: 'var(--rarity-neptinos)',
+  Deltirama: 'var(--rarity-deltirama)', Rare: 'var(--rarity-rare)', Magic: 'var(--rarity-magic)',
+};
+
 function buildStatsHtml(dbItem) {
   if (!dbItem) return '';
   const parts = [];
 
   const tierLabel = getTierLabel(dbItem);
   if (tierLabel) {
-    parts.push(`<div class="tt-tier">${tierLabel}</div>`);
+    const color = TIER_COLORS[tierLabel] || 'var(--muted2)';
+    parts.push(`<div class="tt-tier" style="color:${color}">${tierLabel}</div>`);
   }
 
   if (dbItem.stats) {
