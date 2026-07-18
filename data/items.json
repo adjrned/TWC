@@ -26752,5 +26752,80 @@
     "notes": [
       "General Recipe: Wing + Wing Frame"
     ]
+  },
+  {
+    "id": "I0Z1",
+    "name": "Welcome Cloak",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Armor",
+    "color": "733CBE",
+    "dropped_by": [
+      "Arcane Lord"
+    ],
+    "droprate": 0.0033,
+    "required_by": []
+  },
+  {
+    "id": "I0Z2",
+    "name": "Arcane Power Crystal",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "dropped_by": [
+      "Arcane Lord"
+    ],
+    "droprate": 0.005,
+    "required_by": []
+  },
+  {
+    "id": "I0Z3",
+    "name": "Forbidden Tablet",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Accessory",
+    "color": "733CBE",
+    "dropped_by": [
+      "Arcane Lord"
+    ],
+    "droprate": 0.005,
+    "required_by": []
+  },
+  {
+    "id": "I0Z4",
+    "name": "Monarch's Soulstone",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Token",
+    "color": "733CBE",
+    "dropped_by": [
+      "Arcane Lord"
+    ],
+    "droprate": 0.0015,
+    "required_by": []
+  },
+  {
+    "id": "I0Z5",
+    "name": "Sorcerer Lord's Token",
+    "koreanname": "",
+    "description": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Token",
+    "color": "733CBE",
+    "dropped_by": [
+      "Arcane Lord"
+    ],
+    "droprate": 0.0001,
+    "required_by": []
   }
 ]
