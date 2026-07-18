@@ -16,6 +16,8 @@ let searchIndex = [];
 let localizedSearchIndex = [];
 let cachedLocale = null;
 let itemDb = [];
+let itemDbMap = {};
+let iconByName = {};
 let itemsByType = {};
 let initialized = false;
 
@@ -77,11 +79,15 @@ async function initItemIcons() {
   if (initialized) return;
   itemIcons = iconLibrary.filter(icon => !isClassIcon(icon.name));
   searchIndex = itemIcons.map(icon => icon.name.toLowerCase());
+  iconByName = {};
+  itemIcons.forEach(ic => { iconByName[ic.name.toLowerCase()] = ic; });
 
   try {
     const r = await fetch('data/items.json');
     if (r.ok) {
       itemDb = await r.json();
+      itemDbMap = {};
+      itemDb.forEach(item => { itemDbMap[item.name.toLowerCase()] = item; });
       // Group items by type category
       itemsByType = { weapon: [], headwear: [], armor: [], wings: [], accessory: [], other: [] };
       itemDb.forEach(item => {
@@ -208,11 +214,10 @@ function applyFilter() {
     const results = [];
     for (let i = 0; i < idx.length; i++) {
       if (idx[i].includes(q)) {
-        const dbItem = itemDb.find(d => d.name.toLowerCase() === searchIndex[i]);
+        const dbItem = itemDbMap[searchIndex[i]] || null;
         results.push({ icon: itemIcons[i], dbItem });
       }
     }
-    // Sort search results by tier
     results.sort((a, b) => {
       const ta = a.dbItem ? tierSortValue(a.dbItem) : 99;
       const tb = b.dbItem ? tierSortValue(b.dbItem) : 99;
@@ -223,8 +228,8 @@ function applyFilter() {
     // Show category items from the database
     const catItems = getItemsForCategory(activeCategory);
     filtered = catItems.map(dbItem => {
-      const icon = itemIcons.find(ic => ic.name.toLowerCase() === dbItem.name.toLowerCase());
-      return { icon: icon || { name: dbItem.name, src: `twicons/${encodeURIComponent(dbItem.name)}.jpg` }, dbItem };
+      const icon = iconByName[dbItem.name.toLowerCase()] || { name: dbItem.name, src: `twicons/${encodeURIComponent(dbItem.name)}.jpg` };
+      return { icon, dbItem };
     });
   }
 
@@ -371,14 +376,25 @@ function ensurePickerTooltip() {
   return tt;
 }
 
+const TIER_COLOR_CSS = {
+  arcana: 'color: var(--rarity-arcana)',
+  alteia: 'color: var(--rarity-alteia)',
+  gnosis: 'color: var(--rarity-gnosis)',
+  neptinos: 'color: var(--rarity-neptinos)',
+  deltirama: 'color: var(--rarity-deltirama)',
+  rare: 'color: var(--rarity-rare)',
+  magic: 'color: var(--rarity-magic)',
+};
+
 function showPickerTooltip(e, dbItem) {
   const tt = ensurePickerTooltip();
   if (!dbItem) { tt.classList.remove('show'); return; }
 
-  const tier = dbItem ? getItemTier(dbItem) : '';
+  const tier = getItemTier(dbItem);
   const tierLabel = TIER_LABELS[tier] || '';
+  const tierStyle = TIER_COLOR_CSS[tier] || '';
   let html = `<div class="ptt-name">${dbItem.name}</div>`;
-  if (tierLabel) html += `<div class="ptt-tier">${tierLabel}</div>`;
+  if (tierLabel) html += `<div class="ptt-tier" style="${tierStyle}">${tierLabel}</div>`;
   if (dbItem.description) html += `<div class="ptt-desc">${dbItem.description}</div>`;
 
   if (dbItem.stats) {
@@ -389,7 +405,12 @@ function showPickerTooltip(e, dbItem) {
     }
     if (lines.length) html += `<div class="ptt-stats">${lines.join('')}</div>`;
     if (dbItem.stats.passive?.length) {
-      html += `<div class="ptt-passive">${dbItem.stats.passive.slice(0, 3).map(l => '• ' + l).join('<br>')}</div>`;
+      html += `<div class="ptt-section-label">Passive</div>`;
+      html += `<div class="ptt-passive">${dbItem.stats.passive.map(l => '• ' + l).join('<br>')}</div>`;
+    }
+    if (dbItem.stats.active?.length) {
+      html += `<div class="ptt-section-label ptt-active-label">Active</div>`;
+      html += `<div class="ptt-active">${dbItem.stats.active.map(l => '• ' + l).join('<br>')}</div>`;
     }
   }
 

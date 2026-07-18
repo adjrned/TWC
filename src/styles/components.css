@@ -207,7 +207,7 @@
 #floatTooltip .tt-stats:empty { display: none; margin: 0; border: 0; padding: 0; }
 #floatTooltip .tt-tier {
   font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
-  color: var(--accent3); text-transform: uppercase; margin-bottom: 4px;
+  text-transform: uppercase; margin-bottom: 4px;
 }
 #floatTooltip .tt-stat-block { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; }
 #floatTooltip .tt-stat-line {
@@ -350,7 +350,14 @@
 .picker-tooltip .ptt-stat { display: flex; justify-content: space-between; font-size: 10px; }
 .picker-tooltip .ptt-stat-label { color: var(--muted2); }
 .picker-tooltip .ptt-stat-val { color: var(--accent3); font-weight: 700; }
-.picker-tooltip .ptt-passive { font-size: 9px; color: var(--muted2); line-height: 1.4; border-top: 1px solid var(--border); padding-top: 4px; margin-top: 4px; }
+.picker-tooltip .ptt-section-label {
+  font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--muted); margin-top: 6px; margin-bottom: 2px;
+  border-top: 1px solid var(--border); padding-top: 5px;
+}
+.picker-tooltip .ptt-active-label { color: var(--accent); }
+.picker-tooltip .ptt-passive { font-size: 9px; color: var(--muted2); line-height: 1.4; }
+.picker-tooltip .ptt-active { font-size: 9px; color: var(--accent); line-height: 1.4; }
 .picker-sentinel { grid-column: 1/-1; height: 1px; }
 
 /* ── Picker category tabs ── */
