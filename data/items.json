@@ -20501,8 +20501,7 @@
     "color": "99FF99",
     "level": 100,
     "required_by": [
-      "Cage of Twisted Souls",
-      "Exsolus, the Armor of the Absolute"
+      "Cage of Twisted Souls"
     ],
     "recipe": [
       {
@@ -24044,7 +24043,9 @@
         "Martial Artist - Nameless Arts reduces damage taken by 20% while active. Also grants immunity to instant death spell"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Exsolus, the Armor of the Absolute"
+    ]
   },
   {
     "id": "I018",
@@ -27817,7 +27818,7 @@
       "skilldamagepercent": 0.18,
       "critchancepercent": 0.15,
       "passive": [
-        "Apply the Absolute's Mark when attacking",
+        "Apply the Mark of the Absolute when attacking",
         "Final damage inflicted on the target for 4 seconds increases by up to 10% in proportion to the target's lost HP.",
         "Every 20th attack triggers a devastating blow, dealing 40,000 pure damage (attack hit)"
       ],
@@ -27834,7 +27835,7 @@
     },
     "recipe": [
       {
-        "Hades, the Armor of Despair": 1
+        "Exitium, the Armor of Ruin": 1
       },
       {
         "Essence of Earth": 1
