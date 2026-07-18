@@ -27818,7 +27818,6 @@
       "agi": 250,
       "int": 250,
       "drpercent": -0.12,
-      "earthattributeefficiency": 0.05,
       "passive": [
         "Activates Heaven and Earth Protection when equipped",
         "Regenerates 1% of HP per second for allies within an 800 radius, reduces damage taken by 4%, and increases final damage by (your magic defense + damage reduction rate) X 2%."
@@ -27827,7 +27826,8 @@
         "Cosmos activates when used",
         "For 5 seconds, restores 8% of HP per second to allies within an 800 radius, increases Magic Defense by 100%, and grants debuff immunity.",
         "Cooldown: 75 seconds"
-      ]
+      ],
+      "affinityearthpercent": 0.05
     },
     "recipe": [
       {
@@ -27963,7 +27963,6 @@
       "movespeed": 50,
       "skilldamagepercent": 0.15,
       "drpercent": -0.1,
-      "allattributeefficiency": 0.05,
       "passive": [
         "Holy Blood activates upon skill casting",
         "Deals magic damage equal to all stats x 4 per second to surrounding enemies for 3 seconds and regenerates 4% of HP and resources.",
@@ -27973,7 +27972,8 @@
         "Activates Holy Wrath upon use",
         "Final damage increases by 10% for 6 seconds and Holy Blood is activated with 100% amplification.",
         "Cooldown: 45 seconds"
-      ]
+      ],
+      "allaffinitypercent": 0.05
     },
     "recipe": [
       {
@@ -28012,9 +28012,6 @@
       "armor": 150,
       "allstat": 375,
       "critchancepercent": 0.1,
-      "windattributeefficiency": 0.12,
-      "waterattributeefficiency": 0.08,
-      "lightattributeefficiency": 0.08,
       "passive": [
         "Grants beneficial effects when assisting allies",
         "15% chance to grant Clear Mind upon healing - Recovers (HP x 2% + Intelligence x 0.15) and 1.4% MP per second for 5 seconds, increases skill damage by 10%",
@@ -28024,7 +28021,10 @@
         "When used, activates the Heavenly Voice",
         "Removes debuffs from allies within a 900 range and grants Clearness for 10 seconds.",
         "Cooldown: 75 seconds"
-      ]
+      ],
+      "affinitywindpercent": 0.12,
+      "affinitywaterpercent": 0.08,
+      "affinitylightpercent": 0.08
     },
     "recipe": [
       {
@@ -28114,8 +28114,6 @@
       "skilldamagepercent": 0.2,
       "hp": 1500,
       "mp": 1500,
-      "waterattributeefficiency": 0.125,
-      "darkattributeefficiency": 0.05,
       "passive": [
         "When a skill hits, there is a chance that Dark Frost will be activated.",
         "Deals 45,000 magic damage to the target and nearby enemies, and restores 4% of your resources.",
@@ -28126,7 +28124,9 @@
         "Increases all stats by 400 and skill damage by 15% for 10 seconds.",
         "While active, become immune to CC effects, double the chance of Darkfrost activating, and reduce its cooldown by 50%.",
         "Cooldown: 60 seconds / Cooldown decreases by 3 seconds each time Darkfrost is activated"
-      ]
+      ],
+      "affinitywaterpercent": 0.125,
+      "affinitydarkpercent": 0.05
     },
     "recipe": [
       {
@@ -28214,8 +28214,6 @@
       "allstat": 450,
       "skilldamagepercent": 0.15,
       "attackspeedpercent": 0.1,
-      "fireattributeefficiency": 0.1,
-      "lightattributeefficiency": 0.05,
       "active": [
         "Activates Holy Fire upon use",
         "Consumes 50% of current HP",
@@ -28224,7 +28222,9 @@
         "Holy Fire: Skill damage increases by 1%, Fire/Light Affinity increases by 0.3% (Stacks up to 10 times)",
         "Upon reuse, deals 40-60 damage to the target area equal to the main stat (proportional to the number of stacked Holy Flames). Can only be activated once during duration.",
         "Cooldown: 30 seconds"
-      ]
+      ],
+      "affinityflamepercent": 0.1,
+      "affinitylightpercent": 0.05
     },
     "recipe": [
       {
@@ -28305,8 +28305,6 @@
     "stats": {
       "allstat": 525,
       "movespeed": 50,
-      "windattributeefficiency": 0.05,
-      "lightattributeefficiency": 0.1,
       "passive": [
         "Hope is activated when a skill hits an ally",
         "Lasts 12 seconds on a single effect hit, 1.5 seconds on a recovery effect hit",
@@ -28318,7 +28316,9 @@
         "Removes debuffs from allies affected by hope and recovers HP by 50%",
         "Reduces damage taken by 20% for 5 seconds and temporarily increases movement speed.",
         "Cooldown: 30 seconds"
-      ]
+      ],
+      "affinitywindpercent": 0.05,
+      "affinitylightpercent": 0.1
     },
     "recipe": [
       {

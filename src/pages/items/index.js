@@ -177,7 +177,9 @@ const STAT_LABELS = {
   revivaltimepercent: 'Revival Time',
   affinityflamepercent: 'Fire Affinity', affinityearthpercent: 'Earth Affinity',
   affinitylightpercent: 'Light Affinity', affinitydarkpercent: 'Dark Affinity',
+  affinitywindpercent: 'Wind Affinity', affinitywaterpercent: 'Water Affinity',
   affinityiwpercent: 'Ice/Wind Affinity', affinitywlpercent: 'Water/Lightning Affinity',
+  allaffinitypercent: 'All Affinity',
 };
 
 function formatStat(key, val) {
