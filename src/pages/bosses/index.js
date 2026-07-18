@@ -14,14 +14,14 @@ async function loadBossData() {
 }
 
 // Categories as they appear in the data
-const BOSS_CATEGORIES = ['Creep', 'Field', 'Minor', 'Mid', 'High', 'Late', 'Endgame'];
+const BOSS_CATEGORIES = ['Creep', 'Field', 'Minor', 'Coins', 'High', 'Late', 'Endgame'];
 
 // Map data category → CSS tier class suffix
 const CATEGORY_CSS = {
   'Creep':   'creep',
   'Field':   'field',
   'Minor':   'minor',
-  'Mid':     'mids',
+  'Coins':   'coins',
   'High':    'late',
   'Late':    'tower',
   'Endgame': 'endgame',
@@ -91,6 +91,9 @@ function renderBossList(bosses, query) {
     </div>
 
     <div class="boss-filters">
+      <div class="filter-search">
+        <input type="text" id="bossSearchInput" placeholder="Search bosses..." oninput="window._bossSearch(this.value)">
+      </div>
       <div class="filter-pills">
         <button class="filter-pill ${!activeCat ? 'active' : ''}" onclick="window._bossFilterCat('')">All</button>
         ${BOSS_CATEGORIES.map(cat => `
@@ -181,8 +184,18 @@ export async function initBosses({ params, query }) {
       location.hash = '#/bosses' + (qs ? '?' + qs : '');
     };
 
+    window._bossSearch = (val) => {
+      const q = val.toLowerCase();
+      const cards = document.querySelectorAll('.boss-grid .boss-card');
+      cards.forEach(card => {
+        const name = card.querySelector('.boss-card-name-row h3').textContent.toLowerCase();
+        card.style.display = !q || name.includes(q) ? '' : 'none';
+      });
+    };
+
     return function cleanup() {
       delete window._bossFilterCat;
+      delete window._bossSearch;
     };
   }
 }
