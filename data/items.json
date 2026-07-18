@@ -28116,11 +28116,11 @@
       "armor": 175,
       "allstat": 250,
       "mainstat": 250,
-      "skilldamagepercent": 0.1,
+      "skilldamagepercent": 0.125,
       "drpercent": -0.05,
       "passive": [
         "Insight triggers when attacking",
-        "Increases Attack Power by 500 and Proc Damage by 5% for 3 seconds (Stacks up to 3 times; Activation Cooldown: 1 second)",
+        "Increases Attack Power by 750 and Proc Damage by 5% for 3 seconds (Stacks up to 3 times; Activation Cooldown: 1 second)",
         "Deals 3,000 additional damage when attacking at maximum stacks"
       ],
       "active": [
