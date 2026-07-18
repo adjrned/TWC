@@ -4967,5 +4967,14 @@
     "type": "Boss",
     "location": "Portal in Castle Avalon",
     "stats": {}
+  },
+  {
+    "id": "h0C1",
+    "name": "Arcane Lord",
+    "level": "130",
+    "category": "Endgame",
+    "type": "Boss",
+    "location": "",
+    "stats": {}
   }
 ]

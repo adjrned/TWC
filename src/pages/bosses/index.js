@@ -161,7 +161,7 @@ async function loadBossDropData() {
   if (!bossDropData) bossDropData = {};
 }
 
-const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer Kamael']);
+const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer Kamael', 'Arcane Lord']);
 
 const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
@@ -170,6 +170,7 @@ const BOSS_PLAYER_RULES = {
   'Styrix, the Harvester of Souls': { min: 5, max: 10, perPlayer: 20 },
   'Lightbringer Kamael': { min: 5, max: 10, perPlayer: 20 },
   'Arcane Construct': { min: 3, max: 6, perPlayer: 7.5 },
+  'Arcane Lord': { min: 3, max: 6, perPlayer: 33.3 },
 };
 const DEFAULT_PLAYER_RULES = { min: 3, max: 10 };
 

@@ -871,5 +871,46 @@
         "iconMult": 1
       }
     ]
+  },
+  "Arcane Lord": {
+    "name": "Arcane Lord",
+    "iconType": "Legend",
+    "items": [
+      {
+        "name": "Welcome Cloak",
+        "base": 0.33,
+        "wishMult": 0,
+        "wishIconMult": 0,
+        "iconMult": 0
+      },
+      {
+        "name": "Arcane Power Crystal",
+        "base": 0.5,
+        "wishMult": 0,
+        "wishIconMult": 0,
+        "iconMult": 0
+      },
+      {
+        "name": "Forbidden Tablet",
+        "base": 0.5,
+        "wishMult": 0,
+        "wishIconMult": 0,
+        "iconMult": 0
+      },
+      {
+        "name": "Monarch's Soulstone",
+        "base": 0.15,
+        "wishMult": 0,
+        "wishIconMult": 0,
+        "iconMult": 0
+      },
+      {
+        "name": "Sorcerer Lord's Token",
+        "base": 0.01,
+        "wishMult": 0,
+        "wishIconMult": 0,
+        "iconMult": 0
+      }
+    ]
   }
 }
