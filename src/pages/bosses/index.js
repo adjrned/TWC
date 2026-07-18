@@ -171,7 +171,7 @@ const BOSS_PLAYER_RULES = {
   'Lightbringer Kamael': { min: 5, max: 10, perPlayer: 20 },
   'Arcane Construct': { min: 3, max: 6, perPlayer: 7.5 },
 };
-const DEFAULT_PLAYER_RULES = { min: 1, max: 10 };
+const DEFAULT_PLAYER_RULES = { min: 3, max: 10 };
 
 const HARDMODE_BOSSES = new Set(['Ifrit', 'Death Fiend', 'Lightning God Valtora', 'Nereid', 'Underlord Agareth']);
 
