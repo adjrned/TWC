@@ -1,0 +1,315 @@
+{
+  "class": "Reaper",
+  "creator": "Czed",
+  "publishedAt": "2026-07-18T16:10:43.872Z",
+  "rows": [
+    {
+      "id": 124,
+      "name": "Minor-Coin",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Tepethia, the Crimson Sword of Requiem",
+            "src": "twicons/Tepethia%2C%20the%20Crimson%20Sword%20of%20Requiem.jpg"
+          },
+          {
+            "name": "Storm Reaver",
+            "src": "twicons/Storm%20Reaver.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Grim Visage",
+            "src": "twicons/Grim%20Visage.jpg"
+          },
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Cyclone",
+            "src": "twicons/Vest%20of%20Cyclone.jpg"
+          },
+          {
+            "name": "Cruoris, the Armor of Blood",
+            "src": "twicons/Cruoris%2C%20the%20Armor%20of%20Blood.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          },
+          {
+            "name": "Wings of Fury",
+            "src": "twicons/Wings%20of%20Fury.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Nightmare",
+            "src": "twicons/Ring%20of%20Nightmare.jpg"
+          },
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 125,
+      "name": "SK-SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Reaper",
+            "src": "twicons/Crimson%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of Wallachia",
+            "src": "twicons/Eye%20of%20Wallachia.jpg"
+          },
+          {
+            "name": "Dragon Mask",
+            "src": "twicons/Dragon%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Storm",
+            "src": "twicons/Vest%20of%20Storm.jpg"
+          },
+          {
+            "name": "Benedict, the Crimson Armor of Blood",
+            "src": "twicons/Benedict%2C%20the%20Crimson%20Armor%20of%20Blood.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Guardian of the Skies",
+            "src": "twicons/Guardian%20of%20the%20Skies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Strike",
+            "src": "twicons/Ring%20of%20Strike.jpg"
+          },
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 126,
+      "name": "Tower/Agareth",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Cosmic Reaper",
+            "src": "twicons/Cosmic%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Eye of the Reaper",
+            "src": "twicons/Eye%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Horn of Demon God",
+            "src": "twicons/Horn%20of%20Demon%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Vest of Divine Winds",
+            "src": "twicons/Vest%20of%20Divine%20Winds.jpg"
+          },
+          {
+            "name": "Nevedium, the Armor of Demonblood",
+            "src": "twicons/Nevedium%2C%20the%20Armor%20of%20Demonblood.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          },
+          {
+            "name": "Ruler of the Skies",
+            "src": "twicons/Ruler%20of%20the%20Skies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Insanity",
+            "src": "twicons/Ring%20of%20Insanity.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 128,
+      "name": "Duke/Gaia/AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Divine Slayer",
+            "src": "twicons/Divine%20Slayer.jpg"
+          },
+          {
+            "name": "Caedis, the Sword of Slaughter",
+            "src": "twicons/Caedis%2C%20the%20Sword%20of%20Slaughter.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Dragon",
+            "src": "twicons/Horn%20of%20Dragon.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Bloodstorm",
+            "src": "twicons/Bloodstorm.jpg"
+          },
+          {
+            "name": "Cape of Insatiable Hunger",
+            "src": "twicons/Cape%20of%20Insatiable%20Hunger.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          },
+          {
+            "name": "Crimson Curse",
+            "src": "twicons/Crimson%20Curse.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 131,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Duskblade",
+            "src": "twicons/Duskblade.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Harvester's Mask",
+            "src": "twicons/Harvester's%20Mask.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Malevolence",
+            "src": "twicons/Ring%20of%20Malevolence.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 132,
+      "name": "Kam(CritBuild)",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Duskblade",
+            "src": "twicons/Duskblade.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Madness of Old Gods",
+            "src": "twicons/Madness%20of%20Old%20Gods.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Soulstorm",
+            "src": "twicons/Soulstorm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 133,
+      "name": "Kam(BurstBuild Alt)",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heart of Lion",
+            "src": "twicons/Heart%20of%20Lion.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Madness of Old Gods",
+            "src": "twicons/Madness%20of%20Old%20Gods.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Herald of the Void",
+            "src": "twicons/Herald%20of%20the%20Void.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Descender",
+            "src": "twicons/Wings%20of%20Descender.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Godslayer Signet",
+            "src": "twicons/Godslayer%20Signet.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
