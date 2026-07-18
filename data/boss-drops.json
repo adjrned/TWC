@@ -741,35 +741,35 @@
     "items": [
       {
         "name": "Mask of Truth",
-        "base": 0.21904762,
+        "base": 0.23,
         "wishMult": 2.608696,
         "wishIconMult": 3.913043,
         "iconMult": 1.5
       },
       {
         "name": "Arcane Core",
-        "base": 0.29206349,
+        "base": 0.30666666,
         "wishMult": 2.608696,
         "wishIconMult": 3.913043,
         "iconMult": 1.5
       },
       {
         "name": "Ancient Tome",
-        "base": 0.29206349,
+        "base": 0.30666666,
         "wishMult": 2.608696,
         "wishIconMult": 3.913043,
         "iconMult": 1.5
       },
       {
         "name": "Construct's Soulstone",
-        "base": 0.14285714,
+        "base": 0.15,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
       },
       {
         "name": "Construct Token",
-        "base": 0.0047619,
+        "base": 0.005,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
@@ -782,42 +782,42 @@
     "items": [
       {
         "name": "Grim Scythe",
-        "base": 0.38095238,
+        "base": 0.4,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Sinister Skull",
-        "base": 0.57142857,
+        "base": 0.6,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Lantern of Souls",
-        "base": 0.57142857,
+        "base": 0.6,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Spirit of Damnation",
-        "base": 0.57142857,
+        "base": 0.6,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Styrix' Soulstone",
-        "base": 0.14285714,
+        "base": 0.15,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Soul Token",
-        "base": 0.00952381,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -830,42 +830,42 @@
     "items": [
       {
         "name": "Sunstone",
-        "base": 0.38095238,
+        "base": 0.4,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Dew of Paradise",
-        "base": 0.57142857,
+        "base": 0.6,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Divine Lotus",
-        "base": 0.57142857,
+        "base": 0.6,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Holy Thread",
-        "base": 0.57142857,
+        "base": 0.6,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Kamael's Soulstone",
-        "base": 0.14285714,
+        "base": 0.15,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
         "name": "Lightbringer's Token",
-        "base": 0.00952381,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
