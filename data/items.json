@@ -27471,8 +27471,8 @@
       "damage": 9000,
       "int": 1000,
       "hp": 3000,
+      "allaffinitypercent": 0.05,
       "passive": [
-        "All Affinity +5%",
         "Activate revelation upon equipping",
         "When casting the skill, reduce damage taken by allies within a 500 radius by 5% for 6 seconds and restore (Intelligence x 0.2) HP every 2 seconds.",
         "When healing an ally, increase the target's skill damage by 17.5% for 8 seconds [Type-B]"
