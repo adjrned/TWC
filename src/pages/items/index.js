@@ -152,27 +152,127 @@ function renderItemList(items, query) {
   `;
 }
 
+// ── Stat formatting ──────────────────────────────────────────────────────────
+const STAT_LABELS = {
+  damage: 'Damage', armor: 'Armor', hp: 'HP', mp: 'MP',
+  str: 'STR', agi: 'AGI', int: 'INT', allstat: 'All Stats',
+  mainstat: 'Main Stat', hpregen: 'HP Regen', mpregen: 'MP Regen',
+  movespeed: 'Move Speed', critchancepercent: 'Crit Chance',
+  critmultiplier: 'Crit Multiplier', attackspeedpercent: 'Attack Speed',
+  skilldamagepercent: 'Skill Damage', periodicdamagepercent: 'Periodic Damage',
+  procdamagepercent: 'Proc Damage', damagedealtpercent: 'Damage Dealt',
+  healingpercent: 'Healing', healreceivedpercent: 'Heal Received',
+  dodgechancepercent: 'Dodge', drpercent: 'Damage Resist',
+  dtpercent: 'Damage Taken', mdpercent: 'Magic Resist',
+  aadamagepercent: 'AA Damage', expgainpercent: 'EXP Gain',
+  revivaltimepercent: 'Revival Time',
+  affinityflamepercent: 'Fire Affinity', affinityearthpercent: 'Earth Affinity',
+  affinitylightpercent: 'Light Affinity', affinitydarkpercent: 'Dark Affinity',
+  affinityiwpercent: 'Ice/Wind Affinity', affinitywlpercent: 'Water/Lightning Affinity',
+};
+
+function formatStat(key, val) {
+  if (key.endsWith('percent')) return `+${Math.round(val * 100)}%`;
+  if (key === 'critmultiplier') return `x${val}`;
+  return `+${val}`;
+}
+
+// ── Boss cross-reference ─────────────────────────────────────────────────────
+let bossData = null;
+
+async function loadBossData() {
+  if (bossData) return;
+  try {
+    const r = await fetch('data/bosses.json');
+    if (r.ok) bossData = await r.json();
+  } catch(e) {}
+  if (!bossData) bossData = [];
+}
+
+function findBoss(name) {
+  if (!bossData) return null;
+  return bossData.find(b => b.name === name);
+}
+
 // ── Detail view ───────────────────────────────────────────────────────────────
 function renderItemDetail(item) {
   const ri = rankInfo(item);
 
-  const requiredByHtml = (item.required_by || []).length ? `
-    <div class="item-section">
-      <h2>Required By</h2>
-      <div class="item-recipe-list">
-        ${item.required_by.map(name => {
-          const target = itemData.find(i => i.name === name);
-          const tri    = target ? rankInfo(target || {}) : { css: '' };
-          return `
-            <a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
-              <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
-              <span>${esc(name)}</span>
-            </a>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  ` : '';
+  // Stats section
+  let statsHtml = '';
+  if (item.stats) {
+    const statLines = [];
+    for (const [k, v] of Object.entries(item.stats)) {
+      if (k === 'passive' || k === 'active' || k === 'spec') continue;
+      const label = STAT_LABELS[k] || k;
+      statLines.push(`<div class="item-stat-row"><span class="item-stat-label">${esc(label)}</span><span class="item-stat-val">${formatStat(k, v)}</span></div>`);
+    }
+    if (statLines.length) {
+      statsHtml = `<div class="item-section"><h2>Stats</h2><div class="item-stat-block">${statLines.join('')}</div></div>`;
+    }
+  }
+
+  // Passive
+  let passiveHtml = '';
+  if (item.stats?.passive?.length) {
+    passiveHtml = `<div class="item-section"><h2>Passive</h2><ul class="item-effect-list">${item.stats.passive.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
+  }
+
+  // Active
+  let activeHtml = '';
+  if (item.stats?.active?.length) {
+    activeHtml = `<div class="item-section"><h2>Active</h2><ul class="item-effect-list item-active-list">${item.stats.active.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
+  }
+
+  // Spec
+  let specHtml = '';
+  if (item.stats?.spec?.length > 1) {
+    specHtml = `<div class="item-section"><h2>Specialization</h2><p class="item-spec-text">${esc(item.stats.spec[1])}</p></div>`;
+  }
+
+  // Drop sources (linked to bosses)
+  let dropsHtml = '';
+  if (item.dropped_by?.length) {
+    dropsHtml = `<div class="item-section"><h2>Drops From</h2><div class="item-drop-sources">${item.dropped_by.map(name => {
+      const boss = findBoss(name);
+      if (boss) {
+        return `<a href="#/bosses/${esc(boss.id)}" class="item-drop-source-link">
+          <span class="item-drop-boss-name">${esc(name)}</span>
+          ${boss.category ? `<span class="boss-tier-badge tier-${boss.category.toLowerCase()}">${esc(boss.category)}</span>` : ''}
+          ${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}
+        </a>`;
+      }
+      return `<div class="item-drop-source-link"><span class="item-drop-boss-name">${esc(name)}</span>${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}</div>`;
+    }).join('')}</div></div>`;
+  }
+
+  // Recipe
+  let recipeHtml = '';
+  if (item.recipe?.length) {
+    recipeHtml = `<div class="item-section"><h2>Recipe</h2><div class="item-recipe-list">${item.recipe.map(mat => {
+      const [name, qty] = Object.entries(mat)[0];
+      const target = itemData.find(i => i.name === name);
+      const tri = target ? rankInfo(target) : { css: '' };
+      return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
+        <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
+        <span>${esc(name)}</span>
+        ${qty > 1 ? `<span class="recipe-qty">x${qty}</span>` : ''}
+      </a>`;
+    }).join('')}</div></div>`;
+  }
+
+  // Required by (crafts into)
+  let requiredByHtml = '';
+  if (item.required_by?.length) {
+    requiredByHtml = `<div class="item-section"><h2>Used In</h2><div class="item-recipe-list">${item.required_by.map(name => {
+      const target = itemData.find(i => i.name === name);
+      const tri = target ? rankInfo(target) : { css: '' };
+      return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
+        <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
+        <span>${esc(name)}</span>
+      </a>`;
+    }).join('')}</div></div>`;
+  }
 
   return `
     <button class="back-btn" onclick="history.back()">← Back</button>
@@ -186,21 +286,19 @@ function renderItemDetail(item) {
           ${item.koreanname ? `<p class="item-name-ko">${esc(item.koreanname)}</p>` : ''}
           <div class="item-detail-meta">
             ${ri.key !== 'none' ? `<span class="item-rarity-badge ${ri.css}">${ri.label}</span>` : ''}
-            <span class="item-meta-cat">${esc(item.type)}</span>
-            ${item.color ? `
-              <span
-                class="item-color-swatch"
-                title="#${esc(item.color)}"
-                style="display:inline-block;width:16px;height:16px;border-radius:4px;
-                       background:#${esc(item.color)};border:1px solid rgba(255,255,255,0.18);
-                       vertical-align:middle;flex-shrink:0;">
-              </span>
-            ` : ''}
+            <span class="item-meta-cat">${esc(item.type || '')}</span>
+            ${item.level ? `<span class="item-meta-level">Lv ${item.level}</span>` : ''}
           </div>
           ${item.description ? `<p class="item-detail-desc">${esc(item.description)}</p>` : ''}
         </div>
       </div>
 
+      ${statsHtml}
+      ${passiveHtml}
+      ${activeHtml}
+      ${specHtml}
+      ${dropsHtml}
+      ${recipeHtml}
       ${requiredByHtml}
     </div>
   `;
@@ -210,6 +308,7 @@ function renderItemDetail(item) {
 export async function initItems({ params, query }) {
   const app   = document.getElementById('app');
   const items = await loadItemData();
+  await loadBossData();
 
   // Support highlight query param — treat as initial search
   if (query.highlight && !params.name) {

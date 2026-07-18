@@ -682,3 +682,110 @@
     justify-content: center;
   }
 }
+
+/* ── Item detail: stats block ── */
+.item-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+.item-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 13px;
+}
+.item-stat-label { color: var(--muted2); }
+.item-stat-val { color: var(--accent3); font-weight: 700; }
+
+/* ── Item detail: effects ── */
+.item-effect-list {
+  list-style: none;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+.item-effect-list li {
+  font-size: 13px;
+  color: var(--text);
+  padding: 4px 0;
+  line-height: 1.5;
+}
+.item-effect-list li::before {
+  content: '•';
+  color: var(--accent3);
+  margin-right: 8px;
+}
+.item-active-list li::before {
+  color: var(--accent);
+}
+
+/* ── Item detail: spec ── */
+.item-spec-text {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--accent2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  line-height: 1.6;
+}
+
+/* ── Item detail: drop sources ── */
+.item-drop-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.item-drop-source-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+}
+a.item-drop-source-link:hover {
+  border-color: var(--accent);
+  background: rgba(233,69,96,0.04);
+}
+.item-drop-boss-name {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+}
+.item-drop-rate {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent2);
+}
+
+/* ── Item detail: recipe ── */
+.recipe-qty {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent2);
+  margin-left: auto;
+}
+
+/* ── Item detail: meta level ── */
+.item-meta-level {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted2);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 6px;
+}

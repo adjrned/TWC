@@ -2,7 +2,7 @@ const STRINGS = {
   en: {
     // Nav
     'nav.builder': 'Build Planner',
-    'nav.items': 'Item Repository',
+    'nav.items': 'Items',
     'nav.heroes': 'Heroes',
     'nav.bosses': 'Boss Info',
     'nav.awakening': 'Awakening',
