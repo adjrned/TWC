@@ -250,13 +250,13 @@ function renderItemDetail(item) {
           <div class="item-drop-boss-icon"><img src="${bossIconSrc}" alt="${esc(name)}" onerror="this.style.display='none'"></div>
           <span class="item-drop-boss-name">${esc(name)}</span>
           ${boss.category ? `<span class="boss-tier-badge tier-${boss.category.toLowerCase()}">${esc(boss.category)}</span>` : ''}
-          ${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}
+          ${item.droprate ? `<span class="item-drop-rate">${item.droprate * 100}%</span>` : ''}
         </a>`;
       }
       return `<div class="item-drop-source-link">
         <div class="item-drop-boss-icon"><img src="${bossIconSrc}" alt="${esc(name)}" onerror="this.style.display='none'"></div>
         <span class="item-drop-boss-name">${esc(name)}</span>
-        ${item.droprate ? `<span class="item-drop-rate">${Math.round(item.droprate * 100)}%</span>` : ''}
+        ${item.droprate ? `<span class="item-drop-rate">${item.droprate * 100}%</span>` : ''}
       </div>`;
     }).join('')}</div></div>`;
   }

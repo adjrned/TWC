@@ -149,7 +149,7 @@ function renderBossDetail(boss) {
         <h2>Drops</h2>
         <div class="boss-drops-list">
           ${drops.map(item => {
-            const rate = item.droprate ? Math.round(item.droprate * 100) + '%' : '';
+            const rate = item.droprate ? (item.droprate * 100) + '%' : '';
             return `
               <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item">
                 <div class="boss-drop-icon">
@@ -167,7 +167,7 @@ function renderBossDetail(boss) {
   }
 
   return `
-    <button class="back-btn" onclick="location.hash='#/bosses'">Back to Bosses</button>
+    <button class="back-btn" onclick="history.back()">Back</button>
     <div class="boss-detail">
       <div class="boss-detail-header">
         <div class="boss-detail-icon">
@@ -207,7 +207,7 @@ export async function initBosses({ params, query }) {
       app.innerHTML = renderBossDetail(boss);
     } else {
       app.innerHTML = `
-        <button class="back-btn" onclick="location.hash='#/bosses'">Back to Bosses</button>
+        <button class="back-btn" onclick="history.back()">Back</button>
         <div class="coming-soon">
           <div class="coming-soon-icon">?</div>
           <h2>Not Found</h2>
