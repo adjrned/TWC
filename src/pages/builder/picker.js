@@ -242,6 +242,7 @@ function applyFilter() {
 
   renderBatch(grid);
   setupInfiniteScroll(grid);
+  initPickerHover();
   document.getElementById('pickerCount').textContent = filtered.length <= BATCH_SIZE
     ? `${filtered.length} ${t('picker.items')}`
     : `${rendered} / ${filtered.length}`;
@@ -334,10 +335,92 @@ export function pickIcon(icon) {
 
 export function closePicker() {
   document.getElementById('pickerOverlay').classList.remove('show');
+  hidePickerTooltip();
   if (observer) { observer.disconnect(); observer = null; }
   state.pickerTargetRow = null;
   state.pickerTargetCol = null;
   state.pickerTargetIdx = 0;
+}
+
+// ── Picker hover tooltip ──
+const STAT_LABELS = {
+  damage: 'Damage', armor: 'Armor', hp: 'HP', mp: 'MP',
+  str: 'STR', agi: 'AGI', int: 'INT', allstat: 'All Stats',
+  mainstat: 'Main Stat', hpregen: 'HP Regen', mpregen: 'MP Regen',
+  movespeed: 'Move Speed', critchancepercent: 'Crit Chance',
+  critmultiplier: 'Crit Multi', attackspeedpercent: 'Attack Speed',
+  skilldamagepercent: 'Skill Dmg', periodicdamagepercent: 'Periodic Dmg',
+  procdamagepercent: 'Proc Dmg', damagedealtpercent: 'Dmg Dealt',
+  healingpercent: 'Healing', dodgechancepercent: 'Dodge',
+  drpercent: 'Dmg Resist', mdpercent: 'Magic Resist',
+};
+
+function formatStatVal(key, val) {
+  if (key.endsWith('percent')) return `+${Math.round(val * 100)}%`;
+  if (key === 'critmultiplier') return `x${val}`;
+  return `+${val}`;
+}
+
+function ensurePickerTooltip() {
+  let tt = document.getElementById('pickerTooltip');
+  if (!tt) {
+    tt = document.createElement('div');
+    tt.id = 'pickerTooltip';
+    tt.className = 'picker-tooltip';
+    document.body.appendChild(tt);
+  }
+  return tt;
+}
+
+function showPickerTooltip(e, dbItem) {
+  const tt = ensurePickerTooltip();
+  if (!dbItem) { tt.classList.remove('show'); return; }
+
+  const tier = dbItem ? getItemTier(dbItem) : '';
+  const tierLabel = TIER_LABELS[tier] || '';
+  let html = `<div class="ptt-name">${dbItem.name}</div>`;
+  if (tierLabel) html += `<div class="ptt-tier">${tierLabel}</div>`;
+  if (dbItem.description) html += `<div class="ptt-desc">${dbItem.description}</div>`;
+
+  if (dbItem.stats) {
+    const lines = [];
+    for (const [k, v] of Object.entries(dbItem.stats)) {
+      if (k === 'passive' || k === 'active' || k === 'spec') continue;
+      lines.push(`<div class="ptt-stat"><span class="ptt-stat-label">${STAT_LABELS[k] || k}</span><span class="ptt-stat-val">${formatStatVal(k, v)}</span></div>`);
+    }
+    if (lines.length) html += `<div class="ptt-stats">${lines.join('')}</div>`;
+    if (dbItem.stats.passive?.length) {
+      html += `<div class="ptt-passive">${dbItem.stats.passive.slice(0, 3).map(l => '• ' + l).join('<br>')}</div>`;
+    }
+  }
+
+  tt.innerHTML = html;
+  tt.classList.add('show');
+  positionPickerTooltip(e, tt);
+}
+
+function positionPickerTooltip(e, tt) {
+  const x = e.clientX + 16;
+  const y = e.clientY - 10;
+  tt.style.left = Math.min(x, window.innerWidth - 280) + 'px';
+  tt.style.top = Math.min(y, window.innerHeight - tt.offsetHeight - 10) + 'px';
+}
+
+function hidePickerTooltip() {
+  const tt = document.getElementById('pickerTooltip');
+  if (tt) tt.classList.remove('show');
+}
+
+function initPickerHover() {
+  const grid = document.getElementById('pickerGrid');
+  grid.addEventListener('mousemove', (e) => {
+    const item = e.target.closest('.picker-item');
+    if (!item) { hidePickerTooltip(); return; }
+    const idx = parseInt(item.dataset.idx, 10);
+    if (isNaN(idx) || !filtered[idx]) { hidePickerTooltip(); return; }
+    showPickerTooltip(e, filtered[idx].dbItem);
+  });
+  grid.addEventListener('mouseleave', hidePickerTooltip);
 }
 
 export function closePickerOnBg(e) {
