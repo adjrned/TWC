@@ -79,7 +79,7 @@ thead th:hover .th-icon { filter: drop-shadow(0 0 10px rgba(245,166,35,0.7)); }
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 .hero-col-icon-wrap.visible { display: flex; }
-.hero-col-icon-wrap img { width: 115%; height: 115%; object-fit: cover; border-radius: 8px; }
+.hero-col-icon-wrap img { width: 130%; height: 130%; object-fit: cover; border-radius: 8px; }
 #heroColName {
   font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600;
   letter-spacing: 1.5px; color: var(--muted); transition: color 0.2s, text-shadow 0.2s;
