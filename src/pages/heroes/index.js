@@ -31,13 +31,34 @@ function iconSrc(name) {
   return 'twicons/' + encodeURIComponent(name) + '.jpg';
 }
 
+// ── Role classification ───────────────────────────────────────
+const SUPPORT_CLASSES = new Set([
+  'Soul Weaver', 'Wind Mage', 'Priest', 'Merchant', 'Water Mage',
+  'Elementalist', 'Shooter',
+]);
+const DPS_CLASSES = new Set([
+  'Sniper', 'Fire Mage', 'Lightning Mage', 'Reaper', 'Assassin',
+  'Martial Artist', 'Thunderer', 'Berserker', 'Bow Master', 'Fighter',
+  'Trickster', 'Lightseeker', 'Blaster', 'Sword Saint', 'Phantom Blade',
+  'Swordsman', 'Gunner', 'Sword Enchanter', 'Lancer', 'Crusader',
+  'Warlock', 'Dark Knight', 'Knight', 'Blood Weaver',
+]);
+
+function heroMatchesRole(hero, role) {
+  if (!role) return true;
+  if (role === 'DPS') return DPS_CLASSES.has(hero.heroClass);
+  if (role === 'Support') return SUPPORT_CLASSES.has(hero.heroClass);
+  return true;
+}
+
 // ── Hero list ─────────────────────────────────────────────────
 function renderHeroList(heroes, query) {
   const activeStat = query.stat || '';
+  const activeRole = query.role || '';
 
-  const filtered = activeStat
-    ? heroes.filter(h => h.mainstat === activeStat)
-    : heroes;
+  let filtered = heroes;
+  if (activeStat) filtered = filtered.filter(h => h.mainstat === activeStat);
+  if (activeRole) filtered = filtered.filter(h => heroMatchesRole(h, activeRole));
 
   // Sort: by mainstat order, then alphabetically by name
   const sorted = [...filtered].sort((a, b) => {
@@ -58,6 +79,9 @@ function renderHeroList(heroes, query) {
         <button class="filter-pill hero-stat-str ${activeStat === 'STR' ? 'active' : ''}" onclick="window._heroFilterStat('STR')">STR</button>
         <button class="filter-pill hero-stat-agi ${activeStat === 'AGI' ? 'active' : ''}" onclick="window._heroFilterStat('AGI')">AGI</button>
         <button class="filter-pill hero-stat-int ${activeStat === 'INT' ? 'active' : ''}" onclick="window._heroFilterStat('INT')">INT</button>
+        <span class="filter-divider"></span>
+        <button class="filter-pill hero-role-dps ${activeRole === 'DPS' ? 'active' : ''}" onclick="window._heroFilterRole('DPS')">DPS</button>
+        <button class="filter-pill hero-role-support ${activeRole === 'Support' ? 'active' : ''}" onclick="window._heroFilterRole('Support')">Support</button>
       </div>
     </div>
 
@@ -232,12 +256,21 @@ export async function initHeroes({ params, query }) {
     window._heroFilterStat = (stat) => {
       const ps = new URLSearchParams();
       if (stat) ps.set('stat', stat);
+      if (query.role) ps.set('role', query.role);
+      const qs = ps.toString();
+      location.hash = '#/heroes' + (qs ? '?' + qs : '');
+    };
+    window._heroFilterRole = (role) => {
+      const ps = new URLSearchParams();
+      if (query.stat) ps.set('stat', query.stat);
+      if (role) ps.set('role', role);
       const qs = ps.toString();
       location.hash = '#/heroes' + (qs ? '?' + qs : '');
     };
 
     return function cleanup() {
       delete window._heroFilterStat;
+      delete window._heroFilterRole;
     };
   }
 }

@@ -48,6 +48,23 @@
 .hero-stat-badge.hero-stat-agi { background: rgba(74,222,128,0.1); color: #4ade80; border-color: rgba(74,222,128,0.35); }
 .hero-stat-badge.hero-stat-int { background: rgba(96,165,250,0.1); color: #60a5fa; border-color: rgba(96,165,250,0.35); }
 
+/* Role filter pills */
+.filter-divider {
+  width: 1px; height: 20px; background: var(--border2); margin: 0 4px; flex-shrink: 0;
+}
+.filter-pill.hero-role-dps { border-color: rgba(245,166,35,0.3); color: #f5a623; }
+.filter-pill.hero-role-dps:hover { background: rgba(245,166,35,0.08); border-color: #f5a623; }
+.filter-pill.hero-role-dps.active {
+  background: rgba(245,166,35,0.12); border-color: #f5a623;
+  box-shadow: 0 0 12px rgba(245,166,35,0.22); text-shadow: 0 0 10px rgba(245,166,35,0.5);
+}
+.filter-pill.hero-role-support { border-color: rgba(78,205,196,0.3); color: #4ecdc4; }
+.filter-pill.hero-role-support:hover { background: rgba(78,205,196,0.08); border-color: #4ecdc4; }
+.filter-pill.hero-role-support.active {
+  background: rgba(78,205,196,0.12); border-color: #4ecdc4;
+  box-shadow: 0 0 12px rgba(78,205,196,0.22); text-shadow: 0 0 10px rgba(78,205,196,0.5);
+}
+
 /* ── Hero grid ── */
 .hero-grid {
   display: grid;
