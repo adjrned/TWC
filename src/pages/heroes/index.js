@@ -84,7 +84,7 @@ function renderHeroList(heroes, query) {
   return `
     <div class="page-header">
       <h1>Heroes</h1>
-      <p class="page-subtitle">Class guides, skills, and build information</p>
+      <p class="page-subtitle">Skills, specs, and roles</p>
     </div>
 
     <div class="hero-filters">
