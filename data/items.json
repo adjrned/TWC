@@ -1116,7 +1116,10 @@
       "Polar Bear Giant",
       "Polar Bear",
       "Ice Troll Priest",
-      "Ice Troll"
+      "Ice Troll",
+      "Frost Spider",
+      "Frost Skirmisher",
+      "Frostvemon Spider"
     ],
     "rank": "none",
     "grade": 0,
@@ -1181,7 +1184,8 @@
     "name": "Snowman Pendant",
     "koreanname": "스노우맨 펜던트",
     "dropped_by": [
-      "Mammoth"
+      "Mammoth",
+      "Snowman"
     ],
     "rank": "[Magic]",
     "grade": 0,
@@ -1792,7 +1796,8 @@
     "name": "Bat Wings",
     "koreanname": "박쥐 날개",
     "dropped_by": [
-      "Wallachia Monstrosity"
+      "Wallachia Monstrosity",
+      "Bat Statue"
     ],
     "rank": "[Rare]",
     "grade": 0,
@@ -2671,7 +2676,8 @@
     "koreanname": "타락한 크리스탈 조각",
     "description": "A shard that emanates a powerful evil aura",
     "dropped_by": [
-      "Giant Golem"
+      "Giant Golem",
+      "Golem Monster"
     ],
     "rank": "[Epic]",
     "grade": 1,
@@ -3069,7 +3075,8 @@
     "koreanname": "요정의 로브",
     "description": "\"I shall offer you the protection worthy of the heroism you've shown me.\"",
     "dropped_by": [
-      "Mana Ancient"
+      "Mana Ancient",
+      "Fairy"
     ],
     "rank": "[Epic]",
     "grade": 1,
@@ -7644,7 +7651,9 @@
     "name": "Fragment of the Wind",
     "koreanname": "바람의 조각",
     "dropped_by": [
-      "Ancient Ent"
+      "Ancient Ent",
+      "Elder Ent",
+      "Giant Ent"
     ],
     "rank": "[Epic]",
     "grade": 3,
@@ -8291,7 +8300,10 @@
     "name": "Fragment of Chaos",
     "koreanname": "혼돈이 깃든 파편",
     "dropped_by": [
-      "Death Fiend"
+      "Death Fiend",
+      "Death Huntress",
+      "Death Weaver",
+      "Death Devourer"
     ],
     "rank": "[Epic]",
     "grade": 4,
@@ -8492,7 +8504,8 @@
     "name": "Essence of Storm",
     "koreanname": "폭풍의 결정",
     "dropped_by": [
-      "Lightning God Valtora"
+      "Lightning God Valtora",
+      "Servant of Lightning God"
     ],
     "rank": "[Epic]",
     "grade": 4,
@@ -9226,7 +9239,9 @@
     "name": "Blood Essence",
     "koreanname": "피의 결정",
     "dropped_by": [
-      "Duke Lazarus"
+      "Duke Lazarus",
+      "Vampiric Monstrosity",
+      "Blood Baron"
     ],
     "rank": "[Epic]",
     "grade": 5,
@@ -12527,7 +12542,10 @@
         "Specialty - Water Mastery",
         "Elementalist - Water Release: Cooldown reduced by 4 seconds"
       ]
-    }
+    },
+    "dropped_by": [
+      "Frozen Soul"
+    ]
   },
   {
     "id": "ram4",
@@ -12988,7 +13006,11 @@
         "Merchant - Bag Slam: Damage is increased by 150%, and it increases target's damage taken by 4% for 6 seconds.",
         "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 5%"
       ]
-    }
+    },
+    "dropped_by": [
+      "Hell Portal",
+      "Gatekeeper of Hell"
+    ]
   },
   {
     "id": "hlst",
@@ -13421,7 +13443,10 @@
         "Specialties - Fairy Blessing",
         "Wind Mage - Feather of Aeolus: Heals for max HP X 15%."
       ]
-    }
+    },
+    "dropped_by": [
+      "Forest Spirit"
+    ]
   },
   {
     "id": "I0CS",
@@ -14531,7 +14556,11 @@
       "active": [
         "On use, creates a magical passage that connects to Capital Prius"
       ]
-    }
+    },
+    "dropped_by": [
+      "Fairy",
+      "Fairy Spirit"
+    ]
   },
   {
     "id": "I093",
@@ -15315,7 +15344,10 @@
         "Elementalist - Water Release: Cooldown reduced by 4 seconds",
         "Elementalist - Water Bolt: Max target count increased by 1"
       ]
-    }
+    },
+    "dropped_by": [
+      "Frozen Soul"
+    ]
   },
   {
     "id": "I0P9",
@@ -15504,7 +15536,11 @@
         "Stuns for 1 second",
         "Cooldown: 60 seconds"
       ]
-    }
+    },
+    "dropped_by": [
+      "Hell Golem",
+      "Hellspawn"
+    ]
   },
   {
     "id": "I0GZ",
@@ -15630,7 +15666,11 @@
         "Deals (flame affinity X (AGI X 2.25)) magic damage per second for 10 seconds",
         "Increase magic damage taken of enemy by 2% for 5 seconds"
       ]
-    }
+    },
+    "dropped_by": [
+      "Hell Golem",
+      "Hellspawn"
+    ]
   },
   {
     "id": "rde2",
@@ -16372,7 +16412,10 @@
         "Deals (100% max HP) pure damage to enemies",
         "Cooldown: 3 seconds"
       ]
-    }
+    },
+    "dropped_by": [
+      "Gatekeeper of Hell"
+    ]
   },
   {
     "id": "I0E2",
@@ -17958,7 +18001,10 @@
       "active": [
         "On use, creates a Magical Passage"
       ]
-    }
+    },
+    "dropped_by": [
+      "Fairy Spirit"
+    ]
   },
   {
     "id": "glsk",
