@@ -139,7 +139,7 @@ function renderHeroDetail(hero, skills) {
   const colorHex = '#' + hero.color;
   const statInfo = STAT_COLOR[hero.mainstat] || {};
   const roles = (hero.role || []).join(' / ');
-  const weaponTypes = (hero.wearable || []).filter(w => w.startsWith('Weapon')).map(w => w.replace('Weapon (', '').replace(')', '')).join(', ');
+  const weaponTypes = (hero.wearable || []).filter(w => w.startsWith('Weapon'));
 
   return `
     <button class="back-btn" onclick="location.hash='#/heroes'">Back to Heroes</button>
@@ -155,7 +155,7 @@ function renderHeroDetail(hero, skills) {
           <div class="hero-detail-meta">
             <span class="hero-stat-badge ${statInfo.pill || ''}">${esc(hero.mainstat)}</span>
             ${roles ? `<span class="hero-role-badge">${esc(roles)}</span>` : ''}
-            ${weaponTypes ? `<span class="hero-weapon-badge">${esc(weaponTypes)}</span>` : ''}
+            ${weaponTypes.map(w => `<span class="hero-weapon-badge">${esc(w)}</span>`).join('')}
           </div>
           ${hero.description?.length ? `
             <p class="hero-detail-desc">${hero.description.map(d => esc(d)).join(' ')}</p>
@@ -163,11 +163,6 @@ function renderHeroDetail(hero, skills) {
         </div>
       </div>
 
-      ${hero.wearable?.length ? `
-        <div class="hero-wearable-inline">
-          ${hero.wearable.map(w => `<span class="hero-wearable-tag">${esc(w)}</span>`).join('')}
-        </div>
-      ` : ''}
 
       ${hero.spec?.length && hero.spec[0] !== 'No Specs!' ? `
         <div class="hero-section">
