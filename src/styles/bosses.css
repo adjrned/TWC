@@ -710,30 +710,40 @@
   text-align: right;
 }
 
-/* ── Drop calculator controls ── */
+/* ── Drop calculator layout ── */
+.drop-calc-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.drop-calc-layout .boss-drops-list {
+  flex: 1;
+  min-width: 0;
+}
 .drop-calc-controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 12px 16px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
+  min-width: 180px;
+  flex-shrink: 0;
+  order: 1;
 }
 .drop-calc-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
   font-weight: 600;
   color: var(--muted2);
   cursor: pointer;
 }
 .drop-calc-toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   accent-color: var(--accent);
   cursor: pointer;
 }
@@ -742,21 +752,39 @@
 }
 .drop-calc-player {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--muted2);
+  margin-top: 4px;
+}
+.drop-calc-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .drop-calc-player input[type="range"] {
   width: 100px;
   accent-color: var(--accent);
   cursor: pointer;
 }
-.drop-calc-player #calcPlayersVal {
+#calcPlayersVal {
   color: var(--accent3);
   font-weight: 700;
-  min-width: 16px;
+  font-size: 14px;
+  min-width: 20px;
+}
+
+@media (max-width: 600px) {
+  .drop-calc-layout {
+    flex-direction: column-reverse;
+  }
+  .drop-calc-controls {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
 /* ── Boss drops list ── */

@@ -210,18 +210,21 @@ function renderDropCalculator(boss) {
   return `
     <div class="boss-section">
       <h2>Drop Rates</h2>
-      <div class="drop-calc-controls">
-        ${!isNoWish ? `
-          <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>Wishing</span></label>
-          <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon</span></label>
-        ` : ''}
-        <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal Buff</span></label>
-        <div class="drop-calc-player">
-          <span>Players:</span>
-          <input type="range" id="calcPlayers" min="${rules.min}" max="${rules.max}" value="${rules.min}">
-          <span id="calcPlayersVal">${rules.min}</span>
+      <div class="drop-calc-layout">
+        <div class="drop-calc-controls">
+          ${!isNoWish ? `
+            <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>${dropInfo.iconType === 'Immortal' ? 'Target Item' : 'Wishing'}</span></label>
+            <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon (+50%)</span></label>
+          ` : ''}
+          <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal (×2)</span></label>
+          <div class="drop-calc-player">
+            <span>Party Size</span>
+            <div class="drop-calc-slider-row">
+              <input type="range" id="calcPlayers" min="${rules.min}" max="${rules.max}" value="${rules.min}">
+              <span id="calcPlayersVal">${rules.min}</span>
+            </div>
+          </div>
         </div>
-      </div>
       <div class="boss-drops-list" id="dropCalcList">
         ${dropInfo.items.map((item, i) => {
           const defaultRate = item.base; // base rate at min players (no bonus)
@@ -234,6 +237,7 @@ function renderDropCalculator(boss) {
             <span class="boss-drop-rate" data-idx="${i}">${defaultRate.toFixed(4)}%</span>
           </a>
         `;}).join('')}
+      </div>
       </div>
     </div>
   `;
