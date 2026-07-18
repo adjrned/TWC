@@ -161,7 +161,7 @@ async function loadBossDropData() {
   if (!bossDropData) bossDropData = {};
 }
 
-const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer Kamael']);
+const NO_WISH_BOSSES = new Set([]);
 
 const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
@@ -186,14 +186,16 @@ function getPlayerBonus(playerCount, bossName) {
   return effectivePlayers * 5;
 }
 
-function isCurrencyItem(name) {
-  const l = name.toLowerCase();
-  return l.includes('soulstone') || l.includes('token') || l.includes('coin');
+function isCurrencyItem(item) {
+  const l = item.name.toLowerCase();
+  if (l.includes('coin')) return true;
+  if (l.includes('token') && (item.wishMult === null || item.wishMult === 0)) return true;
+  return false;
 }
 
 function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount }, bossName) {
-  // Soulstones, tokens, and coins are not affected by any modifiers
-  if (isCurrencyItem(item.name)) return item.base;
+  // Tokens and coins with no wish data are not affected by any modifiers
+  if (isCurrencyItem(item)) return item.base;
 
   const playerPct = getPlayerBonus(playerCount, bossName);
   const seasonalMult = seasonal ? 2 : 1;
