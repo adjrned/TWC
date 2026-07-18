@@ -224,7 +224,7 @@ function renderDropCalculator(boss) {
       <div class="drop-calc-layout">
         <div class="drop-calc-controls">
           ${!isNoWish ? `
-            <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>${dropInfo.iconType === 'Immortal' ? 'Target Item' : 'Wishing'}</span></label>
+            <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>Wish</span></label>
             <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon (+50%)</span></label>
           ` : ''}
           ${HARDMODE_BOSSES.has(boss.name) ? `
