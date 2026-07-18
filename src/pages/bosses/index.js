@@ -27,15 +27,26 @@ function getDropsForBoss(bossName) {
 // Categories as they appear in the data
 const BOSS_CATEGORIES = ['Creep', 'Field', 'Minor', 'Coins', 'High', 'Late', 'Endgame'];
 
-// Map data category → CSS tier class suffix
+// Display labels using rarity tier names
+const CATEGORY_LABELS = {
+  'Creep':   'Creep',
+  'Field':   'Field',
+  'Minor':   'Deltirama',
+  'Coins':   'Neptinos',
+  'High':    'Gnosis',
+  'Late':    'Alteia',
+  'Endgame': 'Arcana',
+};
+
+// Map data category → CSS rarity class
 const CATEGORY_CSS = {
   'Creep':   'creep',
   'Field':   'field',
-  'Minor':   'minor',
-  'Coins':   'coins',
-  'High':    'late',
-  'Late':    'tower',
-  'Endgame': 'endgame',
+  'Minor':   'deltirama',
+  'Coins':   'neptinos',
+  'High':    'gnosis',
+  'Late':    'alteia',
+  'Endgame': 'arcana',
 };
 
 function categoryClass(cat) {
@@ -89,7 +100,7 @@ function typeBadge(type) {
 
 // ── List view ─────────────────────────────────────────────────────────────────
 function renderBossList(bosses, query) {
-  const activeCat = query.cat || '';
+  const activeCat = query.cat !== undefined ? query.cat : 'Endgame';
 
   const filtered = activeCat
     ? bosses.filter(b => b.category === activeCat)
@@ -108,7 +119,7 @@ function renderBossList(bosses, query) {
       <div class="filter-pills">
         <button class="filter-pill ${!activeCat ? 'active' : ''}" onclick="window._bossFilterCat('')">All</button>
         ${BOSS_CATEGORIES.map(cat => `
-          <button class="filter-pill boss-tier-${categoryClass(cat)} ${activeCat === cat ? 'active' : ''}" onclick="window._bossFilterCat('${esc(cat)}')">${esc(cat)}</button>
+          <button class="filter-pill rarity-${categoryClass(cat)} ${activeCat === cat ? 'active' : ''}" onclick="window._bossFilterCat('${esc(cat)}')">${esc(CATEGORY_LABELS[cat] || cat)}</button>
         `).join('')}
       </div>
     </div>
@@ -126,7 +137,7 @@ function renderBossList(bosses, query) {
                 <h3>${esc(boss.name)}</h3>
               </div>
               <div class="boss-card-badges">
-                <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(boss.category || '')}</span>
+                <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(CATEGORY_LABELS[boss.category] || boss.category || '')}</span>
                 ${typeBadge(boss.type)}
                 ${boss.level ? `<span class="boss-level-badge">Lv ${esc(boss.level)}</span>` : ''}
               </div>
@@ -176,7 +187,7 @@ function renderBossDetail(boss) {
         <div class="boss-detail-title">
           <h1>${esc(boss.name)}</h1>
           <div class="boss-detail-meta">
-            <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(boss.category || '')}</span>
+            <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(CATEGORY_LABELS[boss.category] || boss.category || '')}</span>
             ${typeBadge(boss.type)}
             ${boss.level ? `<span class="boss-meta-item">Level ${esc(boss.level)}</span>` : ''}
             ${boss.location ? `<span class="boss-meta-item">${esc(boss.location)}</span>` : ''}

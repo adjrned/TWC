@@ -100,18 +100,12 @@
 }
 
 /* Tier filter pill colors */
-.filter-pill.boss-tier-minor { border-color: rgba(176,176,176,0.3); color: #b0b0b0; }
-.filter-pill.boss-tier-minor.active { background: rgba(176,176,176,0.12); border-color: #b0b0b0; }
-.filter-pill.boss-tier-coins { border-color: rgba(96,165,250,0.3); color: var(--rarity-magic); }
-.filter-pill.boss-tier-coins.active { background: rgba(96,165,250,0.12); border-color: var(--rarity-magic); }
-.filter-pill.boss-tier-mids { border-color: rgba(184,160,224,0.35); color: var(--rarity-deltirama); }
-.filter-pill.boss-tier-mids.active { background: rgba(184,160,224,0.15); border-color: var(--rarity-deltirama); }
-.filter-pill.boss-tier-late { border-color: rgba(45,158,110,0.35); color: var(--rarity-neptinos); }
-.filter-pill.boss-tier-late.active { background: rgba(45,158,110,0.15); border-color: var(--rarity-neptinos); }
-.filter-pill.boss-tier-tower { border-color: rgba(78,205,196,0.35); color: var(--rarity-alteia); }
-.filter-pill.boss-tier-tower.active { background: rgba(78,205,196,0.15); border-color: var(--rarity-alteia); }
-.filter-pill.boss-tier-endgame { border-color: rgba(155,89,182,0.35); color: var(--rarity-arcana); }
-.filter-pill.boss-tier-endgame.active { background: rgba(155,89,182,0.15); border-color: var(--rarity-arcana); }
+.filter-pill.rarity-creep { border-color: rgba(150,150,150,0.3); color: #9a9a9a; }
+.filter-pill.rarity-creep:hover { background: rgba(150,150,150,0.08); border-color: #9a9a9a; }
+.filter-pill.rarity-creep.active { background: rgba(150,150,150,0.12); border-color: #9a9a9a; }
+.filter-pill.rarity-field { border-color: rgba(134,197,134,0.3); color: #86c586; }
+.filter-pill.rarity-field:hover { background: rgba(134,197,134,0.08); border-color: #86c586; }
+.filter-pill.rarity-field.active { background: rgba(134,197,134,0.12); border-color: #86c586; }
 
 /* ── Boss grid ── */
 .boss-grid {
@@ -190,12 +184,11 @@
   background: rgba(255,255,255,0.05);
   color: var(--muted2);
 }
-.boss-tier-badge.tier-minor { background: rgba(176,176,176,0.1); color: #b0b0b0; border-color: rgba(176,176,176,0.3); }
-.boss-tier-badge.tier-coins { background: rgba(96,165,250,0.1); color: var(--rarity-magic); border-color: rgba(96,165,250,0.3); }
-.boss-tier-badge.tier-mids { background: rgba(184,160,224,0.12); color: var(--rarity-deltirama); border-color: rgba(184,160,224,0.35); }
-.boss-tier-badge.tier-late { background: rgba(45,158,110,0.12); color: var(--rarity-neptinos); border-color: rgba(45,158,110,0.35); }
-.boss-tier-badge.tier-tower { background: rgba(78,205,196,0.12); color: var(--rarity-alteia); border-color: rgba(78,205,196,0.35); }
-.boss-tier-badge.tier-endgame { background: rgba(155,89,182,0.12); color: var(--rarity-arcana); border-color: rgba(155,89,182,0.35); }
+.boss-tier-badge.tier-deltirama { background: rgba(195,155,225,0.12); color: var(--rarity-deltirama); border-color: rgba(195,155,225,0.35); }
+.boss-tier-badge.tier-neptinos { background: rgba(155,225,225,0.1); color: var(--rarity-neptinos); border-color: rgba(155,225,225,0.3); }
+.boss-tier-badge.tier-gnosis { background: rgba(220,20,60,0.12); color: var(--rarity-gnosis); border-color: rgba(220,20,60,0.35); }
+.boss-tier-badge.tier-alteia { background: rgba(153,255,153,0.1); color: var(--rarity-alteia); border-color: rgba(153,255,153,0.3); }
+.boss-tier-badge.tier-arcana { background: rgba(115,60,190,0.12); color: var(--rarity-arcana); border-color: rgba(115,60,190,0.4); }
 
 .drop-preview {
   font-size: 10px;
@@ -625,13 +618,6 @@
 
 /* ── New category additions (Creep / Field / Mid / High) ── */
 
-/* Filter pill — Creep */
-.filter-pill.boss-tier-creep { border-color: rgba(150,150,150,0.3); color: #9a9a9a; }
-.filter-pill.boss-tier-creep.active { background: rgba(150,150,150,0.10); border-color: #9a9a9a; }
-
-/* Filter pill — Field */
-.filter-pill.boss-tier-field { border-color: rgba(134,197,134,0.3); color: #86c586; }
-.filter-pill.boss-tier-field.active { background: rgba(134,197,134,0.10); border-color: #86c586; }
 
 /* Tier badges — Creep & Field */
 .boss-tier-badge.tier-creep  { background: rgba(150,150,150,0.08); color: #9a9a9a; border-color: rgba(150,150,150,0.25); }
