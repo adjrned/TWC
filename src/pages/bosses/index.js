@@ -100,7 +100,7 @@ function typeBadge(type) {
 
 // ── List view ─────────────────────────────────────────────────────────────────
 function renderBossList(bosses, query) {
-  const activeCat = query.cat !== undefined ? query.cat : 'Endgame';
+  const activeCat = 'cat' in query ? query.cat : 'Endgame';
 
   const filtered = activeCat
     ? bosses.filter(b => b.category === activeCat)
@@ -128,7 +128,7 @@ function renderBossList(bosses, query) {
       ${filtered.length === 0
         ? `<div class="boss-empty">No entities in this category.</div>`
         : filtered.map(boss => `
-          <a href="#/bosses/${esc(boss.id)}" class="boss-card" data-category="${esc(boss.category || '')}">
+          <a href="#/bosses/${boss.id}" class="boss-card" data-category="${esc(boss.category || '')}">
             <div class="boss-card-icon">
               <img src="${esc(iconSrc(boss.name))}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
             </div>
