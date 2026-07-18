@@ -88,6 +88,9 @@ function renderHeroList(heroes, query) {
     </div>
 
     <div class="hero-filters">
+      <div class="filter-search">
+        <input type="text" id="heroSearchInput" placeholder="Search heroes..." oninput="window._heroSearch(this.value)">
+      </div>
       <div class="filter-pills">
         <button class="filter-pill ${!activeStat ? 'active' : ''}" onclick="window._heroFilterStat('')">All</button>
         <button class="filter-pill hero-stat-str ${activeStat === 'STR' ? 'active' : ''}" onclick="window._heroFilterStat('STR')">STR</button>
@@ -282,9 +285,20 @@ export async function initHeroes({ params, query }) {
       location.hash = '#/heroes' + (qs ? '?' + qs : '');
     };
 
+    window._heroSearch = (val) => {
+      const q = val.toLowerCase();
+      const cards = document.querySelectorAll('.hero-grid .hero-card');
+      cards.forEach(card => {
+        const name = card.querySelector('h3').textContent.toLowerCase();
+        const cls = card.querySelector('.hero-class-name')?.textContent.toLowerCase() || '';
+        card.style.display = !q || name.includes(q) || cls.includes(q) ? '' : 'none';
+      });
+    };
+
     return function cleanup() {
       delete window._heroFilterStat;
       delete window._heroFilterRole;
+      delete window._heroSearch;
     };
   }
 }
