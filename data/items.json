@@ -28311,7 +28311,7 @@
         "Hope is activated when a skill hits an ally",
         "Lasts 12 seconds on a single effect hit, 1.5 seconds on a recovery effect hit",
         "Increases target's skill damage by 12% and primary stat by 210.",
-        "Increases the effectiveness of all your attributes by 0.6% for each ally affected by Hope (excluding yourself) (maximum 5 stacks)"
+        "Increases all your Affinities by 0.6% for each ally affected by Hope (excluding yourself) (maximum 5 stacks)"
       ],
       "active": [
         "Activates Salvation upon use",
@@ -28322,13 +28322,13 @@
     },
     "recipe": [
       {
-        "Vest of Divine Winds": 1
-      },
-      {
-        "Mask of Truth": 1
+        "Bell of Divinity": 1
       },
       {
         "Aegis of Earth": 1
+      },
+      {
+        "Mask of Truth": 1
       },
       {
         "Spirit of Damnation": 1
