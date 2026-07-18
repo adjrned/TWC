@@ -261,7 +261,7 @@
   background: rgba(74,222,128,0.06);
   border-color: rgba(74,222,128,0.16);
 }
-.item-card-icon img { width: 115%; height: 115%; object-fit: cover; }
+.item-card-icon img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.3); }
 
 .item-card-info {
   flex: 1;
@@ -275,9 +275,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.item-card.rarity-legendary .item-card-name { color: #fbbf24; }
-.item-card.rarity-epic      .item-card-name { color: #d8b4fe; }
-.item-card.rarity-rare      .item-card-name { color: #93c5fd; }
+.item-card.rarity-arcana .item-card-name { color: var(--rarity-arcana); }
+.item-card.rarity-alteia .item-card-name { color: var(--rarity-alteia); }
+.item-card.rarity-gnosis .item-card-name { color: var(--rarity-gnosis); }
+.item-card.rarity-neptinos .item-card-name { color: var(--rarity-neptinos); }
+.item-card.rarity-deltirama .item-card-name { color: var(--rarity-deltirama); }
+.item-card.rarity-rare .item-card-name { color: var(--rarity-rare); }
+.item-card.rarity-magic .item-card-name { color: var(--rarity-magic); }
 
 .item-card-category {
   display: block;
@@ -296,32 +300,26 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
-.item-rarity-badge.rarity-legendary {
-  background: rgba(245,158,11,0.18);
-  color: var(--rarity-legendary);
-  border: 1px solid rgba(245,158,11,0.4);
-  text-shadow: 0 0 8px rgba(245,158,11,0.5);
+.item-rarity-badge.rarity-arcana {
+  background: rgba(155,89,182,0.15); color: var(--rarity-arcana); border: 1px solid rgba(155,89,182,0.4);
 }
-.item-rarity-badge.rarity-epic {
-  background: rgba(192,132,252,0.16);
-  color: var(--rarity-epic);
-  border: 1px solid rgba(192,132,252,0.38);
-  text-shadow: 0 0 8px rgba(192,132,252,0.45);
+.item-rarity-badge.rarity-alteia {
+  background: rgba(78,205,196,0.12); color: var(--rarity-alteia); border: 1px solid rgba(78,205,196,0.35);
+}
+.item-rarity-badge.rarity-gnosis {
+  background: rgba(240,128,106,0.12); color: var(--rarity-gnosis); border: 1px solid rgba(240,128,106,0.35);
+}
+.item-rarity-badge.rarity-neptinos {
+  background: rgba(45,158,110,0.12); color: var(--rarity-neptinos); border: 1px solid rgba(45,158,110,0.35);
+}
+.item-rarity-badge.rarity-deltirama {
+  background: rgba(184,160,224,0.12); color: var(--rarity-deltirama); border: 1px solid rgba(184,160,224,0.35);
 }
 .item-rarity-badge.rarity-rare {
-  background: rgba(96,165,250,0.14);
-  color: var(--rarity-rare);
-  border: 1px solid rgba(96,165,250,0.32);
+  background: rgba(196,164,108,0.12); color: var(--rarity-rare); border: 1px solid rgba(196,164,108,0.3);
 }
-.item-rarity-badge.rarity-uncommon {
-  background: rgba(74,222,128,0.12);
-  color: var(--rarity-uncommon);
-  border: 1px solid rgba(74,222,128,0.28);
-}
-.item-rarity-badge.rarity-common {
-  background: rgba(176,176,176,0.08);
-  color: var(--rarity-common);
-  border: 1px solid rgba(176,176,176,0.2);
+.item-rarity-badge.rarity-magic {
+  background: rgba(96,165,250,0.12); color: var(--rarity-magic); border: 1px solid rgba(96,165,250,0.3);
 }
 
 /* ── Item detail — hero section ── */
@@ -400,7 +398,7 @@
   border-color: var(--rarity-uncommon);
   box-shadow: 0 0 10px rgba(74,222,128,0.15);
 }
-.item-detail-icon img { width: 115%; height: 115%; object-fit: cover; }
+.item-detail-icon img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.3); }
 
 .item-detail-title {
   flex: 1;
@@ -414,16 +412,13 @@
   margin-bottom: 4px;
   line-height: 1.2;
 }
-.item-detail-title h1.rarity-legendary {
-  color: var(--rarity-legendary);
-  text-shadow: 0 0 24px rgba(245,158,11,0.4);
-}
-.item-detail-title h1.rarity-epic {
-  color: var(--rarity-epic);
-  text-shadow: 0 0 20px rgba(192,132,252,0.35);
-}
-.item-detail-title h1.rarity-rare  { color: var(--rarity-rare); }
-.item-detail-title h1.rarity-uncommon { color: var(--rarity-uncommon); }
+.item-detail-title h1.rarity-arcana { color: var(--rarity-arcana); text-shadow: 0 0 20px rgba(155,89,182,0.35); }
+.item-detail-title h1.rarity-alteia { color: var(--rarity-alteia); text-shadow: 0 0 20px rgba(78,205,196,0.35); }
+.item-detail-title h1.rarity-gnosis { color: var(--rarity-gnosis); text-shadow: 0 0 20px rgba(240,128,106,0.3); }
+.item-detail-title h1.rarity-neptinos { color: var(--rarity-neptinos); text-shadow: 0 0 20px rgba(45,158,110,0.3); }
+.item-detail-title h1.rarity-deltirama { color: var(--rarity-deltirama); text-shadow: 0 0 20px rgba(184,160,224,0.3); }
+.item-detail-title h1.rarity-rare { color: var(--rarity-rare); }
+.item-detail-title h1.rarity-magic { color: var(--rarity-magic); }
 
 .item-name-ko {
   font-size: 12px;

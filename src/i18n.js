@@ -54,8 +54,8 @@ const STRINGS = {
     // Pages
     'bosses.title': 'Boss Info',
     'bosses.subtitle': 'Strategies, phases, and drop tables for every boss',
-    'items.title': 'Item Repository',
-    'items.subtitle': 'Full item database — stats, recipes, and drop sources',
+    'items.title': 'Item Database',
+    'items.subtitle': 'Stats, recipes, and drop sources',
     'items.search': 'Search items...',
 
     // Common
@@ -113,7 +113,7 @@ const STRINGS = {
     'bosses.title': '보스 정보',
     'bosses.subtitle': '모든 보스의 전략, 페이즈, 드롭 테이블',
     'items.title': '아이템 도감',
-    'items.subtitle': '전체 아이템 데이터베이스 — 스탯, 레시피, 드롭 출처',
+    'items.subtitle': '스탯, 레시피, 드롭 출처',
     'items.search': '아이템 검색...',
 
     'common.back': '← 뒤로',
@@ -170,7 +170,7 @@ const STRINGS = {
     'bosses.title': 'Boss信息',
     'bosses.subtitle': '所有Boss的策略、阶段和掉落表',
     'items.title': '物品图鉴',
-    'items.subtitle': '完整物品数据库 — 属性、配方、掉落来源',
+    'items.subtitle': '属性、配方、掉落来源',
     'items.search': '搜索物品...',
 
     'common.back': '← 返回',
