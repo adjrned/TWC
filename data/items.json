@@ -27868,7 +27868,7 @@
       "str": 550,
       "agi": 250,
       "int": 250,
-      "drpercent": -0.12,
+      "dtpercent": -0.12,
       "passive": [
         "Activates Heaven and Earth Protection when equipped",
         "Regenerates 1% of HP per second for allies within an 800 radius, reduces damage taken by 4%, and increases final damage by (your magic defense + damage reduction rate) X 2%."
