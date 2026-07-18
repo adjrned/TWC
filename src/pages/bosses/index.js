@@ -135,6 +135,7 @@ function renderBossList(bosses, query) {
             <div class="boss-card-info">
               <div class="boss-card-name-row">
                 <h3>${esc(boss.name)}</h3>
+                ${boss.name === 'Arcane Lord' ? '<span class="nav-wip">WIP</span>' : ''}
               </div>
               <div class="boss-card-badges">
                 <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(CATEGORY_LABELS[boss.category] || boss.category || '')}</span>
