@@ -61,7 +61,7 @@
       },
       {
         "name": "Skeleton Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -123,7 +123,7 @@
       },
       {
         "name": "Zombie Token",
-        "base": 0.00338983,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -178,7 +178,7 @@
       },
       {
         "name": "Bone Dragon Token",
-        "base": 0.00338983,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -233,7 +233,7 @@
       },
       {
         "name": "Ent Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -281,7 +281,7 @@
       },
       {
         "name": "Archangel Token",
-        "base": 0.00338983,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -343,7 +343,7 @@
       },
       {
         "name": "Token of Darkness",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -412,7 +412,7 @@
       },
       {
         "name": "Fiend Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -467,7 +467,7 @@
       },
       {
         "name": "Lightning God Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -522,7 +522,7 @@
       },
       {
         "name": "Flame God Token",
-        "base": 0.00434783,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -577,7 +577,7 @@
       },
       {
         "name": "Sea God Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -632,7 +632,7 @@
       },
       {
         "name": "Underlord Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -673,14 +673,14 @@
       },
       {
         "name": "Duke's Soulstone",
-        "base": 0.23809524,
+        "base": 0.15,
         "wishMult": 1,
         "wishIconMult": 1.5,
         "iconMult": 1
       },
       {
         "name": "Duke Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
@@ -721,14 +721,14 @@
       },
       {
         "name": "Gaia's Soulstone",
-        "base": 0.19047619,
+        "base": 0.15,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
       },
       {
         "name": "Gaia Token",
-        "base": 0.0047619,
+        "base": 0.01,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
@@ -769,7 +769,7 @@
       },
       {
         "name": "Construct Token",
-        "base": 0.005,
+        "base": 0.01,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
