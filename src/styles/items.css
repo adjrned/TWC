@@ -1,12 +1,12 @@
-/* ── Rarity/tier colors ── */
+/* ── Rarity/tier colors (from game data) ── */
 :root {
-  --rarity-magic: #60a5fa;
-  --rarity-rare: #c4a46c;
-  --rarity-deltirama: #b8a0e0;
-  --rarity-neptinos: #2d9e6e;
-  --rarity-gnosis: #f0806a;
-  --rarity-alteia: #4ecdc4;
-  --rarity-arcana: #9b59b6;
+  --rarity-magic: #AFC3FF;
+  --rarity-rare: #EBD787;
+  --rarity-deltirama: #C39BE1;
+  --rarity-neptinos: #9BE1E1;
+  --rarity-gnosis: #DC143C;
+  --rarity-alteia: #99FF99;
+  --rarity-arcana: #733CBE;
   /* Legacy aliases */
   --rarity-common: #b0b0b0;
   --rarity-uncommon: #4ade80;
@@ -116,47 +116,47 @@
 }
 
 /* Rarity-specific pill states */
-.filter-pill.rarity-magic { border-color: rgba(96,165,250,0.3); color: var(--rarity-magic); }
-.filter-pill.rarity-magic:hover { background: rgba(96,165,250,0.1); border-color: var(--rarity-magic); }
+.filter-pill.rarity-magic { border-color: rgba(175,195,255,0.35); color: var(--rarity-magic); }
+.filter-pill.rarity-magic:hover { background: rgba(175,195,255,0.1); border-color: var(--rarity-magic); }
 .filter-pill.rarity-magic.active {
-  background: rgba(96,165,250,0.15); border-color: var(--rarity-magic);
-  box-shadow: 0 0 12px rgba(96,165,250,0.22); text-shadow: 0 0 10px rgba(96,165,250,0.5);
+  background: rgba(175,195,255,0.15); border-color: var(--rarity-magic);
+  box-shadow: 0 0 12px rgba(175,195,255,0.22);
 }
-.filter-pill.rarity-rare { border-color: rgba(196,164,108,0.35); color: var(--rarity-rare); }
-.filter-pill.rarity-rare:hover { background: rgba(196,164,108,0.1); border-color: var(--rarity-rare); }
+.filter-pill.rarity-rare { border-color: rgba(235,215,135,0.4); color: var(--rarity-rare); }
+.filter-pill.rarity-rare:hover { background: rgba(235,215,135,0.1); border-color: var(--rarity-rare); }
 .filter-pill.rarity-rare.active {
-  background: rgba(196,164,108,0.15); border-color: var(--rarity-rare);
-  box-shadow: 0 0 12px rgba(196,164,108,0.25); text-shadow: 0 0 10px rgba(196,164,108,0.5);
+  background: rgba(235,215,135,0.15); border-color: var(--rarity-rare);
+  box-shadow: 0 0 12px rgba(235,215,135,0.25);
 }
-.filter-pill.rarity-deltirama { border-color: rgba(184,160,224,0.35); color: var(--rarity-deltirama); }
-.filter-pill.rarity-deltirama:hover { background: rgba(184,160,224,0.1); border-color: var(--rarity-deltirama); }
+.filter-pill.rarity-deltirama { border-color: rgba(195,155,225,0.4); color: var(--rarity-deltirama); }
+.filter-pill.rarity-deltirama:hover { background: rgba(195,155,225,0.1); border-color: var(--rarity-deltirama); }
 .filter-pill.rarity-deltirama.active {
-  background: rgba(184,160,224,0.18); border-color: var(--rarity-deltirama);
-  box-shadow: 0 0 14px rgba(184,160,224,0.28); text-shadow: 0 0 10px rgba(184,160,224,0.55);
+  background: rgba(195,155,225,0.18); border-color: var(--rarity-deltirama);
+  box-shadow: 0 0 14px rgba(195,155,225,0.3);
 }
-.filter-pill.rarity-neptinos { border-color: rgba(45,158,110,0.35); color: var(--rarity-neptinos); }
-.filter-pill.rarity-neptinos:hover { background: rgba(45,158,110,0.1); border-color: var(--rarity-neptinos); }
+.filter-pill.rarity-neptinos { border-color: rgba(155,225,225,0.4); color: var(--rarity-neptinos); }
+.filter-pill.rarity-neptinos:hover { background: rgba(155,225,225,0.1); border-color: var(--rarity-neptinos); }
 .filter-pill.rarity-neptinos.active {
-  background: rgba(45,158,110,0.18); border-color: var(--rarity-neptinos);
-  box-shadow: 0 0 14px rgba(45,158,110,0.28); text-shadow: 0 0 10px rgba(45,158,110,0.55);
+  background: rgba(155,225,225,0.18); border-color: var(--rarity-neptinos);
+  box-shadow: 0 0 14px rgba(155,225,225,0.3);
 }
-.filter-pill.rarity-gnosis { border-color: rgba(240,128,106,0.35); color: var(--rarity-gnosis); }
-.filter-pill.rarity-gnosis:hover { background: rgba(240,128,106,0.1); border-color: var(--rarity-gnosis); }
+.filter-pill.rarity-gnosis { border-color: rgba(220,20,60,0.4); color: var(--rarity-gnosis); }
+.filter-pill.rarity-gnosis:hover { background: rgba(220,20,60,0.1); border-color: var(--rarity-gnosis); }
 .filter-pill.rarity-gnosis.active {
-  background: rgba(240,128,106,0.18); border-color: var(--rarity-gnosis);
-  box-shadow: 0 0 14px rgba(240,128,106,0.28); text-shadow: 0 0 10px rgba(240,128,106,0.55);
+  background: rgba(220,20,60,0.18); border-color: var(--rarity-gnosis);
+  box-shadow: 0 0 14px rgba(220,20,60,0.3);
 }
-.filter-pill.rarity-alteia { border-color: rgba(78,205,196,0.35); color: var(--rarity-alteia); }
-.filter-pill.rarity-alteia:hover { background: rgba(78,205,196,0.1); border-color: var(--rarity-alteia); }
+.filter-pill.rarity-alteia { border-color: rgba(153,255,153,0.35); color: var(--rarity-alteia); }
+.filter-pill.rarity-alteia:hover { background: rgba(153,255,153,0.08); border-color: var(--rarity-alteia); }
 .filter-pill.rarity-alteia.active {
-  background: rgba(78,205,196,0.18); border-color: var(--rarity-alteia);
-  box-shadow: 0 0 14px rgba(78,205,196,0.28); text-shadow: 0 0 10px rgba(78,205,196,0.55);
+  background: rgba(153,255,153,0.14); border-color: var(--rarity-alteia);
+  box-shadow: 0 0 14px rgba(153,255,153,0.25);
 }
-.filter-pill.rarity-arcana { border-color: rgba(155,89,182,0.35); color: var(--rarity-arcana); }
-.filter-pill.rarity-arcana:hover { background: rgba(155,89,182,0.1); border-color: var(--rarity-arcana); }
+.filter-pill.rarity-arcana { border-color: rgba(115,60,190,0.45); color: var(--rarity-arcana); }
+.filter-pill.rarity-arcana:hover { background: rgba(115,60,190,0.1); border-color: var(--rarity-arcana); }
 .filter-pill.rarity-arcana.active {
-  background: rgba(155,89,182,0.18); border-color: var(--rarity-arcana);
-  box-shadow: 0 0 14px rgba(155,89,182,0.3); text-shadow: 0 0 10px rgba(155,89,182,0.55);
+  background: rgba(115,60,190,0.18); border-color: var(--rarity-arcana);
+  box-shadow: 0 0 14px rgba(115,60,190,0.35);
 }
 
 /* ── Item grid ── */
@@ -301,25 +301,25 @@
   white-space: nowrap;
 }
 .item-rarity-badge.rarity-arcana {
-  background: rgba(155,89,182,0.15); color: var(--rarity-arcana); border: 1px solid rgba(155,89,182,0.4);
+  background: rgba(115,60,190,0.15); color: var(--rarity-arcana); border: 1px solid rgba(115,60,190,0.45);
 }
 .item-rarity-badge.rarity-alteia {
-  background: rgba(78,205,196,0.12); color: var(--rarity-alteia); border: 1px solid rgba(78,205,196,0.35);
+  background: rgba(153,255,153,0.1); color: var(--rarity-alteia); border: 1px solid rgba(153,255,153,0.3);
 }
 .item-rarity-badge.rarity-gnosis {
-  background: rgba(240,128,106,0.12); color: var(--rarity-gnosis); border: 1px solid rgba(240,128,106,0.35);
+  background: rgba(220,20,60,0.12); color: var(--rarity-gnosis); border: 1px solid rgba(220,20,60,0.35);
 }
 .item-rarity-badge.rarity-neptinos {
-  background: rgba(45,158,110,0.12); color: var(--rarity-neptinos); border: 1px solid rgba(45,158,110,0.35);
+  background: rgba(155,225,225,0.1); color: var(--rarity-neptinos); border: 1px solid rgba(155,225,225,0.3);
 }
 .item-rarity-badge.rarity-deltirama {
-  background: rgba(184,160,224,0.12); color: var(--rarity-deltirama); border: 1px solid rgba(184,160,224,0.35);
+  background: rgba(195,155,225,0.12); color: var(--rarity-deltirama); border: 1px solid rgba(195,155,225,0.35);
 }
 .item-rarity-badge.rarity-rare {
-  background: rgba(196,164,108,0.12); color: var(--rarity-rare); border: 1px solid rgba(196,164,108,0.3);
+  background: rgba(235,215,135,0.12); color: var(--rarity-rare); border: 1px solid rgba(235,215,135,0.35);
 }
 .item-rarity-badge.rarity-magic {
-  background: rgba(96,165,250,0.12); color: var(--rarity-magic); border: 1px solid rgba(96,165,250,0.3);
+  background: rgba(175,195,255,0.12); color: var(--rarity-magic); border: 1px solid rgba(175,195,255,0.3);
 }
 
 /* ── Item detail — hero section ── */
@@ -412,11 +412,11 @@
   margin-bottom: 4px;
   line-height: 1.2;
 }
-.item-detail-title h1.rarity-arcana { color: var(--rarity-arcana); text-shadow: 0 0 20px rgba(155,89,182,0.35); }
-.item-detail-title h1.rarity-alteia { color: var(--rarity-alteia); text-shadow: 0 0 20px rgba(78,205,196,0.35); }
-.item-detail-title h1.rarity-gnosis { color: var(--rarity-gnosis); text-shadow: 0 0 20px rgba(240,128,106,0.3); }
-.item-detail-title h1.rarity-neptinos { color: var(--rarity-neptinos); text-shadow: 0 0 20px rgba(45,158,110,0.3); }
-.item-detail-title h1.rarity-deltirama { color: var(--rarity-deltirama); text-shadow: 0 0 20px rgba(184,160,224,0.3); }
+.item-detail-title h1.rarity-arcana { color: var(--rarity-arcana); text-shadow: 0 0 20px rgba(115,60,190,0.4); }
+.item-detail-title h1.rarity-alteia { color: var(--rarity-alteia); text-shadow: 0 0 20px rgba(153,255,153,0.3); }
+.item-detail-title h1.rarity-gnosis { color: var(--rarity-gnosis); text-shadow: 0 0 20px rgba(220,20,60,0.35); }
+.item-detail-title h1.rarity-neptinos { color: var(--rarity-neptinos); text-shadow: 0 0 20px rgba(155,225,225,0.3); }
+.item-detail-title h1.rarity-deltirama { color: var(--rarity-deltirama); text-shadow: 0 0 20px rgba(195,155,225,0.3); }
 .item-detail-title h1.rarity-rare { color: var(--rarity-rare); }
 .item-detail-title h1.rarity-magic { color: var(--rarity-magic); }
 
