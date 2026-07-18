@@ -47,6 +47,7 @@ const EFFECT_TYPE_CSS = {
 function renderAwakeningList() {
   const totalHeroes = heroData.length;
   const awakened = awakeningData.length;
+  const sorted = [...awakeningData].sort((a, b) => a.heroClass.localeCompare(b.heroClass));
 
   return `
     <div class="page-header">
@@ -54,10 +55,13 @@ function renderAwakeningList() {
       <p class="page-subtitle">Upgraded abilities and new effects</p>
     </div>
 
-    <p class="awk-progress">${awakened} / ${totalHeroes} heroes have awakening data</p>
+    <div class="awk-notice">
+      <p>Awakenings are unlocked at level 110. This information is a work in progress — not all heroes have been documented yet.</p>
+      <span class="awk-progress">${awakened} / ${totalHeroes} heroes</span>
+    </div>
 
     <div class="awk-grid">
-      ${awakeningData.map(awk => {
+      ${sorted.map(awk => {
         const hero = getHero(awk.heroClass);
         const colorHex = hero ? '#' + hero.color : '#666';
         return `
