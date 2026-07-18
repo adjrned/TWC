@@ -275,7 +275,7 @@ function renderItemDetail(item) {
   }
 
   return `
-    <button class="back-btn" onclick="history.back()">← Back</button>
+    <button class="back-btn" onclick="history.back()">Back</button>
     <div class="item-detail">
       <div class="item-detail-header ${ri.css}">
         <div class="item-detail-icon ${ri.css}" style="background:#${esc(item.color || '333333')}22">
@@ -322,7 +322,7 @@ export async function initItems({ params, query }) {
       app.innerHTML = renderItemDetail(item);
     } else {
       app.innerHTML = `
-        <button class="back-btn" onclick="history.back()">← Back</button>
+        <button class="back-btn" onclick="history.back()">Back</button>
         <div class="coming-soon">
           <div class="coming-soon-icon">❓</div>
           <h2>Item Not Found</h2>
