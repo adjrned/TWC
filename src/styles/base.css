@@ -47,7 +47,6 @@ body {
   font-family: 'Nunito', sans-serif;
   font-size: 14px;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 /* ── Gradient mesh (static for performance) ── */
