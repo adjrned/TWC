@@ -41,5 +41,354 @@
         ]
       }
     ]
+  },
+  {
+    "version": "v0.75a",
+    "compatible": "v0.62s ~",
+    "notice": "Summer Event is active starting this version; the event will run from June 10 to July 12. Refer to current-event for more information.",
+    "sections": [
+      {
+        "title": "Bug Fixes",
+        "entries": [
+          "Kamael, the Lightbringer - Fixed an issue where material names were not displayed from the Loot Chest",
+          "Trickster - Illusion will now remain in combat as well if main hero is in combat",
+          "Trickster - Fixed a bug where crit-related effects did not proc on illusion's Q cast",
+          "Saint's Cloak - Fixed an issue where the death prevention effect would trigger before certain skill effects"
+        ]
+      },
+      {
+        "title": "Items",
+        "subsections": [
+          {
+            "name": "Apocalypse Prime",
+            "entries": [
+              "Shooter Specialty - E damage increase 60% -> 50%"
+            ]
+          },
+          {
+            "name": "Heaven's Fall",
+            "entries": [
+              "Passive - Skill Damage increase 15%/10% -> 12%/8%"
+            ]
+          },
+          {
+            "name": "Bomb Backpack Series",
+            "entries": [
+              "Bomb Throw - Damage STR x 7.5~8 -> STR x 7.5",
+              "Soul Bomb - Explosion Damage STR x 50~150 -> STR x 50~125"
+            ]
+          },
+          {
+            "name": "Eye of Truth",
+            "entries": [
+              "Skill Damage 10% -> 12.5%",
+              "Passive - AD increase per stack 500 -> 750"
+            ]
+          },
+          {
+            "name": "Madness of Old Gods",
+            "entries": [
+              "Crit Multiplier x0.10 -> x0.15",
+              "Passive - Bonus damage per proc 60000 -> 70000"
+            ]
+          },
+          {
+            "name": "Godslayer Signet",
+            "entries": [
+              "Passive - AD increase 10500 -> 11000, Damage Amplification per stack when consuming marks 2% -> 3% (Maximum 14% -> 21%)"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Monsters",
+        "subsections": [
+          {
+            "name": "Gnosis-tier Bosses",
+            "entries": [
+              "HP increase per player 35% -> 30%",
+              "Ancient Ent - Boss difficulty adjusted"
+            ]
+          },
+          {
+            "name": "Altheia-tier Bosses",
+            "entries": [
+              "Death Fiend - Boss difficulty reduced",
+              "Nereid - Boss difficulty reduced"
+            ]
+          },
+          {
+            "name": "Duke Lazarus",
+            "entries": [
+              "Shield break per tentacle hit 20% -> 30%"
+            ]
+          },
+          {
+            "name": "Gaia, the Earth Goddess",
+            "entries": [
+              "Base HP 42.5 million -> 40 million"
+            ]
+          },
+          {
+            "name": "Arcane Construct",
+            "entries": [
+              "Base HP 51 million -> 47.5 million",
+              "Orb of Purification HP 15 million -> 14 million"
+            ]
+          },
+          {
+            "name": "Styrix, the Harvester of Souls",
+            "entries": [
+              "Base HP 80 million -> 72.5 million",
+              "(Phase 2) Soul Lantern HP 10~17.5 million -> 9~16.5 million"
+            ]
+          },
+          {
+            "name": "Kamael, the Lightbringer",
+            "entries": [
+              "Base HP 90 million -> 85 million",
+              "Guardian Angel HP 9 million -> 8.5 million",
+              "Sword of Judgment HP 20 million -> 19 million"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Characters",
+        "subsections": [
+          {
+            "name": "Fighter",
+            "entries": [
+              "D - Maximum Combo Stacks 5 -> 4, AD per stack 10% -> 12%, Skill Damage 12% -> 15%, now displays stack",
+              "Q - SHATTERED chance (on failure) 50/75/100% -> 50/100%",
+              "T/F - Cast time reduced"
+            ]
+          },
+          {
+            "name": "Paladin",
+            "entries": [
+              "DQ (Blessing) - When STR is the primary attribute, the Skill Damage increase effect is replaced with Skill Damage amplification of 4% (8% for self) (can stack with INT Paladin effects)",
+              "F - Cast time reduced"
+            ]
+          },
+          {
+            "name": "Dark Knight",
+            "entries": [
+              "D - Soul consumption 3 -> 2, cast damage Main Stat x 7.5 -> Main Stat x 6, periodic damage Main Stat x 5 -> Main Stat x 4"
+            ]
+          },
+          {
+            "name": "Crusader",
+            "entries": [
+              "W - All Stats increase 5% [Self 10%] -> Main Stat increase 4% [Self 8%] [Type-B]",
+              "E - Cast time reduced",
+              "R - Damage Taken increase 10% -> 6%"
+            ]
+          },
+          {
+            "name": "Knight",
+            "entries": [
+              "R - Reduced time required to fire while an orb is summoned",
+              "T - Skill Damage amplification effect now also applies to self"
+            ]
+          },
+          {
+            "name": "Lancer",
+            "entries": [
+              "Q - Damage Taken increase 5% -> 4%, debuff duration 15 sec -> 8 sec",
+              "R - Final Damage increase 20% -> 15%",
+              "T - Increase all stats of the hit ally by 8% for 40 sec -> Increase the hit ally's Main Stat by 6% for 15 sec [Type-B]"
+            ]
+          },
+          {
+            "name": "Sword Saint",
+            "entries": [
+              "Q - Damage (STR + INT) x 10 -> (STR + INT) x 9",
+              "R - Damage per meteor (STR + INT) x 7.5 -> (STR + INT) x 6",
+              "T - Cast time reduced"
+            ]
+          },
+          {
+            "name": "Phantom Blade",
+            "entries": [
+              "T - Duration 8 sec -> 6 sec, now amplifies skill damage by 12%, increases Q damage by 25%, reduces E cd from 3s to 2s",
+              "F - Cast time reduced"
+            ]
+          },
+          {
+            "name": "Swordsman",
+            "entries": [
+              "D - Damage AD x 0.8 + AGI x 5 -> AD x 0.85 + AGI x 5",
+              "R - AGI increase per sword 1% -> 2%",
+              "T - Damage Taken increase 10% -> 6%"
+            ]
+          },
+          {
+            "name": "Martial Artist",
+            "entries": [
+              "Q - Damage AGI x 5 -> AGI x 7.5"
+            ]
+          },
+          {
+            "name": "Assassin",
+            "entries": [
+              "T - Damage AGI x 20 -> AGI x 25"
+            ]
+          },
+          {
+            "name": "Bow Master",
+            "entries": [
+              "E - AD and Main Stat increase 5% -> 4%"
+            ]
+          },
+          {
+            "name": "Shooter",
+            "entries": [
+              "Magitek Efficiency - Highest Elemental Efficiency x 80% -> 70%",
+              "E - Magic Damage Taken increase 5% -> 4% [Type-D]",
+              "T - Projectile Damage AD x 0.3 + Main Stat x 2.5 -> AD x 0.25 + Main Stat x 2"
+            ]
+          },
+          {
+            "name": "Sword Enchanter",
+            "entries": [
+              "E - AD increase 20% -> 12% (20% for self)",
+              "R - Cooldown 20 sec -> 15 sec"
+            ]
+          },
+          {
+            "name": "Reaper",
+            "entries": [
+              "E - Base Damage AGI x 10 -> AGI x 12.5, Cooldown 8 sec -> 6 sec"
+            ]
+          },
+          {
+            "name": "Gunner",
+            "entries": [
+              "R - Base Damage AD x 75% -> AD x 80%"
+            ]
+          },
+          {
+            "name": "Trickster",
+            "entries": [
+              "D - Illusion damage reduction 50% -> 40%",
+              "Q - Damage AD x 0.7 + AGI x 5 -> AD x 1 + AGI x 5",
+              "W - On attack, gain 2.5% AGI for 6 sec [Max 8 stacks] -> Changed to gain 8% AGI for 6 sec when casting a skill [Max 3 stacks]",
+              "T - Now also hits units around the target"
+            ]
+          },
+          {
+            "name": "Thunderer",
+            "entries": [
+              "Magnetic Field - Maximum accumulation per second 10% -> 12%",
+              "R - Cast time reduced"
+            ]
+          },
+          {
+            "name": "Hermit",
+            "entries": [
+              "D - (Harmony) Heal increase 100% -> 50%, increases Final Damage by 2.5% for 3 sec when healing allies [Water Affinity / Type-A]",
+              "Q - (Harmony) When empowered, target takes (4 + Main Stat / 1200)% increased damage for 3 sec [Type-C]",
+              "R - HP Regeneration -> Changed to Healing per second [can trigger healing effects], (without Harmony applied) Skill Damage increase effect -> Skill Damage amplification 4% (12% for self)",
+              "F - (Harmony) Grants debuff immunity while active"
+            ]
+          },
+          {
+            "name": "Blood Weaver",
+            "entries": [
+              "Q - Blood natural regeneration per second 3 -> 4",
+              "E - Blood recovery on cast 40 -> 60"
+            ]
+          },
+          {
+            "name": "Mage (Fire)",
+            "entries": [
+              "D - Time until Burn damage is applied 2.5 sec -> 2 sec",
+              "T - Damage per Meteor INT x 15 -> INT x 18, activation speed increased"
+            ]
+          },
+          {
+            "name": "Mage (Water)",
+            "entries": [
+              "D - Maximum targets affected 3 -> 2",
+              "R - Cooldown 12 sec -> 10 sec",
+              "F - Cooldown 60 sec -> 75 sec"
+            ]
+          },
+          {
+            "name": "Mage (Arcane)",
+            "entries": [
+              "F - Barrage Damage INT x 2 -> INT x 2.5, Q Combo Barrage Damage INT x 4 -> INT x 5"
+            ]
+          },
+          {
+            "name": "Mage (Lightning)",
+            "entries": [
+              "WWW - Maximum stacks 5 -> 10"
+            ]
+          },
+          {
+            "name": "Mage (Wind)",
+            "entries": [
+              "E - Damage reduction of healed allies increased by 10% -> Increase Primary Stat by (INT x 0.03), Damage Reduction increased by 8% [Wind Element / Type-C]",
+              "F - Slightly reduced the size of summon",
+              "FW - Mana is now consumed from the initial cast, on hit the target takes 4% increased magic damage for 4 sec [Type-D]"
+            ]
+          },
+          {
+            "name": "Warlock",
+            "entries": [
+              "T - Soul Offering hotkey changed from F to T / Ultimate can now be used while transformed"
+            ]
+          },
+          {
+            "name": "Priest",
+            "entries": [
+              "E - Removed All Stats increase effect, Attack Damage increase 5% -> 8% and now only applies within the aura range",
+              "TW - Similar to TQ, casting it on Nereid Bubble/Kamael Shackle, etc. will now automatically target an ally",
+              "F - Final Damage increase 5% -> 6%"
+            ]
+          },
+          {
+            "name": "Alchemist",
+            "entries": [
+              "Q - Skill Damage amplification on Transmutation 8% -> 6%",
+              "RRQ - Magic Damage Taken increase 6% -> 4%",
+              "T - Final Damage increase 15% -> Changed to Skill Damage amplification 12%"
+            ]
+          },
+          {
+            "name": "Soul Weaver",
+            "entries": [
+              "Q - Damage Taken increase (6 + INT / 800)% -> (5 + INT / 1000)%",
+              "W - Skill Damage increase (4 + INT / 375)% -> (6 + INT / 375)%",
+              "T - Cast time removed, added effect that restores HP equal to (INT x 2.5) to allies on the field when it expires, duration 6 sec -> 5 sec, cooldown 60 sec -> 45 sec"
+            ]
+          },
+          {
+            "name": "Shrine Priestess",
+            "entries": [
+              "R - Affinity increase 12% -> 6%, Damage Reduction 20% -> 12%",
+              "T - Skill Damage amplification 20% -> 12%, D now also resets Mana when reset (activation coefficient 0.25)",
+              "F - Number of Fire Talismans created 3 -> 2"
+            ]
+          },
+          {
+            "name": "Witch",
+            "entries": [
+              "E - Main Stat increase (4 + INT / 1000)% -> (INT x 0.06) [Type-C]"
+            ]
+          },
+          {
+            "name": "Elementalist",
+            "entries": [
+              "WR - All Stats increase 10% -> Increase Main Stat by (INT x 0.06) [Type-C]",
+              "TE - Magic Damage Taken increase (5 + INT / 1000)% -> (4 + INT / 1200)%, debuff duration 8 sec -> 6 sec",
+              "FE - Damage INT x 125 -> INT x 175, 6 sec Damage Taken increase 6% -> pauses for 1.5s"
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -54,6 +54,7 @@ function renderPatchNotes() {
             <span class="patch-version">${esc(patch.version)}</span>
             <span class="patch-compat">Compatible Version: ${esc(patch.compatible)}</span>
           </div>
+          ${patch.notice ? `<div class="patch-notice">${esc(patch.notice)}</div>` : ''}
           ${patch.sections.map(renderSection).join('')}
         </div>
       `).join('')}
