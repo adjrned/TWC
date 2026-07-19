@@ -9553,7 +9553,9 @@
       "Illumination",
       "Exsolus, the Armor of the Absolute",
       "Cape of the Saint",
-      "Wings of Descender"
+      "Wings of Descender",
+      "Primal Flame",
+      "Primordial Heart"
     ],
     "recipe": [
       {
@@ -9595,7 +9597,8 @@
       "Guardian of Sky and Earth",
       "Plates of Divine Blood",
       "Codex of Light",
-      "Aegis of Avalon"
+      "Aegis of Avalon",
+      "Godslayer Signet"
     ],
     "recipe": [
       {
@@ -9713,7 +9716,8 @@
       "Eye of Truth",
       "Frostmoon Crown",
       "Codex of Light",
-      "Coil of Ouroboros"
+      "Coil of Ouroboros",
+      "Primal Flame"
     ],
     "recipe": [
       {
@@ -9766,7 +9770,9 @@
       "Exsolus, the Armor of the Absolute",
       "Plates of Dawn",
       "Celestial Crown",
-      "Madness of Old Gods"
+      "Madness of Old Gods",
+      "Godslayer Signet",
+      "Primordial Heart"
     ],
     "recipe": [
       {
@@ -9970,7 +9976,9 @@
       "Exsolus, the Armor of the Absolute",
       "Celestial Crown",
       "Righteous Flame",
-      "Wings of Descender"
+      "Wings of Descender",
+      "Godslayer Signet",
+      "Primordial Heart"
     ],
     "recipe": [
       {
@@ -10008,7 +10016,8 @@
       "Eye of Truth",
       "Celestial Wind",
       "Codex of Light",
-      "Cape of the Saint"
+      "Cape of the Saint",
+      "Primal Flame"
     ],
     "recipe": [
       {
@@ -24957,7 +24966,8 @@
     "color": "733CBE",
     "level": 100,
     "required_by": [
-      "Ring of Genesis"
+      "Ring of Genesis",
+      "Primal Flame"
     ],
     "recipe": [
       {
@@ -25131,7 +25141,9 @@
         "Cooldown: 90 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Godslayer Signet"
+    ]
   },
   {
     "id": "I00V",
@@ -25285,7 +25297,9 @@
         "Cooldown: 20 seconds (to gain a charge)"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Primordial Heart"
+    ]
   },
   {
     "id": "tstr",
@@ -28474,7 +28488,23 @@
         "Cooldown: 60 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Crimson Curse": 1
+      },
+      {
+        "Dew of Paradise": 1
+      },
+      {
+        "Lantern of Souls": 1
+      },
+      {
+        "Arcane Core": 1
+      },
+      {
+        "Aegis of Earth": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28492,6 +28522,7 @@
       "allstat": 550,
       "attackspeedpercent": 0.25,
       "skilldamagepercent": 0.15,
+      "affinityflamepercent": 0.05,
       "passive": [
         "Acquire Primordial Flame upon casting skill",
         "Increases skill damage by 2.5% and continuous damage by 2.5% for 6 seconds (stacks up to 4 times)"
@@ -28503,7 +28534,23 @@
         "Cooldown: 15 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Star of Apotheosis": 1
+      },
+      {
+        "Mask of Truth": 1
+      },
+      {
+        "Divine Lotus": 1
+      },
+      {
+        "Spirit of Damnation": 1
+      },
+      {
+        "Essence of Earth": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28521,6 +28568,8 @@
       "mainstat": 600,
       "hp": 2500,
       "attackspeedpercent": 0.15,
+      "affinitywaterpercent": 0.05,
+      "affinityearthpercent": 0.1,
       "passive": [
         "Enhance nearby allies with primordial energy",
         "Increases attack power by 0.7 (maximum 3000) and attack speed by 25%",
@@ -28533,7 +28582,23 @@
         "Cooldown: 15 seconds (Maximum 2 charges)"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Heart of Life": 1
+      },
+      {
+        "Sunstone": 1
+      },
+      {
+        "Lantern of Souls": 1
+      },
+      {
+        "Arcane Core": 1
+      },
+      {
+        "Essence of Earth": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28570,7 +28635,8 @@
       "Plates of Dawn",
       "Celestial Crown",
       "Eye of Truth",
-      "Cape of the Saint"
+      "Cape of the Saint",
+      "Primordial Heart"
     ],
     "dropped_by": []
   },
@@ -28840,7 +28906,8 @@
       "Plates of Divine Blood",
       "Frostmoon Crown",
       "Madness of Old Gods",
-      "Coil of Ouroboros"
+      "Coil of Ouroboros",
+      "Godslayer Signet"
     ],
     "stats": {}
   },
@@ -28866,7 +28933,8 @@
       "Righteous Flame",
       "Codex of Light",
       "Wings of Descender",
-      "Dark Lotus"
+      "Dark Lotus",
+      "Primal Flame"
     ],
     "stats": {}
   },
