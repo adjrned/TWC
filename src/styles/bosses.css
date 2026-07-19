@@ -838,3 +838,29 @@
   color: var(--accent2);
   flex-shrink: 0;
 }
+
+.wish-toggle {
+  margin-bottom: 1rem;
+}
+
+.wish-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.wish-label select {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.drop-wished {
+  border-color: var(--accent2) !important;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent2) 30%, transparent);
+}

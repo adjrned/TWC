@@ -3450,7 +3450,12 @@
     ],
     "minions": [
       "Flame Spirit"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1.5,
+      "nonWish": 1
+    }
   },
   {
     "id": "n02V",
@@ -3500,7 +3505,12 @@
       "Weapon of Nothingness",
       "Absolute Devastation",
       "True Power of Despair"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1.5,
+      "nonWish": 1
+    }
   },
   {
     "id": "h00W",
@@ -3581,7 +3591,12 @@
     "minions": [
       "Zombie",
       "Worshipper of Immortality"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1.5,
+      "nonWish": 1
+    }
   },
   {
     "id": "n039",
@@ -3693,7 +3708,12 @@
       "Elder Ent",
       "Giant Ent",
       "Ent"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1.5,
+      "nonWish": 1
+    }
   },
   {
     "id": "n03W",
@@ -3832,7 +3852,12 @@
       "Spirit of Light",
       "Protection of Light",
       "Judgment"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1.5,
+      "nonWish": 1
+    }
   },
   {
     "id": "n02Y",
@@ -3888,7 +3913,12 @@
     "minions": [
       "Illusion of Irbert",
       "Illusion of Irbert (Large)"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1.5,
+      "nonWish": 1
+    }
   },
   {
     "id": "n01Q",
@@ -4008,7 +4038,12 @@
       "Death Huntress",
       "Death Devourer",
       "Death Weaver"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h01S",
@@ -4212,7 +4247,12 @@
     ],
     "minions": [
       "Servant of Lightning God"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h04P",
@@ -4295,7 +4335,12 @@
     "minions": [
       "Obsidian Golem",
       "Lava Spirit"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h063",
@@ -4431,7 +4476,12 @@
     "minions": [
       "Wavecaller",
       "Large Wavecaller"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h06V",
@@ -4576,7 +4626,12 @@
       "Gatekeeper of Hell",
       "Cursed Spirit",
       "Hellspawn"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h07A",
@@ -4785,7 +4840,12 @@
       "Servant of Blood",
       "Blood Baron",
       "Spike"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h08Q",
@@ -4915,7 +4975,12 @@
       "I0R7"
     ],
     "spells": [],
-    "minions": []
+    "minions": [],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h09V",
@@ -4934,7 +4999,12 @@
       "I0O1",
       "I02W",
       "I0GH"
-    ]
+    ],
+    "wishable": true,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h0A1",
@@ -4957,7 +5027,12 @@
       "I0QE"
     ],
     "spells": [],
-    "minions": []
+    "minions": [],
+    "wishable": false,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h0B1",
@@ -4966,7 +5041,12 @@
     "category": "Endgame",
     "type": "Boss",
     "location": "Portal in Castle Avalon",
-    "stats": {}
+    "stats": {},
+    "wishable": false,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   },
   {
     "id": "h0C1",
@@ -4975,6 +5055,11 @@
     "category": "Endgame",
     "type": "Boss",
     "location": "",
-    "stats": {}
+    "stats": {},
+    "wishable": false,
+    "dropFormula": {
+      "wish": 1,
+      "nonWishFormula": "(1/n)*1.15"
+    }
   }
 ]
