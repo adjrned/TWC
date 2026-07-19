@@ -220,7 +220,7 @@ function renderDropCalculator(boss) {
   const iconLabel = dropInfo.iconType === 'Immortal' ? 'Immortal' : 'Legend';
   const rules = BOSS_PLAYER_RULES[boss.name] || DEFAULT_PLAYER_RULES;
   const bossObj = bossData.find(b => b.name === boss.name);
-  const showSacrifice = bossObj && ['Late', 'Endgame'].includes(bossObj.category);
+  const showSacrifice = !isNoWish && bossObj && ['Late', 'Endgame'].includes(bossObj.category);
 
   return `
     <div class="boss-section">
@@ -341,7 +341,7 @@ function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
   if (!drops.length) return '';
 
   const showWish = boss && boss.wishable;
-  const showSacrifice = boss && ['Late', 'Endgame'].includes(boss.category);
+  const showSacrifice = showWish && ['Late', 'Endgame'].includes(boss.category);
   const sacBonus = SACRIFICE_BONUSES[sacrifice];
   const sacLabel = sacBonus ? `+${Math.round(sacBonus * 100)}%` : '0%';
 
