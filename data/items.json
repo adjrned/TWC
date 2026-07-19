@@ -17527,8 +17527,7 @@
       }
     ],
     "required_by": [
-      "Crown of Absolute Zero",
-      "Celestial Crown"
+      "Crown of Absolute Zero"
     ]
   },
   {
@@ -24447,7 +24446,9 @@
         "Shining Fragment of Ruins": 2
       }
     ],
-    "required_by": []
+    "required_by": [
+      "Celestial Crown"
+    ]
   },
   {
     "id": "I0D7",
@@ -28102,7 +28103,7 @@
     },
     "recipe": [
       {
-        "Crown of Composure": 1
+        "Crown of Cleansing": 1
       },
       {
         "Sunstone": 1
