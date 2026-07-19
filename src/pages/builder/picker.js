@@ -1,5 +1,5 @@
 import { state } from '../../state.js';
-import { LABELS, COLS, ROSTER } from '../../constants.js';
+import { COLS, ROSTER } from '../../constants.js';
 import { iconLibrary } from '../../data/icons.js';
 import { showToast } from '../../ui/toast.js';
 import { setSlotItem } from './slots.js';
