@@ -1,5 +1,4 @@
 import { state } from '../state.js';
-import { LABELS } from '../constants.js';
 import { getSlotArr } from '../pages/builder/slots.js';
 import { t, getLocale } from '../i18n.js';
 import { translateItemName } from '../data/translate.js';
