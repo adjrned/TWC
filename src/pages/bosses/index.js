@@ -193,14 +193,14 @@ function isCurrencyItem(item) {
   return l.includes('soulstone') || l.includes('token') || l.includes('coin');
 }
 
-function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount }, bossName) {
-  // Soulstones, tokens, and coins are not affected by any modifiers
+function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount, sacrifice = 0 }, bossName) {
   if (isCurrencyItem(item)) return item.base;
 
   const playerPct = getPlayerBonus(playerCount, bossName);
   const seasonalMult = seasonal ? 2 : 1;
   const hardmodeMult = (hardmode && HARDMODE_BOSSES.has(bossName)) ? 1.5 : 1;
-  const combined = (1 + playerPct / 100) * seasonalMult * hardmodeMult;
+  const sacMult = 1 + SACRIFICE_BONUSES[sacrifice];
+  const combined = (1 + playerPct / 100) * seasonalMult * hardmodeMult * sacMult;
 
   let wishMult = 1;
   if (!NO_WISH_BOSSES.has(bossName)) {
@@ -219,6 +219,8 @@ function renderDropCalculator(boss) {
   const isNoWish = NO_WISH_BOSSES.has(boss.name);
   const iconLabel = dropInfo.iconType === 'Immortal' ? 'Immortal' : 'Legend';
   const rules = BOSS_PLAYER_RULES[boss.name] || DEFAULT_PLAYER_RULES;
+  const bossObj = bossData.find(b => b.name === boss.name);
+  const showSacrifice = bossObj && ['Late', 'Endgame'].includes(bossObj.category);
 
   return `
     <div class="boss-section">
@@ -240,6 +242,15 @@ function renderDropCalculator(boss) {
               <span id="calcPlayersVal">${rules.min}</span>
             </div>
           </div>
+          ${showSacrifice ? `
+          <div class="drop-calc-player">
+            <span>Sacrifice</span>
+            <div class="drop-calc-slider-row">
+              <input type="range" id="calcSacrifice" min="0" max="3" step="1" value="0">
+              <span id="calcSacrificeVal">0%</span>
+            </div>
+          </div>
+          ` : ''}
         </div>
       <div class="boss-drops-list" id="dropCalcList">
         ${dropInfo.items.map((item, i) => {
@@ -270,19 +281,25 @@ function initDropCalc(boss) {
     const hardmode = document.getElementById('calcHardmode')?.checked || false;
     const seasonal = document.getElementById('calcSeasonal')?.checked;
     const playerCount = parseInt(document.getElementById('calcPlayers')?.value || '1');
+    const sacrifice = parseInt(document.getElementById('calcSacrifice')?.value || '0');
     document.getElementById('calcPlayersVal').textContent = playerCount;
+    const sacValEl = document.getElementById('calcSacrificeVal');
+    if (sacValEl) {
+      const sacBonus = SACRIFICE_BONUSES[sacrifice];
+      sacValEl.textContent = sacBonus ? `+${Math.round(sacBonus * 100)}%` : '0%';
+    }
 
     const rates = document.querySelectorAll('#dropCalcList .boss-drop-rate');
     rates.forEach(el => {
       const idx = parseInt(el.dataset.idx);
       const item = dropInfo.items[idx];
       if (!item) return;
-      const calc = calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount }, boss.name);
+      const calc = calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount, sacrifice }, boss.name);
       el.textContent = calc.toFixed(4) + '%';
     });
   };
 
-  ['calcWish', 'calcIcon', 'calcHardmode', 'calcSeasonal', 'calcPlayers'].forEach(id => {
+  ['calcWish', 'calcIcon', 'calcHardmode', 'calcSeasonal', 'calcPlayers', 'calcSacrifice'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', update);
   });
