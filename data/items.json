@@ -10066,7 +10066,12 @@
     "grade": 5,
     "type": "Material",
     "color": "733CBE",
-    "required_by": [],
+    "required_by": [
+      "Sunstone",
+      "Dew of Paradise",
+      "Divine Lotus",
+      "Holy Thread"
+    ],
     "dropped_by": [
       "Lightbringer Kamael"
     ],
@@ -28656,7 +28661,11 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Kamael's Soulstone": 2
+      }
+    ],
     "required_by": [
       "Ordius, the Divine Lance",
       "Soul Rift",
@@ -28924,6 +28933,11 @@
     "color": "733CBE",
     "level": 100,
     "stats": {},
+    "recipe": [
+      {
+        "Kamael's Soulstone": 2
+      }
+    ],
     "required_by": [
       "Apocalypse Prime",
       "Heaven's Fall",
@@ -28951,6 +28965,11 @@
     "color": "733CBE",
     "level": 100,
     "stats": {},
+    "recipe": [
+      {
+        "Kamael's Soulstone": 2
+      }
+    ],
     "required_by": [
       "Bag of Sentience",
       "Illumination",
@@ -28978,6 +28997,11 @@
     "color": "733CBE",
     "level": 100,
     "stats": {},
+    "recipe": [
+      {
+        "Kamael's Soulstone": 2
+      }
+    ],
     "required_by": [
       "Crimson Whisper",
       "Heart of Lion",
