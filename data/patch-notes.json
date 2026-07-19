@@ -1,0 +1,45 @@
+[
+  {
+    "version": "v0.75b",
+    "compatible": "v0.62s ~",
+    "sections": [
+      {
+        "title": "Bug Fixes",
+        "entries": [
+          "Paladin - Fixed issue with DQ sigil buff not working",
+          "Crusader - Fixed issue with cooldown reset not working properly with F",
+          "Keeper of the Grove - Fixed issue with item not granting pure attack speed bonus"
+        ]
+      },
+      {
+        "title": "Monsters",
+        "subsections": [
+          {
+            "name": "Kamael, the Lightbringer",
+            "entries": [
+              "Shackle HP 5 million -> 4.5 million",
+              "Sword of Judgment HP 19 million -> 18.5 million"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Characters",
+        "subsections": [
+          {
+            "name": "Paladin",
+            "entries": [
+              "DQ - (STR main stat) Skill damage amp on sigil 4% (8% for self) -> 2.5% (7.5% for self)"
+            ]
+          },
+          {
+            "name": "Priest",
+            "entries": [
+              "E - Aura radius 900 -> 1200"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

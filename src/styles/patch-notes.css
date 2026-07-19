@@ -1,0 +1,78 @@
+.patch-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 800px;
+}
+
+.patch-note {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.patch-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.patch-version {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.patch-compat {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.patch-section {
+  margin-bottom: 1rem;
+}
+
+.patch-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.patch-subsection {
+  margin-left: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.patch-subsection-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.patch-entries {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0 1rem;
+}
+
+.patch-entries li {
+  position: relative;
+  padding-left: 1rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.patch-entries li::before {
+  content: '*';
+  position: absolute;
+  left: 0;
+  color: var(--text-muted);
+}
