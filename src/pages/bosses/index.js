@@ -293,52 +293,71 @@ function isSpecialDrop(item) {
   return item.name.includes('Soulstone') || item.name.includes('Token');
 }
 
-function calcWishRate(item, boss, wishTarget) {
-  if (!item.droprate || !boss.dropFormula) return item.droprate;
+const SACRIFICE_BONUSES = [0, 0.8, 1.6, 2.0];
+
+function calcWishRate(item, boss, wishTarget, sacrifice = 0) {
+  if (!item.droprate || !boss.dropFormula) {
+    return item.droprate ? item.droprate * (1 + SACRIFICE_BONUSES[sacrifice]) : item.droprate;
+  }
   if (isSpecialDrop(item)) return item.droprate;
 
   const formula = boss.dropFormula;
   const drops = itemData.filter(i => (i.dropped_by || []).includes(boss.name) && !isSpecialDrop(i));
   const n = drops.length;
+  const sacMult = 1 + SACRIFICE_BONUSES[sacrifice];
 
   if (wishTarget === item.name) {
-    return item.droprate * (formula.wish || 1);
+    return item.droprate * (formula.wish || 1) * sacMult;
   } else if (boss.wishable && wishTarget) {
     if (formula.nonWishFormula === '(1/n)*1.15') {
-      return item.droprate * (1 / n) * 1.15;
+      return item.droprate * (1 / n) * 1.15 * sacMult;
     }
-    return item.droprate * (formula.nonWish || 1);
+    return item.droprate * (formula.nonWish || 1) * sacMult;
   }
-  return item.droprate;
+  return item.droprate * sacMult;
 }
 
-function renderSimpleDrops(bossName, wishTarget) {
+function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
   if (!itemData) return '';
   const boss = bossData.find(b => b.name === bossName);
   const drops = itemData.filter(i => (i.dropped_by || []).includes(bossName));
   if (!drops.length) return '';
 
   const showWish = boss && boss.wishable;
+  const showSacrifice = boss && ['Late', 'Endgame'].includes(boss.category);
+  const sacBonus = SACRIFICE_BONUSES[sacrifice];
+  const sacLabel = sacBonus ? `+${Math.round(sacBonus * 100)}%` : '0%';
 
   return `
     <div class="boss-section">
       <h2>Drops</h2>
-      ${showWish ? `
-        <div class="wish-toggle">
-          <label class="wish-label">
-            <span>Wish Target:</span>
-            <select id="wishSelect">
-              <option value="">None</option>
-              ${drops.filter(i => !isSpecialDrop(i)).map(i => `
-                <option value="${esc(i.name)}" ${wishTarget === i.name ? 'selected' : ''}>${esc(i.name)}</option>
-              `).join('')}
-            </select>
-          </label>
-        </div>
-      ` : ''}
+      <div class="drops-controls">
+        ${showWish ? `
+          <div class="wish-toggle">
+            <label class="wish-label">
+              <span>Wish Target:</span>
+              <select id="wishSelect">
+                <option value="">None</option>
+                ${drops.filter(i => !isSpecialDrop(i)).map(i => `
+                  <option value="${esc(i.name)}" ${wishTarget === i.name ? 'selected' : ''}>${esc(i.name)}</option>
+                `).join('')}
+              </select>
+            </label>
+          </div>
+        ` : ''}
+        ${showSacrifice ? `
+          <div class="sacrifice-control">
+            <label class="sacrifice-label">
+              <span>Sacrifice:</span>
+              <input type="range" id="sacrificeSlider" min="0" max="3" step="1" value="${sacrifice}">
+              <span class="sacrifice-value" id="sacrificeValue">${sacLabel}</span>
+            </label>
+          </div>
+        ` : ''}
+      </div>
       <div class="boss-drops-list">
         ${drops.map(item => {
-          const effectiveRate = boss ? calcWishRate(item, boss, wishTarget) : item.droprate;
+          const effectiveRate = boss ? calcWishRate(item, boss, wishTarget, sacrifice) : item.droprate;
           const rate = effectiveRate ? parseFloat((effectiveRate * 100).toFixed(4)) + '%' : '';
           const isWished = wishTarget === item.name;
           return `
@@ -391,17 +410,30 @@ function renderBossDetail(boss) {
   `;
 }
 
-// ── Wish select handler ──────────────────────────────────────────────────────
-function initWishSelect(boss) {
+// ── Drops controls handler ───────────────────────────────────────────────────
+function initDropsControls(boss) {
   const select = document.getElementById('wishSelect');
-  if (!select) return;
-  select.addEventListener('change', () => {
-    const dropsSection = select.closest('.boss-section');
-    if (dropsSection) {
-      dropsSection.outerHTML = renderSimpleDrops(boss.name, select.value);
-      initWishSelect(boss);
+  const slider = document.getElementById('sacrificeSlider');
+
+  function rerender() {
+    const wishVal = select ? select.value : '';
+    const sacVal = slider ? parseInt(slider.value) : 0;
+    const section = document.querySelector('.boss-section');
+    if (section) {
+      section.outerHTML = renderSimpleDrops(boss.name, wishVal, sacVal);
+      initDropsControls(boss);
     }
-  });
+  }
+
+  if (select) select.addEventListener('change', rerender);
+  if (slider) {
+    slider.addEventListener('input', () => {
+      const val = parseInt(slider.value);
+      const label = document.getElementById('sacrificeValue');
+      if (label) label.textContent = SACRIFICE_BONUSES[val] ? `+${Math.round(SACRIFICE_BONUSES[val] * 100)}%` : '0%';
+    });
+    slider.addEventListener('change', rerender);
+  }
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
@@ -415,7 +447,7 @@ export async function initBosses({ params, query }) {
     if (boss) {
       app.innerHTML = renderBossDetail(boss);
       initDropCalc(boss);
-      initWishSelect(boss);
+      initDropsControls(boss);
     } else {
       app.innerHTML = `
         <button class="back-btn" onclick="history.back()">Back</button>
