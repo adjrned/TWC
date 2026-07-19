@@ -28017,7 +28017,7 @@
       "allstat": 500,
       "movespeed": 50,
       "skilldamagepercent": 0.15,
-      "drpercent": -0.1,
+      "dtpercent": -0.1,
       "passive": [
         "Holy Blood activates upon skill casting",
         "Deals magic damage equal to all stats x 4 per second to surrounding enemies for 3 seconds and regenerates 4% of HP and resources.",
@@ -28119,7 +28119,7 @@
       "allstat": 250,
       "mainstat": 250,
       "skilldamagepercent": 0.125,
-      "drpercent": -0.05,
+      "dtpercent": -0.05,
       "passive": [
         "Insight triggers when attacking",
         "Increases Attack Power by 750 and Proc Damage by 5% for 3 seconds (Stacks up to 3 times; Activation Cooldown: 1 second)",
