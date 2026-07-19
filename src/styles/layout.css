@@ -25,8 +25,61 @@
   padding: 24px 0;
   z-index: 1000;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  /* Shimmer right-edge border */
   border-right: none;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 56px;
+}
+
+.sidebar.collapsed .sidebar-logo h1,
+.sidebar.collapsed .sidebar-logo p,
+.sidebar.collapsed .sidebar-logo .logo-divider,
+.sidebar.collapsed .nav-link span:not(.nav-icon),
+.sidebar.collapsed .nav-wip,
+.sidebar.collapsed .sidebar-footer {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  padding: 0 0 12px;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar.collapsed .nav-icon {
+  margin: 0;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  z-index: 10;
+  transition: transform 0.25s, background 0.15s;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255,255,255,0.15);
+  color: var(--text);
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  right: 50%;
+  transform: translateX(50%) rotate(180deg);
 }
 
 /* Animated shimmer border on right edge */
@@ -310,6 +363,11 @@
   min-height: 100vh;
   position: relative;
   z-index: 1;
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed ~ .main-content {
+  margin-left: 56px;
 }
 
 #app {
