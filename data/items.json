@@ -28459,18 +28459,18 @@
       "str": 575,
       "agi": 550,
       "periodicdamagepercent": 0.4,
-      "healingpercent": -0.4,
+      "healreceivedpercent": -0.4,
       "passive": [
-        "Activates the Last Stand of the Gods with a chance on attack",
+        "Activates the End of the Gods with a chance on attack",
         "Activates with a 20% chance",
-        "Attack power increases by 10500 for 7.5 seconds, and primary stat and HP regeneration rate increase by 600.",
-        "The next 3 attacks, and every 6th attack thereafter, inflicts additional pure damage equal to 125% of the attack power and applies the Mark of the God of Death for 5 seconds (maximum 7 activations/stacks)",
-        "The next hit that deals more than 300,000 base damage consumes a mark and increases damage by 2% per stack (when activated, the mark does not stack further for the duration of the passive)",
+        "Attack power increases by 11000 for 7.5 seconds, and primary stat and HP regeneration rate increase by 600.",
+        "The next 3 attacks, and every 6th attack thereafter, inflicts additional pure damage equal to 125% of the attack power and applies the Mark of the Godslayer for 5 seconds (maximum 7 activations/stacks)",
+        "The next hit that deals more than 300,000 base damage consumes a mark and increases damage by 3% per stack (when activated, the mark does not stack further for the duration of the passive)",
         "Cooldown: 15 seconds"
       ],
       "active": [
         "Activates Blasphemed Hymn upon use",
-        "Consumes 75% of current HP to instantly activate the Last of the Gods.",
+        "Consumes 75% of current HP to instantly activate the End of the Gods.",
         "Cooldown: 60 seconds"
       ]
     },
