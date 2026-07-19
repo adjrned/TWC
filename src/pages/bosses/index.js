@@ -247,7 +247,7 @@ function renderDropCalculator(boss) {
             <span>Sacrifice</span>
             <div class="drop-calc-slider-row">
               <input type="range" id="calcSacrifice" min="0" max="3" step="1" value="0">
-              <span id="calcSacrificeVal">0%</span>
+              <span id="calcSacrificeVal" style="min-width:50px;display:inline-block">0%</span>
             </div>
           </div>
           ` : ''}
