@@ -740,14 +740,14 @@
         "iconMult": 1.5
       },
       {
-        "name": "Harvest Soulstone",
+        "name": "Harvester's Soulstone",
         "base": 0.15,
         "wishMult": 2.5,
         "wishIconMult": 3,
         "iconMult": 1.5
       },
       {
-        "name": "Soul Token",
+        "name": "Harvester's Token",
         "base": 0.01,
         "wishMult": null,
         "wishIconMult": null,

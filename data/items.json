@@ -10046,8 +10046,8 @@
   },
   {
     "id": "I0QE",
-    "name": "Soul Token",
-    "koreanname": "영혼의 토큰",
+    "name": "Harvester's Token",
+    "koreanname": "수확자의 토큰",
     "rank": "none",
     "grade": 0,
     "type": "Token",
@@ -10055,6 +10055,34 @@
     "required_by": [],
     "dropped_by": [
       "Styrix, the Harvester of Souls"
+    ],
+    "droprate": 0.0001
+  },
+  {
+    "id": "I1B1",
+    "name": "Kamael's Soulstone",
+    "koreanname": "",
+    "rank": "[Epic]",
+    "grade": 5,
+    "type": "Material",
+    "color": "733CBE",
+    "required_by": [],
+    "dropped_by": [
+      "Lightbringer Kamael"
+    ],
+    "droprate": 0.0015
+  },
+  {
+    "id": "I1B2",
+    "name": "Lightbringer's Token",
+    "koreanname": "",
+    "rank": "none",
+    "grade": 0,
+    "type": "Token",
+    "color": "733CBE",
+    "required_by": [],
+    "dropped_by": [
+      "Lightbringer Kamael"
     ],
     "droprate": 0.0001
   },
