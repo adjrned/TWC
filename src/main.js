@@ -52,6 +52,17 @@ function initLocaleSwitcher() {
 
 initLocaleSwitcher();
 
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+if (sidebarToggle && sidebar) {
+  const saved = localStorage.getItem('sidebarCollapsed');
+  if (saved === 'true') sidebar.classList.add('collapsed');
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+  });
+}
+
 registerRoute('/', async (ctx) => {
   return await initBuilder(ctx);
 });
