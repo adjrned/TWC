@@ -9811,7 +9811,8 @@
       "Eye of Truth",
       "Righteous Flame",
       "Aegis of Avalon",
-      "Cape of the Saint"
+      "Cape of the Saint",
+      "Dark Lotus"
     ],
     "recipe": [
       {
@@ -9932,7 +9933,8 @@
       "Frostmoon Crown",
       "Aegis of Avalon",
       "Coil of Ouroboros",
-      "Void Seraph"
+      "Void Seraph",
+      "Dark Lotus"
     ],
     "recipe": [
       {
@@ -21518,7 +21520,9 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "required_by": []
+    "required_by": [
+      "Dark Lotus"
+    ]
   },
   {
     "id": "I0LW",
@@ -25140,7 +25144,8 @@
     "color": "733CBE",
     "level": 100,
     "required_by": [
-      "Chains of Torment"
+      "Chains of Torment",
+      "Dark Lotus"
     ],
     "recipe": [
       {
@@ -28408,6 +28413,7 @@
     "stats": {
       "allstat": 500,
       "mpregen": 35,
+      "affinitydarkpercent": 0.05,
       "passive": [
         "Activates Seed of Darkness upon hitting with a single skill",
         "Increases magic damage received by 5% for 10 seconds [Type-B] Deals 2.5x primary stat magic damage per second."
@@ -28419,7 +28425,23 @@
         "Cooldown: 30 seconds"
       ]
     },
-    "recipe": [],
+    "recipe": [
+      {
+        "Ring of Despair": 1
+      },
+      {
+        "Seal of Corruption": 1
+      },
+      {
+        "Divine Lotus": 1
+      },
+      {
+        "Sinister Skull": 1
+      },
+      {
+        "Ancient Tome": 1
+      }
+    ],
     "required_by": [],
     "dropped_by": []
   },
@@ -28843,7 +28865,8 @@
       "Herald of the Void",
       "Righteous Flame",
       "Codex of Light",
-      "Wings of Descender"
+      "Wings of Descender",
+      "Dark Lotus"
     ],
     "stats": {}
   },
