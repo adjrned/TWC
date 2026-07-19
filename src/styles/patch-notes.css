@@ -32,6 +32,16 @@
   color: var(--text-muted);
 }
 
+.patch-notice {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 .patch-section {
   margin-bottom: 1rem;
 }
