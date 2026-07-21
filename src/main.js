@@ -7,6 +7,7 @@ import './styles/items.css';
 import './styles/heroes.css';
 import './styles/awakening.css';
 import './styles/patch-notes.css';
+import './styles/tracker.css';
 import { registerRoute, initRouter } from './router.js';
 import { initBuilder } from './pages/builder/index.js';
 import { getLocale, setLocale } from './i18n.js';
@@ -105,6 +106,11 @@ registerRoute('/items/:name', async (ctx) => {
 registerRoute('/patch-notes', async (ctx) => {
   const { initPatchNotes } = await import('./pages/patch-notes/index.js');
   return await initPatchNotes(ctx);
+});
+
+registerRoute('/tracker', async (ctx) => {
+  const { initTracker } = await import('./pages/tracker/index.js');
+  return await initTracker(ctx);
 });
 
 initRouter();
