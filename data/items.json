@@ -8597,8 +8597,7 @@
       "Guardian Angel"
     ],
     "dropped_by": [
-      "Lightning God Valtora",
-      "Servant of Lightning God"
+      "Lightning God Valtora"
     ],
     "droprate": 0.008
   },
@@ -9335,9 +9334,7 @@
       "Frostmoon Crown"
     ],
     "dropped_by": [
-      "Duke Lazarus",
-      "Vampiric Monstrosity",
-      "Blood Baron"
+      "Duke Lazarus"
     ],
     "droprate": 0.01
   },
@@ -20368,8 +20365,7 @@
       }
     ],
     "required_by": [
-      "Dread Incarnate",
-      "Cage of Shadow Fiend"
+      "Dread Incarnate"
     ]
   },
   {
@@ -20574,7 +20570,8 @@
       }
     ],
     "required_by": [
-      "Cage of Twisted Souls"
+      "Cage of Twisted Souls",
+      "Cage of Shadow Fiend"
     ]
   },
   {
@@ -27834,7 +27831,7 @@
     },
     "recipe": [
       {
-        "Voidshard Armor": 1
+        "Hades, the Armor of Despair": 1
       },
       {
         "Twisted Fragment of Ruins": 1
