@@ -139,10 +139,14 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
     const droppedBy = mat ? (mat.dropped_by || []) : [];
     const entry = { name: matName, needed, item: mat || null };
 
-    if (droppedBy.length === 0) continue;
-    for (const bossName of droppedBy) {
-      if (!groups[bossName]) groups[bossName] = { boss: bossMap.get(bossName) || null, materials: [] };
-      groups[bossName].materials.push(entry);
+    if (droppedBy.length === 0) {
+      if (!groups['Craftable']) groups['Craftable'] = { boss: null, materials: [] };
+      groups['Craftable'].materials.push(entry);
+    } else {
+      for (const bossName of droppedBy) {
+        if (!groups[bossName]) groups[bossName] = { boss: bossMap.get(bossName) || null, materials: [] };
+        groups[bossName].materials.push(entry);
+      }
     }
   }
 
