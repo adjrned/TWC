@@ -485,10 +485,24 @@
 }
 
 .tree-boss-hint {
-  color: var(--muted);
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
   margin-left: auto;
   white-space: nowrap;
+}
+
+.tree-boss-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.tree-drop-rate {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  margin-left: 4px;
 }
 
 .tree-children.collapsed {
@@ -597,27 +611,34 @@
 }
 
 .comp-mat-bosses {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   margin-left: auto;
-  font-size: 0.78rem;
-  color: var(--muted);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 250px;
-  text-align: right;
 }
 
-.comp-boss-link {
-  color: var(--accent2);
-  text-decoration: none;
+.comp-boss-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  object-fit: cover;
+  transition: transform 0.15s;
 }
 
-.comp-boss-link:hover {
-  text-decoration: underline;
+.comp-boss-icon:hover {
+  transform: scale(1.2);
+}
+
+.comp-drop-rate {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  margin-left: 4px;
 }
 
 .comp-craftable {
   color: var(--accent3);
+  font-size: 0.78rem;
   font-style: italic;
 }
 

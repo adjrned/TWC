@@ -31,6 +31,7 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
     status: consumed >= neededQty ? 'have' : consumed > 0 ? 'partial' : 'none',
     isLeaf,
     droppedBy: item ? (item.dropped_by || []) : [],
+    droprate: item ? (item.droprate || 0) : 0,
     children: [],
   };
 
