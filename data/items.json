@@ -20095,15 +20095,15 @@
         "Bag of Demise": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
+        "Arcane Core": 1
+      },
+      {
         "Ancient Tome": 1
       }
     ],
@@ -22702,12 +22702,10 @@
         "Curse of Greed": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Twisted Fragment of Ruins": 1
@@ -22717,7 +22715,6 @@
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -22769,8 +22766,7 @@
         "Mark of Lord": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -22827,8 +22823,7 @@
         "Fragment of Soul": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       }
     ],
     "required_by": [
@@ -22868,7 +22863,6 @@
         "The Ender": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
@@ -22920,12 +22914,10 @@
         "Atricia, the True Sword of Dreams": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
         "Twisted Fragment of Ruins": 1
@@ -22967,11 +22959,12 @@
         "Espishu, the True Sword of Chaos": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Sinister Skull": 1,
+        "Sinister Skull": 1
+      },
+      {
         "Spirit of Damnation": 1
       }
     ],
@@ -23016,11 +23009,9 @@
         "Mask of Truth": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
@@ -23065,16 +23056,13 @@
         "Blazing Heart": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -23111,18 +23099,15 @@
         "Grim Scythe": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       }
     ],
@@ -23173,8 +23158,7 @@
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       }
     ],
     "required_by": []
@@ -23209,12 +23193,10 @@
         "Power of Beriel": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       }
     ],
     "required_by": [
@@ -23267,8 +23249,7 @@
         "Fragment of Hell": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -23307,12 +23288,10 @@
         "Fragment of Hell": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Twisted Fragment of Ruins": 1
@@ -23362,15 +23341,12 @@
         "Mask of Truth": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -23420,7 +23396,6 @@
         "The Ender": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -23433,8 +23408,7 @@
         "Fragment of Hell": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       }
     ],
     "required_by": [
@@ -23477,12 +23451,10 @@
         "The Ender": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Twisted Fragment of Ruins": 1
@@ -23526,18 +23498,15 @@
         "Chrono Chaser": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       }
     ],
@@ -23590,8 +23559,7 @@
         "Fragment of Soul": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -23651,8 +23619,7 @@
         "Aegis of Sea": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
         "Shining Fragment of Ruins": 1
@@ -23699,12 +23666,10 @@
         "Mark of Lord": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       }
     ],
     "required_by": [
@@ -23744,7 +23709,6 @@
         "Crimson Hatred": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -23754,12 +23718,10 @@
         "Essence of Sea": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       }
     ],
     "required_by": []
@@ -23800,15 +23762,15 @@
         "Grim Scythe": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
+        "Arcane Core": 1
+      },
+      {
         "Ancient Tome": 1
       }
     ],
@@ -23846,15 +23808,12 @@
         "Grail of Eternity": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -23908,7 +23867,9 @@
         "Essence of Sea": 1
       },
       {
-        "Blood Essence": 1,
+        "Blood Essence": 1
+      },
+      {
         "Soul Blossom": 1
       }
     ],
@@ -23953,7 +23914,6 @@
         "Armor of Grudge": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -24019,11 +23979,9 @@
         "Fragment of Hell": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       }
     ],
@@ -24068,11 +24026,9 @@
         "Gown of Life": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
@@ -24177,11 +24133,9 @@
         "Robe of Archlich": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
@@ -24225,7 +24179,6 @@
         "Mask of Truth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -24233,8 +24186,7 @@
         "Essence of Earth": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       }
     ],
     "required_by": []
@@ -24275,14 +24227,12 @@
         "Mask of Truth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       }
     ],
@@ -24321,12 +24271,13 @@
         "Gown of Life": 1
       },
       {
-        "Arcane Core": 1,
+        "Arcane Core": 1
+      },
+      {
         "Ancient Tome": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": []
@@ -24360,16 +24311,13 @@
         "Jupiter, the Robe of Heavens": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -24413,19 +24361,15 @@
         "Robe of Archlich": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -24469,8 +24413,7 @@
         "Fragment of Hell": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
         "Shining Fragment of Ruins": 2
@@ -24524,11 +24467,9 @@
         "Curse of Greed": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
@@ -24574,8 +24515,7 @@
         "Radiance of the One": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
         "Aegis of Sea": 1
@@ -24622,7 +24562,6 @@
         "Fragment of Hell": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
@@ -24667,7 +24606,6 @@
         "Curse of Greed": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -24716,11 +24654,9 @@
         "Mark of Lord": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       }
     ],
@@ -24808,14 +24744,12 @@
         "Mask of Truth": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -24857,16 +24791,13 @@
         "Curse of Greed": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": []
@@ -24913,11 +24844,9 @@
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -24958,16 +24887,13 @@
         "Curse of Greed": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": []
@@ -25008,8 +24934,7 @@
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": []
@@ -25050,15 +24975,13 @@
         "Mask of Truth": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": []
@@ -25101,11 +25024,9 @@
         "Fragment of Soul": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       }
     ],
@@ -25162,8 +25083,7 @@
         "Mark of Lord": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -25243,7 +25163,6 @@
         "Grail of Eternity": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -25296,21 +25215,18 @@
         "Seal of Deceiver": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
         "Aegis of Sea": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
         "Mark of Lord": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       }
     ],
@@ -25354,12 +25270,10 @@
         "Curse of Greed": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
         "Shining Fragment of Ruins": 2
@@ -25405,15 +25319,13 @@
         "Aegis of Sea": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
         "Fragment of Hell": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -25450,14 +25362,12 @@
         "Ring of Hope": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       }
     ],
@@ -25495,16 +25405,13 @@
         "Nephthys, the Engraved Ring": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       }
     ],
     "required_by": [
@@ -25543,8 +25450,7 @@
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -25590,12 +25496,10 @@
         "Seal of Corruption": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": []
@@ -25633,19 +25537,16 @@
         "Demonic Fist": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": []
@@ -25687,7 +25588,6 @@
         "Gown of Life": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
@@ -25729,19 +25629,16 @@
         "Nebula Rose": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
         "Gown of Life": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -25797,8 +25694,7 @@
         "Fragment of Hell": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -25852,8 +25748,7 @@
         "Fragment of Soul": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       }
     ],
     "required_by": [
@@ -25904,8 +25799,7 @@
         "Mark of Lord": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
         "Soul Blossom": 1,
@@ -25959,12 +25853,10 @@
         "Essence of Sea": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       }
     ],
     "required_by": [
@@ -26017,8 +25909,7 @@
         "Fragment of Soul": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Shining Fragment of Ruins": 1
@@ -26059,7 +25950,6 @@
         "Protection of the Fairies": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -26069,8 +25959,7 @@
         "Mask of Truth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       }
     ],
     "required_by": []
@@ -26105,15 +25994,13 @@
         "Soul Devourer": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       }
     ],
     "required_by": [
@@ -26154,19 +26041,15 @@
         "Gown of Life": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -26206,18 +26089,15 @@
         "Gown of Life": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -26259,11 +26139,9 @@
         "Mark of Lord": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -26303,12 +26181,10 @@
         "Bloodstorm": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Arcane Core": 1,
@@ -26350,11 +26226,9 @@
         "Cape of Insatiable Hunger": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -27410,8 +27284,7 @@
         "Grim Scythe": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Dew of Paradise": 1
@@ -27465,11 +27338,9 @@
         "Mask of Truth": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -27517,16 +27388,13 @@
         "Grim Scythe": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Holy Thread": 1
@@ -27571,15 +27439,12 @@
         "Grim Scythe": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -27632,11 +27497,9 @@
         "Grim Scythe": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -27683,11 +27546,9 @@
         "Mask of Truth": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -27739,7 +27600,6 @@
         "Sunstone": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
@@ -27785,12 +27645,10 @@
         "Grim Scythe": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -27835,7 +27693,6 @@
         "Bag of Despair": 1
       },
       {
-        "Emblem of Sacrifice": 1,
         "Crimson Rose": 1
       },
       {
@@ -27896,7 +27753,6 @@
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -27938,8 +27794,7 @@
         "Gown of Life": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -27985,7 +27840,6 @@
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -28035,12 +27889,10 @@
         "Exitium, the Armor of Ruin": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
@@ -28084,15 +27936,12 @@
         "Harmony of Sky and Earth": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -28139,16 +27988,13 @@
         "Gown of Life": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Divine Lotus": 1
@@ -28194,15 +28040,12 @@
         "Sunstone": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -28248,11 +28091,9 @@
         "Mask of Truth": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -28301,15 +28142,13 @@
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Lantern of Souls": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       }
     ],
     "required_by": [],
@@ -28352,15 +28191,12 @@
         "Sunstone": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -28405,12 +28241,10 @@
         "Mask of Truth": 1
       },
       {
-        "Blood Essence": 1,
-        "Soul Blossom": 1
+        "Blood Essence": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Dew of Paradise": 1
@@ -28455,15 +28289,13 @@
         "Grim Scythe": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
         "Twisted Fragment of Ruins": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
         "Dew of Paradise": 1
@@ -28504,11 +28336,9 @@
         "Crown of Cataclysm": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
@@ -28601,14 +28431,12 @@
         "Bell of Divinity": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
         "Mask of Truth": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
@@ -28654,11 +28482,9 @@
         "Divine Lotus": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       }
     ],
@@ -28705,11 +28531,9 @@
         "Lantern of Souls": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       }
     ],
@@ -28753,12 +28577,10 @@
         "Divine Lotus": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       }
     ],
     "required_by": [],
@@ -28803,12 +28625,10 @@
         "Lantern of Souls": 1
       },
       {
-        "Arcane Core": 1,
-        "Ancient Tome": 1
+        "Arcane Core": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       }
     ],
     "required_by": [],
@@ -28889,20 +28709,16 @@
         "Guardian Angel": 1
       },
       {
-        "Emblem of Sacrifice": 1,
-        "Crimson Rose": 1
+        "Emblem of Sacrifice": 1
       },
       {
-        "Essence of Earth": 1,
         "Aegis of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Holy Thread": 1
@@ -28948,15 +28764,12 @@
         "Sunstone": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
-        "Arcane Core": 1,
         "Ancient Tome": 1
       },
       {
-        "Sinister Skull": 1,
         "Spirit of Damnation": 1
       }
     ],
@@ -29001,8 +28814,7 @@
         "Mask of Truth": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Dew of Paradise": 1
@@ -29048,8 +28860,7 @@
         "Blood Devourer": 1
       },
       {
-        "Sinister Skull": 1,
-        "Spirit of Damnation": 1
+        "Sinister Skull": 1
       },
       {
         "Holy Thread": 1
@@ -29094,12 +28905,10 @@
         "Ruler of the Skies": 1
       },
       {
-        "Blood Essence": 1,
         "Soul Blossom": 1
       },
       {
-        "Essence of Earth": 1,
-        "Aegis of Earth": 1
+        "Essence of Earth": 1
       },
       {
         "Lantern of Souls": 1
