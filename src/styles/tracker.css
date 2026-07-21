@@ -549,7 +549,7 @@
 
 /* ── Comprehensive View ────────────────────────────────────────────────────── */
 
-.comp-tracked-item {
+.comp-boss-section {
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
@@ -557,33 +557,31 @@
   margin-bottom: 16px;
 }
 
-.comp-item-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
+.comp-boss-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
 
-.comp-item-icon {
+.comp-boss-header .comp-boss-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.comp-boss-header .comp-boss-link:hover {
+  color: var(--accent3);
+}
+
+.comp-boss-header-icon {
   width: 32px;
   height: 32px;
   border-radius: 6px;
   object-fit: cover;
-}
-
-.comp-item-header h3 {
-  font-size: 1rem;
-}
-
-.comp-item-header a {
-  color: var(--text);
-  text-decoration: none;
-}
-
-.comp-item-header a:hover {
-  color: var(--accent3);
 }
 
 .comp-materials-list {

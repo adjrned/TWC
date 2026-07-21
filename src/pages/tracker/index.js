@@ -213,43 +213,36 @@ function renderComprehensiveView() {
   }
 
   const ownedMap = buildOwnedMap(trackerState.lastSave?.inventory);
-  const data = buildComprehensiveData(trackerState.trackedItems, itemMap, ownedMap, bossData);
+  const groups = buildComprehensiveData(trackerState.trackedItems, itemMap, ownedMap, bossData);
+  const entries = Object.entries(groups);
 
-  return data.map(({ itemName, materials }) => {
+  if (!entries.length) {
+    return '<div class="tracker-content-empty">All materials acquired!</div>';
+  }
+
+  return entries.map(([bossName, { boss, materials }]) => {
+    const bossHref = boss ? `#/bosses/${encodeURIComponent(boss.id)}` : '#/bosses';
     const matsHtml = materials.map(m => {
-      const status = m.owned >= m.needed ? 'have' : m.owned > 0 ? 'partial' : 'none';
-      const hasRecipe = m.item && m.item.recipe && m.item.recipe.length > 0;
+      const remaining = m.needed - m.owned;
       const droprate = m.item ? (m.item.droprate || 0) : 0;
       const rateStr = droprate ? `${(droprate * 100).toFixed(2)}%` : '';
-      let sourceHtml = '';
-      if (m.bosses.length) {
-        const icons = m.bosses.map(b => {
-          const href = b.boss ? `#/bosses/${encodeURIComponent(b.boss.id)}` : `#/bosses`;
-          return `<a href="${href}" title="${esc(b.name)}"><img src="twicons/${encodeURIComponent(b.name + ' Icon')}.jpg" alt="${esc(b.name)}" class="comp-boss-icon" onerror="this.style.display='none'"></a>`;
-        }).join('');
-        sourceHtml = icons;
-      } else if (hasRecipe) {
-        sourceHtml = status === 'have'
-          ? '<span class="comp-craftable">Crafted</span>'
-          : '<span class="comp-craftable">Craftable</span>';
-      }
-
       return `
         <div class="comp-material">
           <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="" class="comp-mat-icon" onerror="this.style.display='none'">
           <a href="#/items/${encodeURIComponent(m.name)}" class="comp-mat-name">${esc(m.name)}</a>
-          <span class="comp-mat-count status-${status}">Need: ${m.needed} (have ${m.owned})</span>
+          <span class="comp-mat-count status-none">Need ${remaining} more</span>
           ${rateStr ? `<span class="comp-drop-rate">${rateStr}</span>` : ''}
-          ${sourceHtml ? `<span class="comp-mat-bosses">${sourceHtml}</span>` : ''}
         </div>
       `;
     }).join('');
 
     return `
-      <div class="comp-tracked-item">
-        <div class="comp-item-header">
-          <img src="twicons/${encodeURIComponent(itemName)}.jpg" alt="" class="comp-item-icon" onerror="this.style.display='none'">
-          <h3><a href="#/items/${encodeURIComponent(itemName)}">${esc(itemName)}</a></h3>
+      <div class="comp-boss-section">
+        <div class="comp-boss-header">
+          <a href="${bossHref}" class="comp-boss-link">
+            <img src="twicons/${encodeURIComponent(bossName + ' Icon')}.jpg" alt="${esc(bossName)}" class="comp-boss-header-icon" onerror="this.style.display='none'">
+            <span>${esc(bossName)}</span>
+          </a>
         </div>
         <div class="comp-materials-list">${matsHtml}</div>
       </div>
