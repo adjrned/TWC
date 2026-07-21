@@ -616,8 +616,14 @@
   text-decoration: underline;
 }
 
-.comp-unknown {
-  color: var(--muted);
+.comp-craftable {
+  color: var(--accent3);
+  font-style: italic;
+}
+
+.tree-craftable {
+  color: var(--accent3);
+  font-style: italic;
 }
 
 /* ── Load Code History ─────────────────────────────────────────────────────── */
