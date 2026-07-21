@@ -31,10 +31,11 @@ async function loadBossData() {
 function renderUploadArea(hasSave) {
   return `
     <div class="tracker-upload ${hasSave ? 'has-save' : ''}" id="trackerUpload">
-      <div class="upload-zone" id="uploadZone">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
         <div class="upload-icon">📂</div>
-        <p>Drop your save file here or <label class="upload-link">browse<input type="file" id="fileInput" accept=".txt" hidden></label></p>
+        <p>Drop your save file here or click to browse</p>
         <span class="upload-hint">WC3 save file (.txt)</span>
+        <input type="file" id="fileInput" accept=".txt" hidden>
       </div>
     </div>
   `;
@@ -109,9 +110,17 @@ function renderTrackedList() {
 
 function renderViewToggle() {
   return `
-    <div class="tracker-view-toggle">
-      <button class="view-tab ${currentView === 'split' ? 'active' : ''}" onclick="window._trackerSetView('split')">Split View</button>
-      <button class="view-tab ${currentView === 'comprehensive' ? 'active' : ''}" onclick="window._trackerSetView('comprehensive')">Comprehensive</button>
+    <div class="tracker-view-bar">
+      <div class="tracker-view-toggle">
+        <button class="view-tab ${currentView === 'split' ? 'active' : ''}" onclick="window._trackerSetView('split')">Split View</button>
+        <button class="view-tab ${currentView === 'comprehensive' ? 'active' : ''}" onclick="window._trackerSetView('comprehensive')">Comprehensive</button>
+      </div>
+      ${currentView === 'split' ? `
+        <div class="tree-expand-controls">
+          <button class="btn-small" onclick="window._trackerExpandAll()">Expand All</button>
+          <button class="btn-small" onclick="window._trackerCollapseAll()">Collapse All</button>
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -387,12 +396,8 @@ export async function initTracker({ params, query }) {
 
   window._trackerSetView = (view) => {
     currentView = view;
-    const toggleEl = document.querySelector('.tracker-view-toggle');
-    if (toggleEl) {
-      toggleEl.querySelectorAll('.view-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(view));
-      });
-    }
+    const bar = document.querySelector('.tracker-view-bar');
+    if (bar) bar.outerHTML = renderViewToggle();
     refreshContent();
   };
 
@@ -403,6 +408,20 @@ export async function initTracker({ params, query }) {
       const btn = children.previousElementSibling?.querySelector('.tree-toggle');
       if (btn) btn.textContent = children.classList.contains('collapsed') ? '▶' : '▼';
     }
+  };
+
+  window._trackerExpandAll = () => {
+    document.querySelectorAll('.tree-children.collapsed').forEach(el => {
+      el.classList.remove('collapsed');
+    });
+    document.querySelectorAll('.tree-toggle').forEach(btn => { btn.textContent = '▼'; });
+  };
+
+  window._trackerCollapseAll = () => {
+    document.querySelectorAll('.tree-children').forEach(el => {
+      el.classList.add('collapsed');
+    });
+    document.querySelectorAll('.tree-toggle').forEach(btn => { btn.textContent = '▶'; });
   };
 
   window._toggleHistoryEntry = (idx) => {
@@ -434,6 +453,8 @@ export async function initTracker({ params, query }) {
     delete window._trackerUntrackItem;
     delete window._trackerSetView;
     delete window._toggleTreeNode;
+    delete window._trackerExpandAll;
+    delete window._trackerCollapseAll;
     delete window._toggleHistoryEntry;
     delete window._trackerCopyCodes;
     delete window._trackerDeleteSave;
