@@ -153,12 +153,19 @@ function renderTreeNode(node, depth, counter) {
     </div>`;
   }
 
+  const altLabel = node.alternatives && node.alternatives.length
+    ? `<span class="tree-alt-hint" title="${node.alternatives.map(a => esc(a)).join(', ')}">or ${node.alternatives.map(a =>
+        `<img src="twicons/${encodeURIComponent(a)}.jpg" alt="${esc(a)}" title="${esc(a)}" class="tree-alt-icon" onerror="this.style.display='none'">`
+      ).join('')}</span>`
+    : '';
+
   return `
     <div class="tree-node depth-${Math.min(depth, 5)}">
       <div class="tree-node-row">
         ${toggle}
         <img src="twicons/${encodeURIComponent(node.name)}.jpg" alt="" class="tree-node-icon" onerror="this.style.display='none'">
         <a href="#/items/${encodeURIComponent(node.name)}" class="tree-node-name">${esc(node.name)}</a>
+        ${altLabel}
         ${qtyLabel}
         ${ownedLabel}
         ${rateLabel}

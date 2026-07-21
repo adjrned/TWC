@@ -504,6 +504,23 @@
   color: var(--muted2);
 }
 
+.tree-alt-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.tree-alt-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  object-fit: cover;
+  opacity: 0.7;
+}
+
 .tree-children.collapsed {
   display: none;
 }
