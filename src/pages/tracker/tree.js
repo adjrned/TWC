@@ -26,7 +26,7 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, visited = ne
     children: [],
   };
 
-  if (!isLeaf && !visited.has(name)) {
+  if (!isLeaf && !visited.has(name) && ownedQty < neededQty) {
     const next = new Set(visited);
     next.add(name);
     for (const ingredient of item.recipe) {
@@ -40,11 +40,12 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, visited = ne
   return node;
 }
 
-export function flattenToLeaves(name, qty, itemMap, accumulator = new Map(), visited = new Set()) {
+export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), visited = new Set()) {
   const item = itemMap.get(name);
   const hasRecipe = item && item.recipe && item.recipe.length > 0;
+  const owned = ownedMap ? (ownedMap.get(name) || 0) : 0;
 
-  if (!hasRecipe || visited.has(name)) {
+  if (!hasRecipe || visited.has(name) || owned >= qty) {
     accumulator.set(name, (accumulator.get(name) || 0) + qty);
     return accumulator;
   }
@@ -53,7 +54,7 @@ export function flattenToLeaves(name, qty, itemMap, accumulator = new Map(), vis
   next.add(name);
   for (const ingredient of item.recipe) {
     const [matName, matQty] = Object.entries(ingredient)[0];
-    flattenToLeaves(matName, qty * matQty, itemMap, accumulator, next);
+    flattenToLeaves(matName, qty * matQty, itemMap, ownedMap, accumulator, next);
   }
   return accumulator;
 }
@@ -64,7 +65,7 @@ const EXCLUDED_MATERIALS = new Set([
 ]);
 
 function isExcluded(name) {
-  return EXCLUDED_MATERIALS.has(name) || name.includes('Soulstone');
+  return EXCLUDED_MATERIALS.has(name) || name.includes('Soulstone') || name.includes('Token');
 }
 
 export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData) {
@@ -75,7 +76,7 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
 
   const results = [];
   for (const itemName of trackedItems) {
-    const leaves = flattenToLeaves(itemName, 1, itemMap);
+    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap);
     const materials = [];
 
     for (const [matName, needed] of leaves) {
