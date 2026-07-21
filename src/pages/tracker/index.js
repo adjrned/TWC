@@ -153,10 +153,16 @@ function renderTreeNode(node, depth, counter) {
     </div>`;
   }
 
-  const altLabel = node.alternatives && node.alternatives.length
-    ? `<span class="tree-alt-hint" title="${node.alternatives.map(a => esc(a)).join(', ')}">or ${node.alternatives.map(a =>
-        `<img src="twicons/${encodeURIComponent(a)}.jpg" alt="${esc(a)}" title="${esc(a)}" class="tree-alt-icon" onerror="this.style.display='none'">`
-      ).join('')}</span>`
+  const altRow = node.alternatives && node.alternatives.length
+    ? `<div class="tree-alt-row">
+        <span class="tree-alt-label">or</span>
+        ${node.alternatives.map(a =>
+          `<a href="#/items/${encodeURIComponent(a)}" class="tree-alt-item">
+            <img src="twicons/${encodeURIComponent(a)}.jpg" alt="${esc(a)}" class="tree-alt-icon" onerror="this.style.display='none'">
+            <span class="tree-alt-name">${esc(a)}</span>
+          </a>`
+        ).join('')}
+      </div>`
     : '';
 
   return `
@@ -165,12 +171,12 @@ function renderTreeNode(node, depth, counter) {
         ${toggle}
         <img src="twicons/${encodeURIComponent(node.name)}.jpg" alt="" class="tree-node-icon" onerror="this.style.display='none'">
         <a href="#/items/${encodeURIComponent(node.name)}" class="tree-node-name">${esc(node.name)}</a>
-        ${altLabel}
         ${qtyLabel}
         ${ownedLabel}
         ${rateLabel}
         ${bossHint}
       </div>
+      ${altRow}
       ${childrenHtml}
     </div>
   `;
