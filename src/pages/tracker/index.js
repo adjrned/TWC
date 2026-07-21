@@ -42,55 +42,41 @@ function renderUploadArea(hasSave) {
 
 function renderCharacterOverview(save) {
   if (!save) return '';
-  const sectionCounts = Object.entries(save.sections).map(([name, items]) =>
-    `<span class="overview-stat"><strong>${items.length}</strong> ${esc(name)}</span>`
-  ).join('');
-
-  return `
-    <div class="tracker-overview">
-      <div class="overview-header">
-        <div class="overview-identity">
-          <h2>${esc(save.username)}</h2>
-          <span class="overview-class">${esc(save.class)} &middot; Lv.${save.level}</span>
-        </div>
-        <div class="overview-version">v${esc(save.version)}</div>
-      </div>
-      <div class="overview-stats">${sectionCounts}</div>
-      <button class="btn-small btn-danger" onclick="window._trackerDeleteSave()">Remove Save</button>
-    </div>
-  `;
-}
-
-function renderInventory(save) {
-  if (!save) return '';
+  const classIcon = `twicons/${save.class.replace(/\s+/g, '')}Icon.jpg`;
   const sectionOrder = ['Hero Inventory', 'Bag', 'Storage'];
+
   const sectionsHtml = sectionOrder.map(name => {
     const items = save.sections[name];
     if (!items || !items.length) return '';
     const itemsHtml = items.map(({ name: itemName, qty }) => {
-      const qtyStr = qty > 1 ? ` <span class="inv-qty">x${qty}</span>` : '';
-      return `
-        <a href="#/items/${encodeURIComponent(itemName)}" class="inv-item">
-          <img src="twicons/${encodeURIComponent(itemName)}.jpg" alt="" class="inv-item-icon" onerror="this.style.display='none'">
-          <span class="inv-item-name">${esc(itemName)}</span>${qtyStr}
-        </a>
-      `;
+      const title = qty > 1 ? `${itemName} x${qty}` : itemName;
+      return `<a href="#/items/${encodeURIComponent(itemName)}" class="inv-icon-link" title="${esc(title)}">
+        <img src="twicons/${encodeURIComponent(itemName)}.jpg" alt="${esc(itemName)}" class="inv-icon" onerror="this.style.display='none'">
+        ${qty > 1 ? `<span class="inv-icon-qty">x${qty}</span>` : ''}
+      </a>`;
     }).join('');
     return `
       <div class="inv-section">
         <h3 class="inv-section-title">${esc(name)}</h3>
-        <div class="inv-items">${itemsHtml}</div>
+        <div class="inv-icons">${itemsHtml}</div>
       </div>
     `;
   }).join('');
 
   return `
-    <div class="tracker-inventory" id="trackerInventory">
-      <div class="inv-header" onclick="window._toggleInventory()">
-        <h2 class="tracker-section-title">Character Inventory</h2>
-        <span class="inv-chevron" id="invChevron">▼</span>
+    <div class="tracker-overview">
+      <div class="overview-header">
+        <img src="${esc(classIcon)}" alt="${esc(save.class)}" class="overview-class-icon" onerror="this.style.display='none'">
+        <div class="overview-identity">
+          <h2>${esc(save.username)}</h2>
+          <span class="overview-class">${esc(save.class)} &middot; Lv.${save.level}</span>
+        </div>
+        <div class="overview-actions">
+          <span class="overview-version">v${esc(save.version)}</span>
+          <button class="btn-small btn-danger" onclick="window._trackerDeleteSave()">Remove</button>
+        </div>
       </div>
-      <div class="inv-body" id="invBody">${sectionsHtml}</div>
+      ${sectionsHtml}
     </div>
   `;
 }
@@ -267,7 +253,6 @@ function renderPage() {
       <h1 class="tracker-title">Item Tracker</h1>
       ${renderUploadArea(hasSave)}
       ${renderCharacterOverview(trackerState.lastSave)}
-      ${renderInventory(trackerState.lastSave)}
       ${renderSearchArea()}
       <div id="trackedItemsArea">${renderTrackedList()}</div>
       ${hasSave || trackerState.trackedItems.length ? `
@@ -420,15 +405,6 @@ export async function initTracker({ params, query }) {
     }
   };
 
-  window._toggleInventory = () => {
-    const body = document.getElementById('invBody');
-    const chev = document.getElementById('invChevron');
-    if (body) {
-      body.classList.toggle('collapsed');
-      if (chev) chev.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
-    }
-  };
-
   window._toggleHistoryEntry = (idx) => {
     const body = document.getElementById(`histBody${idx}`);
     const chev = document.getElementById(`histChev${idx}`);
@@ -458,7 +434,6 @@ export async function initTracker({ params, query }) {
     delete window._trackerUntrackItem;
     delete window._trackerSetView;
     delete window._toggleTreeNode;
-    delete window._toggleInventory;
     delete window._toggleHistoryEntry;
     delete window._trackerCopyCodes;
     delete window._trackerDeleteSave;
