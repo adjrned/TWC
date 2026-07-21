@@ -81,6 +81,15 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
     return accumulator;
   }
 
+  const hasNonExcludedIngredients = item.recipe.some(ing =>
+    Object.keys(ing).some(n => !isExcluded(n))
+  );
+
+  if (!hasNonExcludedIngredients) {
+    accumulator.set(name, (accumulator.get(name) || 0) + stillNeeded);
+    return accumulator;
+  }
+
   const next = new Set(ancestors);
   next.add(name);
   for (const ingredient of item.recipe) {
