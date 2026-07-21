@@ -130,7 +130,7 @@ function renderTreeNode(node, depth, counter) {
   const collapsed = (depth > 1 || node.status === 'have') ? 'collapsed' : '';
   const statusClass = `status-${node.status}`;
   const hasChildren = node.children.length > 0;
-  const toggle = hasChildren ? `<button class="tree-toggle" onclick="window._toggleTreeNode('${id}')">${collapsed ? '▶' : '▼'}</button>` : '<span class="tree-toggle-spacer"></span>';
+  const toggle = hasChildren ? `<button type="button" class="tree-toggle" onclick="event.stopPropagation();window._toggleTreeNode('${id}',this)">${collapsed ? '▶' : '▼'}</button>` : '<span class="tree-toggle-spacer"></span>';
   const qtyLabel = node.neededQty > 1 ? `<span class="tree-qty">x${node.neededQty}</span>` : '';
   const ownedLabel = `<span class="tree-owned ${statusClass}">${node.ownedQty}/${node.neededQty}</span>`;
   let bossHint = '';
@@ -450,12 +450,12 @@ export async function initTracker({ params, query }) {
     wireEvents();
   };
 
-  window._toggleTreeNode = (id) => {
-    const children = document.querySelector(`[data-node-id="${id}"]`);
+  window._toggleTreeNode = (id, btn) => {
+    const treeNode = btn.closest('.tree-node');
+    const children = treeNode?.querySelector(`:scope > [data-node-id="${id}"]`);
     if (children) {
       children.classList.toggle('collapsed');
-      const btn = children.previousElementSibling?.querySelector('.tree-toggle');
-      if (btn) btn.textContent = children.classList.contains('collapsed') ? '▶' : '▼';
+      btn.textContent = children.classList.contains('collapsed') ? '▶' : '▼';
     }
   };
 
