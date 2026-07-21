@@ -60,12 +60,21 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
   return node;
 }
 
-export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), visited = new Set()) {
+export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), visited = new Set(), remaining = null) {
+  if (!remaining) {
+    remaining = new Map();
+    for (const [k, v] of ownedMap) remaining.set(k, v);
+  }
+
   const item = itemMap.get(name);
   const hasRecipe = item && item.recipe && item.recipe.length > 0;
+  const available = remaining.get(name) || 0;
+  const consumed = Math.min(available, qty);
+  remaining.set(name, available - consumed);
+  const stillNeeded = qty - consumed;
 
-  if (!hasRecipe || visited.has(name)) {
-    accumulator.set(name, (accumulator.get(name) || 0) + qty);
+  if (stillNeeded <= 0 || !hasRecipe || visited.has(name)) {
+    if (stillNeeded > 0) accumulator.set(name, (accumulator.get(name) || 0) + stillNeeded);
     return accumulator;
   }
 
@@ -78,11 +87,11 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
 
     if (nonExcluded.length === 1) {
       const [matName, matQty] = nonExcluded[0];
-      flattenToLeaves(matName, qty * matQty, itemMap, ownedMap, accumulator, next);
+      flattenToLeaves(matName, stillNeeded * matQty, itemMap, ownedMap, accumulator, next, remaining);
     } else {
-      const sorted = [...nonExcluded].sort((a, b) => (ownedMap.get(b[0]) || 0) - (ownedMap.get(a[0]) || 0));
+      const sorted = [...nonExcluded].sort((a, b) => (remaining.get(b[0]) || 0) - (remaining.get(a[0]) || 0));
       const [chosenName, chosenQty] = sorted[0];
-      flattenToLeaves(chosenName, qty * chosenQty, itemMap, ownedMap, accumulator, next);
+      flattenToLeaves(chosenName, stillNeeded * chosenQty, itemMap, ownedMap, accumulator, next, remaining);
     }
   }
   return accumulator;
