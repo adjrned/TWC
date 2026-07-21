@@ -133,13 +133,13 @@ function renderTreeNode(node, depth, counter) {
   const toggle = hasChildren ? `<button type="button" class="tree-toggle" onclick="event.stopPropagation();window._toggleTreeNode('${id}',this)">${collapsed ? '▶' : '▼'}</button>` : '<span class="tree-toggle-spacer"></span>';
   const qtyLabel = node.neededQty > 1 ? `<span class="tree-qty">x${node.neededQty}</span>` : '';
   const ownedLabel = `<span class="tree-owned ${statusClass}">${node.ownedQty}/${node.neededQty}</span>`;
+  const rateLabel = node.droppedBy.length && node.droprate ? `<span class="tree-drop-rate">${(node.droprate * 100).toFixed(2)}%</span>` : '';
   let bossHint = '';
   if (node.droppedBy.length) {
-    const rateStr = node.droprate ? `${(node.droprate * 100).toFixed(2)}%` : '';
     const icons = node.droppedBy.map(b =>
       `<img src="twicons/${encodeURIComponent(b + ' Icon')}.jpg" alt="${esc(b)}" title="${esc(b)}" class="tree-boss-icon" onerror="this.style.display='none'">`
     ).join('');
-    bossHint = `<span class="tree-boss-hint">${icons}${rateStr ? `<span class="tree-drop-rate">${rateStr}</span>` : ''}</span>`;
+    bossHint = `<span class="tree-boss-hint">${icons}</span>`;
   } else if (!node.isLeaf) {
     bossHint = node.status === 'have'
       ? `<span class="tree-boss-hint tree-craftable">Crafted</span>`
@@ -161,6 +161,7 @@ function renderTreeNode(node, depth, counter) {
         <a href="#/items/${encodeURIComponent(node.name)}" class="tree-node-name">${esc(node.name)}</a>
         ${qtyLabel}
         ${ownedLabel}
+        ${rateLabel}
         ${bossHint}
       </div>
       ${childrenHtml}
@@ -213,7 +214,7 @@ function renderComprehensiveView() {
           const href = b.boss ? `#/bosses/${encodeURIComponent(b.boss.id)}` : `#/bosses`;
           return `<a href="${href}" title="${esc(b.name)}"><img src="twicons/${encodeURIComponent(b.name + ' Icon')}.jpg" alt="${esc(b.name)}" class="comp-boss-icon" onerror="this.style.display='none'"></a>`;
         }).join('');
-        sourceHtml = `${icons}${rateStr ? `<span class="comp-drop-rate">${rateStr}</span>` : ''}`;
+        sourceHtml = icons;
       } else if (hasRecipe) {
         sourceHtml = status === 'have'
           ? '<span class="comp-craftable">Crafted</span>'
@@ -225,6 +226,7 @@ function renderComprehensiveView() {
           <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="" class="comp-mat-icon" onerror="this.style.display='none'">
           <a href="#/items/${encodeURIComponent(m.name)}" class="comp-mat-name">${esc(m.name)}</a>
           <span class="comp-mat-count status-${status}">Need: ${m.needed} (have ${m.owned})</span>
+          ${rateStr ? `<span class="comp-drop-rate">${rateStr}</span>` : ''}
           ${sourceHtml ? `<span class="comp-mat-bosses">${sourceHtml}</span>` : ''}
         </div>
       `;
