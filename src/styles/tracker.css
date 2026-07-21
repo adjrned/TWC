@@ -504,21 +504,43 @@
   color: var(--muted2);
 }
 
-.tree-alt-hint {
-  display: inline-flex;
+.tree-alt-row {
+  display: flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
+  gap: 6px;
+  padding: 2px 0 2px 38px;
+  font-size: 0.8rem;
+}
+
+.tree-alt-label {
   color: var(--muted);
   font-style: italic;
+  font-size: 0.75rem;
+}
+
+.tree-alt-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--muted2);
+  transition: color 0.15s;
+}
+
+.tree-alt-item:hover {
+  color: var(--accent3);
 }
 
 .tree-alt-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 3px;
   object-fit: cover;
   opacity: 0.7;
+}
+
+.tree-alt-name {
+  font-size: 0.78rem;
 }
 
 .tree-children.collapsed {
