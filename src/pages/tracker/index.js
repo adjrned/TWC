@@ -255,9 +255,11 @@ function renderCumulativeSummary() {
 
   const ownedMap = buildOwnedMap(trackerState.lastSave?.inventory);
   const totals = new Map();
+  const sharedRemaining = new Map();
+  for (const [k, v] of ownedMap) sharedRemaining.set(k, v);
 
   for (const itemName of trackerState.trackedItems) {
-    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap);
+    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap, new Map(), new Set(), sharedRemaining);
     for (const [matName, needed] of leaves) {
       if (matName.includes('Soulstone') || matName.includes('Token') || matName === 'Prius Silver Coin' || matName === 'Prius Gold Coin') continue;
       totals.set(matName, (totals.get(matName) || 0) + needed);

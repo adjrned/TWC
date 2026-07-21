@@ -125,8 +125,10 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
   }
 
   const totals = new Map();
+  const sharedRemaining = new Map();
+  for (const [k, v] of ownedMap) sharedRemaining.set(k, v);
   for (const itemName of trackedItems) {
-    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap);
+    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap, new Map(), new Set(), sharedRemaining);
     for (const [matName, needed] of leaves) {
       if (isExcluded(matName)) continue;
       totals.set(matName, (totals.get(matName) || 0) + needed);
