@@ -10,30 +10,38 @@ export function buildOwnedMap(inventory) {
   return new Map(Object.entries(inventory || {}));
 }
 
-export function buildRecipeTree(name, neededQty, itemMap, ownedMap, visited = new Set()) {
+export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = null, ancestors = new Set()) {
+  if (!remaining) {
+    remaining = new Map();
+    for (const [k, v] of ownedMap) remaining.set(k, v);
+  }
+
   const item = itemMap.get(name);
-  const ownedQty = ownedMap.get(name) || 0;
+  const available = remaining.get(name) || 0;
+  const consumed = Math.min(available, neededQty);
+  remaining.set(name, available - consumed);
+
   const hasRecipe = item && item.recipe && item.recipe.length > 0;
   const isLeaf = !hasRecipe;
 
   const node = {
     name,
     neededQty,
-    ownedQty,
-    status: ownedQty >= neededQty ? 'have' : ownedQty > 0 ? 'partial' : 'none',
+    ownedQty: consumed,
+    status: consumed >= neededQty ? 'have' : consumed > 0 ? 'partial' : 'none',
     isLeaf,
     droppedBy: item ? (item.dropped_by || []) : [],
     children: [],
   };
 
-  if (!isLeaf && !visited.has(name)) {
-    const next = new Set(visited);
+  if (!isLeaf && !ancestors.has(name)) {
+    const next = new Set(ancestors);
     next.add(name);
     for (const ingredient of item.recipe) {
       const [matName, matQty] = Object.entries(ingredient)[0];
       if (isExcluded(matName)) continue;
       const totalNeeded = neededQty * matQty;
-      node.children.push(buildRecipeTree(matName, totalNeeded, itemMap, ownedMap, next));
+      node.children.push(buildRecipeTree(matName, totalNeeded, itemMap, ownedMap, remaining, next));
     }
   }
 
