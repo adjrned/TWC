@@ -97,11 +97,11 @@ function renderTrackedList() {
   if (!trackerState.trackedItems.length) return '<div class="tracked-empty">No items tracked yet. Search above to add items.</div>';
   return `
     <div class="tracked-items-list">
-      ${trackerState.trackedItems.map(name => `
+      ${trackerState.trackedItems.map((name, idx) => `
         <div class="tracked-chip">
           <img src="twicons/${encodeURIComponent(name)}.jpg" alt="" class="tracked-chip-icon" onerror="this.style.display='none'">
           <span>${esc(name)}</span>
-          <button class="tracked-remove" onclick="window._trackerUntrackItem('${esc(name.replace(/'/g, "\\'"))}')">×</button>
+          <button class="tracked-remove" onclick="window._trackerUntrackItem(${idx})">×</button>
         </div>
       `).join('')}
     </div>
@@ -396,7 +396,6 @@ function handleSearch(val) {
   searchTimeout = setTimeout(() => {
     const matches = itemData
       .filter(item => item.name.toLowerCase().includes(q))
-      .filter(item => !trackerState.trackedItems.includes(item.name))
       .slice(0, 10);
 
     resultsEl.innerHTML = matches.map(item => `
@@ -441,20 +440,18 @@ export async function initTracker({ params, query }) {
   window._trackerSearchInput = handleSearch;
 
   window._trackerTrackItem = (name) => {
-    if (!trackerState.trackedItems.includes(name)) {
-      trackerState.trackedItems.push(name);
-      saveTrackerState(trackerState);
-      refreshTrackedList();
-      refreshContent();
-      const resultsEl = document.getElementById('trackerSearchResults');
-      if (resultsEl) resultsEl.innerHTML = '';
-      const input = document.getElementById('trackerSearchInput');
-      if (input) input.value = '';
-    }
+    trackerState.trackedItems.push(name);
+    saveTrackerState(trackerState);
+    refreshTrackedList();
+    refreshContent();
+    const resultsEl = document.getElementById('trackerSearchResults');
+    if (resultsEl) resultsEl.innerHTML = '';
+    const input = document.getElementById('trackerSearchInput');
+    if (input) input.value = '';
   };
 
-  window._trackerUntrackItem = (name) => {
-    trackerState.trackedItems = trackerState.trackedItems.filter(n => n !== name);
+  window._trackerUntrackItem = (idx) => {
+    trackerState.trackedItems.splice(idx, 1);
     saveTrackerState(trackerState);
     refreshTrackedList();
     refreshContent();
