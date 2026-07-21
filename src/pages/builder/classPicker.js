@@ -6,6 +6,15 @@ import { showToast } from '../../ui/toast.js';
 import { render } from './render.js';
 import { t, getClassName } from '../../i18n.js';
 
+export function updateBuildHash() {
+  const params = new URLSearchParams();
+  if (state.selectedClass) params.set('class', state.selectedClass);
+  if (state.selectedCreator) params.set('creator', state.selectedCreator);
+  const qs = params.toString();
+  const newHash = qs ? `#/?${qs}` : '#/';
+  if (location.hash !== newHash) history.replaceState(null, '', newHash);
+}
+
 export async function buildClassSelect() {
   const dropdown = document.getElementById('classPickerDropdown');
   const hiddenSel = document.getElementById('classSelect');
@@ -84,6 +93,7 @@ export async function selectClass(name) {
   state.creatorName = '';
   if (!hasLocalData(state.selectedClass)) await loadBuildFile(state.selectedClass, null);
   save(); await syncClassUI(); render();
+  updateBuildHash();
 }
 
 export async function onCreatorChange() {
@@ -93,6 +103,7 @@ export async function onCreatorChange() {
   save();
   await loadBuildFile(state.selectedClass, state.selectedCreator);
   save(); syncClassUI(); render();
+  updateBuildHash();
 }
 
 async function selectCreator(name) {
@@ -109,6 +120,7 @@ async function selectCreator(name) {
   save();
   await loadBuildFile(state.selectedClass, state.selectedCreator);
   save(); syncClassUI(); render();
+  updateBuildHash();
 }
 
 export async function resetToTemplate() {

@@ -4,7 +4,7 @@ import { loadIconLibrary } from '../../data/icons.js';
 import { hasLocalData, loadBuildFile } from '../../data/builds.js';
 import { save, load } from '../../data/storage.js';
 import { initTooltip } from '../../ui/tooltip.js';
-import { buildClassSelect, syncClassUI, toggleClassDropdown, toggleCreatorDropdown, onCreatorChange, resetToTemplate, clearAllRows } from './classPicker.js';
+import { buildClassSelect, syncClassUI, toggleClassDropdown, toggleCreatorDropdown, onCreatorChange, resetToTemplate, clearAllRows, updateBuildHash } from './classPicker.js';
 import { render } from './render.js';
 import { addRow } from './rows.js';
 import { openPicker, filterPicker, closePicker, closePickerOnBg } from './picker.js';
@@ -41,6 +41,7 @@ export async function initBuilder(ctx) {
 
   await syncClassUI();
   render();
+  updateBuildHash();
 
   initTooltip();
 
