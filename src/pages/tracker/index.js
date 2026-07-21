@@ -127,7 +127,7 @@ function renderViewToggle() {
 
 function renderTreeNode(node, depth, counter) {
   const id = `tn-${counter.value++}`;
-  const collapsed = depth > 1 ? 'collapsed' : '';
+  const collapsed = (depth > 1 || node.status === 'have') ? 'collapsed' : '';
   const statusClass = `status-${node.status}`;
   const hasChildren = node.children.length > 0;
   const toggle = hasChildren ? `<button class="tree-toggle" onclick="window._toggleTreeNode('${id}')">${collapsed ? '▶' : '▼'}</button>` : '<span class="tree-toggle-spacer"></span>';
@@ -136,8 +136,10 @@ function renderTreeNode(node, depth, counter) {
   let bossHint = '';
   if (node.droppedBy.length) {
     bossHint = `<span class="tree-boss-hint">${node.droppedBy.map(b => esc(b)).join(', ')}</span>`;
-  } else if (!node.isLeaf && node.status !== 'have') {
-    bossHint = `<span class="tree-boss-hint tree-craftable">Craftable</span>`;
+  } else if (!node.isLeaf) {
+    bossHint = node.status === 'have'
+      ? `<span class="tree-boss-hint tree-craftable">Crafted</span>`
+      : `<span class="tree-boss-hint tree-craftable">Craftable</span>`;
   }
 
   let childrenHtml = '';
@@ -206,7 +208,9 @@ function renderComprehensiveView() {
             : `<span class="comp-boss-link">${esc(b.name)}</span>`
           ).join(', ');
       } else if (hasRecipe) {
-        sourceHtml = '<span class="comp-craftable">Craftable</span>';
+        sourceHtml = status === 'have'
+          ? '<span class="comp-craftable">Crafted</span>'
+          : '<span class="comp-craftable">Craftable</span>';
       }
 
       return `
