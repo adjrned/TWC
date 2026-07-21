@@ -133,7 +133,12 @@ function renderTreeNode(node, depth, counter) {
   const toggle = hasChildren ? `<button class="tree-toggle" onclick="window._toggleTreeNode('${id}')">${collapsed ? '▶' : '▼'}</button>` : '<span class="tree-toggle-spacer"></span>';
   const qtyLabel = node.neededQty > 1 ? `<span class="tree-qty">x${node.neededQty}</span>` : '';
   const ownedLabel = `<span class="tree-owned ${statusClass}">${node.ownedQty}/${node.neededQty}</span>`;
-  const bossHint = node.isLeaf && node.droppedBy.length ? `<span class="tree-boss-hint">${esc(node.droppedBy[0])}</span>` : '';
+  let bossHint = '';
+  if (node.droppedBy.length) {
+    bossHint = `<span class="tree-boss-hint">${node.droppedBy.map(b => esc(b)).join(', ')}</span>`;
+  } else if (!node.isLeaf && node.status !== 'have') {
+    bossHint = `<span class="tree-boss-hint tree-craftable">Craftable</span>`;
+  }
 
   let childrenHtml = '';
   if (hasChildren) {
@@ -193,19 +198,23 @@ function renderComprehensiveView() {
   return data.map(({ itemName, materials }) => {
     const matsHtml = materials.map(m => {
       const status = m.owned >= m.needed ? 'have' : m.owned > 0 ? 'partial' : 'none';
-      const bossLinks = m.bosses.length
-        ? m.bosses.map(b => b.boss
+      const hasRecipe = m.item && m.item.recipe && m.item.recipe.length > 0;
+      let sourceHtml = '';
+      if (m.bosses.length) {
+        sourceHtml = m.bosses.map(b => b.boss
             ? `<a href="#/bosses/${encodeURIComponent(b.boss.id)}" class="comp-boss-link">${esc(b.name)}</a>`
             : `<span class="comp-boss-link">${esc(b.name)}</span>`
-          ).join(', ')
-        : '<span class="comp-unknown">Unknown Source</span>';
+          ).join(', ');
+      } else if (hasRecipe) {
+        sourceHtml = '<span class="comp-craftable">Craftable</span>';
+      }
 
       return `
         <div class="comp-material">
           <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="" class="comp-mat-icon" onerror="this.style.display='none'">
           <a href="#/items/${encodeURIComponent(m.name)}" class="comp-mat-name">${esc(m.name)}</a>
           <span class="comp-mat-count status-${status}">Need: ${m.needed} (have ${m.owned})</span>
-          <span class="comp-mat-bosses">${bossLinks}</span>
+          ${sourceHtml ? `<span class="comp-mat-bosses">${sourceHtml}</span>` : ''}
         </div>
       `;
     }).join('');
