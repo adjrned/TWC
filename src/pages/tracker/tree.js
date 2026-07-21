@@ -57,6 +57,11 @@ export function flattenToLeaves(name, qty, itemMap, accumulator = new Map(), vis
   return accumulator;
 }
 
+const EXCLUDED_MATERIALS = new Set([
+  'Prius Silver Coin',
+  'Prius Gold Coin',
+]);
+
 export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData) {
   const bossMap = new Map();
   if (bossData) {
@@ -66,26 +71,18 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
   const results = [];
   for (const itemName of trackedItems) {
     const leaves = flattenToLeaves(itemName, 1, itemMap);
-    const groups = {};
+    const materials = [];
 
     for (const [matName, needed] of leaves) {
+      if (EXCLUDED_MATERIALS.has(matName)) continue;
       const mat = itemMap.get(matName);
       const droppedBy = mat ? (mat.dropped_by || []) : [];
       const owned = ownedMap.get(matName) || 0;
-      const entry = { name: matName, needed, owned, item: mat || null };
-
-      if (droppedBy.length === 0) {
-        if (!groups['Unknown Source']) groups['Unknown Source'] = { boss: null, materials: [] };
-        groups['Unknown Source'].materials.push(entry);
-      } else {
-        for (const bossName of droppedBy) {
-          if (!groups[bossName]) groups[bossName] = { boss: bossMap.get(bossName) || null, materials: [] };
-          groups[bossName].materials.push(entry);
-        }
-      }
+      const bosses = droppedBy.map(name => ({ name, boss: bossMap.get(name) || null }));
+      materials.push({ name: matName, needed, owned, bosses, item: mat || null });
     }
 
-    results.push({ itemName, groups });
+    results.push({ itemName, materials });
   }
 
   return results;

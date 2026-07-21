@@ -61,6 +61,40 @@ function renderCharacterOverview(save) {
   `;
 }
 
+function renderInventory(save) {
+  if (!save) return '';
+  const sectionOrder = ['Hero Inventory', 'Bag', 'Storage'];
+  const sectionsHtml = sectionOrder.map(name => {
+    const items = save.sections[name];
+    if (!items || !items.length) return '';
+    const itemsHtml = items.map(({ name: itemName, qty }) => {
+      const qtyStr = qty > 1 ? ` <span class="inv-qty">x${qty}</span>` : '';
+      return `
+        <a href="#/items/${encodeURIComponent(itemName)}" class="inv-item">
+          <img src="twicons/${encodeURIComponent(itemName)}.jpg" alt="" class="inv-item-icon" onerror="this.style.display='none'">
+          <span class="inv-item-name">${esc(itemName)}</span>${qtyStr}
+        </a>
+      `;
+    }).join('');
+    return `
+      <div class="inv-section">
+        <h3 class="inv-section-title">${esc(name)}</h3>
+        <div class="inv-items">${itemsHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="tracker-inventory" id="trackerInventory">
+      <div class="inv-header" onclick="window._toggleInventory()">
+        <h2 class="tracker-section-title">Character Inventory</h2>
+        <span class="inv-chevron" id="invChevron">▼</span>
+      </div>
+      <div class="inv-body" id="invBody">${sectionsHtml}</div>
+    </div>
+  `;
+}
+
 function renderSearchArea() {
   return `
     <div class="tracker-search-section">
@@ -161,25 +195,24 @@ function renderComprehensiveView() {
   const ownedMap = buildOwnedMap(trackerState.lastSave?.inventory);
   const data = buildComprehensiveData(trackerState.trackedItems, itemMap, ownedMap, bossData);
 
-  return data.map(({ itemName, groups }) => {
-    const groupEntries = Object.entries(groups);
-    const groupsHtml = groupEntries.map(([bossName, { boss, materials }]) => {
-      const bossLink = boss
-        ? `<a href="#/bosses/${encodeURIComponent(boss.id)}" class="comp-boss-name">${esc(bossName)}</a>`
-        : `<span class="comp-boss-name comp-unknown">${esc(bossName)}</span>`;
+  return data.map(({ itemName, materials }) => {
+    const matsHtml = materials.map(m => {
+      const status = m.owned >= m.needed ? 'have' : m.owned > 0 ? 'partial' : 'none';
+      const bossLinks = m.bosses.length
+        ? m.bosses.map(b => b.boss
+            ? `<a href="#/bosses/${encodeURIComponent(b.boss.id)}" class="comp-boss-link">${esc(b.name)}</a>`
+            : `<span class="comp-boss-link">${esc(b.name)}</span>`
+          ).join(', ')
+        : '<span class="comp-unknown">Unknown Source</span>';
 
-      const matsHtml = materials.map(m => {
-        const status = m.owned >= m.needed ? 'have' : m.owned > 0 ? 'partial' : 'none';
-        return `
-          <div class="comp-material">
-            <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="" class="comp-mat-icon" onerror="this.style.display='none'">
-            <a href="#/items/${encodeURIComponent(m.name)}" class="comp-mat-name">${esc(m.name)}</a>
-            <span class="comp-mat-count status-${status}">Need: ${m.needed} (have ${m.owned})</span>
-          </div>
-        `;
-      }).join('');
-
-      return `<div class="comp-boss-group"><div class="comp-boss-header">${bossLink}</div>${matsHtml}</div>`;
+      return `
+        <div class="comp-material">
+          <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="" class="comp-mat-icon" onerror="this.style.display='none'">
+          <a href="#/items/${encodeURIComponent(m.name)}" class="comp-mat-name">${esc(m.name)}</a>
+          <span class="comp-mat-count status-${status}">Need: ${m.needed} (have ${m.owned})</span>
+          <span class="comp-mat-bosses">${bossLinks}</span>
+        </div>
+      `;
     }).join('');
 
     return `
@@ -188,7 +221,7 @@ function renderComprehensiveView() {
           <img src="twicons/${encodeURIComponent(itemName)}.jpg" alt="" class="comp-item-icon" onerror="this.style.display='none'">
           <h3><a href="#/items/${encodeURIComponent(itemName)}">${esc(itemName)}</a></h3>
         </div>
-        ${groupsHtml}
+        <div class="comp-materials-list">${matsHtml}</div>
       </div>
     `;
   }).join('');
@@ -234,6 +267,7 @@ function renderPage() {
       <h1 class="tracker-title">Item Tracker</h1>
       ${renderUploadArea(hasSave)}
       ${renderCharacterOverview(trackerState.lastSave)}
+      ${renderInventory(trackerState.lastSave)}
       ${renderSearchArea()}
       <div id="trackedItemsArea">${renderTrackedList()}</div>
       ${hasSave || trackerState.trackedItems.length ? `
@@ -386,6 +420,15 @@ export async function initTracker({ params, query }) {
     }
   };
 
+  window._toggleInventory = () => {
+    const body = document.getElementById('invBody');
+    const chev = document.getElementById('invChevron');
+    if (body) {
+      body.classList.toggle('collapsed');
+      if (chev) chev.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+    }
+  };
+
   window._toggleHistoryEntry = (idx) => {
     const body = document.getElementById(`histBody${idx}`);
     const chev = document.getElementById(`histChev${idx}`);
@@ -415,6 +458,7 @@ export async function initTracker({ params, query }) {
     delete window._trackerUntrackItem;
     delete window._trackerSetView;
     delete window._toggleTreeNode;
+    delete window._toggleInventory;
     delete window._toggleHistoryEntry;
     delete window._trackerCopyCodes;
     delete window._trackerDeleteSave;
