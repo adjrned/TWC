@@ -221,7 +221,6 @@ function renderComprehensiveView() {
   }
 
   return entries.map(([bossName, { boss, materials }]) => {
-    const bossHref = boss ? `#/bosses/${encodeURIComponent(boss.id)}` : '#/bosses';
     const matsHtml = materials.map(m => {
       const droprate = m.item ? (m.item.droprate || 0) : 0;
       const rateStr = droprate ? `${(droprate * 100).toFixed(2)}%` : '';
@@ -235,14 +234,16 @@ function renderComprehensiveView() {
       `;
     }).join('');
 
+    const headerHtml = boss
+      ? `<a href="#/bosses/${encodeURIComponent(boss.id)}" class="comp-boss-link">
+          <img src="twicons/${encodeURIComponent(bossName + ' Icon')}.jpg" alt="${esc(bossName)}" class="comp-boss-header-icon" onerror="this.style.display='none'">
+          <span>${esc(bossName)}</span>
+        </a>`
+      : `<span class="comp-boss-link comp-craftable-header">${esc(bossName)}</span>`;
+
     return `
       <div class="comp-boss-section">
-        <div class="comp-boss-header">
-          <a href="${bossHref}" class="comp-boss-link">
-            <img src="twicons/${encodeURIComponent(bossName + ' Icon')}.jpg" alt="${esc(bossName)}" class="comp-boss-header-icon" onerror="this.style.display='none'">
-            <span>${esc(bossName)}</span>
-          </a>
-        </div>
+        <div class="comp-boss-header">${headerHtml}</div>
         <div class="comp-materials-list">${matsHtml}</div>
       </div>
     `;
