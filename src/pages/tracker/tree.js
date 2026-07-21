@@ -63,9 +63,8 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
 export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), visited = new Set()) {
   const item = itemMap.get(name);
   const hasRecipe = item && item.recipe && item.recipe.length > 0;
-  const owned = ownedMap ? (ownedMap.get(name) || 0) : 0;
 
-  if (!hasRecipe || visited.has(name) || owned >= qty) {
+  if (!hasRecipe || visited.has(name)) {
     accumulator.set(name, (accumulator.get(name) || 0) + qty);
     return accumulator;
   }
