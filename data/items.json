@@ -8413,10 +8413,7 @@
       "Chaos Pickaxe"
     ],
     "dropped_by": [
-      "Death Fiend",
-      "Death Huntress",
-      "Death Weaver",
-      "Death Devourer"
+      "Death Fiend"
     ],
     "droprate": 0.0075
   },
