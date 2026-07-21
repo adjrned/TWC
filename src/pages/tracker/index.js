@@ -223,14 +223,13 @@ function renderComprehensiveView() {
   return entries.map(([bossName, { boss, materials }]) => {
     const bossHref = boss ? `#/bosses/${encodeURIComponent(boss.id)}` : '#/bosses';
     const matsHtml = materials.map(m => {
-      const remaining = m.needed - m.owned;
       const droprate = m.item ? (m.item.droprate || 0) : 0;
       const rateStr = droprate ? `${(droprate * 100).toFixed(2)}%` : '';
       return `
         <div class="comp-material">
           <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="" class="comp-mat-icon" onerror="this.style.display='none'">
           <a href="#/items/${encodeURIComponent(m.name)}" class="comp-mat-name">${esc(m.name)}</a>
-          <span class="comp-mat-count status-none">Need ${remaining} more</span>
+          <span class="comp-mat-count status-none">Need ${m.needed}</span>
           ${rateStr ? `<span class="comp-drop-rate">${rateStr}</span>` : ''}
         </div>
       `;
@@ -265,16 +264,15 @@ function renderCumulativeSummary() {
   }
 
   const items = [...totals.entries()]
-    .map(([name, needed]) => ({ name, needed, owned: ownedMap.get(name) || 0 }))
-    .filter(m => m.owned < m.needed);
+    .map(([name, needed]) => ({ name, needed }))
+    .filter(m => m.needed > 0);
 
   if (!items.length) return '<div class="cumulative-summary"><p class="cumulative-complete">All materials acquired!</p></div>';
 
   const iconsHtml = items.map(m => {
-    const remaining = m.needed - m.owned;
-    return `<a href="#/items/${encodeURIComponent(m.name)}" class="inv-icon-link" title="${esc(m.name)} — need ${remaining} more (${m.owned}/${m.needed})">
+    return `<a href="#/items/${encodeURIComponent(m.name)}" class="inv-icon-link" title="${esc(m.name)} — need ${m.needed}">
       <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="${esc(m.name)}" class="inv-icon" onerror="this.style.display='none'">
-      <span class="inv-icon-qty">x${remaining}</span>
+      <span class="inv-icon-qty">x${m.needed}</span>
     </a>`;
   }).join('');
 

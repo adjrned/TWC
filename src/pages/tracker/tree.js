@@ -60,16 +60,28 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
   return node;
 }
 
-export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), visited = new Set()) {
+export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), ancestors = new Set(), remaining = null) {
+  if (!remaining) {
+    remaining = new Map();
+    for (const [k, v] of ownedMap) remaining.set(k, v);
+  }
+
   const item = itemMap.get(name);
   const hasRecipe = item && item.recipe && item.recipe.length > 0;
 
-  if (!hasRecipe || visited.has(name)) {
-    accumulator.set(name, (accumulator.get(name) || 0) + qty);
+  const available = remaining.get(name) || 0;
+  const consumed = Math.min(available, qty);
+  remaining.set(name, available - consumed);
+  const stillNeeded = qty - consumed;
+
+  if (stillNeeded <= 0) return accumulator;
+
+  if (!hasRecipe || ancestors.has(name)) {
+    accumulator.set(name, (accumulator.get(name) || 0) + stillNeeded);
     return accumulator;
   }
 
-  const next = new Set(visited);
+  const next = new Set(ancestors);
   next.add(name);
   for (const ingredient of item.recipe) {
     const entries = Object.entries(ingredient);
@@ -78,11 +90,11 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
 
     if (nonExcluded.length === 1) {
       const [matName, matQty] = nonExcluded[0];
-      flattenToLeaves(matName, qty * matQty, itemMap, ownedMap, accumulator, next);
+      flattenToLeaves(matName, stillNeeded * matQty, itemMap, ownedMap, accumulator, next, remaining);
     } else {
-      const sorted = [...nonExcluded].sort((a, b) => (ownedMap.get(b[0]) || 0) - (ownedMap.get(a[0]) || 0));
+      const sorted = [...nonExcluded].sort((a, b) => (remaining.get(b[0]) || 0) - (remaining.get(a[0]) || 0));
       const [chosenName, chosenQty] = sorted[0];
-      flattenToLeaves(chosenName, qty * chosenQty, itemMap, ownedMap, accumulator, next);
+      flattenToLeaves(chosenName, stillNeeded * chosenQty, itemMap, ownedMap, accumulator, next, remaining);
     }
   }
   return accumulator;
@@ -114,11 +126,9 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
 
   const groups = {};
   for (const [matName, needed] of totals) {
-    const owned = ownedMap.get(matName) || 0;
-    if (owned >= needed) continue;
     const mat = itemMap.get(matName);
     const droppedBy = mat ? (mat.dropped_by || []) : [];
-    const entry = { name: matName, needed, owned, item: mat || null };
+    const entry = { name: matName, needed, item: mat || null };
 
     if (droppedBy.length === 0) continue;
     for (const bossName of droppedBy) {
