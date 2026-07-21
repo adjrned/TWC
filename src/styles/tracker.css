@@ -326,6 +326,28 @@
   font-weight: 600;
 }
 
+/* ── Cumulative Summary ────────────────────────────────────────────────────── */
+
+.cumulative-summary {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.cumulative-title {
+  font-size: 0.85rem;
+  color: var(--muted2);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.cumulative-complete {
+  color: var(--accent3);
+  font-size: 0.9rem;
+}
+
 /* ── Content Area ──────────────────────────────────────────────────────────── */
 
 .tracker-content {

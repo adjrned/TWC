@@ -1,7 +1,7 @@
 import { esc } from '../../ui/escape.js';
 import { parseSaveFile } from './parser.js';
 import { loadTrackerState, saveTrackerState, loadCodeHistory, addCodeHistoryEntry } from './storage.js';
-import { buildItemMap, buildOwnedMap, buildRecipeTree, buildComprehensiveData } from './tree.js';
+import { buildItemMap, buildOwnedMap, buildRecipeTree, buildComprehensiveData, flattenToLeaves } from './tree.js';
 
 let itemData = null;
 let bossData = null;
@@ -222,6 +222,42 @@ function renderComprehensiveView() {
   }).join('');
 }
 
+function renderCumulativeSummary() {
+  if (!trackerState.trackedItems.length) return '';
+
+  const ownedMap = buildOwnedMap(trackerState.lastSave?.inventory);
+  const totals = new Map();
+
+  for (const itemName of trackerState.trackedItems) {
+    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap);
+    for (const [matName, needed] of leaves) {
+      if (matName.includes('Soulstone') || matName.includes('Token') || matName === 'Prius Silver Coin' || matName === 'Prius Gold Coin') continue;
+      totals.set(matName, (totals.get(matName) || 0) + needed);
+    }
+  }
+
+  const items = [...totals.entries()]
+    .map(([name, needed]) => ({ name, needed, owned: ownedMap.get(name) || 0 }))
+    .filter(m => m.owned < m.needed);
+
+  if (!items.length) return '<div class="cumulative-summary"><p class="cumulative-complete">All materials acquired!</p></div>';
+
+  const iconsHtml = items.map(m => {
+    const remaining = m.needed - m.owned;
+    return `<a href="#/items/${encodeURIComponent(m.name)}" class="inv-icon-link" title="${esc(m.name)} — need ${remaining} more (${m.owned}/${m.needed})">
+      <img src="twicons/${encodeURIComponent(m.name)}.jpg" alt="${esc(m.name)}" class="inv-icon" onerror="this.style.display='none'">
+      <span class="inv-icon-qty">x${remaining}</span>
+    </a>`;
+  }).join('');
+
+  return `
+    <div class="cumulative-summary">
+      <h3 class="cumulative-title">Total Materials Needed</h3>
+      <div class="inv-icons">${iconsHtml}</div>
+    </div>
+  `;
+}
+
 function renderContent() {
   return currentView === 'split' ? renderSplitView() : renderComprehensiveView();
 }
@@ -266,6 +302,7 @@ function renderPage() {
       <div id="trackedItemsArea">${renderTrackedList()}</div>
       ${hasSave || trackerState.trackedItems.length ? `
         ${renderViewToggle()}
+        ${currentView === 'comprehensive' ? `<div id="cumulativeSummary">${renderCumulativeSummary()}</div>` : ''}
         <div id="trackerContent" class="tracker-content">${renderContent()}</div>
       ` : ''}
       ${renderLoadCodeHistory()}
@@ -396,9 +433,8 @@ export async function initTracker({ params, query }) {
 
   window._trackerSetView = (view) => {
     currentView = view;
-    const bar = document.querySelector('.tracker-view-bar');
-    if (bar) bar.outerHTML = renderViewToggle();
-    refreshContent();
+    fullRerender();
+    wireEvents();
   };
 
   window._toggleTreeNode = (id) => {
