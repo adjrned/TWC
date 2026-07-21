@@ -152,5 +152,16 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
     }
   }
 
-  return groups;
+  const bossOrder = new Map();
+  if (bossData) {
+    bossData.forEach((b, i) => bossOrder.set(b.name, i));
+  }
+
+  const sorted = Object.entries(groups).sort((a, b) => {
+    const idxA = bossOrder.has(a[0]) ? bossOrder.get(a[0]) : -1;
+    const idxB = bossOrder.has(b[0]) ? bossOrder.get(b[0]) : -1;
+    return idxB - idxA;
+  });
+
+  return Object.fromEntries(sorted);
 }
