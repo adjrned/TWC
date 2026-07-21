@@ -31,6 +31,7 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, visited = ne
     next.add(name);
     for (const ingredient of item.recipe) {
       const [matName, matQty] = Object.entries(ingredient)[0];
+      if (isExcluded(matName)) continue;
       const totalNeeded = neededQty * matQty;
       node.children.push(buildRecipeTree(matName, totalNeeded, itemMap, ownedMap, next));
     }
@@ -62,6 +63,10 @@ const EXCLUDED_MATERIALS = new Set([
   'Prius Gold Coin',
 ]);
 
+function isExcluded(name) {
+  return EXCLUDED_MATERIALS.has(name) || name.includes('Soulstone');
+}
+
 export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData) {
   const bossMap = new Map();
   if (bossData) {
@@ -74,7 +79,7 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
     const materials = [];
 
     for (const [matName, needed] of leaves) {
-      if (EXCLUDED_MATERIALS.has(matName)) continue;
+      if (isExcluded(matName)) continue;
       const mat = itemMap.get(matName);
       const droppedBy = mat ? (mat.dropped_by || []) : [];
       const owned = ownedMap.get(matName) || 0;
