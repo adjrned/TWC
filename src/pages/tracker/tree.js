@@ -39,10 +39,21 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
     const next = new Set(ancestors);
     next.add(name);
     for (const ingredient of item.recipe) {
-      const [matName, matQty] = Object.entries(ingredient)[0];
-      if (isExcluded(matName)) continue;
-      const totalNeeded = neededQty * matQty;
-      node.children.push(buildRecipeTree(matName, totalNeeded, itemMap, ownedMap, remaining, next));
+      const entries = Object.entries(ingredient);
+      const nonExcluded = entries.filter(([n]) => !isExcluded(n));
+      if (!nonExcluded.length) continue;
+
+      if (nonExcluded.length === 1) {
+        const [matName, matQty] = nonExcluded[0];
+        node.children.push(buildRecipeTree(matName, neededQty * matQty, itemMap, ownedMap, remaining, next));
+      } else {
+        const sorted = [...nonExcluded].sort((a, b) => (remaining.get(b[0]) || 0) - (remaining.get(a[0]) || 0));
+        const [chosenName, chosenQty] = sorted[0];
+        const alternatives = sorted.slice(1).map(([n]) => n);
+        const child = buildRecipeTree(chosenName, neededQty * chosenQty, itemMap, ownedMap, remaining, next);
+        child.alternatives = alternatives;
+        node.children.push(child);
+      }
     }
   }
 
@@ -62,8 +73,18 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
   const next = new Set(visited);
   next.add(name);
   for (const ingredient of item.recipe) {
-    const [matName, matQty] = Object.entries(ingredient)[0];
-    flattenToLeaves(matName, qty * matQty, itemMap, ownedMap, accumulator, next);
+    const entries = Object.entries(ingredient);
+    const nonExcluded = entries.filter(([n]) => !isExcluded(n));
+    if (!nonExcluded.length) continue;
+
+    if (nonExcluded.length === 1) {
+      const [matName, matQty] = nonExcluded[0];
+      flattenToLeaves(matName, qty * matQty, itemMap, ownedMap, accumulator, next);
+    } else {
+      const sorted = [...nonExcluded].sort((a, b) => (ownedMap.get(b[0]) || 0) - (ownedMap.get(a[0]) || 0));
+      const [chosenName, chosenQty] = sorted[0];
+      flattenToLeaves(chosenName, qty * chosenQty, itemMap, ownedMap, accumulator, next);
+    }
   }
   return accumulator;
 }
