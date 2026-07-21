@@ -16,7 +16,7 @@ import { t } from './i18n.js';
 
 function updateNavText() {
   const links = document.querySelectorAll('.sidebar .nav-link');
-  const labels = ['nav.builder', 'nav.heroes', 'nav.items', 'nav.bosses', 'nav.awakening'];
+  const labels = ['nav.builder', 'nav.items', null, 'nav.bosses', 'nav.heroes', 'nav.awakening'];
   links.forEach((link, i) => {
     if (!labels[i]) return;
     const textNodes = [...link.childNodes].filter(n => n.nodeType === 3);
