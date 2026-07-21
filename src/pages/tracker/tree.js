@@ -26,7 +26,7 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, visited = ne
     children: [],
   };
 
-  if (!isLeaf && !visited.has(name) && ownedQty < neededQty) {
+  if (!isLeaf && !visited.has(name)) {
     const next = new Set(visited);
     next.add(name);
     for (const ingredient of item.recipe) {
