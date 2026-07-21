@@ -502,7 +502,6 @@
 .tree-drop-rate {
   font-size: 0.72rem;
   color: var(--muted2);
-  margin-left: 4px;
 }
 
 .tree-children.collapsed {
