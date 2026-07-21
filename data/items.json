@@ -20570,8 +20570,7 @@
       }
     ],
     "required_by": [
-      "Cage of Twisted Souls",
-      "Cage of Shadow Fiend"
+      "Cage of Twisted Souls"
     ]
   },
   {
@@ -23870,7 +23869,9 @@
         "Soul Blossom": 1
       }
     ],
-    "required_by": []
+    "required_by": [
+      "Cage of Shadow Fiend"
+    ]
   },
   {
     "id": "I00G",
@@ -27831,7 +27832,7 @@
     },
     "recipe": [
       {
-        "Hades, the Armor of Despair": 1
+        "Cage of Twisted Souls": 1
       },
       {
         "Twisted Fragment of Ruins": 1
