@@ -135,7 +135,11 @@ function renderTreeNode(node, depth, counter) {
   const ownedLabel = `<span class="tree-owned ${statusClass}">${node.ownedQty}/${node.neededQty}</span>`;
   let bossHint = '';
   if (node.droppedBy.length) {
-    bossHint = `<span class="tree-boss-hint">${node.droppedBy.map(b => esc(b)).join(', ')}</span>`;
+    const rateStr = node.droprate ? `${(node.droprate * 100).toFixed(2)}%` : '';
+    const icons = node.droppedBy.map(b =>
+      `<img src="twicons/${encodeURIComponent(b + ' Icon')}.jpg" alt="${esc(b)}" title="${esc(b)}" class="tree-boss-icon" onerror="this.style.display='none'">`
+    ).join('');
+    bossHint = `<span class="tree-boss-hint">${icons}${rateStr ? `<span class="tree-drop-rate">${rateStr}</span>` : ''}</span>`;
   } else if (!node.isLeaf) {
     bossHint = node.status === 'have'
       ? `<span class="tree-boss-hint tree-craftable">Crafted</span>`
@@ -201,12 +205,15 @@ function renderComprehensiveView() {
     const matsHtml = materials.map(m => {
       const status = m.owned >= m.needed ? 'have' : m.owned > 0 ? 'partial' : 'none';
       const hasRecipe = m.item && m.item.recipe && m.item.recipe.length > 0;
+      const droprate = m.item ? (m.item.droprate || 0) : 0;
+      const rateStr = droprate ? `${(droprate * 100).toFixed(2)}%` : '';
       let sourceHtml = '';
       if (m.bosses.length) {
-        sourceHtml = m.bosses.map(b => b.boss
-            ? `<a href="#/bosses/${encodeURIComponent(b.boss.id)}" class="comp-boss-link">${esc(b.name)}</a>`
-            : `<span class="comp-boss-link">${esc(b.name)}</span>`
-          ).join(', ');
+        const icons = m.bosses.map(b => {
+          const href = b.boss ? `#/bosses/${encodeURIComponent(b.boss.id)}` : `#/bosses`;
+          return `<a href="${href}" title="${esc(b.name)}"><img src="twicons/${encodeURIComponent(b.name + ' Icon')}.jpg" alt="${esc(b.name)}" class="comp-boss-icon" onerror="this.style.display='none'"></a>`;
+        }).join('');
+        sourceHtml = `${icons}${rateStr ? `<span class="comp-drop-rate">${rateStr}</span>` : ''}`;
       } else if (hasRecipe) {
         sourceHtml = status === 'have'
           ? '<span class="comp-craftable">Crafted</span>'
