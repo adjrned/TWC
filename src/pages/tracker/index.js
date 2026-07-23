@@ -9,6 +9,8 @@ import { supportsFileHandles, pickFile, storeFileHandle, getFileHandle, removeFi
 
 let itemData = null;
 let bossData = null;
+let heroData = null;
+let heroIconMap = null;
 let itemMap = null;
 let profilesData = null;
 let trackerState = null;
@@ -43,6 +45,26 @@ async function loadBossData() {
   if (!bossData) bossData = [];
 }
 
+async function loadHeroData() {
+  if (heroData) return;
+  try {
+    const r = await fetch('data/heroes.json');
+    if (r.ok) heroData = await r.json();
+  } catch (e) {}
+  if (!heroData) heroData = [];
+  heroIconMap = new Map();
+  for (const h of heroData) {
+    if (h.heroClass && h.icon) heroIconMap.set(h.heroClass, h.icon);
+  }
+}
+
+function getHeroIcon(heroClass) {
+  if (!heroClass) return '';
+  const icon = heroIconMap?.get(heroClass);
+  if (icon) return `twicons/${icon}.jpg`;
+  return `twicons/${heroClass.replace(/\s+/g, '')}Icon.jpg`;
+}
+
 function setFileStatus(msg) {
   fileStatusMessage = msg;
   const el = document.getElementById('fileStatusMsg');
@@ -67,7 +89,7 @@ function renderProfileSelector() {
   const tabs = profiles.map(p => {
     const isActive = p.id === active;
     const label = p.name.length > 20 ? p.name.slice(0, 18) + '...' : p.name;
-    const iconSrc = p.heroClass ? `twicons/${p.heroClass.replace(/\s+/g, '')}Icon.jpg` : '';
+    const iconSrc = getHeroIcon(p.heroClass);
     const iconHtml = iconSrc ? `<img src="${esc(iconSrc)}" alt="" class="profile-tab-icon" onerror="this.style.display='none'">` : '';
     return `<button class="profile-tab ${isActive ? 'active' : ''}" onclick="window._trackerSwitchProfile('${p.id}')" title="${esc(p.name)}">${iconHtml}${esc(label)}</button>`;
   }).join('');
@@ -133,7 +155,7 @@ function renderLinkedFileInfo() {
 
 function renderCharacterOverview(save) {
   if (!save) return '';
-  const classIcon = `twicons/${save.class.replace(/\s+/g, '')}Icon.jpg`;
+  const classIcon = getHeroIcon(save.class);
   const sectionOrder = ['Hero Inventory', 'Bag', 'Storage'];
 
   const sectionsHtml = sectionOrder.map(name => {
@@ -675,6 +697,7 @@ function switchProfile(id) {
 export async function initTracker({ params, query }) {
   await loadItemData();
   await loadBossData();
+  await loadHeroData();
 
   profilesData = migrateToProfiles();
   const pid = activeProfileId();
