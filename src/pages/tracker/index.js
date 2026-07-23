@@ -444,8 +444,7 @@ function fullRerender() {
 
 function createProfileFromSave(parsed) {
   const id = Date.now().toString(36);
-  const name = `${parsed.username} (${parsed.class})`;
-  profilesData.profiles.push({ id, name, heroClass: parsed.class, createdAt: Date.now() });
+  profilesData.profiles.push({ id, name: parsed.class, heroClass: parsed.class, createdAt: Date.now() });
   profilesData.activeProfileId = id;
   saveProfiles(profilesData);
 
@@ -472,7 +471,7 @@ function applyParsedSave(parsed) {
 
   const profile = activeProfile();
   if (profile) {
-    profile.name = `${parsed.username} (${parsed.class})`;
+    profile.name = parsed.class;
     profile.heroClass = parsed.class;
     saveProfiles(profilesData);
   }
