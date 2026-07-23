@@ -196,7 +196,6 @@ function renderCharacterOverview(save) {
         </div>
         <div class="overview-actions">
           ${linkedHtml}
-          <span class="overview-version">v${esc(save.version)}</span>
           <button class="btn-small btn-danger" onclick="window._trackerDeleteSave()">Remove</button>
         </div>
       </div>
@@ -414,6 +413,21 @@ function renderContent() {
   return currentView === 'split' ? renderSplitView() : renderComprehensiveView();
 }
 
+function renderHistoryInventory(sections) {
+  if (!sections) return '';
+  const sectionOrder = ['Hero Inventory', 'Bag', 'Storage'];
+  const allItems = sectionOrder.flatMap(name => sections[name] || []);
+  if (!allItems.length) return '';
+  const iconsHtml = allItems.map(({ name, qty }) => {
+    const title = qty > 1 ? `${name} x${qty}` : name;
+    return `<a href="#/items/${encodeURIComponent(name)}" class="inv-icon-link" title="${esc(title)}">
+      <img src="twicons/${encodeURIComponent(name)}.jpg" alt="${esc(name)}" class="inv-icon inv-icon-sm" onerror="this.style.display='none'">
+      ${qty > 1 ? `<span class="inv-icon-qty">x${qty}</span>` : ''}
+    </a>`;
+  }).join('');
+  return `<div class="history-inventory"><div class="inv-icons">${iconsHtml}</div></div>`;
+}
+
 function renderLoadCodeHistory() {
   const history = trackerState.loadCodeHistory || [];
   if (!history.length) return '';
@@ -428,6 +442,7 @@ function renderLoadCodeHistory() {
           <span class="history-chevron" id="histChev${i}">▶</span>
         </div>
         <div class="history-entry-body collapsed" id="histBody${i}">
+          ${renderHistoryInventory(entry.sections)}
           <pre class="history-codes">${entry.codes.map(c => esc(c)).join('\n')}</pre>
           <button class="btn-small" onclick="window._trackerCopyCodes(${i})">Copy Codes</button>
         </div>
@@ -506,6 +521,7 @@ function applyParsedSave(parsed) {
       level: parsed.level,
       version: parsed.version,
       codes: parsed.loadCodes,
+      sections: parsed.sections,
       uploadedAt: parsed.uploadedAt,
     });
   }
