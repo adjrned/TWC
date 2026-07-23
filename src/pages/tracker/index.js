@@ -80,7 +80,7 @@ function renderProfileSelector() {
       </div>
       ${active ? `<div class="profile-actions">
         <button class="btn-small" onclick="window._trackerRenameProfile()">Rename</button>
-        ${profiles.length > 1 ? `<button class="btn-small btn-danger" onclick="window._trackerDeleteProfile()">Delete</button>` : ''}
+        <button class="btn-small btn-danger" onclick="window._trackerDeleteProfile()">Delete</button>
       </div>` : ''}
     </div>
   `;
@@ -88,17 +88,28 @@ function renderProfileSelector() {
 
 function renderUploadArea(hasSave) {
   const hasFileAPI = supportsFileHandles();
-  const linkedHint = hasFileAPI
-    ? '<span class="upload-hint-linked">You can link a file for quick refresh (Chrome/Edge)</span>'
-    : '';
+
+  if (hasSave) {
+    return `
+      <div class="tracker-upload-compact" id="trackerUpload">
+        <div class="upload-compact-zone" id="uploadZone">
+          <span class="upload-compact-icon">📂</span>
+          <span class="upload-compact-text">Drop or click to update save</span>
+          <input type="file" id="fileInput" accept=".txt" hidden>
+          ${hasFileAPI ? `<button class="btn-small btn-link-file" id="btnLinkFile" onclick="event.stopPropagation(); window._trackerLinkFile()">Link File</button>` : ''}
+        </div>
+        <div class="file-status" id="fileStatusMsg" style="display:${fileStatusMessage ? '' : 'none'}">${esc(fileStatusMessage)}</div>
+      </div>
+    `;
+  }
 
   return `
-    <div class="tracker-upload ${hasSave ? 'has-save' : ''}" id="trackerUpload">
+    <div class="tracker-upload" id="trackerUpload">
       <div class="upload-zone" id="uploadZone">
         <div class="upload-icon">📂</div>
         <p>Drop your save file here or click to browse</p>
         <span class="upload-hint">WC3 save file (.txt)</span>
-        ${linkedHint}
+        ${hasFileAPI ? '<span class="upload-hint-linked">You can link a file for quick refresh (Chrome/Edge)</span>' : ''}
         <input type="file" id="fileInput" accept=".txt" hidden>
         ${hasFileAPI ? `<button class="btn-small btn-link-file" id="btnLinkFile" onclick="event.stopPropagation(); window._trackerLinkFile()">Link File for Auto-Refresh</button>` : ''}
       </div>
