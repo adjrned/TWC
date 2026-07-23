@@ -419,8 +419,8 @@ function renderPage() {
         ${renderLoadCodeHistory()}
       ` : `
         <div class="tracker-no-profile">
-          <p>Create a character profile to start tracking items.</p>
-          <button class="btn-small" onclick="window._trackerAddProfile()">Create Profile</button>
+          <p>Upload a save file to create your first character profile.</p>
+          ${renderUploadArea(false)}
         </div>
       `}
     </div>
@@ -440,6 +440,17 @@ function refreshContent() {
 function fullRerender() {
   const app = document.getElementById('app');
   app.innerHTML = renderPage();
+}
+
+function createProfileFromSave(parsed) {
+  const id = Date.now().toString(36);
+  const name = `${parsed.username} (${parsed.class})`;
+  profilesData.profiles.push({ id, name, heroClass: parsed.class, createdAt: Date.now() });
+  profilesData.activeProfileId = id;
+  saveProfiles(profilesData);
+
+  trackerState = { version: 1, trackedItems: [], lastSave: null, loadCodeHistory: [] };
+  applyParsedSave(parsed);
 }
 
 function applyParsedSave(parsed) {
@@ -468,7 +479,6 @@ function applyParsedSave(parsed) {
 }
 
 function handleFileUpload(file) {
-  if (!activeProfileId()) return;
   const reader = new FileReader();
   reader.onload = (e) => {
     const parsed = parseSaveFile(e.target.result);
@@ -476,7 +486,11 @@ function handleFileUpload(file) {
       alert('Could not parse save file. Please upload a valid WC3 save file.');
       return;
     }
-    applyParsedSave(parsed);
+    if (!activeProfileId()) {
+      createProfileFromSave(parsed);
+    } else {
+      applyParsedSave(parsed);
+    }
     setFileStatus(`Save loaded: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
     fullRerender();
     wireEvents();
@@ -485,13 +499,18 @@ function handleFileUpload(file) {
 }
 
 async function handleLinkFile() {
-  if (!activeProfileId()) return;
   try {
     const { handle, text, fileName } = await pickFile();
     const parsed = parseSaveFile(text);
     if (!parsed) {
       alert('Could not parse save file. Please select a valid WC3 save file.');
       return;
+    }
+
+    if (!activeProfileId()) {
+      createProfileFromSave(parsed);
+    } else {
+      applyParsedSave(parsed);
     }
 
     await storeFileHandle(activeProfileId(), handle);
@@ -502,7 +521,6 @@ async function handleLinkFile() {
       saveProfiles(profilesData);
     }
 
-    applyParsedSave(parsed);
     setFileStatus(`File linked: ${fileName} — use Refresh to re-read anytime`);
     fullRerender();
     wireEvents();
@@ -650,7 +668,7 @@ export async function initTracker({ params, query }) {
 
   profilesData = migrateToProfiles();
   const pid = activeProfileId();
-  trackerState = pid ? loadProfileState(pid) : { version: 1, trackedItems: [], lastSave: null };
+  trackerState = pid ? loadProfileState(pid) : { version: 1, trackedItems: [], lastSave: null, loadCodeHistory: [] };
 
   const app = document.getElementById('app');
   app.innerHTML = renderPage();
@@ -663,15 +681,26 @@ export async function initTracker({ params, query }) {
   window._trackerSwitchProfile = switchProfile;
 
   window._trackerAddProfile = () => {
-    const name = prompt('Enter a name for this character profile:');
-    if (!name || !name.trim()) return;
-    const id = Date.now().toString(36);
-    profilesData.profiles.push({ id, name: name.trim(), createdAt: Date.now() });
-    profilesData.activeProfileId = id;
-    saveProfiles(profilesData);
-    trackerState = loadProfileState(id);
-    fullRerender();
-    wireEvents();
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt';
+    input.onchange = () => {
+      if (!input.files.length) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const parsed = parseSaveFile(e.target.result);
+        if (!parsed) {
+          alert('Could not parse save file. Please upload a valid WC3 save file.');
+          return;
+        }
+        createProfileFromSave(parsed);
+        setFileStatus(`Profile created: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+        fullRerender();
+        wireEvents();
+      };
+      reader.readAsText(input.files[0]);
+    };
+    input.click();
   };
 
   window._trackerRenameProfile = () => {
@@ -697,7 +726,7 @@ export async function initTracker({ params, query }) {
     saveProfiles(profilesData);
     trackerState = profilesData.activeProfileId
       ? loadProfileState(profilesData.activeProfileId)
-      : { version: 1, trackedItems: [], lastSave: null };
+      : { version: 1, trackedItems: [], lastSave: null, loadCodeHistory: [] };
     fullRerender();
     wireEvents();
   };
