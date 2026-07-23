@@ -765,27 +765,54 @@ export async function initTracker({ params, query }) {
 
   window._trackerSwitchProfile = switchProfile;
 
-  window._trackerAddProfile = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt';
-    input.onchange = () => {
-      if (!input.files.length) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const parsed = parseSaveFile(e.target.result);
+  window._trackerAddProfile = async () => {
+    if (supportsFileHandles()) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'WC3 Save File', accept: { 'text/plain': ['.txt'] } }],
+        });
+        const file = await handle.getFile();
+        const text = await file.text();
+        const parsed = parseSaveFile(text);
         if (!parsed) {
           alert('Could not parse save file. Please upload a valid WC3 save file.');
           return;
         }
         createProfileFromSave(parsed);
-        setFileStatus(`Profile created: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+        await storeFileHandle(activeProfileId(), handle);
+        const profile = activeProfile();
+        if (profile) {
+          profile.linkedFileName = file.name;
+          saveProfiles(profilesData);
+        }
+        setFileStatus(`Profile created and file linked: ${parsed.class} Lv.${parsed.level}`);
         fullRerender();
         wireEvents();
+      } catch (err) {
+        if (err.name !== 'AbortError') throw err;
+      }
+    } else {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.txt';
+      input.onchange = () => {
+        if (!input.files.length) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const parsed = parseSaveFile(e.target.result);
+          if (!parsed) {
+            alert('Could not parse save file. Please upload a valid WC3 save file.');
+            return;
+          }
+          createProfileFromSave(parsed);
+          setFileStatus(`Profile created: ${parsed.class} Lv.${parsed.level}`);
+          fullRerender();
+          wireEvents();
+        };
+        reader.readAsText(input.files[0]);
       };
-      reader.readAsText(input.files[0]);
-    };
-    input.click();
+      input.click();
+    }
   };
 
   window._trackerRenameProfile = () => {
