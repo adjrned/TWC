@@ -83,16 +83,28 @@ function loadLegacyCodeHistory() {
 
 export function migrateToProfiles() {
   const profilesData = loadProfiles();
-  if (profilesData.profiles.length > 0) return profilesData;
+  if (profilesData.profiles.length > 0) {
+    let updated = false;
+    for (const p of profilesData.profiles) {
+      if (!p.heroClass) {
+        const state = loadProfileState(p.id);
+        if (state.lastSave?.class) {
+          p.heroClass = state.lastSave.class;
+          p.name = state.lastSave.class;
+          updated = true;
+        }
+      }
+    }
+    if (updated) saveProfiles(profilesData);
+    return profilesData;
+  }
 
   const legacy = loadTrackerState();
   if (!legacy.lastSave && !legacy.trackedItems.length) return profilesData;
 
   const id = Date.now().toString(36);
   const heroClass = legacy.lastSave?.class || '';
-  const name = legacy.lastSave
-    ? `${legacy.lastSave.username} (${legacy.lastSave.class})`
-    : 'Default';
+  const name = heroClass || 'Default';
 
   profilesData.profiles.push({ id, name, heroClass, createdAt: Date.now() });
   profilesData.activeProfileId = id;
