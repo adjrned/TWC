@@ -193,13 +193,37 @@
   color: var(--muted);
 }
 
-.tracker-upload.has-save .upload-zone {
-  padding: 16px;
+/* ── Compact Upload (when save already loaded) ────────────────────────────── */
+
+.tracker-upload-compact {
+  margin-bottom: 16px;
 }
 
-.tracker-upload.has-save .upload-icon {
-  font-size: 1.4rem;
-  margin-bottom: 4px;
+.upload-compact-zone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--card);
+}
+
+.upload-compact-zone:hover,
+.upload-compact-zone.drag-over {
+  border-color: var(--accent3);
+  background: rgba(78, 205, 196, 0.04);
+}
+
+.upload-compact-icon {
+  font-size: 1.1rem;
+}
+
+.upload-compact-text {
+  font-size: 0.82rem;
+  color: var(--muted2);
 }
 
 /* ── Character Overview ────────────────────────────────────────────────────── */
