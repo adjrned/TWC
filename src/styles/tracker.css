@@ -892,6 +892,28 @@
   display: none;
 }
 
+.history-inventory {
+  margin-bottom: 10px;
+}
+
+.history-inventory .inv-icons {
+  gap: 3px;
+}
+
+.inv-icon-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.inv-icon-link:has(.inv-icon-sm) {
+  width: 24px;
+  height: 24px;
+}
+
+.inv-icon-link:has(.inv-icon-sm) .inv-icon-qty {
+  font-size: 0.55rem;
+}
+
 .history-codes {
   font-size: 0.78rem;
   color: var(--muted2);
