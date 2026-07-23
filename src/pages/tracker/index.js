@@ -153,23 +153,20 @@ function renderUploadArea(hasSave) {
   `;
 }
 
-function renderLinkedFileInfo() {
-  const profile = activeProfile();
-  if (!profile || !profile.linkedFileName) return '';
-  return `
-    <div class="linked-file-info">
-      <span class="linked-file-icon">🔗</span>
-      <span class="linked-file-name">${esc(profile.linkedFileName)}</span>
-      <button class="btn-small" onclick="window._trackerRefreshFile()" title="Re-read the linked file to update inventory">Refresh</button>
-      <button class="btn-small btn-danger" onclick="window._trackerUnlinkFile()" title="Stop auto-reading this file">Unlink</button>
-    </div>
-  `;
-}
-
 function renderCharacterOverview(save) {
   if (!save) return '';
   const classIcon = getHeroIcon(save.class);
+  const profile = activeProfile();
+  const isLinked = profile && profile.linkedFileName;
   const sectionOrder = ['Hero Inventory', 'Bag', 'Storage'];
+
+  const linkedHtml = isLinked ? `
+    <div class="overview-linked">
+      <span class="overview-linked-file" title="${esc(profile.linkedFileName)}">🔗 ${esc(profile.linkedFileName)}</span>
+      <button class="btn-small" onclick="window._trackerRefreshFile()" title="Re-read the linked file to update inventory">Refresh</button>
+      <button class="btn-small btn-danger" onclick="window._trackerUnlinkFile()" title="Stop auto-reading this file">Unlink</button>
+    </div>
+  ` : '';
 
   const sectionsHtml = sectionOrder.map(name => {
     const items = save.sections[name];
@@ -198,6 +195,7 @@ function renderCharacterOverview(save) {
           <span class="overview-class">${esc(save.class)} &middot; Lv.${save.level}</span>
         </div>
         <div class="overview-actions">
+          ${linkedHtml}
           <span class="overview-version">v${esc(save.version)}</span>
           <button class="btn-small btn-danger" onclick="window._trackerDeleteSave()">Remove</button>
         </div>
@@ -453,7 +451,6 @@ function renderPage() {
       ${renderProfileSelector()}
       ${activeProfileId() ? `
         ${renderUploadArea(hasSave)}
-        ${renderLinkedFileInfo()}
         ${renderCharacterOverview(trackerState.lastSave)}
         ${renderSearchArea()}
         <div id="trackedItemsArea">${renderTrackedList()}</div>

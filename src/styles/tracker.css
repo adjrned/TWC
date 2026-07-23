@@ -93,32 +93,6 @@
   font-size: 0.95rem;
 }
 
-/* ── Linked File ──────────────────────────────────────────────────────────── */
-
-.linked-file-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(78, 205, 196, 0.06);
-  border: 1px solid rgba(78, 205, 196, 0.2);
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 0.82rem;
-}
-
-.linked-file-icon {
-  font-size: 1rem;
-}
-
-.linked-file-name {
-  color: var(--text);
-  font-weight: 500;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .file-status {
   margin-top: 8px;
@@ -269,6 +243,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.overview-linked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.overview-linked-file {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .overview-version {
