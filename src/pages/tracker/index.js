@@ -2,7 +2,7 @@ import { esc } from '../../ui/escape.js';
 import { parseSaveFile } from './parser.js';
 import {
   loadProfiles, saveProfiles, loadProfileState, saveProfileState,
-  deleteProfileState, migrateToProfiles, loadCodeHistory, addCodeHistoryEntry,
+  deleteProfileState, migrateToProfiles, addCodeToProfileState,
 } from './storage.js';
 import { buildItemMap, buildOwnedMap, buildRecipeTree, buildComprehensiveData, flattenToLeaves } from './tree.js';
 import { supportsFileHandles, pickFile, storeFileHandle, getFileHandle, removeFileHandle, readFileFromHandle } from './filehandle.js';
@@ -67,7 +67,9 @@ function renderProfileSelector() {
   const tabs = profiles.map(p => {
     const isActive = p.id === active;
     const label = p.name.length > 20 ? p.name.slice(0, 18) + '...' : p.name;
-    return `<button class="profile-tab ${isActive ? 'active' : ''}" onclick="window._trackerSwitchProfile('${p.id}')" title="${esc(p.name)}">${esc(label)}</button>`;
+    const iconSrc = p.heroClass ? `twicons/${p.heroClass.replace(/\s+/g, '')}Icon.jpg` : '';
+    const iconHtml = iconSrc ? `<img src="${esc(iconSrc)}" alt="" class="profile-tab-icon" onerror="this.style.display='none'">` : '';
+    return `<button class="profile-tab ${isActive ? 'active' : ''}" onclick="window._trackerSwitchProfile('${p.id}')" title="${esc(p.name)}">${iconHtml}${esc(label)}</button>`;
   }).join('');
 
   return `
@@ -369,7 +371,7 @@ function renderContent() {
 }
 
 function renderLoadCodeHistory() {
-  const history = loadCodeHistory();
+  const history = trackerState.loadCodeHistory || [];
   if (!history.length) return '';
 
   const entries = history.map((entry, i) => {
@@ -442,10 +444,9 @@ function fullRerender() {
 
 function applyParsedSave(parsed) {
   trackerState.lastSave = parsed;
-  saveProfileState(activeProfileId(), trackerState);
 
   if (parsed.loadCodes.length) {
-    addCodeHistoryEntry({
+    addCodeToProfileState(trackerState, {
       id: parsed.uploadedAt,
       username: parsed.username,
       class: parsed.class,
@@ -454,6 +455,15 @@ function applyParsedSave(parsed) {
       codes: parsed.loadCodes,
       uploadedAt: parsed.uploadedAt,
     });
+  }
+
+  saveProfileState(activeProfileId(), trackerState);
+
+  const profile = activeProfile();
+  if (profile) {
+    profile.name = `${parsed.username} (${parsed.class})`;
+    profile.heroClass = parsed.class;
+    saveProfiles(profilesData);
   }
 }
 
@@ -753,7 +763,7 @@ export async function initTracker({ params, query }) {
   };
 
   window._trackerCopyCodes = (idx) => {
-    const history = loadCodeHistory();
+    const history = trackerState.loadCodeHistory || [];
     if (history[idx]) {
       navigator.clipboard.writeText(history[idx].codes.join('\n'));
     }

@@ -28,7 +28,7 @@ export function loadTrackerState() {
       if (s && s.version === 1) return s;
     }
   } catch (e) {}
-  return { version: 1, trackedItems: [], lastSave: null };
+  return { version: 1, trackedItems: [], lastSave: null, loadCodeHistory: [] };
 }
 
 export function saveTrackerState(state) {
@@ -46,10 +46,13 @@ export function loadProfileState(profileId) {
     const raw = localStorage.getItem(getProfileStorageKey(profileId));
     if (raw) {
       const s = JSON.parse(raw);
-      if (s && s.version === 1) return s;
+      if (s && s.version === 1) {
+        if (!s.loadCodeHistory) s.loadCodeHistory = [];
+        return s;
+      }
     }
   } catch (e) {}
-  return { version: 1, trackedItems: [], lastSave: null };
+  return { version: 1, trackedItems: [], lastSave: null, loadCodeHistory: [] };
 }
 
 export function saveProfileState(profileId, state) {
@@ -64,6 +67,20 @@ export function deleteProfileState(profileId) {
   } catch (e) {}
 }
 
+export function addCodeToProfileState(state, entry) {
+  if (!state.loadCodeHistory) state.loadCodeHistory = [];
+  state.loadCodeHistory.unshift(entry);
+  if (state.loadCodeHistory.length > MAX_HISTORY) state.loadCodeHistory.length = MAX_HISTORY;
+}
+
+function loadLegacyCodeHistory() {
+  try {
+    const raw = localStorage.getItem(LOADCODE_KEY);
+    if (raw) return JSON.parse(raw) || [];
+  } catch (e) {}
+  return [];
+}
+
 export function migrateToProfiles() {
   const profilesData = loadProfiles();
   if (profilesData.profiles.length > 0) return profilesData;
@@ -72,30 +89,22 @@ export function migrateToProfiles() {
   if (!legacy.lastSave && !legacy.trackedItems.length) return profilesData;
 
   const id = Date.now().toString(36);
+  const heroClass = legacy.lastSave?.class || '';
   const name = legacy.lastSave
     ? `${legacy.lastSave.username} (${legacy.lastSave.class})`
     : 'Default';
 
-  profilesData.profiles.push({ id, name, createdAt: Date.now() });
+  profilesData.profiles.push({ id, name, heroClass, createdAt: Date.now() });
   profilesData.activeProfileId = id;
-  saveProfileState(id, legacy);
+
+  const legacyCodes = loadLegacyCodeHistory();
+  const state = {
+    version: 1,
+    trackedItems: legacy.trackedItems || [],
+    lastSave: legacy.lastSave || null,
+    loadCodeHistory: legacyCodes,
+  };
+  saveProfileState(id, state);
   saveProfiles(profilesData);
   return profilesData;
-}
-
-export function loadCodeHistory() {
-  try {
-    const raw = localStorage.getItem(LOADCODE_KEY);
-    if (raw) return JSON.parse(raw) || [];
-  } catch (e) {}
-  return [];
-}
-
-export function addCodeHistoryEntry(entry) {
-  const history = loadCodeHistory();
-  history.unshift(entry);
-  if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-  try {
-    localStorage.setItem(LOADCODE_KEY, JSON.stringify(history));
-  } catch (e) {}
 }
