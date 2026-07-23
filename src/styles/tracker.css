@@ -224,6 +224,7 @@
 .upload-compact-text {
   font-size: 0.82rem;
   color: var(--muted2);
+  flex: 1;
 }
 
 /* ── Character Overview ────────────────────────────────────────────────────── */

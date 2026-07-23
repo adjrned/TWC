@@ -123,6 +123,8 @@ function renderProfileSelector() {
 
 function renderUploadArea(hasSave) {
   const hasFileAPI = supportsFileHandles();
+  const profile = activeProfile();
+  const isLinked = profile && profile.linkedFileName;
 
   if (hasSave) {
     return `
@@ -131,7 +133,7 @@ function renderUploadArea(hasSave) {
           <span class="upload-compact-icon">📂</span>
           <span class="upload-compact-text">Drop or click to update save</span>
           <input type="file" id="fileInput" accept=".txt" hidden>
-          ${hasFileAPI ? `<button class="btn-small btn-link-file" id="btnLinkFile" onclick="event.stopPropagation(); window._trackerLinkFile()">Link File</button>` : ''}
+          ${hasFileAPI && !isLinked ? `<button class="btn-small btn-link-file" id="btnLinkFile" onclick="event.stopPropagation(); window._trackerLinkFile()">Link File</button>` : ''}
         </div>
         <div class="file-status" id="fileStatusMsg" style="display:${fileStatusMessage ? '' : 'none'}">${esc(fileStatusMessage)}</div>
       </div>
@@ -144,9 +146,7 @@ function renderUploadArea(hasSave) {
         <div class="upload-icon">📂</div>
         <p>Drop your save file here or click to browse</p>
         <span class="upload-hint">WC3 save file (.txt)</span>
-        ${hasFileAPI ? '<span class="upload-hint-linked">You can link a file for quick refresh (Chrome/Edge)</span>' : ''}
         <input type="file" id="fileInput" accept=".txt" hidden>
-        ${hasFileAPI ? `<button class="btn-small btn-link-file" id="btnLinkFile" onclick="event.stopPropagation(); window._trackerLinkFile()">Link File for Auto-Refresh</button>` : ''}
       </div>
       <div class="file-status" id="fileStatusMsg" style="display:${fileStatusMessage ? '' : 'none'}">${esc(fileStatusMessage)}</div>
     </div>
@@ -523,9 +523,9 @@ function applyParsedSave(parsed) {
   }
 }
 
-function handleFileUpload(file) {
+function handleFileUpload(file, fileHandle) {
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     const parsed = parseSaveFile(e.target.result);
     if (!parsed) {
       alert('Could not parse save file. Please upload a valid WC3 save file.');
@@ -536,7 +536,23 @@ function handleFileUpload(file) {
     } else {
       applyParsedSave(parsed);
     }
-    setFileStatus(`Save loaded: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+
+    if (fileHandle && supportsFileHandles()) {
+      try {
+        await storeFileHandle(activeProfileId(), fileHandle);
+        const profile = activeProfile();
+        if (profile) {
+          profile.linkedFileName = file.name;
+          saveProfiles(profilesData);
+        }
+        setFileStatus(`Save loaded and file linked: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+      } catch (err) {
+        setFileStatus(`Save loaded: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+      }
+    } else {
+      setFileStatus(`Save loaded: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+    }
+
     fullRerender();
     wireEvents();
   };
@@ -678,22 +694,45 @@ function wireEvents() {
   const fileInput = document.getElementById('fileInput');
 
   if (uploadZone) {
-    uploadZone.addEventListener('click', (e) => {
+    uploadZone.addEventListener('click', async (e) => {
       if (e.target.closest('#btnLinkFile')) return;
-      fileInput?.click();
+      if (supportsFileHandles()) {
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            types: [{ description: 'WC3 Save File', accept: { 'text/plain': ['.txt'] } }],
+          });
+          const file = await handle.getFile();
+          handleFileUpload(file, handle);
+        } catch (err) {
+          if (err.name !== 'AbortError') throw err;
+        }
+      } else {
+        fileInput?.click();
+      }
     });
     uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-    uploadZone.addEventListener('drop', (e) => {
+    uploadZone.addEventListener('drop', async (e) => {
       e.preventDefault();
       uploadZone.classList.remove('drag-over');
-      if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files[0]);
+      const items = e.dataTransfer.items;
+      if (items && items.length && items[0].getAsFileSystemHandle) {
+        try {
+          const handle = await items[0].getAsFileSystemHandle();
+          if (handle.kind === 'file') {
+            const file = await handle.getFile();
+            handleFileUpload(file, handle);
+            return;
+          }
+        } catch (err) {}
+      }
+      if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files[0], null);
     });
   }
 
   if (fileInput) {
     fileInput.addEventListener('change', () => {
-      if (fileInput.files.length) handleFileUpload(fileInput.files[0]);
+      if (fileInput.files.length) handleFileUpload(fileInput.files[0], null);
     });
   }
 }
