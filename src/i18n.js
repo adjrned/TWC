@@ -75,7 +75,7 @@ const STRINGS = {
     'nav.bosses.short': '보스',
     'nav.awakening.short': '각성',
 
-    'builder.title': 'TWRPG 빌드 플래너',
+    'builder.title': '빌드 플래너',
     'builder.subtitle': '페이즈별 장비',
     'builder.import': '가져오기',
     'builder.export': '내보내기',
@@ -132,7 +132,7 @@ const STRINGS = {
     'nav.bosses.short': 'Boss',
     'nav.awakening.short': '觉醒',
 
-    'builder.title': 'TWRPG 构建规划',
+    'builder.title': '构建规划',
     'builder.subtitle': '每阶段装备',
     'builder.import': '导入',
     'builder.export': '导出',
