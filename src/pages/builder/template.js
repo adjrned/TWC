@@ -4,7 +4,7 @@ export function builderHTML() {
   return `
   <header>
     <div class="logo-area">
-      <h1>TW<span>RPG</span> ${t('builder.title').replace('TWRPG ', '')}</h1>
+      <h1>${t('builder.title')}</h1>
       <p>${t('builder.subtitle')}</p>
     </div>
     <div class="header-actions">
