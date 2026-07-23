@@ -1,13 +1,28 @@
 import { esc } from '../../ui/escape.js';
 import { parseSaveFile } from './parser.js';
-import { loadTrackerState, saveTrackerState, loadCodeHistory, addCodeHistoryEntry } from './storage.js';
+import {
+  loadProfiles, saveProfiles, loadProfileState, saveProfileState,
+  deleteProfileState, migrateToProfiles, loadCodeHistory, addCodeHistoryEntry,
+} from './storage.js';
 import { buildItemMap, buildOwnedMap, buildRecipeTree, buildComprehensiveData, flattenToLeaves } from './tree.js';
+import { supportsFileHandles, pickFile, storeFileHandle, getFileHandle, removeFileHandle, readFileFromHandle } from './filehandle.js';
 
 let itemData = null;
 let bossData = null;
 let itemMap = null;
+let profilesData = null;
 let trackerState = null;
 let currentView = 'split';
+let fileStatusMessage = '';
+
+function activeProfileId() {
+  return profilesData?.activeProfileId || null;
+}
+
+function activeProfile() {
+  if (!profilesData) return null;
+  return profilesData.profiles.find(p => p.id === profilesData.activeProfileId) || null;
+}
 
 async function loadItemData() {
   if (itemData) return;
@@ -28,15 +43,77 @@ async function loadBossData() {
   if (!bossData) bossData = [];
 }
 
+function setFileStatus(msg) {
+  fileStatusMessage = msg;
+  const el = document.getElementById('fileStatusMsg');
+  if (el) {
+    el.textContent = msg;
+    el.style.display = msg ? '' : 'none';
+  }
+  if (msg) {
+    setTimeout(() => {
+      fileStatusMessage = '';
+      const el2 = document.getElementById('fileStatusMsg');
+      if (el2) el2.style.display = 'none';
+    }, 5000);
+  }
+}
+
+function renderProfileSelector() {
+  if (!profilesData) return '';
+  const profiles = profilesData.profiles;
+  const active = activeProfileId();
+
+  const tabs = profiles.map(p => {
+    const isActive = p.id === active;
+    const label = p.name.length > 20 ? p.name.slice(0, 18) + '...' : p.name;
+    return `<button class="profile-tab ${isActive ? 'active' : ''}" onclick="window._trackerSwitchProfile('${p.id}')" title="${esc(p.name)}">${esc(label)}</button>`;
+  }).join('');
+
+  return `
+    <div class="profile-bar">
+      <div class="profile-tabs">
+        ${tabs}
+        <button class="profile-tab profile-add" onclick="window._trackerAddProfile()" title="Add new character profile">+</button>
+      </div>
+      ${active ? `<div class="profile-actions">
+        <button class="btn-small" onclick="window._trackerRenameProfile()">Rename</button>
+        ${profiles.length > 1 ? `<button class="btn-small btn-danger" onclick="window._trackerDeleteProfile()">Delete</button>` : ''}
+      </div>` : ''}
+    </div>
+  `;
+}
+
 function renderUploadArea(hasSave) {
+  const hasFileAPI = supportsFileHandles();
+  const linkedHint = hasFileAPI
+    ? '<span class="upload-hint-linked">You can link a file for quick refresh (Chrome/Edge)</span>'
+    : '';
+
   return `
     <div class="tracker-upload ${hasSave ? 'has-save' : ''}" id="trackerUpload">
-      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-zone" id="uploadZone">
         <div class="upload-icon">📂</div>
         <p>Drop your save file here or click to browse</p>
         <span class="upload-hint">WC3 save file (.txt)</span>
+        ${linkedHint}
         <input type="file" id="fileInput" accept=".txt" hidden>
+        ${hasFileAPI ? `<button class="btn-small btn-link-file" id="btnLinkFile" onclick="event.stopPropagation(); window._trackerLinkFile()">Link File for Auto-Refresh</button>` : ''}
       </div>
+      <div class="file-status" id="fileStatusMsg" style="display:${fileStatusMessage ? '' : 'none'}">${esc(fileStatusMessage)}</div>
+    </div>
+  `;
+}
+
+function renderLinkedFileInfo() {
+  const profile = activeProfile();
+  if (!profile || !profile.linkedFileName) return '';
+  return `
+    <div class="linked-file-info">
+      <span class="linked-file-icon">🔗</span>
+      <span class="linked-file-name">${esc(profile.linkedFileName)}</span>
+      <button class="btn-small" onclick="window._trackerRefreshFile()" title="Re-read the linked file to update inventory">Refresh</button>
+      <button class="btn-small btn-danger" onclick="window._trackerUnlinkFile()" title="Stop auto-reading this file">Unlink</button>
     </div>
   `;
 }
@@ -325,16 +402,25 @@ function renderPage() {
   return `
     <div class="tracker-page">
       <h1 class="tracker-title">Item Tracker</h1>
-      ${renderUploadArea(hasSave)}
-      ${renderCharacterOverview(trackerState.lastSave)}
-      ${renderSearchArea()}
-      <div id="trackedItemsArea">${renderTrackedList()}</div>
-      ${hasSave || trackerState.trackedItems.length ? `
-        ${renderViewToggle()}
-        ${currentView === 'comprehensive' ? `<div id="cumulativeSummary">${renderCumulativeSummary()}</div>` : ''}
-        <div id="trackerContent" class="tracker-content">${renderContent()}</div>
-      ` : ''}
-      ${renderLoadCodeHistory()}
+      ${renderProfileSelector()}
+      ${activeProfileId() ? `
+        ${renderUploadArea(hasSave)}
+        ${renderLinkedFileInfo()}
+        ${renderCharacterOverview(trackerState.lastSave)}
+        ${renderSearchArea()}
+        <div id="trackedItemsArea">${renderTrackedList()}</div>
+        ${hasSave || trackerState.trackedItems.length ? `
+          ${renderViewToggle()}
+          ${currentView === 'comprehensive' ? `<div id="cumulativeSummary">${renderCumulativeSummary()}</div>` : ''}
+          <div id="trackerContent" class="tracker-content">${renderContent()}</div>
+        ` : ''}
+        ${renderLoadCodeHistory()}
+      ` : `
+        <div class="tracker-no-profile">
+          <p>Create a character profile to start tracking items.</p>
+          <button class="btn-small" onclick="window._trackerAddProfile()">Create Profile</button>
+        </div>
+      `}
     </div>
   `;
 }
@@ -354,7 +440,25 @@ function fullRerender() {
   app.innerHTML = renderPage();
 }
 
+function applyParsedSave(parsed) {
+  trackerState.lastSave = parsed;
+  saveProfileState(activeProfileId(), trackerState);
+
+  if (parsed.loadCodes.length) {
+    addCodeHistoryEntry({
+      id: parsed.uploadedAt,
+      username: parsed.username,
+      class: parsed.class,
+      level: parsed.level,
+      version: parsed.version,
+      codes: parsed.loadCodes,
+      uploadedAt: parsed.uploadedAt,
+    });
+  }
+}
+
 function handleFileUpload(file) {
+  if (!activeProfileId()) return;
   const reader = new FileReader();
   reader.onload = (e) => {
     const parsed = parseSaveFile(e.target.result);
@@ -362,25 +466,114 @@ function handleFileUpload(file) {
       alert('Could not parse save file. Please upload a valid WC3 save file.');
       return;
     }
-    trackerState.lastSave = parsed;
-    saveTrackerState(trackerState);
-
-    if (parsed.loadCodes.length) {
-      addCodeHistoryEntry({
-        id: parsed.uploadedAt,
-        username: parsed.username,
-        class: parsed.class,
-        level: parsed.level,
-        version: parsed.version,
-        codes: parsed.loadCodes,
-        uploadedAt: parsed.uploadedAt,
-      });
-    }
-
+    applyParsedSave(parsed);
+    setFileStatus(`Save loaded: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
     fullRerender();
     wireEvents();
   };
   reader.readAsText(file);
+}
+
+async function handleLinkFile() {
+  if (!activeProfileId()) return;
+  try {
+    const { handle, text, fileName } = await pickFile();
+    const parsed = parseSaveFile(text);
+    if (!parsed) {
+      alert('Could not parse save file. Please select a valid WC3 save file.');
+      return;
+    }
+
+    await storeFileHandle(activeProfileId(), handle);
+
+    const profile = activeProfile();
+    if (profile) {
+      profile.linkedFileName = fileName;
+      saveProfiles(profilesData);
+    }
+
+    applyParsedSave(parsed);
+    setFileStatus(`File linked: ${fileName} — use Refresh to re-read anytime`);
+    fullRerender();
+    wireEvents();
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      setFileStatus('Could not link file. Try again or use drag-and-drop.');
+    }
+  }
+}
+
+async function handleRefreshFile() {
+  const pid = activeProfileId();
+  if (!pid) return;
+  try {
+    const handle = await getFileHandle(pid);
+    if (!handle) {
+      setFileStatus('No linked file found. Please link a file first.');
+      return;
+    }
+    setFileStatus('Reading file...');
+    const text = await readFileFromHandle(handle);
+    if (text === null) {
+      setFileStatus('Permission denied. Click Refresh again to grant access.');
+      return;
+    }
+    const parsed = parseSaveFile(text);
+    if (!parsed) {
+      setFileStatus('File could not be parsed. It may have been modified or is not a valid save.');
+      return;
+    }
+    applyParsedSave(parsed);
+    setFileStatus(`Updated: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+    fullRerender();
+    wireEvents();
+  } catch (e) {
+    setFileStatus('Could not read file. The file may have been moved or deleted.');
+  }
+}
+
+async function handleUnlinkFile() {
+  const pid = activeProfileId();
+  if (!pid) return;
+  await removeFileHandle(pid);
+  const profile = activeProfile();
+  if (profile) {
+    delete profile.linkedFileName;
+    saveProfiles(profilesData);
+  }
+  setFileStatus('File unlinked.');
+  fullRerender();
+  wireEvents();
+}
+
+async function tryAutoRefresh() {
+  const pid = activeProfileId();
+  if (!pid) return;
+  const profile = activeProfile();
+  if (!profile || !profile.linkedFileName) return;
+  if (!supportsFileHandles()) return;
+
+  try {
+    const handle = await getFileHandle(pid);
+    if (!handle) return;
+    const permission = await handle.queryPermission({ mode: 'read' });
+    if (permission !== 'granted') return;
+    const file = await handle.getFile();
+    const text = await file.text();
+    const parsed = parseSaveFile(text);
+    if (!parsed) return;
+
+    const prev = trackerState.lastSave;
+    if (prev && prev.uploadedAt && parsed.level === prev.level &&
+        JSON.stringify(parsed.inventory) === JSON.stringify(prev.inventory)) {
+      return;
+    }
+
+    applyParsedSave(parsed);
+    setFileStatus(`Auto-refreshed: ${parsed.username} (${parsed.class} Lv.${parsed.level})`);
+    fullRerender();
+    wireEvents();
+  } catch (e) {}
 }
 
 let searchTimeout = null;
@@ -412,6 +605,10 @@ function wireEvents() {
   const fileInput = document.getElementById('fileInput');
 
   if (uploadZone) {
+    uploadZone.addEventListener('click', (e) => {
+      if (e.target.closest('#btnLinkFile')) return;
+      fileInput?.click();
+    });
     uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
     uploadZone.addEventListener('drop', (e) => {
@@ -428,20 +625,80 @@ function wireEvents() {
   }
 }
 
+function switchProfile(id) {
+  profilesData.activeProfileId = id;
+  saveProfiles(profilesData);
+  trackerState = loadProfileState(id);
+  fullRerender();
+  wireEvents();
+  tryAutoRefresh();
+}
+
 export async function initTracker({ params, query }) {
   await loadItemData();
   await loadBossData();
-  trackerState = loadTrackerState();
+
+  profilesData = migrateToProfiles();
+  const pid = activeProfileId();
+  trackerState = pid ? loadProfileState(pid) : { version: 1, trackedItems: [], lastSave: null };
 
   const app = document.getElementById('app');
   app.innerHTML = renderPage();
   wireEvents();
 
+  tryAutoRefresh();
+
   window._trackerSearchInput = handleSearch;
+
+  window._trackerSwitchProfile = switchProfile;
+
+  window._trackerAddProfile = () => {
+    const name = prompt('Enter a name for this character profile:');
+    if (!name || !name.trim()) return;
+    const id = Date.now().toString(36);
+    profilesData.profiles.push({ id, name: name.trim(), createdAt: Date.now() });
+    profilesData.activeProfileId = id;
+    saveProfiles(profilesData);
+    trackerState = loadProfileState(id);
+    fullRerender();
+    wireEvents();
+  };
+
+  window._trackerRenameProfile = () => {
+    const profile = activeProfile();
+    if (!profile) return;
+    const name = prompt('Rename profile:', profile.name);
+    if (!name || !name.trim()) return;
+    profile.name = name.trim();
+    saveProfiles(profilesData);
+    fullRerender();
+    wireEvents();
+  };
+
+  window._trackerDeleteProfile = () => {
+    const profile = activeProfile();
+    if (!profile) return;
+    if (!confirm(`Delete profile "${profile.name}"? This will remove all tracked items and save data for this character.`)) return;
+    const id = profile.id;
+    profilesData.profiles = profilesData.profiles.filter(p => p.id !== id);
+    deleteProfileState(id);
+    removeFileHandle(id);
+    profilesData.activeProfileId = profilesData.profiles.length ? profilesData.profiles[0].id : null;
+    saveProfiles(profilesData);
+    trackerState = profilesData.activeProfileId
+      ? loadProfileState(profilesData.activeProfileId)
+      : { version: 1, trackedItems: [], lastSave: null };
+    fullRerender();
+    wireEvents();
+  };
+
+  window._trackerLinkFile = handleLinkFile;
+  window._trackerRefreshFile = handleRefreshFile;
+  window._trackerUnlinkFile = handleUnlinkFile;
 
   window._trackerTrackItem = (name) => {
     trackerState.trackedItems.push(name);
-    saveTrackerState(trackerState);
+    saveProfileState(activeProfileId(), trackerState);
     refreshTrackedList();
     refreshContent();
     const resultsEl = document.getElementById('trackerSearchResults');
@@ -452,7 +709,7 @@ export async function initTracker({ params, query }) {
 
   window._trackerUntrackItem = (idx) => {
     trackerState.trackedItems.splice(idx, 1);
-    saveTrackerState(trackerState);
+    saveProfileState(activeProfileId(), trackerState);
     refreshTrackedList();
     refreshContent();
   };
@@ -504,7 +761,7 @@ export async function initTracker({ params, query }) {
 
   window._trackerDeleteSave = () => {
     trackerState.lastSave = null;
-    saveTrackerState(trackerState);
+    saveProfileState(activeProfileId(), trackerState);
     fullRerender();
     wireEvents();
   };
@@ -520,6 +777,13 @@ export async function initTracker({ params, query }) {
     delete window._toggleHistoryEntry;
     delete window._trackerCopyCodes;
     delete window._trackerDeleteSave;
+    delete window._trackerSwitchProfile;
+    delete window._trackerAddProfile;
+    delete window._trackerRenameProfile;
+    delete window._trackerDeleteProfile;
+    delete window._trackerLinkFile;
+    delete window._trackerRefreshFile;
+    delete window._trackerUnlinkFile;
     clearTimeout(searchTimeout);
   };
 }
