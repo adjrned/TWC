@@ -45,6 +45,12 @@ async function loadBossData() {
   if (!bossData) bossData = [];
 }
 
+function classNameKeys(name) {
+  const base = name.toLowerCase().replace(/[^a-z]/g, '');
+  const words = name.toLowerCase().match(/[a-z]+/g) || [];
+  return [base, [...words].sort().join('')];
+}
+
 async function loadHeroData() {
   if (heroData) return;
   try {
@@ -54,15 +60,22 @@ async function loadHeroData() {
   if (!heroData) heroData = [];
   heroIconMap = new Map();
   for (const h of heroData) {
-    if (h.heroClass && h.icon) heroIconMap.set(h.heroClass, h.icon);
+    if (h.heroClass && h.icon) {
+      heroIconMap.set(h.heroClass, h.icon);
+      for (const key of classNameKeys(h.heroClass)) {
+        heroIconMap.set(key, h.icon);
+      }
+    }
   }
 }
 
 function getHeroIcon(heroClass) {
   if (!heroClass) return '';
-  const icon = heroIconMap?.get(heroClass);
-  if (icon) return `twicons/${icon}.jpg`;
-  return `twicons/${heroClass.replace(/\s+/g, '')}Icon.jpg`;
+  if (heroIconMap?.has(heroClass)) return `twicons/${heroIconMap.get(heroClass)}.jpg`;
+  for (const key of classNameKeys(heroClass)) {
+    if (heroIconMap?.has(key)) return `twicons/${heroIconMap.get(key)}.jpg`;
+  }
+  return `twicons/${heroClass.replace(/[^a-zA-Z]/g, '')}Icon.jpg`;
 }
 
 function setFileStatus(msg) {
