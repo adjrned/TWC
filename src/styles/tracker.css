@@ -57,6 +57,15 @@
   font-weight: 600;
 }
 
+.profile-tab-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 .profile-tab.profile-add {
   font-size: 1rem;
   font-weight: 700;
