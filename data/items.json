@@ -20757,7 +20757,9 @@
         "Shining Fragment of Ruins": 1
       }
     ],
-    "required_by": []
+    "required_by": [
+      "Plates of Divine Blood"
+    ]
   },
   {
     "id": "I027",
@@ -24206,9 +24208,7 @@
         "Soul Blossom": 1
       }
     ],
-    "required_by": [
-      "Plates of Divine Blood"
-    ]
+    "required_by": []
   },
   {
     "id": "I09F",
@@ -28055,7 +28055,7 @@
         "Plates of Sanguine Fury": 1
       },
       {
-        "Dread Incarnate": 1
+        "Bloodseeker Plates": 1
       },
       {
         "Mask of Truth": 1
