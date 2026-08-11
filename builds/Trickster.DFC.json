@@ -1,0 +1,223 @@
+{
+  "class": "Trickster",
+  "createdBy": "DFC",
+  "publishedAt": "2026-08-05T18:29:15.132Z",
+  "rows": [
+    {
+      "id": 136,
+      "name": "Gnosis",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Crimson Reaper",
+            "src": "twicons/Crimson%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Devil",
+            "src": "twicons/Horn%20of%20Devil.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Grandine, the Plates of Wraith",
+            "src": "twicons/Grandine%2C%20the%20Plates%20of%20Wraith.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Slayer Boots",
+            "src": "twicons/Slayer%20Boots.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea%2C%20the%20Ring%20of%20Chaos.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 137,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Cosmic Reaper",
+            "src": "twicons/Cosmic%20Reaper.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Horn of Lightning God",
+            "src": "twicons/Horn%20of%20Lightning%20God.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Storm",
+            "src": "twicons/Storm.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 138,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Spirit of Protector",
+            "src": "twicons/Spirit%20of%20Protector.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Harmony of Sky and Earth",
+            "src": "twicons/Harmony%20of%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ispion, the Runed Ring",
+            "src": "twicons/Ispion%2C%20the%20Runed%20Ring.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 139,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Spirit of Protector",
+            "src": "twicons/Spirit%20of%20Protector.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Harmony of Sky and Earth",
+            "src": "twicons/Harmony%20of%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Protection of the Fairies",
+            "src": "twicons/Protection%20of%20the%20Fairies.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 141,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Heaven's Door",
+            "src": "twicons/Heaven's%20Door.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Harmony of Sky and Earth",
+            "src": "twicons/Harmony%20of%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 142,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Aeon Sphere",
+            "src": "twicons/Aeon%20Sphere.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Keeper of the Grove",
+            "src": "twicons/Keeper%20of%20the%20Grove.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Harmony of Sky and Earth",
+            "src": "twicons/Harmony%20of%20Sky%20and%20Earth.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Thread of Life",
+            "src": "twicons/Thread%20of%20Life.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Heirloom of Lazarus",
+            "src": "twicons/Heirloom%20of%20Lazarus.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
