@@ -799,3 +799,33 @@ a.item-drop-source-link:hover {
   padding: 2px 8px;
   border-radius: 6px;
 }
+
+/* ── Item detail: clickable create-id (copies "@create <id>") ── */
+.item-meta-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted2);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.item-meta-id:hover {
+  color: var(--accent2);
+  border-color: var(--accent2);
+  background: rgba(255,255,255,0.08);
+}
+.item-meta-id-copy {
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.item-meta-id:hover .item-meta-id-copy { opacity: 1; }

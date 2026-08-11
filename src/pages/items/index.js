@@ -1,5 +1,6 @@
 import { esc } from '../../ui/escape.js';
 import { t } from '../../i18n.js';
+import { showToast } from '../../ui/toast.js';
 
 let itemData = null;
 
@@ -330,6 +331,7 @@ function renderItemDetail(item) {
             ${ri.key !== 'none' ? `<span class="item-rarity-badge ${ri.css}">${ri.label}</span>` : ''}
             <span class="item-meta-cat">${esc(item.type || '')}</span>
             ${item.level ? `<span class="item-meta-level">Lv ${item.level}</span>` : ''}
+            ${item.id ? `<button type="button" class="item-meta-id" title="Copy @create ${esc(item.id)} to clipboard" onclick="window._copyCreateId('${esc(item.id)}')"><span class="item-meta-id-cmd">@create ${esc(item.id)}</span><span class="item-meta-id-copy">Copy</span></button>` : ''}
           </div>
           ${item.description ? `<p class="item-detail-desc">${esc(item.description)}</p>` : ''}
         </div>
@@ -362,6 +364,25 @@ export async function initItems({ params, query }) {
     const item     = items.find(i => i.name === itemName);
     if (item) {
       app.innerHTML = renderItemDetail(item);
+
+      // Click the create-id pill to copy the in-game spawn command.
+      window._copyCreateId = async (id) => {
+        const cmd = `@create ${id}`;
+        try {
+          await navigator.clipboard.writeText(cmd);
+        } catch (e) {
+          const ta = document.createElement('textarea');
+          ta.value = cmd;
+          ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        showToast(`Copied "${cmd}" to clipboard!`);
+      };
+
+      return function cleanup() { delete window._copyCreateId; };
     } else {
       app.innerHTML = `
         <button class="back-btn" onclick="history.back()">Back</button>
