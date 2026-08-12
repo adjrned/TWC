@@ -160,13 +160,15 @@ function renderItemList(items, query) {
         const ri      = rankInfo(item);
         const nameLow = item.name.toLowerCase();
         const koLow   = (item.koreanname || '').toLowerCase();
-        const hidden  = search && !nameLow.includes(search) && !koLow.includes(search);
+        const zhLow   = translateItemName(item.name, 'zh').toLowerCase();
+        const hidden  = search && !nameLow.includes(search) && !koLow.includes(search) && !zhLow.includes(search);
         return `
           <a
             href="#/items/${encodeURIComponent(item.name)}"
             class="item-card ${ri.css}"
             data-name="${esc(nameLow)}"
             data-korean="${esc(koLow)}"
+            data-zh="${esc(zhLow)}"
             ${hidden ? 'style="display:none"' : ''}>
             <div class="item-card-icon" style="background:#${esc(item.color || '333333')}22">
               <img src="${iconSrc(item.name)}" alt="${esc(item.name)}" onerror="this.style.display='none'">
@@ -433,7 +435,8 @@ export async function initItems({ params, query }) {
       cards.forEach(card => {
         const name   = card.dataset.name   || '';
         const korean = card.dataset.korean || '';
-        const show   = !q || name.includes(q) || korean.includes(q);
+        const zh     = card.dataset.zh     || '';
+        const show   = !q || name.includes(q) || korean.includes(q) || zh.includes(q);
         card.style.display = show ? '' : 'none';
         if (show) visible++;
       });
