@@ -57,6 +57,17 @@ const STRINGS = {
     'items.title': 'Item Database',
     'items.subtitle': 'Stats, effects, and recipes',
     'items.search': 'Search items...',
+    'items.stats': 'Stats',
+    'items.passive': 'Passive',
+    'items.active': 'Active',
+    'items.spec': 'Specialization',
+    'items.dropsFrom': 'Drops From',
+    'items.recipe': 'Recipe',
+    'items.usedIn': 'Used In',
+    'items.back': 'Back',
+    'items.lv': 'Lv',
+    'items.notFound': 'Item Not Found',
+    'items.notFoundBody': '"{name}" is not in the database yet.',
 
     // Common
     'common.back': '← Back',
@@ -115,6 +126,17 @@ const STRINGS = {
     'items.title': '아이템 도감',
     'items.subtitle': '스탯, 레시피, 드롭 출처',
     'items.search': '아이템 검색...',
+    'items.stats': '스탯',
+    'items.passive': '패시브',
+    'items.active': '액티브',
+    'items.spec': '특성',
+    'items.dropsFrom': '드롭 출처',
+    'items.recipe': '레시피',
+    'items.usedIn': '사용처',
+    'items.back': '뒤로',
+    'items.lv': 'Lv',
+    'items.notFound': '아이템을 찾을 수 없음',
+    'items.notFoundBody': '"{name}"은(는) 아직 도감에 없습니다.',
 
     'common.back': '← 뒤로',
     'common.madeBy': 'Made by Ruzai',
@@ -172,6 +194,17 @@ const STRINGS = {
     'items.title': '物品图鉴',
     'items.subtitle': '属性、配方、掉落来源',
     'items.search': '搜索物品...',
+    'items.stats': '属性',
+    'items.passive': '被动',
+    'items.active': '主动',
+    'items.spec': '专精',
+    'items.dropsFrom': '掉落来源',
+    'items.recipe': '配方',
+    'items.usedIn': '用于合成',
+    'items.back': '返回',
+    'items.lv': '等级',
+    'items.notFound': '未找到物品',
+    'items.notFoundBody': '"{name}" 尚未收录。',
 
     'common.back': '← 返回',
     'common.madeBy': 'Made by Ruzai',
@@ -256,6 +289,37 @@ export function getItemName(item) {
 export function getClassName(name) {
   if (currentLocale === 'en') return name;
   return CLASS_NAMES[currentLocale]?.[name] || name;
+}
+
+// Item type labels. Types come as single words ("Armor"), parenthesised
+// ("Weapon (Bow)"), or dashed ("Weapon - Bow"); translate each part.
+const TYPE_WORDS = {
+  ko: {
+    Weapon: '무기', Accessory: '장신구', Armor: '갑옷', Coin: '코인', Food: '음식',
+    Headwear: '투구', Material: '재료', Misc: '기타', Pickaxe: '곡괭이', Special: '특수',
+    Token: '토큰', Wings: '날개', Icon: '아이콘', Bag: '가방', Backpack: '가방',
+    Bow: '활', Gun: '총', Firearms: '총기', Melee: '근접', Shared: '공용',
+    Common: '공용', Staff: '지팡이',
+  },
+  zh: {
+    Weapon: '武器', Accessory: '饰品', Armor: '铠甲', Coin: '硬币', Food: '食物',
+    Headwear: '头盔', Material: '材料', Misc: '杂项', Pickaxe: '镐', Special: '特殊',
+    Token: '令牌', Wings: '翅膀', Icon: '图标', Bag: '背包', Backpack: '背包',
+    Bow: '弓', Gun: '枪', Firearms: '火器', Melee: '近战', Shared: '共用',
+    Common: '通用', Staff: '法杖',
+  },
+};
+
+export function getTypeName(type) {
+  if (currentLocale === 'en' || !type) return type;
+  const map = TYPE_WORDS[currentLocale];
+  if (!map) return type;
+  const w = (s) => map[s] || s;
+  const paren = type.match(/^(\w+)\s*\((.+)\)$/);
+  if (paren) return `${w(paren[1])} (${w(paren[2])})`;
+  const dash = type.match(/^(\w+)\s*-\s*(.+)$/);
+  if (dash) return `${w(dash[1])} · ${w(dash[2])}`;
+  return w(type);
 }
 
 export function getRowName(name) {

@@ -1,8 +1,29 @@
 import { esc } from '../../ui/escape.js';
-import { t } from '../../i18n.js';
+import { t, getLocale, getTypeName } from '../../i18n.js';
+import { translateItemName } from '../../data/translate.js';
 import { showToast } from '../../ui/toast.js';
 
 let itemData = null;
+
+// ── Locale-aware item names ────────────────────────────────────────────────────
+// Korean uses the curated `koreanname` from the data; Chinese (and any Korean
+// gaps) fall back to the word-map translator. English passes through unchanged.
+function localizedItemName(item) {
+  if (!item) return '';
+  const loc = getLocale();
+  if (loc === 'ko') return item.koreanname || translateItemName(item.name, 'ko');
+  if (loc === 'zh') return translateItemName(item.name, 'zh');
+  return item.name;
+}
+
+// When we only have the English name (recipe / used-in references), look up the
+// full item to reuse its curated name, otherwise translate the bare string.
+function localizedNameByName(name) {
+  const target = itemData?.find(i => i.name === name);
+  if (target) return localizedItemName(target);
+  const loc = getLocale();
+  return loc === 'en' ? name : translateItemName(name, loc);
+}
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
 // Tier is determined by rank + grade together.
@@ -151,8 +172,8 @@ function renderItemList(items, query) {
               <img src="${iconSrc(item.name)}" alt="${esc(item.name)}" onerror="this.style.display='none'">
             </div>
             <div class="item-card-info">
-              <span class="item-card-name">${esc(item.name)}</span>
-              <span class="item-card-category">${esc(item.type)}</span>
+              <span class="item-card-name">${esc(localizedItemName(item))}</span>
+              <span class="item-card-category">${esc(getTypeName(item.type))}</span>
             </div>
             ${ri.key !== 'none' ? `<span class="item-rarity-badge ${ri.css}">${ri.label}</span>` : ''}
           </a>
@@ -229,32 +250,32 @@ function renderItemDetail(item) {
       statLines.push(`<div class="item-stat-row"><span class="item-stat-label">${esc(label)}</span><span class="item-stat-val">${formatStat(k, v)}</span></div>`);
     }
     if (statLines.length) {
-      statsHtml = `<div class="item-section"><h2>Stats</h2><div class="item-stat-block">${statLines.join('')}</div></div>`;
+      statsHtml = `<div class="item-section"><h2>${t('items.stats')}</h2><div class="item-stat-block">${statLines.join('')}</div></div>`;
     }
   }
 
   // Passive
   let passiveHtml = '';
   if (item.stats?.passive?.length) {
-    passiveHtml = `<div class="item-section"><h2>Passive</h2><ul class="item-effect-list">${item.stats.passive.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
+    passiveHtml = `<div class="item-section"><h2>${t('items.passive')}</h2><ul class="item-effect-list">${item.stats.passive.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
   }
 
   // Active
   let activeHtml = '';
   if (item.stats?.active?.length) {
-    activeHtml = `<div class="item-section"><h2>Active</h2><ul class="item-effect-list item-active-list">${item.stats.active.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
+    activeHtml = `<div class="item-section"><h2>${t('items.active')}</h2><ul class="item-effect-list item-active-list">${item.stats.active.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`;
   }
 
   // Spec
   let specHtml = '';
   if (item.stats?.spec?.length > 1) {
-    specHtml = `<div class="item-section"><h2>Specialization</h2><p class="item-spec-text">${esc(item.stats.spec[1])}</p></div>`;
+    specHtml = `<div class="item-section"><h2>${t('items.spec')}</h2><p class="item-spec-text">${esc(item.stats.spec[1])}</p></div>`;
   }
 
   // Drop sources (linked to bosses with icons)
   let dropsHtml = '';
   if (item.dropped_by?.length) {
-    dropsHtml = `<div class="item-section"><h2>Drops From</h2><div class="item-drop-sources">${item.dropped_by.map(name => {
+    dropsHtml = `<div class="item-section"><h2>${t('items.dropsFrom')}</h2><div class="item-drop-sources">${item.dropped_by.map(name => {
       const boss = findBoss(name);
       const bossIconSrc = `twicons/${encodeURIComponent(name + ' Icon')}.jpg`;
       if (boss) {
@@ -286,11 +307,11 @@ function renderItemDetail(item) {
       if (ta !== tb) return ta - tb;
       return a.name.localeCompare(b.name);
     });
-    recipeHtml = `<div class="item-section"><h2>Recipe</h2><div class="item-recipe-list">${recipeSorted.map(({ name, qty, target }) => {
+    recipeHtml = `<div class="item-section"><h2>${t('items.recipe')}</h2><div class="item-recipe-list">${recipeSorted.map(({ name, qty, target }) => {
       const tri = target ? rankInfo(target) : { css: '' };
       return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
         <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
-        <span>${esc(name)}</span>
+        <span>${esc(localizedNameByName(name))}</span>
         ${qty > 1 ? `<span class="recipe-qty">x${qty}</span>` : ''}
       </a>`;
     }).join('')}</div></div>`;
@@ -308,29 +329,35 @@ function renderItemDetail(item) {
       if (ta !== tb) return ta - tb;
       return a.name.localeCompare(b.name);
     });
-    requiredByHtml = `<div class="item-section"><h2>Used In</h2><div class="item-recipe-list">${usedInSorted.map(({ name, target }) => {
+    requiredByHtml = `<div class="item-section"><h2>${t('items.usedIn')}</h2><div class="item-recipe-list">${usedInSorted.map(({ name, target }) => {
       const tri = target ? rankInfo(target) : { css: '' };
       return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
         <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
-        <span>${esc(name)}</span>
+        <span>${esc(localizedNameByName(name))}</span>
       </a>`;
     }).join('')}</div></div>`;
   }
 
+  // Title in the active locale; keep the alternate name visible as a subtitle
+  // (the original English when localized, the Korean name when in English).
+  const loc      = getLocale();
+  const title    = localizedItemName(item);
+  const subtitle = loc === 'en' ? item.koreanname : item.name;
+
   return `
-    <button class="back-btn" onclick="history.back()">Back</button>
+    <button class="back-btn" onclick="history.back()">${t('items.back')}</button>
     <div class="item-detail">
       <div class="item-detail-header ${ri.css}">
         <div class="item-detail-icon ${ri.css}" style="background:#${esc(item.color || '333333')}22">
           <img src="${iconSrc(item.name)}" alt="${esc(item.name)}" onerror="this.style.display='none'">
         </div>
         <div class="item-detail-title">
-          <h1 class="${ri.css}">${esc(item.name)}</h1>
-          ${item.koreanname ? `<p class="item-name-ko">${esc(item.koreanname)}</p>` : ''}
+          <h1 class="${ri.css}">${esc(title)}</h1>
+          ${subtitle ? `<p class="item-name-ko">${esc(subtitle)}</p>` : ''}
           <div class="item-detail-meta">
             ${ri.key !== 'none' ? `<span class="item-rarity-badge ${ri.css}">${ri.label}</span>` : ''}
-            <span class="item-meta-cat">${esc(item.type || '')}</span>
-            ${item.level ? `<span class="item-meta-level">Lv ${item.level}</span>` : ''}
+            <span class="item-meta-cat">${esc(getTypeName(item.type || ''))}</span>
+            ${item.level ? `<span class="item-meta-level">${t('items.lv')} ${item.level}</span>` : ''}
             ${item.id ? `<button type="button" class="item-meta-id" title="Copy @create ${esc(item.id)} to clipboard" onclick="window._copyCreateId('${esc(item.id)}')">ID: ${esc(item.id)}</button>` : ''}
           </div>
           ${item.description ? `<p class="item-detail-desc">${esc(item.description)}</p>` : ''}
@@ -385,11 +412,11 @@ export async function initItems({ params, query }) {
       return function cleanup() { delete window._copyCreateId; };
     } else {
       app.innerHTML = `
-        <button class="back-btn" onclick="history.back()">Back</button>
+        <button class="back-btn" onclick="history.back()">${t('items.back')}</button>
         <div class="coming-soon">
           <div class="coming-soon-icon">❓</div>
-          <h2>Item Not Found</h2>
-          <p>"${esc(itemName)}" is not in the database yet.</p>
+          <h2>${t('items.notFound')}</h2>
+          <p>${esc(t('items.notFoundBody', { name: itemName }))}</p>
         </div>
       `;
     }
