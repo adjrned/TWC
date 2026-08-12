@@ -331,7 +331,7 @@ function renderItemDetail(item) {
             ${ri.key !== 'none' ? `<span class="item-rarity-badge ${ri.css}">${ri.label}</span>` : ''}
             <span class="item-meta-cat">${esc(item.type || '')}</span>
             ${item.level ? `<span class="item-meta-level">Lv ${item.level}</span>` : ''}
-            ${item.id ? `<button type="button" class="item-meta-id" title="Copy @create ${esc(item.id)} to clipboard" onclick="window._copyCreateId('${esc(item.id)}')"><span class="item-meta-id-cmd">@create ${esc(item.id)}</span><span class="item-meta-id-copy">Copy</span></button>` : ''}
+            ${item.id ? `<button type="button" class="item-meta-id" title="Copy @create ${esc(item.id)} to clipboard" onclick="window._copyCreateId('${esc(item.id)}')">${esc(item.id)}</button>` : ''}
           </div>
           ${item.description ? `<p class="item-detail-desc">${esc(item.description)}</p>` : ''}
         </div>
@@ -379,7 +379,7 @@ export async function initItems({ params, query }) {
           document.execCommand('copy');
           ta.remove();
         }
-        showToast(`Copied "${cmd}" to clipboard!`);
+        showToast('Copied!');
       };
 
       return function cleanup() { delete window._copyCreateId; };
