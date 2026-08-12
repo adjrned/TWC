@@ -331,7 +331,7 @@ function renderItemDetail(item) {
             ${ri.key !== 'none' ? `<span class="item-rarity-badge ${ri.css}">${ri.label}</span>` : ''}
             <span class="item-meta-cat">${esc(item.type || '')}</span>
             ${item.level ? `<span class="item-meta-level">Lv ${item.level}</span>` : ''}
-            ${item.id ? `<button type="button" class="item-meta-id" title="Copy @create ${esc(item.id)} to clipboard" onclick="window._copyCreateId('${esc(item.id)}')">${esc(item.id)}</button>` : ''}
+            ${item.id ? `<button type="button" class="item-meta-id" title="Copy @create ${esc(item.id)} to clipboard" onclick="window._copyCreateId('${esc(item.id)}')">ID: ${esc(item.id)}</button>` : ''}
           </div>
           ${item.description ? `<p class="item-detail-desc">${esc(item.description)}</p>` : ''}
         </div>
