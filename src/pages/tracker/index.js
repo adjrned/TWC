@@ -1,4 +1,5 @@
 import { esc } from '../../ui/escape.js';
+import { t } from '../../i18n.js';
 import { parseSaveFile } from './parser.js';
 import {
   loadProfiles, saveProfiles, loadProfileState, saveProfileState,
@@ -463,8 +464,8 @@ function renderPage() {
   return `
     <div class="tracker-page">
       <div class="page-header">
-        <h1>Item Tracker</h1>
-        <p class="page-subtitle">Track materials and recipe progress</p>
+        <h1>${t('tracker.title')}</h1>
+        <p class="page-subtitle">${t('tracker.subtitle')}</p>
       </div>
       ${renderProfileSelector()}
       ${activeProfileId() ? `

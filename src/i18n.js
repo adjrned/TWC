@@ -69,6 +69,9 @@ const STRINGS = {
     'items.notFound': 'Item Not Found',
     'items.notFoundBody': '"{name}" is not in the database yet.',
 
+    'tracker.title': 'Item Tracker',
+    'tracker.subtitle': 'Track materials and recipe progress',
+
     // Common
     'common.back': '← Back',
     'common.madeBy': 'Made by Ruzai',
@@ -138,6 +141,9 @@ const STRINGS = {
     'items.notFound': '아이템을 찾을 수 없음',
     'items.notFoundBody': '"{name}"은(는) 아직 도감에 없습니다.',
 
+    'tracker.title': '아이템 트래커',
+    'tracker.subtitle': '재료와 레시피 진행 상황 추적',
+
     'common.back': '← 뒤로',
     'common.madeBy': 'Made by Ruzai',
   },
@@ -205,6 +211,9 @@ const STRINGS = {
     'items.lv': '等级',
     'items.notFound': '未找到物品',
     'items.notFoundBody': '"{name}" 尚未收录。',
+
+    'tracker.title': '物品追踪器',
+    'tracker.subtitle': '追踪材料与配方进度',
 
     'common.back': '← 返回',
     'common.madeBy': 'Made by Ruzai',

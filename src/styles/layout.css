@@ -436,8 +436,21 @@
 
 /* ── Page headers ── */
 .page-header {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
   position: relative;
+}
+/* Decorative accent line on the divider (uniform across all pages) */
+.page-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0.75;
 }
 .page-header h1 {
   font-family: 'Cinzel', serif;
