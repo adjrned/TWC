@@ -462,7 +462,10 @@ function renderPage() {
   const hasSave = !!trackerState.lastSave;
   return `
     <div class="tracker-page">
-      <h1 class="tracker-title">Item Tracker</h1>
+      <div class="page-header">
+        <h1>Item Tracker</h1>
+        <p class="page-subtitle">Track materials and recipe progress</p>
+      </div>
       ${renderProfileSelector()}
       ${activeProfileId() ? `
         ${renderUploadArea(hasSave)}

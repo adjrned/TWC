@@ -1,16 +1,10 @@
 /* ── Item Tracker Page ──────────────────────────────────────────────────────── */
 
+/* Fills the shared #app container so width/padding match every other page. */
 .tracker-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px 16px 64px;
-}
-
-.tracker-title {
-  font-family: 'Cinzel', serif;
-  font-size: 1.8rem;
-  margin-bottom: 24px;
-  color: var(--text);
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* ── Profile Bar ──────────────────────────────────────────────────────────── */
@@ -956,10 +950,6 @@
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
-  .tracker-page {
-    padding: 16px 12px 80px;
-  }
-
   .tree-node {
     margin-left: 10px;
   }

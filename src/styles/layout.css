@@ -456,6 +456,18 @@
   letter-spacing: 0.5px;
 }
 
+/* Header variant with right-aligned action buttons (e.g. Build Planner) */
+.page-header.page-header-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-header.page-header-actions .page-header-titles {
+  min-width: 0;
+}
+
 /* ── Coming soon placeholder ── */
 .coming-soon {
   text-align: center;

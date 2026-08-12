@@ -78,48 +78,7 @@ body::after {
 
 
 
-/* ── Header ── */
-header {
-  padding: 28px 0 20px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
-  position: relative;
-}
-header::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100px;
-  height: 1px;
-  background: linear-gradient(90deg, var(--accent), transparent);
-  opacity: 0.75;
-}
-
-.logo-area h1 {
-  font-family: 'Cinzel', serif;
-  font-size: clamp(18px,3.5vw,26px);
-  font-weight: 700;
-  letter-spacing: 3px;
-  line-height: 1;
-  text-shadow: 0 0 30px rgba(233,69,96,0.25);
-}
-.logo-area h1 span {
-  color: var(--accent);
-  text-shadow: var(--glow-sm);
-}
-.logo-area p {
-  font-size: 11px;
-  color: var(--muted2);
-  margin-top: 5px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
+/* ── Header actions (right-aligned buttons in a .page-header) ── */
 .header-actions {
   display: flex;
   gap: 8px;

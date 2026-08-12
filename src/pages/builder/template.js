@@ -2,10 +2,10 @@ import { t } from '../../i18n.js';
 
 export function builderHTML() {
   return `
-  <header>
-    <div class="logo-area">
+  <div class="page-header page-header-actions">
+    <div class="page-header-titles">
       <h1>${t('builder.title')}</h1>
-      <p>${t('builder.subtitle')}</p>
+      <p class="page-subtitle">${t('builder.subtitle')}</p>
     </div>
     <div class="header-actions">
       <button class="btn" onclick="openImport()">${t('builder.import')}</button>
@@ -15,7 +15,7 @@ export function builderHTML() {
         <span class="copy-btn-tooltip">${t('builder.copyTooltip')}</span>
       </span>
     </div>
-  </header>
+  </div>
 
   <div class="toolbar">
     <div class="custom-select-wrap" id="classPickerWrap">
