@@ -337,8 +337,8 @@
       "slots": {
         "weapon": [
           {
-            "name": "PrimalShard",
-            "src": "twicons/PrimalShard.jpg"
+            "name": "Primal Shard",
+            "src": "twicons/Primal%20Shard.jpg"
           }
         ],
         "helm": [
