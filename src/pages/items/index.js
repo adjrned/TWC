@@ -206,6 +206,16 @@ const STAT_LABELS = {
   allaffinitypercent: 'All Affinities',
 };
 
+// Elemental affinity → colour class. Adds `affinity-<element>` to the stat row so
+// CSS can tint the label and value (e.g. Fire renders red). `all` gets a gradient.
+const AFFINITY_ELEMENT = {
+  affinityflamepercent: 'flame', affinityearthpercent: 'earth',
+  affinitylightpercent: 'light', affinitydarkpercent: 'dark',
+  affinitywindpercent: 'wind', affinitywaterpercent: 'water',
+  affinityiwpercent: 'iw', affinitywlpercent: 'wl',
+  allaffinitypercent: 'all',
+};
+
 function formatStat(key, val) {
   if (key.endsWith('percent')) return `+${parseFloat((val * 100).toFixed(2))}%`;
   if (key === 'critmultiplier') return `x${val}`;
@@ -249,7 +259,8 @@ function renderItemDetail(item) {
     for (const [k, v] of Object.entries(item.stats)) {
       if (k === 'passive' || k === 'active' || k === 'spec') continue;
       const label = STAT_LABELS[k] || k;
-      statLines.push(`<div class="item-stat-row"><span class="item-stat-label">${esc(label)}</span><span class="item-stat-val">${formatStat(k, v)}</span></div>`);
+      const affCls = AFFINITY_ELEMENT[k] ? ` is-affinity affinity-${AFFINITY_ELEMENT[k]}` : '';
+      statLines.push(`<div class="item-stat-row${affCls}"><span class="item-stat-label">${esc(label)}</span><span class="item-stat-val">${formatStat(k, v)}</span></div>`);
     }
     if (statLines.length) {
       statsHtml = `<div class="item-section"><h2>${t('items.stats')}</h2><div class="item-stat-block">${statLines.join('')}</div></div>`;

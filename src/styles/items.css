@@ -698,6 +698,28 @@
 .item-stat-label { color: var(--muted2); }
 .item-stat-val { color: var(--accent3); font-weight: 700; }
 
+/* ── Elemental affinity colours ── */
+.item-stat-row.affinity-flame { --aff: #ff5b4d; }
+.item-stat-row.affinity-water { --aff: #43a6ff; }
+.item-stat-row.affinity-wind  { --aff: #57d98a; }
+.item-stat-row.affinity-earth { --aff: #cf9b4a; }
+.item-stat-row.affinity-light { --aff: #ffd24a; }
+.item-stat-row.affinity-dark  { --aff: #b072ff; }
+.item-stat-row.affinity-iw    { --aff: #5fd8e6; }
+.item-stat-row.affinity-wl    { --aff: #7c8cff; }
+.item-stat-row.is-affinity .item-stat-label,
+.item-stat-row.is-affinity .item-stat-val { color: var(--aff); }
+
+/* "All Affinities" gets a rainbow gradient across both label and value */
+.item-stat-row.affinity-all .item-stat-label,
+.item-stat-row.affinity-all .item-stat-val {
+  background: linear-gradient(90deg, #ff5b4d, #ffd24a, #57d98a, #43a6ff, #b072ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
 /* ── Item detail: effects ── */
 .item-effect-list {
   list-style: none;
