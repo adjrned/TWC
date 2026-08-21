@@ -10053,7 +10053,7 @@
     "droprate": 0.0001
   },
   {
-    "id": "I1B1",
+    "id": "I02U",
     "name": "Kamael's Soulstone",
     "koreanname": "",
     "rank": "[Epic]",
@@ -10072,7 +10072,7 @@
     "droprate": 0.0015
   },
   {
-    "id": "I1B2",
+    "id": "I0R8",
     "name": "Lightbringer's Token",
     "koreanname": "",
     "rank": "none",
@@ -27241,7 +27241,7 @@
     "droprate": 0.0001
   },
   {
-    "id": "I1770",
+    "id": "I0LG",
     "name": "Apocalypse Prime",
     "koreanname": "",
     "description": "",
@@ -27292,7 +27292,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1771",
+    "id": "I02R",
     "name": "Bag of Sentience",
     "koreanname": "",
     "description": "",
@@ -27349,7 +27349,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1772",
+    "id": "I05E",
     "name": "Crimson Whisper",
     "koreanname": "",
     "description": "",
@@ -27402,7 +27402,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1773",
+    "id": "I0LJ",
     "name": "Heart of Lion",
     "koreanname": "",
     "description": "",
@@ -27453,7 +27453,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1774",
+    "id": "I02I",
     "name": "Heaven's Fall",
     "koreanname": "",
     "description": "",
@@ -27508,7 +27508,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1775",
+    "id": "I0LM",
     "name": "Illumination",
     "koreanname": "",
     "description": "",
@@ -27557,7 +27557,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1776",
+    "id": "I022",
     "name": "Ordius, the Divine Lance",
     "koreanname": "",
     "description": "",
@@ -27608,7 +27608,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1777",
+    "id": "I0LK",
     "name": "Primal Shard",
     "koreanname": "",
     "description": "",
@@ -27659,7 +27659,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1778",
+    "id": "I026",
     "name": "Soul Rift",
     "koreanname": "",
     "description": "",
@@ -27710,7 +27710,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1779",
+    "id": "I0QI",
     "name": "Soulrender",
     "koreanname": "",
     "description": "",
@@ -27761,7 +27761,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1780",
+    "id": "I02X",
     "name": "Animus, the Robe of Souls",
     "koreanname": "",
     "description": "",
@@ -27805,7 +27805,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1781",
+    "id": "I01Y",
     "name": "Cage of Shadow Fiend",
     "koreanname": "",
     "description": "",
@@ -27851,7 +27851,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1782",
+    "id": "I02J",
     "name": "Exsolus, the Armor of the Absolute",
     "koreanname": "",
     "description": "",
@@ -27903,7 +27903,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1783",
+    "id": "I02F",
     "name": "Guardian of Sky and Earth",
     "koreanname": "",
     "description": "",
@@ -27950,7 +27950,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1784",
+    "id": "I02Y",
     "name": "Herald of the Void",
     "koreanname": "",
     "description": "",
@@ -28002,7 +28002,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1785",
+    "id": "I01W",
     "name": "Plates of Dawn",
     "koreanname": "",
     "description": "",
@@ -28051,7 +28051,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1786",
+    "id": "I01P",
     "name": "Plates of Divine Blood",
     "koreanname": "",
     "description": "",
@@ -28102,7 +28102,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1787",
+    "id": "I02G",
     "name": "Celestial Crown",
     "koreanname": "",
     "description": "",
@@ -28154,7 +28154,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1788",
+    "id": "I0ET",
     "name": "Eye of Truth",
     "koreanname": "",
     "description": "",
@@ -28203,7 +28203,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1789",
+    "id": "I02L",
     "name": "Frostmoon Crown",
     "koreanname": "",
     "description": "",
@@ -28253,7 +28253,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1790",
+    "id": "I030",
     "name": "Madness of Old Gods",
     "koreanname": "",
     "description": "",
@@ -28304,7 +28304,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1791",
+    "id": "I02K",
     "name": "Righteous Flame",
     "koreanname": "",
     "description": "",
@@ -28351,7 +28351,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1792",
+    "id": "I02C",
     "name": "Celestial Wind",
     "koreanname": "",
     "description": "",
@@ -28398,7 +28398,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1793",
+    "id": "I031",
     "name": "Codex of Light",
     "koreanname": "",
     "description": "",
@@ -28446,7 +28446,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1794",
+    "id": "I037",
     "name": "Dark Lotus",
     "koreanname": "",
     "description": "",
@@ -28491,7 +28491,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1795",
+    "id": "I024",
     "name": "Godslayer Signet",
     "koreanname": "",
     "description": "",
@@ -28540,7 +28540,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1796",
+    "id": "I01A",
     "name": "Primal Flame",
     "koreanname": "",
     "description": "",
@@ -28586,7 +28586,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1797",
+    "id": "I03A",
     "name": "Primordial Heart",
     "koreanname": "",
     "description": "",
@@ -28634,7 +28634,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1798",
+    "id": "I023",
     "name": "Sunstone",
     "koreanname": "",
     "description": "",
@@ -28678,7 +28678,7 @@
     ]
   },
   {
-    "id": "I1799",
+    "id": "I00Z",
     "name": "Aegis of Avalon",
     "koreanname": "",
     "description": "",
@@ -28729,7 +28729,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1800",
+    "id": "I032",
     "name": "Cape of the Saint",
     "koreanname": "",
     "description": "",
@@ -28778,7 +28778,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1801",
+    "id": "I02Z",
     "name": "Coil of Ouroboros",
     "koreanname": "",
     "description": "",
@@ -28825,7 +28825,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1802",
+    "id": "I02H",
     "name": "Void Seraph",
     "koreanname": "",
     "description": "",
@@ -28871,7 +28871,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1803",
+    "id": "I010",
     "name": "Wings of Descender",
     "koreanname": "",
     "description": "",
@@ -28922,7 +28922,7 @@
     "dropped_by": []
   },
   {
-    "id": "I1A1",
+    "id": "I02P",
     "name": "Dew of Paradise",
     "koreanname": "",
     "description": "",
@@ -28954,7 +28954,7 @@
     "droprate": 0.006
   },
   {
-    "id": "I1A2",
+    "id": "I02O",
     "name": "Divine Lotus",
     "koreanname": "",
     "description": "",
@@ -28986,7 +28986,7 @@
     "droprate": 0.006
   },
   {
-    "id": "I1A3",
+    "id": "I02N",
     "name": "Holy Thread",
     "koreanname": "",
     "description": "",
