@@ -1,0 +1,235 @@
+{
+  "class": "Shooter",
+  "createdBy": "1Plus4",
+  "publishedAt": "2026-08-27T00:35:55.844Z",
+  "rows": [
+    {
+      "id": 9,
+      "name": "Minor",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Devil Chaser",
+            "src": "twicons/Devil%20Chaser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Fervor",
+            "src": "twicons/Crown%20of%20Fervor.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Grandine, the Plates of Wraith",
+            "src": "twicons/Grandine%2C%20the%20Plates%20of%20Wraith.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Pure Crystal Wings",
+            "src": "twicons/Pure%20Crystal%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the Reaper",
+            "src": "twicons/Ring%20of%20the%20Reaper.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "name": "Mid",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Fiend Chaser",
+            "src": "twicons/Fiend%20Chaser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Grandine, the Plates of Wraith",
+            "src": "twicons/Grandine%2C%20the%20Plates%20of%20Wraith.jpg"
+          },
+          {
+            "name": "Benedict, the Crimson Armor of Blood",
+            "src": "twicons/Benedict%2C%20the%20Crimson%20Armor%20of%20Blood.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Pure Crystal Wings",
+            "src": "twicons/Pure%20Crystal%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Cold Ring of Death",
+            "src": "twicons/Cold%20Ring%20of%20Death.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "name": "Late",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Fiend Chaser",
+            "src": "twicons/Fiend%20Chaser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Athanasia, the Armor of the Reaper",
+            "src": "twicons/Athanasia%2C%20the%20Armor%20of%20the%20Reaper.jpg"
+          },
+          {
+            "name": "Nevedium, the Armor of Demonblood",
+            "src": "twicons/Nevedium%2C%20the%20Armor%20of%20Demonblood.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Frozen Soul",
+            "src": "twicons/Ring%20of%20Frozen%20Soul.jpg"
+          },
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "name": "Duke - AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul Chaser",
+            "src": "twicons/Soul%20Chaser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul Chaser",
+            "src": "twicons/Soul%20Chaser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Astral Fury",
+            "src": "twicons/Astral%20Fury.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Desolate Soul",
+            "src": "twicons/Ring%20of%20Desolate%20Soul.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Soul Chaser",
+            "src": "twicons/Soul%20Chaser.jpg"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.jpg"
+          }
+        ],
+        "body": [
+          {
+            "name": "Herald of the Void",
+            "src": "twicons/Herald%20of%20the%20Void.jpg"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Coil of Ouroboros",
+            "src": "twicons/Coil%20of%20Ouroboros.jpg"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Celestial Wind",
+            "src": "twicons/Celestial%20Wind.jpg"
+          }
+        ]
+      }
+    }
+  ]
+}
