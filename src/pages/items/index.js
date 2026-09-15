@@ -339,10 +339,19 @@ function renderItemDetail(item) {
     }).join('')}</div></div>`;
   }
 
-  // Required by (crafts into, sorted by tier then alpha)
+  // Required by (crafts into, sorted by tier then alpha).
+  // Derive from every recipe that references this item in ANY slot key so that
+  // alternate crafting paths (e.g. an "or" ingredient) also show up, then union
+  // with any curated required_by entries.
+  const usedInNames = new Set(item.required_by || []);
+  for (const other of itemData) {
+    if (other.recipe?.some(slot => Object.prototype.hasOwnProperty.call(slot, item.name))) {
+      usedInNames.add(other.name);
+    }
+  }
   let requiredByHtml = '';
-  if (item.required_by?.length) {
-    const usedInSorted = item.required_by.map(name => {
+  if (usedInNames.size) {
+    const usedInSorted = [...usedInNames].map(name => {
       const target = itemData.find(i => i.name === name);
       return { name, target };
     }).sort((a, b) => {
