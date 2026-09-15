@@ -17385,8 +17385,7 @@
       }
     ],
     "required_by": [
-      "Mask of Demigod",
-      "Madness of Old Gods"
+      "Mask of Demigod"
     ]
   },
   {
@@ -21008,7 +21007,9 @@
         "Mark of Lord": 1
       }
     ],
-    "required_by": []
+    "required_by": [
+      "Madness of Old Gods"
+    ]
   },
   {
     "id": "I0NA",
@@ -28282,7 +28283,7 @@
     },
     "recipe": [
       {
-        "Dragon Mask": 1
+        "Mask of Demigod": 1
       },
       {
         "Grim Scythe": 1
