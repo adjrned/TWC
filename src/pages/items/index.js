@@ -311,22 +311,31 @@ function renderItemDetail(item) {
   let recipeHtml = '';
   if (item.recipe?.length) {
     const recipeSorted = item.recipe.map(mat => {
-      const [name, qty] = Object.entries(mat)[0];
+      const entries = Object.entries(mat);
+      const [name, qty] = entries[0];
       const target = itemData.find(i => i.name === name);
-      return { name, qty, target };
+      const alternatives = entries.slice(1).map(([n]) => n);
+      return { name, qty, target, alternatives };
     }).sort((a, b) => {
       const ta = a.target ? TIER_ORDER.indexOf(rankInfo(a.target).key) : 99;
       const tb = b.target ? TIER_ORDER.indexOf(rankInfo(b.target).key) : 99;
       if (ta !== tb) return ta - tb;
       return a.name.localeCompare(b.name);
     });
-    recipeHtml = `<div class="item-section"><h2>${t('items.recipe')}</h2><div class="item-recipe-list">${recipeSorted.map(({ name, qty, target }) => {
+    const recipeItemHtml = (name, qty) => {
+      const target = itemData.find(i => i.name === name);
       const tri = target ? rankInfo(target) : { css: '' };
       return `<a href="#/items/${encodeURIComponent(name)}" class="recipe-item ${tri.css}">
         <img src="${iconSrc(name)}" alt="${esc(name)}" onerror="this.style.display='none'">
         <span>${esc(localizedNameByName(name))}</span>
         ${qty > 1 ? `<span class="recipe-qty">x${qty}</span>` : ''}
       </a>`;
+    };
+    recipeHtml = `<div class="item-section"><h2>${t('items.recipe')}</h2><div class="item-recipe-list">${recipeSorted.map(({ name, qty, alternatives }) => {
+      if (!alternatives.length) return recipeItemHtml(name, qty);
+      return `<span class="recipe-alt-group">${recipeItemHtml(name, qty)}${alternatives.map(alt =>
+        `<span class="recipe-alt-or">${t('items.or')}</span>${recipeItemHtml(alt, qty)}`
+      ).join('')}</span>`;
     }).join('')}</div></div>`;
   }
 
