@@ -175,7 +175,15 @@ const BOSS_PLAYER_RULES = {
 };
 const DEFAULT_PLAYER_RULES = { min: 3, max: 10 };
 
-const HARDMODE_BOSSES = new Set(['Ifrit', 'Death Fiend', 'Lightning God Valtora', 'Nereid', 'Underlord Agareth']);
+// Hard mode drop bonus per boss (multiplier). Nereid/Agareth give +75%, the rest +50%.
+const HARDMODE_MULT = {
+  'Ifrit': 1.5,
+  'Death Fiend': 1.5,
+  'Lightning God Valtora': 1.5,
+  'Nereid': 1.75,
+  'Underlord Agareth': 1.75,
+};
+const HARDMODE_BOSSES = new Set(Object.keys(HARDMODE_MULT));
 
 function getPlayerBonus(playerCount, bossName) {
   const rules = BOSS_PLAYER_RULES[bossName];
@@ -198,7 +206,7 @@ function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount,
 
   const playerPct = getPlayerBonus(playerCount, bossName);
   const seasonalMult = seasonal ? 2 : 1;
-  const hardmodeMult = (hardmode && HARDMODE_BOSSES.has(bossName)) ? 1.5 : 1;
+  const hardmodeMult = (hardmode && HARDMODE_BOSSES.has(bossName)) ? HARDMODE_MULT[bossName] : 1;
   const sacMult = 1 + SACRIFICE_BONUSES[sacrifice];
   const combined = (1 + playerPct / 100) * seasonalMult * hardmodeMult * sacMult;
 
@@ -232,7 +240,7 @@ function renderDropCalculator(boss) {
             <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon (+50%)</span></label>
           ` : ''}
           ${HARDMODE_BOSSES.has(boss.name) ? `
-            <label class="drop-calc-toggle"><input type="checkbox" id="calcHardmode"><span>Hard Mode (+50%)</span></label>
+            <label class="drop-calc-toggle"><input type="checkbox" id="calcHardmode"><span>Hard Mode (+${Math.round((HARDMODE_MULT[boss.name] - 1) * 100)}%)</span></label>
           ` : ''}
           <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal (×2)</span></label>
           <div class="drop-calc-player">
