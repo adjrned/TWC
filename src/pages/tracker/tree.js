@@ -1,3 +1,5 @@
+import { dropRates } from '../../data/items.js';
+
 export function buildItemMap(items) {
   const map = new Map();
   for (const item of items) {
@@ -31,7 +33,8 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
     status: consumed >= neededQty ? 'have' : consumed > 0 ? 'partial' : 'none',
     isLeaf,
     droppedBy: item ? (item.dropped_by || []) : [],
-    droprate: item ? (item.droprate || 0) : 0,
+    // Per-monster rates — some items store one rate per dropped_by entry.
+    drops: dropRates(item),
     children: [],
   };
 
@@ -114,7 +117,7 @@ const EXCLUDED_MATERIALS = new Set([
   'Prius Gold Coin',
 ]);
 
-function isExcluded(name) {
+export function isExcluded(name) {
   return EXCLUDED_MATERIALS.has(name) || name.includes('Soulstone') || name.includes('Token');
 }
 

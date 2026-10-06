@@ -120,3 +120,26 @@ export function migrateToProfiles() {
   saveProfiles(profilesData);
   return profilesData;
 }
+
+// ── Used by item pages ("Track" button) ──
+export function getActiveProfile() {
+  const data = loadProfiles();
+  return data.profiles.find(p => p.id === data.activeProfileId) || null;
+}
+
+export function isTrackedInActiveProfile(name) {
+  const profile = getActiveProfile();
+  return !!profile && loadProfileState(profile.id).trackedItems.includes(name);
+}
+
+// Adds/removes the item on the active profile. Returns null when there is no profile yet.
+export function toggleTrackedInActiveProfile(name) {
+  const profile = getActiveProfile();
+  if (!profile) return null;
+  const state = loadProfileState(profile.id);
+  const i = state.trackedItems.indexOf(name);
+  if (i >= 0) state.trackedItems.splice(i, 1);
+  else state.trackedItems.push(name);
+  saveProfileState(profile.id, state);
+  return { profile, tracked: i < 0 };
+}
