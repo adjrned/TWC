@@ -7,7 +7,8 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         { src: 'builds', dest: '.' },
-        { src: 'twicons', dest: '.' },
+        { src: 'twicons/*.webp', dest: 'twicons' },
+        { src: 'twicons/manifest.json', dest: 'twicons' },
         { src: 'data', dest: '.' },
       ]
     })
