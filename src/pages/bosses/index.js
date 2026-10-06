@@ -1,5 +1,9 @@
 import { esc } from '../../ui/escape.js';
-import { t } from '../../i18n.js';
+import { t, tf, getTypeName } from '../../i18n.js';
+import { loadItems, iconSrc as itemIconSrc, getItem, rankInfo, tierIndex, localizedItemName, dropRateFor } from '../../data/items.js';
+import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
+import { hideItemTooltip } from '../../ui/tooltip.js';
+import { appendPatchHistory } from '../../ui/patchHistory.js';
 
 let bossData = null;
 let itemData = null;
@@ -7,25 +11,18 @@ let itemData = null;
 async function loadBossData() {
   if (bossData) return bossData;
   try {
-    const [br, ir] = await Promise.all([
+    const [br, items] = await Promise.all([
       fetch('data/bosses.json'),
-      fetch('data/items.json'),
+      loadItems(),
     ]);
     if (br.ok) bossData = await br.json();
-    if (ir.ok) itemData = await ir.json();
+    itemData = items;
   } catch (e) {}
   if (!bossData) bossData = [];
   if (!itemData) itemData = [];
   return bossData;
 }
 
-function getDropsForBoss(bossName) {
-  if (!itemData) return [];
-  return itemData.filter(i => (i.dropped_by || []).includes(bossName));
-}
-
-// Categories as they appear in the data
-const BOSS_CATEGORIES = ['Creep', 'Field', 'Minor', 'Coins', 'High', 'Late', 'Endgame'];
 
 // Display labels using rarity tier names
 const CATEGORY_LABELS = {
@@ -38,23 +35,17 @@ const CATEGORY_LABELS = {
   'Endgame': 'Arcana',
 };
 
-// Map data category → CSS rarity class
-const CATEGORY_CSS = {
-  'Creep':   'creep',
-  'Field':   'field',
-  'Minor':   'deltirama',
-  'Coins':   'neptinos',
-  'High':    'gnosis',
-  'Late':    'alteia',
-  'Endgame': 'arcana',
-};
+// Creep / Field are translated; the tier names (Arcana, Gnosis…) are proper nouns.
+function catLabel(cat) {
+  return tf('bosses.cat.' + cat, CATEGORY_LABELS[cat] || cat || '');
+}
 
-function categoryClass(cat) {
-  return CATEGORY_CSS[cat] || 'minor';
+function typeLabel(type) {
+  return type ? tf('bosses.type.' + type, type) : '';
 }
 
 function iconSrc(name) {
-  return `twicons/${encodeURIComponent(name + ' Icon')}.jpg`;
+  return itemIconSrc(name + ' Icon');
 }
 
 // ── Stat label mapping ────────────────────────────────────────────────────────
@@ -74,80 +65,125 @@ const STAT_LABELS = {
   moveSpeed:    'Move Speed',
 };
 
+// "30000000" → "30,000,000", ".5" → "0.5"; non-numeric strings pass through.
+function fmtNum(v) {
+  const s = String(v).trim();
+  if (!/^-?\d*\.?\d+$/.test(s)) return s;
+  return Number(s).toLocaleString('en-US', { maximumFractionDigits: 3 });
+}
+
+// Compact HP for list rows: 30000000 → "30M".
+function fmtShort(v) {
+  const n = Number(v);
+  if (!isFinite(n) || !String(v ?? '').trim()) return '';
+  if (n >= 1e6) return parseFloat((n / 1e6).toFixed(1)) + 'M';
+  if (n >= 1e3) return parseFloat((n / 1e3).toFixed(1)) + 'K';
+  return String(n);
+}
+
 function renderStatTable(stats) {
   if (!stats) return '';
   const rows = Object.entries(stats)
     .filter(([, v]) => v !== '' && v !== null && v !== undefined)
-    .map(([k, v]) => {
-      const label = STAT_LABELS[k] || k;
-      return `
-        <tr class="stat-row">
-          <td class="stat-label">${esc(label)}</td>
-          <td class="stat-value">${esc(String(v))}</td>
-        </tr>`;
-    }).join('');
-  return `
-    <table class="boss-stats-table">
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-// ── Type badge ────────────────────────────────────────────────────────────────
-function typeBadge(type) {
-  const cls = type ? 'boss-type-badge type-' + type.toLowerCase() : 'boss-type-badge';
-  return `<span class="${esc(cls)}">${esc(type || '')}</span>`;
+    .map(([k, v]) => `<div class="mdb-statrow"><dt>${esc(tf('bstat.' + k, STAT_LABELS[k] || k))}</dt><dd>${esc(fmtNum(v))}</dd></div>`)
+    .join('');
+  return `<dl class="mdb-stats">${rows}</dl>`;
 }
 
 // ── List view ─────────────────────────────────────────────────────────────────
-function renderBossList(bosses, query) {
-  const activeCat = 'cat' in query ? query.cat : 'Endgame';
+// Highest tier first, matching the item database.
+const CATEGORY_ORDER = ['Endgame', 'Late', 'High', 'Coins', 'Minor', 'Field', 'Creep'];
+const TIER_CSS = {
+  Endgame: 'rarity-arcana', Late: 'rarity-alteia', High: 'rarity-gnosis', Coins: 'rarity-neptinos',
+  Minor: 'rarity-deltirama', Field: 'mtier-field', Creep: 'mtier-creep',
+};
 
-  const filtered = activeCat
-    ? bosses.filter(b => b.category === activeCat)
-    : bosses;
+const SORTS = [
+  { key: 'tier',   label: () => t('items.sortTier') },
+  { key: 'level',  label: () => t('items.sortLevel') },
+  { key: 'health', label: () => t('bosses.sortHealth') },
+  { key: 'name',   label: () => t('items.sortName') },
+];
 
+let dropsByBoss = null;
+function bossDrops(name) {
+  if (!dropsByBoss) {
+    dropsByBoss = new Map();
+    for (const it of itemData) {
+      for (const b of it.dropped_by || []) {
+        if (!dropsByBoss.has(b)) dropsByBoss.set(b, []);
+        dropsByBoss.get(b).push(it);
+      }
+    }
+    for (const list of dropsByBoss.values()) list.sort((a, b) => tierIndex(a) - tierIndex(b) || a.name.localeCompare(b.name));
+  }
+  return dropsByBoss.get(name) || [];
+}
+
+function filterBosses(bosses, s, ignoreCat = false) {
+  const q = s.q.toLowerCase().trim();
+  const out = bosses.filter(b =>
+    (ignoreCat || !s.cat || b.category === s.cat) &&
+    (!q || b.name.toLowerCase().includes(q) || (b.location || '').toLowerCase().includes(q) ||
+      bossDrops(b.name).some(i => i.name.toLowerCase().includes(q))));
+  const tier = b => CATEGORY_ORDER.indexOf(b.category);
+  const num = v => Number(v) || 0;
+  const by = {
+    tier:   (a, b) => tier(a) - tier(b) || num(b.level) - num(a.level) || a.name.localeCompare(b.name),
+    level:  (a, b) => num(b.level) - num(a.level) || a.name.localeCompare(b.name),
+    health: (a, b) => num(b.stats?.health) - num(a.stats?.health) || a.name.localeCompare(b.name),
+    name:   (a, b) => a.name.localeCompare(b.name),
+  }[s.sort] || ((a, b) => tier(a) - tier(b));
+  return out.sort(by);
+}
+
+function bossRowHtml(boss) {
+  const drops = bossDrops(boss.name);
+  const shown = drops.slice(0, 6);
+  return `<a href="#/bosses/${esc(boss.id)}" class="mdb-row ${TIER_CSS[boss.category] || ''}">
+    ${iconHtml(boss.name, 'idb-icon', iconSrc(boss.name))}
+    <span class="idb-main">
+      <span class="idb-name">${esc(boss.name)}${boss.name === 'Arcane Lord' ? ' <span class="nav-wip">WIP</span>' : ''}</span>
+      <span class="idb-type">${esc(boss.location || '')}</span>
+    </span>
+    <span class="mdb-kind">${esc(typeLabel(boss.type))}</span>
+    <span class="idb-lv">${boss.level ? esc(boss.level) : ''}</span>
+    <span class="mdb-hp" title="${esc(fmtNum(boss.stats?.health || ''))}">${esc(fmtShort(boss.stats?.health))}</span>
+    <span class="mdb-drops">${shown.map(i => `<span class="mdb-dropicon ${rankInfo(i).css}" data-name="${esc(i.name)}">${iconHtml(i.name, 'idb-chip-icon')}</span>`).join('')}${drops.length > shown.length ? `<span class="idb-more">+${drops.length - shown.length}</span>` : ''}</span>
+    <span class="idb-tier">${esc(catLabel(boss.category))}</span>
+  </a>`;
+}
+
+function renderBossShell(s) {
   return `
     <div class="page-header">
       <h1>${t('bosses.title')}</h1>
       <p class="page-subtitle">${t('bosses.subtitle')}</p>
     </div>
-
-    <div class="boss-filters">
-      <div class="filter-search">
-        <input type="text" id="bossSearchInput" placeholder="Search bosses..." oninput="window._bossSearch(this.value)">
-      </div>
-      <div class="filter-pills">
-        <button class="filter-pill ${!activeCat ? 'active' : ''}" onclick="window._bossFilterCat('')">All</button>
-        ${BOSS_CATEGORIES.map(cat => `
-          <button class="filter-pill rarity-${categoryClass(cat)} ${activeCat === cat ? 'active' : ''}" onclick="window._bossFilterCat('${esc(cat)}')">${esc(CATEGORY_LABELS[cat] || cat)}</button>
-        `).join('')}
-      </div>
+    <div class="idb-toolbar">
+      <label class="idb-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="search" id="bossSearchInput" placeholder="${esc(t('bosses.search'))}" value="${esc(s.q)}" autocomplete="off" spellcheck="false">
+        <kbd>/</kbd>
+      </label>
+      <label class="idb-select">
+        <span>${t('items.sort')}</span>
+        <select data-k="sort">${SORTS.map(o => `<option value="${o.key}" ${s.sort === o.key ? 'selected' : ''}>${o.label()}</option>`).join('')}</select>
+      </label>
     </div>
-
-    <div class="boss-grid">
-      ${filtered.length === 0
-        ? `<div class="boss-empty">No entities in this category.</div>`
-        : filtered.map(boss => `
-          <a href="#/bosses/${boss.id}" class="boss-card" data-category="${esc(boss.category || '')}">
-            <div class="boss-card-icon">
-              <img src="${esc(iconSrc(boss.name))}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
-            </div>
-            <div class="boss-card-info">
-              <div class="boss-card-name-row">
-                <h3>${esc(boss.name)}</h3>
-                ${boss.name === 'Arcane Lord' ? '<span class="nav-wip">WIP</span>' : ''}
-              </div>
-              <div class="boss-card-badges">
-                <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(CATEGORY_LABELS[boss.category] || boss.category || '')}</span>
-                ${typeBadge(boss.type)}
-                ${boss.level ? `<span class="boss-level-badge">Lv ${esc(boss.level)}</span>` : ''}
-              </div>
-              ${boss.location ? `<div class="boss-card-location">${esc(boss.location)}</div>` : ''}
-            </div>
-          </a>
-        `).join('')}
-    </div>
+    <div class="idb-facets" id="bossFacets"></div>
+    <div class="idb-meta" id="bossMeta"></div>
+    <div id="bossList"></div>
   `;
+}
+
+function renderBossFacets(bosses, s) {
+  const counts = new Map();
+  const all = filterBosses(bosses, s, true);
+  for (const b of all) counts.set(b.category, (counts.get(b.category) || 0) + 1);
+  const tab = (key, label, n, css = '') =>
+    `<button type="button" class="idb-tab ${css}" data-k="cat" data-v="${esc(key)}" aria-pressed="${s.cat === key}" ${n ? '' : 'disabled'}>${css ? '<i class="mdb-swatch"></i>' : ''}${esc(label)}<span>${n}</span></button>`;
+  return `<div class="idb-tabs">${tab('', t('items.all'), all.length)}${CATEGORY_ORDER.map(c => tab(c, catLabel(c), counts.get(c) || 0, TIER_CSS[c])).join('')}</div>`;
 }
 
 // ── Drop rate calculator ──────────────────────────────────────────────────────
@@ -220,61 +256,58 @@ function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount,
   return item.base * combined * wishMult;
 }
 
+// Drop table row shared by the calculator and the simple list.
+function dropRowHtml(item, rateHtml, extraCls = '') {
+  const db = getItem(item.name);
+  return `<a href="#/items/${encodeURIComponent(item.name)}" class="mdb-drop ${rankInfo(db).css} ${extraCls}" data-name="${esc(item.name)}">
+    ${iconHtml(item.name, 'idb-chip-icon')}
+    <span class="mdb-drop-name">${esc(db ? localizedItemName(db) : item.name)}</span>
+    <span class="mdb-drop-type">${esc(getTypeName(db?.type || item.type || ''))}</span>
+    ${rateHtml}
+  </a>`;
+}
+
 function renderDropCalculator(boss) {
   const dropInfo = bossDropData?.[boss.name];
   if (!dropInfo) return '';
 
   const isNoWish = NO_WISH_BOSSES.has(boss.name);
-  const iconLabel = dropInfo.iconType === 'Immortal' ? 'Immortal' : 'Legend';
+  const iconLabel = t(dropInfo.iconType === 'Immortal' ? 'bosses.iconImmortal' : 'bosses.iconLegend');
   const rules = BOSS_PLAYER_RULES[boss.name] || DEFAULT_PLAYER_RULES;
   const bossObj = bossData.find(b => b.name === boss.name);
   const showSacrifice = !isNoWish && bossObj && ['Late', 'Endgame'].includes(bossObj.category);
 
   return `
-    <div class="boss-section">
-      <h2>Drop Rates</h2>
-      <div class="drop-calc-layout">
-        <div class="drop-calc-controls">
-          ${!isNoWish ? `
-            <label class="drop-calc-toggle"><input type="checkbox" id="calcWish"><span>Wish</span></label>
-            <label class="drop-calc-toggle"><input type="checkbox" id="calcIcon"><span>${iconLabel} Icon (+50%)</span></label>
-          ` : ''}
-          ${HARDMODE_BOSSES.has(boss.name) ? `
-            <label class="drop-calc-toggle"><input type="checkbox" id="calcHardmode"><span>Hard Mode (+${Math.round((HARDMODE_MULT[boss.name] - 1) * 100)}%)</span></label>
-          ` : ''}
-          <label class="drop-calc-toggle"><input type="checkbox" id="calcSeasonal"><span>Seasonal (×2)</span></label>
-          <div class="drop-calc-player">
-            <span>Party Size</span>
-            <div class="drop-calc-slider-row">
-              <input type="range" id="calcPlayers" min="${rules.min}" max="${rules.max}" value="${rules.min}">
-              <span id="calcPlayersVal">${rules.min}</span>
-            </div>
-          </div>
-          ${showSacrifice ? `
-          <div class="drop-calc-player">
-            <span>Sacrifice</span>
-            <div class="drop-calc-slider-row">
-              <input type="range" id="calcSacrifice" min="0" max="3" step="1" value="0">
-              <span id="calcSacrificeVal" style="min-width:50px;display:inline-block">0%</span>
-            </div>
-          </div>
-          ` : ''}
-        </div>
-      <div class="boss-drops-list" id="dropCalcList">
+    <section class="boss-section">
+      <h2>${t('bosses.dropRates')}</h2>
+      <div class="mdb-calc">
+        ${!isNoWish ? `
+          <label class="mdb-check"><input type="checkbox" id="calcWish"><span>${t('bosses.wish')}</span></label>
+          <label class="mdb-check"><input type="checkbox" id="calcIcon"><span>${t('bosses.iconBonus', { type: iconLabel })}</span></label>
+        ` : ''}
+        ${HARDMODE_BOSSES.has(boss.name) ? `
+          <label class="mdb-check"><input type="checkbox" id="calcHardmode"><span>${t('bosses.hardMode', { n: Math.round((HARDMODE_MULT[boss.name] - 1) * 100) })}</span></label>
+        ` : ''}
+        <label class="mdb-check"><input type="checkbox" id="calcSeasonal"><span>${t('bosses.seasonal')}</span></label>
+        <label class="mdb-range">
+          <span>${t('bosses.party')}</span>
+          <input type="range" id="calcPlayers" min="${rules.min}" max="${rules.max}" value="${rules.min}">
+          <b id="calcPlayersVal">${rules.min}</b>
+        </label>
+        ${showSacrifice ? `
+        <label class="mdb-range">
+          <span>${t('bosses.sacrifice')}</span>
+          <input type="range" id="calcSacrifice" min="0" max="3" step="1" value="0">
+          <b id="calcSacrificeVal">0%</b>
+        </label>` : ''}
+      </div>
+      <div class="mdb-droplist" id="dropCalcList">
         ${dropInfo.items.map((item, i) => {
-          const defaultRate = calcDropRate(item, { wishing: false, hasIcon: false, seasonal: false, hardmode: false, playerCount: rules.min }, boss.name);
-          return `
-          <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item" data-idx="${i}">
-            <div class="boss-drop-icon">
-              <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
-            </div>
-            <span class="boss-drop-name">${esc(item.name)}</span>
-            <span class="boss-drop-rate" data-idx="${i}">${defaultRate.toFixed(4)}%</span>
-          </a>
-        `;}).join('')}
+          const rate = calcDropRate(item, { wishing: false, hasIcon: false, seasonal: false, hardmode: false, playerCount: rules.min }, boss.name);
+          return dropRowHtml(item, `<span class="boss-drop-rate" data-idx="${i}">${rate.toFixed(4)}%</span>`);
+        }).join('')}
       </div>
-      </div>
-    </div>
+    </section>
   `;
 }
 
@@ -321,10 +354,11 @@ function isSpecialDrop(item) {
 const SACRIFICE_BONUSES = [0, 0.8, 1.6, 2.0];
 
 function calcWishRate(item, boss, wishTarget, sacrifice = 0) {
-  if (!item.droprate || !boss.dropFormula) {
-    return item.droprate ? item.droprate * (1 + SACRIFICE_BONUSES[sacrifice]) : item.droprate;
+  const base = dropRateFor(item, boss.name);
+  if (!base || !boss.dropFormula) {
+    return base ? base * (1 + SACRIFICE_BONUSES[sacrifice]) : base;
   }
-  if (isSpecialDrop(item)) return item.droprate;
+  if (isSpecialDrop(item)) return base;
 
   const formula = boss.dropFormula;
   const drops = itemData.filter(i => (i.dropped_by || []).includes(boss.name) && !isSpecialDrop(i));
@@ -332,20 +366,20 @@ function calcWishRate(item, boss, wishTarget, sacrifice = 0) {
   const sacMult = 1 + SACRIFICE_BONUSES[sacrifice];
 
   if (wishTarget === item.name) {
-    return item.droprate * (formula.wish || 1) * sacMult;
+    return base * (formula.wish || 1) * sacMult;
   } else if (boss.wishable && wishTarget) {
     if (formula.nonWishFormula === '(1/n)*1.15') {
-      return item.droprate * (1 / n) * 1.15 * sacMult;
+      return base * (1 / n) * 1.15 * sacMult;
     }
-    return item.droprate * (formula.nonWish || 1) * sacMult;
+    return base * (formula.nonWish || 1) * sacMult;
   }
-  return item.droprate * sacMult;
+  return base * sacMult;
 }
 
 function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
   if (!itemData) return '';
   const boss = bossData.find(b => b.name === bossName);
-  const drops = itemData.filter(i => (i.dropped_by || []).includes(bossName));
+  const drops = bossDrops(bossName);
   if (!drops.length) return '';
 
   const showWish = boss && boss.wishable;
@@ -354,83 +388,65 @@ function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
   const sacLabel = sacBonus ? `+${Math.round(sacBonus * 100)}%` : '0%';
 
   return `
-    <div class="boss-section">
-      <h2>Drops</h2>
-      <div class="drops-controls">
+    <section class="boss-section">
+      <h2>${t('bosses.drops')}</h2>
+      ${showWish || showSacrifice ? `<div class="mdb-calc">
         ${showWish ? `
-          <div class="wish-toggle">
-            <label class="wish-label">
-              <span>Wish Target:</span>
-              <select id="wishSelect">
-                <option value="">None</option>
-                ${drops.filter(i => !isSpecialDrop(i)).map(i => `
-                  <option value="${esc(i.name)}" ${wishTarget === i.name ? 'selected' : ''}>${esc(i.name)}</option>
-                `).join('')}
-              </select>
-            </label>
-          </div>
-        ` : ''}
+          <label class="idb-select">
+            <span>${t('bosses.wish')}</span>
+            <select id="wishSelect">
+              <option value="">${t('bosses.none')}</option>
+              ${drops.filter(i => !isSpecialDrop(i)).map(i => `<option value="${esc(i.name)}" ${wishTarget === i.name ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}
+            </select>
+          </label>` : ''}
         ${showSacrifice ? `
-          <div class="sacrifice-control">
-            <label class="sacrifice-label">
-              <span>Sacrifice:</span>
-              <input type="range" id="sacrificeSlider" min="0" max="3" step="1" value="${sacrifice}">
-              <span class="sacrifice-value" id="sacrificeValue">${sacLabel}</span>
-            </label>
-          </div>
-        ` : ''}
-      </div>
-      <div class="boss-drops-list">
+          <label class="mdb-range">
+            <span>${t('bosses.sacrifice')}</span>
+            <input type="range" id="sacrificeSlider" min="0" max="3" step="1" value="${sacrifice}">
+            <b id="sacrificeValue">${sacLabel}</b>
+          </label>` : ''}
+      </div>` : ''}
+      <div class="mdb-droplist">
         ${drops.map(item => {
-          const effectiveRate = boss ? calcWishRate(item, boss, wishTarget, sacrifice) : item.droprate;
+          const effectiveRate = boss ? calcWishRate(item, boss, wishTarget, sacrifice) : dropRateFor(item, bossName);
           const rate = effectiveRate ? parseFloat((effectiveRate * 100).toFixed(4)) + '%' : '';
-          const isWished = wishTarget === item.name;
-          return `
-            <a href="#/items/${encodeURIComponent(item.name)}" class="boss-drop-item ${isWished ? 'drop-wished' : ''}">
-              <div class="boss-drop-icon">
-                <img src="twicons/${encodeURIComponent(item.name)}.jpg" alt="${esc(item.name)}" onerror="this.style.display='none'">
-              </div>
-              <span class="boss-drop-name">${esc(item.name)}</span>
-              <span class="boss-drop-type">${esc(item.type || '')}</span>
-              ${rate ? `<span class="boss-drop-rate">${rate}</span>` : ''}
-            </a>
-          `;
+          return dropRowHtml(item, rate ? `<span class="boss-drop-rate">${rate}</span>` : '<span></span>', wishTarget === item.name ? 'drop-wished' : '');
         }).join('')}
       </div>
-    </div>
+    </section>
   `;
 }
 
 // ── Detail view ───────────────────────────────────────────────────────────────
 function renderBossDetail(boss) {
   const hasCalcData = !!bossDropData?.[boss.name];
+  const drops = hasCalcData ? renderDropCalculator(boss) : renderSimpleDrops(boss.name);
+  const tierCss = TIER_CSS[boss.category] || '';
 
   return `
-    <button class="back-btn" onclick="history.back()">Back</button>
-    <div class="boss-detail">
-      <div class="boss-detail-header">
-        <div class="boss-detail-icon">
-          <img src="${esc(iconSrc(boss.name))}" alt="${esc(boss.name)}" onerror="this.style.display='none'">
-        </div>
-        <div class="boss-detail-title">
-          <h1>${esc(boss.name)}</h1>
-          <div class="boss-detail-meta">
-            <span class="boss-tier-badge tier-${categoryClass(boss.category)}">${esc(CATEGORY_LABELS[boss.category] || boss.category || '')}</span>
-            ${typeBadge(boss.type)}
-            ${boss.level ? `<span class="boss-meta-item">Level ${esc(boss.level)}</span>` : ''}
-            ${boss.location ? `<span class="boss-meta-item">${esc(boss.location)}</span>` : ''}
+    <nav class="idb-crumbs">
+      <button type="button" class="back-btn" onclick="appBack('#/bosses')">${t('items.back')}</button>
+      <a href="#/bosses">${t('bosses.title')}</a>
+      <span>/</span>
+      <a href="#/bosses?cat=${esc(boss.category || '')}">${esc(catLabel(boss.category))}</a>
+    </nav>
+    <div class="idb-detail ${drops ? '' : 'single'}">
+      <article class="idb-card ${tierCss}">
+        <header class="idb-card-head mdb-head">
+          ${iconHtml(boss.name, 'idb-card-icon', iconSrc(boss.name))}
+          <div class="idb-card-title">
+            <h1>${esc(boss.name)}</h1>
+            <p class="idb-card-meta">
+              <span class="idb-card-tier">${esc(catLabel(boss.category))}</span>
+              ${boss.type ? `<span>${esc(typeLabel(boss.type))}</span>` : ''}
+              ${boss.level ? `<span>${t('items.lv')} ${esc(boss.level)}</span>` : ''}
+            </p>
           </div>
-        </div>
-      </div>
-
-      ${hasCalcData ? renderDropCalculator(boss) : renderSimpleDrops(boss.name)}
-
-      ${boss.stats && Object.keys(boss.stats).length ? `
-        <div class="boss-section">
-          <h2>Stats</h2>
-          ${renderStatTable(boss.stats)}
-        </div>
-      ` : ''}
+        </header>
+        ${boss.location ? `<p class="mdb-location">${esc(boss.location)}</p>` : ''}
+        ${boss.stats && Object.keys(boss.stats).length ? renderStatTable(boss.stats) : ''}
+      </article>
+      ${drops ? `<div class="idb-side">${drops}</div>` : ''}
     </div>
   `;
 }
@@ -471,40 +487,87 @@ export async function initBosses({ params, query }) {
     const boss = bosses.find(b => b.id === params.id);
     if (boss) {
       app.innerHTML = renderBossDetail(boss);
+      appendPatchHistory(app.querySelector('.idb-detail'), [boss.name]);
       initDropCalc(boss);
       initDropsControls(boss);
-    } else {
-      app.innerHTML = `
-        <button class="back-btn" onclick="history.back()">Back</button>
-        <div class="coming-soon">
-          <div class="coming-soon-icon">?</div>
-          <h2>Not Found</h2>
-          <p>No entry exists for this ID.</p>
-        </div>
-      `;
+      bindItemHover(app.querySelector('.idb-side'));
+      return () => hideItemTooltip();
     }
-  } else {
-    app.innerHTML = renderBossList(bosses, query);
-
-    window._bossFilterCat = (cat) => {
-      const ps = new URLSearchParams();
-      if (cat) ps.set('cat', cat);
-      const qs = ps.toString();
-      location.hash = '#/bosses' + (qs ? '?' + qs : '');
-    };
-
-    window._bossSearch = (val) => {
-      const q = val.toLowerCase();
-      const cards = document.querySelectorAll('.boss-grid .boss-card');
-      cards.forEach(card => {
-        const name = card.querySelector('.boss-card-name-row h3').textContent.toLowerCase();
-        card.style.display = !q || name.includes(q) ? '' : 'none';
-      });
-    };
-
-    return function cleanup() {
-      delete window._bossFilterCat;
-      delete window._bossSearch;
-    };
+    app.innerHTML = `
+      <nav class="idb-crumbs"><button type="button" class="back-btn" onclick="appBack('#/bosses')">${t('items.back')}</button><a href="#/bosses">${t('bosses.title')}</a></nav>
+      <div class="coming-soon">
+        <h2>${t('page.notFound')}</h2>
+        <p>${t('bosses.notFoundBody')}</p>
+      </div>
+    `;
+    return;
   }
+
+  // ── List ── (defaults to Arcana bosses, as before; ?cat= shows all)
+  const s = { q: query.q || '', cat: 'cat' in query ? query.cat : 'Endgame', sort: query.sort || 'tier' };
+  app.innerHTML = renderBossShell(s);
+  const facetsEl = document.getElementById('bossFacets');
+  const metaEl = document.getElementById('bossMeta');
+  const listEl = document.getElementById('bossList');
+  const searchEl = document.getElementById('bossSearchInput');
+
+  const syncUrl = () => {
+    const p = new URLSearchParams();
+    if (s.cat !== 'Endgame') p.set('cat', s.cat);
+    if (s.q) p.set('q', s.q);
+    if (s.sort !== 'tier') p.set('sort', s.sort);
+    const qs = p.toString();
+    history.replaceState(null, '', '#/bosses' + (qs ? '?' + qs : ''));
+  };
+
+  const update = () => {
+    const list = filterBosses(bosses, s);
+    facetsEl.innerHTML = renderBossFacets(bosses, s);
+    metaEl.innerHTML = `<span>${list.length === 1 ? t('bosses.entry') : t('bosses.entries', { n: list.length })}</span>`;
+    listEl.innerHTML = list.length
+      ? `<div class="idb-list">${list.map(bossRowHtml).join('')}</div>`
+      : `<div class="idb-empty">${t('bosses.empty')}</div>`;
+    hideItemTooltip();
+  };
+
+  const onClick = e => {
+    const btn = e.target.closest('button[data-k="cat"]');
+    if (!btn || btn.disabled) return;
+    s.cat = btn.dataset.v;
+    syncUrl();
+    update();
+  };
+  const onChange = e => {
+    const sel = e.target.closest('select[data-k="sort"]');
+    if (!sel) return;
+    s.sort = sel.value;
+    syncUrl();
+    update();
+  };
+  const onKey = e => {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    e.preventDefault();
+    searchEl.focus();
+  };
+
+  let raf = 0;
+  searchEl.addEventListener('input', () => {
+    s.q = searchEl.value;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => { syncUrl(); update(); });
+  });
+  app.addEventListener('click', onClick);
+  app.addEventListener('change', onChange);
+  document.addEventListener('keydown', onKey);
+  bindItemHover(listEl);
+  update();
+
+  return function cleanup() {
+    app.removeEventListener('click', onClick);
+    app.removeEventListener('change', onChange);
+    document.removeEventListener('keydown', onKey);
+    hideItemTooltip();
+  };
 }

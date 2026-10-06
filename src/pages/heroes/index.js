@@ -1,29 +1,31 @@
 import { esc } from '../../ui/escape.js';
-import { t } from '../../i18n.js';
+import { t, getClassName, getTypeName } from '../../i18n.js';
+import { loadItems, iconSrc as sharedIconSrc, getItem, rankInfo, localizedItemName } from '../../data/items.js';
+import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
+import { hideItemTooltip } from '../../ui/tooltip.js';
+import { slotIcon } from '../../ui/slotIcons.js';
+import { appendPatchHistory } from '../../ui/patchHistory.js';
 
 let heroData = null;
 let skillData = null;
-let itemData = null;
 
 async function loadData() {
   if (heroData && skillData) return;
   try {
-    const [hr, sr, ir] = await Promise.all([
+    const [hr, sr] = await Promise.all([
       fetch('data/heroes.json'),
       fetch('data/skills.json'),
-      fetch('data/items.json'),
+      loadItems(),
     ]);
     if (hr.ok) heroData = await hr.json();
     if (sr.ok) skillData = await sr.json();
-    if (ir.ok) itemData = await ir.json();
   } catch (e) {}
   if (!heroData) heroData = [];
   if (!skillData) skillData = [];
-  if (!itemData) itemData = [];
 }
 
 function getSpecDescription(weaponName, heroClass) {
-  const item = itemData.find(i => i.name === weaponName);
+  const item = getItem(weaponName);
   if (!item?.stats?.spec) return '';
   const specLine = item.stats.spec.find(s => s.startsWith(heroClass + ' - '));
   if (specLine) return specLine.slice(heroClass.length + 3);
@@ -31,17 +33,11 @@ function getSpecDescription(weaponName, heroClass) {
   return '';
 }
 
-// ── Colors per mainstat ──────────────────────────────────────
-const STAT_COLOR = {
-  STR: { pill: 'hero-stat-str', hex: '#e94560' },
-  AGI: { pill: 'hero-stat-agi', hex: '#4ade80' },
-  INT: { pill: 'hero-stat-int', hex: '#60a5fa' },
-};
-
 const STAT_ORDER = ['STR', 'AGI', 'INT'];
+const STAT_CSS = { STR: 'stat-str', AGI: 'stat-agi', INT: 'stat-int' };
 
 function iconSrc(name) {
-  return 'twicons/' + encodeURIComponent(name) + '.jpg';
+  return sharedIconSrc(name);
 }
 
 // ── Role classification ───────────────────────────────────────
@@ -66,184 +62,176 @@ function heroMatchesRole(hero, role) {
 }
 
 // ── Hero list ─────────────────────────────────────────────────
-function renderHeroList(heroes, query) {
-  const activeStat = query.stat || '';
-  const activeRole = query.role || '';
+function filterHeroes(heroes, s, skip) {
+  const q = s.q.toLowerCase().trim();
+  return heroes.filter(h =>
+    (skip === 'stat' || !s.stat || h.mainstat === s.stat) &&
+    (skip === 'role' || heroMatchesRole(h, s.role)) &&
+    (!q || [h.name, h.heroClass, ...(h.role || [])].join(' ').toLowerCase().includes(q)));
+}
 
-  let filtered = heroes;
-  if (activeStat) filtered = filtered.filter(h => h.mainstat === activeStat);
-  if (activeRole) filtered = filtered.filter(h => heroMatchesRole(h, activeRole));
+function heroCardHtml(hero) {
+  return `<a href="#/heroes/${esc(hero.id)}" class="hl-card" style="--hero:#${esc(hero.color)}">
+    ${iconHtml(hero.name, 'hl-portrait', iconSrc(hero.icon))}
+    <span class="hl-text">
+      <span class="hl-name">${esc(hero.name)}</span>
+      <span class="hl-class">${esc(getClassName(hero.heroClass))}</span>
+      ${hero.role?.length ? `<span class="hl-role">${esc(hero.role.join(' · '))}</span>` : ''}
+    </span>
+  </a>`;
+}
 
-  // Sort: by mainstat order, then alphabetically by name
-  const sorted = [...filtered].sort((a, b) => {
-    const si = STAT_ORDER.indexOf(a.mainstat) - STAT_ORDER.indexOf(b.mainstat);
-    if (si !== 0) return si;
-    return a.name.localeCompare(b.name);
-  });
-
+function renderListShell(s) {
   return `
     <div class="page-header">
-      <h1>Heroes</h1>
-      <p class="page-subtitle">Skills, specs, and roles</p>
+      <h1>${t('heroes.title')}</h1>
+      <p class="page-subtitle">${t('heroes.subtitle')}</p>
     </div>
-
-    <div class="hero-filters">
-      <div class="filter-search">
-        <input type="text" id="heroSearchInput" placeholder="Search heroes..." oninput="window._heroSearch(this.value)">
-      </div>
-      <div class="filter-pills">
-        <button class="filter-pill ${!activeStat ? 'active' : ''}" onclick="window._heroFilterStat('')">All</button>
-        <button class="filter-pill hero-stat-str ${activeStat === 'STR' ? 'active' : ''}" onclick="window._heroFilterStat('STR')">STR</button>
-        <button class="filter-pill hero-stat-agi ${activeStat === 'AGI' ? 'active' : ''}" onclick="window._heroFilterStat('AGI')">AGI</button>
-        <button class="filter-pill hero-stat-int ${activeStat === 'INT' ? 'active' : ''}" onclick="window._heroFilterStat('INT')">INT</button>
-        <span class="filter-divider"></span>
-        <button class="filter-pill hero-role-dps ${activeRole === 'DPS' ? 'active' : ''}" onclick="window._heroFilterRole('DPS')">DPS</button>
-        <button class="filter-pill hero-role-support ${activeRole === 'Support' ? 'active' : ''}" onclick="window._heroFilterRole('Support')">Support</button>
-      </div>
+    <div class="idb-toolbar">
+      <label class="idb-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="search" id="heroSearchInput" placeholder="${esc(t('heroes.search'))}" value="${esc(s.q)}" autocomplete="off" spellcheck="false">
+        <kbd>/</kbd>
+      </label>
     </div>
-
-    <div class="hero-grid">
-      ${sorted.length === 0
-        ? `<div class="hero-empty">No heroes found.</div>`
-        : sorted.map(hero => renderHeroCard(hero)).join('')
-      }
-    </div>
+    <div class="idb-facets" id="heroFacets"></div>
+    <div id="heroList"></div>
   `;
 }
 
-function renderHeroCard(hero) {
-  const statInfo = STAT_COLOR[hero.mainstat] || {};
-  const colorHex = '#' + hero.color;
-  const roles = (hero.role || []).join(', ');
+function renderFacets(heroes, s) {
+  const byStat = filterHeroes(heroes, s, 'stat');
+  const byRole = filterHeroes(heroes, s, 'role');
+  const tab = (key, label, n) =>
+    `<button type="button" class="idb-tab ${key ? STAT_CSS[key] : ''}" data-k="stat" data-v="${key}" aria-pressed="${s.stat === key}" ${n ? '' : 'disabled'}>${key ? '<i class="hl-swatch"></i>' : ''}${label}<span>${n}</span></button>`;
+  const chip = role => {
+    const n = byRole.filter(h => heroMatchesRole(h, role)).length;
+    return `<button type="button" class="idb-chip" data-k="role" data-v="${role}" aria-pressed="${s.role === role}" ${n ? '' : 'disabled'}>${t(role === 'DPS' ? 'heroes.dps' : 'heroes.support')}<span>${n}</span></button>`;
+  };
+  return `<div class="idb-tabs">${tab('', t('items.all'), byStat.length)}${STAT_ORDER.map(k => tab(k, t('stat.' + k), byStat.filter(h => h.mainstat === k).length)).join('')}</div>
+    <div class="idb-tiers">${chip('DPS')}${chip('Support')}</div>`;
+}
 
-  return `
-    <a href="#/heroes/${esc(hero.id)}" class="hero-card" style="--hero-color: ${colorHex}">
-      <div class="hero-card-icon">
-        <img src="${iconSrc(hero.icon)}" alt="${esc(hero.name)}" onerror="this.style.display='none'">
-      </div>
-      <div class="hero-card-info">
-        <h3>${esc(hero.name)}</h3>
-        <span class="hero-class-name">${esc(hero.heroClass)}</span>
-        <div class="hero-card-meta">
-          <span class="hero-stat-badge ${statInfo.pill || ''}">${esc(hero.mainstat)}</span>
-          ${roles ? `<span class="hero-role-text">${esc(roles)}</span>` : ''}
-        </div>
-      </div>
-    </a>
-  `;
+function renderList(list) {
+  if (!list.length) return `<div class="idb-empty">${t('heroes.empty')}</div>`;
+  return STAT_ORDER.map(stat => {
+    const group = list.filter(h => h.mainstat === stat).sort((a, b) => a.heroClass.localeCompare(b.heroClass));
+    if (!group.length) return '';
+    return `<section class="hl-group ${STAT_CSS[stat]}">
+      <h2><i class="hl-swatch"></i>${t('stat.' + stat)} <span>${group.length}</span></h2>
+      <div class="hl-grid">${group.map(heroCardHtml).join('')}</div>
+    </section>`;
+  }).join('');
 }
 
 // ── Hero detail ───────────────────────────────────────────────
-function renderHeroDetail(hero, skills) {
-  const heroSkills = skills
-    .filter(s => s.heroClass === hero.heroClass)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-  const colorHex = '#' + hero.color;
-  const statInfo = STAT_COLOR[hero.mainstat] || {};
-  const roles = (hero.role || []).join(' / ');
-  const weaponTypes = (hero.wearable || []).filter(w => w.startsWith('Weapon'));
-
-  return `
-    <button class="back-btn" onclick="location.hash='#/heroes'">Back to Heroes</button>
-
-    <div class="hero-detail">
-      <div class="hero-detail-header" style="--hero-color: ${colorHex}">
-        <div class="hero-detail-icon">
-          <img src="${iconSrc(hero.icon)}" alt="${esc(hero.name)}" onerror="this.style.display='none'">
-        </div>
-        <div class="hero-detail-title">
-          <h1>${esc(hero.name)}</h1>
-          <span class="hero-detail-class">${esc(hero.heroClass)}</span>
-          <div class="hero-detail-meta">
-            <span class="hero-stat-badge ${statInfo.pill || ''}">${esc(hero.mainstat)}</span>
-            ${roles ? `<span class="hero-role-badge">${esc(roles)}</span>` : ''}
-            ${weaponTypes.map(w => `<span class="hero-weapon-badge">${esc(w)}</span>`).join('')}
-          </div>
-          ${hero.description?.length ? `
-            <p class="hero-detail-desc">${hero.description.map(d => esc(d)).join(' ')}</p>
-          ` : ''}
-        </div>
-      </div>
-
-
-      ${hero.spec?.length && hero.spec[0] !== 'No Specs!' ? `
-        <div class="hero-section">
-          <h2>Specializations</h2>
-          <div class="hero-spec-list">
-            ${hero.spec.map(s => {
-              const parts = s.split(' - ');
-              const weapon = parts[0] || '';
-              const ability = parts[1] || '';
-              const desc = getSpecDescription(weapon, hero.heroClass);
-              return `
-                <div class="hero-spec-item">
-                  <div class="hero-spec-header">
-                    <span class="hero-spec-weapon">${esc(weapon)}</span>
-                    ${ability ? `<span class="hero-spec-arrow">→</span><span class="hero-spec-ability">${esc(ability)}</span>` : ''}
-                  </div>
-                  ${desc ? `<p class="hero-spec-desc">${esc(desc)}</p>` : ''}
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      ` : ''}
-
-      ${heroSkills.length ? `
-        <div class="hero-section">
-          <h2>Skills</h2>
-          <div class="hero-skills-list">
-            ${heroSkills.map(skill => renderSkillCard(skill)).join('')}
-          </div>
-        </div>
-      ` : ''}
-    </div>
-  `;
+// Hotkeys come as "[Q]", "[Q] → [W]", "[Q] -> [W]", "[R → R]"; normalise to key lists.
+function hotkeyPath(hotkey) {
+  const keys = String(hotkey || '').match(/Passive|[A-Z]/g) || [];
+  return keys.length ? keys : ['?'];
 }
 
-function renderSkillCard(skill) {
-  const skillColor = '#' + skill.color;
-  const hasPassive = Array.isArray(skill.passive) && skill.passive.length > 0;
-  const hasActive = Array.isArray(skill.active) && skill.active.length > 0;
+const KEY_ORDER = ['Passive', 'A', 'D', 'Q', 'W', 'E', 'R', 'T', 'F'];
+
+function groupSkills(skills) {
+  const groups = new Map();
+  for (const sk of skills) {
+    const path = hotkeyPath(sk.hotkey);
+    const root = path[0];
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push({ sk, depth: path.length - 1, path });
+  }
+  const rootIdx = k => (KEY_ORDER.includes(k) ? KEY_ORDER.indexOf(k) : 99);
+  return [...groups.entries()]
+    .sort((a, b) => Math.min(...a[1].map(x => x.sk.order || 0)) - Math.min(...b[1].map(x => x.sk.order || 0)) || rootIdx(a[0]) - rootIdx(b[0]))
+    .map(([key, list]) => ({ key, list: list.sort((a, b) => a.depth - b.depth || (a.sk.order || 0) - (b.sk.order || 0)) }));
+}
+
+function keycaps(path) {
+  return path.map(k => `<kbd class="hs-key">${esc(k)}</kbd>`).join('<span class="hs-arrow">→</span>');
+}
+
+function skillHtml({ sk, depth, path }) {
+  const lines = (arr, flavorFirst) => `<ul class="hs-lines">${arr.map((l, i) => `<li class="${flavorFirst && i === 0 ? 'hs-flavor' : ''}">${esc(l)}</li>`).join('')}</ul>`;
+  const hasP = sk.passive?.length, hasA = sk.active?.length;
+  const meta = [
+    sk.cooldown != null ? t('heroes.cooldown', { n: sk.cooldown }) : '',
+    sk.proc_rate != null ? t('heroes.proc', { n: Math.round(sk.proc_rate * 100) }) : '',
+    sk.toggle ? t('heroes.toggle') : '',
+  ].filter(Boolean);
+  return `<article class="hs-skill" data-depth="${Math.min(depth, 2)}" style="--skill:#${esc(sk.color || '888888')}">
+    <header class="hs-head">
+      ${iconHtml(sk.name, 'hs-icon', iconSrc(sk.icon))}
+      <div class="hs-title">
+        <h3>${esc(sk.name)}</h3>
+        <div class="hs-meta">${keycaps(path)}${meta.map(m => `<span>${esc(m)}</span>`).join('')}</div>
+      </div>
+    </header>
+    ${hasP ? `${hasA ? `<div class="hs-label">${t('items.passive')}</div>` : ''}${lines(sk.passive, true)}` : ''}
+    ${hasA ? `${hasP ? `<div class="hs-label hs-label-active">${t('items.active')}</div>` : ''}${lines(sk.active, !hasP)}` : ''}
+  </article>`;
+}
+
+function weaponTypeChip(w) {
+  const sub = (w.match(/\(([^)]+)\)/) || [])[1] || w;
+  return `<span class="hd-weapon">${slotIcon('weapon', 13)}${esc(getTypeName(sub))}</span>`;
+}
+
+function renderHeroDetail(hero, skills) {
+  const heroSkills = skills.filter(s => s.heroClass === hero.heroClass);
+  const groups = groupSkills(heroSkills);
+  const weaponTypes = (hero.wearable || []).filter(w => w.startsWith('Weapon'));
+  const specs = hero.spec?.length && hero.spec[0] !== 'No Specs!' ? hero.spec : [];
+
+  const specHtml = specs.length ? `<section class="idb-section">
+    <h2>${t('heroes.specs')} <span class="idb-count">${specs.length}</span></h2>
+    <div class="hd-specs">${specs.map(s => {
+      const [weapon = '', ability = ''] = s.split(' - ');
+      const item = getItem(weapon);
+      const desc = getSpecDescription(weapon, hero.heroClass);
+      const chip = item
+        ? `<a href="#/items/${encodeURIComponent(weapon)}" class="idb-chiplink ${rankInfo(item).css}" data-name="${esc(weapon)}">${iconHtml(weapon, 'idb-chip-icon')}<span class="idb-chiplink-name">${esc(localizedItemName(item))}</span></a>`
+        : `<span class="idb-chiplink">${esc(weapon)}</span>`;
+      return `<div class="hd-spec">
+        ${chip}
+        <div class="hd-spec-text">
+          ${ability ? `<div class="hd-spec-ability">${esc(ability)}</div>` : ''}
+          ${desc ? `<p>${esc(desc)}</p>` : ''}
+        </div>
+      </div>`;
+    }).join('')}</div>
+  </section>` : '';
+
+  const skillsHtml = groups.length ? `<section class="idb-section">
+    <h2>${t('heroes.skills')} <span class="idb-count">${heroSkills.length}</span></h2>
+    ${groups.length > 1 ? `<nav class="hd-keys" aria-label="${esc(t('heroes.jump'))}">${groups.map(g => `<button type="button" class="hs-key" data-jump="${esc(g.key)}" title="${esc(g.list[0].sk.name)}">${esc(g.key)}</button>`).join('')}</nav>` : ''}
+    <div class="hd-skills">${groups.map(g => `<div class="hs-group" data-key="${esc(g.key)}">${g.list.map(skillHtml).join('')}</div>`).join('')}</div>
+  </section>` : '';
 
   return `
-    <div class="skill-card" style="--skill-color: ${skillColor}">
-      <div class="skill-card-header">
-        <div class="skill-icon">
-          <img src="${iconSrc(skill.icon)}" alt="${esc(skill.name)}" onerror="this.style.display='none'">
-        </div>
-        <div class="skill-info">
-          <h3 class="skill-name">${esc(skill.name)}</h3>
-          <div class="skill-meta">
-            <span class="skill-hotkey">${esc(skill.hotkey)}</span>
-            ${skill.cooldown != null
-              ? `<span class="skill-cooldown">${skill.cooldown}s CD</span>`
-              : skill.proc_rate != null
-                ? `<span class="skill-cooldown">${Math.round(skill.proc_rate * 100)}% Proc</span>`
-                : ''
-            }
+    <nav class="idb-crumbs">
+      <button type="button" class="back-btn" onclick="appBack('#/heroes')">${t('items.back')}</button>
+      <a href="#/heroes">${t('heroes.title')}</a>
+      <span>/</span>
+      <a href="#/heroes?stat=${esc(hero.mainstat)}">${esc(t('stat.' + hero.mainstat))}</a>
+    </nav>
+    <div class="idb-detail hd-layout">
+      <article class="idb-card hd-card ${STAT_CSS[hero.mainstat] || ''}" style="--hero:#${esc(hero.color)}">
+        <header class="hd-head">
+          ${iconHtml(hero.name, 'hd-portrait', iconSrc(hero.icon))}
+          <div class="idb-card-title">
+            <h1>${esc(hero.name)}</h1>
+            <p class="idb-card-meta">
+              <span class="hd-class">${esc(getClassName(hero.heroClass))}</span>
+              <span class="hd-stat">${esc(t('stat.' + hero.mainstat))}</span>
+            </p>
           </div>
-        </div>
-      </div>
-      <div class="skill-body">
-        ${hasPassive ? `
-          ${hasActive ? `<div class="skill-section-label">Passive</div>` : ''}
-          <ul class="skill-desc-list">
-            ${skill.passive.map((line, i) => `
-              <li class="${i === 0 ? 'skill-flavor' : ''}">${esc(line)}</li>
-            `).join('')}
-          </ul>
-        ` : ''}
-        ${hasActive ? `
-          ${hasPassive ? `<div class="skill-section-label">Active</div>` : ''}
-          <ul class="skill-desc-list">
-            ${skill.active.map((line, i) => `
-              <li class="${!hasPassive && i === 0 ? 'skill-flavor' : ''}">${esc(line)}</li>
-            `).join('')}
-          </ul>
-        ` : ''}
-      </div>
+        </header>
+        ${hero.role?.length ? `<div class="hd-block"><div class="idb-fxlabel">${t('heroes.role')}</div>${hero.role.map(r => `<p>${esc(r)}</p>`).join('')}</div>` : ''}
+        ${weaponTypes.length ? `<div class="hd-block"><div class="idb-fxlabel">${t('heroes.weapons')}</div><div class="hd-weapons">${weaponTypes.map(weaponTypeChip).join('')}</div></div>` : ''}
+        ${hero.description?.length ? `<div class="hd-block hd-desc">${hero.description.map(d => `<p>${esc(d)}</p>`).join('')}</div>` : ''}
+      </article>
+      <div class="idb-side">${specHtml}${skillsHtml}</div>
     </div>
   `;
 }
@@ -255,50 +243,67 @@ export async function initHeroes({ params, query }) {
 
   if (params.id) {
     const hero = heroData.find(h => h.id === params.id);
-    if (hero) {
-      app.innerHTML = renderHeroDetail(hero, skillData);
-    } else {
+    if (!hero) {
       app.innerHTML = `
-        <button class="back-btn" onclick="location.hash='#/heroes'">Back to Heroes</button>
+        <nav class="idb-crumbs"><button type="button" class="back-btn" onclick="appBack('#/heroes')">${t('items.back')}</button><a href="#/heroes">${t('heroes.title')}</a></nav>
         <div class="coming-soon">
-          <div class="coming-soon-icon">❓</div>
-          <h2>Hero Not Found</h2>
-          <p>No hero exists with that ID.</p>
+          <h2>${t('heroes.notFound')}</h2>
+          <p>${t('heroes.notFoundBody')}</p>
         </div>
       `;
+      return;
     }
-  } else {
-    app.innerHTML = renderHeroList(heroData, query);
-
-    window._heroFilterStat = (stat) => {
-      const ps = new URLSearchParams();
-      if (stat) ps.set('stat', stat);
-      if (query.role) ps.set('role', query.role);
-      const qs = ps.toString();
-      location.hash = '#/heroes' + (qs ? '?' + qs : '');
+    app.innerHTML = renderHeroDetail(hero, skillData);
+    appendPatchHistory(app.querySelector('.idb-detail'), [hero.heroClass]);
+    const onClick = e => {
+      const key = e.target.closest('[data-jump]')?.dataset.jump;
+      if (key) app.querySelector(`.hs-group[data-key="${CSS.escape(key)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    window._heroFilterRole = (role) => {
-      const ps = new URLSearchParams();
-      if (query.stat) ps.set('stat', query.stat);
-      if (role && role !== query.role) ps.set('role', role);
-      const qs = ps.toString();
-      location.hash = '#/heroes' + (qs ? '?' + qs : '');
-    };
-
-    window._heroSearch = (val) => {
-      const q = val.toLowerCase();
-      const cards = document.querySelectorAll('.hero-grid .hero-card');
-      cards.forEach(card => {
-        const name = card.querySelector('h3').textContent.toLowerCase();
-        const cls = card.querySelector('.hero-class-name')?.textContent.toLowerCase() || '';
-        card.style.display = !q || name.includes(q) || cls.includes(q) ? '' : 'none';
-      });
-    };
-
-    return function cleanup() {
-      delete window._heroFilterStat;
-      delete window._heroFilterRole;
-      delete window._heroSearch;
-    };
+    app.addEventListener('click', onClick);
+    bindItemHover(app.querySelector('.hd-specs'));
+    return () => { app.removeEventListener('click', onClick); hideItemTooltip(); };
   }
+
+  // ── List ──
+  const s = { q: query.q || '', stat: query.stat || '', role: query.role || '' };
+  app.innerHTML = renderListShell(s);
+  const facetsEl = document.getElementById('heroFacets');
+  const listEl = document.getElementById('heroList');
+  const searchEl = document.getElementById('heroSearchInput');
+
+  const syncUrl = () => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(s)) if (v) p.set(k, v);
+    const qs = p.toString();
+    history.replaceState(null, '', '#/heroes' + (qs ? '?' + qs : ''));
+  };
+  const update = () => {
+    facetsEl.innerHTML = renderFacets(heroData, s);
+    listEl.innerHTML = renderList(filterHeroes(heroData, s));
+  };
+
+  const onClick = e => {
+    const btn = e.target.closest('button[data-k]');
+    if (!btn || btn.disabled) return;
+    const k = btn.dataset.k, v = btn.dataset.v;
+    s[k] = k === 'role' && s.role === v ? '' : v;
+    syncUrl();
+    update();
+  };
+  const onKey = e => {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    e.preventDefault();
+    searchEl.focus();
+  };
+  searchEl.addEventListener('input', () => { s.q = searchEl.value; syncUrl(); update(); });
+  app.addEventListener('click', onClick);
+  document.addEventListener('keydown', onKey);
+  update();
+
+  return () => {
+    app.removeEventListener('click', onClick);
+    document.removeEventListener('keydown', onKey);
+  };
 }
