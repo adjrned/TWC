@@ -234,3 +234,62 @@
 #floatTooltip .tt-passive div::before,
 #floatTooltip .tt-active div::before { content: '•'; position: absolute; left: 1px; color: var(--accent3); }
 #floatTooltip .tt-active div::before { color: var(--accent); }
+
+/* Easter egg: the BLA toggle (last segment of the locale switcher) and the cat
+   it sets loose (src/ui/easterEgg.js). */
+.bla-btn[aria-pressed="true"] { background: var(--bg3); color: var(--accent); }
+
+#blaCat {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  z-index: 99998;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform;
+  /* Round, so the rotation reads as rolling rather than a spinning square. */
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.25);
+  object-fit: cover;
+}
+#blaCat.show { visibility: visible; opacity: 1; }
+/* Corner-hit fireworks. */
+#blaSparks {
+  position: fixed;
+  inset: 0;
+  z-index: 99997;
+  pointer-events: none;
+  overflow: hidden;
+}
+#blaSparks.flash { background: radial-gradient(circle at center, rgba(245,166,35,0.10), transparent 65%); }
+.bla-spark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 12px 3px currentColor;
+}
+.bla-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(245,166,35,0.6);
+}
+/* Brief glow each time it clips an edge. */
+#blaCat.hit { animation: bla-hit 260ms ease-out; }
+@keyframes bla-hit {
+  from { box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(0,0,0,0.55); }
+  to { box-shadow: 0 0 0 0 rgba(245,166,35,0), 0 4px 12px rgba(0,0,0,0.55); }
+}

@@ -12,6 +12,7 @@ import { registerRoute, initRouter } from './router.js';
 import { initBuilder } from './pages/builder/index.js';
 import { getLocale, setLocale } from './i18n.js';
 import { initCompareTray } from './ui/compareTray.js';
+import { initEasterEgg } from './ui/easterEgg.js';
 
 import { t } from './i18n.js';
 
@@ -135,4 +136,5 @@ registerRoute('/tracker', async (ctx) => {
 });
 
 initCompareTray();
+initEasterEgg();
 initRouter();
