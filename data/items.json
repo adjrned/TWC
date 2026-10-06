@@ -9439,7 +9439,8 @@
       "Crimson Rose",
       "Blood Essence",
       "Emblem of Sacrifice",
-      "Soul Blossom"
+      "Soul Blossom",
+      "Immortal Icon"
     ],
     "dropped_by": [
       "Duke Lazarus"
@@ -9656,7 +9657,8 @@
       "Gown of Life",
       "Essence of Earth",
       "Aegis of Earth",
-      "Twisted Fragment of Ruins"
+      "Twisted Fragment of Ruins",
+      "Immortal Icon"
     ],
     "dropped_by": [
       "Gaia, the Earth Goddess"
@@ -9831,7 +9833,8 @@
     "required_by": [
       "Mask of Truth",
       "Arcane Core",
-      "Ancient Tome"
+      "Ancient Tome",
+      "Immortal Icon"
     ],
     "dropped_by": [
       "Arcane Construct"
@@ -27045,6 +27048,49 @@
       },
       {
         "Agareth Icon": 1
+      }
+    ],
+    "required_by": [
+      "Immortal Icon"
+    ]
+  },
+  {
+    "name": "Immortal Icon",
+    "koreanname": "이모탈 아이콘",
+    "description": "Account-sharable icon. Requires level 105 or higher to craft.",
+    "rank": "none",
+    "grade": 0,
+    "type": "Icon",
+    "color": "008000",
+    "stats": {
+      "allstat": 100,
+      "attackspeedpercent": 0.06,
+      "critchancepercent": 0.03,
+      "dtpercent": -0.03,
+      "skilldamagepercent": 0.03,
+      "damagedealtpercent": 0.03,
+      "hp": 400,
+      "mp": 400,
+      "hpregen": 15,
+      "mpregen": 15,
+      "expgainpercent": 0.5,
+      "passive": [
+        "Deltirama ~ Arcane Construct personal loot drop rate increased by 50%",
+        "Shareable with all characters on the same account"
+      ]
+    },
+    "recipe": [
+      {
+        "Legend Icon": 1
+      },
+      {
+        "Duke's Soulstone": 5
+      },
+      {
+        "Gaia's Soulstone": 5
+      },
+      {
+        "Construct's Soulstone": 5
       }
     ],
     "required_by": []

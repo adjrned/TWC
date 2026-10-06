@@ -1,6 +1,6 @@
 import { esc } from '../../ui/escape.js';
-import { iconSrc as sharedIconSrc } from '../../data/items.js';
-import { iconHtml } from '../../ui/itemUi.js';
+import { iconSrc as sharedIconSrc, loadItems, getItem, rankInfo, localizedNameByName } from '../../data/items.js';
+import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
 import { t, tf, getClassName } from '../../i18n.js';
 
 let awakeningData = null;
@@ -19,6 +19,7 @@ async function loadData() {
     if (hr.ok) heroData = await hr.json();
     if (sr.ok) skillData = await sr.json();
   } catch (e) {}
+  await loadItems(); // Soulstone / icon chips below need names, tiers and icons.
   if (!awakeningData) awakeningData = [];
   if (!heroData) heroData = [];
   if (!skillData) skillData = [];
@@ -36,6 +37,50 @@ function findSkill(heroClass, name) {
 
 function iconSrc(name) {
   return sharedIconSrc(name);
+}
+
+// v0.74a: levels past 100 are bought with Soulstones (from Jaina at Mage's Tower).
+const LEVEL_COSTS = [
+  [101, "Duke's Soulstone", 1],
+  [102, "Duke's Soulstone", 1],
+  [103, "Gaia's Soulstone", 1],
+  [104, "Gaia's Soulstone", 1],
+  [105, "Construct's Soulstone", 2],
+  [106, "Harvester's Soulstone", 1],
+  [107, "Harvester's Soulstone", 1],
+  [108, "Kamael's Soulstone", 1],
+  [109, "Kamael's Soulstone", 1],
+];
+const IMMORTAL_ICON = 'Immortal Icon';
+
+// Item chip with tier colour and the shared hover tooltip (via data-name).
+function itemChip(name, count = 0) {
+  const label = esc(localizedNameByName(name)) + (count > 1 ? ` <b>×${count}</b>` : '');
+  return `<a href="#/items/${encodeURIComponent(name)}" class="idb-chiplink ${rankInfo(getItem(name)).css}" data-name="${esc(name)}">${iconHtml(name, 'idb-chip-icon')}<span class="idb-chiplink-name">${label}</span></a>`;
+}
+
+// Level 100+ progression and the Immortal Icon it unlocks (both new in v0.74a).
+function levelsHtml() {
+  const icon = getItem(IMMORTAL_ICON);
+  return `<section class="aw-levels">
+    <div class="aw-card">
+      <h3>${t('awk.levels')}<span class="aw-ver">v0.74a</span></h3>
+      <p>${t('awk.levelsNote')}</p>
+      <ul class="aw-lv">
+        ${LEVEL_COSTS.map(([lv, name, n]) => `<li><span class="aw-lv-step">${lv - 1} <i>→</i> ${lv}</span>${itemChip(name, n)}</li>`).join('')}
+      </ul>
+    </div>
+    ${icon ? `<div class="aw-card">
+      <h3>${t('awk.immortal')}<span class="aw-ver">v0.74a</span></h3>
+      <div class="aw-immortal">${itemChip(IMMORTAL_ICON)}</div>
+      <p>${t('awk.immortalNote')}</p>
+      <h4>${t('awk.recipe')}</h4>
+      <div class="aw-recipe">${(icon.recipe || []).map(r => {
+        const [name, n] = Object.entries(r)[0];
+        return itemChip(name, n);
+      }).join('')}</div>
+    </div>` : ''}
+  </section>`;
 }
 
 const STAT_ORDER = ['STR', 'AGI', 'INT'];
@@ -105,6 +150,7 @@ function renderShell(s) {
       </div>
       <p>${t('awk.notice')}</p>
     </div>
+    ${levelsHtml()}
     <div class="idb-toolbar">
       <label class="idb-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
@@ -188,9 +234,11 @@ export async function initAwakening({ query }) {
   app.addEventListener('click', onClick);
   document.addEventListener('keydown', onKey);
   update();
+  const unbindHover = bindItemHover(app.querySelector('.aw-levels'));
 
   return () => {
     app.removeEventListener('click', onClick);
     document.removeEventListener('keydown', onKey);
+    unbindHover();
   };
 }
