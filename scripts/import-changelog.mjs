@@ -9,6 +9,7 @@
 //     items|monsters|heroes: [{ name, changes: [string | string[]] | string }] }
 import fs from 'fs';
 import { fixPatches } from './patch-note-fixes.mjs';
+import { compareVersions } from './versions.mjs';
 
 const SRC = process.argv[2] || 'https://raw.githubusercontent.com/sfarmani/twrpg-info/master/changelog.json';
 const OUT = 'data/patch-notes.json';
@@ -66,21 +67,6 @@ function convert(p) {
     out.sections.push({ title, ...(entries.length ? { entries } : {}), ...(subsections.length ? { subsections } : {}) });
   }
   return out;
-}
-
-// Newest first: compare "v0.69e" / "v0.64g3" numerically, then by suffix.
-function versionKey(v) {
-  const m = v.match(/^v?(\d+)\.(\d+)([a-z]*)(\d*)/i) || [];
-  return [+m[1] || 0, +m[2] || 0, (m[3] || '').toLowerCase(), +m[4] || 0];
-}
-function compareVersions(a, b) {
-  const x = versionKey(a.version), y = versionKey(b.version);
-  for (let i = 0; i < 4; i++) {
-    if (x[i] === y[i]) continue;
-    if (i === 2) return x[i].length !== y[i].length ? y[i].length - x[i].length : (y[i] > x[i] ? 1 : -1);
-    return y[i] - x[i];
-  }
-  return 0;
 }
 
 const text = /^https?:/.test(SRC) ? await (await fetch(SRC)).text() : fs.readFileSync(SRC, 'utf8');

@@ -18,7 +18,7 @@ export const HERO_ALIASES = {
 };
 // Short names and old names of bosses. (Typos are fixed in the data: scripts/patch-note-fixes.mjs.)
 export const BOSS_ALIASES = {
-  'Kamael, the Lightbringer': 'Lightbringer Kamael',
+  'Kamael, the Lightbringer': 'Lightbringer Kamael', 'Kamael': 'Lightbringer Kamael',
   'Valtora': 'Lightning God Valtora',
   'Agareth': 'Underlord Agareth',
   'Gaia': 'Gaia, the Earth Goddess',

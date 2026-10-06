@@ -53,7 +53,7 @@
      "Kamael, the Lightbringer - Fixed an issue where material names were not displayed from the Loot Chest",
      "Trickster - Illusion will now remain in combat as well if main hero is in combat",
      "Trickster - Fixed a bug where crit-related effects did not proc on illusion's Q cast",
-     "Saint's Cloak - Fixed an issue where the death prevention effect would trigger before certain skill effects"
+     "Cape of the Saint - Fixed an issue where the death prevention effect would trigger before certain skill effects"
     ]
    },
    {
@@ -390,6 +390,1686 @@
     ]
    }
   ]
+ },
+ {
+  "version": "v0.74c",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Blaster - Fixed issue with R drones not assisting autos",
+     "Minor bug fixes"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.74b",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Event - Fixed issue with bosses not dropping boxes sometimes",
+     "Blaster - Adjusted proc coefficients on RR, fixed issue with it not being considered as skill damage, fixed issue with CD reset",
+     "Warlock - Fixed issue with CD reset on TW",
+     "Ancient Ent - Elder Ent's jump time partially rolled back",
+     "Bag of Sentience - Fixed issue with CD reset not working properly",
+     "Apocalypse Prime - Fixed issue with R debuff not being consumed on Shooter",
+     "Soulstones are now considered as coin/currency"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.74a",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Alchemist - Fixed an issue where the cooldown would not reset when re-casting T while it was already active",
+     "Heaven's Fall - Fixed a bug where the enhancement effect triggered after 20 successful heals did not increase skill damage",
+     "Bell of Divinity - Fixed an issue where equipping the item increased W duration more than the displayed value",
+     "Fixed other minor bugs and corrected some skill/buff description errors"
+    ]
+   },
+   {
+    "title": "Events",
+    "entries": [
+     "Weird Event (April Fools)",
+     [
+      "Enabled until March 29",
+      "Please refer to the announcement for more details"
+     ]
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Awakening",
+      "entries": [
+       "You can now level up beyond level 100 using Soulstones (through Jaina at Mage's Tower)",
+       "Level 100 -> 101: Duke's Soulstone x1",
+       "Level 101 -> 102: Duke's Soulstone x1",
+       "Level 102 -> 103: Gaia's Soulstone x1",
+       "Level 103 -> 104: Gaia's Soulstone x1",
+       "Level 104 -> 105: Construct's Soulstone x2",
+       "Level 105 -> 106: Styrix's Soulstone x1",
+       "Level 106 -> 107: Styrix's Soulstone x1",
+       "Level 107 -> 108: Kamael's Soulstone x1",
+       "Level 108 -> 109: Kamael's Soulstone x1"
+      ]
+     },
+     {
+      "name": "Immortal Icon",
+      "entries": [
+       "New icon added (Account-sharable)",
+       "Crafting Requirement = Level 105 or higher",
+       "Recipe = Legend Icon + Duke's Soulstone x5 + Gaia's Soulstone x5 + Construct's Soulstone x5",
+       "Note for global players: please do not abuse -save/-asave to avoid gameplay restrictions"
+      ]
+     },
+     {
+      "name": "Armageddon / Prelude to Demise",
+      "entries": [
+       "Passive Effect (Nightmare) - AD +x bonus -> HP Regen +x bonus"
+      ]
+     },
+     {
+      "name": "Heaven's Fall",
+      "entries": [
+       "Removed text for heal proc text"
+      ]
+     },
+     {
+      "name": "Apocalypse Prime",
+      "entries": [
+       "Shooter-exclusive effect - When R cooldown is reset after consecutive hits, the R debuff will now be consumed"
+      ]
+     },
+     {
+      "name": "Bag of Sentience",
+      "entries": [
+       "Cooldown reset message is now only visible to the owner and the Merchant",
+       "Added 1.5 second delay upon activation"
+      ]
+     },
+     {
+      "name": "Challenger's Potion",
+      "entries": [
+       "Final Damage Reduction 15% -> 10%"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Gnosis Bosses",
+      "entries": [
+       "Adjusted boss skill damage to make it easier for smaller groups to progress",
+       "Ancient Ent - Reduced summon and jump delay of Elder Ent; Elder Ent no longer heals nearby allies but grants them some DR instead"
+      ]
+     },
+     {
+      "name": "Alteia Bosses",
+      "entries": [
+       "Now uses the same Wish/Sacrifice system as Arcana bosses",
+       "Base drop rates adjusted accordingly",
+       "Death Fiend - Time limit to defeat another boss after the first kill: 5 sec -> 10 sec (Normal) / 5 sec (Hard)"
+      ]
+     },
+     {
+      "name": "Arcana Bosses",
+      "entries": [
+       "Duke Lazarus",
+       [
+        "Equipment drop rate 1.00% -> 1.20%, Material drop rate 1.25% -> 1.50%"
+       ],
+       "Gaia",
+       [
+        "Players can now partially damage the boss during certain patterns",
+        "Reduced Life Energy consumption during some patterns and increased pattern speed",
+        "Equipment drop rate 0.75% -> 0.90%, Material drop rate 1.00% -> 1.20%"
+       ],
+       "Arcane Construct",
+       [
+        "Changed to personal loot, equipment drop rate 0.50% -> 0.60%, Material drop rate 0.60% -> 0.80%"
+       ],
+       "Sacrifice rate 90% -> 80%"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Knight",
+      "entries": [
+       "R - All orbs will now be summoned when cooldown is reset",
+       "F - Slightly reduced cast time/backswing after channel is over; commands can now be pre-input while channeling"
+      ]
+     },
+     {
+      "name": "Paladin",
+      "entries": [
+       "R - Damage changed from AD x8 -> AD x10; no longer increased by Demonic Fist series"
+      ]
+     },
+     {
+      "name": "Merchant",
+      "entries": [
+       "W - Additional skill damage bonus (STR / 600)% -> (STR / 500)%"
+      ]
+     },
+     {
+      "name": "Bow Master",
+      "entries": [
+       "T - Consecutive casts will no longer cancel the initially activated T"
+      ]
+     },
+     {
+      "name": "Hermit",
+      "entries": [
+       "R - Ki cost during Harmony effect 60 -> 50; Additional skill damage bonus (Main Stat / 400)% -> (Main Stat / 375)%"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "E - Base skill damage increase 7% -> 6%",
+       "F - Final damage increase 6% -> 5%"
+      ]
+     },
+     {
+      "name": "Warlock",
+      "entries": [
+       "T - Fixed issue where Q/W cooldown reset did not function properly during transformation"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.73a",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed bugs for various stuff"
+    ]
+   },
+   {
+    "title": "Events",
+    "entries": [
+     "Winter Event is enabled"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Bag of Sentience",
+      "entries": [
+       "Fixed an issue where dropped elixirs were not visible.",
+       "Fixed an issue where the skill reset text was displayed as numbers instead of hotkeys."
+      ]
+     },
+     {
+      "name": "Soul Rift",
+      "entries": [
+       "Soul Bomb skill can now be refreshed"
+      ]
+     },
+     {
+      "name": "Exsolus, the Armor of the Absolute",
+      "entries": [
+       "Reduced VFX glare on explosion"
+      ]
+     },
+     {
+      "name": "Cape of the Saint",
+      "entries": [
+       "Changed so that Saint's Blessing does not activate on Berserker while the Berserk skill is active."
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Field Bosses (Ragnaar, Tentacle Lord, Giant Golem, etc.)",
+      "entries": [
+       "Respawn time reduced: 90 seconds → 60 seconds."
+      ]
+     },
+     {
+      "name": "Gnosis-tier Boss (SK~SD)",
+      "entries": [
+       "Difficulty adjusted to be easier for small groups."
+      ]
+     },
+     {
+      "name": "Duke Lazarus",
+      "entries": [
+       "Equipment drop rate: 0.75% → 1%",
+       "Material drop rate: 1% → 1.25%"
+      ]
+     },
+     {
+      "name": "Gaia, the Earth Goddess",
+      "entries": [
+       "Equipment drop rate: 0.65% → 0.75%",
+       "Material drop rate: 0.85% → 1%"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Bow Master",
+      "entries": [
+       "W - Projectile firing interval: 0.1 sec → 0.07 sec"
+      ]
+     },
+     {
+      "name": "Mage (Water)",
+      "entries": [
+       "Fixed an issue where cooldown was not reset when casting Q → F."
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Priest - Reduced glare on the New Year Costume E effect."
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72f2",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Crimson Reaper - Fixed issue with item making party players bleed",
+     "Bag of Sentience - Fixed bugs with item",
+     "Fixed issue with some cosmetic items not working",
+     "Fixed other bugs"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Despair bag series",
+      "entries": [
+       "Doll is now fixed at 100% HP (can still accumulate damage taken like before)",
+       "Reworked slightly"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Knight",
+      "entries": [
+       "T - Reverted display text for old mark stacks"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "R - Added 2s debuff immunity",
+       "TQ - Charge speed no longer affected by light affinity (rollback of previous buffs)",
+       "TW - Max cast range 1200 -> 1000 (rollback of previous buffs)",
+       "TE - Cooldown 80s -> 100s (rollback of previous buffs)"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72f",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Frostmoon Crown - Fixed a bug where the active effect did not grant CC immunity",
+     "Codex of Light - Fixed an issue where the passive effect had no limit on the number of recognized allies",
+     "Brave Crab Token - Fixed a bug where the token skill did not work",
+     "Shooter - Fixed issue with F height changing based on terrain/sometimes having visual glitch if cast on top of obstacle",
+     "Priest - Fixed bug where TE goes on cooldown even if target is revived mid-cast via some other method",
+     "Styrix, the Harvester of Souls - Fixed issue where 1 lantern could protect everyone",
+     "Kamael, the Lightbringer - Fixed issue with random gauge resets after final pattern",
+     "Reforged crashing issue - The cause is still being investigated. If possible, please submit a bug report if it happens again"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Apocalypse Prime",
+      "entries": [
+       "Shooter Specialty - Break Shot damage increase 40% → 60%, now reduces its knockback distance by 50% as well"
+      ]
+     },
+     {
+      "name": "Heaven's Fall",
+      "entries": [
+       "Active - Damage taken bonus 4% -> 5%"
+      ]
+     },
+     {
+      "name": "Primal Shard",
+      "entries": [
+       "Skill damage 10% → 15%",
+       "Dark affinity 7.5s -> 10%",
+       "Passive - Number of skill hits required for proc 6 -> 5, base proc damage INT X 25 -> INT X 0, additional damage INT X 2.5 X 10 -> INT X 8 X 5, cooldown 8s -> 6s",
+       "Active - Duration 6s -> 8s"
+      ]
+     },
+     {
+      "name": "Frostmoon Crown",
+      "entries": [
+       "HP & MP 1000 → 1500",
+       "Passive - Trigger damage 50000 -> 45000, resource recovery 6% -> 4%, proc cooldown 3s -> 2.5s (still reduces active CD by 3s on proc)"
+      ]
+     },
+     {
+      "name": "Madness of Old Gods",
+      "entries": [
+       "AGI 500 -> 550",
+       "Passive proc damage 55000 -> 60000"
+      ]
+     },
+     {
+      "name": "New Items Added",
+      "entries": [
+       "Bag of Sentience",
+       "Soul Rift"
+      ]
+     },
+     {
+      "name": "Lightbringer's Token",
+      "entries": [
+       "Reduced size and added bag skill"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Berserker",
+      "entries": [
+       "D - Added an icon above the target's head when applying Bleeding",
+       "E - Max final damage increase based on lost HP 20% → 15%"
+      ]
+     },
+     {
+      "name": "Swordsman",
+      "entries": [
+       "D - Damage AD × 0.85 + Agility × 5.5 → AD × 0.8 + Agility × 5"
+      ]
+     },
+     {
+      "name": "Sword Enchanter",
+      "entries": [
+       "E - D damage amplification 25% → 20%",
+       "T - D damage amplification 30% → 25%"
+      ]
+     },
+     {
+      "name": "Martial Artist",
+      "entries": [
+       "R - AD increase 80% → 90%"
+      ]
+     },
+     {
+      "name": "Warlock",
+      "entries": [
+       "E - Cooldown 24s → 20s",
+       "R - Recovers 1 soul on Q center hit / every 1.5s -> Recovers 1 soul every 1s"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "R - Range 700 → 900"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72e3",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed a bug where the Stone Absorption ability of the Immortal Cat Token was not activating",
+     "Bowmaster - Fixed a bug where the F skill fired one fewer arrow than intended",
+     "Alchemist - Fixed an error where the number of Infusion uses was affected by resource recovery"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Heaven's Fall",
+      "entries": [
+       "Fixed a bug where it did not grant debuff immunity"
+      ]
+     },
+     {
+      "name": "Exsolus, the Armor of the Absolute",
+      "entries": [
+       "Passive trigger damage 75000 -> 40000",
+       "Fixed a bug where the Monk-exclusive effect was not applied"
+      ]
+     },
+     {
+      "name": "Eye of Truth",
+      "entries": [
+       "Skill damage 15% -> 10%",
+       "AD per stack 750 -> 500, Additional damage on AA 4000 -> 3000"
+      ]
+     },
+     {
+      "name": "Righteous Flame",
+      "entries": [
+       "Active damage Main Stat X 40~70 -> 40~60"
+      ]
+     },
+     {
+      "name": "Madness of Old Gods",
+      "entries": [
+       "STR & INT 150 -> HP 2000",
+       "Additional damage 50000 -> 55000"
+      ]
+     },
+     {
+      "name": "Wings of Descender",
+      "entries": [
+       "Passive trigger damage AD X 0.5 + Main Stat X 4 -> AD X 0.4 + Main Stat X 5"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Lancer",
+      "entries": [
+       "D - Damage STR X 1.5 -> STR X 2",
+       "W - Damage AD X 0.9 + STR X 4.5 -> AD X 1 + STR X 5",
+       "E - Damage AD X 1.2 + STR X 6 -> AD X 1.2 + STR X 7"
+      ]
+     },
+     {
+      "name": "Sword Saint",
+      "entries": [
+       "E - Damage (STR + INT) X 25 -> (STR + INT) X 20",
+       "T - Damage AD X 6 + (STR + INT) X 50 -> AD X 5 + (STR + INT) X 40"
+      ]
+     },
+     {
+      "name": "Bow Master",
+      "entries": [
+       "T - Damage per arrow AD X 0.6 + AGI X 5 -> AD X 1.2 + AGI X 9, Number of arrows 20 -> 12, Slightly increased range and added damage text display"
+      ]
+     },
+     {
+      "name": "Martial Artist",
+      "entries": [
+       "Q - AD increase 50% -> 40%",
+       "R - AD increase 100% -> 80%"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "TQ - Charge speed is now affected by Light Attribute Efficiency",
+       "TE - Cooldown 100s -> 80s"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72e2",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Wings of Death - Fixed a bug where certain skills did not deal damage",
+     "Knight - Fixed an issue where the T buff duration was applied for an excessively long time",
+     "Plates of Dawn - Fixed a bug where the active effect did not amplify skill damage",
+     "Lightbringer Kamael - Fixed a bug where the hero's soul was sometimes not summoned when falling off the field"
+    ]
+   },
+   {
+    "title": "Events",
+    "entries": [
+     "Summer event has ended"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Soulrender",
+      "entries": [
+       "Active - Changed so that the reset effect triggers even if the enemy's HP drops to 1 without dying (e.g., Kamael's Guardian or Divine Blade, etc.)"
+      ]
+     },
+     {
+      "name": "Ordius, the Divine Lance",
+      "entries": [
+       "Damage 13000 -> 13500",
+       "Passive - Movement distance requirement 6000 -> 5000, stacks now recover automatically when out of combat",
+       "Active - Base damage Main Stat X 35 -> Main Stat X 30, if it hits a target with Mark of Light that hasn't triggered lightning yet, the lightning damage from the existing mark will be added to active damage.",
+       [
+        "No longer resets passive stacks."
+       ]
+      ]
+     },
+     {
+      "name": "Illumination",
+      "entries": [
+       "Buff icon added for SKD buff"
+      ]
+     },
+     {
+      "name": "Plates of Divine Blood",
+      "entries": [
+       "All stats 475 -> 500",
+       "All affinity 4% -> 5%"
+      ]
+     },
+     {
+      "name": "Celestial Crown",
+      "entries": [
+       "Active effect changed to be less eye-straining"
+      ]
+     },
+     {
+      "name": "Dark Lotus",
+      "entries": [
+       "Fixed stats to match most current revision"
+      ]
+     },
+     {
+      "name": "Guardian of Avalon",
+      "entries": [
+       "Wing model changed"
+      ]
+     },
+     {
+      "name": "New Items and Recipes Added",
+      "entries": [
+       "Primal Shard",
+       "Heaven's Fall",
+       "Exsolus, the Armor of the Absolute",
+       "Righteous Flame",
+       "Frostmoon Crown",
+       "Eye of Truth",
+       "Madness of Old Gods",
+       "Codex of Light",
+       "Cape of the Saint"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Kamael, the Lightbringer",
+      "entries": [
+       "Targets marked with red/blue marks gain slight increased movement speed",
+       "Orbs of Light - Number of small orb shots 6 -> 5",
+       "Final Phase - Changed so that the last slash in the mana pattern no longer applies a slow effect"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Merchant",
+      "entries": [
+       "Q - Range 800 -> 900, AoE 325 -> 425"
+      ]
+     },
+     {
+      "name": "Soulweaver",
+      "entries": [
+       "F - Fixed an issue where the orb got stuck on the field's edge and wouldn't move"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Knockback-type skills from bag cannot be used in boss areas -> Changed so that knockback-type skills from bag cannot be used only when the hero is in combat state"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72d3",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Reforged - Event crashing should be fixed.. please report any other crashing if it still happens",
+     "Fixed issue with certain recipes missing some materials"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72d2",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Kamael - Fixed issue with runes sometimes starting out on cooldown"
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Disabled some screen flash effects to investigate the crashing issue on Reforged"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72d",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Reforged - Fixes applied for freezing/crashing (please report if still crashing)",
+     "Death Fiend - Fixed issue with coil spinning too fast, fixed issue with weaver teleporting out of boss area",
+     "Styrix - Fixed issue with lantern not healing properly",
+     "Kamael - Fixed issues with bugged revives",
+     "Sunstone - Fixed issue with item having no CD"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Ordius, the Divine Lance",
+      "entries": [
+       "INT 950 -> 1000, Crit Multiplier x0.15 -> x0.20, skill damage increase on Mark of Light 12% -> 14%"
+      ]
+     },
+     {
+      "name": "Illumination",
+      "entries": [
+       "Active cooldown 1s -> 0s"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Kamael, the Lightbringer",
+      "entries": [
+       "Absolute Rune",
+       [
+        "Stack reduction when shackled 1/2 -> 2/3"
+       ],
+       "50% & 10% pattern",
+       [
+        "Intro sped up",
+        "Cooldown on Absolute Rune will be reset after 50% pattern is over"
+       ],
+       "MP pattern",
+       [
+        "Made quicker and boss now takes 50% reduced damage while casting it",
+        "Bind gauge gained from being hit by shockwaves 40 -> 50, knockback added, final shockwave inflicts 2x damage/gauge"
+       ]
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Some skills sped up slightly, spinning blades during last mech now knocks you back if you touch them",
+     "Divine Fury - Slashes and sideway explosions upon thrust are more deadly now",
+     "Guardian - Slightly increased damage on MP pattern"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72c2",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed a bug where the game would freeze when summoning a helicopter in the summer event minigame",
+     "(Fatal issue on reforged is still under investigation)",
+     "Fixed a bug where items could not be picked up when moving at high speed",
+     "Fixed a bug where the position of the gravestone and the hero could differ when the hero dies",
+     "Paladin - W - Fixed an issue where W resources charged slowly",
+     "Sword Saint - Fixed issue with Lunar Mark visual effect persisting even after being used",
+     "Trickster - R - Fixed bug where skill couldn't be used at all",
+     "Assassin - D - Fixed that nasty bug where stealth breaks completely on load under certain circumstances",
+     "Hermit - R - Fixed bug with SKD bonus being activated when AGI is main stat instead of STR/INT",
+     "Alchemist - D - Fixed an issue where the buff would not immediately disappear even after all D charges were used",
+     "Heart of Lion - Fixed an issue where additional hits were counted as physical damage instead of magic damage",
+     "Harvester's Mask series - Fixed a bug where it didn't activate screen flash effect/where the proc didn't activate on certain attack effects",
+     "Wings of the Void - Fixed a bug where the passive DoT damage effect did not work properly",
+     "Fixed a bug where the \"All Affinity\" stat on some items was not working correctly",
+     "Fixed an issue where some cosmetic items were not functioning correctly",
+     "Zombie Lord - Fixed stat/drop rate related issues",
+     "(We have added an additional 25% drop rate bonus for Zombie Lord until the end of the event. We apologize for the inconvenience)",
+     "Death Fiend - Fixed timer text issue",
+     "Duke Lazarus - Fixed a bug where the number of PLAGUE targets would revert to 1 after Sacrifice pattern",
+     "Gaia - Fixed a bug where the Corrupted Energy value changed randomly, fixed a bug where an extra safe zone appeared, fixed issue with Soulstone appearing on wrong location in chest",
+     "Styrix - Fixed issue with hp/healing on lanterns",
+     "Kamael - Fixed a bug where certain players' bind would reset during MP pattern, fixed other misc bugs",
+     "Fixed an issue where some knockback-type token skills could be used in boss areas"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Agnitus, the Bow of Divine Fury",
+      "entries": [
+       "Sniper Specialty - Storm Shaft max stack increase 1 -> 0"
+      ]
+     },
+     {
+      "name": "Crimson Whisper",
+      "entries": [
+       "Added 5% skill damage",
+       "Passive - Explosion damage per stack (AD X 0.07 + Agi X 1 -> AD X 0.1 + Agi X 1)",
+       "Sniper Specialty - Storm Shaft max stack increase 2 -> 1"
+      ]
+     },
+     {
+      "name": "Wings of Descender",
+      "entries": [
+       "Removed the critical multiplier bonus on passive; bonus damage on enhanced attack 400% -> 300%"
+      ]
+     },
+     {
+      "name": "Godslayer Signet",
+      "entries": [
+       "Passive - Activation chance 18% -> 20%, passive stat increase 550 -> 600, trigger damage Atk X 120% -> Atk X 125%, bonus damage on next skill per stack 3% -> 2%"
+      ]
+     },
+     {
+      "name": "Void Seraph",
+      "entries": [
+       "Base stats - MP regen +25 -> Attack Speed +15%",
+       "Passive effect - Attack Speed +3% per stack (max 15%) -> MP regen +5 per stack (max 25)"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Max resummon count",
+      "entries": [
+       "Neptinos tier boss 6~12 -> 6~9",
+       "Gnosis tier boss 5~8 -> 5~6",
+       "(the resummon counts were increased in v0.71a but resulted in lobbies being much longer; it is being partially rolled back)"
+      ]
+     },
+     {
+      "name": "Kamael, the Lightbringer",
+      "entries": [
+       "Changed so that Kneel / White Circle patterns cannot appear consecutively",
+       "100 MP Pattern - Changed so that summoned units do not die from slash effect"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Reaper",
+      "entries": [
+       "R - Added back sound effect"
+      ]
+     },
+     {
+      "name": "Hermit",
+      "entries": [
+       "Q - Range 750 -> 800",
+       "E - Added +50 base move speed bonus on passive effect, changed healing effect -> regeneration effect (no longer affected by 2x heal from D)"
+      ]
+     },
+     {
+      "name": "Gunner",
+      "entries": [
+       "D - Normal attack damage reduction 30% -> 50%",
+       "W - Hit range 600 -> 675",
+       "R - Removed guaranteed critical effect",
+       "(Due to previous changes, damage was buffed much higher than intended, so it is being rolled back partially)"
+      ]
+     },
+     {
+      "name": "Sniper",
+      "entries": [
+       "Q - Maximum stack is now increased by 1 per 40% attack speed"
+      ]
+     },
+     {
+      "name": "Merchant",
+      "entries": [
+       "D - Changed to 20 cost / 100 max resource cap"
+      ]
+     },
+     {
+      "name": "Elementalist",
+      "entries": [
+       "D - Changed to 50 cost / 100 max resource cap"
+      ]
+     },
+     {
+      "name": "Trickster",
+      "entries": [
+       "R - Changed to 25 cost / 100 max resource cap"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.72b",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Reduced stuttering when riding summons or using certain skills at high movement speed",
+     "Fixed bug where some summons blocked allies when resummoned",
+     "Fixed bug where dropped item texts did not display correctly",
+     "Knight - Fixed bug where damage reduction applied to self when activating T",
+     "Berserker - Fixed bug where after chaining T->R, clicking a unit outside range caused the character to freeze instead of moving",
+     "Crusader - Fixed bug where E was not benefiting from Skill Damage Amp",
+     "Crusader - Fixed slight R2 activation time difference depending on skin used",
+     "Crusader - Fixed bug where dummy effects from F persisted",
+     "Sword Saint - Fixed bug where D enhanced autos could not trigger some skill proc effects",
+     "Thunderer - Fixed bug where W enhanced autos could not trigger some skill proc effects",
+     "Phantom Blade - Fixed issue with Q not critting outside of T",
+     "Alchemist - Fixed bug where golem dealt continuous damage while in invisible state even when not summoned",
+     "Priest - Fixed bug where TQ restored resources for certain characters",
+     "Nereid - Fixed bug where boss's basic attack penetrated death-ignore effects such as Berserker's T",
+     "Nereid - Fixed bug where special pattern activated instantly after cart phase without delay",
+     "Duke - Fixed bug where thrown ally collided with tentacle and took abnormal damage",
+     "Arcane Construct - Fixed bug where certain patterns overlapped if damage was high",
+     "Agareth - Fixed bug where infest debuff from normal difficulty boss could be removed by cleanse instead of ESC",
+     "Styrix - Fixed bug where summons bugged after 'Die' skill"
+    ]
+   },
+   {
+    "title": "Events",
+    "entries": [
+     "Summer's Gift - Increased auto-use speed"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Agnitus series",
+      "entries": [
+       "Sniper Specialty - Storm Shaft max stack increased by 3/4 -> max stack increased by 1/2 and cooldown reduced by 33%"
+      ]
+     },
+     {
+      "name": "Akhelius, the Staff of Duality",
+      "entries": [
+       "Base Fire/Water affinity 10% -> 5%",
+       "Additional affinity on passive 10% -> 15%"
+      ]
+     },
+     {
+      "name": "Valtora/Ifrit/Nereid/Legend Icon",
+      "entries": [
+       "Stat increase 30/50 -> 50/75, Elemental Fury effect removed"
+      ]
+     },
+     {
+      "name": "Wings of Cosmos",
+      "entries": [
+       "All stats 300 / Main stat 100 -> All stats 350",
+       "MP Regen rate 20 -> Attack Speed 10%"
+      ]
+     },
+     {
+      "name": "New Items",
+      "entries": [
+       "Added several new items and updated to newer revisions",
+       "(Items not yet testable: Heaven's Fall / Primal Shard / Backpack of Wisdom / Items with unreleased recipes)"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Kamael, the Lightbringer",
+      "entries": [
+       "New Arcana-tier boss located inside the Holy Capital Avalon",
+       "In parties of 6 or more, +30% HP and +20% item drop rate per additional member, with other difficulty adjustments based on number of players",
+       "Drop Items: Sunstone (0.40%) / Heavenly Thread (0.60%) / Sacred Lotus (0.60%) / Dew of Paradise (0.60%) / Kamael's Soulstone (0.15%) / Lightbringer's Token (0.01%)"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Sword Saint",
+      "entries": [
+       "D - Bonus damage on each AA (STR+INT) X 6 -> (STR+INT)X4",
+       "E - Bonus damage on successful block 200% -> 150%"
+      ]
+     },
+     {
+      "name": "Merchant",
+      "entries": [
+       "R (Throw Money) - Ranged increased, added short stuns on each hit",
+       "R (Bag of All Evils - Devour) - Increased AoE on final explosion"
+      ]
+     },
+     {
+      "name": "Knight",
+      "entries": [
+       "T - Improved visibility of message when max stacks reached"
+      ]
+     },
+     {
+      "name": "Dark Knight",
+      "entries": [
+       "D - Adds short stun if INT is main stat",
+       "E (STR main) - Damage bonus increase per activation 35% -> 25% (max 70% -> 50%)",
+       "E (INT main) - Magic damage taken bonus amps from 33-100% -> 50-100% of max value"
+      ]
+     },
+     {
+      "name": "Martial Artist",
+      "entries": [
+       "Basic attack delay 0.8s -> 0.4s / Only 40% of attack speed increase from AGI and items applies",
+       "D - Added 15% attack speed increase",
+       "R - Removed 60% attack speed increase",
+       "F - Removed attack delay reduction effect, added 250% attack speed during use",
+       "F - D damage +60% / other skill damage +75% -> Fixed at Skill Damage Amp 70%"
+      ]
+     },
+     {
+      "name": "Gunner",
+      "entries": [
+       "Basic attack delay 1.3s -> 0.7s / Only 40% of attack speed increase from AGI and items applies",
+       "D - Attack/R damage is reduced by 60% against boss units -> Normal (physical) attack damage reduced by 30% against all enemies. No longer reduces R damage.",
+       "Q - Damage bonus 300% -> 200%, converted attack now benefits from Skill Damage Increase, added guaranteed critical effect",
+       "R - Damage per hit AD X 1.9 -> AD X 0.75, added guaranteed critical effect",
+       "T - Removed attack delay reduction effect"
+      ]
+     },
+     {
+      "name": "Thunderer",
+      "entries": [
+       "Q - Skill damage now affected by wind affinity"
+      ]
+     },
+     {
+      "name": "Assassin",
+      "entries": [
+       "E - Damage AD X 1 + AGI X 8 -> AD X 1 + AGI X 10, temporary movement speed boost now persists independently from D stealth effect"
+      ]
+     },
+     {
+      "name": "Reaper",
+      "entries": [
+       "Q - Range 375 -> 475, no longer cancels motion",
+       "E - Adjusted to be more fluid to use, now usable on ground",
+       "R - Fixed bug where W combo extra hit did not benefit from continuous damage increase"
+      ]
+     },
+     {
+      "name": "Sword Enchanter",
+      "entries": [
+       "E - D damage increase 30% -> 25%"
+      ]
+     },
+     {
+      "name": "Hermit",
+      "entries": [
+       "Q - Now adds to attack damage instead of triggering additional proc damage",
+       "R - (Common) Resource regen/sec 5% -> 4%",
+       "(STR/INT main stat) Ki cost 50 -> 60, duration 5-10s -> fixed 10s, skill damage bonus (main stat / 450)% -> (main stat / 400)%",
+       "(AGI main stat) Ki cost 50 -> 0, duration distance-based 5-10s -> fixed 5s, cooldown 15s",
+       "T2 - (Common) Added short invincibility during activation",
+       "F - (Common) Damage per sec main stat X 70 -> 90, (AGI main stat) duration 2s -> 1.5s"
+      ]
+     },
+     {
+      "name": "Shooter",
+      "entries": [
+       "All skill damage now affected by Magitek affinity"
+      ]
+     },
+     {
+      "name": "Sniper",
+      "entries": [
+       "Improved visual clarity a bit",
+       "Q",
+       [
+        "Passive - Removed attack speed increase, proc damage changed to bonus damage instead of separate damage instance",
+        "Active - Base damage AD X 1.5 -> AD X 1 + AGI X 4"
+       ],
+       "W",
+       [
+        "Arrows are now considered as AA (cannot trigger some effects like Harvester's Mask though)"
+       ],
+       "R",
+       [
+        "Damage/stun duration changed to be same for either attack or skill enhancements",
+        "Arrow fired from attack enhancement is no longer considered a separate attack instance",
+        "When enhancing skill with R, R's coefficient is added to that skill and total damage is converted to Fire element",
+        "ex) With 15% Fire affinity on Snipe enhancement",
+        [
+         "Before: (AD X 15 + AGI X 60) + AGI X 15 X 115%",
+         "After: (AD X 15 + AGI X 60 + AGI X 15) X 115%"
+        ]
+       ],
+       "F - Range 425 -> 500"
+      ]
+     },
+     {
+      "name": "Mage (Fire)",
+      "entries": [
+       "Q - Now usable on ground"
+      ]
+     },
+     {
+      "name": "Mage (Water)",
+      "entries": [
+       "D - Vulnerability bonus damage 150% -> 200%, skill damage increase (5 + INT / 500)% -> (4 + INT / 800)%, extra hit is now bonus damage instead of separate instance of magic damage",
+       "T - Damage per sec INT X 5 -> INT X 10",
+       "F - Damage INT X 125 + Max MP X 15 -> INT X 100 + Max MP X 10, pause duration 2s -> 1.5s, now also applies Vulnerability like T"
+      ]
+     },
+     {
+      "name": "Mage (Lightning)",
+      "entries": [
+       "E - Can now cast Q while channeling E (E ends immediately when casting Q)"
+      ]
+     },
+     {
+      "name": "Mage (Arcane)",
+      "entries": [
+       "W - Increases magic damage dealt to target by 6% -> amplifies skill damage by 7.5%, aoe slightly increased",
+       "R - Icons updated/now uses different color for 2nd cast"
+      ]
+     },
+     {
+      "name": "Alchemist",
+      "entries": [
+       "D - Casting Fire transmutations grants 8% skill damage bonus -> 8% skill damage amp",
+       "QR - Impact delay 2s -> 1.25s",
+       "WR - Cloud duration 10s -> 15s",
+       "EW - Eye of the Storm - Skill changed",
+       [
+        "Summons a cloud for 6s at target location, dealing continuous damage to 1 nearby enemy and increasing magic defense of nearby allies by 20%.",
+        "No longer interacts with Healing Rain or Wind Transmute"
+       ],
+       "RQ - Cannon duration 10s -> 15s",
+       "RW - Elixir Transmutation - Skill changed",
+       [
+        "After 2s delay, creates an elixir at target location that is consumed upon contact.",
+        "Removes debuffs and heals HP by (Alchemist's INT X 3)",
+        "(Elixir lasts 30s on ground; skill has absolute cooldown of 30 seconds)"
+       ],
+       "T",
+       [
+        "Removes channel on next 5 transmutations -> Activates Infusion (D)",
+        "Final damage increase 10% -> 15%",
+        "No longer increases damage of unused transmutations"
+       ],
+       "F - Max HP consumption capped at 15% per sec, alchemist can no longer die from this effect"
+      ]
+     },
+     {
+      "name": "Warlock",
+      "entries": [
+       "R - Base MP regen increased by 75 + Base MP regen amplified by 100% -> Now just regenerates 1% of max MP per second; effect moved to D"
+      ]
+     },
+     {
+      "name": "Elementalist",
+      "entries": [
+       "D - Can now cast other skills while jumping",
+       "W - MP regen 4% per sec (1% for summons) -> Resource regen 2% (1% for summons), does not stack with Hermit R",
+       "EQ - Damage INT X 75 -> INT X 60",
+       "R - Removed annoying light+sound effect when resummoning unit",
+       "FE - Damage INT X 150 -> INT X 125"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "W - Duration 12s -> 10s, HP regen 8% per sec -> Heals for INT X 0.7 every 1.5s",
+       "TQ - Now prioritizes more beneficial effect when targetting units with overlapping units like Nereid bubble or Duke spike",
+       "TW - Range 750 -> 1200"
+      ]
+     },
+     {
+      "name": "Soul Weaver",
+      "entries": [
+       "R - Adjusted to be more fluid to use"
+      ]
+     },
+     {
+      "name": "Witch",
+      "entries": [
+       "TW - Damage reduction bonus 12% -> 20% for witch/armaros, 10% for allies"
+      ]
+     },
+     {
+      "name": "Shrine Priestess",
+      "entries": [
+       "T - [Passive] When learned, switches elements of all skills to 'Fusion'. 'Fusion' element affinity = Higher of Fire or Water affinity X 100% + lower affinity X 50%",
+       "T - [Active] Skill damage amp (15 + 0.3 X (fire affinity bonus + water affinity bonus)) -> flat 20%"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "System optimizations and fatal error fixes",
+     "Visual effects for damage text of various skills and items have been cleaned up to be less cluttered",
+     "'Healing received' and 'regen received' has been unified to singe 'heal received' stat that applies to both regen and heals.",
+     "'Increases damage done by skills' -> term unified to 'Skill Damage Ampl' and is now multiplicative",
+     "'Damage dealt' / 'Total damage increase' -> term unified to 'Final Damage'",
+     "Resources of certain characters are changed as following:",
+     [
+      "Paladin - 0/3 -> 0/100 (W consumes 33 per use)",
+      "Sword Saint - 0/3 -> 0/100 (R consumes 33 per use)",
+      "Sniper - 0/4 -> 0/100 (R consumes 25 per use)",
+      "Shooter - 0/3 -> 0/100 (R consumes 33 per use)",
+      "Witch - 0/4 -> 0/100 (W consumes 25 per use)"
+     ]
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71h",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed issue with Christmas Tree disappearing from Closet",
+     "Fixed issue with Sword Saint D not doing damage",
+     "Fixed various minor bugs with bosses"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71g",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Staff of Plague - Fixed issue with Active not working",
+     "Skeleton King - Fixed issue with boss summoning right away as fight starts",
+     "Shadow Dragon - Fixed issue with boss ignoring attacks on first summon",
+     "Nereid - Fixed issue with boss having infinite shield",
+     "Styrix - Fixed issue with boss casting lantern-related patterns without lanterns",
+     "Styrix - Fixed issue with boss casting empowered patterns right after Fog",
+     "Crab Token - Fixed issue with token skill not working",
+     "Fixed issue with players keep getting repeated messages when near exit zone of boss map",
+     "Fixed issue with difficulty not working on some bosses"
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Nereid",
+      "entries": [
+       "Drown will not apply bubble if target is invulnerable when debuff expires"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Priest/Mage (Fire)/Mage (Wind)",
+      "entries": [
+       "No longer uses/displays MP"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71f",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Phantom Blade - Fixed issue with 3rd AA not restoring mana",
+     "Mage (Wind) - Fixed issue with E shield not working",
+     "Nereid - Fixed issue with shield pattern reactivating infinitely",
+     "Gaia - Fixed issue with Force Blast not being interrupted when transitioning",
+     "Arcane Construct - Fixed issue with heroes being able to walk over broken tiles",
+     "Fixed issue with field bosses not having max summon count increased by player count",
+     "Fixed issue with some players being unable to progress through quests",
+     "Fixed issue with summon hotkey becoming unbound in certain scenarios",
+     "-convert command fully disabled outside of Reforged"
+    ]
+   },
+   {
+    "title": "Monsters",
+    "entries": [
+     "Gaia - Slightly reduced stun duration of orbs during Spirit Call"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71e",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed issue with Bag skill 'Absorb Magic Stone' not working",
+     "Fixed issue with characters movement becoming stuck when dashes/knockbacks overlap",
+     "Duke - Fixed issue with jump skill not working",
+     "Bow Master - Fixed issue with T skill not working when using certain weapons"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71d",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Sword Enchanter - Fixed issue with T canceling out buffs on other Sword Enchanters",
+     "Priest - Fixed issue with TQ not cleansing Nereid bubble properly",
+     "Eye of the Blood God - Fixed issue where summon persists after unequipping item",
+     "Fixed issue with glitched movement if knockback overlaps with dash"
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Mage (Lightning)",
+      "entries": [
+       "W3 - Damage rolled back from INT X 11 -> INT X 12.5, now requires Short Circuit to explode orbs again"
+      ]
+     },
+     {
+      "name": "Alchemist",
+      "entries": [
+       "RR - Options simplified / hotkey persists for re-summons now"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Prevents HP from dropping below 1 on revive -> Becomes immune to damage after revive, buff duration reduced around 50% (excluding Merchant T)",
+     "Memory usage reduced/optimized. Bosses/monsters now only load when entering the associated areas."
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71c",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed issue with hero damage becoming glitched in certain situations",
+     "Helicopter Mount - Fixed issue with glitched movement",
+     "Bell of Divinity series - Fixed issue with passive not being applied from heal",
+     "Arcane Construct - Fixed issue with boss jumping mid orb pattern",
+     "Sword Enchanter - Fixed issue with A key not allowing dashes",
+     "Reaper - Fixed issue with D movement being glitched",
+     "Priest - Fixed issue with TQ not healing"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Bell of Divinity series",
+      "entries": [
+       "Passive duration from heal 2.5s -> 1.5s"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71b",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Soul Weaver - Fixed issue with T not doing damage",
+     "Zombie Lord - Fixed issue with boss not being restored to full MP on first revive",
+     "Duke Lazarus - Fixed issue with swipe skill not working",
+     "Gaia - Fixed issue with Force Blast knockback not working properly",
+     "Gaia - Fixed issue with orbs being spawned while casting Spirit Call",
+     "Arcane Construct - Fixed issue with boss casting skills in orb pattern",
+     "Fixed issue with various characters having glitched movement with dash skills",
+     "Fixed issue with mount not moving in some situations"
+    ]
+   },
+   {
+    "title": "Events",
+    "entries": [
+     "Increased boss item drop chance on Beachball slightly"
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Knight",
+      "entries": [
+       "T - # of stacks is now displayed beside BOSS enemies (for non-boss enemies, only at max stacks)"
+      ]
+     },
+     {
+      "name": "Phantom Blade",
+      "entries": [
+       "D - Soul now restores to full when loading/reviving"
+      ]
+     },
+     {
+      "name": "Bow Master",
+      "entries": [
+       "F - Small arrow count 6 -> 4, big arrow now recharges D stack as well (total D stacks 6 -> 5)"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "T - Now summons with full MP for the first summon of the game",
+       "TR/TQ - Merged into a single skill with 15 MP cost; damage INT X 25 -> INT X 30"
+      ]
+     },
+     {
+      "name": "Mage (Lightning)",
+      "entries": [
+       "W3 - Base damage INT X 12.5 -> INT X 11"
+      ]
+     },
+     {
+      "name": "Warlock",
+      "entries": [
+       "T - Cooldown 75s -> 60s"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.71a",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Berserker - Fixed issue with Q doing abnormal damage in some scenarios",
+     "Christmas Giant - Fixed issue with mount skill dragging you across map"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Some stats have been removed for optimizations, such as",
+      "entries": [
+       "Revival time reduction",
+       "'Chance to activate X on kill' effects"
+      ]
+     },
+     {
+      "name": "Soulbane series",
+      "entries": [
+       "Bow Master specialty - Enhanced W damage AD X 1.4/1.6 + AGI X 24/28 -> AD X 1.35/1.5 + AGI X 23/26"
+      ]
+     },
+     {
+      "name": "Bell of Divinity series",
+      "entries": [
+       "Can now apply passive effect on heal as well, for 2.5 seconds"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Minor-tier Bosses",
+      "entries": [
+       "Max resummon count per lobby 5~15 -> 8~15 (based on player count)"
+      ]
+     },
+     {
+      "name": "Neptinos-tier Bosses",
+      "entries": [
+       "Max resummon count per lobby 5~10 -> 6~12 (based on player count)"
+      ]
+     },
+     {
+      "name": "Gnosis-tier Bosses",
+      "entries": [
+       "Max resummon count per lobby 5 -> 5~8 (based on player count)"
+      ]
+     },
+     {
+      "name": "Zombie Lord",
+      "entries": [
+       "Acolytes no longer has CC immunity by default",
+       "Priest now gives 3 Holy Water per trade",
+       "Acolyte - Death Coil's HP/MP restoration amount 25% -> 15%"
+      ]
+     },
+     {
+      "name": "Samael",
+      "entries": [
+       "Reduced damage on few skills",
+       "Reduced # of summoned projectiles from 7 to 5",
+       "Reduced # of healing orbs from 8~16 -> 6~16 based on player count, damage on absorbing each orb 1500 -> 1000"
+      ]
+     },
+     {
+      "name": "Duke Lazarus",
+      "entries": [
+       "Drop rate increase per player 2.5% -> 5% (max 15% -> 30%)",
+       "Equipment drop rate 0.70% -> 0.75%, material drop rate 0.90% -> 1.00%"
+      ]
+     },
+     {
+      "name": "Gaia",
+      "entries": [
+       "Drop rate increase per player 2.5% -> 5% (max 15% -> 30%)",
+       "Equipment drop rate 0.60% -> 0.65%, material drop rate 0.75% -> 0.85%"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "entries": [
+     "Global skill castpoint (delay) reduced for some characters"
+    ],
+    "subsections": [
+     {
+      "name": "Blaster",
+      "entries": [
+       "E - Passive proc chance changed",
+       [
+        "Before: 10% chance to crit/proc (description was incorrectly saying 20%), guaranteed every 5th proc / cannot proc if target has Armor/Critical break",
+        "After: 15% chance to crit/proc, guaranteed every 6th proc / can now proc regardless of Break state"
+       ],
+       "E - Active - Damage AD X 1 + STR X 12.5 -> AD X 1 + STR X 15"
+      ]
+     },
+     {
+      "name": "Sword Saint",
+      "entries": [
+       "E - Skill mechanism changed",
+       [
+        "1st instance of skill: Damage blocked completely + any attached effects (ex. debuff/gauge gain) are ignored",
+        "Attacks or all other subsequent sources of damage: Damage reduced by 70%"
+       ]
+      ]
+     },
+     {
+      "name": "Bow Master",
+      "entries": [
+       "T - Arrow count 24 -> 20"
+      ]
+     },
+     {
+      "name": "Elementalist",
+      "entries": [
+       "E - Summon damage INT X 2/10 -> INT X 2/8",
+       "R - Summon damage INT X 15 -> INT X 12, RQ max duration 3s -> 1.5s"
+      ]
+     },
+     {
+      "name": "Mage (Lightning)",
+      "entries": [
+       "W3 - No longer requires proccing of Short Circuit to detonate the orbs"
+      ]
+     },
+     {
+      "name": "Mage (Wind)",
+      "entries": [
+       "FR - Summon will now finish the cast before disappearing even if MP runs out mid-cast"
+      ]
+     },
+     {
+      "name": "Priest",
+      "entries": [
+       "D - Cast range 750 -> 900",
+       "TQ - No longer cleanses debuffs",
+       "TR - New skill 'Holy Bolt' added.",
+       [
+        "Consumes 15 MP (recharges by 1 per second if near priest, can be affected by resource regen bonus)",
+        "If target is enemy, deals INT X 25 damage + 1.5s stun",
+        "If target is ally, cleanses all of its debuffs"
+       ]
+      ]
+     },
+     {
+      "name": "Alchemist",
+      "entries": [
+       "QR - Cast range 600 -> 900"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Various optimizations/system updates for preparation of boss release",
+     "(Please note that there may be various bugs due to result of this update)",
+     "Some skills have been updated to allow queuing other commands mid-cast"
+    ]
+   }
+  ],
+  "source": "patchlog"
  },
  {
   "version": "v0.69e",
@@ -737,7 +2417,7 @@
        "Heart of Lion",
        "Illumination",
        "Apocalypse Prime",
-       "Dawn Plates",
+       "Plates of Dawn",
        "Plates of Divine Blood",
        "Primal Flame",
        "Coil of Ouroboros",
