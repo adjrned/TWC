@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TWRPG Companion</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0c0d10">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230c0d10'/><text x='16' y='22' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='15' fill='%23f5a623'>TW</text></svg>">
 </head>
 <body>
 <div class="app-shell">
@@ -13,41 +17,37 @@
   <aside class="sidebar" id="sidebar">
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">‹</button>
     <div class="sidebar-logo">
-      <div class="logo-emblem">⚜</div>
-      <h1>TW<span>RPG</span></h1>
+      <h1><span>TW</span>RPG</h1>
       <p>Companion</p>
-      <div class="logo-divider"></div>
     </div>
     <nav class="sidebar-nav">
       <a href="#/" class="nav-link" data-route="/" data-tooltip="Build Planner">
-        <span class="nav-icon">⚙️</span>
-        <span class="nav-text">Build Planner</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+        <span class="nav-text" data-i18n="nav.builder">Build Planner</span>
       </a>
       <a href="#/items" class="nav-link" data-route="/items" data-tooltip="Items">
-        <span class="nav-icon">📖</span>
-        <span class="nav-text">Items</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21L8 9l4-6 4 6z"/></svg></span>
+        <span class="nav-text" data-i18n="nav.items">Items</span>
       </a>
       <a href="#/tracker" class="nav-link" data-route="/tracker" data-tooltip="Item Tracker">
-        <span class="nav-icon">🎯</span>
-        <span class="nav-text">Item Tracker</span>
-        <span class="nav-wip">WIP</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+        <span class="nav-text" data-i18n="nav.tracker">Item Tracker</span>
       </a>
       <a href="#/bosses" class="nav-link" data-route="/bosses" data-tooltip="Monsters">
-        <span class="nav-icon">⚔️</span>
-        <span class="nav-text">Monsters</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/><path d="M9.5 6.5L21 18v3h-3l-1.5-1.5M5 14l-2 2 2 2"/></svg></span>
+        <span class="nav-text" data-i18n="nav.bosses">Monsters</span>
       </a>
       <a href="#/heroes" class="nav-link" data-route="/heroes" data-tooltip="Heroes">
-        <span class="nav-icon">🧙</span>
-        <span class="nav-text">Heroes</span>
-      </a>
-      <a href="#/awakening" class="nav-link" data-route="/awakening" data-tooltip="Awakening">
-        <span class="nav-icon">✨</span>
-        <span class="nav-text">Awakening</span>
-        <span class="nav-wip">WIP</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></span>
+        <span class="nav-text" data-i18n="nav.heroes">Heroes</span>
       </a>
       <a href="#/patch-notes" class="nav-link" data-route="/patch-notes" data-tooltip="Patch Notes">
-        <span class="nav-icon">📋</span>
-        <span class="nav-text">Patch Notes</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>
+        <span class="nav-text" data-i18n="nav.patchNotes">Patch Notes</span>
+      </a>
+      <a href="#/awakening" class="nav-link" data-route="/awakening" data-tooltip="Awakening">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+        <span class="nav-text" data-i18n="nav.awakening">Awakening</span>
         <span class="nav-wip">WIP</span>
       </a>
     </nav>
@@ -57,7 +57,7 @@
         <button class="locale-btn" data-locale="ko">KR</button>
         <button class="locale-btn" data-locale="zh">CN</button>
       </div>
-      <p>Made by Ruzai</p>
+      <p data-i18n="common.madeBy">Made by Ruzai</p>
     </div>
   </aside>
 
@@ -69,28 +69,43 @@
 </div>
 
 <!-- Bottom nav (mobile) -->
-<nav class="bottom-nav">
+<nav class="bottom-nav" aria-label="Main">
   <a href="#/" class="nav-link" data-route="/">
-    <span class="nav-icon">⚙️</span>
-    Builder
-  </a>
-  <a href="#/heroes" class="nav-link" data-route="/heroes">
-    <span class="nav-icon">🧙</span>
-    Heroes
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+    <span class="bn-label" data-i18n="nav.builder.short">Builder</span>
   </a>
   <a href="#/items" class="nav-link" data-route="/items">
-    <span class="nav-icon">📖</span>
-    Items
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21L8 9l4-6 4 6z"/></svg></span>
+    <span class="bn-label" data-i18n="nav.items.short">Items</span>
+  </a>
+  <a href="#/tracker" class="nav-link" data-route="/tracker">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+    <span class="bn-label" data-i18n="nav.tracker.short">Tracker</span>
   </a>
   <a href="#/bosses" class="nav-link" data-route="/bosses">
-    <span class="nav-icon">⚔️</span>
-    Boss
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/><path d="M9.5 6.5L21 18v3h-3l-1.5-1.5M5 14l-2 2 2 2"/></svg></span>
+    <span class="bn-label" data-i18n="nav.bosses.short">Monsters</span>
   </a>
-  <a href="#/awakening" class="nav-link" data-route="/awakening">
-    <span class="nav-icon">✨</span>
-    Awakening
-  </a>
+  <button type="button" class="nav-link bn-more" id="bnMore" aria-expanded="false" aria-controls="bnSheet">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+    <span class="bn-label" data-i18n="nav.more">More</span>
+  </button>
 </nav>
+<div class="bn-sheet" id="bnSheet" hidden>
+  <div class="bn-sheet-links">
+    <a href="#/heroes" class="nav-link" data-route="/heroes"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></span><span data-i18n="nav.heroes">Heroes</span></a>
+    <a href="#/patch-notes" class="nav-link" data-route="/patch-notes"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span><span data-i18n="nav.patchNotes">Patch Notes</span></a>
+    <a href="#/awakening" class="nav-link" data-route="/awakening"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><span data-i18n="nav.awakening">Awakening</span></a>
+  </div>
+  <div class="bn-sheet-foot">
+    <div class="locale-switcher" id="localeSwitcherMobile">
+      <button class="locale-btn" data-locale="en">EN</button>
+      <button class="locale-btn" data-locale="ko">KR</button>
+      <button class="locale-btn" data-locale="zh">CN</button>
+    </div>
+    <span data-i18n="common.madeBy">Made by Ruzai</span>
+  </div>
+</div>
 
 <!-- Floating tooltip -->
 <div id="floatTooltip">
@@ -99,39 +114,11 @@
   <div class="tt-stats" id="ftStats"></div>
 </div>
 
-<!-- Icon Picker Modal -->
+<!-- Item picker modal (content built by pages/builder/picker.js) -->
 <div id="pickerOverlay" onclick="closePickerOnBg(event)">
-  <div id="pickerModal">
-    <div class="picker-header">
-      <h2 id="pickerTitle">Choose Icon</h2>
-      <span class="picker-mode-pill mode-primary" id="pickerModePill">PRIMARY</span>
-      <div class="picker-search">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" id="pickerSearch" placeholder="Search icons..." oninput="filterPicker()">
-      </div>
-      <button class="btn" onclick="closePicker()">✕</button>
-    </div>
-    <div class="picker-grid" id="pickerGrid"></div>
-    <div class="picker-footer">
-      <span>Showing <strong id="pickerCount">0</strong> icons from <code>twicons/</code></span>
-      <span style="font-size:11px;color:var(--muted)">Click to assign</span>
-    </div>
-  </div>
+  <div id="pickerModal" role="dialog" aria-modal="true" aria-labelledby="pickerTitle"></div>
 </div>
 
-<!-- Context Menu (right-click) -->
-<div id="ctxMenu">
-  <button onclick="ctxOpenPicker(0)">Change main</button>
-  <button id="ctxAddAltBtn" onclick="ctxOpenPicker(1)">Add alternative</button>
-  <button id="ctxChangeAltBtn" onclick="ctxOpenPicker(1)">Change alternative</button>
-  <button id="ctxClearAltBtn" onclick="ctxClearAlt()" class="danger">Clear alternative</button>
-  <hr class="ctx-divider">
-  <button onclick="ctxClear()">Clear slot</button>
-  <hr class="ctx-divider">
-  <button class="danger" onclick="ctxDelete()">Remove row</button>
-</div>
 
 <!-- Import Modal -->
 <div class="modal-overlay" id="importModal">

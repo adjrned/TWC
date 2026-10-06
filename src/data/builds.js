@@ -1,5 +1,6 @@
 import { state } from '../state.js';
-import { COLS, ICONS_PATH, buildFileName, buildFileNameForCreator } from '../constants.js';
+import { COLS, buildFileName, buildFileNameForCreator } from '../constants.js';
+import { iconSrc } from './items.js';
 import { save } from './storage.js';
 
 let _buildsIndexCache = null;
@@ -42,7 +43,7 @@ export async function fetchCreatorsForClass(className) {
 
 export function normalizeItem(raw) {
   if (!raw?.name) return null;
-  return { type: raw.type || 'library', name: raw.name, src: raw.src || ICONS_PATH + encodeURIComponent(raw.name) + '.jpg' };
+  return { type: raw.type || 'library', name: raw.name, src: iconSrc(raw.name) };
 }
 
 export function normalizeSlotToArray(raw) {

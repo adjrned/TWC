@@ -1,4 +1,4 @@
-import { ICONS_PATH } from '../constants.js';
+import { ICONS_PATH, ICON_EXT } from '../constants.js';
 
 export let iconLibrary = [];
 
@@ -9,7 +9,7 @@ export async function loadIconLibrary() {
       const json = await r.json();
       const names = Array.isArray(json) ? json : Array.isArray(json?.files) ? json.files : null;
       if (Array.isArray(names) && names.length) {
-        iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + encodeURIComponent(n) + '.jpg' }));
+        iconLibrary = names.map(n => ({ name: n, src: ICONS_PATH + encodeURIComponent(n) + ICON_EXT }));
         return;
       }
     }
