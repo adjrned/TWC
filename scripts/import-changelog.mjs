@@ -8,6 +8,7 @@
 //     bugs|events|misc: [string | string[]],          // nested array = sub-points of previous line
 //     items|monsters|heroes: [{ name, changes: [string | string[]] | string }] }
 import fs from 'fs';
+import { fixPatches } from './patch-note-fixes.mjs';
 
 const SRC = process.argv[2] || 'https://raw.githubusercontent.com/sfarmani/twrpg-info/master/changelog.json';
 const OUT = 'data/patch-notes.json';
@@ -96,6 +97,8 @@ imported.forEach((p, i) => {
   if (guess && guess < older.released) guess = isoDate(`${p.released}, ${year + 1}`);
   if (guess) p.released = guess;
 });
+fixPatches(imported);
+
 const existing = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')).filter(p => p.source !== 'twrpg-info') : [];
 
 const byVersion = new Map(imported.map(p => [p.version, p]));

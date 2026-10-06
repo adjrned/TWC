@@ -14,10 +14,31 @@ export const HERO_ALIASES = {
   'Mage (Fire)': 'Fire Mage', 'Mage (Water)': 'Water Mage', 'Mage (Arcane)': 'Arcane Mage',
   'Mage (Lightning)': 'Lightning Mage', 'Mage (Wind)': 'Wind Mage',
   'Soulweaver': 'Soul Weaver', 'Bloodweaver': 'Blood Weaver', 'Bowmaster': 'Bow Master',
-  'Sword saint': 'Sword Saint', 'Witch (now Warlock)': 'Warlock',
+  'Sword saint': 'Sword Saint', 'Witch (now Warlock)': 'Warlock', 'Wizard (Fire)': 'Fire Mage',
 };
+// Short names and old names of bosses. (Typos are fixed in the data: scripts/patch-note-fixes.mjs.)
 export const BOSS_ALIASES = {
   'Kamael, the Lightbringer': 'Lightbringer Kamael',
+  'Valtora': 'Lightning God Valtora',
+  'Agareth': 'Underlord Agareth',
+  'Gaia': 'Gaia, the Earth Goddess',
+  'Styrix': 'Styrix, the Harvester of Souls', 'Soul Harvester Styrix': 'Styrix, the Harvester of Souls',
+  'Ancient Construct': 'Arcane Construct',
+  'Samael': 'Archangel Samael',
+  'Shadow Dragon': 'Shadow Dragon Irbert',
+  'Mad Clown': 'Wallachia Mad Clown',
+  'Skeleton King Desperia': 'Skeletal King Desperia', 'Skull King Desperia': 'Skeletal King Desperia',
+  'Skeleton King': 'Skeletal King Desperia', 'Skeletal King': 'Skeletal King Desperia',
+  'Chaos Elemental': 'Elemental of Chaos',
+  'Corrupt Angel': "The Devil's Right Arm Corrupt Angel",
+  'Guardian Angels': "The 3rd Army's Guardian Angel",
+  'Count Wallachia': 'Duchy of Wallachia Count', 'Count of Wallachia': 'Duchy of Wallachia Count',
+  'Gatekeeper': 'Castle Avalon Gatekeeper', "Guardian Spirit, Avalon's Gatekeeper": 'Castle Avalon Gatekeeper',
+  'Demon Lord': 'Demon Lord Beriel',
+  'Duke': 'Duke Lazarus',
+  'Driads': 'Dryad',
+  'Guardian of the Sea': 'Guardian of Sea',
+  'Jack-o-Lantern': 'Jack o Lantern',
 };
 
 export function loadPatches() {

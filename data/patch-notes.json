@@ -111,7 +111,7 @@
       ]
      },
      {
-      "name": "Altheia-tier Bosses",
+      "name": "Alteia-tier Bosses",
       "entries": [
        "Death Fiend - Boss difficulty reduced",
        "Nereid - Boss difficulty reduced"
@@ -846,7 +846,7 @@
       ]
      },
      {
-      "name": "Echo of the Void",
+      "name": "Echoes of the Void",
       "entries": [
        "Passive magic damage taken increase 6% → 4%; now unique (stacks with all other effects), cooldown is now item-based and displays on the item."
       ]
@@ -882,7 +882,7 @@
       "entries": [
        "HP regen removed",
        "MP regen 30/30/45/50/60 → 15/15/20/20/25",
-       "Ring of the Reaoer - AGI 260 / INT 295 → Main Stat 290",
+       "Ring of the Reaper - AGI 260 / INT 295 → Main Stat 290",
        "Ring of Desolate Soul / Ring of Noble Soul - Now heals Max HP X 50% upon expiration"
       ]
      },
@@ -1280,7 +1280,7 @@
        "Will no longer drop, and the crafting recipes that used it will now be craftable with other materials from the Skeleton King.",
        [
         "Orb of Oblivion: Fragment of Oblivion → Orb of Oblivion",
-        "Espichu, the Sword of Chaos: Fragment/Orb of Oblivion → Orb of Oblivion",
+        "Espishu, the Sword of Chaos: Fragment/Orb of Oblivion → Orb of Oblivion",
         "Ethenos, the Staff of Chaos: Fragment/Orb of Oblivion → Orb of Oblivion",
         "Hellflame: Fragment of Oblivion → Spirit of Abyss",
         "Ever Frostbane: Fragment/Orb of Oblivion → Orb of Oblivion",
@@ -1345,7 +1345,7 @@
        "Shadow Dragon (without wish)",
        [
         "Sword: 0.9% → 1%",
-        "Rusalka/Nepthtys: 1.3% → 1.5%",
+        "Rusalka/Nephthys: 1.3% → 1.5%",
         "Dark Crystal/Antimatter: 1.7% → 2%",
         "Frozen Debris: 1.1% → 1.25%"
        ],
@@ -1731,7 +1731,7 @@
       ]
      },
      {
-      "name": "Harvester Token",
+      "name": "Harvester's Token",
       "entries": [
        "Skill properly works now"
       ]
@@ -1755,7 +1755,7 @@
     "title": "Characters",
     "subsections": [
      {
-      "name": "Sword saint",
+      "name": "Sword Saint",
       "entries": [
        "New character added"
       ]
@@ -4849,7 +4849,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Fixed some effects not working properly on new items",
-     "Heavens Door - Fixed bug where the active effect could heal/reset cooldowns immediately upon application",
+     "Heaven's Door - Fixed bug where the active effect could heal/reset cooldowns immediately upon application",
      "Mad Clown - Fixed bug where boss restores all MP if using skill that makes you temporarily disappear"
     ]
    },
@@ -5722,7 +5722,7 @@
       "entries": [
        "Hellspike Armor - Charge amount",
        "Druid Robe - Fairy count",
-       "Heavens Door - Applied count"
+       "Heaven's Door - Applied count"
       ]
      }
     ]
@@ -6605,7 +6605,7 @@
         "Damage INT X 22.5 → INT X 30",
         "RNG reduced for orb spawns, spawn angle slightly adjusted"
        ],
-       "Hyperchargec (T)",
+       "Hypercharge (T)",
        [
         "Damage per second INT X 21.43 (description was incorrect) → INT X 40",
         "Damage duration 1.5s → 1s (total channel time 2s → 1.5s)"
@@ -7958,7 +7958,7 @@
        "Philosopher's Stone (T)",
        [
         "Increases skill damage by 15% → damage dealt by 15%",
-        "Activating a unique trasmutation will have its damage increased by 50%",
+        "Activating a unique transmutation will have its damage increased by 50%",
         "Cooldown: 45 seconds → 40 seconds"
        ],
        "Gate of Truth (F)",
@@ -9576,7 +9576,7 @@
      {
       "name": "Wings of Sacred Provenance",
       "entries": [
-       "When reaching full stacks, a message will be displayed like Felspike Amror"
+       "When reaching full stacks, a message will be displayed like Felspike Armor"
       ]
      },
      {
@@ -10081,7 +10081,7 @@
         "Storage Expansion Coupon",
         [
          "When used, expands your storage by 1 slot",
-         "Cost: 2 Coins of Effor (purchased at Coin Trader)",
+         "Cost: 2 Coins of Effort (purchased at Coin Trader)",
          "Can be used up to 6 times"
         ]
        ]
@@ -10172,7 +10172,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Atricia, the Sword of Nightmare - Incorrect cooldown fixed (90s → 75s)",
+     "Atricia, the Sword of Nightmares - Incorrect cooldown fixed (90s → 75s)",
      "Robe of Frost Herald - Incorrect active reactivation count fixed (2 → 3)",
      "Exitium, the Armor of Ruin - Fixed issue with Martial Artist specialty not working properly",
      "Horn of Demon God - Fixed issue where if one person applied debuff, others couldn't apply it",
@@ -10277,7 +10277,7 @@
      {
       "name": "Monster notes",
       "entries": [
-       "Magical Horn / Frozen Cyrstal drop rates increased"
+       "Magical Horn / Frozen Crystal drop rates increased"
       ]
      },
      {
@@ -10555,7 +10555,7 @@
     "title": "Items",
     "subsections": [
      {
-      "name": "Atricia, the Sword of Nightmare",
+      "name": "Atricia, the Sword of Nightmares",
       "entries": [
        "Crit timer: 2 seconds → 3 seconds"
       ]
@@ -11380,7 +11380,7 @@
      {
       "name": "New recipes added",
       "entries": [
-       "Atricia, the Sword of Nightmare",
+       "Atricia, the Sword of Nightmares",
        "Final Omen",
        "Titan's Plates",
        "Exitium, the Armor of Ruin",
@@ -11473,7 +11473,7 @@
       ]
      },
      {
-      "name": "Visage of Vengance",
+      "name": "Visage of Vengeance",
       "entries": [
        "Passive",
        [
@@ -11675,7 +11675,7 @@
       ]
      },
      {
-      "name": "Atricia, the Sword of Nightmare",
+      "name": "Atricia, the Sword of Nightmares",
       "entries": [
        "Passive",
        [
@@ -11792,7 +11792,7 @@
     "title": "Items",
     "subsections": [
      {
-      "name": "Atricia, the Sword of Nightmare",
+      "name": "Atricia, the Sword of Nightmares",
       "entries": [
        "ATK DMG: 10800 → 11000",
        "AGI: 760 → 780",
@@ -13172,7 +13172,7 @@
      "Priest default model has been changed",
      "New years costumes have been added for",
      [
-      "Phantom Blade / Swordman (#2)",
+      "Phantom Blade / Swordsman (#2)",
       "Dark Knight / Reaper",
       "Witch / Arcane Mage",
       "Bow Master / Sniper"
@@ -13306,7 +13306,7 @@
    {
     "title": "Miscellaneous",
     "entries": [
-     "Increased size of Ifirit entrance"
+     "Increased size of Ifrit entrance"
     ]
    }
   ],
@@ -13526,7 +13526,7 @@
      {
       "name": "Alchemist",
       "entries": [
-       "All transmuation cooldowns have been fixed to 10 seconds"
+       "All transmutation cooldowns have been fixed to 10 seconds"
       ]
      }
     ]
@@ -15386,7 +15386,7 @@
        [
         "AoE indicator size increased to better match actual hitbox"
        ],
-       "Upon entering phase 2, Duke will summon 1 vampiric monstrostity per each player, spread around the map",
+       "Upon entering phase 2, Duke will summon 1 vampiric monstrosity per each player, spread around the map",
        "Bloody Swipes",
        [
         "'...' text will be much more visible now"
@@ -15722,7 +15722,7 @@
     "entries": [
      "Dark Knight - After casting Soul Break (Q) fixed hero automatically attacking another target nearby",
      "Alchemist - Fixed HP consumption-related bug if 2 or more alchemists casted Gate of Truth (F) in same room",
-     "Sahdow Dragon Irbert - Fixed summon cinematic bug",
+     "Shadow Dragon Irbert - Fixed summon cinematic bug",
      "Valtora - Fixed units getting stuck in upper part of boss arena",
      "Skills - Fixed some skills getting deactivated when re-picking a character",
      "Items - Fixed various description errors"
@@ -15871,7 +15871,7 @@
      "Items - Fixed some items becoming different items on load",
      "Mad clown - Fixed not spawning combat spoils chest",
      "Elementalist - Re-fixed bugs related to Seal of wind (D) - Jump (D)",
-     "Water mage - Fixed stats provided by Frozen emotion (W) not changing based on items equipped by Water mage"
+     "Water Mage - Fixed stats provided by Frozen emotion (W) not changing based on items equipped by Water mage"
     ]
    },
    {
@@ -15973,13 +15973,13 @@
      "Units - Fixed some hidden units (like Shrine maiden's summon) being able to take damage from some damage-over-time effects",
      "Crafting - Fixed bugs related to items on cooldown",
      "Companions - Fixed Gold divinity companion causing a lot of lag",
-     "Hades, the armor of despair - Fixed debuff not being applied on every even activation",
+     "Hades, the Armor of Despair - Fixed debuff not being applied on every even activation",
      "Demon realm invasion - Fixed a bug that allowed Demon lord Beriel to be summoned twice",
-     "Arcane mage - Fixed visual effect of Gravity field (E) staying longer than duration with Weird costume enabled",
-     "Arcane mage - While Illusion (R) is active, fixed Magic star (Q) projectile casted by it dissapearing if another Magic star is casted while it exists",
+     "Arcane Mage - Fixed visual effect of Gravity field (E) staying longer than duration with Weird costume enabled",
+     "Arcane Mage - While Illusion (R) is active, fixed Magic star (Q) projectile casted by it dissapearing if another Magic star is casted while it exists",
      "Elementalist - Fixed Seal of wind (D) - Jump (D) being castable more than 5 time per summon",
      "Elementalist - Fixed Seal of wind (D) - Jump (D) sometimes causing hero to get stuck",
-     "Shrine priestess - Fixed icon of Go forth Meeko! (D) - Spirit of flame (Q) dissapearing when hero is repicked",
+     "Shrine Priestess - Fixed icon of Go forth Meeko! (D) - Spirit of flame (Q) dissapearing when hero is repicked",
      "Fixed some description errors",
      [
       "HP regen per 1 point of STR: 0.03 → 0.01",
@@ -16110,13 +16110,13 @@
         "Paladin - Divine spirit (W)",
         "Sniper - Explosive shot (R)",
         "Shooter - Distortion (R)",
-        "Dark knight - Dark arts (R) (all spells within)",
+        "Dark Knight - Dark arts (R) (all spells within)",
         "Crusader - Remains of rage (Q)",
         "Knight - Grand sword (Q), Blitz (W) and Mana blaster (R)",
         "Witch - Star shower (W)",
         "Swordsman - Sword storm (E) - Flash step (Q)",
-        "Shrine priestess - Fire talisman spells and Spirit fusion (T) - Spirit shift (D)",
-        "Arcane mage - All spells have slightly reduced Proc rate except Moonlight link (D) and Starlight (F)",
+        "Shrine Priestess - Fire talisman spells and Spirit fusion (T) - Spirit shift (D)",
+        "Arcane Mage - All spells have slightly reduced Proc rate except Moonlight link (D) and Starlight (F)",
         "Alchemist - Conjure fire/water/air/earth (QWER)"
        ]
       ]
@@ -16238,8 +16238,8 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Water mage - Fixed Frozen emotion (W) 20th attack proc happening on every attack",
-     "Water mage - Fixed Frozen emotion (W) proc sometimes killing units that are not supposed to die",
+     "Water Mage - Fixed Frozen emotion (W) 20th attack proc happening on every attack",
+     "Water Mage - Fixed Frozen emotion (W) proc sometimes killing units that are not supposed to die",
      "Items - Fixed some Rod cosmetic items having wrong models",
      "Events - Fixed bugs related to first batch of guide event rewards"
     ]
@@ -16305,14 +16305,14 @@
      "Loading - Fixed heroes sometimes becoming invincible upon load",
      "Memory stone - Fixed blocking path of ground units",
      "Priest - Fixed Heaven field (F) description error (From 500 armor to 100 armor)",
-     "Shrine priestess - Fixed Fire pillar (E) description error (from 30 X int damage per pillar to 15 X int damage per pillar)",
-     "Shrine priestess - Fixed Spirit fusion (T) - Spirit shift (D) not activating 'On spellcast' effects",
-     "Shrine priestess - Fixed Spirit fusion (T) activating 'On spellcast' effects even when it wasn't cast",
-     "Winter's tear - Fixed description error (Removed crit chance)",
+     "Shrine Priestess - Fixed Fire pillar (E) description error (from 30 X int damage per pillar to 15 X int damage per pillar)",
+     "Shrine Priestess - Fixed Spirit fusion (T) - Spirit shift (D) not activating 'On spellcast' effects",
+     "Shrine Priestess - Fixed Spirit fusion (T) activating 'On spellcast' effects even when it wasn't cast",
+     "Winter's Tear - Fixed description error (Removed crit chance)",
      "Chaos - Fixed description error (Passive cooldown from 2 seconds to 5 seconds)",
-     "Crimson pumpkin rod - Fixed description error (From 50 int per stack to 15 int per stack)",
-     "Cruoris, the armor of blood - Fixed description error (From 6% skill damage to 2.5% skill damage)",
-     "Shadow dragon Irbert - Fixed running away into corner when taking damage from invincible or invisible units",
+     "Crimson Pumpkin Rod - Fixed description error (From 50 int per stack to 15 int per stack)",
+     "Cruoris, the Armor of Blood - Fixed description error (From 6% skill damage to 2.5% skill damage)",
+     "Shadow Dragon Irbert - Fixed running away into corner when taking damage from invincible or invisible units",
      "Ifrit - Fixed Obsidian giants sometimes spawning with wrong shield percentage"
     ]
    },
@@ -16378,7 +16378,7 @@
         "Skeleton King Desperia",
         "Zombie Lord",
         "Archangel Samael",
-        "Shadown Dragon Irbert"
+        "Shadow Dragon Irbert"
        ]
       ]
      },
@@ -16471,7 +16471,7 @@
        ],
        "Ultimate Enchant (F)",
        [
-        "Debuffed enemies now take 30% more damage from Sword Echant (D) instead of being Disenchanted"
+        "Debuffed enemies now take 30% more damage from Sword Enchant (D) instead of being Disenchanted"
        ]
       ]
      },
@@ -16528,7 +16528,7 @@
      {
       "name": "Arcane Mage",
       "entries": [
-       "Barage (T)",
+       "Barrage (T)",
        [
         "Damage per projectile: INT X 7.5 → INT X 8.5"
        ]
@@ -16630,12 +16630,12 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Shrine priestess - Fixed DW being castable on enemies",
-     "Shrine priestess - Fixed fire skill of R being activated by red player's character",
-     "Shrine priestess - Fixed T duration not ending",
-     "Shrine priestess - Fixed F not healing allies",
-     "Shrine priestess - Fixed F damage not being linked to W projectile",
-     "Shrine priestess - Fixed D summon being able to enter/exit areas by itself",
+     "Shrine Priestess - Fixed DW being castable on enemies",
+     "Shrine Priestess - Fixed fire skill of R being activated by red player's character",
+     "Shrine Priestess - Fixed T duration not ending",
+     "Shrine Priestess - Fixed F not healing allies",
+     "Shrine Priestess - Fixed F damage not being linked to W projectile",
+     "Shrine Priestess - Fixed D summon being able to enter/exit areas by itself",
      "Event - Fixed Blue crab party mini-game stopping if ticket was used right after a mini-game ends",
      "Event - Fixed Shining seashells not being soulbound",
      "Event - Fixed non-saved items created by Beach ball that were exchanged for Prius silver coins not making exchange text appear on save"
@@ -16818,8 +16818,8 @@
     "title": "Bug Fixes",
     "entries": [
      "Paladin - Fixed error in Holy aura (D) - Aura of retribution (Q) description",
-     "Dark knight - Fixed damage and soul generation of Soul break (Q)",
-     "Dark knight - Fixed cooldown reset interrupting Unholy light (E) channel",
+     "Dark Knight - Fixed damage and soul generation of Soul break (Q)",
+     "Dark Knight - Fixed cooldown reset interrupting Unholy light (E) channel",
      "Hermit - Fixed shield break effect of Purify (F) happening later than intended",
      "Winter's tear/Eternal winter - Fixed passive effect being affected by water affinity twice",
      "Evil lava spirit - Fixed wheel projectiles not dissapearing if boss was killed during wheel",
@@ -16949,7 +16949,7 @@
       ]
      },
      {
-      "name": "Castle AValon",
+      "name": "Castle Avalon",
       "entries": [
        "White magic stone cost: 4 → 6 (was set incorrectly in previous version)"
       ]
@@ -17179,11 +17179,11 @@
     "title": "Bug Fixes",
     "entries": [
      "Knight - Fixed Seal of mana (T) activating when not learned",
-     "Martial artist - Fixed Martial movement (D) being castable while silenced",
+     "Martial Artist - Fixed Martial movement (D) being castable while silenced",
      "Alchemist - Fixed Philosopher's stone (T) proc chance being too low",
      "Witch - Fixed Hell gate (T) - Mark of power (W) being castable on enemies",
-     "Staff of domination - Fixed damage of summon being too low",
-     "Embrace of nature - Fixed hp increase from active being too low"
+     "Staff of Domination - Fixed damage of summon being too low",
+     "Embrace of Nature - Fixed hp increase from active being too low"
     ]
    },
    {
@@ -17264,7 +17264,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Reaper - Fixed Consecutive strikes (W) buff ending if Demonic fist active is used afterwards",
-     "Bow master - Fixed still having mana with Weird costume enabled",
+     "Bow Master - Fixed still having mana with Weird costume enabled",
      "Valtora - Fixed tornadoes sometimes randomly teleporting",
      "Items - Fixed some description errors",
      [
@@ -17614,7 +17614,7 @@
     "entries": [
      "Monsters - Fixed bosses sometimes losing hp",
      "Paladin - Fixed being able to cast Holy aura (D) - Aura of awakening (R) while silenced if Holy aura menu was open before silence",
-     "Tentacle lord - Fixed some spells dealing too much damage",
+     "Tentacle Lord - Fixed some spells dealing too much damage",
      "Agareth - Fixed some terrain in bottom part of the arena to prevent units getting stuck",
      "Items - Properly adjusted stats of Blazing soul, Blazing heart, Hatred, Vest of divine winds, Sacred armor, Wings of fury",
      "Costumes - Changed color of Bow master's Guardian scout (E) with Weird costume back to purple",
@@ -17662,13 +17662,13 @@
     "title": "Bug Fixes",
     "entries": [
      "Areas - Fixed some boss arenas being close enough to each other to let heroes attack bosses across them",
-     "Bone dragon - Fixed some spells doing too much damage",
+     "Bone Dragon - Fixed some spells doing too much damage",
      "Skeleton king Desperia - Fixed Howl hp restoration being too high",
-     "Ancient ent - Fixed Elder ent item drop rate being incorrect after boss is revived",
+     "Ancient Ent - Fixed Elder ent item drop rate being incorrect after boss is revived",
      "Berserker - Fixed Brandish (Q) setting crit chance to 100% when used at low lvl",
      "Shooter - Fixed Stardust rain (T) passive activating before spell is learned",
      "Priest - Fixed Holy wave (Q) healing being too low",
-     "Crown of great rage - Fixed armor being too low",
+     "Crown of Great Rage - Fixed armor being too low",
      "Loading - Fixed hp of heroes being too low after loading, forcing players to re-equip their items",
      "Tokens - Fixed cosmetic spell of Corrupt angel token not working",
      "Areas - Fixed some terrain not blocking path",
@@ -17698,7 +17698,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Priest - Fixed Holy Wave (Q) not working properly",
-     "Zombie Lord - Worshippers of Eternal Life will now stop channeling coils when Zombie Lord enters ressurection state"
+     "Zombie Lord - Worshippers of Eternal Life will now stop channeling coils when Zombie Lord enters resurrection state"
     ]
    }
   ],
@@ -17726,18 +17726,18 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Wallachia monstrosity - Fixed being able to teleport out of Duchy of wallachia",
+     "Wallachia Monstrosity - Fixed being able to teleport out of Duchy of wallachia",
      "Frostspider lord raid - Fixed some items appearing as Deltirama class instead of Neptinos class in crafting menu",
-     "Corruptor rectus - Fixed Link damage being higher than intended",
-     "Flame nightmare - Fixed Flame spirits not exploding when coming in contact with the boss",
-     "Turtle lord - Fixed hp regen being higher than intended",
-     "Death fiend - Fixed memory stone appearing before all bosses die",
+     "Corruptor Rectus - Fixed Link damage being higher than intended",
+     "Flame Nightmare - Fixed Flame spirits not exploding when coming in contact with the boss",
+     "Turtle Lord - Fixed hp regen being higher than intended",
+     "Death Fiend - Fixed memory stone appearing before all bosses die",
      "Berserker - Fixed Blade rush (R) dealing less damage than intended",
      "Merchant - Fixed Dangerous explosive (T)/Cursed doll(T) summons still having 85% magic resistance",
      "Trickster - Fixed moving items in inventory causing a strange bug",
      "Trickster - Fixed icons of items Fantasm (D) wears not appearing properly to other players",
-     "Soul weaver - Fixed Soul collector (D) max soul amount being higher than intended",
-     "Wind mage - Fixed Horn of notus (T) not being affected by wind affinity",
+     "Soul Weaver - Fixed Soul collector (D) max soul amount being higher than intended",
+     "Wind Mage - Fixed Horn of notus (T) not being affected by wind affinity",
      "Training center - Fixed more than one dummy being present in each room",
      "Elemental tower - Fixed Elemental keys still appearing in crafting menu",
      "Tokens - Fixed Rainbow crystal golem token not having a cosmetic spell",
@@ -17875,7 +17875,7 @@
     "entries": [
      "Chrono Chaser - Fixed related bugs",
      "Mid-game bosses - Fixed loot-related bugs",
-     "Sword Enchanter - Fixed bugs related to Echant Mastery (T)"
+     "Sword Enchanter - Fixed bugs related to Enchant Mastery (T)"
     ]
    }
   ],
@@ -17901,19 +17901,19 @@
      "Item Adjustments",
      [
       "Weapons of crimson flames (Ragnaar drops) - Fixed on-attack proc not working properly",
-      "Flame cloak - Damage reduced from 5000 per 0.5 seconds to 750 per 0.5 seconds",
-      "Ring of the dead - Fixed still having old stats",
+      "Flame Cloak - Damage reduced from 5000 per 0.5 seconds to 750 per 0.5 seconds",
+      "Ring of the Dead - Fixed still having old stats",
       "Stone armor/Bat wings - Item class reduced from Epic to Rare"
      ],
      "Monster Adjustments",
      [
-      "Wallachia monstrosity - Fixed teleporting to unintended locations",
-      "Guardian of sea - Attack damage reduced, Water orb damage reduced from 25000 to 2500, amount of Water orb explosion waves reduced from 8 to 4",
+      "Wallachia Monstrosity - Fixed teleporting to unintended locations",
+      "Guardian of Sea - Attack damage reduced, Water orb damage reduced from 25000 to 2500, amount of Water orb explosion waves reduced from 8 to 4",
       "Count of wallachia - Summon cinematic now starts for all players in Duchy of wallachia, not just those near summon spot, and attack damage increase from True form reduced from 8000 to 3000",
-      "Demon lord beriel - Portal is now invulnerable during invasion start cinematic",
-      "Turtle lord - Fixed hp regen of summoned turtles being too high",
-      "Shadow dragon irbert - Added floating text near summon spot to show how many magic stones are needed, Darkness activation damage reduced from 15000 to 4500",
-      "Ancient ent - Players can now exit the arena is the boss fight didn't start, fixed hp regen being too low",
+      "Demon Lord Beriel - Portal is now invulnerable during invasion start cinematic",
+      "Turtle Lord - Fixed hp regen of summoned turtles being too high",
+      "Shadow Dragon Irbert - Added floating text near summon spot to show how many magic stones are needed, Darkness activation damage reduced from 15000 to 4500",
+      "Ancient Ent - Players can now exit the arena is the boss fight didn't start, fixed hp regen being too low",
       "Valtora - All orbs within arena now dissapear once boss dies",
       "Fixed some stats of end-game bosses being set too low",
       "Minor balance changes to lvling bosses (Further adjustments will be done over future patches)"
@@ -17923,7 +17923,7 @@
       "Fixed not learned spells sometimes activating",
       "Paladin - Holy divide (Q) damage increased from 60% attack damage to 100% attack damage, Ruinbringer spec bonus damage reduced from 100% to 25%, Calamity spec bonus damage reduced from 150% to 50%",
       "Thunderer - Fixed Disable thunder shield hotkey being (R) instead of (E)",
-      "Martial artist - Fixed Vacuum palm (E) max armor reduction being 175 instead of 125"
+      "Martial Artist - Fixed Vacuum palm (E) max armor reduction being 175 instead of 125"
      ],
      "Misc Adjustments",
      [
@@ -17985,8 +17985,8 @@
      "Hero Adjustments",
      [
       "Spells - Fixed stat selection menu icon getting stuck, permanently covering some spell/attack icons",
-      "Dark knight - Fixed not equipping items properly",
-      "Dark knight - Fixed Dark arts (R) - Defile (E) magic resistance reduction scaling not being updated to match lower stats",
+      "Dark Knight - Fixed not equipping items properly",
+      "Dark Knight - Fixed Dark arts (R) - Defile (E) magic resistance reduction scaling not being updated to match lower stats",
       "Thunderer - Fixed Three talon strike (Q) duration being different and fixed its buff not appearing in status window",
       "Swordsman - Fixed attack speed being too low at lvl 100",
       "Trickster - Fixed not equipping weapons properly",
@@ -18001,18 +18001,18 @@
      "Monster Adjustments",
      [
       "Reduced damage of Darkness wave spell casted by Wallachia death knight lord, Mad clown and Corrupt angel",
-      "Cursed mask - Fixed not working in Duchy of walalchia",
-      "Corruptor rectus - Reduced hp of Life orb",
+      "Cursed Mask - Fixed not working in Duchy of Wallachia",
+      "Corruptor Rectus - Reduced hp of Life orb",
       "Castle avalon - Fixed Stone statues in 1st chamber dealing too much damage",
-      "Wings of death - Flame projectile damage increased from 1500 to 2500, Perseverance duration reduced from 10 seconds to 8 seconds and movespeed slow reduced from 50% to 10%",
+      "Wings of Death - Flame projectile damage increased from 1500 to 2500, Perseverance duration reduced from 10 seconds to 8 seconds and movespeed slow reduced from 50% to 10%",
       "Corrupt angel - Fixed Memory stone not spawning on death",
-      "Guardian angel - Fixed skipping summoning cutscene causing game to crash",
-      "Demon lord beriel - Now invincible during spawn cinematic",
+      "Guardian Angel - Fixed skipping summoning cutscene causing game to crash",
+      "Demon Lord Beriel - Now invincible during spawn cinematic",
       "Dragon's nest - Reduced hp regen of Dragonic warriors and Dragon whelps",
-      "Archangel samael - Fixed being summonable more than once",
+      "Archangel Samael - Fixed being summonable more than once",
       "Skeleton king desperia - Fixed Skeleton summons dealing too much damage and having too low hp, and fixed countdown barrier not spawning",
-      "Shadow dragon irbert - Fixed summon cinematic",
-      "Death fiend - Increased attack damage by 50% and added 50% magic resistance to Death devourer",
+      "Shadow Dragon Irbert - Fixed summon cinematic",
+      "Death Fiend - Increased attack damage by 50% and added 50% magic resistance to Death devourer",
       "Nereid - Fixed Water orbs dealing too much damage"
      ],
      "Item Adjustments",
@@ -18029,7 +18029,7 @@
        "Diana, the robe of holy maiden",
        "Ring of time"
       ],
-      "Brave heart - Fixed providing wrong stats"
+      "Brave Heart - Fixed providing wrong stats"
      ],
      "Text description adjustments",
      [
@@ -19300,12 +19300,12 @@
     "title": "Bug Fixes",
     "entries": [
      "Berserker - Fixed Rabid storm (F) not dealing damage",
-     "Bow master - Fixed Purestorm shot (R) not dealing damage",
+     "Bow Master - Fixed Purestorm shot (R) not dealing damage",
      "Gunner - Fixed Tumble (Q) not amplifying damage",
      "Reaper - Fixed Consecutive strikes (W) stacks not amplifying damage",
      "Water Mage - Fixed Glacier Orb (T) not dealing damage",
      "Wind Mage - Fixed Gentle Winds (W) not dealing damage",
-     "Wing Mage - Fixed Guardian of Wind (F) not having proper magic resistance",
+     "Wind Mage - Fixed Guardian of Wind (F) not having proper magic resistance",
      "Lightning Mage - Fixed Hypercharge (T) not dealing damage",
      "Arcane Mage - Fixed Gravity field (E) not dealing damage",
      "Soul Weaver - Fixed Soul transfer (E) not dealing damage",
@@ -19365,7 +19365,7 @@
     "title": "Items",
     "subsections": [
      {
-      "name": "Halo of Judgement / Radiance of the One",
+      "name": "Halo of Judgment / Radiance of the One",
       "entries": [
        "Proc damge increased by 150%",
        "Proc generation cycle: 0.3 seconds → 0.75 seconds",
@@ -20099,7 +20099,7 @@
      "Fixed loading times being longer after halloween event started",
      "Using chain spells now sets 'last spell casted' to one that enabled the chaincast",
      [
-      "Example: if Crusader uses 1st Sword Dance: Strike (R) - Max Amplication: Execution Sword (T) - 2nd Sword Dance: Sword (R), and then uses Ring of the Sage, the spell reset would apply to R instead of T"
+      "Example: if Crusader uses 1st Sword Dance: Strike (R) - Max Amplification: Execution Sword (T) - 2nd Sword Dance: Sword (R), and then uses Ring of the Sage, the spell reset would apply to R instead of T"
      ],
      "Optimized some more lag induding spells",
      [
@@ -20123,7 +20123,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Trickster - Fixed not being able to re-cast Wonder Hand (W) up to two times",
-     "witch - Fixed Death Bomb (Q) cooldown reset not working properly",
+     "Witch - Fixed Death Bomb (Q) cooldown reset not working properly",
      "Jupiter, the Robe of Heavens - Fixed not healing summons"
     ]
    },
@@ -20948,7 +20948,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Fixed some bugs with Wings of Purification",
-     "Fixed some item descriptions that were incorrect (Rifle of True Poison, Bloostone Plates, Robe of the Sage, etc...)"
+     "Fixed some item descriptions that were incorrect (Rifle of True Poison, Bloodstone Plates, Robe of the Sage, etc...)"
     ]
    },
    {
@@ -21478,7 +21478,7 @@
      {
       "name": "Assassin",
       "entries": [
-       "Reduced cast time of Ambus (W) / Shadow Walk (E)",
+       "Reduced cast time of Ambush (W) / Shadow Walk (E)",
        "Shadow Walk (E)",
        [
         "Slightly reduced MOV SPD drop-off"
@@ -21584,7 +21584,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Droplet Orb - Fixed being able to use it on enemies",
-     "Lightning MAge - Fixed more Discharge related bugs",
+     "Lightning Mage - Fixed more Discharge related bugs",
      "Grandine, the Plates of Wraith - Fixed proc priority being higher than shield effects"
     ]
    },
@@ -22254,7 +22254,7 @@
        "Conjure Earth (R) - Stone Golem (R)",
        [
         "Rolling Golem (W) cast time reduced",
-        "Power Slame (E) cast time removed"
+        "Power Slam (E) cast time removed"
        ],
        "Gate of Truth (F)",
        [
@@ -22599,7 +22599,7 @@
      {
       "name": "Underlord Agareth",
       "entries": [
-       "Enchanced Fear cycle",
+       "Enhanced Fear cycle",
        [
         "Before: 3 casts → empowered cast → 3 casts → empowered cast",
         "After: 2 casts → empowered cast → 3 casts → empowered cast"
@@ -22749,7 +22749,7 @@
       ]
      },
      {
-      "name": "Spirit Besat Icon",
+      "name": "Spirit Beast Icon",
       "entries": [
        "Worth: 250 Prius Silver Coins"
       ]
@@ -22788,7 +22788,7 @@
       ]
      },
      {
-      "name": "Irfrit / Nereid",
+      "name": "Ifrit / Nereid",
       "entries": [
        "drop rate increased to 25% (rollback)"
       ]
@@ -22898,7 +22898,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Bag of Explosion - Fixed related bugs",
-     "Soul of Abyss / Parasitic Staff / Staff of Plauge / Horn of God - Fixed a bug where active could not be used on units with magic immunity",
+     "Soul of Abyss / Parasitic Staff / Staff of Plague / Horn of God - Fixed a bug where active could not be used on units with magic immunity",
      "Ring of Resonance - Fixed skill damage not working",
      "Curse of Greed - Fixed passive not working",
      "Guardian of the Skies - Fixed visual effects not working"
@@ -23077,7 +23077,7 @@
       ]
      },
      {
-      "name": "Anceint Ent",
+      "name": "Ancient Ent",
       "entries": [
        "Units hit by Elder Ent will be last priority target for 3 seconds for jump"
       ]
@@ -23086,7 +23086,7 @@
       "name": "Shadow Dragon Irbert",
       "entries": [
        "HP: 33,821,000 → 27,500,000",
-       "Gaint Illusion of Shadow Dragon HP: 19,125,000 → 17,500,000",
+       "Giant Illusion of Shadow Dragon HP: 19,125,000 → 17,500,000",
        "Small Illusion of Shadow Dragon HP: 11,125,600 → 10,000,000"
       ]
      },
@@ -23500,7 +23500,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Wing mage - Fixed Feather of Aeolus (D) being able to jump through some terrain"
+     "Wind Mage - Fixed Feather of Aeolus (D) being able to jump through some terrain"
     ]
    },
    {
@@ -23635,7 +23635,7 @@
      {
       "name": "Phantom Blade",
       "entries": [
-       "Cresent (Q)",
+       "Crescent (Q)",
        [
         "Changed to be W spell"
        ],
@@ -24366,7 +24366,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Fighter - Fixed Swing (A) not getting casted with right-click if allied target is close to enemy target",
-     "Flame soul - Fixed description error"
+     "Flame Soul - Fixed description error"
     ]
    },
    {
@@ -24516,11 +24516,11 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Halo of judgment - Fixed stacks not working properly",
+     "Halo of Judgment - Fixed stacks not working properly",
      "Fighter - Fixed Dragon fist (T) not being usable on magic immune targets",
      "Reaper - Fixed empowered Deaths dash (E) not procing on-spellcast effects",
-     "Death fiend - Adjusted clickbox",
-     "Death fiend - Fixed Death weavers Wave spell being invisible with Reforged graphics"
+     "Death Fiend - Adjusted clickbox",
+     "Death Fiend - Fixed Death weavers Wave spell being invisible with Reforged graphics"
     ]
    },
    {
@@ -24658,7 +24658,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Fighter - Fixed a bug where text and skill effects remained when multiple Figthers were in the same game",
+     "Fighter - Fixed a bug where text and skill effects remained when multiple Fighters were in the same game",
      "Desync issues caused by Fighter are still happening. In the event that a desync happens to you, it would be very helpful if you posted the replay as that would help with solving the issues"
     ]
    },
@@ -24796,7 +24796,7 @@
     "title": "Items",
     "subsections": [
      {
-      "name": "King Kong Claws",
+      "name": "King Kong's Claws",
       "entries": [
        "Bonus damage nerfed from 100% attack damage to 2500 damage"
       ]
@@ -25204,7 +25204,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Warlock - Soul Grimore (R) - Fixed active effect to no longer last more than 5 seconds"
+     "Warlock - Soul Grimoire (R) - Fixed active effect to no longer last more than 5 seconds"
     ]
    },
    {
@@ -25353,7 +25353,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Blood weaver - Fixed not being able to cast Rose dance (W) when it would not consume hp",
+     "Blood Weaver - Fixed not being able to cast Rose dance (W) when it would not consume hp",
      "Items - Fixed item binding by area not working sometimes",
      "Rifle of deadly poison - Fixed description being outdated"
     ]
@@ -25407,7 +25407,7 @@
      {
       "name": "Soul Weaver",
       "entries": [
-       "Soul Tranfer (E)",
+       "Soul Transfer (E)",
        [
         "Removed screen flash visual effects"
        ]
@@ -25721,7 +25721,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Death fiend - Fixed not restricting players from entering wallachia cemetery when alive"
+     "Death Fiend - Fixed not restricting players from entering wallachia cemetery when alive"
     ]
    },
    {
@@ -26231,7 +26231,7 @@
      {
       "name": "Elder Ent",
       "entries": [
-       "Fragment of the Wind / Purfied Water of Nature drop rate: 0.25% → 0.5%"
+       "Fragment of the Wind / Purified Water of Nature drop rate: 0.25% → 0.5%"
       ]
      },
      {
@@ -26361,7 +26361,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Elder ent - Fixed killing elder ent with aoe damage causing nearby enemies to not take damage",
+     "Elder Ent - Fixed killing elder ent with aoe damage causing nearby enemies to not take damage",
      "Shooter - Fixed spells of another heroes / bosses in fight (like paladin's Divine spirit (W) / death weaver's wave) breaking if Comet storm (F) gets blocked by terrain",
      "Priest - Fixed raguel being able to pull immovable units"
     ]
@@ -26489,7 +26489,7 @@
     "title": "Bug Fixes",
     "entries": [
      "Costumes - Fixed bugs related to witch costume",
-     "Zombie lord - Fixed game softlocking after 2 fail cinematics",
+     "Zombie Lord - Fixed game softlocking after 2 fail cinematics",
      "Ifrit - Fixed wheel start position and initial rotation being reversed"
     ]
    },
@@ -26688,7 +26688,7 @@
      {
       "name": "Monster notes",
       "entries": [
-       "Corrputor Rectus / Spirit Beast / Flame Nightmare / Turtle Lord are now affected by difficulty scaling"
+       "Corruptor Rectus / Spirit Beast / Flame Nightmare / Turtle Lord are now affected by difficulty scaling"
       ]
      },
      {
@@ -27115,7 +27115,7 @@
        "Heart Break (R)",
        [
         "Damage X 2000% + (STR + AGI) X 100 → Damage X 2500% + (STR + AGI) X 150",
-        "Stun / sheild break effect is now AoE",
+        "Stun / shield break effect is now AoE",
         "Shield Break percentage 70% → 60% (on Ifrit)",
         "Cast time: 1.25 seconds → 0.75 seconds"
        ],
@@ -27905,7 +27905,7 @@
        ],
        "Max Amplification: Execution Sword (T)",
        [
-        "Duration pauses when hero is paused while casting (similar to Thunderer's Heart Breat (R))"
+        "Duration pauses when hero is paused while casting (similar to Thunderer's Heart Break (R))"
        ]
       ]
      },
@@ -27935,7 +27935,7 @@
      {
       "name": "Phantom Blade",
       "entries": [
-       "Cresent (Q) / Daze (W)",
+       "Crescent (Q) / Daze (W)",
        [
         "Now castable while casting other spells"
        ],
@@ -28192,7 +28192,7 @@
       "entries": [
        "Meteor Strike (F)",
        [
-        "Summon 32 meteor framgents dealing INT X 7.5 damage each → 16 meteor fragments dealing INT X 15 damage each"
+        "Summon 32 meteor fragments dealing INT X 7.5 damage each → 16 meteor fragments dealing INT X 15 damage each"
        ]
       ]
      },
@@ -28689,15 +28689,15 @@
      "Knight - Fixed Excalibur (F) breaking shields of allies",
      "Knight - Fixed Excalibur (F) cooldown being 100 seconds instead of 60 seconds",
      "Berserker - Fixed not being immune to silence when Blood fury (E) is toggled ON",
-     "Bone dragon - Fixed ways to dodge explosion of Crazy hellspike without hiding behind other Hellspikes",
-     "Death fiend - Fixed Death hounds not dissapearing on fight reset"
+     "Bone Dragon - Fixed ways to dodge explosion of Crazy hellspike without hiding behind other Hellspikes",
+     "Death Fiend - Fixed Death hounds not dissapearing on fight reset"
     ]
    },
    {
     "title": "Monsters",
     "subsections": [
      {
-      "name": "Zombie lord",
+      "name": "Zombie Lord",
       "entries": [
        "HP: 12,541,930 → 11,541,930"
       ]
@@ -29365,7 +29365,7 @@
     "entries": [
      "Jack - Powder bug fix",
      "Lancer - Speed bug fix",
-     "Fixed Shooter's Water Bullet (Q) with Hydrobuster not working"
+     "Fixed Shooter's Water Bullet (Q) with Hydro Buster not working"
     ]
    },
    {
@@ -29444,7 +29444,7 @@
      "Lancer - Changed Pierce (Q) to not get stuck inside enemies",
      "Wings of Death - Fixed being able to move over terrain",
      "Death Fiend - Fixed not healing summons sometimes",
-     "Bag of Mother Nature - Fixed merchange spec not increasing duration of Life Shield Scroll (E)"
+     "Bag of Mother Nature - Fixed merchant spec not increasing duration of Life Shield Scroll (E)"
     ]
    },
    {
@@ -29629,7 +29629,7 @@
        "Removed movespeed increase from spells that can't increase it past 500",
        [
         "Example: Priest Holy Aurora (E) 30% movespeed increase removed",
-        "Example: Martial Artist Footwalk (D) / Reapers Scythe Mastery (D) 125 / 100 move speed kept",
+        "Example: Martial Artist Footwork (D) / Reapers Scythe Mastery (D) 125 / 100 move speed kept",
         "Example: Sword Enchanter's Speed Enchant (W) 400 movespeed kept"
        ]
       ]
@@ -29922,7 +29922,7 @@
     "title": "Monsters",
     "subsections": [
      {
-      "name": "Anceint Ent",
+      "name": "Ancient Ent",
       "entries": [
        "Elder Ent",
        [
@@ -30534,7 +30534,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Druid's mantle - Fixed shooters being unable to wear it"
+     "Druid's Mantle - Fixed shooters being unable to wear it"
     ]
    },
    {
@@ -30587,7 +30587,7 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Arcane mage - Fixed invincibility not ending after Starlight (F) cast"
+     "Arcane Mage - Fixed invincibility not ending after Starlight (F) cast"
     ]
    }
   ],
@@ -30601,11 +30601,11 @@
    {
     "title": "Bug Fixes",
     "entries": [
-     "Hydrobuster - Water bullet (Q) - Fixed being uncastable on magic immune targets",
-     "Benedict, the crimson armor of blood - Fixed hp regen working during any amount of hp accumulated instead of max hp",
+     "Hydro Buster - Water bullet (Q) - Fixed being uncastable on magic immune targets",
+     "Benedict, the Crimson Armor of Blood - Fixed hp regen working during any amount of hp accumulated instead of max hp",
      "Knight - Fixed Seal of mana (T) having 100% of Release mana (D) healing instead of 75%",
      "Crusader - Fixed proc chance of Execution sword (D) being 13% instead of 15%",
-     "Arcane mage - Fixed model getting stuck if she dies during Starlight (F) cast"
+     "Arcane Mage - Fixed model getting stuck if she dies during Starlight (F) cast"
     ]
    },
    {
@@ -31387,7 +31387,7 @@
        [
         "Removed casting time, increased dash speed and damage increased"
        ],
-       "Barage (T)",
+       "Barrage (T)",
        [
         "Spell reworked and damage reduced"
        ]
@@ -31509,7 +31509,7 @@
        "Increased the number of early leveling mobs",
        "Increased the attack damage of mid-level mobs",
        "Kalidi Forest entry level 30 → 25",
-       "Capital Pruis entry level 80 → 60"
+       "Capital Prius entry level 80 → 60"
       ]
      },
      {
@@ -31954,7 +31954,7 @@
      {
       "name": "Crimson Cross / Crimson Star / Cosmic Star",
       "entries": [
-       "Shooter spec - Nanaomachine Injection duration increase 200% → 50%"
+       "Shooter spec - Nanomachine Injection duration increase 200% → 50%"
       ]
      },
      {
@@ -32893,7 +32893,7 @@
      {
       "name": "Soul Weaver",
       "entries": [
-       "Harvet (A)",
+       "Harvest (A)",
        [
         "Changed to enable casting during silence",
         "Changed to be affected by attack speed"
@@ -33381,7 +33381,7 @@
     "entries": [
      "Floating damage text now only appears on boss units",
      "Amount of stat points required to gain 100 fatigue 40 → 60",
-     "Max ressurection time 47 seconds → 40 seconds"
+     "Max resurrection time 47 seconds → 40 seconds"
     ]
    }
   ],
@@ -34862,7 +34862,7 @@
      {
       "name": "Phantom Blade",
       "entries": [
-       "Cresent (Q)",
+       "Crescent (Q)",
        [
         "0.25 second stun to non-boss units removed",
         "90% movespeed reduction on all units for 3 seconds"
@@ -35354,7 +35354,7 @@
     "entries": [
      "Phantom Blade - Fixed field of view errors",
      "Frozen Heart - Fixed visuals on characters",
-     "Hydrobuster - Fixed passive not restoring proper amount of HP"
+     "Hydro Buster - Fixed passive not restoring proper amount of HP"
     ]
    },
    {
@@ -35713,7 +35713,7 @@
       ]
      },
      {
-      "name": "Levante, the sword of Love and Hate",
+      "name": "Levante, the Sword of Love and Hate",
       "entries": [
        "Attack Damage 31,000 → 25,500"
       ]
@@ -36461,7 +36461,7 @@
      {
       "name": "Martial Artist",
       "entries": [
-       "Footwalk (D)",
+       "Footwork (D)",
        [
         "CD 25s → 20s"
        ]
@@ -37017,13 +37017,13 @@
      {
       "name": "Flame Nightmare",
       "entries": [
-       "Crown of Ferver's drop rate reduced by 12.5%"
+       "Crown of Fervor's drop rate reduced by 12.5%"
       ]
      },
      {
       "name": "Turtle Lord",
       "entries": [
-       "Oath of Courages's drop rate reduced by 12.5%"
+       "Oath of Courage's drop rate reduced by 12.5%"
       ]
      },
      {
