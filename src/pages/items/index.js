@@ -593,7 +593,7 @@ export async function initItems({ params, query }) {
   };
   document.addEventListener('keydown', onKey);
 
-  bindItemHover(listEl);
+  const unbindHover = bindItemHover(listEl);
   const saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || 'null');
   update({ onDone: () => { if (saved && saved.hash === listHash) window.scrollTo(0, saved.y); } });
 
@@ -604,6 +604,6 @@ export async function initItems({ params, query }) {
     app.removeEventListener('click', onClick);
     app.removeEventListener('change', onChange);
     offPins();
-    hideItemTooltip();
+    unbindHover();
   };
 }

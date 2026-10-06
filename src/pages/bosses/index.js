@@ -490,8 +490,7 @@ export async function initBosses({ params, query }) {
       appendPatchHistory(app.querySelector('.idb-detail'), [boss.name]);
       initDropCalc(boss);
       initDropsControls(boss);
-      bindItemHover(app.querySelector('.idb-side'));
-      return () => hideItemTooltip();
+      return bindItemHover(app.querySelector('.idb-side'));
     }
     app.innerHTML = `
       <nav class="idb-crumbs"><button type="button" class="back-btn" onclick="appBack('#/bosses')">${t('items.back')}</button><a href="#/bosses">${t('bosses.title')}</a></nav>
@@ -561,13 +560,13 @@ export async function initBosses({ params, query }) {
   app.addEventListener('click', onClick);
   app.addEventListener('change', onChange);
   document.addEventListener('keydown', onKey);
-  bindItemHover(listEl);
+  const unbindHover = bindItemHover(listEl);
   update();
 
   return function cleanup() {
     app.removeEventListener('click', onClick);
     app.removeEventListener('change', onChange);
     document.removeEventListener('keydown', onKey);
-    hideItemTooltip();
+    unbindHover();
   };
 }

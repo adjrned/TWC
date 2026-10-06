@@ -946,6 +946,8 @@
 .mdb-range { display: inline-flex; align-items: center; gap: 8px; color: var(--muted2); }
 .mdb-range input { width: 96px; accent-color: var(--accent); }
 .mdb-range b { min-width: 34px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Room for the widest value ("+200%") so dragging doesn't reflow the row. */
+#calcSacrificeVal, #sacrificeValue { min-width: 5.5ch; }
 .mdb-calc .idb-select { height: 28px; }
 
 /* Drop table */

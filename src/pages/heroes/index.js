@@ -2,7 +2,6 @@ import { esc } from '../../ui/escape.js';
 import { t, getClassName, getTypeName } from '../../i18n.js';
 import { loadItems, iconSrc as sharedIconSrc, getItem, rankInfo, localizedItemName } from '../../data/items.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
-import { hideItemTooltip } from '../../ui/tooltip.js';
 import { slotIcon } from '../../ui/slotIcons.js';
 import { appendPatchHistory } from '../../ui/patchHistory.js';
 
@@ -260,8 +259,8 @@ export async function initHeroes({ params, query }) {
       if (key) app.querySelector(`.hs-group[data-key="${CSS.escape(key)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     app.addEventListener('click', onClick);
-    bindItemHover(app.querySelector('.hd-specs'));
-    return () => { app.removeEventListener('click', onClick); hideItemTooltip(); };
+    const unbindHover = bindItemHover(app.querySelector('.hd-specs'));
+    return () => { app.removeEventListener('click', onClick); unbindHover(); };
   }
 
   // ── List ──
