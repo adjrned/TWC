@@ -1,5 +1,5 @@
 import { state } from '../../state.js';
-import { ICONS_PATH } from '../../constants.js';
+import { iconSrc as libraryIconSrc } from '../../data/items.js';
 import { showToast } from '../../ui/toast.js';
 import { save } from '../../data/storage.js';
 import { render } from './render.js';
@@ -12,8 +12,10 @@ export function getSlotArr(rowId, col) {
   return getSlotsFor(rowId)[col] || [];
 }
 
+// Library icons are derived from the item name (stored `src` values may carry
+// encodings like %2C that some servers don't resolve); uploads keep their src.
 export function iconSrc(item) {
-  return !item ? null : item.type === 'upload' ? item.src : (item.src || ICONS_PATH + encodeURIComponent(item.name) + '.jpg');
+  return !item ? null : item.type === 'upload' ? item.src : libraryIconSrc(item.name);
 }
 
 export function setSlotItem(rowId, col, idx, item) {
@@ -42,5 +44,12 @@ export function clearSlotItem(rowId, col, idx) {
 export function clearSlot(rowId, col) {
   if (!state.selectedClass || !state.builds[state.selectedClass]?.[rowId]) return;
   delete state.builds[state.selectedClass][rowId][col];
+  save(); render();
+}
+
+export function swapSlotItems(rowId, col) {
+  const arr = getSlotArr(rowId, col);
+  if (!arr[0] || !arr[1]) return;
+  state.builds[state.selectedClass][rowId][col] = [arr[1], arr[0]];
   save(); render();
 }

@@ -4,6 +4,7 @@ import { fetchBuildCountsForAllClasses, fetchCreatorsForClass, hasLocalData, loa
 import { save } from '../../data/storage.js';
 import { showToast } from '../../ui/toast.js';
 import { render } from './render.js';
+import { openBuildBrowser, closeBuildBrowser, isBuildBrowserOpen } from './buildBrowser.js';
 import { t, getClassName } from '../../i18n.js';
 
 export function updateBuildHash() {
@@ -15,12 +16,11 @@ export function updateBuildHash() {
   if (location.hash !== newHash) history.replaceState(null, '', newHash);
 }
 
+let docClickBound = false;
+
 export async function buildClassSelect() {
   const dropdown = document.getElementById('classPickerDropdown');
-  const hiddenSel = document.getElementById('classSelect');
   dropdown.innerHTML = '';
-  hiddenSel.innerHTML = '<option value=""></option>';
-
   const counts = await fetchBuildCountsForAllClasses();
 
   for (const [type, list] of Object.entries(ROSTER)) {
@@ -35,198 +35,125 @@ export async function buildClassSelect() {
       const opt = document.createElement('div');
       opt.className = 'custom-select-option';
       opt.dataset.value = name;
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'opt-name';
-      nameSpan.textContent = getClassName(name);
-      opt.appendChild(nameSpan);
+      opt.innerHTML = `<img class="opt-icon" src="${classIconPath(name)}" alt="" loading="lazy" onerror="this.remove()"><span class="opt-name"></span>`;
+      opt.querySelector('.opt-name').textContent = getClassName(name);
       if (count > 0) {
         const badge = document.createElement('span');
         badge.className = 'opt-count';
-        badge.textContent = `${count} build${count > 1 ? 's' : ''}`;
+        badge.textContent = t(count > 1 ? 'builder.nBuilds' : 'builder.oneBuild', { n: count });
         opt.appendChild(badge);
       }
       opt.addEventListener('click', () => selectClass(name));
       dropdown.appendChild(opt);
-
-      const hiddenOpt = document.createElement('option');
-      hiddenOpt.value = name;
-      hiddenOpt.textContent = name;
-      hiddenSel.appendChild(hiddenOpt);
     });
   }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#classPickerWrap')) closeClassDropdown();
-    if (!e.target.closest('#creatorPickerWrap')) closeCreatorDropdown();
-  });
+  // The builder page is re-created on each visit; bind the outside-click closer once.
+  if (!docClickBound) {
+    docClickBound = true;
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#classPickerWrap')) closeClassDropdown();
+    });
+  }
 }
 
 export function toggleClassDropdown() {
   document.getElementById('classPickerWrap').classList.toggle('open');
-  document.getElementById('creatorPickerWrap').classList.remove('open');
 }
 
 export function closeClassDropdown() {
-  document.getElementById('classPickerWrap').classList.remove('open');
-}
-
-export function toggleCreatorDropdown() {
-  document.getElementById('creatorPickerWrap').classList.toggle('open');
-  document.getElementById('classPickerWrap').classList.remove('open');
-}
-
-export function closeCreatorDropdown() {
-  document.getElementById('creatorPickerWrap').classList.remove('open');
+  document.getElementById('classPickerWrap')?.classList.remove('open');
 }
 
 export async function selectClass(name) {
   closeClassDropdown();
-  const label = document.getElementById('classPickerLabel');
-  label.textContent = getClassName(name);
-  label.classList.remove('placeholder');
-  document.querySelectorAll('.custom-select-option').forEach(el => {
-    el.classList.toggle('selected', el.dataset.value === name);
-  });
-  document.getElementById('classSelect').value = name;
   state.selectedClass = name;
   state.selectedCreator = null;
   state.creatorName = '';
-  if (!hasLocalData(state.selectedClass)) await loadBuildFile(state.selectedClass, null);
-  save(); await syncClassUI(); render();
-  updateBuildHash();
-}
-
-export async function onCreatorChange() {
-  const val = document.getElementById('creatorSelect').value;
-  state.selectedCreator = val || null;
-  if (state.selectedClass && state.builds[state.selectedClass]) delete state.builds[state.selectedClass];
   save();
-  await loadBuildFile(state.selectedClass, state.selectedCreator);
-  save(); syncClassUI(); render();
+  await syncClassUI();
+  render();
   updateBuildHash();
+  // No saved work for this class yet → show its community builds to start from.
+  if (!hasLocalData(name)) await showBuildBrowser();
 }
 
-async function selectCreator(name) {
-  closeCreatorDropdown();
-  const label = document.getElementById('creatorPickerLabel');
-  label.textContent = name || '— Choose build —';
-  label.classList.toggle('placeholder', !name);
-  document.querySelectorAll('#creatorPickerDropdown .custom-select-option').forEach(el => {
-    el.classList.toggle('selected', el.dataset.value === name);
+export async function showBuildBrowser() {
+  await openBuildBrowser(async () => {
+    await syncClassUI();
+    render();
+    updateBuildHash();
   });
-  document.getElementById('creatorSelect').value = name || '';
-  state.selectedCreator = name || null;
-  if (state.selectedClass && state.builds[state.selectedClass]) delete state.builds[state.selectedClass];
-  save();
-  await loadBuildFile(state.selectedClass, state.selectedCreator);
-  save(); syncClassUI(); render();
-  updateBuildHash();
+}
+
+export async function toggleBuildBrowser() {
+  if (isBuildBrowserOpen()) closeBuildBrowser();
+  else await showBuildBrowser();
 }
 
 export async function resetToTemplate() {
   if (!state.selectedClass) return;
   const label = state.selectedCreator ? `${state.selectedClass} (${state.selectedCreator})` : state.selectedClass;
-  if (!confirm(`Reset to the published template for ${label}? Your local edits will be lost.`)) return;
+  if (!confirm(t('builder.resetConfirm', { label }))) return;
   if (state.builds[state.selectedClass]) delete state.builds[state.selectedClass];
   save();
   const loaded = await loadBuildFile(state.selectedClass, state.selectedCreator);
-  if (!loaded) showToast('No published template found for this class.');
-  syncClassUI(); render();
+  if (!loaded) showToast(t('builder.noTemplate'));
+  await syncClassUI(); render();
 }
 
 export function clearAllRows() {
   if (!state.selectedClass) return;
-  if (!confirm('Clear all items from every row? This cannot be undone.')) return;
+  if (!confirm(t('builder.clearConfirm'))) return;
   if (state.builds[state.selectedClass]) {
     for (const rowId of Object.keys(state.builds[state.selectedClass])) {
       state.builds[state.selectedClass][rowId] = {};
     }
   }
-  save(); render(); showToast('All rows cleared.');
+  save(); render(); showToast(t('builder.cleared'));
 }
 
 export async function syncClassUI() {
-  document.getElementById('classSelect').value = state.selectedClass || '';
+  const cls = state.selectedClass;
+  const label = document.getElementById('classPickerLabel');
+  const icon = document.getElementById('classPickerIcon');
+  const buildBtn = document.getElementById('buildBrowserBtn');
   const colName = document.getElementById('heroColName');
   const colSubtitle = document.getElementById('heroColSubtitle');
   const iconWrap = document.getElementById('heroColIconWrap');
   const imgEl = document.getElementById('heroColIconImg');
-  const ph = document.getElementById('heroColIconPlaceholder');
-  const resetBtn = document.getElementById('resetTemplateBtn');
-  const clearBtn = document.getElementById('clearAllBtn');
-  const creatorWrap = document.getElementById('creatorPickerWrap');
-  const creatorSel = document.getElementById('creatorSelect');
 
-  if (state.selectedClass) {
-    const label = document.getElementById('classPickerLabel');
-    label.textContent = getClassName(state.selectedClass);
-    label.classList.remove('placeholder');
-    document.querySelectorAll('.custom-select-option').forEach(el =>
-      el.classList.toggle('selected', el.dataset.value === state.selectedClass)
-    );
-    const creators = await fetchCreatorsForClass(state.selectedClass);
-    if (creators.length > 0) {
-      creatorSel.innerHTML = '';
-      const defaultOpt = document.createElement('option');
-      defaultOpt.value = '';
-      defaultOpt.textContent = '— Choose build —';
-      creatorSel.appendChild(defaultOpt);
-      creators.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        creatorSel.appendChild(opt);
-      });
-      creatorSel.value = state.selectedCreator || '';
+  document.querySelectorAll('#classPickerDropdown .custom-select-option').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === cls));
+  document.getElementById('resetTemplateBtn').hidden = !(cls && state.selectedCreator);
+  document.getElementById('clearAllBtn').hidden = !cls;
 
-      const creatorDropdown = document.getElementById('creatorPickerDropdown');
-      creatorDropdown.innerHTML = '';
-      creators.forEach(c => {
-        const opt = document.createElement('div');
-        opt.className = 'custom-select-option';
-        opt.dataset.value = c;
-        if (c === state.selectedCreator) opt.classList.add('selected');
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'opt-name';
-        nameSpan.textContent = c;
-        opt.appendChild(nameSpan);
-        opt.addEventListener('click', () => selectCreator(c));
-        creatorDropdown.appendChild(opt);
-      });
-
-      const creatorLabel = document.getElementById('creatorPickerLabel');
-      creatorLabel.textContent = state.selectedCreator || t('builder.chooseBuild');
-      creatorLabel.classList.toggle('placeholder', !state.selectedCreator);
-
-      creatorWrap.style.display = '';
-    } else {
-      creatorWrap.style.display = 'none';
-    }
-
-    colName.textContent = getClassName(state.selectedClass);
-    colSubtitle.textContent = state.creatorName ? `by ${state.creatorName}` : '';
-    colName.classList.add('active');
-    iconWrap.classList.add('visible');
-    const p = classIconPath(state.selectedClass);
-    imgEl.style.display = 'none';
-    ph.style.display = '';
-    const testImg = new Image();
-    testImg.onload = () => { imgEl.src = p; imgEl.style.display = 'block'; ph.style.display = 'none'; };
-    testImg.onerror = () => { imgEl.style.display = 'none'; ph.style.display = ''; };
-    testImg.src = p;
-    resetBtn.style.display = '';
-    clearBtn.style.display = '';
-  } else {
-    const label = document.getElementById('classPickerLabel');
+  if (!cls) {
     label.textContent = t('builder.selectClass');
     label.classList.add('placeholder');
-    document.querySelectorAll('.custom-select-option').forEach(el => el.classList.remove('selected'));
-    creatorWrap.style.display = 'none';
-    colName.textContent = 'Heroes';
-    colSubtitle.textContent = '';
-    colName.classList.remove('active');
-    iconWrap.classList.remove('visible');
-    resetBtn.style.display = 'none';
-    clearBtn.style.display = 'none';
+    icon.hidden = true;
+    buildBtn.hidden = true;
+    closeBuildBrowser();
+    return;
   }
+
+  label.textContent = getClassName(cls);
+  label.classList.remove('placeholder');
+  icon.onerror = () => { icon.hidden = true; };
+  icon.src = classIconPath(cls);
+  icon.hidden = false;
+
+  const creators = await fetchCreatorsForClass(cls);
+  buildBtn.hidden = false;
+  document.getElementById('buildBrowserValue').textContent =
+    state.selectedCreator || (hasLocalData(cls) ? t('builder.custom') : t('builder.chooseBuild'));
+  buildBtn.title = t(creators.length === 1 ? 'builder.oneBuild' : 'builder.nBuilds', { n: creators.length });
+
+  colName.textContent = getClassName(cls);
+  colSubtitle.textContent = state.creatorName ? t('builder.by', { name: state.creatorName }) : '';
+  iconWrap.classList.add('visible');
+  imgEl.style.display = 'none';
+  const test = new Image();
+  test.onload = () => { imgEl.src = test.src; imgEl.style.display = 'block'; };
+  test.src = classIconPath(cls);
 }
