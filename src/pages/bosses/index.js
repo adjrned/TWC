@@ -272,7 +272,6 @@ function renderDropCalculator(boss) {
   if (!dropInfo) return '';
 
   const isNoWish = NO_WISH_BOSSES.has(boss.name);
-  const iconLabel = t(dropInfo.iconType === 'Immortal' ? 'bosses.iconImmortal' : 'bosses.iconLegend');
   const rules = BOSS_PLAYER_RULES[boss.name] || DEFAULT_PLAYER_RULES;
   const bossObj = bossData.find(b => b.name === boss.name);
   const showSacrifice = !isNoWish && bossObj && ['Late', 'Endgame'].includes(bossObj.category);
@@ -283,7 +282,7 @@ function renderDropCalculator(boss) {
       <div class="mdb-calc">
         ${!isNoWish ? `
           <label class="mdb-check"><input type="checkbox" id="calcWish"><span>${t('bosses.wish')}</span></label>
-          <label class="mdb-check"><input type="checkbox" id="calcIcon"><span>${t('bosses.iconBonus', { type: iconLabel })}</span></label>
+          <label class="mdb-check"><input type="checkbox" id="calcIcon"><span>${t('bosses.iconBonus')}</span></label>
         ` : ''}
         ${HARDMODE_BOSSES.has(boss.name) ? `
           <label class="mdb-check"><input type="checkbox" id="calcHardmode"><span>${t('bosses.hardMode', { n: Math.round((HARDMODE_MULT[boss.name] - 1) * 100) })}</span></label>
