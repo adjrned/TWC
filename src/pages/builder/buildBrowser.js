@@ -1,7 +1,7 @@
 import { state } from '../../state.js';
 import { DEFAULT_ROWS, COLS, buildFileNameForCreator } from '../../constants.js';
 import { esc } from '../../ui/escape.js';
-import { t, getClassName } from '../../i18n.js';
+import { t, getClassName, getLocale } from '../../i18n.js';
 import { fetchCreatorsForClass, hasLocalData, loadBuildFile } from '../../data/builds.js';
 import { save } from '../../data/storage.js';
 import { getItem, rankInfo, iconSrc } from '../../data/items.js';
@@ -34,10 +34,11 @@ function previewHtml(data) {
   }).join('')}</span>`;
 }
 
-function fmtDate(iso) {
+export function fmtBuildDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return isNaN(d) ? '' : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  const locale = getLocale() === 'zh' ? 'zh-CN' : getLocale();
+  return isNaN(d) ? '' : d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 export function isBuildBrowserOpen() {
@@ -71,7 +72,7 @@ export async function openBuildBrowser(onChosen) {
         const active = state.selectedCreator === c;
         return `<button type="button" class="bb-card${active ? ' active' : ''}" data-creator="${esc(c)}">
           <span class="bb-creator">${esc(c)}${active ? ` <span class="bb-current">${t('builder.current')}</span>` : ''}</span>
-          <span class="bb-meta">${[phases ? t('builder.phases', { n: phases }) : '', fmtDate(data?.publishedAt)].filter(Boolean).join(' · ')}</span>
+          <span class="bb-meta">${[phases ? t('builder.phases', { n: phases }) : '', fmtBuildDate(data?.publishedAt)].filter(Boolean).join(' · ')}</span>
           ${previewHtml(data)}
         </button>`;
       }).join('')}
@@ -100,6 +101,7 @@ export async function chooseBuild(cls, creator) {
   delete state.builds[cls];
   state.selectedCreator = creator;
   state.creatorName = '';
+  state.publishedAt = '';
   if (creator) {
     await loadBuildFile(cls, creator);
   } else {

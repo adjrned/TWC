@@ -70,6 +70,7 @@ export function importExportBuildData(data) {
   state.builds = importedBuilds;
   state.selectedClass = cls;
   state.creatorName = data.createdBy || '';
+  state.publishedAt = data.publishedAt || '';
   return true;
 }
 
@@ -92,6 +93,7 @@ export function importLegacyBuildFile(data, className) {
   state.builds = importedBuilds;
   state.selectedClass = className;
   state.creatorName = data.createdBy || '';
+  state.publishedAt = data.publishedAt || '';
   return true;
 }
 

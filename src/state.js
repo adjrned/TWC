@@ -4,6 +4,7 @@ export const state = {
   selectedClass: null,
   selectedCreator: null,
   creatorName: '',
+  publishedAt: '',
   uid: 0,
   dragSrcId: null,
   pickerTargetRow: null,

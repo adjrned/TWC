@@ -4,7 +4,7 @@ import { fetchBuildCountsForAllClasses, fetchCreatorsForClass, hasLocalData, loa
 import { save } from '../../data/storage.js';
 import { showToast } from '../../ui/toast.js';
 import { render } from './render.js';
-import { openBuildBrowser, closeBuildBrowser, isBuildBrowserOpen } from './buildBrowser.js';
+import { openBuildBrowser, closeBuildBrowser, isBuildBrowserOpen, fmtBuildDate } from './buildBrowser.js';
 import { t, getClassName } from '../../i18n.js';
 
 export function updateBuildHash() {
@@ -135,6 +135,7 @@ export async function selectClass(name) {
   state.selectedClass = name;
   state.selectedCreator = null;
   state.creatorName = '';
+  state.publishedAt = '';
   save();
   await syncClassUI();
   render();
@@ -215,7 +216,10 @@ export async function syncClassUI() {
   buildBtn.title = t(creators.length === 1 ? 'builder.oneBuild' : 'builder.nBuilds', { n: creators.length });
 
   colName.textContent = getClassName(cls);
-  colSubtitle.textContent = state.creatorName ? t('builder.by', { name: state.creatorName }) : '';
+  colSubtitle.textContent = [
+    state.creatorName ? t('builder.by', { name: state.creatorName }) : '',
+    state.creatorName ? fmtBuildDate(state.publishedAt) : '',
+  ].filter(Boolean).join(' · ');
   iconWrap.classList.add('visible');
   imgEl.style.display = 'none';
   const test = new Image();
