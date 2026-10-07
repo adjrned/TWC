@@ -20,7 +20,16 @@ let docClickBound = false;
 
 export async function buildClassSelect() {
   const dropdown = document.getElementById('classPickerDropdown');
-  dropdown.innerHTML = '';
+  dropdown.innerHTML = `
+    <div class="custom-select-search"><input type="text" id="classPickerSearch" autocomplete="off" spellcheck="false"></div>
+    <div class="custom-select-list" id="classPickerList"></div>
+    <div class="custom-select-empty" id="classPickerEmpty" hidden></div>`;
+  const search = document.getElementById('classPickerSearch');
+  const listEl = document.getElementById('classPickerList');
+  search.placeholder = t('builder.searchClass');
+  document.getElementById('classPickerEmpty').textContent = t('builder.noClassMatch');
+  search.addEventListener('input', filterClassOptions);
+  search.addEventListener('keydown', onSearchKey);
   const counts = await fetchBuildCountsForAllClasses();
 
   for (const [type, list] of Object.entries(ROSTER)) {
@@ -28,13 +37,14 @@ export async function buildClassSelect() {
     groupLabel.className = 'custom-select-group-label';
     groupLabel.dataset.stat = type;
     groupLabel.textContent = t('stat.' + type);
-    dropdown.appendChild(groupLabel);
+    listEl.appendChild(groupLabel);
 
     list.forEach(name => {
       const count = counts[name] || 0;
       const opt = document.createElement('div');
       opt.className = 'custom-select-option';
       opt.dataset.value = name;
+      opt.dataset.search = `${name} ${getClassName(name)}`.toLowerCase();
       opt.innerHTML = `<img class="opt-icon" src="${classIconPath(name)}" alt="" loading="lazy" onerror="this.remove()"><span class="opt-name"></span>`;
       opt.querySelector('.opt-name').textContent = getClassName(name);
       if (count > 0) {
@@ -44,7 +54,8 @@ export async function buildClassSelect() {
         opt.appendChild(badge);
       }
       opt.addEventListener('click', () => selectClass(name));
-      dropdown.appendChild(opt);
+      opt.addEventListener('mousemove', () => setActiveOption(opt));
+      listEl.appendChild(opt);
     });
   }
 
@@ -57,8 +68,62 @@ export async function buildClassSelect() {
   }
 }
 
+function visibleOptions() {
+  return [...document.querySelectorAll('#classPickerList .custom-select-option:not([hidden])')];
+}
+
+function setActiveOption(opt) {
+  document.querySelectorAll('#classPickerList .custom-select-option.active').forEach(el => el.classList.remove('active'));
+  if (opt) {
+    opt.classList.add('active');
+    opt.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function filterClassOptions() {
+  const q = document.getElementById('classPickerSearch').value.trim().toLowerCase();
+  let label = null, labelHasMatch = false, any = false;
+  const finishGroup = () => { if (label) label.hidden = !labelHasMatch; };
+  for (const el of document.getElementById('classPickerList').children) {
+    if (el.classList.contains('custom-select-group-label')) {
+      finishGroup();
+      label = el; labelHasMatch = false;
+    } else {
+      const match = !q || el.dataset.search.includes(q);
+      el.hidden = !match;
+      if (match) { labelHasMatch = true; any = true; }
+    }
+  }
+  finishGroup();
+  document.getElementById('classPickerEmpty').hidden = any;
+  setActiveOption(q ? visibleOptions()[0] : null);
+}
+
+function onSearchKey(e) {
+  const opts = visibleOptions();
+  const idx = opts.findIndex(el => el.classList.contains('active'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (!opts.length) return;
+    const next = e.key === 'ArrowDown' ? (idx + 1) % opts.length : (idx <= 0 ? opts.length - 1 : idx - 1);
+    setActiveOption(opts[next]);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const pick = opts[idx] || opts[0];
+    if (pick) selectClass(pick.dataset.value);
+  } else if (e.key === 'Escape') {
+    closeClassDropdown();
+  }
+}
+
 export function toggleClassDropdown() {
-  document.getElementById('classPickerWrap').classList.toggle('open');
+  const wrap = document.getElementById('classPickerWrap');
+  if (!wrap.classList.toggle('open')) return;
+  const search = document.getElementById('classPickerSearch');
+  search.value = '';
+  filterClassOptions();
+  document.querySelector('#classPickerList .custom-select-option.selected')?.scrollIntoView({ block: 'nearest' });
+  search.focus();
 }
 
 export function closeClassDropdown() {
