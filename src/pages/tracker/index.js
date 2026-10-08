@@ -330,9 +330,9 @@ function renderMaterials() {
         return `<div class="trk-mrow">
           ${iconHtml(m.name, 'idb-chip-icon')}
           ${itemLink(m.name)}
+          <span class="trk-usedfor">${m.usedFor.map(n => `<a href="#/items/${encodeURIComponent(n)}" class="trk-usedfor-item ${rankInfo(getItem(n)).css}" data-name="${esc(n)}" aria-label="${esc(t('trk.usedFor', { name: localizedNameOf(n) }))}">${iconHtml(n, 'idb-chip-icon')}</a>`).join('')}</span>
           <span class="trk-need">×${m.needed}</span>
           <span class="trk-rate">${rate ? formatDropRate(rate) : ''}</span>
-          <span class="trk-usedfor">${m.usedFor.map(n => `<a href="#/items/${encodeURIComponent(n)}" class="trk-usedfor-item ${rankInfo(getItem(n)).css}" data-name="${esc(n)}" aria-label="${esc(t('trk.usedFor', { name: localizedNameOf(n) }))}">${iconHtml(n, 'idb-chip-icon')}</a>`).join('')}</span>
         </div>`;
       }).join('')}
     </div>`;
