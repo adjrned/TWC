@@ -264,12 +264,12 @@ function treeNodeHtml(node, depth) {
   const open = depth <= 1 && node.status !== 'have';
   const row = `
     <div class="trk-row ${node.status === 'have' ? 'is-have' : ''}">
+      ${statusHtml(node)}
       ${iconHtml(node.name, 'idb-chip-icon')}
       ${itemLink(node.name)}
       ${node.neededQty > 1 ? `<span class="trk-need">×${node.neededQty}</span>` : ''}
       <span class="trk-spacer"></span>
       ${sourcesHtml(node)}
-      ${statusHtml(node)}
     </div>
     ${node.alternatives?.length ? `<div class="trk-alts"><span>${t('items.or')}</span>${node.alternatives.map(a => `${iconHtml(a, 'idb-chip-icon')}${itemLink(a)}`).join('')}</div>` : ''}`;
   if (!hasChildren) return `<li class="trk-leaf">${row}</li>`;
@@ -284,7 +284,7 @@ function renderTrees() {
     // Base materials have no recipe: show the item itself so its count and sources are visible.
     const body = tree.children.length
       ? `<ul class="trk-tree">${tree.children.map(c => treeNodeHtml(c, 0)).join('')}</ul>`
-      : `<ul class="trk-tree"><li class="trk-leaf"><div class="trk-row ${tree.status === 'have' ? 'is-have' : ''}">${iconHtml(name, 'idb-chip-icon')}${itemLink(name)}<span class="trk-spacer"></span>${sourcesHtml(tree)}${statusHtml(tree)}</div></li></ul>`;
+      : `<ul class="trk-tree"><li class="trk-leaf"><div class="trk-row ${tree.status === 'have' ? 'is-have' : ''}">${statusHtml(tree)}${iconHtml(name, 'idb-chip-icon')}${itemLink(name)}<span class="trk-spacer"></span>${sourcesHtml(tree)}</div></li></ul>`;
     return `<section class="trk-card">
       <header class="trk-card-head ${ri.css}">
         ${iconHtml(name, 'idb-chip-icon lg')}
