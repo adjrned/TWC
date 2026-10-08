@@ -7,6 +7,7 @@ import { t, tf, getLocale, getClassName } from '../../i18n.js';
 import { showToast } from '../../ui/toast.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
 import { hideItemTooltip } from '../../ui/tooltip.js';
+import { openItemPicker, closePicker, EQUIP_TABS, MATERIAL_TAB, ALL_TAB } from '../../ui/itemPicker.js';
 import { parseSaveFile } from './parser.js';
 import {
   saveProfiles, loadProfileState, saveProfileState,
@@ -227,6 +228,7 @@ function renderTrackSearch() {
         <input type="search" id="trackerSearchInput" placeholder="${esc(t('trk.search'))}" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="trackerSearchResults">
       </label>
       <div class="trk-results" id="trackerSearchResults" role="listbox" hidden></div>
+      <button type="button" class="btn" data-act="browse-items">${t('trk.browse')}</button>
     </div>`;
 }
 
@@ -330,6 +332,7 @@ function renderMaterials() {
           ${itemLink(m.name)}
           <span class="trk-need">×${m.needed}</span>
           <span class="trk-rate">${rate ? formatDropRate(rate) : ''}</span>
+          <span class="trk-usedfor">${m.usedFor.map(n => `<a href="#/items/${encodeURIComponent(n)}" class="trk-usedfor-item ${rankInfo(getItem(n)).css}" data-name="${esc(n)}" aria-label="${esc(t('trk.usedFor', { name: localizedNameOf(n) }))}">${iconHtml(n, 'idb-chip-icon')}</a>`).join('')}</span>
         </div>`;
       }).join('')}
     </div>`;
@@ -600,6 +603,19 @@ function runSearch(val) {
   renderResults();
 }
 
+function openTrackPicker() {
+  openItemPicker({
+    title: t('trk.browseTitle'),
+    tabs: [...EQUIP_TABS, MATERIAL_TAB, ALL_TAB],
+    tab: 'all',
+    allItems: true,
+    current: () => new Set(trackerState.trackedItems),
+    currentLabel: t('trk.isTracked'),
+    // Stay open so several items can be tracked in one go.
+    onPick: item => { trackItem(item.name); return true; },
+  });
+}
+
 function trackItem(name) {
   if (trackerState.trackedItems.includes(name)) {
     showToast(t('trk.alreadyTracked', { name: localizedNameOf(name) }));
@@ -671,6 +687,7 @@ async function onAppClick(e) {
   if (!el) return;
   const act = el.dataset.act;
   if (act === 'track') { e.preventDefault(); return trackItem(el.dataset.name); }
+  if (act === 'browse-items') return openTrackPicker();
   if (act === 'untrack') {
     trackerState.trackedItems.splice(+el.dataset.idx, 1);
     saveProfileState(activeProfileId(), trackerState);
@@ -741,6 +758,7 @@ export async function initTracker() {
     app.removeEventListener('click', onAppClick);
     unbindHover();
     clearTimeout(searchTimeout);
+    closePicker();
     hideItemTooltip();
   };
 }

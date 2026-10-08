@@ -146,8 +146,9 @@
 
 /* ── Tracking ── */
 .trk-tracking { margin-bottom: 16px; }
-.trk-search { position: relative; max-width: 520px; margin-bottom: 10px; }
-.trk-search .idb-search { width: 100%; }
+.trk-search { position: relative; display: flex; gap: 8px; max-width: 640px; margin-bottom: 10px; }
+.trk-search .idb-search { flex: 1; min-width: 0; }
+.trk-search > .btn { flex-shrink: 0; }
 .trk-results {
   position: absolute;
   top: calc(100% + 4px);
@@ -346,7 +347,7 @@ a.trk-boss:hover { color: var(--accent); }
 .trk-boss img { width: 26px; height: 26px; border-radius: 3px; border: 1px solid var(--border2); object-fit: cover; }
 .trk-mrow {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) 48px 64px;
+  grid-template-columns: 26px minmax(0, 1fr) 48px 64px minmax(0, auto);
   align-items: center;
   gap: 10px;
   padding: 3px 12px 3px 46px;
@@ -356,6 +357,10 @@ a.trk-boss:hover { color: var(--accent); }
 .trk-mrow .trk-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trk-mrow .trk-need { text-align: right; }
 .trk-rate { text-align: right; font-size: 12px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.trk-usedfor { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px; min-width: 0; }
+.trk-usedfor-item { display: inline-flex; border-radius: 3px; opacity: 0.85; }
+.trk-usedfor-item:hover { opacity: 1; }
+.trk-usedfor .idb-chip-icon { width: 22px; height: 22px; }
 
 /* ── Load code history ── */
 .trk-history { margin-top: 8px; }
@@ -398,6 +403,6 @@ a.trk-boss:hover { color: var(--accent); }
   .trk-profile-actions { width: 100%; }
   .trk-char-actions { width: 100%; }
   .trk-src span { display: none; }
-  .trk-mrow { grid-template-columns: 26px minmax(0, 1fr) 40px 56px; padding-left: 12px; }
+  .trk-mrow { grid-template-columns: 26px minmax(0, 1fr) 40px 56px minmax(0, auto); padding-left: 12px; }
   .trk-upload { padding: 28px 16px; }
 }

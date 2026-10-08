@@ -7,7 +7,7 @@ import { initTooltip, hideItemTooltip } from '../../ui/tooltip.js';
 import { buildClassSelect, syncClassUI, toggleClassDropdown, toggleBuildBrowser, resetToTemplate, clearAllRows, updateBuildHash } from './classPicker.js';
 import { render, bindGridEvents } from './render.js';
 import { addRow } from './rows.js';
-import { filterPicker, closePicker, closePickerOnBg } from './picker.js';
+import { closePicker } from './picker.js';
 import { closeSlotMenu, bindSlotMenuGlobals } from './slotMenu.js';
 import { openImport, closeImport, doImport, exportData, copyToClipboard } from './exportImport.js';
 import { builderHTML } from './template.js';
@@ -41,21 +41,14 @@ export async function initBuilder(ctx) {
   bindSlotMenuGlobals();
   const unbindGrid = bindGridEvents(document.getElementById('bpGrid'));
 
-  const onKey = e => {
-    if (e.key === 'Escape' && document.getElementById('pickerOverlay').classList.contains('show')) closePicker();
-  };
-  document.addEventListener('keydown', onKey);
-
   // Expose handlers for inline onclick attributes in HTML
   Object.assign(window, {
     toggleClassDropdown, toggleBuildBrowser, resetToTemplate, clearAllRows, addRow,
-    filterPicker, closePicker, closePickerOnBg,
     openImport, closeImport, doImport, exportData, copyToClipboard,
   });
 
   return function cleanup() {
     unbindGrid();
-    document.removeEventListener('keydown', onKey);
     closeSlotMenu();
     closePicker();
     hideItemTooltip();

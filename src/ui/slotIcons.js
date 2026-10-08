@@ -5,6 +5,7 @@ const PATHS = {
   body:      '<path d="M8 3L4 6v5l2 1v9h12v-9l2-1V6l-4-3"/><path d="M8 3a4 4 0 0 0 8 0M12 9v12"/>',
   wings:     '<path d="M12 8C10 5 6 4 2 5c1 5 4 9 10 11"/><path d="M12 8c2-3 6-4 10-3-1 5-4 9-10 11"/><path d="M12 8v12"/>',
   accessory: '<circle cx="12" cy="15" r="6"/><path d="M9 5l3-3 3 3-3 4z"/>',
+  material:  '<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21L8 9l4-6 4 6z"/>',
   all:       '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
 };
 

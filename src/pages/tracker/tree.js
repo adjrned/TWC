@@ -128,6 +128,7 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
   }
 
   const totals = new Map();
+  const usedFor = new Map();
   const sharedRemaining = new Map();
   for (const [k, v] of ownedMap) sharedRemaining.set(k, v);
   for (const itemName of trackedItems) {
@@ -135,6 +136,8 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
     for (const [matName, needed] of leaves) {
       if (isExcluded(matName)) continue;
       totals.set(matName, (totals.get(matName) || 0) + needed);
+      if (!usedFor.has(matName)) usedFor.set(matName, []);
+      if (matName !== itemName) usedFor.get(matName).push(itemName);
     }
   }
 
@@ -142,7 +145,7 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
   for (const [matName, needed] of totals) {
     const mat = itemMap.get(matName);
     const droppedBy = mat ? (mat.dropped_by || []) : [];
-    const entry = { name: matName, needed, item: mat || null };
+    const entry = { name: matName, needed, item: mat || null, usedFor: usedFor.get(matName) || [] };
 
     if (droppedBy.length === 0) {
       if (!groups['Craftable']) groups['Craftable'] = { boss: null, materials: [] };
