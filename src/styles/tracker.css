@@ -282,6 +282,9 @@
 .trk-row:hover { background: var(--bg3); }
 .trk-row .trk-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .trk-row.is-have .trk-name { opacity: 0.6; }
+.trk-spacer { flex: 1; }
+/* Status sits in a fixed column at the right edge so it lines up across rows. */
+.trk-row .trk-status-pill { min-width: 48px; justify-content: center; }
 .trk-need { font-size: 12px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 
 .trk-status-pill {
