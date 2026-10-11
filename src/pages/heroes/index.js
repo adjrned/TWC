@@ -64,12 +64,19 @@ function heroMatchesRole(hero, role) {
 }
 
 // ── Hero list ─────────────────────────────────────────────────
+// Name, class (English + localized), tags and summary text.
+function searchText(h) {
+  return [h.name, h.heroClass, getClassName(h.heroClass), h.range, ...(h.tags || []), h.overview,
+    ...Object.values(h.statNotes || {}), ...(h.strengths || []), ...(h.weaknesses || [])]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
 function filterHeroes(heroes, s, skip) {
   const q = s.q.toLowerCase().trim();
   return heroes.filter(h =>
     (skip === 'stat' || !s.stat || h.mainstat === s.stat) &&
     (skip === 'role' || heroMatchesRole(h, s.role)) &&
-    (!q || [h.name, h.heroClass, ...(h.role || [])].join(' ').toLowerCase().includes(q)));
+    (!q || searchText(h).includes(q)));
 }
 
 function heroCardHtml(hero) {
@@ -78,7 +85,7 @@ function heroCardHtml(hero) {
     <span class="hl-text">
       <span class="hl-name">${esc(hero.name)}</span>
       <span class="hl-class">${esc(getClassName(hero.heroClass))}</span>
-      ${hero.role?.length ? `<span class="hl-role">${esc(hero.role.join(' · '))}</span>` : ''}
+      ${hero.tags?.length ? `<span class="hl-role">${esc(hero.tags.join(' · '))}</span>` : ''}
     </span>
   </a>`;
 }
