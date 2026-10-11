@@ -152,7 +152,7 @@ function keycaps(path) {
 
 function skillHtml({ sk, depth, path }) {
   const lines = (arr, flavorFirst) => `<ul class="hs-lines">${arr.map((l, i) => `<li class="${flavorFirst && i === 0 ? 'hs-flavor' : ''}">${esc(l)}</li>`).join('')}</ul>`;
-  const hasP = sk.passive?.length, hasA = sk.active?.length;
+  const hasP = sk.passive?.length, hasA = sk.active?.length, hasT = sk.toggle?.length;
   const meta = [
     sk.cooldown != null ? t('heroes.cooldown', { n: sk.cooldown }) : '',
     sk.proc_rate != null ? t('heroes.proc', { n: Math.round(sk.proc_rate * 100) }) : '',
@@ -168,6 +168,7 @@ function skillHtml({ sk, depth, path }) {
     </header>
     ${hasP ? `${hasA ? `<div class="hs-label">${t('items.passive')}</div>` : ''}${lines(sk.passive, true)}` : ''}
     ${hasA ? `${hasP ? `<div class="hs-label hs-label-active">${t('items.active')}</div>` : ''}${lines(sk.active, !hasP)}` : ''}
+    ${hasT ? `${hasP || hasA ? `<div class="hs-label hs-label-active">${t('heroes.toggle')}</div>` : ''}${lines(sk.toggle, !hasP && !hasA)}` : ''}
   </article>`;
 }
 

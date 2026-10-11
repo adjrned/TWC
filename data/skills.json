@@ -27,13 +27,13 @@
     "order": 2,
     "passive": [
       "Infuses the spirit of lightning into your arrows.",
-      "On every 4th attack, deals AGI X 7 magic damage and stores a charge of lightning",
-      "Increases AGI by 5% and attack speed by 15% for 10 seconds",
-      "Stacks up to 4 times"
+      "On every 4th attack, deals AGI X 7 bonus magic damage and stores a charge of lightning",
+      "Increases AGI by 5% for 10 seconds",
+      "Stacks up to 4 times (+1 per 40% attack speed)"
     ],
     "active": [
       "Fires an arrow that pierces the wind.",
-      "Attack Damage X 1.5 damage",
+      "Attack Damage X 1 + AGI X 4 damage",
       "Reduces target's movement speed by 50% for 2 seconds",
       "Consumes lightning charges to deal 100% bonus damage per consumed charge"
     ]
@@ -50,7 +50,8 @@
     "active": [
       "Swiftly disengages while attacking at the same time.",
       "Each arrow deals Attack Damage X 0.5 + AGI X 2.5 magic damage",
-      "First 4 arrows are fired at last attacked target"
+      "First 4 arrows are fired at last attacked target",
+      "Arrows count as basic attacks"
     ]
   },
   {
@@ -86,7 +87,8 @@
       "Recharges every 8 seconds, up to 4 charges",
       "Recharge cycle affected by flame affinity: (8 / (1 + 2 X flame affinity)) seconds",
       "Chain: Glide - Decreases damage by 75% and adds splash effect",
-      "Chain: Skill - Increases damage by 25% and stun duration by 200%"
+      "Chain: Skill - Adds Explosive Shot's damage to the skill and converts the total damage to Fire element",
+      "Starts with full charges on load"
     ]
   },
   {
@@ -167,7 +169,7 @@
     "active": [
       "Fires shards made from concentrated souls.",
       "INT X 3 magic damage",
-      "Increases damage taken by (5 + INT / 800)% and reduces speed by 40% for 5 seconds",
+      "Increases damage taken by (5 + INT / 1000)% and reduces speed by 40% for 5 seconds",
       "On consecutive casts, fires additional shards and stuns for 0.5 seconds"
     ]
   },
@@ -181,7 +183,7 @@
     "order": 4,
     "active": [
       "Surrounds self and nearby allies with spiritual barriers.",
-      "Increases skill damage by (4 + INT / 375)% for 30 seconds",
+      "Increases skill damage by (6 + INT / 375)% for 30 seconds",
       "Regenerates (INT X 0.1) HP per second"
     ]
   },
@@ -224,14 +226,15 @@
     "color": "487913",
     "hotkey": "[T]",
     "icon": "SoulWeaverT",
-    "cooldown": 60,
+    "cooldown": 45,
     "order": 7,
     "active": [
       "Summons a cradle that holds down the souls of the living.",
       "INT X 9 magic damage per second",
       "Periodically stuns for 1 second",
       "Prevents nearby allies' HP from dropping below 1",
-      "Lasts 6 seconds"
+      "Lasts 5 seconds",
+      "On expiration, heals allies on the field for INT X 2.5 HP"
     ]
   },
   {
@@ -281,7 +284,7 @@
     "order": 2,
     "passive": [
       "Affinity with fire bleses you with potent power.",
-      "Performing fire-related transmutation increases skill damage by 8% for 6 seconds"
+      "Performing fire-related transmutation amplifies skill damage by 6% for 6 seconds"
     ],
     "active": [
       "Inscribe a fire transmutation circle to perform transmutations.",
@@ -430,7 +433,7 @@
       "Transmute a cloud that brings down rain to nearby area.",
       "Heals for INT X 0.07 per second",
       "Nullifies HP lost from Gate of Truth while active",
-      "Chain: Eye of the Storm"
+      "Lasts 15 seconds"
     ]
   },
   {
@@ -479,9 +482,8 @@
     "order": 15,
     "active": [
       "Summon an eye of the storm at the target location.",
-      "Attacks nearby enemies with INT X .75 damage",
-      "Its attack speed is temporarily increased when a Wind transmutation is performed",
-      "On recast, moves the Eye to the target location and increases duration"
+      "For 6 seconds, continuously attacks 1 nearby enemy with INT X 0.75 damage",
+      "Increases nearby allies' magic defense by 20%"
     ]
   },
   {
@@ -547,13 +549,13 @@
       "Transmutes a cannon to fire a powerful cannonball.",
       "INT X 7.5 magic damage",
       "Also fired from existing cannons",
-      "Cannon will disappear if you move far away from it or 10 seconds elapse",
+      "Cannon will disappear if you move far away from it or 15 seconds elapse",
       "Up to 5 cannons can be active at once"
     ]
   },
   {
     "id": "A0NV",
-    "name": "Potion Transmutation",
+    "name": "Elixir Transmutation",
     "heroClass": "Alchemist",
     "color": "ff8080",
     "hotkey": "[R] → [W]",
@@ -561,10 +563,11 @@
     "proc_rate": 0.5,
     "order": 20,
     "active": [
-      "Conjures a useful potion.",
-      "Better potions can be created with higher skill level",
-      "Higher chance to create better potions with higher INT",
-      "Chainable: Water Stream"
+      "Transmutes a healing elixir.",
+      "After 2 seconds, creates an elixir at target location that is consumed on contact",
+      "Removes debuffs and heals for INT X 3 HP",
+      "Elixir lasts 30 seconds on the ground",
+      "Has an absolute cooldown of 30 seconds"
     ]
   },
   {
@@ -652,7 +655,7 @@
     "active": [
       "Roll in a line",
       "INT X 6 magic damage",
-      "Increase damage taken by collided enemies by 6% for 8 seconds"
+      "Increases magic damage taken by collided enemies by 4% for 8 seconds"
     ]
   },
   {
@@ -682,8 +685,8 @@
     "active": [
       "Uses a mystical reagent known as Philosopher's Stone to amplify your transmutations.",
       "Resets cooldowns on all transmutations",
-      "Increases damage dealt by 10% for 10 seconds",
-      "Next 5 transmutations do not incur cooldown and deals 50% more damage if it hasn't been previously activated"
+      "Activates Infusion",
+      "Amplifies skill damage by 12% for 10 seconds"
     ]
   },
   {
@@ -697,7 +700,7 @@
     "order": 29,
     "active": [
       "\"I don't know what is the 'truth' of this world. However, as I look at his efforts and sacrifices in attempts to reach it, I believe something truly fascinating is awaiting him at the end of his road.\" - A Scholar of Prius",
-      "Consumes Max HP X (5 + 0.50 X elapsed seconds)% per second",
+      "Consumes Max HP X (5 + 0.50 X elapsed seconds)% per second (up to 15% per second; cannot kill the Alchemist)",
       "Increases INT by 1% on every second and on every skill cast (up to 25%)",
       "Reduces damage taken by 25%",
       "On expiration, deals INT X 100 magic damage to nearby enemies and stuns for 2.5 seconds"
@@ -727,7 +730,8 @@
     "passive": [
       "A twisted magic that allows you to steal target's flows of life and mana.",
       "Deals INT X 0.5 magic damage on every attack",
-      "Every 4th attack deals 6x damage and restores 6% HP, 50 + 10% MP"
+      "Every 4th attack deals 6x damage and restores 6% HP, 50 + 10% MP",
+      "MP regen increased by 75 + 100%"
     ]
   },
   {
@@ -770,7 +774,7 @@
     "color": "9465e2",
     "hotkey": "[E]",
     "icon": "WarlockE",
-    "cooldown": 24,
+    "cooldown": 20,
     "order": 4,
     "active": [
       "Summons a vengeful spirit that absorbs damage and reflects them back at the attackers.",
@@ -791,14 +795,14 @@
     "passive": [
       "Amplifies your magic with grimoire that is inscribed with ancient demons' powers.",
       "Total damage increased by 10%, max HP increased by 25%",
-      "MP regen increased by 75 + 100%"
+      "Regenerates 1% of max MP per second"
     ],
     "active": [
       "Unleashes the grimoire and let your magic run wild.",
       "Consumes 5 souls per second",
       "Focus attacks of Dimension Collapse onto targeted area",
       "Gates have 100% increased damage and 200% increased attack speed for the cast",
-      "1 soul is restored when landing Crucifixion and every 1.5 seconds (up to 20)"
+      "1 soul is restored every second (up to 20)"
     ]
   },
   {
@@ -808,7 +812,7 @@
     "color": "9465e2",
     "hotkey": "[T]",
     "icon": "WarlockT",
-    "cooldown": 75,
+    "cooldown": 60,
     "order": 6,
     "active": [
       "Obtains a demon's body at the cost of one's own soul.",
@@ -816,7 +820,8 @@
       "Restores all MP and souls",
       "Armor increased by 100 & max HP and magic defense increased by 25%",
       "Changes skills partially",
-      "After 5 seconds, consumed MP increases by 50% and total damage increases by 1% every second (up to 15%)"
+      "After 5 seconds, consumed MP increases by 50% and total damage increases by 1% every second (up to 15%)",
+      "Apocalypse can be cast while transformed"
     ]
   },
   {
@@ -883,7 +888,7 @@
     "name": "Soul Offering",
     "heroClass": "Warlock",
     "color": "9465e2",
-    "hotkey": "[T] → [F]",
+    "hotkey": "[T] → [T]",
     "icon": "WarlockT_F",
     "order": 11,
     "active": [
@@ -934,7 +939,7 @@
     "order": 2,
     "passive": [
       "Gathers blood.",
-      "Charges 3 blood gauge every secon and on every attack",
+      "Charges 4 blood gauge every second and 3 on every attack",
       "Charges 1 blood gauge for each 1% HP healed by skills, 2% HP healed by item effects, 20% HP healed by allies"
     ],
     "active": [
@@ -975,7 +980,8 @@
     "active": [
       "Pulls target and drains life out of it.",
       "Deals up to Max HP X 6 damage over 1 second",
-      "Heal up to Max HP X 40%"
+      "Heal up to Max HP X 40%",
+      "Restores 60 blood gauge on cast"
     ]
   },
   {
@@ -1035,7 +1041,7 @@
     "order": 1,
     "passive": [
       "Her expertise in magic allows her to bend flames to her will.",
-      "Landing attacks or skills inflict Burn, dealing 40% additional damage (minimum INT X 2.5) over 2.5 seconds",
+      "Landing attacks or skills inflict Burn, dealing 40% additional damage (minimum INT X 2.5) over 2 seconds",
       "After casting skill, envelops feet in a trail of flame to increase movement speed by 250 for 2 seconds",
       "Burning unit will explode on death"
     ]
@@ -1117,7 +1123,7 @@
     "order": 6,
     "active": [
       "Calls down meteor fragments that are drifting around the atmosphere.",
-      "Each meteorite deals INT X 15 magic damage",
+      "Each meteorite deals INT X 18 magic damage",
       "Drops a total of 5 fragments"
     ]
   },
@@ -1151,7 +1157,8 @@
       "Control drones that can assist allies.",
       "Assists Shooter's attacks with AGI X 5 pure damage (affected by attack speed)",
       "Can attach onto allies",
-      "Can summon up to 3 probes"
+      "Can summon up to 3 probes",
+      "All skill damage is affected by Magitek affinity (70% of your highest elemental affinity)"
     ],
     "active": [
       "Recall all probes back to Shooter.",
@@ -1226,7 +1233,8 @@
       "Fires a charged magic bullet, and disengage using the recoil.",
       "Attack damage X 1.5 + AGI X 7.5 magic damage",
       "Deals up to 300% bonus damage based on knockback distance",
-      "INT Main Stat: Breaks barrier effects"
+      "INT Main Stat: Breaks barrier effects",
+      "Increases target's magic damage taken by 4%"
     ]
   },
   {
@@ -1257,7 +1265,7 @@
     "order": 7,
     "passive": [
       "Enhance probes' attacks.",
-      "When landing Q/E/R on a boss unit, fires additional magic bullets dealing Attack Damage X 0.3 + Main Stat X 2.5 magic damage (3 bullets for Q/R, 6 bullets for E)"
+      "When landing Q/E/R on a boss unit, fires additional magic bullets dealing Attack Damage X 0.25 + Main Stat X 2 magic damage (3 bullets for Q/R, 6 bullets for E)"
     ],
     "active": [
       "Relentlessly fire magic bullets together with the probes.",
@@ -1344,8 +1352,8 @@
     "active": [
       "Reads a chant that boosts strength.",
       "Projects 2 Enchanted Swords",
-      "Increases damage dealt by 5% & attack damage by 20% for 4 seconds",
-      "Sword Enchant - Damage increased by 30% and attack count needed for sword projection is reduced to 2",
+      "Increases damage dealt by 5% & attack damage by 12% (20% for self) for 4 seconds",
+      "Sword Enchant - Damage amplified by 20% and attack count needed for sword projection is reduced to 2",
       "Does not stack with Speed Enchant"
     ]
   },
@@ -1356,7 +1364,7 @@
     "color": "dfdfdf",
     "hotkey": "[R]",
     "icon": "SwordEnchanterR",
-    "cooldown": 20,
+    "cooldown": 15,
     "order": 5,
     "active": [
       "Reads a chant that boosts endurance.",
@@ -1376,7 +1384,7 @@
     "order": 6,
     "passive": [
       "Profound mastery allows Sword Enchanter to disintegrate the armors of her enemies.",
-      "Increases damage of Sword Enchant by 30%"
+      "Amplifies damage of Sword Enchant by 25%"
     ],
     "active": [
       "Empowers your chant to make it resonate further.",
@@ -1408,7 +1416,7 @@
     "order": 8,
     "active": [
       "Reads a chant that boosts strength.",
-      "Increases damage dealt by 5% & attack damage by 20% for 4 seconds"
+      "Increases damage dealt by 5% & attack damage by 12% for 4 seconds"
     ]
   },
   {
@@ -1455,7 +1463,8 @@
       "Attacks never miss and ignore 100% of target's armor",
       "Can reload up to 6 bullets",
       "Requires 0.7 seconds of reloading when depleted",
-      "Attacks deal only 40% damage to boss units"
+      "Basic attacks deal 50% reduced damage",
+      "Base attack cooldown is 0.7 seconds; only 40% of attack speed from AGI and items applies"
     ],
     "active": [
       "Reloads all bullets."
@@ -1472,7 +1481,7 @@
     "order": 2,
     "active": [
       "Travels a short distance by tumbling.",
-      "Increases next bullet's damage by 300%",
+      "Increases next bullet's damage by 200% and guarantees a critical strike (affected by skill damage increase)",
       "Decreases damage taken by 60% while tumbling",
       "Cooldown is reset if reloaded with all bullets depleted"
     ]
@@ -1522,7 +1531,7 @@
     "active": [
       "Fires all bullets in a quick succession.",
       "Consumes all bullets",
-      "Each attack deals Attack Damage X 1.9 pure damage"
+      "Each attack deals Attack Damage X 0.8 pure damage"
     ]
   },
   {
@@ -1536,7 +1545,7 @@
     "order": 6,
     "active": [
       "Discards used up revolvers instead of reloading them.",
-      "Increases attack speed by 150% and reduces base attack cooldown by 50%",
+      "Increases attack speed by 150%",
       "Increases movement speed by 250",
       "Increases reload speed by 300%",
       "Reduces related skills' cooldown by 66% and resets their cooldowns",
@@ -1572,7 +1581,7 @@
     "passive": [
       "Focus ki into every action to perform powerful attacks.",
       "Attack hits all enemies within radius",
-      "On skill cast, empowers next attack to deal (Attack Damage X 0.85 + AGI X 5.5) pure damage",
+      "On skill cast, empowers next attack to deal (Attack Damage X 0.85 + AGI X 5) pure damage",
       "Can critically strike",
       "Base attack speed decreased"
     ]
@@ -1678,8 +1687,9 @@
     "order": 8,
     "passive": [
       "Finishing a combo leaves a sword of illusion behind.",
-      "Each sword increases AGI by 1%",
-      "Can possess up to a maximum of 8 swords"
+      "Each sword increases AGI by 2%",
+      "Can possess up to a maximum of 8 swords",
+      "Starts with full swords on load"
     ],
     "active": [
       "Directs all swords toward a single target.",
@@ -1699,7 +1709,7 @@
     "active": [
       "Brutally slashes everything in range with rapid movements.",
       "Attack Damage X 8 + AGI X 40 magic damage every second for 1.5 seconds",
-      "Increases target's damage taken by 10% for 8 seconds",
+      "Increases target's damage taken by 6% for 8 seconds",
       "Summons 4 Swords of Illusion"
     ]
   },
@@ -1731,7 +1741,8 @@
     "active": [
       "Jumps high borrowing the power of wind spirits.",
       "INT X 10~25 (based on hero level) pure damage",
-      "Charges once every 10 seconds (up to 2 charges)"
+      "Charges once every 10 seconds (up to 2 charges)",
+      "Other skills can be cast while jumping"
     ]
   },
   {
@@ -1870,8 +1881,8 @@
     "order": 11,
     "passive": [
       "Quenches nearby allies' thirst.",
-      "Regenerates nearby allies HP and MP by 4% every second",
-      "Increases healed ally's stats by 10% for 15 seconds"
+      "Regenerates nearby allies' HP by 4% and resources by 2% (1% for summons) every second (resource regen does not stack with Hermit's Orb of Harmony)",
+      "Increases healed ally's Main Stat by (INT X 0.06) for 15 seconds"
     ]
   },
   {
@@ -1899,7 +1910,7 @@
     "active": [
       "Unleashes the power of lightning.",
       "Deals INT X 25 magic damage to enemies hit",
-      "Increases target's magic damage taken by (4 + INT / 1200)% for 8 seconds"
+      "Increases target's magic damage taken by (4 + INT / 1200)% for 6 seconds"
     ]
   },
   {
@@ -1913,7 +1924,7 @@
     "order": 14,
     "active": [
       "Releases built up energy.",
-      "Deals INT X 75 magic damage over 1.25 seconds"
+      "Deals INT X 60 magic damage over 1.25 seconds"
     ]
   },
   {
@@ -1927,7 +1938,7 @@
     "passive": [
       "Unleashes a burst of lightning on each attack.",
       "Every attack deals INT X 2 magic damage",
-      "Every 4th attack is enhanced, dealing INT X 10 magic damage and being chained to 2 additional targets"
+      "Every 4th attack is enhanced, dealing INT X 8 magic damage and being chained to 2 additional targets"
     ]
   },
   {
@@ -1983,7 +1994,7 @@
     "order": 19,
     "active": [
       "Forms a link to protect nearby allies.",
-      "Reduces damage taken by nearby allies by 30% and grants CC immunity up to 3 seconds"
+      "Reduces damage taken by nearby allies by 30% and grants CC immunity up to 1.5 seconds"
     ]
   },
   {
@@ -1996,7 +2007,7 @@
     "order": 20,
     "passive": [
       "Attacks enemies with massive shockwaves.",
-      "Every attack sends a shockwave dealing INT X 15 magic damage"
+      "Every attack sends a shockwave dealing INT X 12 magic damage"
     ]
   },
   {
@@ -2100,8 +2111,8 @@
     "order": 27,
     "active": [
       "Summons a fragment of great chaos and drops it at target location.",
-      "INT X 150 magic damage",
-      "Increases damage taken by 6% for 6 seconds"
+      "INT X 175 magic damage",
+      "Pauses enemies hit for 1.5 seconds"
     ]
   },
   {
@@ -2202,7 +2213,7 @@
       "Releases collected energy with an explosive burst.",
       "INT X 12.5 magic damage",
       "Short stun effect",
-      "If used to activate Short Circuit, consumes all spawned Lightning Orbs and deals 100% additional damage (up to 5 times)"
+      "If used to activate Short Circuit, consumes all spawned Lightning Orbs and deals 100% additional damage (up to 10 times)"
     ]
   },
   {
@@ -2219,7 +2230,8 @@
       "For 1 second, deals INT X 9 magic damage to collided enemies",
       "Reduces damage taken by 70% and ignores CC effects while active",
       "Can absorb Lightning Orbs, healing you for 8% HP and 20 energy and granting you Charged status, which refreshes the duration of skill and allows you to deal damage once more",
-      "While Charged, Discharge and Hypercharge deals 100% increased damage"
+      "While Charged, Discharge and Hypercharge deals 100% increased damage",
+      "Lightning Bolt can be cast while active (ends Discharge immediately)"
     ]
   },
   {
@@ -2321,7 +2333,7 @@
     "order": 3,
     "passive": [
       "The blessing of god allows crusader to become a persevering light amidst her battles.",
-      "Increases nearby allies' all stats by 5% (2x for yourself)",
+      "Increases nearby allies' Main Stat by 4% (8% for yourself)",
       "Damage received reduced by 20% if HP is below 50%"
     ],
     "active": [
@@ -2358,7 +2370,7 @@
     "active": [
       "Dashes forward with lightning speed, striking all enemies.",
       "Attack Damage X 6 magic damage",
-      "Increases damage taken by target by 10% for 8 seconds",
+      "Increases damage taken by target by 6% for 8 seconds",
       "Enhance next Remains of Rage cast within 3 seconds, increasing its damage by 300% and dashing to target location to inflict stun for 1 second",
       "Chain - 2nd Sword Dance: Sword"
     ]
@@ -2425,8 +2437,10 @@
     "order": 1,
     "passive": [
       "A stance that reacts faster than the mind.",
-      "Attack damage increased by 50%",
-      "Movement speed increased by 125"
+      "Attack damage increased by 40%",
+      "Movement speed increased by 125",
+      "Attack speed increased by 15%",
+      "Base attack cooldown is 0.4 seconds; only 40% of attack speed from AGI and items applies"
     ],
     "active": [
       "Evades next attack received within 1 second",
@@ -2443,7 +2457,7 @@
     "order": 2,
     "passive": [
       "A martial art that strengthens the fist, passed down from the Shaolins of the orients.",
-      "15% chance to deal AGI X 5 magic damage on attack"
+      "15% chance to deal AGI X 7.5 magic damage on attack"
     ]
   },
   {
@@ -2484,8 +2498,7 @@
     "order": 5,
     "passive": [
       "Calms your mind and body to maintain control over yourself.",
-      "Attack speed increased by 60%",
-      "On attack, has 10% chance to temporarily increase attack damage by 100%, damage reduction by 20% for and regenerates 2% + 90 HP every second for 5 seconds",
+      "On attack, has 10% chance to temporarily increase attack damage by 90%, damage reduction by 20% for and regenerates 2% + 90 HP every second for 5 seconds",
       "Forcefully triggered when using Martial Movement or Nameless Arts"
     ]
   },
@@ -2514,7 +2527,7 @@
     "order": 7,
     "active": [
       "\"None can match the skills of the martial artists of Eloren. Having obtained the knowledge of all advanced martial arts, each one of their techniques is deadly.\" - A Continent Traveller",
-      "Increases damage dealt by counter by 60%, all other skills by 75% and reduces attack cooldown by 50%",
+      "Amplifies skill damage by 70% and increases attack speed by 250%",
       "Gains immunity to debuffs and CC effects",
       "If cast once, lasts 4 seconds and has 30 seconds cooldown",
       "If cast twice, lasts 6 seconds and has 60 seconds cooldown"
@@ -2536,7 +2549,7 @@
     ],
     "active": [
       "Temporarily augments the destructive power of spear techniques.",
-      "For 4 seconds, every attack deals STR X 1.5 bonus magic damage",
+      "For 4 seconds, every attack deals STR X 2 bonus magic damage",
       "Attack speed maximized",
       "Boosts next skill cast within duration"
     ]
@@ -2553,7 +2566,7 @@
     "active": [
       "Pierces through enemies.",
       "Attack damage X 1 + STR X 7.5 pure damage",
-      "Increases damage taken by target by 5% for 15 seconds",
+      "Increases damage taken by target by 4% for 8 seconds",
       "Empowered: Increases chance to critically strike with skills by 50% for 40 seconds"
     ]
   },
@@ -2568,7 +2581,7 @@
     "order": 3,
     "active": [
       "Attacks nearby enemies with a swift spear strike.",
-      "Attack damage X 0.9 + STR X 4.5 magic damage",
+      "Attack damage X 1 + STR X 5 magic damage",
       "Enemies hit are slowed by 90% for 2 seconds",
       "Resets duration of Oriental Spear Mastery",
       "Empowered: AoE increased and increases damage dealt by D/Q/W/E on target by 100% for 5 seconds"
@@ -2585,7 +2598,7 @@
     "order": 4,
     "active": [
       "Strikes target's vital point.",
-      "Attack damage X 1.2 + STR X 6 magic damage",
+      "Attack damage X 1.2 + STR X 7 magic damage",
       "Breaks barriers",
       "Empowered: Critically strikes and deals up to 40~100% bonus damage based on target's missing HP"
     ]
@@ -2603,7 +2616,7 @@
       "Replenish ki in preparation for a fierce battle.",
       "Restores 4% of ki every second",
       "If ki is restored, HP is also restored for equal %",
-      "Increases your damage dealt by 20% if ki is over 50%, increases your healing received by 40% if ki is below 50%"
+      "Increases your final damage by 15% if ki is over 50%, increases your healing received by 40% if ki is below 50%"
     ],
     "active": [
       "Disengage and prepare for the next battle.",
@@ -2623,7 +2636,7 @@
     "active": [
       "Focuses ki into spear and launch it forward.",
       "STR X 100 magic damage",
-      "Increases all stats by 8% for self and allies within 1000 range from explosion for 40 seconds",
+      "Increases Main Stat of allies hit by 6% for 15 seconds",
       "Resets cooldown of Oriental Spear Mastery"
     ]
   },
@@ -2705,11 +2718,11 @@
     "color": "ff9999",
     "hotkey": "[E]",
     "icon": "ReaperE",
-    "cooldown": 8,
+    "cooldown": 6,
     "order": 4,
     "active": [
       "Pierces through the target, delivering a deadly strike.",
-      "AGI X 10 magic damage",
+      "AGI X 12.5 magic damage",
       "Critically strikes",
       "While active, Whirl of Death (Q) will deal an additional 200% damage and Death's Dash's damage is increased by 50%"
     ]
@@ -2828,7 +2841,7 @@
     "active": [
       "Becomes one with the shadow to avoid being seen by enemies.",
       "Becomes invisible and temporarily gains bonus movement speed",
-      "Next attack within 6 seconds inflicts Attack Damage X 1 + AGI X 8 magic damage",
+      "Next attack within 6 seconds inflicts Attack Damage X 1 + AGI X 10 magic damage",
       "If struck from behind, damage increased by 50%"
     ]
   },
@@ -2859,7 +2872,7 @@
     "order": 6,
     "active": [
       "Summons shadows from all directions and rush toward the target point.",
-      "AGI X 20 magic damage",
+      "AGI X 25 magic damage",
       "Summons 5 additional shadows that copy next Shadow Slash or Ambush, each dealing 50% of original damage",
       "When max stacks of Shadow Mark is obtained, can be activated immediately regardless of cooldown"
     ]
@@ -2961,7 +2974,7 @@
     "order": 5,
     "passive": [
       "Heals grant resistance to allies.",
-      "Upon healing allies, reduces their damage taken by 10% for 5 seconds"
+      "Upon healing allies, increases their Main Stat by (INT X 0.03) and reduces their damage taken by 8% for 5 seconds"
     ],
     "active": [
       "Summon a mirror of eon to redirect harm back to attackers.",
@@ -3061,7 +3074,8 @@
       "The anger of Vayu sweeps across, obliterating any foes in its path.",
       "(AGI + INT) X 20 magic damage",
       "Drags enemies along",
-      "Consecutive casts within 6 seconds cost 20 MP"
+      "Costs 20 MP per cast",
+      "Increases magic damage taken by enemies hit by 4% for 4 seconds"
     ]
   },
   {
@@ -3092,7 +3106,8 @@
       "Brings down judgment on enemies.",
       "Each attack deals 1(AGI + INT) X 20 magic damage",
       "Attacks up to (5 + Pure Attack Speed / 15)% times",
-      "Disappears after cast"
+      "Disappears after cast",
+      "Finishes casting even if MP runs out mid-cast"
     ]
   },
   {
@@ -3211,7 +3226,7 @@
     "order": 7,
     "active": [
       "Throws money with great force, inflicting tetanus on enemies hit.",
-      "Each coin inflicts STR X 1.5 magic damage",
+      "Each coin inflicts STR X 1.5 magic damage and a short stun",
       "For 5 seconds, deals STR X 1.5 magic damage per second and increases damage taken by (4 + STR / 1200)%",
       "Throws up to 10 coins"
     ]
@@ -3325,7 +3340,8 @@
       "Focuses strength onto the tip of the spear to deliver powerful strikes.",
       "Next 3 attacks are converted into pure type, each dealing Attack Damage X 1.5 + (STR + AGI) X 5 damage",
       "Lasts 10 seconds",
-      "3rd attack critically strikes and knocks-up non-boss target"
+      "3rd attack critically strikes and knocks-up non-boss target",
+      "Damage is affected by wind affinity"
     ]
   },
   {
@@ -3338,7 +3354,7 @@
     "order": 3,
     "passive": [
       "Surrounds yourself with a magnetic field to become less affected by air resistance.",
-      "Builds magnetic field upon dealing damage or receiving damage (up to 10% per second)",
+      "Builds magnetic field upon dealing damage or receiving damage (up to 12% per second)",
       "Max attack damage bonus: (STR + AGI) X 2.5",
       "Max attack speed bonus: 75%",
       "Max reduction bonus: 20%"
@@ -3464,7 +3480,7 @@
     "order": 4,
     "passive": [
       "As the hunger for blood increases, so do berserker's combat abilities.",
-      "Increases attack damage up to (STR X 5), total damage up to 20%, move speed up to 125, and damage reduction up to 50% based on missing HP",
+      "Increases attack damage up to (STR X 5), final damage up to 15%, move speed up to 125, and damage reduction up to 50% based on missing HP",
       "Each attack increases STR by 10%, attack speed by 25% for 6 seconds (stacks up to 3 times; duration is refreshed on skill casts)"
     ],
     "toggle": [
@@ -3589,7 +3605,7 @@
     "order": 4,
     "passive": [
       "Summons a faithful guardian that follows Bow Master around.",
-      "Increases nearby hero's attack damage and main stat by 5%",
+      "Increases nearby hero's attack damage and main stat by 4%",
       "Supports every attack with Attack Damage X 0.07 + AGI X 0.35 bonus magic damage",
       "Can critically strike"
     ],
@@ -3625,8 +3641,8 @@
     "order": 6,
     "active": [
       "Summons countless magical arrows to bombard target area.",
-      "Summons 24 arrows",
-      "Each arrow deals Attack Damage X 0.4 + AGI X 5 magic damage and short stun"
+      "Summons 12 arrows",
+      "Each arrow deals Attack Damage X 1.2 + AGI X 9 magic damage and short stun"
     ]
   },
   {
@@ -3655,10 +3671,10 @@
     "order": 8,
     "active": [
       "\"Without a warning, our enemies were swept across like dust by a magical arrow she shot.\" - A soldier of battlefield",
-      "Summons 6 small arrows that deals AGI X 15 magic damage each",
+      "Summons 4 small arrows that deals AGI X 15 magic damage each",
       "Afterwards, fires a large arrow that deals AGI X 125 magic damage",
       "On cast, resets cooldown of Flame Shot and Freezing Shot",
-      "Gains 1 charge of Elven Arrow each time small arrow is fired"
+      "Gains 1 charge of Elven Arrow each time an arrow is fired (5 total)"
     ]
   },
   {
@@ -3772,7 +3788,8 @@
       "If 3 orbs are charged, it sends all 3 orbs to target location with each orb dealing 400% max MP",
       "If Release Mana is toggled on, each orb stuns target",
       "If Release Mana is toggled off, each orb slows target movement speed by 50% for 3 seconds",
-      "If less than 3 orbs were charges, does not go on cooldown"
+      "If less than 3 orbs were charges, does not go on cooldown",
+      "Summons all orbs when cooldown is reset"
     ]
   },
   {
@@ -3809,7 +3826,7 @@
     ],
     "active": [
       "Inscribes seal of mana onto the ground to protect allies from damage.",
-      "Increases damage dealt by skills by 4%",
+      "Amplifies skill damage of allies and self by 4%",
       "Shares Knight's reduction and healing with allies",
       "Restores Knight's MP by 10% per second",
       "Lasts 6 seconds"
@@ -3848,10 +3865,11 @@
     ],
     "active": [
       "Strikes target area with dark lightning.",
-      "Main Stat X 7.5 magic damage",
-      "Deals Main Stat X 5 magic damage every 3 seconds for 12 seconds",
+      "Main Stat X 6 magic damage",
+      "Deals Main Stat X 4 magic damage every 3 seconds for 12 seconds",
       "STR: Heals yourself for (Max HP X 15%). Damage/duration increased by 50% and increases your skill damage dealt to target by 10%.",
-      "INT: Heals allies for INT X 2.5. Increases magic damage taken by (4 + INT / 1200)%"
+      "INT: Heals allies for INT X 2.5 and short stuns enemies. Increases magic damage taken by (4 + INT / 1200)%",
+      "Consumes 2 souls"
     ]
   },
   {
@@ -3918,7 +3936,7 @@
     "active": [
       "Unleashes a piercing strike that breaks souls.",
       "Attack Damage X 0.6 + (STR + INT / 3) X 8 magic damage",
-      "Consecutive casts increases damage by 35% (up to 70%)"
+      "Consecutive casts increases damage by 25% (up to 50%)"
     ]
   },
   {
@@ -3934,7 +3952,7 @@
       "Surrounds yourself with unholy light.",
       "Periodically consumes souls",
       "Deals INT X 5 magic damage per second",
-      "Increases damage taken by target up to (6 + INT / 800)%",
+      "Increases damage taken by target up to (6 + INT / 800)% (starts at 50% of max value)",
       "Upon deactivation, deals up to INT X 50 magic damage based on uptime",
       "STR: Changed to Phantom Rush"
     ]
@@ -4036,7 +4054,7 @@
       "Pulls down mana in the atmosphere as a shattering strike.",
       "Max MP X 2.5 magic damage",
       "Stuns for 0.5 seconds",
-      "Increases magic damage taken from Mage by 6% for 30 seconds (stacks up to 2 times)"
+      "Amplifies Mage's skill damage against target by 7.5% for 30 seconds (stacks up to 2 times)"
     ]
   },
   {
@@ -4101,8 +4119,8 @@
     "active": [
       "\"It's not an ordinary spell. This parade of stars that formed from the harmony of mana will captivate anyone's mind who sees it.\" - Mage",
       "Summons 5 stars for 8 seconds",
-      "Every second, each star fires a magic missile dealing INT X 2 magic damage",
-      "When you Magic Star, each star fires a magic missile dealing  INT X 4 magic damage",
+      "Every second, each star fires a magic missile dealing INT X 2.5 magic damage",
+      "When you Magic Star, each star fires a magic missile dealing INT X 5 magic damage",
       "On use, resets cooldown on Moonlight Link"
     ]
   },
@@ -4133,14 +4151,14 @@
     "passive": [
       "Imbues skills with cold energy.",
       "Landing two normal skills consecutively makes target vulnerable",
-      "Next skill against a vulnerable unit will be empowered, dealing 150% bonus damage"
+      "Next skill against a vulnerable unit will be empowered, dealing 200% bonus damage"
     ],
     "active": [
       "Embraces target with cold spirit.",
       "Deals INT X 2 bonus magic damage on attack",
-      "Increases skill damage by (5 + INT / 500)%",
+      "Increases skill damage by (4 + INT / 800)%",
       "Absorbs up to INT X 0.5 damage (recharges by 10% per second)",
-      "Can be applied on to 3 allies (always active on self)"
+      "Can be applied on to 2 allies (always active on self)"
     ]
   },
   {
@@ -4197,7 +4215,7 @@
     "color": "87cefa",
     "hotkey": "[R]",
     "icon": "WaterMageR",
-    "cooldown": 12,
+    "cooldown": 10,
     "order": 5,
     "active": [
       "Releases a burst of cold energy, freezing everything nearby.",
@@ -4216,7 +4234,7 @@
     "order": 6,
     "active": [
       "Summons a magical orb that releases frosty aura.",
-      "For 8 seconds, deals INT X 5 magic damage per second",
+      "For 8 seconds, deals INT X 10 magic damage per second",
       "Periodically freezes for 1 second",
       "Chain: Increases Ice Shard's damage by 300%"
     ]
@@ -4232,8 +4250,9 @@
     "order": 7,
     "active": [
       "\"Looking at you all reminds me of ice sculptures. Well, not that one captures my attention.\" - Mage",
-      "Pauses nearby enemies for 2 seconds",
-      "Upon expiration, deals INT X 125 + Max MP X 15 pure damage"
+      "Pauses nearby enemies for 1.5 seconds",
+      "Upon expiration, deals INT X 100 + Max MP X 10 pure damage",
+      "Makes targets vulnerable"
     ]
   },
   {
@@ -4293,9 +4312,9 @@
     "order": 3,
     "active": [
       "Summons a holy orb that can be used to assist allies.",
-      "Summons an orb that can be controlled for 12 seconds",
+      "Summons an orb that can be controlled for 10 seconds",
       "Deals INT X 5 magic damage to enemies hit",
-      "Increases allies' movement speed by 200 and regenerates their HP by 8% per second",
+      "Increases allies' movement speed by 200 and heals them for INT X 0.7 every 1.5 seconds",
       "Replicates Holy Wave and Holy Aurora cast by Priest",
       "Hitting a target with both waves will deal additional INT X 30 magic damage"
     ]
@@ -4311,7 +4330,7 @@
     "order": 4,
     "passive": [
       "The priest's presence alone brings great support to her allies.",
-      "Increases nearby allies' attack damage by 5% and all stats by (Priest's INT X 0.06)"
+      "Increases attack damage of allies within 1200 radius by 8%"
     ],
     "active": [
       "Creates a holy ring to protect allies and bring down judgment on enemies",
@@ -4332,7 +4351,7 @@
     "active": [
       "Releases a holy nova.",
       "Heals allies within radius for INT X 2.5",
-      "Increases target's skill damage by (7 + INT / 450)% for 5 seconds",
+      "Increases target's skill damage by (6 + INT / 450)% for 5 seconds",
       "Buff duration is increased up to 100% based on how long Holy Aurora was maintained"
     ]
   },
@@ -4347,7 +4366,7 @@
     "order": 6,
     "passive": [
       "The priest's presence alone brings great support to her allies.",
-      "Increases nearby allies' attack damage by 5% and all stats by (Priest's INT X 0.05)"
+      "Increases attack damage of allies within 1200 radius by 8%"
     ],
     "active": [
       "Devastates target ground with corrupt energy to cause havoc.",
@@ -4367,7 +4386,7 @@
     "order": 7,
     "passive": [
       "The priest's presence alone brings great support to her allies.",
-      "Increases nearby allies' attack damage by 5% and all stats by (Priest's INT X 0.05)"
+      "Increases attack damage of allies within 1200 radius by 8%"
     ],
     "active": [
       "Devastates target ground with corrupt energy to cause havoc.",
@@ -4387,7 +4406,7 @@
     "order": 8,
     "passive": [
       "The priest's presence alone brings great support to her allies.",
-      "Increases nearby allies' attack damage by 5% and all stats by (Priest's INT X 0.05)"
+      "Increases attack damage of allies within 1200 radius by 8%"
     ],
     "active": [
       "Devastates target ground with corrupt energy to cause havoc.",
@@ -4409,7 +4428,8 @@
       "Convert targeted area's mana into holy energy, creating a holy explosion.",
       "INT X 45 magic damage",
       "Stuns enemies within area for 0.5 seconds and blinds them for 5 seconds",
-      "Grants barriers to allies within area that absorbs INT X 6 damage for 6 seconds"
+      "Grants barriers to allies within area that absorbs INT X 6 damage for 6 seconds",
+      "Grants debuff immunity to allies within area for 2 seconds"
     ]
   },
   {
@@ -4423,7 +4443,8 @@
     "order": 10,
     "active": [
       "Temporarily opens the gate of heaven to summon an angel bound to the Priest by an old contract",
-      "Summons Angel 'Raguel'"
+      "Summons Angel 'Raguel'",
+      "First summon of the game starts with full MP"
     ]
   },
   {
@@ -4464,9 +4485,10 @@
     "cooldown": 15,
     "order": 13,
     "active": [
-      "Surround ally in light to heal his/her wounds.",
-      "Restores all HP",
-      "Removes all debuffs"
+      "Calls down holy light on the target.",
+      "Consumes 15 MP (Raguel restores 1 MP per second while near the Priest; affected by resource regen bonus)",
+      "If ally, restores all HP and removes all debuffs",
+      "If enemy, deals INT X 30 magic damage and stuns for 1.5 seconds"
     ]
   },
   {
@@ -4511,7 +4533,7 @@
     "active": [
       "\"As my body suddenly start bursting out light, I've felt like I could keep on fighting without ever growing tired. It was only later that I realized the Priest had arrived.\" - Soldier of Empire Army",
       "Summons Heaven Field for 20 seconds",
-      "For allies on the field, increases their damage dealt by 5%, reduces their damage taken by 15% and regenerates their HP by 10% per second",
+      "For allies on the field, increases their final damage by 6%, reduces their damage taken by 15% and regenerates their HP by 10% per second",
       "For your summons on the field, increases their attack speed by 50%"
     ]
   },
@@ -4543,7 +4565,7 @@
       "An aspect of crusader who calls down retribution on his foes.",
       "Increase nearby allies' attack damage by 10%",
       "Judgment - Deals 150% bonus damage",
-      "Sigil - Increases skill damage by 12% for 20 seconds",
+      "Sigil - Increases skill damage by 12% for 20 seconds (if STR is main stat, amplifies skill damage by 2.5% instead; 7.5% for self)",
       "Devotion: Increases skill damage by additional (INT / 750)%"
     ]
   },
@@ -4667,7 +4689,7 @@
     "order": 9,
     "active": [
       "Summons a holy cross to bring down judgment on enemies.",
-      "Attack Damage X 8 magic damage",
+      "Attack Damage X 10 magic damage",
       "Stuns target for 1.5 seconds",
       "Deals up to 75% bonus damage based on target's missing HP (max damage to immobile targets)",
       "Devotion: Breaks shield effects and increases damage taken by target by (5 + INT / 1000)% for 6 seconds"
@@ -4732,7 +4754,8 @@
     "passive": [
       "Restores 1 soul every 1.5 seconds",
       "Can hold up to 8 souls",
-      "Each soul regenerates your HP by 0.5% per second"
+      "Each soul regenerates your HP by 0.5% per second",
+      "Souls are fully restored on load and on revive"
     ],
     "active": [
       "Turns toward target direction."
@@ -4807,9 +4830,10 @@
     "cooldown": 30,
     "order": 7,
     "active": [
-      "Removes all soul consumption for 8 seconds and reduces some skills' cooldowns",
+      "Removes all soul consumption and amplifies skill damage by 12% for 6 seconds",
       "Enables dash while active",
-      "Alacrity: Damage is increased by 25% and critical strike is guaranteed"
+      "Alacrity: Damage is increased by 25% and critical strike is guaranteed",
+      "Reduces Daze's cooldown from 3 to 2 seconds"
     ]
   },
   {
@@ -4840,7 +4864,8 @@
       "Forms a harmonious balance between attacking and healing.",
       "Every 4th attack heals you and 2 nearby allies for 25 + INT X 0.5 + Target's MAX HP X 2%",
       "If AGI is highest, your skills deal 100% more damage",
-      "If STR or INT is highest, your skills heal and regenerate for 100% more and activates Harmony"
+      "If STR or INT is highest, your skills heal and regenerate for 50% more and activates Harmony",
+      "Harmony: Healing an ally increases its final damage by 2.5% for 3 seconds"
     ]
   },
   {
@@ -4855,9 +4880,9 @@
       "Strikes target's weak points.",
       "Attack Damage X 1.2 + Main Stat X 5 pure damage",
       "Grants increased attack speed for 1.5 seconds",
-      "Deals Main Stat X 1 pure damage on each attack",
+      "Adds Main Stat X 1 damage to each attack",
       "If cast from melee range or after casting Wind Walk, deals 100% bonus damage and stuns for 0.5 seconds",
-      "Harmony: Ki cost is removed and can be cast on allies"
+      "Harmony: Ki cost is removed and can be cast on allies. When empowered, target takes (4 + Main Stat / 1200)% increased damage for 3 seconds"
     ]
   },
   {
@@ -4888,7 +4913,7 @@
     "order": 4,
     "passive": [
       "Calms your mind and body by walking.",
-      "Restores HP 5% / 10 ki per second while walking"
+      "Regenerates HP 5% / 10 ki per second and increases movement speed by 50 while walking"
     ],
     "active": [
       "Increases movement speed for 1 second",
@@ -4906,11 +4931,11 @@
     "order": 5,
     "active": [
       "Summons an orb that heals allies.",
-      "Regenerates HP by Main Stat X 0.25 per second",
-      "Regenerates resource by 5% per second",
-      "Increases skill damage by 10%",
-      "Lasts 5~10 seconds based on duration traveled",
-      "Harmony: Skill damage bonus is further increased by (Main Stat / 500)%"
+      "Heals for Main Stat X 0.25 HP per second (can trigger healing effects)",
+      "Regenerates resource by 4% per second",
+      "Amplifies skill damage by 4% (12% for self)",
+      "AGI: No Ki cost, lasts 5 seconds, 15 second cooldown",
+      "Harmony: Costs 50 Ki, lasts 10 seconds and skill damage bonus is further increased by (Main Stat / 375)%"
     ]
   },
   {
@@ -4942,7 +4967,8 @@
     "active": [
       "Releases all of your power.",
       "Knocks back nearby enemies and stuns them for 1.5 seconds",
-      "Harmony: Pulls enemies in instead of knocking them back"
+      "Harmony: Pulls enemies in instead of knocking them back",
+      "Grants brief invulnerability on activation"
     ]
   },
   {
@@ -4956,9 +4982,9 @@
     "order": 9,
     "active": [
       "\"This water shall cleanse your body and soul.\" - Hermit",
-      "Deals Main Stat X 70 magic damage per second and breaks shield over 2 seconds",
+      "Deals Main Stat X 90 magic damage per second and breaks shield over 2 seconds (1.5 seconds if AGI is highest)",
       "Your HP will not drop below 1 while casting this",
-      "Harmony: Duration increased by 1 second, heals allies Target's Max HP X 15% per second, cleanses them and prevents their HP from going below 1"
+      "Harmony: Duration increased by 1 second, heals allies Target's Max HP X 15% per second, cleanses them, grants debuff immunity and prevents their HP from going below 1"
     ]
   },
   {
@@ -5027,7 +5053,7 @@
       "Summons a cauldron filled with magical items.",
       "Creates a potion every 2 seconds for 20 seconds",
       "Potion lasts for 20 seconds and heals for INT X 3",
-      "Increases target's main stat by (4 + INT / 1000)% for 60 seconds",
+      "Increases target's main stat by (INT X 0.06) for 60 seconds",
       "Chaining with Death Bomb creates 3 potions, increases Q's damage by 70~140% (based on hero LV) and increases enemies' magic damage taken by 5% for 4 seconds"
     ]
   },
@@ -5111,7 +5137,7 @@
     "order": 10,
     "passive": [
       "Increases damage dealt by 5%",
-      "Reduces damage taken by 20%",
+      "Reduces damage taken by 20% for Witch and Armaros, 10% for other allies",
       "Increases attack speed by 25%"
     ],
     "active": [
@@ -5166,7 +5192,7 @@
       "Fulfilling one of conditions below will trigger a combo effect, restoring 1 energy",
       "When repeating an action (ex. AAA, WWW)",
       "When alternating between different action (ex. AWA, AWE): Empowers next skill",
-      "If you activate a different combo than before (ex. AAA -> AWA): Increases attack damage by 10% and damage dealt by skills by 12% (stacks up to 5 times; resets on failure)"
+      "If you activate a different combo than before (ex. AAA -> AWA): Increases attack damage by 12% and damage dealt by skills by 15% (stacks up to 4 times; resets on failure)"
     ]
   },
   {
@@ -5200,7 +5226,7 @@
       "Attack damage X 0.75 + STR X 5 magic damage",
       "If target is CRACKED, cooldown is reset",
       "If target is SHATTERED, consumes it to deal 200% damage",
-      "Empowered: Deals 300% damage and if target is CRACKED, has chance to leave it SHATTERED for 5 seconds (chance increases based on fail count)"
+      "Empowered: Deals 300% damage and if target is CRACKED, has chance to leave it SHATTERED for 5 seconds (50% chance, 100% after a failure)"
     ]
   },
   {
@@ -5297,7 +5323,7 @@
     "order": 1,
     "active": [
       "Creates an illusion that can mimic you.",
-      "Illusion deals 50% reduced damage and takes 40% reduced damage",
+      "Illusion deals 40% reduced damage and takes 40% reduced damage",
       "Has 5 second recast cooldown if killed"
     ]
   },
@@ -5329,7 +5355,7 @@
     ],
     "active": [
       "An expert mastery of dagger.",
-      "Attack damage X 0.7 + AGI X 5 magic damage",
+      "Attack damage X 1 + AGI X 5 magic damage",
       "Can critically strike"
     ]
   },
@@ -5344,7 +5370,7 @@
     "order": 4,
     "passive": [
       "The movement of his hands are said to be almost magical.",
-      "On attack, increases AGI by 2.5% for 6 seconds (stacks up to 8 times)",
+      "On skill cast, increases AGI by 8% for 6 seconds (stacks up to 3 times)",
       "On skill cast, empowers next attack to strike 3 additional times, each dealing AGI X 1 pure damage"
     ],
     "active": [
@@ -5417,7 +5443,8 @@
     "active": [
       "Delivers a grand finale.",
       "Consumes all marks to deal Attack Damage X 1 + AGI X 12.5 magic damage each",
-      "Can critically strike"
+      "Can critically strike",
+      "Also hits units around the target"
     ]
   },
   {
@@ -5595,7 +5622,7 @@
       "Forms a dome made of water.",
       "Creates a dome of water that lasts for 20 seconds at target location",
       "Allies within the dome are healed for INT X 0.2 HP per second",
-      "Allies within the dome receive 12% water affinity and have damage taken reduced by 20%"
+      "Allies within the dome receive 6% water affinity and have damage taken reduced by 12%"
     ]
   },
   {
@@ -5609,8 +5636,9 @@
     "order": 11,
     "active": [
       "Merges with Meeko to gain immense power.",
-      "For 8 seconds, increases damage dealt by skills by 5% + 0.3% X (Flame Affinity + Water Affinity)",
-      "All skills are converted into Fire skills"
+      "For 8 seconds, amplifies skill damage by 12%",
+      "All skills are converted into Fire skills",
+      "Passive: When learned, converts all skills to Fusion element (affinity = higher of Fire or Water affinity X 100% + lower affinity X 50%)"
     ]
   },
   {
@@ -5686,7 +5714,7 @@
       "Forms a barrier made of fire.",
       "Converts summoned Water Dome into Fire Dome",
       "Enemies within the dome receive INT X 2 magic damage per second",
-      "Allies within the dome receive 12% fire affinity"
+      "Allies within the dome receive 6% fire affinity"
     ]
   },
   {
@@ -5700,7 +5728,7 @@
     "order": 17,
     "active": [
       "\"Feel the wrath of Fox God.\" - Shrine Priestess",
-      "Summons 3 Fire Talismans",
+      "Summons 2 Fire Talismans",
       "Each explosion deals INT X 25 magic damage and heals allies for INT X 2",
       "Final explosion, deals INT X 100 magic damage"
     ]
@@ -5887,12 +5915,12 @@
     "cooldown": 10,
     "order": 4,
     "passive": [
-      "Basic attacks and Homing Missiles against bosses have 17% chance to critically strike and apply Armor Break",
+      "Basic attacks and Homing Missiles against bosses have 15% chance to critically strike and apply Armor Break (guaranteed every 6th attack; can proc regardless of Break state)",
       "Increases damage dealt by your attacks to target by 15% for 4 seconds (stacks up to 2 times)"
     ],
     "active": [
       "Fires a destructive missile.",
-      "Attack Damage X 1 + STR X 12.5 magic damage and slows",
+      "Attack Damage X 1 + STR X 15 magic damage and slows",
       "Converts Armor Break into Critical Break for 2 seconds, which also increases damage dealt by your skills",
       "Cooldown is reset if target is boss with max stacks",
       "Consumes Critical Break to land as critical strike"
@@ -5983,7 +6011,7 @@
     "order": 1,
     "active": [
       "Dashes with extreme speed.",
-      "Next 6 basic attacks deal (STR + INT) X 2~6 (based on hero level) bonus damage (up to 3 seconds)",
+      "Next 6 basic attacks deal (STR + INT) X 2~4 (based on hero level) bonus damage (up to 3 seconds)",
       "Can be cast twice in a row"
     ]
   },
@@ -5998,7 +6026,7 @@
     "order": 2,
     "active": [
       "Infuses your blade with magic.",
-      "Next basic attack deals (STR + INT) X 10 bonus magic damage",
+      "Next basic attack deals (STR + INT) X 9 bonus magic damage",
       "If Lunar Mark is consumed, lands as critical strike and cooldown is reset"
     ]
   },
@@ -6029,9 +6057,9 @@
     "order": 4,
     "active": [
       "Surrounds your body with mana to retaliate.",
-      "Reduces damage taken by 80% and cancels harmful effects up to 1 second",
-      "On cancel, retalitates with (STR + INT) X 25 magic damage",
-      "If a skill is successfully blocked, duration is refreshed and deals 200% bonus damage"
+      "For up to 1 second, completely blocks the first skill hit (ignoring its attached effects) and reduces all other damage taken by 70%",
+      "On cancel, retalitates with (STR + INT) X 20 magic damage",
+      "If a skill is successfully blocked, duration is refreshed and deals 150% bonus damage"
     ]
   },
   {
@@ -6044,7 +6072,7 @@
     "order": 5,
     "active": [
       "Drops down fragments of star.",
-      "Deals (STR + INT) X 7.5 magic damage 3 times",
+      "Deals (STR + INT) X 6 magic damage 3 times",
       "Heals allies for (Target's Max HP X 2% + INT X 0.5) HP each time",
       "Applies Lunar Mark",
       "Charges once every 5 seconds (up to 3 charges; affected by base attack speed)"
@@ -6061,7 +6089,7 @@
     "order": 6,
     "active": [
       "Fires a slash infused with moonlight.",
-      "Attack Damage X 4 + (STR + INT) X 50 magic damage",
+      "Attack Damage X 5 + (STR + INT) X 40 magic damage",
       "If Lunar Mark is consumed, deals 100% bonus damage and breaks shield effects"
     ]
   },
