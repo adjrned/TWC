@@ -194,7 +194,7 @@ function summaryHtml(hero) {
     ${meta.length ? `<div class="hd-summary-meta">${meta.join('<span class="hd-sep">·</span>')}</div>` : ''}
     ${hero.tags?.length ? `<div class="hd-tags">${hero.tags.map(tag => `<span class="hd-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
     <div class="hd-block hd-overview"><p>${esc(hero.overview)}</p>
-      ${notes.map(([stat, text]) => `<p class="hd-statnote"><b class="${STAT_CSS[stat] || ''}">${esc(t('stat.' + stat))}</b> ${esc(text)}</p>`).join('')}
+      ${notes.map(([key, text]) => `<p class="hd-statnote">${key.split('/').map(stat => `<b class="${STAT_CSS[stat] || ''}">${esc(t('stat.' + stat))}</b>`).join('/')} ${esc(text)}</p>`).join('')}
     </div>
     ${list(hero.strengths, t('heroes.strengths'), 'hd-plus')}
     ${list(hero.weaknesses, t('heroes.weaknesses'), 'hd-minus')}`;

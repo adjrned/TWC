@@ -263,7 +263,8 @@
   color: var(--muted2);
 }
 .hd-statnote { margin-top: 6px !important; }
-.hd-statnote b { color: var(--stat); margin-right: 4px; }
+.hd-statnote b { color: var(--stat); }
+.hd-statnote b:last-of-type { margin-right: 4px; }
 .hd-points { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .hd-points li { position: relative; padding-left: 14px; }
 .hd-points li::before { position: absolute; left: 0; font-weight: 700; }

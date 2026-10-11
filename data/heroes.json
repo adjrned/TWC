@@ -22,6 +22,24 @@
       "Soulbane - Cursed Arrow",
       "Agnitus, the Bow of Divine Fury - Arrow of Judgment",
       "Divine Vein - Divine Arrow"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Burst",
+      "Mobility"
+    ],
+    "overview": "A long-range archer who stores lightning charges on basic attacks and spends them on Q for bonus damage. R loads explosive shots that stun and add fire damage to the next skill. T hits harder the farther away the target is.",
+    "strengths": [
+      "Huge single-target burst from range",
+      "Hard to pin down: W disengages, and E pushes enemies back and cuts damage from outside its radius by up to 80%",
+      "Strong self-heal (D)"
+    ],
+    "weaknesses": [
+      "Often out of range of team buffs"
     ]
   },
   {
@@ -182,6 +200,32 @@
       "Punisher - Abandon All Hope",
       "Last Word - Abandon All Hope",
       "Final Omen - Abandon All Hope"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS",
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "DPS",
+      "Healer",
+      "Debuffer",
+      "Shielder"
+    ],
+    "overview": "Fights alongside drones (D) that join the attacks and can attach to allies. All skill damage uses Magitek affinity, which equals 70% of the highest elemental affinity.",
+    "statNotes": {
+      "AGI": "Ranged damage dealer with some healing on the side.",
+      "INT": "Healer that bounces heals between allies, breaks shields with E, and makes T's missiles pierce enemies and heal allies."
+    },
+    "strengths": [
+      "W shields an ally, removes debuffs and gives a speed boost",
+      "R makes the target take more damage, and E adds 4% more magic damage taken",
+      "INT excels in small parties"
+    ],
+    "weaknesses": [
+      "Hard to heal 3 or more players at once",
+      "Immobile"
     ]
   },
   {
@@ -204,7 +248,23 @@
     ],
     "spec": [
       "No Specs!"
-    ]
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Burst",
+      "Buffer"
+    ],
+    "overview": "A burst damage dealer who summons enchanted swords through attacks and skills, then spends them for bonus damage and quick dashes onto enemies. W, E and R are chants for speed, power or protection, and T extends the next chant to nearby allies.",
+    "strengths": [
+      "Simple to play",
+      "Can buff allies with attack damage, speed or a cleanse and 50% damage reduction (T)",
+      "F stuns and makes the target take 50% more damage from enchanted swords"
+    ],
+    "weaknesses": []
   },
   {
     "id": "H05B",
@@ -228,6 +288,24 @@
       "Punisher - Abandon All Hope",
       "Last Word - Abandon All Hope",
       "Final Omen - Abandon All Hope"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Mobility",
+      "Burst"
+    ],
+    "overview": "A revolver gunslinger with 6 bullets, mixing basic attacks with skills. Q tumbles and guarantees a crit on the next shot, R empties the cylinder, and T removes bullet costs and cuts cooldowns for a burst window.",
+    "strengths": [
+      "Highly mobile at mid range (Q)",
+      "Shots never miss and ignore all armor",
+      "F deals extra damage to low-HP targets"
+    ],
+    "weaknesses": [
+      "Revolves around 30s and 15s burst windows"
     ]
   },
   {
@@ -249,6 +327,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "DPS",
+      "AoE",
+      "Debuffer"
+    ],
+    "overview": "Weaves basic attacks between skills: each cast empowers the next attack for heavy damage that hits everything nearby. Q, W and E each chain into a follow-up. Finishing combos leaves illusion swords that boost AGI and can all be fired at once with R.",
+    "strengths": [
+      "High sustained damage",
+      "T makes the target take 6% more damage",
+      "Stuns and knockbacks give strong crowd control"
+    ],
+    "weaknesses": [
+      "Damage depends on weaving basic attacks between skills"
     ]
   },
   {
@@ -332,7 +429,8 @@
     ],
     "difficulty": 1,
     "tags": [
-      "Sustain",
+      "DPS",
+      "Tank",
       "Mobility",
       "Buffer",
       "Debuffer"
@@ -371,6 +469,24 @@
       "Grandine, the Plates of Wraith - Wraith Possession",
       "Athanasia, the Armor of the Reaper - Reaper Possession",
       "Exitium, the Armor of Ruin - Bringer of Ruin"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "DPS",
+      "Auto-attack"
+    ],
+    "overview": "Fights almost entirely with fast basic attacks that randomly trigger extra strikes and debuffs. D dodges the next hit and counters, and F gives a burst window with +70% skill damage, +250% attack speed and CC immunity.",
+    "strengths": [
+      "Simple playstyle with very few skill casts",
+      "Lowers enemy armor by 40% and makes them take more proc damage (E)",
+      "Self-sustaining: R randomly adds attack damage, damage reduction and regen"
+    ],
+    "weaknesses": [
+      "Damage depends on random procs"
     ]
   },
   {
@@ -436,6 +552,24 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Burst",
+      "Combo"
+    ],
+    "overview": "A scythe fighter built around skill combos. D refreshes Q and E, W stacks extra damage for repeating the same kind of hit, and E powers up Q for a big burst. F marks a target to take more damage the lower its HP, then hits hard when the mark ends.",
+    "strengths": [
+      "High burst damage",
+      "Hard to take down: R cuts damage taken by 80% with CC immunity, and T gives another 30%",
+      "Strong mobility (D and E)"
+    ],
+    "weaknesses": [
+      "Revolves around 15s and 30s burst windows"
     ]
   },
   {
@@ -458,6 +592,24 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Burst",
+      "Crit",
+      "Stealth"
+    ],
+    "overview": "All skills can crit. Q and W reset each other and build marks that raise crit chance, and full marks let T fire instantly with shadows that copy the next skill. Slips into stealth when out of combat, and E turns invisible for a big opening hit.",
+    "strengths": [
+      "High burst damage",
+      "Safe while hidden: 30% damage reduction in stealth, and R keeps stealth up inside the smoke"
+    ],
+    "weaknesses": [
+      "Short burst windows: damage drops off between T casts"
     ]
   },
   {
@@ -528,7 +680,7 @@
     "difficulty": 1,
     "tags": [
       "Reviver",
-      "Shield",
+      "Shielder",
       "Healer",
       "Debuffer"
     ],
@@ -562,6 +714,25 @@
     "spec": [
       "Guardian of the Skies - Improved Magnetic Field",
       "Ruler of the Skies - Improved Magnetic Field"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "DPS",
+      "Auto-attack",
+      "Shield Break"
+    ],
+    "overview": "A spear fighter whose basic attacks ignore 80% of armor, with every 4th attack striking twice. Dealing or taking damage builds a magnetic field that adds attack damage, attack speed and damage reduction. R spends it for a shield-breaking burst.",
+    "strengths": [
+      "Simple, auto-attack-focused playstyle",
+      "Breaks shields (R)",
+      "Durable: the magnetic field adds up to 20% damage reduction, and E adds 30% more"
+    ],
+    "weaknesses": [
+      "Low APM (actions per minute)"
     ]
   },
   {
@@ -591,6 +762,7 @@
     ],
     "difficulty": 1,
     "tags": [
+      "DPS",
       "Auto-attack",
       "Sustain",
       "Bleed"
@@ -630,7 +802,23 @@
       "Everfrostbane - Improved Freezing Shot",
       "Soulbane - Improved Freezing Shot",
       "Divine Vein - Improved Freezing Shot"
-    ]
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Burst",
+      "Buffer",
+      "CC"
+    ],
+    "overview": "An elven archer whose arrows explode every few seconds and store charges, letting Q and W skip their cooldowns. A guardian scout (E) follows along, joining attacks and buffing nearby allies. T and F rain down big volleys.",
+    "strengths": [
+      "Gives nearby allies +4% attack damage and Main Stat, and E's active boosts their HP regen",
+      "Strong crowd control: Q stuns, W slows, and T stuns everything it hits"
+    ],
+    "weaknesses": []
   },
   {
     "id": "H000",
@@ -669,7 +857,7 @@
       "Tank",
       "Shield Break",
       "Buffer",
-      "Shield"
+      "Shielder"
     ],
     "overview": "A mana-powered tank. Her max MP grows with STR + INT, and her skills spend it for damage. She protects the party, breaks barriers, and pushes monsters around.",
     "strengths": [
@@ -830,6 +1018,7 @@
     ],
     "difficulty": 2,
     "tags": [
+      "DPS",
       "Buffer",
       "Healer",
       "Mobility"
@@ -867,6 +1056,23 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "DPS",
+      "Combo"
+    ],
+    "overview": "A melee fighter with slightly longer reach than most. Slashes up to 3 times in a row, ignoring armor, and spends souls for bonus damage. R dodges the next attack, refills souls and resets W and E. T removes soul costs for 6 seconds and amplifies skill damage by 12%.",
+    "strengths": [
+      "High damage that keeps up through the fight",
+      "R lets a well-timed dodge restore souls and resets skills"
+    ],
+    "weaknesses": [
+      "High APM (actions per minute): needs constant key input, so it isn't recommended if you have wrist strain"
     ]
   },
   {
@@ -894,6 +1100,29 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS",
+      "Support"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Healer",
+      "Buffer",
+      "Debuffer"
+    ],
+    "overview": "Every 4th attack heals the hero and two nearby allies. The highest stat decides the role.",
+    "statNotes": {
+      "AGI": "Damage dealer. Skills deal 100% more damage, and R costs no Ki.",
+      "STR/INT": "Healer. Activates Harmony, which boosts healing, lets Q target allies and makes enemies take more damage. Heals also give allies +2.5% final damage."
+    },
+    "strengths": [
+      "Easy to play",
+      "Easily overheals multiple people"
+    ],
+    "weaknesses": [
+      "Low APM (actions per minute)"
     ]
   },
   {
@@ -977,6 +1206,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "Burst",
+      "Combo",
+      "Mobility"
+    ],
+    "overview": "Fights alongside an illusion that copies every move. Q marks the target, and E and T consume the marks for big hits. R throws cards that can be teleported to, and F resets T for a second finisher.",
+    "strengths": [
+      "High burst once marks are stacked",
+      "Highly mobile: E swaps places with the illusion, and R teleports to cards",
+      "The illusion takes 40% reduced damage, and R's teleport adds a short damage reduction"
+    ],
+    "weaknesses": [
+      "Hard to play: you control two characters at once"
     ]
   },
   {
@@ -1027,7 +1275,6 @@
     ],
     "difficulty": 3,
     "tags": [
-      "DPS",
       "Burst",
       "Mobility",
       "Resets"
@@ -1110,7 +1357,6 @@
     ],
     "difficulty": 2,
     "tags": [
-      "DPS",
       "Combo",
       "Burst",
       "Parry"
