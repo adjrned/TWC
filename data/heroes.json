@@ -116,9 +116,9 @@
     "difficulty": 3,
     "tags": [
       "DPS",
-      "Combo",
       "Buffer",
-      "Debuffer"
+      "Debuffer",
+      "Combo"
     ],
     "overview": "A versatile caster who draws an element circle (Q fire, W water, E wind, R earth), then follows up with a second key for one of 16 transmutations. These cover damage, healing, shields, debuffs and a summoned golem. T resets every transmutation and amplifies skill damage by 12%.",
     "strengths": [
@@ -388,8 +388,8 @@
     ],
     "difficulty": 2,
     "tags": [
-      "Mobility",
-      "Burst"
+      "Burst",
+      "Mobility"
     ],
     "overview": "A revolver gunslinger with 6 bullets, mixing basic attacks with skills. Q tumbles and guarantees a crit on the next shot, R empties the cylinder, and T removes bullet costs and cuts cooldowns for a burst window.",
     "strengths": [
@@ -428,8 +428,8 @@
     "difficulty": 2,
     "tags": [
       "DPS",
-      "AoE",
-      "Debuffer"
+      "Debuffer",
+      "AoE"
     ],
     "overview": "Weaves basic attacks between skills: each cast empowers the next attack for heavy damage that hits everything nearby. Q, W and E each chain into a follow-up. Finishing combos leaves illusion swords that boost AGI and can all be fired at once with R.",
     "strengths": [
@@ -474,10 +474,10 @@
     ],
     "difficulty": 2,
     "tags": [
-      "Summoner",
       "Buffer",
       "Debuffer",
-      "Shielder"
+      "Shielder",
+      "Summoner"
     ],
     "overview": "Summons elementals that fight alongside the hero: Q fire for damage, W water for healing, E lightning for ranged damage, R earth for protection. Each elemental's own skills come from pressing its key again. T recalls them to safety and heals them, and F summons a chaos elemental.",
     "strengths": [
@@ -562,10 +562,9 @@
     "difficulty": 1,
     "tags": [
       "DPS",
-      "Tank",
-      "Mobility",
       "Buffer",
-      "Debuffer"
+      "Debuffer",
+      "Mobility"
     ],
     "overview": "A tanky frontliner who's easy to pick up. She dashes and leaps into fights, raises nearby allies' Main Stat, and makes her target take more damage.",
     "strengths": [
@@ -649,9 +648,9 @@
     "difficulty": 2,
     "tags": [
       "Burst",
+      "Buffer",
       "Crit",
-      "Shield Break",
-      "Buffer"
+      "Shield Break"
     ],
     "overview": "A spear fighter whose skills can crit. She powers up each skill with D, breaks barriers, and finishes off low-HP targets.",
     "strengths": [
@@ -775,6 +774,7 @@
     "tags": [
       "Healer",
       "Buffer",
+      "Reviver",
       "Summoner"
     ],
     "overview": "An AoE healer whose heals give allies +Main Stat and 8% damage reduction. Q toggles spirits between healing and attacking. R lays a healing field that raises allies' HP and skill damage, and F summons a guardian that heals, revives and fights.",
@@ -1005,10 +1005,10 @@
     ],
     "difficulty": 1,
     "tags": [
-      "Tank",
-      "Shield Break",
+      "DPS",
       "Buffer",
-      "Shielder"
+      "Shielder",
+      "Shield Break"
     ],
     "overview": "A mana-powered tank. Her max MP grows with STR + INT, and her skills spend it for damage. She protects the party, breaks barriers, and pushes monsters around.",
     "strengths": [
@@ -1094,8 +1094,8 @@
     "difficulty": 3,
     "tags": [
       "Burst",
-      "Combo",
-      "Debuffer"
+      "Debuffer",
+      "Combo"
     ],
     "overview": "Damage scales with max MP. Two Q stars colliding explode for 500% damage, and W amplifies skill damage against its target. D restores HP and MP and refreshes cooldowns, and F summons stars that fire alongside each Q.",
     "strengths": [
@@ -1404,8 +1404,8 @@
     "difficulty": 3,
     "tags": [
       "DPS",
-      "Combo",
-      "Debuffer"
+      "Debuffer",
+      "Combo"
     ],
     "overview": "Builds combo stacks by chaining actions: repeating one (AAA) or alternating them (AWA). Changing combo types stacks up to 4 times for more attack and skill damage. Cracking and shattering enemies sets up big hits.",
     "strengths": [
@@ -1485,8 +1485,8 @@
     "difficulty": 2,
     "tags": [
       "DPS",
-      "Combo",
-      "Buffer"
+      "Buffer",
+      "Combo"
     ],
     "overview": "Fights alongside a fox spirit. R creates water and fire talismans: water ones power up the next skill automatically, and fire ones let it be recast as a fire version. T merges with the fox for 8 seconds, turning every skill into fire and amplifying skill damage by 12%.",
     "strengths": [
@@ -1606,8 +1606,8 @@
     ],
     "difficulty": 2,
     "tags": [
-      "Combo",
       "Burst",
+      "Combo",
       "Parry"
     ],
     "overview": "Mixes swordplay with arcane magic, with most skills scaling on STR + INT. W and R mark the target, and Q and T consume the mark for crits, resets and shield breaking.",
