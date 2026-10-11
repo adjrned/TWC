@@ -303,8 +303,8 @@
     "tags": [
       "DPS",
       "Healer",
-      "Debuffer",
-      "Shielder"
+      "Shielder",
+      "Debuffer"
     ],
     "overview": "Fights alongside drones (D) that join the attacks and can attach to allies. All skill damage uses Magitek affinity, which equals 70% of the highest elemental affinity.",
     "statNotes": {
@@ -474,9 +474,9 @@
     ],
     "difficulty": 2,
     "tags": [
+      "Shielder",
       "Buffer",
       "Debuffer",
-      "Shielder",
       "Summoner"
     ],
     "overview": "Summons elementals that fight alongside the hero: Q fire for damage, W water for healing, E lightning for ranged damage, R earth for protection. Each elemental's own skills come from pressing its key again. T recalls them to safety and heals them, and F summons a chaos elemental.",
@@ -773,8 +773,8 @@
     "difficulty": 2,
     "tags": [
       "Healer",
-      "Buffer",
       "Reviver",
+      "Buffer",
       "Summoner"
     ],
     "overview": "An AoE healer whose heals give allies +Main Stat and 8% damage reduction. Q toggles spirits between healing and attacking. R lays a healing field that raises allies' HP and skill damage, and F summons a guardian that heals, revives and fights.",
@@ -830,9 +830,9 @@
     ],
     "difficulty": 1,
     "tags": [
+      "Healer",
       "Reviver",
       "Shielder",
-      "Healer",
       "Debuffer"
     ],
     "overview": "A support who keeps the party alive. She revives fallen allies, shields the party with her own HP, and makes enemies take more damage. Her bag sets her style: healing potions or bombs.",
@@ -1006,8 +1006,8 @@
     "difficulty": 1,
     "tags": [
       "DPS",
-      "Buffer",
       "Shielder",
+      "Buffer",
       "Shield Break"
     ],
     "overview": "A mana-powered tank. Her max MP grows with STR + INT, and her skills spend it for damage. She protects the party, breaks barriers, and pushes monsters around.",
@@ -1179,9 +1179,9 @@
     "difficulty": 2,
     "tags": [
       "Healer",
-      "Buffer",
       "Reviver",
-      "Shielder"
+      "Shielder",
+      "Buffer"
     ],
     "overview": "A dedicated healer who excels in large parties. The aura gives nearby allies +8% attack damage, and E's follow-up raises their skill damage. T summons an angel who can fully heal and cleanse an ally, pull an ally to safety, or revive a fallen one.",
     "strengths": [
@@ -1229,8 +1229,8 @@
     "difficulty": 2,
     "tags": [
       "DPS",
-      "Buffer",
       "Healer",
+      "Buffer",
       "Mobility"
     ],
     "overview": "Every 7th attack triggers Judgment. The chosen aura (D) decides whether Judgment and Sigils add skill damage, shields, heals or cleanses. W dashes in and hands Sigils to allies.",
