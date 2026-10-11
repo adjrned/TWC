@@ -25,13 +25,14 @@ async function loadData() {
   if (!skillData) skillData = [];
 }
 
-function getSpecDescription(weaponName, heroClass) {
+// Every specialty line for this hero (a weapon can change several skills).
+function getSpecDescriptions(weaponName, heroClass) {
   const item = getItem(weaponName);
-  if (!item?.stats?.spec) return '';
-  const specLine = item.stats.spec.find(s => s.startsWith(heroClass + ' - '));
-  if (specLine) return specLine.slice(heroClass.length + 3);
-  if (item.stats.spec.length > 1) return item.stats.spec[1].replace(/^[^-]+ - /, '');
-  return '';
+  if (!item?.stats?.spec) return [];
+  const lines = item.stats.spec.filter(s => s.startsWith(heroClass + ' - ')).map(s => s.slice(heroClass.length + 3));
+  if (lines.length) return lines;
+  if (item.stats.spec.length > 1) return [item.stats.spec[1].replace(/^[^-]+ - /, '')];
+  return [];
 }
 
 const STAT_ORDER = ['STR', 'AGI', 'INT'];
@@ -226,7 +227,7 @@ function renderHeroDetail(hero, skills) {
     <div class="hd-specs">${specs.map(s => {
       const [weapon = '', ability = ''] = s.split(' - ');
       const item = getItem(weapon);
-      const desc = getSpecDescription(weapon, hero.heroClass);
+      const descs = getSpecDescriptions(weapon, hero.heroClass);
       const chip = item
         ? `<a href="#/items/${encodeURIComponent(weapon)}" class="idb-chiplink ${rankInfo(item).css}" data-name="${esc(weapon)}">${iconHtml(weapon, 'idb-chip-icon')}<span class="idb-chiplink-name">${esc(localizedItemName(item))}</span></a>`
         : `<span class="idb-chiplink">${esc(weapon)}</span>`;
@@ -234,7 +235,7 @@ function renderHeroDetail(hero, skills) {
         ${chip}
         <div class="hd-spec-text">
           ${ability ? `<div class="hd-spec-ability">${esc(ability)}</div>` : ''}
-          ${desc ? `<p>${esc(desc)}</p>` : ''}
+          ${descs.map(d => `<p>${esc(d)}</p>`).join('')}
         </div>
       </div>`;
     }).join('')}</div>

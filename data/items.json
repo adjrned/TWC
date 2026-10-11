@@ -16186,7 +16186,7 @@
       "spec": [
         "Specialty - Crimson Star",
         "Shooter - Twin Star: Heals allies hit for (INT X 0.5 + Target's Max HP X 10%)",
-        "Shooter - Nanomachine Injection: Healing speed increased by 50% and duration increased by 50%"
+        "Shooter - Nanomachine Injection: Duration increased by 50%"
       ]
     },
     "recipe": [
@@ -19577,7 +19577,7 @@
       "spec": [
         "Specialty - Cosmic Star",
         "Shooter - Twin Star: Heals allies hit for (INT X 0.5 + Target's Max HP X 15%)",
-        "Shooter - Nanomachine Injection: Healing speed increased by 60% and duration increased by 50%; while buff is active, target is immune to debuffs"
+        "Shooter - Nanomachine Injection: Duration increased by 50%; while buff is active, target is immune to debuffs"
       ]
     },
     "recipe": [
@@ -23389,7 +23389,7 @@
       "spec": [
         "Specialty - Abyss Fall",
         "Shooter - Twin Star: Heals allies hit for (INT X 0.5 + Target's Max HP X 15%)",
-        "Shooter - Nanomachine Injection: Healing speed increased by 60% and duration increased by 100%; while buff is active, target is immune to debuffs"
+        "Shooter - Nanomachine Injection: Duration increased by 100%; while buff is active, target is immune to debuffs"
       ]
     },
     "recipe": [
@@ -27531,9 +27531,9 @@
         "Recharge once every 10 seconds (maximum 3 recharges)"
       ],
       "spec": [
-        "Exclusive effect",
-        "Shooter - Twin Star: Restores HP of allies hit by Intelligence x 0.75",
-        "Shooter - Nanomachine Injection: Increases duration by 100% and grants debuff immunity."
+        "Specialty - Heaven's Fall",
+        "Shooter - Twin Star: Heals allies hit for INT X 0.75",
+        "Shooter - Nanomachine Injection: Duration increased by 100%; while buff is active, target is immune to debuffs"
       ]
     },
     "recipe": [
