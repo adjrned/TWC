@@ -169,7 +169,7 @@
     "active": [
       "Fires shards made from concentrated souls.",
       "INT X 3 magic damage",
-      "Increases damage taken by (5 + INT / 1000)% and reduces speed by 40% for 5 seconds",
+      "Increases damage taken by (5 + INT / 1000)% [Type-D] and reduces speed by 40% for 5 seconds",
       "On consecutive casts, fires additional shards and stuns for 0.5 seconds"
     ]
   },
@@ -3058,7 +3058,8 @@
       "Vayu's blessing that heals wounds and bestows revitalization.",
       "Consumes 3 MP per second",
       "Heals nearby allies for INT X 0.5 HP per second",
-      "Increases affected allies' magic defense by 25%"
+      "Increases affected allies' magic defense by 25%",
+      "Increases affected allies' final damage by 4% [Type-A]"
     ]
   },
   {
@@ -3176,6 +3177,7 @@
       "Throws a potion made with your own blood, which is thick as troll's blood.",
       "Heals target for STR X 2.5 HP",
       "Increases target's HP regen by (Target's Max HP X 3% + Your own HP Regen) for 10 seconds",
+      "Increases target's skill damage by 6% + (STR / 500)%",
       "Potion lasts 300 seconds, and you can maintain up to 5 potions on ground at once",
       "1 potion is refilled every 4 seconds (up to 5 potions)"
     ]
@@ -4351,7 +4353,7 @@
     "active": [
       "Releases a holy nova.",
       "Heals allies within radius for INT X 2.5",
-      "Increases target's skill damage by (6 + INT / 450)% for 5 seconds",
+      "Increases target's skill damage by (6 + INT / 500)% for 5 seconds",
       "Buff duration is increased up to 100% based on how long Holy Aurora was maintained"
     ]
   },
@@ -4459,7 +4461,8 @@
       "Cleanses multiple enemies using power bestowed by the god.",
       "On each attack, strike all nearby enemies and deal INT X 1.5 additional magic damage on hit",
       "Magic defense increased by 30% and movement speed increased by 75",
-      "Immune to CC effects"
+      "Immune to CC effects",
+      "Increases nearby allies' final damage by 2% [Type-A]"
     ]
   },
   {

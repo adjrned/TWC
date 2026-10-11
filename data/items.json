@@ -3188,6 +3188,7 @@
       "allstat": 200,
       "attackspeedpercent": 0.15,
       "passive": [
+        "Increases nearby allies' ATK SPD by 15% [Type-A]",
         "On death, revives you after a short delay (cooldown: 3 minutes)",
         "Cooldown: 180 seconds"
       ]
@@ -5094,7 +5095,7 @@
       "hp": 750,
       "skilldamagepercent": 0.05,
       "passive": [
-        "On attack, 9% chance to reduce target's armor by 12% [Type-A] for 5 seconds"
+        "On attack, 9% chance to reduce target's armor by 15% [Type-A] for 5 seconds"
       ]
     },
     "required_by": [
@@ -5820,7 +5821,7 @@
       "skilldamagepercent": 0.03,
       "passive": [
         "25% chance to corrupt enemies in frontal cone on attack",
-        "Deals (STR X 9) magic damage and reduces enemy armor by 175 for 6 seconds"
+        "Deals (STR X 9) magic damage and reduces enemy armor by 15% [Type-A] for 6 seconds"
       ]
     },
     "recipe": [
@@ -8221,7 +8222,7 @@
       "mainstat": 813,
       "attackspeedpercent": 0.25,
       "passive": [
-        "Deals 15% bonus damage to enemies under 50% HP",
+        "Deals 15% bonus final damage to enemies under 50% HP [Type-B]",
         "Empowers next attack every 12 seconds",
         "Empowered attacks deal (MAIN STAT X 18.75) magic damage"
       ]
@@ -13354,7 +13355,7 @@
       "agi": 100,
       "skilldamagepercent": 0.05,
       "passive": [
-        "Increases nearby allies' stats by 5% [Type-A, excluding self]"
+        "Increases nearby allies' stats by 4% [Type-A, excluding self]"
       ]
     },
     "recipe": [
@@ -14416,7 +14417,7 @@
       "agi": 320,
       "skilldamagepercent": 0.09,
       "passive": [
-        "13% chance to reduce target's armor by 12% [Type-A] on attack for 5 seconds"
+        "13% chance to reduce target's armor by 15% [Type-A] on attack for 5 seconds"
       ]
     },
     "recipe": [
@@ -18003,7 +18004,7 @@
       "mpregen": 25,
       "passive": [
         "On landing a direct hit on enemies, applies Composure",
-        "Increases enemy magic damage taken by 6% [Type-B] for 12 seconds"
+        "Increases enemy magic damage taken by 3% [Type-B] for 12 seconds"
       ],
       "active": [
         "On use, activates Statis",
@@ -18225,7 +18226,7 @@
       "passive": [
         "On single-target hits, engulfs target with Corruption",
         "Deals 12.5% bonus damage over 3 seconds (effect stacks)",
-        "Increases enemy magic damage taken by 4% [Type-B]"
+        "Increases enemy magic damage taken by 2% [Type-C]"
       ]
     },
     "recipe": [
@@ -20547,7 +20548,7 @@
         "Increases nearby allies stats by 6%",
         "Activates Requiem every 6 seconds",
         "Deals ((STR + AGI + INT) X 3) magic damage in an AoE",
-        "Increases enemy damage taken by 4% for 6 seconds",
+        "Increases enemy damage taken by 3% [Type-B] for 6 seconds",
         "On next attack, heals (6% max HP)"
       ]
     },
@@ -21533,13 +21534,13 @@
       "affinitydarkpercent": 0.05,
       "passive": [
         "On direct hit, applies Composure (single-taget spells on enemies)",
-        "Increases magic damage taken by 7.5% [Type-B] for 12 seconds"
+        "Increases magic damage taken by 4% [Type-B] for 12 seconds"
       ],
       "active": [
         "On use, activates Despair",
         "Deals (water affinity X (MAIN STAT X 60)) pure damage to enemies with Composure",
         "Freezes for 3 seconds",
-        "Increases enemy damage taken by 5% for 2 seconds",
+        "Increases enemy magic damage taken by 8% [Type-B] for 2 seconds",
         "Cooldown: 30 seconds"
       ]
     },
@@ -21893,7 +21894,8 @@
       "passive": [
         "Empowers next attack with Demon's Grasp every 5 seconds",
         "Deals 5 additional attacks with (20% ATK DMG) pure damage",
-        "Heals (5% max HP)"
+        "Heals (5% max HP)",
+        "Reduces armor by 15% [Type-A]"
       ],
       "active": [
         "On use empowers next attack with Demon's Grasp",
@@ -22334,7 +22336,7 @@
         "On direct hit, activates Drowning Abyss",
         "Single-target spells deal 15% bonus damage per skill cast over 3 seconds",
         "(Bonus damage type is same as the spell used)",
-        "Increases enemy magic damage taken by 5%"
+        "Increases enemy magic damage taken by 2.5% [Type-C]"
       ]
     },
     "recipe": [
@@ -22629,7 +22631,7 @@
       "skilldamagepercent": 0.075,
       "passive": [
         "Upon damaging enemies below 50% HP, activates Death's Door",
-        "Deals 15% bonus damage"
+        "Deals 15% bonus final damage [Type-B]"
       ],
       "active": [
         "On use, activates Heartrender",
@@ -23839,7 +23841,7 @@
       "allstat": 300,
       "attackspeedpercent": -0.75,
       "passive": [
-        "Increases nearby allies stats by 7%, enemies' damage taken by 4% [Type-B]",
+        "Increases nearby allies stats by 7%, enemies' damage taken by 3% [Type-B]",
         "Obtains Twisted Souls during combat",
         "You gain 1 soul every 40 seconds",
         "You gain 2 souls when an ally dies",
@@ -23847,7 +23849,7 @@
       ],
       "active": [
         "On use, activates Lamentation",
-        "For 6 seconds, deals 60000 magic damage per second to nearby enemies within 500 radius and increases their damage taken by 8% [Type-B]",
+        "For 6 seconds, deals 60000 magic damage per second to nearby enemies within 500 radius and increases their damage taken by 6% [Type-B]",
         "Deals 200% bonus damage to non-boss units",
         "Cooldown: 60 seconds"
       ]
@@ -24955,6 +24957,9 @@
       "armor": 135,
       "int": 375,
       "mdpercent": 0.1,
+      "passive": [
+        "Increases nearby allies' ATK DMG by 7.5% [Type-C] (upgraded from Eye of the Flame Lord's aura)"
+      ],
       "active": [
         "On use, summons Crimson Eye",
         "Can be recast to give commands to the summon.",
@@ -26122,7 +26127,7 @@
       "passive": [
         "On direct skill hit, activates Void Corrosion",
         "Deals 17% of damage dealt over 3 seconds",
-        "Increases magic damage taken by target by 6%"
+        "Increases magic damage taken by target by 3% [Type-C]"
       ],
       "active": [
         "On use, activates Void Explosion",
