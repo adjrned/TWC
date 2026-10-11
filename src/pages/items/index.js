@@ -1,6 +1,7 @@
 import { esc } from '../../ui/escape.js';
 import { t, getLocale, getTypeName } from '../../i18n.js';
 import { translateItemName } from '../../data/translate.js';
+import { loadBossDrops, bossDropsForItem } from '../../data/bossDrops.js';
 import { showToast } from '../../ui/toast.js';
 import { hideItemTooltip } from '../../ui/tooltip.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
@@ -283,13 +284,37 @@ function renderList(el, list, s, onDone) {
 
 // ── Detail view ──────────────────────────────────────────────────────────────
 let bossData = null;
+let bossDrops = null;
 async function loadBossData() {
   if (bossData) return;
   try {
-    const r = await fetch('data/bosses.json');
+    const [r, drops] = await Promise.all([fetch('data/bosses.json'), loadBossDrops()]);
     if (r.ok) bossData = await r.json();
+    bossDrops = drops;
   } catch (e) {}
   if (!bossData) bossData = [];
+  if (!bossDrops) bossDrops = {};
+}
+
+// Drop sources for an item with their base rate. Boss drop tables (same data as the
+// Monster page) take priority; other sources fall back to the item's own droprate.
+function dropSources(item) {
+  const tables = bossDropsForItem(bossDrops, item.name);
+  const names = [...new Set([...(item.dropped_by || []), ...tables.map(d => d.boss)])];
+  return names.map(name => {
+    const d = tables.find(x => x.boss === name);
+    return { name, rate: d ? d.base / 100 : dropRateFor(item, name) };
+  });
+}
+
+// One decimal so rates line up; the full value stays in the tooltip.
+const shortRate = r => (r * 100 < 0.05 ? '<0.1%' : `${(r * 100).toFixed(1)}%`);
+
+// Boss icon + base rate for each drop source, shown inside a recipe ingredient's chip (same look as the Item Tracker).
+function recipeDropsHtml(item) {
+  const sources = item ? dropSources(item).filter(x => x.rate) : [];
+  if (!sources.length) return '';
+  return `<span class="rt-sources">${sources.map(({ name, rate }) => `<span class="rt-src" title="${esc(name)} · ${formatDropRate(rate)}">${iconHtml(name + ' Icon', 'rt-src-icon')}<span>${shortRate(rate)}</span></span>`).join('')}</span>`;
 }
 
 const BOSS_CATEGORY_LABELS = {
@@ -306,12 +331,14 @@ function byTierThenName(a, b) {
   return d || a.localeCompare(b);
 }
 
-function chipHtml(name, qty = 0) {
+// `extra` is appended inside the chip, right-aligned after the name (e.g. drop sources).
+function chipHtml(name, qty = 0, extra = '') {
   const ri = rankInfo(getItem(name));
   return `<a href="${itemHref(name)}" class="idb-chiplink ${ri.css}" data-name="${esc(name)}">
     ${iconHtml(name, 'idb-chip-icon')}
     <span class="idb-chiplink-name">${esc(localizedNameByName(name))}</span>
     ${qty > 1 ? `<span class="idb-qty">×${qty}</span>` : ''}
+    ${extra}
   </a>`;
 }
 
@@ -322,7 +349,7 @@ function sortSlots(recipe) {
 // Collapsible crafting tree. Each ingredient with its own recipe can be expanded.
 function recipeNodeHtml(name, qty, ancestors) {
   const it = getItem(name);
-  const row = chipHtml(name, qty);
+  const row = chipHtml(name, qty, recipeDropsHtml(it));
   if (!it?.recipe?.length || ancestors.has(name)) return `<li class="rt-leaf">${row}</li>`;
   const next = new Set(ancestors).add(name);
   return `<li><details><summary>${row}</summary><ul>${recipeSlotsHtml(it.recipe, next)}</ul></details></li>`;
@@ -369,8 +396,9 @@ function renderDetail(item, items) {
 
   // ── Acquisition column ──
   const parts = [];
-  if (item.dropped_by?.length) {
-    parts.push(section(t('items.dropsFrom'), `<div class="idb-drops">${item.dropped_by.map(name => {
+  const sources = dropSources(item);
+  if (sources.length) {
+    parts.push(section(t('items.dropsFrom'), `<div class="idb-drops">${sources.map(({ name, rate }) => {
       const boss = bossData.find(b => b.name === name);
       const tag = boss ? 'a' : 'div';
       const href = boss ? ` href="#/bosses/${esc(boss.id)}"` : '';
@@ -378,7 +406,7 @@ function renderDetail(item, items) {
         ${iconHtml(name + ' Icon', 'idb-drop-icon')}
         <span class="idb-drop-name">${esc(name)}</span>
         ${boss?.category ? `<span class="boss-tier-badge tier-${BOSS_CATEGORY_CSS[boss.category] || boss.category.toLowerCase()}">${esc(BOSS_CATEGORY_LABELS[boss.category] || boss.category)}</span>` : ''}
-        ${dropRateFor(item, name) ? `<span class="idb-drop-rate">${formatDropRate(dropRateFor(item, name))}</span>` : ''}
+        ${rate ? `<span class="idb-drop-rate" title="${formatDropRate(rate)}">${shortRate(rate)}</span>` : ''}
       </${tag}>`;
     }).join('')}</div>`));
   }

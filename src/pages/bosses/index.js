@@ -1,4 +1,5 @@
 import { esc } from '../../ui/escape.js';
+import { loadBossDrops, NO_WISH_BOSSES, isCurrencyItem } from '../../data/bossDrops.js';
 import { t, tf, getTypeName } from '../../i18n.js';
 import { loadItems, iconSrc as itemIconSrc, getItem, rankInfo, tierIndex, localizedItemName, dropRateFor } from '../../data/items.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
@@ -190,15 +191,8 @@ function renderBossFacets(bosses, s) {
 let bossDropData = null;
 
 async function loadBossDropData() {
-  if (bossDropData) return;
-  try {
-    const r = await fetch('data/boss-drops.json');
-    if (r.ok) bossDropData = await r.json();
-  } catch(e) {}
-  if (!bossDropData) bossDropData = {};
+  if (!bossDropData) bossDropData = await loadBossDrops();
 }
-
-const NO_WISH_BOSSES = new Set(['Styrix, the Harvester of Souls', 'Lightbringer Kamael', 'Arcane Lord']);
 
 const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
 
@@ -230,11 +224,6 @@ function getPlayerBonus(playerCount, bossName) {
   // Default: bonus starts at 3 players, +5% per player from 3 onwards
   const effectivePlayers = Math.max(0, playerCount - 2);
   return effectivePlayers * 5;
-}
-
-function isCurrencyItem(item) {
-  const l = item.name.toLowerCase();
-  return l.includes('soulstone') || l.includes('token') || l.includes('coin');
 }
 
 function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount, sacrifice = 0 }, bossName) {
