@@ -4,6 +4,8 @@ import { loadItems, iconSrc as sharedIconSrc, getItem, rankInfo, localizedItemNa
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
 import { slotIcon } from '../../ui/slotIcons.js';
 import { appendPatchHistory } from '../../ui/patchHistory.js';
+import { fetchCreatorsForClass } from '../../data/builds.js';
+import { fetchBuild, previewHtml, fmtBuildDate } from '../builder/buildBrowser.js';
 
 let heroData = null;
 let skillData = null;
@@ -55,6 +57,7 @@ const DPS_CLASSES = new Set([
 
 function heroMatchesRole(hero, role) {
   if (!role) return true;
+  if (hero.filter) return hero.filter.includes(role);
   if (role === 'DPS') return DPS_CLASSES.has(hero.heroClass);
   if (role === 'Support') return SUPPORT_CLASSES.has(hero.heroClass);
   return true;
@@ -177,6 +180,48 @@ function weaponTypeChip(w) {
   return `<span class="hd-weapon">${slotIcon('weapon', 13)}${esc(getTypeName(sub))}</span>`;
 }
 
+// Structured summary (range, difficulty, tags, overview, strengths/weaknesses, per-stat notes).
+// Heroes not yet rewritten fall back to the old role/description text.
+function summaryHtml(hero) {
+  const meta = [
+    hero.range ? esc(t(hero.range === 'Ranged' ? 'heroes.ranged' : 'heroes.melee')) : '',
+    hero.difficulty ? `<span class="hd-diff" title="${esc(t('heroes.difficulty'))} ${hero.difficulty}/3">${esc(t('heroes.difficulty'))} ${[1, 2, 3].map(n => `<i class="${n <= hero.difficulty ? 'on' : ''}"></i>`).join('')}</span>` : '',
+  ].filter(Boolean);
+  const list = (items, label, cls) => items?.length
+    ? `<div class="hd-block"><div class="idb-fxlabel">${label}</div><ul class="hd-points ${cls}">${items.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>` : '';
+  const notes = Object.entries(hero.statNotes || {});
+  return `
+    ${meta.length ? `<div class="hd-summary-meta">${meta.join('<span class="hd-sep">·</span>')}</div>` : ''}
+    ${hero.tags?.length ? `<div class="hd-tags">${hero.tags.map(tag => `<span class="hd-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
+    <div class="hd-block hd-overview"><p>${esc(hero.overview)}</p>
+      ${notes.map(([stat, text]) => `<p class="hd-statnote"><b class="${STAT_CSS[stat] || ''}">${esc(t('stat.' + stat))}</b> ${esc(text)}</p>`).join('')}
+    </div>
+    ${list(hero.strengths, t('heroes.strengths'), 'hd-plus')}
+    ${list(hero.weaknesses, t('heroes.weaknesses'), 'hd-minus')}`;
+}
+
+function legacySummaryHtml(hero) {
+  return hero.role?.length ? `<div class="hd-block"><div class="idb-fxlabel">${t('heroes.role')}</div>${hero.role.map(r => `<p>${esc(r)}</p>`).join('')}</div>` : '';
+}
+
+function legacyDescHtml(hero) {
+  return hero.description?.length ? `<div class="hd-block hd-desc">${hero.description.map(d => `<p>${esc(d)}</p>`).join('')}</div>` : '';
+}
+
+// How the community builds gear this hero, slot by slot.
+function gearingHtml(hero) {
+  const g = hero.gearing;
+  if (!g) return '';
+  return `<section class="idb-section hd-gearing">
+    <h2>${t('heroes.gearing')}</h2>
+    ${g.summary ? `<p class="hd-gear-summary">${esc(g.summary)}</p>` : ''}
+    ${g.points?.length ? `<ul class="hd-gear-points">${g.points.map(p => `<li>
+      <span class="hd-gear-slot">${slotIcon(p.slot, 13)}${esc(t('col.' + p.slot))}</span>
+      <span>${esc(p.text)}</span>
+    </li>`).join('')}</ul>` : ''}
+  </section>`;
+}
+
 function renderHeroDetail(hero, skills) {
   const heroSkills = skills.filter(s => s.heroClass === hero.heroClass);
   const groups = groupSkills(heroSkills);
@@ -216,6 +261,7 @@ function renderHeroDetail(hero, skills) {
       <a href="#/heroes?stat=${esc(hero.mainstat)}">${esc(t('stat.' + hero.mainstat))}</a>
     </nav>
     <div class="idb-detail hd-layout">
+      <div class="hd-aside">
       <article class="idb-card hd-card ${STAT_CSS[hero.mainstat] || ''}" style="--hero:#${esc(hero.color)}">
         <header class="hd-head">
           ${iconHtml(hero.name, 'hd-portrait', iconSrc(hero.icon))}
@@ -227,13 +273,36 @@ function renderHeroDetail(hero, skills) {
             </p>
           </div>
         </header>
-        ${hero.role?.length ? `<div class="hd-block"><div class="idb-fxlabel">${t('heroes.role')}</div>${hero.role.map(r => `<p>${esc(r)}</p>`).join('')}</div>` : ''}
+        ${hero.overview ? summaryHtml(hero) : legacySummaryHtml(hero)}
         ${weaponTypes.length ? `<div class="hd-block"><div class="idb-fxlabel">${t('heroes.weapons')}</div><div class="hd-weapons">${weaponTypes.map(weaponTypeChip).join('')}</div></div>` : ''}
-        ${hero.description?.length ? `<div class="hd-block hd-desc">${hero.description.map(d => `<p>${esc(d)}</p>`).join('')}</div>` : ''}
+        ${hero.overview ? '' : legacyDescHtml(hero)}
       </article>
+      ${gearingHtml(hero)}
+      <section class="idb-section hd-builds" id="heroBuilds" hidden></section>
+      </div>
       <div class="idb-side">${specHtml}${skillsHtml}</div>
     </div>
   `;
+}
+
+// Community builds for the hero, linking into the Build Planner. Filled in after the
+// page renders since each build file is fetched separately.
+async function renderBuildLinks(heroClass) {
+  const creators = await fetchCreatorsForClass(heroClass);
+  if (!creators.length) return;
+  const datas = await Promise.all(creators.map(c => fetchBuild(heroClass, c)));
+  const el = document.getElementById('heroBuilds');
+  if (!el) return; // navigated away
+  el.innerHTML = `<h2>${t('heroes.builds')} <span class="idb-count">${creators.length}</span></h2>
+    <div class="hd-build-list">${creators.map((c, i) => {
+      const href = '#/?' + new URLSearchParams({ class: heroClass, creator: c });
+      const date = fmtBuildDate(datas[i]?.publishedAt);
+      return `<a href="${esc(href)}" class="hd-build">
+        <span class="hd-build-name">${esc(c)}</span>${date ? `<span class="bb-meta">${esc(date)}</span>` : ''}
+        ${previewHtml(datas[i])}
+      </a>`;
+    }).join('')}</div>`;
+  el.hidden = false;
 }
 
 // ── Entry point ───────────────────────────────────────────────
@@ -255,6 +324,7 @@ export async function initHeroes({ params, query }) {
     }
     app.innerHTML = renderHeroDetail(hero, skillData);
     appendPatchHistory(app.querySelector('.idb-detail'), [hero.heroClass]);
+    renderBuildLinks(hero.heroClass);
     const onClick = e => {
       const key = e.target.closest('[data-jump]')?.dataset.jump;
       if (key) app.querySelector(`.hs-group[data-key="${CSS.escape(key)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -204,3 +204,84 @@
   .hs-skill[data-depth="1"] { margin-left: 10px; }
   .hs-skill[data-depth="2"] { margin-left: 20px; }
 }
+
+/* Community build links under the portrait */
+.hd-build-list { display: flex; flex-direction: column; gap: 6px; }
+.hd-build {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  color: var(--text);
+  text-decoration: none;
+}
+.hd-build:hover { border-color: var(--accent); background: var(--bg3); }
+.hd-build-name { font-weight: 600; }
+.hd-build .bb-preview { grid-column: 1 / -1; margin-top: 2px; }
+/* Hero card + community builds share the left column; the column sticks instead of the card. */
+.hd-aside {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.hd-aside .idb-card { position: static; }
+@media (max-width: 960px) {
+  .hd-aside { position: static; max-height: none; overflow: visible; }
+}
+
+/* Structured hero summary */
+.hd-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted2);
+}
+.hd-sep { color: var(--muted); }
+.hd-diff { display: inline-flex; align-items: center; gap: 3px; }
+.hd-diff i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--muted); }
+.hd-diff i:first-child { margin-left: 3px; }
+.hd-diff i.on { background: var(--hero, var(--accent)); border-color: var(--hero, var(--accent)); }
+.hd-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.hd-tag {
+  padding: 1px 7px;
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--muted2);
+}
+.hd-statnote { margin-top: 6px !important; }
+.hd-statnote b { color: var(--stat); margin-right: 4px; }
+.hd-points { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.hd-points li { position: relative; padding-left: 14px; }
+.hd-points li::before { position: absolute; left: 0; font-weight: 700; }
+.hd-plus li::before { content: '+'; color: var(--accent3); }
+.hd-minus li::before { content: '−'; color: #e8736b; }
+
+/* Gearing (from community builds) */
+.hd-gear-summary { font-size: 13px; line-height: 1.5; color: #d5d0bf; margin-bottom: 8px; }
+.hd-gear-points { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5; color: #d5d0bf; }
+.hd-gear-points li { display: flex; flex-direction: column; gap: 1px; }
+.hd-gear-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+}
+.hd-gear-slot .slot-svg { color: var(--muted); }
