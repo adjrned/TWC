@@ -337,38 +337,13 @@
       "Buffer",
       "Debuffer"
     ],
-    "overview": "A tanky, mobile holy swordswoman who's easy to pick up. She dashes in with 1st Sword Dance and leaps with Strike of Honor, and each Sword Dance powers up her next skill. Her passive raises nearby allies' Main Stat by 4% (8% for herself), and Sword Dance makes the target take 6% more damage. Max Amplification greatly speeds up her Execution Sword.",
+    "overview": "A tanky frontliner who's easy to pick up. She dashes and leaps into fights, raises nearby allies' Main Stat, and makes her target take more damage.",
     "strengths": [
-      "Very durable: 40% damage reduction on W, extra reduction below 50% HP, and healing during T",
-      "Gives the party a damage buff and a debuff on top of her own damage",
-      "Moves well: R and E both dash or leap her toward enemies"
+      "Very durable: damage reduction, self-healing, and extra protection at low HP",
+      "Gives the party +4% Main Stat and makes enemies take 6% more damage",
+      "Two gap-closers (R and E)"
     ],
-    "weaknesses": [],
-    "gearing": {
-      "summary": "Both community builds stack skill damage, about 75–90% from gear by the end, and favor items that trigger when she casts a skill. Since she casts constantly, those effects fire often.",
-      "points": [
-        {
-          "slot": "weapon",
-          "text": "Spear of Judgment carries the mid-game. It gains STR and skill damage with each cast, and its active gives a big slam and +9% damage. Both builds end on Lightbringer, whose Swords of Justice stun the target and add 25% damage to the next skill."
-        },
-        {
-          "slot": "body",
-          "text": "Max-HP armor turns her tankiness into damage. Felspike Armor stores damage she takes and releases it as a burst. Titan's Plates and Plates of Dawn hit based on her max HP, and Plates of Dawn also cuts damage taken by up to 15%."
-        },
-        {
-          "slot": "helm",
-          "text": "Late game she runs Righteous Flame or Crown of Cataclysm. These spend half her current HP for a large stat boost, which her self-healing easily makes up."
-        },
-        {
-          "slot": "wings",
-          "text": "Coil of Ouroboros, Archangel Wings and Wings of Cosmos can reset her cooldowns."
-        },
-        {
-          "slot": "accessory",
-          "text": "Primal Flame stacks skill damage the more she casts."
-        }
-      ]
-    }
+    "weaknesses": []
   },
   {
     "id": "H00E",

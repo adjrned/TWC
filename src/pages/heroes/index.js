@@ -208,20 +208,6 @@ function legacyDescHtml(hero) {
   return hero.description?.length ? `<div class="hd-block hd-desc">${hero.description.map(d => `<p>${esc(d)}</p>`).join('')}</div>` : '';
 }
 
-// How the community builds gear this hero, slot by slot.
-function gearingHtml(hero) {
-  const g = hero.gearing;
-  if (!g) return '';
-  return `<section class="idb-section hd-gearing">
-    <h2>${t('heroes.gearing')}</h2>
-    ${g.summary ? `<p class="hd-gear-summary">${esc(g.summary)}</p>` : ''}
-    ${g.points?.length ? `<ul class="hd-gear-points">${g.points.map(p => `<li>
-      <span class="hd-gear-slot">${slotIcon(p.slot, 13)}${esc(t('col.' + p.slot))}</span>
-      <span>${esc(p.text)}</span>
-    </li>`).join('')}</ul>` : ''}
-  </section>`;
-}
-
 function renderHeroDetail(hero, skills) {
   const heroSkills = skills.filter(s => s.heroClass === hero.heroClass);
   const groups = groupSkills(heroSkills);
@@ -277,7 +263,6 @@ function renderHeroDetail(hero, skills) {
         ${weaponTypes.length ? `<div class="hd-block"><div class="idb-fxlabel">${t('heroes.weapons')}</div><div class="hd-weapons">${weaponTypes.map(weaponTypeChip).join('')}</div></div>` : ''}
         ${hero.overview ? '' : legacyDescHtml(hero)}
       </article>
-      ${gearingHtml(hero)}
       <section class="idb-section hd-builds" id="heroBuilds" hidden></section>
       </div>
       <div class="idb-side">${specHtml}${skillsHtml}</div>
