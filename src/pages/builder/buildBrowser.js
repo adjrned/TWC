@@ -9,7 +9,7 @@ import { getItem, rankInfo, iconSrc } from '../../data/items.js';
 // Panel listing a class's community builds, each with a preview of its final phase.
 const fileCache = new Map();
 
-async function fetchBuild(cls, creator) {
+export async function fetchBuild(cls, creator) {
   const key = cls + '|' + creator;
   if (!fileCache.has(key)) {
     fileCache.set(key, fetch('builds/' + buildFileNameForCreator(cls, creator))
@@ -23,7 +23,7 @@ function lastFilledRow(data) {
   return rows[rows.length - 1] || null;
 }
 
-function previewHtml(data) {
+export function previewHtml(data) {
   const row = lastFilledRow(data);
   if (!row) return '';
   return `<span class="bb-preview">${COLS.map(col => {

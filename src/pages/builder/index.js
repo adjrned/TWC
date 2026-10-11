@@ -1,6 +1,8 @@
 import { state } from '../../state.js';
 import { DEFAULT_ROWS } from '../../constants.js';
 import { hasLocalData, loadBuildFile } from '../../data/builds.js';
+import { t, getClassName } from '../../i18n.js';
+import { chooseBuild } from './buildBrowser.js';
 import { save, load } from '../../data/storage.js';
 import { loadItems } from '../../data/items.js';
 import { initTooltip, hideItemTooltip } from '../../ui/tooltip.js';
@@ -26,9 +28,17 @@ export async function initBuilder(ctx) {
   const query = ctx?.query || {};
   if (query.class) {
     // Deep link: auto-select class/creator from query params
+    const classChanged = query.class !== state.selectedClass;
+    const switching = query.creator && (classChanged || query.creator !== state.selectedCreator);
     state.selectedClass = query.class;
-    if (query.creator) state.selectedCreator = query.creator;
-    if (!hasLocalData(state.selectedClass)) await loadBuildFile(state.selectedClass, state.selectedCreator);
+    if (switching && hasLocalData(query.class)) {
+      // A link to a different community build (e.g. from a hero page): replace the saved planner only if confirmed.
+      if (confirm(t('builder.replaceConfirm', { cls: getClassName(query.class) }))) await chooseBuild(query.class, query.creator);
+      else if (classChanged) state.selectedCreator = null;
+    } else {
+      if (query.creator) state.selectedCreator = query.creator;
+      if (!hasLocalData(state.selectedClass)) await loadBuildFile(state.selectedClass, state.selectedCreator);
+    }
   } else if (state.selectedClass && !hasLocalData(state.selectedClass)) {
     await loadBuildFile(state.selectedClass, state.selectedCreator);
   }
