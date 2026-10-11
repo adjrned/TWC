@@ -305,3 +305,35 @@
   from { box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(0,0,0,0.55); }
   to { box-shadow: 0 0 0 0 rgba(245,166,35,0), 0 4px 12px rgba(0,0,0,0.55); }
 }
+
+/* ── Back to top (src/ui/scrollTop.js) ── */
+#scrollTopBtn {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  background: var(--bg2);
+  color: var(--muted2);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity .18s, transform .18s, visibility .18s, color .12s, border-color .12s;
+}
+#scrollTopBtn.show { opacity: 1; visibility: visible; transform: none; }
+#scrollTopBtn:hover { color: var(--accent); border-color: var(--accent); }
+@media (max-width: 768px) {
+  #scrollTopBtn { right: 12px; bottom: calc(58px + env(safe-area-inset-bottom) + 12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #scrollTopBtn { transition: none; }
+}

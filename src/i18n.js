@@ -308,6 +308,7 @@ const STRINGS = {
 
     // Common
     'common.back': '← Back',
+    'common.backToTop': 'Back to top',
     'common.madeBy': 'Made by Ruzai',
   },
 
@@ -613,6 +614,7 @@ const STRINGS = {
     'trk.removedFrom': '{name}에서 제거됨',
 
     'common.back': '← 뒤로',
+    'common.backToTop': '맨 위로',
     'common.madeBy': 'Made by Ruzai',
   },
 
@@ -918,6 +920,7 @@ const STRINGS = {
     'trk.removedFrom': '已从 {name} 中移除',
 
     'common.back': '← 返回',
+    'common.backToTop': '返回顶部',
     'common.madeBy': 'Made by Ruzai',
   }
 };
