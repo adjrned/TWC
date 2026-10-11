@@ -393,6 +393,27 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Burst",
+      "Crit",
+      "Shield Break",
+      "Buffer"
+    ],
+    "overview": "A spear fighter whose skills can crit. She powers up each skill with D, breaks barriers, and finishes off low-HP targets.",
+    "strengths": [
+      "Breaks barriers, and E deals extra damage to low-HP targets",
+      "Makes her target take 4% more damage and gives allies she hits +6% Main Stat (T)",
+      "Self-sustaining: ki regen also heals her, and R pulls her back out of danger"
+    ],
+    "weaknesses": [
+      "Gets +15% damage only while her ki is above 50%",
+      "Needs D cast before skills to get their empowered effects"
     ]
   },
   {
@@ -499,6 +520,26 @@
       "Bag of Life - Very Light Bag",
       "Bag of Mother Nature - Very Light Bag",
       "Bag of Universe - Very Light Bag"
+    ],
+    "range": "Melee",
+    "filter": [
+      "Support"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Reviver",
+      "Shield",
+      "Healer",
+      "Debuffer"
+    ],
+    "overview": "A support who keeps the party alive. She revives fallen allies, shields the party with her own HP, and makes enemies take more damage. Her bag sets her style: healing potions or bombs.",
+    "strengths": [
+      "Revives an ally at full HP/MP, or saves herself if she dies while T is ready",
+      "Shields the party (E) and gives one ally +30% damage and −60% damage taken (F)",
+      "Best in risky content where deaths are frequent"
+    ],
+    "weaknesses": [
+      "Low APM (actions per minute)"
     ]
   },
   {
@@ -543,6 +584,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Auto-attack",
+      "Sustain",
+      "Bleed"
+    ],
+    "overview": "Pays for skills with HP and gets stronger as her HP drops. She heals on every hit and can refuse to die for a short time (T).",
+    "strengths": [
+      "Simple, auto-attack-focused playstyle",
+      "At low HP: +15% damage, up to 50% damage reduction, and more attack damage",
+      "Heals 6% max HP on every basic attack"
+    ],
+    "weaknesses": [
+      "While her E toggle is on, she gets 85% less healing and can't go above 30% HP, so healers barely help her"
     ]
   },
   {
@@ -599,7 +659,26 @@
       "True Guardian Ring - Improved Seal of Mana",
       "Ispion, the Runed Ring - Improved Seal of Mana",
       "Heirloom of Lazarus - Improved Seal of Mana"
-    ]
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Tank",
+      "Shield Break",
+      "Buffer",
+      "Shield"
+    ],
+    "overview": "A mana-powered tank. Her max MP grows with STR + INT, and her skills spend it for damage. She protects the party, breaks barriers, and pushes monsters around.",
+    "strengths": [
+      "Very tanky: E halves incoming damage, and she regenerates 10% MP per second",
+      "Shares her damage reduction with allies and amplifies everyone's skill damage by 4% (T)",
+      "Big party save: F gives allies it hits 100% damage reduction and debuff immunity for 5 seconds",
+      "Breaks barriers and shields allies as she charges (W)"
+    ],
+    "weaknesses": []
   },
   {
     "id": "Hmkg",
@@ -625,6 +704,28 @@
     ],
     "spec": [
       "Seal of Deceiver - Power of Inversion"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS",
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Burst",
+      "Healer",
+      "Debuffer"
+    ],
+    "overview": "Fights with souls gathered over time and from skills. The main stat decides the role.",
+    "statNotes": {
+      "STR": "Burst damage with self-healing. Damage grows with consecutive E casts and the souls spent.",
+      "INT": "Support. Heals and shields allies, makes enemies take more magic damage, and protects the party with 60% damage reduction and death prevention."
+    },
+    "strengths": [
+      "Two distinct roles in one hero"
+    ],
+    "weaknesses": [
+      "Running low on souls limits how often skills can be used"
     ]
   },
   {
@@ -721,6 +822,29 @@
       "Blazing Heart - Improved Genesis",
       "Heaven's Fist - Summary Judgment",
       "Demonic Fist - Demon's Grasp"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS",
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Buffer",
+      "Healer",
+      "Mobility"
+    ],
+    "overview": "Every 7th attack triggers Judgment. The chosen aura (D) decides whether Judgment and Sigils add skill damage, shields, heals or cleanses. W dashes in and hands Sigils to allies.",
+    "statNotes": {
+      "STR": "+10% damage, and Sigils also amplify skill damage.",
+      "INT": "Devotion: deals 40% less damage, but gets a bigger aura, heals allies, and extends T and F protection to the party."
+    },
+    "strengths": [
+      "Flexible support: the aura can be swapped to fit the party",
+      "Strong mobility (W)"
+    ],
+    "weaknesses": [
+      "High APM (actions per minute)"
     ]
   },
   {
@@ -813,6 +937,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "DPS",
+      "Combo",
+      "Debuffer"
+    ],
+    "overview": "Builds combo stacks by chaining actions: repeating one (AAA) or alternating them (AWA). Changing combo types stacks up to 4 times for more attack and skill damage. Cracking and shattering enemies sets up big hits.",
+    "strengths": [
+      "High damage ceiling and skill expression",
+      "Makes the target take 6% more damage (E)",
+      "F latches onto a boss and shatters it"
+    ],
+    "weaknesses": [
+      "High APM (actions per minute), and a failed combo resets the stacks"
     ]
   },
   {
@@ -877,6 +1020,26 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "DPS",
+      "Burst",
+      "Mobility",
+      "Resets"
+    ],
+    "overview": "Spawns and collects orbs of light, turning them into stacks that power up R's charged kick. T resets basic skill cooldowns, and a fully charged T adds +25% skill damage and extra resets.",
+    "strengths": [
+      "Frequent cooldown resets create big burst windows",
+      "Infinite mobility",
+      "Lots of burst range"
+    ],
+    "weaknesses": [
+      "Extremely high APM and repetition"
     ]
   },
   {
@@ -898,6 +1061,27 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "DPS",
+      "Auto-attack",
+      "Crit",
+      "Armor Break"
+    ],
+    "overview": "A heavily armed gunner whose basic attacks burn, ignore all armor and splash. E sets up crits for the skills, and missiles load on their own and fire all at once with T.",
+    "strengths": [
+      "High range",
+      "Simple to play, with a shield that builds up every second",
+      "Armor-ignoring splash attacks"
+    ],
+    "weaknesses": [
+      "Immobile",
+      "Gets no attack speed from AGI and only half from other sources"
     ]
   },
   {
@@ -919,6 +1103,26 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "DPS",
+      "Combo",
+      "Burst",
+      "Parry"
+    ],
+    "overview": "Mixes swordplay with arcane magic, with most skills scaling on STR + INT. W and R mark the target, and Q and T consume the mark for crits, resets and shield breaking.",
+    "strengths": [
+      "E completely blocks the next skill hit and counters",
+      "T breaks shields on a marked target",
+      "R also heals allies"
+    ],
+    "weaknesses": [
+      "Damage depends on applying and consuming marks in the right order"
     ]
   }
 ]
