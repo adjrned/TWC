@@ -6,6 +6,7 @@ import './styles/bosses.css';
 import './styles/items.css';
 import './styles/heroes.css';
 import './styles/awakening.css';
+import './styles/effects.css';
 import './styles/patch-notes.css';
 import './styles/tracker.css';
 import { registerRoute, initRouter } from './router.js';
@@ -56,7 +57,7 @@ function initMoreSheet() {
   // Highlight "More" when the current page lives in the sheet.
   const highlight = () => {
     const path = (location.hash.slice(1) || '/').split('?')[0];
-    btn.classList.toggle('active', ['/heroes', '/awakening', '/patch-notes'].some(r => path.startsWith(r)));
+    btn.classList.toggle('active', ['/heroes', '/effects', '/awakening', '/patch-notes'].some(r => path.startsWith(r)));
   };
   window.addEventListener('hashchange', () => { setOpen(false); highlight(); });
   highlight();
@@ -98,6 +99,11 @@ registerRoute('/heroes', async (ctx) => {
 registerRoute('/heroes/:id', async (ctx) => {
   const { initHeroes } = await import('./pages/heroes/index.js');
   return await initHeroes(ctx);
+});
+
+registerRoute('/effects', async (ctx) => {
+  const { initEffects } = await import('./pages/effects/index.js');
+  return await initEffects(ctx);
 });
 
 registerRoute('/awakening', async (ctx) => {

@@ -1,0 +1,131 @@
+/* ════════════════════════════════
+   Effects: buff / debuff stacking types
+   Reuses item database toolbar/tab styles and hero keycaps (.hs-key).
+   ════════════════════════════════ */
+.fx-rules {
+  list-style: none;
+  padding: 10px 12px 10px 14px;
+  margin-bottom: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #d5d0bf;
+}
+
+.fx-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+.fx-columns.single { grid-template-columns: minmax(0, 1fr); }
+.fx-section { min-width: 0; }
+.fx-section > h2 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted2);
+  margin-bottom: 8px;
+}
+.fx-buff > h2 { color: var(--accent3); }
+.fx-debuff > h2 { color: #e8736b; }
+
+.fx-grid { display: flex; flex-direction: column; gap: 12px; }
+.fx-columns.single .fx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  align-items: start;
+}
+.fx-none { font-size: 12px; color: var(--muted); }
+.fx-cat {
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.fx-cat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.fx-cat-head h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+.fx-stacking {
+  padding: 1px 7px;
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+.fx-note { font-size: 12px; line-height: 1.5; color: var(--muted2); margin-bottom: 8px; }
+
+.fx-type + .fx-type { margin-top: 10px; }
+.fx-type-label { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.fx-badge {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--bg3);
+  color: var(--muted2);
+}
+.fx-badge-a { background: rgba(245,166,35,0.14); color: var(--accent); }
+.fx-badge-b { background: rgba(116,167,240,0.14); color: #74a7f0; }
+.fx-badge-c { background: rgba(124,197,161,0.14); color: var(--accent3); }
+.fx-badge-d { background: rgba(167,139,250,0.16); color: var(--accent4); }
+.fx-type-sub { font-size: 11px; color: var(--muted); }
+
+.fx-entries { list-style: none; padding: 0; border-top: 1px solid #1f2229; }
+.fx-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #1f2229;
+  font-size: 13px;
+}
+.fx-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--tier, var(--text));
+  text-decoration: none;
+}
+a.fx-name:hover span { text-decoration: underline; }
+.fx-name > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-name b { color: var(--muted2); font-weight: 600; margin-right: 3px; }
+.fx-icon {
+  position: relative;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--tier, var(--border2));
+  border-radius: 3px;
+}
+.fx-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fx-keys { display: inline-flex; align-items: center; flex-shrink: 0; }
+.fx-keys .hs-key { min-width: 18px; height: 18px; padding: 0 4px; font-size: 10px; }
+.fx-via { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.fx-value { font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; text-align: right; }
+
+.fx-text { flex-direction: column; align-items: flex-start; gap: 4px; color: #d5d0bf; }
+.fx-text > span { white-space: normal; }
+.fx-examples { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.fx-examples .fx-name { font-size: 12px; }
+
+@media (max-width: 960px) {
+  .fx-columns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .fx-columns.single .fx-grid { grid-template-columns: 1fr; }
+  .fx-entry { grid-template-columns: minmax(0, 1fr) auto; }
+  .fx-via { display: none; }
+}
