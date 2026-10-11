@@ -357,9 +357,12 @@ function renderDetail(item, items) {
 
   let specHtml = '';
   if (item.stats?.spec?.length > 1) {
-    const text = item.stats.spec[1];
-    const m = text.match(/^([^-:]+?)\s+-\s+(.*)$/);
-    specHtml = `<div class="idb-fxblock fx-spec"><div class="idb-fxlabel">${t('items.spec')}</div><p>${m ? `<strong>${esc(m[1])}</strong> — ${esc(m[2])}` : esc(text)}</p></div>`;
+    // spec[0] is the "Specialty - <name>" heading; every line after it is one effect.
+    const lines = item.stats.spec.slice(1).map(text => {
+      const m = text.match(/^([^-:]+?)\s+-\s+(.*)$/);
+      return `<p>${m ? `<strong>${esc(m[1])}</strong> — ${esc(m[2])}` : esc(text)}</p>`;
+    });
+    specHtml = `<div class="idb-fxblock fx-spec"><div class="idb-fxlabel">${t('items.spec')}</div>${lines.join('')}</div>`;
   }
 
   const notesHtml = item.notes?.length ? `<div class="idb-notes">${item.notes.map(n => `<p>${esc(n)}</p>`).join('')}</div>` : '';

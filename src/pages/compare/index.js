@@ -63,7 +63,7 @@ function renderTable(items) {
           ${statRows(items)}
           ${textRow(t('items.passive'), items, i => lines(i.stats?.passive), 'fx-passive')}
           ${textRow(t('items.active'), items, i => lines(i.stats?.active), 'fx-active')}
-          ${textRow(t('items.spec'), items, i => (i.stats?.spec?.length > 1 ? esc(i.stats.spec[1]) : ''))}
+          ${textRow(t('items.spec'), items, i => (i.stats?.spec?.length > 1 ? i.stats.spec.slice(1).map(esc).join('<br>') : ''))}
           ${textRow(t('items.dropsFrom'), items, i => (i.dropped_by?.length
             ? dropRates(i).map(({ boss, rate }) => esc(boss) + (rate ? ` <span class="cmp-rate">${formatDropRate(rate)}</span>` : '')).join('<br>')
             : ''))}
