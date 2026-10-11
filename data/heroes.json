@@ -61,6 +61,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "Support"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Buffer",
+      "Debuffer"
+    ],
+    "overview": "A support who weakens enemies and empowers the party. Q makes enemies take more damage, R makes them take more magic damage, and the scythe (A) cuts their healing and slows them. W raises skill damage for the hero and nearby allies.",
+    "strengths": [
+      "Stacks several damage-taken debuffs on enemies",
+      "T keeps nearby allies from dropping below 1 HP, then heals them when it ends",
+      "E can drain enemies or heal allies"
+    ],
+    "weaknesses": [
+      "Can't really heal very well",
+      "Cannot replace a main support"
     ]
   },
   {
@@ -89,6 +108,26 @@
       "Benziena, the Earthen Soul - Enhanced Conjure Golem",
       "Benziena, the Earthen Heart - Enhanced Conjure Golem",
       "Harmonia, the Sparkle of Life - Enhanced Conjure Golem"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "DPS",
+      "Combo",
+      "Buffer",
+      "Debuffer"
+    ],
+    "overview": "A versatile caster who draws an element circle (Q fire, W water, E wind, R earth), then follows up with a second key for one of 16 transmutations. These cover damage, healing, shields, debuffs and a summoned golem. T resets every transmutation and amplifies skill damage by 12%.",
+    "strengths": [
+      "Can do almost anything: damage, heals, cleanses, slows and debuffs",
+      "The earth golem taunts enemies and makes them take more magic damage",
+      "F trades HP for a large INT boost, 25% damage reduction and a big finishing blast"
+    ],
+    "weaknesses": [
+      "Long combos that take more control than most heroes"
     ]
   },
   {
@@ -111,6 +150,24 @@
     ],
     "spec": [
       "Soul Eater - Soul Devour"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Burst",
+      "AoE"
+    ],
+    "overview": "Damage scales with max MP. W opens up to two portals that keep attacking, and Q hits hardest at its center. T transforms into a demon with new skills and full MP, and F can be cast while transformed for a big burst window.",
+    "strengths": [
+      "High burst during the transformation",
+      "E absorbs incoming damage for the hero and allies, then reflects it back many times over",
+      "R gives +10% damage and +25% max HP"
+    ],
+    "weaknesses": [
+      "Revolves around the T transformation window"
     ]
   },
   {
@@ -138,6 +195,25 @@
     "spec": [
       "Teperua, the Ring of Blood - Blood Shield",
       "Trueblood Ring - Blood Shield"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "DPS",
+      "Sustain",
+      "Mobility"
+    ],
+    "overview": "Damage scales with max HP, and INT adds more max HP. Empowered attacks charge up over time, and a blood gauge fuels Q, which hits harder with each cast in a row. R maxes attack speed and frees up W for repeated dashes.",
+    "strengths": [
+      "Strong self-sustain: E pulls the target and heals up to 40% HP, and extra healing turns into a shield",
+      "Excellent mobility (W, with up to 3 casts during R)",
+      "Invulnerable while casting F"
+    ],
+    "weaknesses": [
+      "Needs a steady mix of basic attacks and skills to keep blood and charges flowing"
     ]
   },
   {
@@ -160,7 +236,24 @@
     ],
     "spec": [
       "No Specs!"
-    ]
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 1,
+    "tags": [
+      "Burst",
+      "Combo",
+      "AoE"
+    ],
+    "overview": "Every hit sets enemies on fire, and Q and R make burning targets take extra damage. E grows stronger as it expands outward, and T calls down a meteor shower. Casting a skill gives a short burst of movement speed.",
+    "strengths": [
+      "High burst damage",
+      "W can protect an ally by removing debuffs and adding a shield, or stun enemies on the ground",
+      "No MP to manage"
+    ],
+    "weaknesses": []
   },
   {
     "id": "H00K",
@@ -374,6 +467,26 @@
       "Benziena, the Earthen Soul - Earth Mastery",
       "Benziena, the Earthen Heart - Earth Mastery",
       "Harmonia, the Sparkle of Life - Earth Mastery"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Summoner",
+      "Buffer",
+      "Debuffer",
+      "Shielder"
+    ],
+    "overview": "Summons elementals that fight alongside the hero: Q fire for damage, W water for healing, E lightning for ranged damage, R earth for protection. Each elemental's own skills come from pressing its key again. T recalls them to safety and heals them, and F summons a chaos elemental.",
+    "strengths": [
+      "Covers many roles: water heals and cleanses, earth shields allies and cuts their damage taken, and lightning makes enemies take more magic damage",
+      "W boosts allies' Main Stat and restores their resources",
+      "D jumps for burst mobility"
+    ],
+    "weaknesses": [
+      "Summons need managing, which takes attention away from the hero"
     ]
   },
   {
@@ -397,6 +510,25 @@
     "spec": [
       "Spiritus, the Sword of Elements - Spirits",
       "Spirit Dagger - Spirits"
+    ],
+    "range": "Melee",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "Burst",
+      "Combo",
+      "Mobility"
+    ],
+    "overview": "A close-range mage who shocks enemies with consecutive attacks. Skills that hit shocked targets can crit, and they chain into each other: W can be cast three times in a row. Q and R leave lightning orbs, which W's third cast detonates and E absorbs.",
+    "strengths": [
+      "High burst once orbs are stacked",
+      "E dashes through enemies with 70% damage reduction and CC immunity, healing from orbs it absorbs",
+      "T makes the hero invulnerable, then refills energy and refreshes basic skills"
+    ],
+    "weaknesses": [
+      "Ping dependent"
     ]
   },
   {
@@ -634,7 +766,26 @@
       "Diana, the Robe of Holy Maiden - Maiden's Blessing",
       "Crown of Serenity - Protector of Wind",
       "Crown of Cleansing - Protector of Wind"
-    ]
+    ],
+    "range": "Ranged",
+    "filter": [
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Healer",
+      "Buffer",
+      "Summoner"
+    ],
+    "overview": "An AoE healer whose heals give allies +Main Stat and 8% damage reduction. Q toggles spirits between healing and attacking. R lays a healing field that raises allies' HP and skill damage, and F summons a guardian that heals, revives and fights.",
+    "strengths": [
+      "Strong party-wide healing",
+      "2 party revives",
+      "E absorbs 45% of the damage nearby allies take, then blasts enemies with it",
+      "T heals the party and grants debuff immunity",
+      "D moves quickly with 40% damage reduction and can recall back"
+    ],
+    "weaknesses": []
   },
   {
     "id": "H04Q",
@@ -935,6 +1086,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "Burst",
+      "Combo",
+      "Debuffer"
+    ],
+    "overview": "Damage scales with max MP. Two Q stars colliding explode for 500% damage, and W amplifies skill damage against its target. D restores HP and MP and refreshes cooldowns, and F summons stars that fire alongside each Q.",
+    "strengths": [
+      "High burst damage",
+      "R dashes away twice, turning invisible with 40% damage reduction",
+      "Some support: Q heals allies, and F can switch to protecting an ally with heals"
+    ],
+    "weaknesses": [
+      "Complex combos, especially lining up star collisions"
     ]
   },
   {
@@ -958,6 +1128,26 @@
       "Frozen Robe - Improved Frozen Emotion",
       "Winter Robe - Improved Frozen Emotion",
       "Frost Herald's Garment - Improved Frozen Emotion"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS",
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Burst",
+      "Buffer",
+      "CC"
+    ],
+    "overview": "Landing two skills in a row makes the target vulnerable, and the next skill deals 200% bonus damage. Q's cooldown resets whenever another skill is cast. D buffs up to 2 allies with bonus attack damage, skill damage and a recharging barrier.",
+    "strengths": [
+      "Strong crowd control: Q, R and T freeze, and F pauses enemies",
+      "Buffs and shields allies (D), and E refills their barriers",
+      "High burst once vulnerability is set up"
+    ],
+    "weaknesses": [
+      "Damage depends on alternating skills to keep applying vulnerability"
     ]
   },
   {
@@ -981,6 +1171,26 @@
       "Ring of Deep Darkness - Transmission of Darkness",
       "Grimoire of Darkness - Transmission of Darkness",
       "Seed of Malice - Transmission of Darkness"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Healer",
+      "Buffer",
+      "Reviver",
+      "Shielder"
+    ],
+    "overview": "A dedicated healer who excels in large parties. The aura gives nearby allies +8% attack damage, and E's follow-up raises their skill damage. T summons an angel who can fully heal and cleanse an ally, pull an ally to safety, or revive a fallen one.",
+    "strengths": [
+      "Top-tier party healing and protection",
+      "F gives the party +6% final damage and 15% less damage taken",
+      "R shields allies and grants debuff immunity"
+    ],
+    "weaknesses": [
+      "Constant micro of Raguel, the angel summon"
     ]
   },
   {
@@ -1144,6 +1354,26 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "Support"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "Buffer",
+      "Debuffer",
+      "Shield Break",
+      "Summoner"
+    ],
+    "overview": "A utility support. E brews potions that heal and raise Main Stat, and pairing it with Q makes enemies take more magic damage. T summons a fallen angel who breaks barriers and marks up to 3 allies for +5% damage, damage reduction and attack speed.",
+    "strengths": [
+      "R freezes enemies and makes allies immune to harmful effects for 2 seconds",
+      "F makes enemies take 10% more magic damage",
+      "Breaks barriers (T → Q)"
+    ],
+    "weaknesses": [
+      "The summon needs managing alongside the hero's own skills"
     ]
   },
   {
@@ -1247,6 +1477,25 @@
     ],
     "spec": [
       "No Specs!"
+    ],
+    "range": "Ranged",
+    "filter": [
+      "DPS"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "DPS",
+      "Combo",
+      "Buffer"
+    ],
+    "overview": "Fights alongside a fox spirit. R creates water and fire talismans: water ones power up the next skill automatically, and fire ones let it be recast as a fire version. T merges with the fox for 8 seconds, turning every skill into fire and amplifying skill damage by 12%.",
+    "strengths": [
+      "R also places a dome that heals allies and gives them +6% water affinity and 12% less damage taken",
+      "Some healing from skills that use water talismans and from F's explosions",
+      "Uses both fire and water affinity"
+    ],
+    "weaknesses": [
+      "Talisman management adds an extra layer to every rotation"
     ]
   },
   {
