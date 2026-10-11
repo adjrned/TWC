@@ -59,6 +59,19 @@ function entryHtml(e) {
   </li>`;
 }
 
+// Type-A..D badge, a plain group label (e.g. "Base stats"), or nothing for Unique categories,
+// whose section heading already says they stack with everything.
+function typeLabelHtml(c, tp) {
+  if (tp.type) {
+    return `<div class="fx-type-label"><span class="fx-badge fx-badge-${esc(tp.type.toLowerCase())}">${esc(t('fx.type', { t: tp.type }))}</span>${tp.label ? `<span class="fx-type-sub">${esc(tp.label)}</span>` : ''}</div>`;
+  }
+  if (tp.label) return `<div class="fx-type-label"><span class="fx-badge">${esc(tp.label)}</span></div>`;
+  if (c.group === 'unique') return '';
+  return `<div class="fx-type-label"><span class="fx-badge">${esc(t('fx.stacks'))}</span></div>`;
+}
+
+const SECTION_TITLE = { buff: 'fx.buffs', debuff: 'fx.debuffs', unique: 'fx.uniqueSection' };
+
 function categoryHtml(c, q) {
   const types = c.types
     .map(tp => ({ ...tp, entries: q ? tp.entries.filter(e => entryText(e).includes(q) || c.name.toLowerCase().includes(q)) : tp.entries }))
@@ -70,35 +83,72 @@ function categoryHtml(c, q) {
       ${c.stacking ? `<span class="fx-stacking">${esc(c.stacking)}</span>` : ''}
     </header>
     ${c.note ? `<p class="fx-note">${esc(c.note)}</p>` : ''}
-    ${types.map(tp => `<div class="fx-type">
-      <div class="fx-type-label">${tp.type ? `<span class="fx-badge fx-badge-${esc(tp.type.toLowerCase())}">${esc(t('fx.type', { t: tp.type }))}</span>` : `<span class="fx-badge">${esc(t('fx.stacks'))}</span>`}${tp.label ? `<span class="fx-type-sub">${esc(tp.label)}</span>` : ''}</div>
+    <div class="fx-body">${types.map(tp => `<div class="fx-type">
+      ${typeLabelHtml(c, tp)}
       <ul class="fx-entries">${tp.entries.map(entryHtml).join('')}</ul>
-    </div>`).join('')}
+    </div>`).join('')}</div>
   </article>`;
 }
 
+// Entries in a category that match the search.
+function matchCount(c, q) {
+  return c.types.reduce((n, tp) => n + (q
+    ? tp.entries.filter(e => entryText(e).includes(q) || c.name.toLowerCase().includes(q)).length
+    : tp.entries.length), 0);
+}
+
+// Category groups in page order: [{ id, kind, cats }] (Offense / Defense / Stats / Debuffs).
+function categoryGroups() {
+  const groups = [];
+  for (const sec of effectsData.sections) {
+    for (const c of sec.categories) {
+      let g = groups.find(x => x.id === c.group);
+      if (!g) groups.push(g = { id: c.group, kind: sec.kind, cats: [] });
+      g.cats.push(c);
+    }
+  }
+  return groups;
+}
+
+const shown = (c, s) => (s.cat ? c.id === s.cat : !s.group || c.group === s.group);
+
 function renderList(s) {
   const q = s.q.toLowerCase().trim();
-  // Buffs and debuffs side by side; a single kind (tab) spreads across the full width.
-  const sections = effectsData.sections.filter(sec => !s.kind || sec.kind === s.kind)
-    .map(sec => ({ sec, cats: sec.categories.map(c => categoryHtml(c, q)).join('') }));
+  // All: buffs and debuffs side by side, Unique below them. A group or category shows on its own across the full width.
+  const filtered = s.group || s.cat;
+  const sections = effectsData.sections
+    .map(sec => ({ sec, cats: sec.categories.filter(c => shown(c, s)).map(c => categoryHtml(c, q)).join('') }))
+    .filter(x => !filtered || x.cats);
   if (!sections.some(x => x.cats)) return `<div class="idb-empty">${t('fx.empty')}</div>`;
   return `<div class="fx-columns${sections.length === 1 ? ' single' : ''}">${sections.map(({ sec, cats }) =>
     `<section class="fx-section fx-${esc(sec.kind)}">
-      <h2>${t(sec.kind === 'buff' ? 'fx.buffs' : 'fx.debuffs')}</h2>
+      <h2>${t(SECTION_TITLE[sec.kind])}</h2>
       ${cats ? `<div class="fx-grid">${cats}</div>` : `<p class="fx-none">${t('fx.empty')}</p>`}
     </section>`).join('')}</div>`;
 }
 
+// Tabs: All / Offense / Defense / Stats / Debuffs. A picked group adds a row of its categories.
 function renderTabs(s) {
-  const tab = (kind, label) => `<button type="button" class="idb-tab" data-kind="${kind}" aria-pressed="${s.kind === kind}">${label}</button>`;
-  return `<div class="idb-tabs">${tab('', t('items.all'))}${tab('buff', t('fx.buffs'))}${tab('debuff', t('fx.debuffs'))}</div>`;
+  const q = s.q.toLowerCase().trim();
+  const groups = categoryGroups();
+  const count = cats => cats.reduce((n, c) => n + matchCount(c, q), 0);
+  const tab = (id, label, n, kind = '') =>
+    `<button type="button" class="idb-tab${kind ? ' fx-tab-' + kind : ''}" data-group="${esc(id)}" aria-pressed="${s.group === id}" ${n || !id ? '' : 'disabled'}>${label}<span>${n}</span></button>`;
+  const active = groups.find(g => g.id === s.group);
+  return `<div class="idb-tabs">${tab('', t('items.all'), count(groups.flatMap(g => g.cats)))}${groups.map(g => tab(g.id, t('fx.group.' + g.id), count(g.cats), g.kind)).join('')}</div>
+    ${active ? `<div class="idb-tiers">${active.cats.map(c => {
+      const n = matchCount(c, q);
+      return `<button type="button" class="idb-chip" data-cat="${esc(c.id)}" aria-pressed="${s.cat === c.id}" title="${esc(c.name)}" ${n ? '' : 'disabled'}>${esc(c.short || c.name)}<span>${n}</span></button>`;
+    }).join('')}</div>` : ''}`;
 }
 
 export async function initEffects({ query }) {
   const app = document.getElementById('app');
   await loadData();
-  const s = { q: query.q || '', kind: ['buff', 'debuff'].includes(query.kind) ? query.kind : '' };
+  const allCats = effectsData.sections.flatMap(sec => sec.categories);
+  const cat = allCats.find(c => c.id === query.cat);
+  const group = cat ? cat.group : (allCats.some(c => c.group === query.group) ? query.group : '');
+  const s = { q: query.q || '', group, cat: cat ? cat.id : '' };
 
   app.innerHTML = `
     <div class="page-header">
@@ -135,9 +185,15 @@ export async function initEffects({ query }) {
 
   searchEl.addEventListener('input', () => { s.q = searchEl.value; update(); });
   tabsEl.addEventListener('click', e => {
-    const btn = e.target.closest('[data-kind]');
-    if (!btn) return;
-    s.kind = btn.dataset.kind;
+    const btn = e.target.closest('[data-group], [data-cat]');
+    if (!btn || btn.disabled) return;
+    if ('group' in btn.dataset) {
+      s.group = btn.dataset.group;
+      s.cat = '';
+    } else {
+      // Clicking the selected category again shows the whole group.
+      s.cat = s.cat === btn.dataset.cat ? '' : btn.dataset.cat;
+    }
     update();
   });
   const onKey = e => {

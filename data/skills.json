@@ -2485,7 +2485,7 @@
     "passive": [
       "Applies sudden pressure to the target's weak points, slowing down its movement.",
       "Basic attacks have a 15% chance to slow the target for 6 seconds",
-      "Decreases target's armor by 40% and increases proc damage taken by 5% for 6 seconds if debuff is stacked"
+      "Decreases target's armor by 40% [Type-C] and increases proc damage taken by 5% for 6 seconds if debuff is stacked"
     ]
   },
   {

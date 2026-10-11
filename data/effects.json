@@ -11,6 +11,8 @@
         {
           "id": "attack-damage",
           "name": "Attack damage increase",
+          "short": "Attack damage",
+          "group": "offense",
           "types": [
             {
               "type": "A",
@@ -84,6 +86,8 @@
         {
           "id": "final-damage",
           "name": "Final damage increase",
+          "short": "Final damage",
+          "group": "offense",
           "types": [
             {
               "type": "A",
@@ -159,6 +163,8 @@
         {
           "id": "skill-damage",
           "name": "Skill damage increase",
+          "short": "Skill damage",
+          "group": "offense",
           "note": "Almost everything here stacks. Most ally buffs fall in this category, and hero skills scale with the caster's stats. Items from the same series still don't stack: Priest's E → E plus Eye of the Blood God stacks, but Eye of the Flame Lord plus Eye of the Blood God doesn't (only Eye of the Blood God applies).",
           "types": [
             {
@@ -217,6 +223,8 @@
         {
           "id": "attack-speed",
           "name": "Attack speed increase",
+          "short": "Attack speed",
+          "group": "offense",
           "types": [
             {
               "type": "A",
@@ -253,6 +261,8 @@
         {
           "id": "magic-defense",
           "name": "Magic defense increase",
+          "short": "Magic defense",
+          "group": "defense",
           "stacking": "Multiplicative",
           "types": [
             {
@@ -300,6 +310,8 @@
         {
           "id": "damage-reduction",
           "name": "Damage taken reduction",
+          "short": "Damage reduction",
+          "group": "defense",
           "stacking": "Multiplicative",
           "types": [
             {
@@ -342,6 +354,8 @@
         {
           "id": "healing-received",
           "name": "Healing received increase",
+          "short": "Healing received",
+          "group": "defense",
           "stacking": "Multiplicative",
           "types": [
             {
@@ -349,6 +363,11 @@
               "entries": [
                 {
                   "item": "Thread of Life",
+                  "via": "Aura",
+                  "value": "15%"
+                },
+                {
+                  "item": "Protection of the Fairies",
                   "via": "Aura",
                   "value": "15%"
                 },
@@ -364,6 +383,8 @@
         {
           "id": "main-stat",
           "name": "Main Stat % increase",
+          "short": "Main Stat %",
+          "group": "stats",
           "stacking": "Additive",
           "types": [
             {
@@ -436,6 +457,8 @@
         {
           "id": "all-stats",
           "name": "All stats increase",
+          "short": "All stats",
+          "group": "stats",
           "stacking": "Additive",
           "types": [
             {
@@ -478,11 +501,17 @@
         {
           "id": "hp-regen",
           "name": "HP regeneration increase",
+          "short": "HP regen",
+          "group": "stats",
           "stacking": "Additive",
           "types": [
             {
               "type": "A",
               "entries": [
+                {
+                  "item": "Living Dragon Heart",
+                  "via": "Aura"
+                },
                 {
                   "item": "Azathos, the Pipe of Chaos",
                   "via": "Aura",
@@ -507,35 +536,232 @@
           ]
         },
         {
-          "id": "movement-speed",
-          "name": "Movement speed increase",
+          "id": "resource-regen",
+          "name": "Resource regeneration increase",
+          "short": "Resource regen",
+          "group": "stats",
           "types": [
             {
-              "type": "A",
+              "label": "Don't stack with each other",
               "entries": [
                 {
-                  "text": "Movement speed from item base stats",
-                  "examples": [
-                    "Plates of Lightning",
-                    "Sanguis, the Robe of Sacrifice"
-                  ]
+                  "hero": "Hermit",
+                  "key": "R",
+                  "skill": "Orb of Harmony",
+                  "via": "Buff",
+                  "value": "4%/s"
                 },
                 {
-                  "text": "Movement speed from item passives",
-                  "examples": [
-                    "Vest of Divine Winds"
-                  ]
-                },
-                {
-                  "text": "Movement speed from item actives",
-                  "examples": [
-                    "Bloodstorm",
-                    "Divine Rose"
-                  ]
+                  "hero": "Elementalist",
+                  "key": "W → F",
+                  "skill": "Refreshing Water",
+                  "via": "Aura",
+                  "value": "2%/s (1% for summons)"
                 }
               ]
             }
           ]
+        },
+        {
+          "id": "movement-speed",
+          "name": "Movement speed increase",
+          "short": "Movement speed",
+          "group": "stats",
+          "types": [
+            {
+              "label": "Base stats",
+              "entries": [
+                {
+                  "item": "Caedis, the Sword of Slaughter",
+                  "value": "+75"
+                },
+                {
+                  "item": "Embrace of Death",
+                  "value": "+75"
+                },
+                {
+                  "item": "Heart of Lion",
+                  "value": "+75"
+                },
+                {
+                  "item": "Ring of Divine Winds",
+                  "value": "+60"
+                },
+                {
+                  "item": "Animus, the Robe of Souls",
+                  "value": "+50"
+                },
+                {
+                  "item": "Cape of Insatiable Hunger",
+                  "value": "+50"
+                },
+                {
+                  "item": "Codex of Light",
+                  "value": "+50"
+                },
+                {
+                  "item": "Coil of Ouroboros",
+                  "value": "+50"
+                },
+                {
+                  "item": "Fang Necklace",
+                  "value": "+50"
+                },
+                {
+                  "item": "Herald of the Void",
+                  "value": "+50"
+                },
+                {
+                  "item": "Plates of Divine Blood",
+                  "value": "+50"
+                },
+                {
+                  "item": "Plates of Lightning",
+                  "value": "+50"
+                },
+                {
+                  "item": "Plates of Sanguine Fury",
+                  "value": "+50"
+                },
+                {
+                  "item": "Ring of Malevolence",
+                  "value": "+50"
+                },
+                {
+                  "item": "Robe of Storm",
+                  "value": "+50"
+                },
+                {
+                  "item": "Sanguis, the Robe of Sacrifice",
+                  "value": "+50"
+                },
+                {
+                  "item": "Wings of Cosmos",
+                  "value": "+50"
+                },
+                {
+                  "item": "Wings of Descender",
+                  "value": "+50"
+                },
+                {
+                  "item": "Wings of Night Lord",
+                  "value": "+50"
+                },
+                {
+                  "item": "Wings of Purification",
+                  "value": "+50"
+                }
+              ]
+            },
+            {
+              "label": "Passives",
+              "entries": [
+                {
+                  "item": "Vest of Divine Winds",
+                  "value": "+400 (past limit)"
+                },
+                {
+                  "item": "Vest of Cyclone",
+                  "value": "+300 (past limit)"
+                },
+                {
+                  "item": "Vest of Storm",
+                  "value": "+300 (past limit)"
+                },
+                {
+                  "item": "Voidshard Armor",
+                  "value": "75% (below 50% HP)"
+                },
+                {
+                  "item": "Helm of Passion",
+                  "via": "Aura",
+                  "value": "20%"
+                },
+                {
+                  "item": "Spirit Dagger",
+                  "value": "20% for 3s"
+                },
+                {
+                  "item": "Cape of the Saint",
+                  "value": "+75"
+                },
+                {
+                  "item": "Keeper of the Grove",
+                  "value": "+75 (Lightning)"
+                },
+                {
+                  "item": "Harmonia, the Sparkle of Life",
+                  "value": "+50 for 9s"
+                },
+                {
+                  "item": "Crown of Cleansing",
+                  "value": "+30"
+                },
+                {
+                  "item": "Divine Rose",
+                  "value": "+30 for 4s"
+                },
+                {
+                  "item": "Celestial Crown",
+                  "value": "+30 for 5s"
+                },
+                {
+                  "item": "Wings of Blood Lord",
+                  "value": "+15 per stack (max 5)"
+                },
+                {
+                  "item": "Astral Fury",
+                  "value": "Boost for 1.5s"
+                },
+                {
+                  "item": "Celestial Wind",
+                  "value": "Small boost for 1.5s"
+                }
+              ]
+            },
+            {
+              "label": "Actives",
+              "entries": [
+                {
+                  "item": "Bloodstorm",
+                  "value": "+200 for 2s"
+                },
+                {
+                  "item": "Soulstorm",
+                  "value": "+200 for 2s"
+                },
+                {
+                  "item": "Madness of Old Gods",
+                  "value": "+150 for 10s"
+                },
+                {
+                  "item": "Eye of the Blood God",
+                  "value": "+75 (attached ally)"
+                },
+                {
+                  "item": "Bell of Divinity",
+                  "value": "+75 for 5s (ally)"
+                },
+                {
+                  "item": "Shadow Waltz",
+                  "value": "1s per stack"
+                },
+                {
+                  "item": "Wings of Descender",
+                  "value": "Boost for 8s"
+                },
+                {
+                  "item": "Codex of Light",
+                  "value": "Boost for 5s"
+                },
+                {
+                  "item": "Void Seraph",
+                  "value": "Boost for 1.5s"
+                }
+              ]
+            }
+          ],
+          "note": "Bonuses marked \"past limit\" can go above the normal movement speed cap."
         }
       ]
     },
@@ -545,6 +771,8 @@
         {
           "id": "armor-reduction",
           "name": "Armor reduction",
+          "short": "Armor",
+          "group": "debuffs",
           "stacking": "Multiplicative",
           "types": [
             {
@@ -594,6 +822,22 @@
                   "item": "Demonic Fist",
                   "via": "Passive",
                   "value": "15%"
+                },
+                {
+                  "item": "Horns of Destruction",
+                  "via": "Active",
+                  "value": "−200 armor"
+                }
+              ]
+            },
+            {
+              "type": "C",
+              "entries": [
+                {
+                  "hero": "Martial Artist",
+                  "key": "E",
+                  "skill": "Vacuum Palm",
+                  "value": "40%"
                 }
               ]
             }
@@ -602,6 +846,8 @@
         {
           "id": "magic-damage-taken",
           "name": "Magic damage taken increase",
+          "short": "Magic damage taken",
+          "group": "debuffs",
           "stacking": "Additive",
           "types": [
             {
@@ -720,6 +966,8 @@
         {
           "id": "damage-taken",
           "name": "Damage taken increase",
+          "short": "Damage taken",
+          "group": "debuffs",
           "stacking": "Additive",
           "types": [
             {
@@ -816,6 +1064,8 @@
         {
           "id": "healing-reduction",
           "name": "Healing received reduction",
+          "short": "Healing received",
+          "group": "debuffs",
           "types": [
             {
               "type": "A",
@@ -830,6 +1080,1388 @@
                   "key": "F",
                   "skill": "Ultimate Enchant",
                   "value": "20%"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "unique",
+      "categories": [
+        {
+          "id": "unique-attack-damage",
+          "name": "Attack damage increase",
+          "short": "Attack damage",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Raven Bow",
+                  "via": "Passive",
+                  "value": "2× (10% chance)"
+                },
+                {
+                  "item": "Raven Rifle",
+                  "via": "Passive",
+                  "value": "2× (10% chance)"
+                },
+                {
+                  "item": "Harvester's Mask",
+                  "via": "Passive",
+                  "value": "20%"
+                },
+                {
+                  "item": "Eye of the Reaper",
+                  "via": "Passive",
+                  "value": "17.5%"
+                },
+                {
+                  "item": "Eye of Wallachia",
+                  "via": "Passive",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Martial Artist",
+                  "key": "D",
+                  "skill": "Martial Movement",
+                  "via": "Self",
+                  "value": "40%"
+                },
+                {
+                  "hero": "Assassin",
+                  "key": "W",
+                  "skill": "Ambush",
+                  "via": "Self",
+                  "value": "25% for 3s"
+                },
+                {
+                  "hero": "Crusader",
+                  "key": "T",
+                  "skill": "Max Amplification: Execution Sword",
+                  "via": "Self",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Fighter",
+                  "key": "D",
+                  "skill": "Combo Mastery",
+                  "via": "Self",
+                  "value": "12% per stack"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-final-damage",
+          "name": "Final damage increase",
+          "short": "Final damage",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Illumination",
+                  "via": "Active",
+                  "value": "10%"
+                },
+                {
+                  "item": "Herald of the Void",
+                  "via": "Active",
+                  "value": "8–12%"
+                },
+                {
+                  "item": "Plates of Divine Blood",
+                  "via": "Active",
+                  "value": "10%"
+                },
+                {
+                  "item": "Wings of Descender",
+                  "via": "Active",
+                  "value": "10%"
+                },
+                {
+                  "item": "Celestial Crown",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "item": "Gate of Abyss",
+                  "via": "Active",
+                  "value": "10%"
+                },
+                {
+                  "item": "Soul of Abyss",
+                  "via": "Active",
+                  "value": "8%"
+                },
+                {
+                  "item": "Splitting of the Sky and Earth",
+                  "via": "Active",
+                  "value": "7.5%"
+                },
+                {
+                  "item": "Bloodseeker Plates",
+                  "via": "Passive",
+                  "value": "7.5%"
+                },
+                {
+                  "item": "Embrace of Death",
+                  "via": "Passive",
+                  "value": "10% at max stacks"
+                },
+                {
+                  "item": "Wings of Night Lord",
+                  "via": "Passive",
+                  "value": "10% at max stacks"
+                },
+                {
+                  "item": "Bag of Demise",
+                  "via": "Active",
+                  "value": "6% (target)"
+                },
+                {
+                  "item": "Bag of All Evils",
+                  "via": "Active",
+                  "value": "6% (target)"
+                },
+                {
+                  "item": "Nevedium, the Armor of Demonblood",
+                  "via": "Active",
+                  "value": "5%"
+                },
+                {
+                  "item": "Seed of Malice",
+                  "via": "Passive",
+                  "value": "1% per stack (max 5%)"
+                },
+                {
+                  "item": "Horn of Dragon",
+                  "via": "Passive",
+                  "value": "9% vs. target"
+                },
+                {
+                  "item": "Horn of Demon God",
+                  "via": "Passive",
+                  "value": "8% vs. target"
+                },
+                {
+                  "item": "Eye of Annihilation",
+                  "via": "Passive",
+                  "value": "10% vs. target"
+                },
+                {
+                  "item": "Ring of Genesis",
+                  "via": "Passive",
+                  "value": "7.5% (chance on cast)"
+                },
+                {
+                  "item": "Ring of the One",
+                  "via": "Passive",
+                  "value": "5% (chance on cast)"
+                },
+                {
+                  "item": "Primal Shard",
+                  "via": "Active",
+                  "value": "15% skill damage vs. target"
+                },
+                {
+                  "item": "Ordius, the Divine Lance",
+                  "via": "Passive",
+                  "value": "14% skill damage vs. target"
+                },
+                {
+                  "item": "Soul Chaser",
+                  "via": "Active",
+                  "value": "10% skill damage vs. target"
+                },
+                {
+                  "item": "Call of Gehenna",
+                  "via": "Passive",
+                  "value": "7% skill damage vs. target"
+                },
+                {
+                  "item": "Divine Vein",
+                  "via": "Passive",
+                  "value": "6% skill damage vs. target"
+                },
+                {
+                  "hero": "Merchant",
+                  "key": "F",
+                  "skill": "Scroll of God's Blessing",
+                  "via": "Buff",
+                  "value": "30% (target)"
+                },
+                {
+                  "hero": "Lancer",
+                  "key": "R",
+                  "skill": "Battle Recovery",
+                  "via": "Self",
+                  "value": "15% (ki above 50%)"
+                },
+                {
+                  "hero": "Berserker",
+                  "key": "T",
+                  "skill": "Berserk",
+                  "via": "Self",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Warlock",
+                  "key": "T",
+                  "skill": "Demonic Fury",
+                  "via": "Self",
+                  "value": "Up to 15%"
+                },
+                {
+                  "hero": "Blaster",
+                  "key": "E",
+                  "skill": "Buster Shot",
+                  "via": "Self",
+                  "value": "15% attacks vs. target (×2)"
+                },
+                {
+                  "hero": "Warlock",
+                  "key": "R",
+                  "skill": "Soul Grimoire",
+                  "via": "Self",
+                  "value": "10%"
+                },
+                {
+                  "hero": "Crusader",
+                  "key": "T",
+                  "skill": "Max Amplification: Execution Sword",
+                  "via": "Self",
+                  "value": "10%"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "D",
+                  "skill": "Holy Aura",
+                  "via": "Self",
+                  "value": "10% (STR main stat)"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "D",
+                  "skill": "Dark Arts",
+                  "via": "Self",
+                  "value": "10% skill damage vs. target (STR)"
+                },
+                {
+                  "hero": "Sword Enchanter",
+                  "key": "E",
+                  "skill": "Power Enchant",
+                  "via": "Buff",
+                  "value": "5% (allies with T)"
+                },
+                {
+                  "hero": "Witch",
+                  "key": "T → W",
+                  "skill": "Mark of Power",
+                  "via": "Buff",
+                  "value": "5%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-attack-speed",
+          "name": "Attack speed increase",
+          "short": "Attack speed",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Blazing Heart",
+                  "via": "Passive",
+                  "value": "100% per stack"
+                },
+                {
+                  "item": "Seed of Malice",
+                  "via": "Active",
+                  "value": "60%"
+                },
+                {
+                  "item": "Mark of Sin",
+                  "via": "Active",
+                  "value": "50%"
+                },
+                {
+                  "item": "Shroud of Perseverance",
+                  "via": "Passive",
+                  "value": "50%"
+                },
+                {
+                  "item": "Storm Reaver",
+                  "via": "Passive",
+                  "value": "50% (chance)"
+                },
+                {
+                  "item": "Anger",
+                  "via": "Active",
+                  "value": "50%"
+                },
+                {
+                  "item": "Apocalypse Prime",
+                  "via": "Active",
+                  "value": "50% (pure)"
+                },
+                {
+                  "item": "Grimoire of Darkness",
+                  "via": "Active",
+                  "value": "40%"
+                },
+                {
+                  "item": "Crimson Reaper",
+                  "via": "Passive",
+                  "value": "30%"
+                },
+                {
+                  "item": "Ring of Deep Darkness",
+                  "via": "Active",
+                  "value": "30%"
+                },
+                {
+                  "item": "Meat Bag",
+                  "via": "Passive",
+                  "value": "15%"
+                },
+                {
+                  "item": "Ring of the Storm",
+                  "via": "Passive",
+                  "value": "15% per stack"
+                },
+                {
+                  "item": "Staff of Void",
+                  "via": "Passive",
+                  "value": "12%"
+                },
+                {
+                  "item": "Helm of Passion",
+                  "via": "Aura",
+                  "value": "10%"
+                },
+                {
+                  "item": "Blood Devourer",
+                  "via": "Passive",
+                  "value": "1% base per stack"
+                },
+                {
+                  "hero": "Martial Artist",
+                  "key": "F",
+                  "skill": "Nameless Arts",
+                  "via": "Self",
+                  "value": "250%"
+                },
+                {
+                  "hero": "Gunner",
+                  "key": "T",
+                  "skill": "Bullet Time",
+                  "via": "Self",
+                  "value": "150%"
+                },
+                {
+                  "hero": "Merchant",
+                  "key": "D",
+                  "skill": "This Bag isn't a Decoration!",
+                  "via": "Self",
+                  "value": "100% (Speed Potion)"
+                },
+                {
+                  "hero": "Berserker",
+                  "key": "T",
+                  "skill": "Berserk",
+                  "via": "Self",
+                  "value": "100%"
+                },
+                {
+                  "hero": "Blaster",
+                  "key": "Q",
+                  "skill": "Rapid Fire",
+                  "via": "Self",
+                  "value": "100%"
+                },
+                {
+                  "hero": "Elementalist",
+                  "key": "Q → F",
+                  "skill": "Fervor",
+                  "via": "Self",
+                  "value": "Up to 100%"
+                },
+                {
+                  "hero": "Reaper",
+                  "key": "D",
+                  "skill": "Scythe Mastery",
+                  "via": "Self",
+                  "value": "50%"
+                },
+                {
+                  "hero": "Berserker",
+                  "key": "E",
+                  "skill": "Blood Fury",
+                  "via": "Self",
+                  "value": "25% per stack"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "E → Q",
+                  "skill": "Burning Hand",
+                  "via": "Self",
+                  "value": "25% (pure)"
+                },
+                {
+                  "hero": "Witch",
+                  "key": "T → W",
+                  "skill": "Mark of Power",
+                  "via": "Buff",
+                  "value": "25%"
+                },
+                {
+                  "hero": "Martial Artist",
+                  "key": "D",
+                  "skill": "Martial Movement",
+                  "via": "Self",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Lancer",
+                  "key": "D",
+                  "skill": "Oriental Spear Mastery",
+                  "via": "Self",
+                  "value": "Maxed"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-magic-defense",
+          "name": "Magic defense increase",
+          "short": "Magic defense",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Creation of the Sky and Earth",
+                  "via": "Active",
+                  "value": "100%"
+                },
+                {
+                  "item": "Harmony of Sky and Earth",
+                  "via": "Active",
+                  "value": "100%"
+                },
+                {
+                  "item": "Guardian of Sky and Earth",
+                  "via": "Passive",
+                  "value": "100%"
+                },
+                {
+                  "item": "Potion of Corruption",
+                  "via": "Active",
+                  "value": "60% (transformed)"
+                },
+                {
+                  "item": "Robe of the Necromancer",
+                  "via": "Active",
+                  "value": "40% (nearby allies)"
+                },
+                {
+                  "item": "Robe of Archlich",
+                  "via": "Aura",
+                  "value": "40%"
+                },
+                {
+                  "item": "Protector's Will",
+                  "via": "Active",
+                  "value": "40% (nearby allies)"
+                },
+                {
+                  "item": "Parasitic Staff",
+                  "via": "Active",
+                  "value": "40% (ally)"
+                },
+                {
+                  "item": "Staff of Plague",
+                  "via": "Active",
+                  "value": "40% (ally)"
+                },
+                {
+                  "item": "Nephthys, the Engraved Ring",
+                  "via": "Active",
+                  "value": "5% per stack (max 25%)"
+                },
+                {
+                  "hero": "Swordsman",
+                  "key": "E",
+                  "skill": "Sword Storm",
+                  "via": "Self",
+                  "value": "40%"
+                },
+                {
+                  "hero": "Warlock",
+                  "key": "T",
+                  "skill": "Demonic Fury",
+                  "via": "Self",
+                  "value": "25%"
+                },
+                {
+                  "hero": "Shooter",
+                  "key": "Q",
+                  "skill": "Water Bullet",
+                  "via": "Buff",
+                  "value": "25% (ally)"
+                },
+                {
+                  "hero": "Wind Mage",
+                  "key": "F → Q",
+                  "skill": "Gift",
+                  "via": "Buff",
+                  "value": "25%"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "E → W",
+                  "skill": "Eye of the Storm",
+                  "via": "Buff",
+                  "value": "20%"
+                },
+                {
+                  "hero": "Soul Weaver",
+                  "key": "R",
+                  "skill": "Astral Walk",
+                  "via": "Buff",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "R",
+                  "skill": "Conjure Earth",
+                  "via": "Self",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "D → W",
+                  "skill": "Aura of Protection",
+                  "via": "Aura",
+                  "value": "10%"
+                },
+                {
+                  "hero": "Knight",
+                  "key": "R",
+                  "skill": "Mana Blaster",
+                  "via": "Self",
+                  "value": "8% per orb"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-damage-reduction",
+          "name": "Damage taken reduction",
+          "short": "Damage reduction",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Illumination",
+                  "via": "Passive",
+                  "value": "5%"
+                },
+                {
+                  "item": "Atricia, the Sword of Dreams",
+                  "via": "Active",
+                  "value": "100% (0.5s per stack)"
+                },
+                {
+                  "item": "Atricia, the True Sword of Dreams",
+                  "via": "Active",
+                  "value": "100% (0.5s per stack)"
+                },
+                {
+                  "item": "Dragonic Orb",
+                  "via": "Active",
+                  "value": "90% (magic)"
+                },
+                {
+                  "item": "Tunic of the Wraith",
+                  "via": "Passive",
+                  "value": "90% at low HP"
+                },
+                {
+                  "item": "Grandine, the Plates of Wraith",
+                  "via": "Passive",
+                  "value": "90% for 3s"
+                },
+                {
+                  "item": "Aegis of Avalon",
+                  "via": "Active",
+                  "value": "75% for 4s"
+                },
+                {
+                  "item": "Void Seraph",
+                  "via": "Active",
+                  "value": "75% for 1.5s"
+                },
+                {
+                  "item": "Archangel Wings",
+                  "via": "Passive",
+                  "value": "50% for 10s"
+                },
+                {
+                  "item": "Spirit of Protector",
+                  "via": "Passive",
+                  "value": "40% allies (15% self)"
+                },
+                {
+                  "item": "Wings of Cosmos",
+                  "via": "Active",
+                  "value": "25% for 6s"
+                },
+                {
+                  "item": "Codex of Light",
+                  "via": "Active",
+                  "value": "20% for 5s"
+                },
+                {
+                  "item": "Benziena, the Earthen Heart",
+                  "via": "Passive",
+                  "value": "15% for 9s"
+                },
+                {
+                  "item": "Harmonia, the Sparkle of Life",
+                  "via": "Passive",
+                  "value": "15% for 9s"
+                },
+                {
+                  "item": "Frostshard Armor",
+                  "via": "Passive",
+                  "value": "7.5% for 12s"
+                },
+                {
+                  "item": "Voidshard Armor",
+                  "via": "Passive",
+                  "value": "7.5% for 12s"
+                },
+                {
+                  "item": "Guardian of Sky and Earth",
+                  "via": "Passive",
+                  "value": "4% (allies)"
+                },
+                {
+                  "item": "Plates of Dawn",
+                  "via": "Passive",
+                  "value": "3% per rune (max 15%)"
+                },
+                {
+                  "hero": "Merchant",
+                  "key": "F",
+                  "skill": "Scroll of God's Blessing",
+                  "via": "Buff",
+                  "value": "60% (target)"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "T",
+                  "skill": "Requiem",
+                  "via": "Buff",
+                  "value": "60% (INT, allies)"
+                },
+                {
+                  "hero": "Priest",
+                  "key": "T → F",
+                  "skill": "Divine Blessing",
+                  "via": "Buff",
+                  "value": "50% after revive"
+                },
+                {
+                  "hero": "Warlock",
+                  "key": "E",
+                  "skill": "Vengeance",
+                  "via": "Buff",
+                  "value": "Absorbs 35% (allies)"
+                },
+                {
+                  "hero": "Elementalist",
+                  "key": "R → Q",
+                  "skill": "Earthen Link",
+                  "via": "Buff",
+                  "value": "30%"
+                },
+                {
+                  "hero": "Priest",
+                  "key": "D",
+                  "skill": "Heal",
+                  "via": "Buff",
+                  "value": "20%"
+                },
+                {
+                  "hero": "Witch",
+                  "key": "T → W",
+                  "skill": "Mark of Power",
+                  "via": "Buff",
+                  "value": "10% allies (20% Witch / Armaros)"
+                },
+                {
+                  "hero": "Elementalist",
+                  "key": "R → F",
+                  "skill": "Earthen Protection",
+                  "via": "Aura",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Hermit",
+                  "key": "W",
+                  "skill": "Restoration",
+                  "via": "Buff",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Priest",
+                  "key": "F",
+                  "skill": "Heaven Field",
+                  "via": "Buff",
+                  "value": "15%"
+                },
+                {
+                  "hero": "Shrine Priestess",
+                  "key": "R → R",
+                  "skill": "Water Dome",
+                  "via": "Buff",
+                  "value": "12%"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "T",
+                  "skill": "Divine Shield",
+                  "via": "Self",
+                  "value": "80% (party with Devotion)"
+                },
+                {
+                  "hero": "Reaper",
+                  "key": "R",
+                  "skill": "Death's Slash",
+                  "via": "Self",
+                  "value": "80%"
+                },
+                {
+                  "hero": "Lightning Mage",
+                  "key": "E",
+                  "skill": "Discharge",
+                  "via": "Self",
+                  "value": "70%"
+                },
+                {
+                  "hero": "Warlock",
+                  "key": "E",
+                  "skill": "Vengeance",
+                  "via": "Self",
+                  "value": "Absorbs 70% (self)"
+                },
+                {
+                  "hero": "Sword Saint",
+                  "key": "E",
+                  "skill": "Reflection",
+                  "via": "Self",
+                  "value": "70% after the first block"
+                },
+                {
+                  "hero": "Gunner",
+                  "key": "Q",
+                  "skill": "Tumble",
+                  "via": "Self",
+                  "value": "60%"
+                },
+                {
+                  "hero": "Sword Enchanter",
+                  "key": "R",
+                  "skill": "Guard Enchant",
+                  "via": "Self",
+                  "value": "50%"
+                },
+                {
+                  "hero": "Lancer",
+                  "key": "R",
+                  "skill": "Battle Recovery",
+                  "via": "Self",
+                  "value": "50% for 1.5s"
+                },
+                {
+                  "hero": "Crusader",
+                  "key": "W",
+                  "skill": "Flash of Immortality",
+                  "via": "Self",
+                  "value": "40% (+20% below 50% HP)"
+                },
+                {
+                  "hero": "Wind Mage",
+                  "key": "D",
+                  "skill": "Feather of Aeolus",
+                  "via": "Self",
+                  "value": "40%"
+                },
+                {
+                  "hero": "Arcane Mage",
+                  "key": "R",
+                  "skill": "Illusion",
+                  "via": "Self",
+                  "value": "40%"
+                },
+                {
+                  "hero": "Trickster",
+                  "key": "R",
+                  "skill": "Card Trick",
+                  "via": "Self",
+                  "value": "40% for 1.5s"
+                },
+                {
+                  "hero": "Blood Weaver",
+                  "key": "R",
+                  "skill": "Blood Boil",
+                  "via": "Self",
+                  "value": "30%"
+                },
+                {
+                  "hero": "Reaper",
+                  "key": "T",
+                  "skill": "Extreme Focus",
+                  "via": "Self",
+                  "value": "30%"
+                },
+                {
+                  "hero": "Assassin",
+                  "key": "D",
+                  "skill": "Dark Shroud",
+                  "via": "Self",
+                  "value": "30% in stealth"
+                },
+                {
+                  "hero": "Thunderer",
+                  "key": "E",
+                  "skill": "Thunder Shield",
+                  "via": "Self",
+                  "value": "30%"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "F",
+                  "skill": "Gate of Truth",
+                  "via": "Self",
+                  "value": "25%"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "E",
+                  "skill": "Phantom Rush",
+                  "via": "Self",
+                  "value": "25%"
+                },
+                {
+                  "hero": "Martial Artist",
+                  "key": "R",
+                  "skill": "Inner Meditation",
+                  "via": "Self",
+                  "value": "20% (chance)"
+                },
+                {
+                  "hero": "Fighter",
+                  "key": "R",
+                  "skill": "Iron Body",
+                  "via": "Self",
+                  "value": "20%"
+                },
+                {
+                  "hero": "Knight",
+                  "key": "D",
+                  "skill": "Release Mana",
+                  "via": "Self",
+                  "value": "15%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-healing-received",
+          "name": "Healing received increase",
+          "short": "Healing received",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Crimson Cross",
+                  "via": "Passive",
+                  "value": "5%"
+                },
+                {
+                  "item": "Crimson Star",
+                  "via": "Passive",
+                  "value": "5%"
+                },
+                {
+                  "item": "Cosmic Star",
+                  "via": "Passive",
+                  "value": "10%"
+                },
+                {
+                  "item": "Abyss Fall",
+                  "via": "Passive",
+                  "value": "12%"
+                },
+                {
+                  "item": "Heaven's Fall",
+                  "via": "Passive",
+                  "value": "12%"
+                },
+                {
+                  "hero": "Lancer",
+                  "key": "R",
+                  "skill": "Battle Recovery",
+                  "via": "Self",
+                  "value": "40% (ki below 50%)"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "E",
+                  "skill": "Holy Grace",
+                  "via": "Self",
+                  "value": "15%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-main-stat",
+          "name": "Main Stat % increase",
+          "short": "Main Stat %",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Nevedium, the Armor of Demonblood",
+                  "via": "Active",
+                  "value": "AGI 20%"
+                },
+                {
+                  "item": "Cruoris, the Armor of Blood",
+                  "via": "Active",
+                  "value": "AGI 15%"
+                },
+                {
+                  "item": "Benedict, the Crimson Armor of Blood",
+                  "via": "Active",
+                  "value": "AGI 15%"
+                },
+                {
+                  "item": "Voidshard Armor",
+                  "via": "Passive",
+                  "value": "STR 15%"
+                },
+                {
+                  "item": "True Bloodstone Plates",
+                  "via": "Active",
+                  "value": "7.5%"
+                },
+                {
+                  "item": "Flameshard Armor",
+                  "via": "Passive",
+                  "value": "STR 5%"
+                },
+                {
+                  "item": "Valtora Icon",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "item": "Ifrit Icon",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "item": "Nereid Icon",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "item": "Legend Icon",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "F",
+                  "skill": "Gate of Truth",
+                  "via": "Self",
+                  "value": "INT up to 25%"
+                },
+                {
+                  "hero": "Swordsman",
+                  "key": "R",
+                  "skill": "Sword of Illusion",
+                  "via": "Self",
+                  "value": "AGI 2% per sword"
+                },
+                {
+                  "hero": "Berserker",
+                  "key": "E",
+                  "skill": "Blood Fury",
+                  "via": "Self",
+                  "value": "STR 10% per stack (×3)"
+                },
+                {
+                  "hero": "Trickster",
+                  "key": "W",
+                  "skill": "Wonder Hand",
+                  "via": "Self",
+                  "value": "AGI 8% per stack (×3)"
+                },
+                {
+                  "hero": "Sniper",
+                  "key": "Q",
+                  "skill": "Storm Shaft",
+                  "via": "Self",
+                  "value": "AGI 5%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-hp-regen",
+          "name": "HP regeneration increase",
+          "short": "HP regen",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Cape of the Saint",
+                  "via": "Passive",
+                  "value": "40% max HP/s (when HP would hit 0)"
+                },
+                {
+                  "item": "Illumination",
+                  "via": "Active",
+                  "value": "15% max HP/s (target)"
+                },
+                {
+                  "item": "Gate of Abyss",
+                  "via": "Passive",
+                  "value": "15% max HP (heroes)"
+                },
+                {
+                  "item": "Soul of Abyss",
+                  "via": "Passive",
+                  "value": "15% max HP (heroes)"
+                },
+                {
+                  "item": "Hood of Apocalypse",
+                  "via": "Active",
+                  "value": "10%"
+                },
+                {
+                  "item": "Cosmic Reaper",
+                  "via": "Passive",
+                  "value": "7.5% max HP"
+                },
+                {
+                  "item": "Divine Slayer",
+                  "via": "Passive",
+                  "value": "7.5% max HP"
+                },
+                {
+                  "item": "Plates of Lightning",
+                  "via": "Passive",
+                  "value": "3% max HP"
+                },
+                {
+                  "item": "Bloodseeker Plates",
+                  "via": "Passive",
+                  "value": "3%"
+                },
+                {
+                  "item": "Nevedium, the Armor of Demonblood",
+                  "via": "Passive",
+                  "value": "2% at max stacks"
+                },
+                {
+                  "item": "Benedict, the Crimson Armor of Blood",
+                  "via": "Passive",
+                  "value": "1.5%"
+                },
+                {
+                  "item": "Druid's Mantle",
+                  "via": "Passive",
+                  "value": "0.75% per spirit"
+                },
+                {
+                  "item": "Bell of Divinity",
+                  "via": "Active",
+                  "value": "+500 (ally)"
+                },
+                {
+                  "item": "Staff of Madness",
+                  "via": "Passive",
+                  "value": "+200 (nearby allies)"
+                },
+                {
+                  "item": "Helm of Battle",
+                  "via": "Aura",
+                  "value": "+50"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "F",
+                  "skill": "Hymn of Death",
+                  "via": "Buff",
+                  "value": "25% max HP/s (INT, allies)"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "W",
+                  "skill": "Conjure Water",
+                  "via": "Self",
+                  "value": "15% over 6s"
+                },
+                {
+                  "hero": "Bow Master",
+                  "key": "E",
+                  "skill": "Guardian Scout",
+                  "via": "Buff",
+                  "value": "10% max HP (allies)"
+                },
+                {
+                  "hero": "Crusader",
+                  "key": "R → R",
+                  "skill": "2nd Sword Dance: Sword",
+                  "via": "Self",
+                  "value": "10% max HP"
+                },
+                {
+                  "hero": "Fire Mage",
+                  "key": "W",
+                  "skill": "Flame Spirit",
+                  "via": "Buff",
+                  "value": "5% max HP (allies)"
+                },
+                {
+                  "hero": "Elementalist",
+                  "key": "W → F",
+                  "skill": "Refreshing Water",
+                  "via": "Aura",
+                  "value": "4%/s (allies)"
+                },
+                {
+                  "hero": "Merchant",
+                  "key": "W",
+                  "skill": "Throwing Healing Potion",
+                  "via": "Buff",
+                  "value": "3% max HP + own regen (target)"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "D → E",
+                  "skill": "Aura of Restoration",
+                  "via": "Aura",
+                  "value": "1% max HP + INT × 0.2"
+                },
+                {
+                  "hero": "Phantom Blade",
+                  "key": "D",
+                  "skill": "Soul",
+                  "via": "Self",
+                  "value": "0.5% per soul"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-resource-regen",
+          "name": "Resource regeneration increase",
+          "short": "Resource regen",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "hero": "Warlock",
+                  "key": "Passive",
+                  "skill": "Dark Whisper",
+                  "via": "Self",
+                  "value": "+75 and +100% MP regen"
+                },
+                {
+                  "hero": "Warlock",
+                  "key": "R",
+                  "skill": "Soul Grimoire",
+                  "via": "Self",
+                  "value": "1% max MP/s"
+                },
+                {
+                  "item": "Bloodstone Plates",
+                  "via": "Active",
+                  "value": "400 + 7.5% max MP"
+                },
+                {
+                  "item": "True Bloodstone Plates",
+                  "via": "Active",
+                  "value": "400 + 7.5% max MP"
+                },
+                {
+                  "item": "Grail of Eternity",
+                  "via": "Passive",
+                  "value": "1%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-magic-damage-taken",
+          "name": "Magic damage taken increase",
+          "short": "Magic damage taken",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Astra, the Sword of Moonlight",
+                  "via": "Active",
+                  "value": "25% (next 3 hits)"
+                },
+                {
+                  "hero": "Berserker",
+                  "key": "W",
+                  "skill": "Howling",
+                  "value": "10%"
+                },
+                {
+                  "item": "Ruler of the Skies",
+                  "via": "Active",
+                  "value": "8%"
+                },
+                {
+                  "hero": "Elementalist",
+                  "key": "E → E",
+                  "skill": "Lightning Release",
+                  "value": "(4 + INT / 1200)%"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "D",
+                  "skill": "Dark Arts",
+                  "value": "(4 + INT / 1200)% (INT)"
+                },
+                {
+                  "item": "Hellflame",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "item": "Eternal Flame",
+                  "via": "Passive",
+                  "value": "2%"
+                },
+                {
+                  "item": "Spirit Flame",
+                  "via": "Passive",
+                  "value": "2.5%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-damage-taken",
+          "name": "Damage taken increase",
+          "short": "Damage taken",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Abyss Fall",
+                  "via": "Active",
+                  "value": "4%"
+                },
+                {
+                  "item": "Heaven's Fall",
+                  "via": "Active",
+                  "value": "5%"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "E",
+                  "skill": "Unholy Light",
+                  "value": "Up to (6 + INT / 800)%"
+                },
+                {
+                  "hero": "Fighter",
+                  "key": "E",
+                  "skill": "Chain Blow",
+                  "value": "6%"
+                },
+                {
+                  "item": "Spirit Dagger",
+                  "via": "Passive",
+                  "value": "4%"
+                },
+                {
+                  "item": "Ethereal Dagger",
+                  "via": "Passive",
+                  "value": "5%"
+                },
+                {
+                  "item": "Chaos Dagger",
+                  "via": "Passive",
+                  "value": "5%"
+                },
+                {
+                  "item": "Arch Druid Robe",
+                  "via": "Active",
+                  "value": "4% (enemy target)"
+                },
+                {
+                  "item": "Echoes of the Void",
+                  "via": "Passive",
+                  "value": "4%"
+                },
+                {
+                  "item": "Frost Herald's Garment",
+                  "via": "Aura",
+                  "value": "3%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-healing-reduction",
+          "name": "Healing received reduction",
+          "short": "Healing received",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "hero": "Soul Weaver",
+                  "key": "A",
+                  "skill": "Harvest",
+                  "value": "15%"
                 }
               ]
             }
