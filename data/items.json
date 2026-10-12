@@ -21396,8 +21396,7 @@
       "dtpercent": -0.075,
       "passive": [
         "Empowers next attack with Holy Fist every 6 seconds",
-        "Deals 3 additional attacks with (200% ATK DMG) physical damage",
-        "Reduces armor by 15% [Type-A] for 3 seconds"
+        "Deals 3 additional attacks with (200% ATK DMG) physical damage"
       ],
       "spec": [
         "Specialties - Summary Judgement, Holy Arts",
@@ -21894,8 +21893,7 @@
       "passive": [
         "Empowers next attack with Demon's Grasp every 5 seconds",
         "Deals 5 additional attacks with (20% ATK DMG) pure damage",
-        "Heals (5% max HP)",
-        "Reduces armor by 15% [Type-A]"
+        "Heals (5% max HP)"
       ],
       "active": [
         "On use empowers next attack with Demon's Grasp",
