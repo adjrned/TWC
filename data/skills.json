@@ -215,7 +215,7 @@
     "active": [
       "Pierces through the souls of the living.",
       "INT X 9 magic damage",
-      "Increases magic damage taken by enemies (Type-C) by 5% for 15 seconds",
+      "Increases magic damage taken by enemies by 5% for 15 seconds",
       "Increases magic defense of you and allies by 15% for 45 seconds"
     ]
   },
@@ -655,7 +655,7 @@
     "active": [
       "Roll in a line",
       "INT X 6 magic damage",
-      "Increases magic damage taken by collided enemies by 4% for 8 seconds"
+      "Increases damage taken by collided enemies by 4% for 8 seconds"
     ]
   },
   {

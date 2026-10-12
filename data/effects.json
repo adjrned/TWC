@@ -874,12 +874,6 @@
                   "item": "Eyes of the Watcher",
                   "via": "Active",
                   "value": "8%"
-                },
-                {
-                  "hero": "Alchemist",
-                  "key": "R → R → W",
-                  "skill": "Rolling Golem",
-                  "value": "4%"
                 }
               ]
             },
@@ -920,12 +914,6 @@
                   "item": "Wings of the Void",
                   "via": "Passive",
                   "value": "3%"
-                },
-                {
-                  "hero": "Soul Weaver",
-                  "key": "R",
-                  "skill": "Astral Walk",
-                  "value": "5%"
                 }
               ]
             },
@@ -974,6 +962,12 @@
                   "hero": "Lancer",
                   "key": "Q",
                   "skill": "Pierce",
+                  "value": "4%"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "R → R → W",
+                  "skill": "Rolling Golem",
                   "value": "4%"
                 },
                 {
@@ -2377,6 +2371,12 @@
                   "item": "Spirit Flame",
                   "via": "Passive",
                   "value": "2.5%"
+                },
+                {
+                  "hero": "Soul Weaver",
+                  "key": "R",
+                  "skill": "Astral Walk",
+                  "value": "5%"
                 }
               ]
             }
@@ -2449,7 +2449,7 @@
         {
           "id": "unique-healing-reduction",
           "name": "Healing received reduction",
-          "short": "Healing received",
+          "short": "Healing reduction",
           "group": "unique",
           "types": [
             {

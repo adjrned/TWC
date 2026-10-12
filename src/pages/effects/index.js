@@ -2,32 +2,29 @@ import { esc } from '../../ui/escape.js';
 import { t, getClassName } from '../../i18n.js';
 import { loadItems, getItem, rankInfo, iconSrc, localizedNameByName } from '../../data/items.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
+import { loadSkills, getSkill } from '../../data/skills.js';
 
 // Buff / debuff stacking types (data/effects.json): effects of the same type don't stack.
 let effectsData = null;
 let heroData = null;
-let skillData = null;
 
 async function loadData() {
   if (effectsData) return;
   try {
-    const [er, hr, sr] = await Promise.all([
+    const [er, hr] = await Promise.all([
       fetch('data/effects.json'),
       fetch('data/heroes.json'),
-      fetch('data/skills.json'),
+      loadSkills(),
       loadItems(),
     ]);
     if (er.ok) effectsData = await er.json();
     if (hr.ok) heroData = await hr.json();
-    if (sr.ok) skillData = await sr.json();
   } catch (e) {}
   if (!effectsData) effectsData = { rules: [], sections: [] };
   if (!heroData) heroData = [];
-  if (!skillData) skillData = [];
 }
 
 const heroOf = cls => heroData.find(h => h.heroClass === cls);
-const skillOf = (cls, name) => skillData.find(s => s.heroClass === cls && s.name === name);
 
 function entryText(e) {
   return [e.item && localizedNameByName(e.item), e.item, e.hero, e.hero && getClassName(e.hero), e.skill, e.text, e.via, e.value, ...(e.examples || [])]
@@ -44,10 +41,10 @@ function entryHtml(e) {
     main = itemLink(e.item);
   } else if (e.hero) {
     const hero = heroOf(e.hero);
-    const sk = skillOf(e.hero, e.skill);
+    const sk = getSkill(e.hero, e.skill);
     const keys = String(e.key || '').split('→').map(k => `<kbd class="hs-key">${esc(k.trim())}</kbd>`).join('<span class="hs-arrow">→</span>');
-    main = `<a href="#/heroes/${esc(hero?.id || '')}" class="fx-name">${iconHtml(e.skill, 'fx-icon', iconSrc(sk?.icon || e.skill))}
-      <span title="${esc(getClassName(e.hero) + ' ' + e.skill)}"><b>${esc(getClassName(e.hero))}</b> ${esc(e.skill)}</span>${keys ? `<span class="fx-keys">${keys}</span>` : ''}</a>`;
+    main = `<a href="#/heroes/${esc(hero?.id || '')}" class="fx-name" data-skill="${esc(e.hero + '|' + e.skill)}" data-color="${esc(hero?.color || '')}">${iconHtml(e.skill, 'fx-icon', iconSrc(sk?.icon || e.skill))}
+      <span><b${hero?.color ? ` style="color:#${esc(hero.color)}"` : ''}>${esc(getClassName(e.hero))}</b> ${esc(e.skill)}</span>${keys ? `<span class="fx-keys">${keys}</span>` : ''}</a>`;
   } else {
     main = `<span class="fx-name fx-text"><span>${esc(e.text)}</span>${e.examples?.length
       ? `<span class="fx-examples">${e.examples.map(itemLink).join('')}</span>` : ''}</span>`;
@@ -83,11 +80,22 @@ function categoryHtml(c, q) {
       ${c.stacking ? `<span class="fx-stacking">${esc(c.stacking)}</span>` : ''}
     </header>
     ${c.note ? `<p class="fx-note">${esc(c.note)}</p>` : ''}
-    <div class="fx-body">${types.map(tp => `<div class="fx-type">
+    ${c.group === 'unique' ? splitHtml(types.flatMap(tp => tp.entries)) : `<div class="fx-body">${types.map(tp => `<div class="fx-type">
       ${typeLabelHtml(c, tp)}
       <ul class="fx-entries">${tp.entries.map(entryHtml).join('')}</ul>
-    </div>`).join('')}</div>
+    </div>`).join('')}</div>`}
   </article>`;
+}
+
+// Unique cards span the full width with items on the left and hero abilities on the right.
+function splitHtml(entries) {
+  const col = (label, list) => `<div class="fx-split-col">
+    <div class="fx-type-label"><span class="fx-badge">${label}</span><span class="fx-type-sub">${list.length}</span></div>
+    ${list.length
+      ? `<div class="fx-body"><div class="fx-type"><ul class="fx-entries">${list.map(entryHtml).join('')}</ul></div></div>`
+      : `<p class="fx-none">—</p>`}
+  </div>`;
+  return `<div class="fx-split">${col(t('fx.items'), entries.filter(e => !e.hero))}${col(t('fx.abilities'), entries.filter(e => e.hero))}</div>`;
 }
 
 // Entries in a category that match the search.

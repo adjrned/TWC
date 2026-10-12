@@ -37,7 +37,11 @@
 .fx-unique > h2 { color: var(--text); }
 /* Unique sits under the buff/debuff columns, across the full width */
 .fx-columns > .fx-unique { grid-column: 1 / -1; }
-.fx-columns > .fx-unique .fx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); align-items: start; }
+/* One full-width card per Unique category, split into items (left) and abilities (right) */
+.fx-columns > .fx-section.fx-unique .fx-grid { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+.fx-columns > .fx-section.fx-unique .fx-grid > .fx-cat:only-child { max-width: none; }
+.fx-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; align-items: start; }
+.fx-split-col { min-width: 0; }
 
 .fx-grid { display: flex; flex-direction: column; gap: 12px; }
 .fx-columns.single .fx-grid {
@@ -136,7 +140,8 @@ a.fx-name:hover span { text-decoration: underline; }
   .fx-columns { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 600px) {
-  .fx-columns.single .fx-grid, .fx-columns > .fx-unique .fx-grid { grid-template-columns: 1fr; }
+  .fx-columns.single .fx-grid { grid-template-columns: 1fr; }
+  .fx-split { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .fx-body { grid-template-columns: minmax(0, 1fr) auto; }
   .fx-via { display: none; }
 }
