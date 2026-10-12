@@ -128,7 +128,6 @@ export const STAT_LABELS = {
   affinityflamepercent: 'Fire Affinity', affinityearthpercent: 'Earth Affinity',
   affinitylightpercent: 'Light Affinity', affinitydarkpercent: 'Dark Affinity',
   affinitywindpercent: 'Wind Affinity', affinitywaterpercent: 'Water Affinity',
-  affinityiwpercent: 'Ice/Wind Affinity', affinitywlpercent: 'Water/Lightning Affinity',
   allaffinitypercent: 'All Affinities',
 };
 
@@ -146,7 +145,6 @@ export const STAT_SHORT = {
   affinityflamepercent: 'Fire', affinityearthpercent: 'Earth',
   affinitylightpercent: 'Light', affinitydarkpercent: 'Dark',
   affinitywindpercent: 'Wind', affinitywaterpercent: 'Water',
-  affinityiwpercent: 'Ice/Wind', affinitywlpercent: 'Water/Ltn',
   allaffinitypercent: 'All Aff',
 };
 
@@ -155,7 +153,6 @@ export const AFFINITY_ELEMENT = {
   affinityflamepercent: 'flame', affinityearthpercent: 'earth',
   affinitylightpercent: 'light', affinitydarkpercent: 'dark',
   affinitywindpercent: 'wind', affinitywaterpercent: 'water',
-  affinityiwpercent: 'iw', affinitywlpercent: 'wl',
   allaffinitypercent: 'all',
 };
 

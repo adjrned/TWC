@@ -1248,8 +1248,8 @@
     "order": 6,
     "active": [
       "Fires a bullet that can distort dimensions.",
-      "Main Stat X 7.5 magic damage",
-      "Increases target's damage taken by (7 + INT / 600)% and reduces its movement speed for 3 seconds",
+      "Main Stat X 20 magic damage",
+      "Increases target's damage taken by (5 + INT / 1000)% and reduces its movement speed for 3 seconds",
       "Knocksback target if cast consecutively",
       "Recharges every 15 seconds (affected by pure attack speed)"
     ]
@@ -4566,10 +4566,10 @@
     "order": 2,
     "passive": [
       "An aspect of crusader who calls down retribution on his foes.",
-      "Increase nearby allies' attack damage by 10%",
+      "Increase nearby allies' attack damage by 8%",
       "Judgment - Deals 150% bonus damage",
-      "Sigil - Increases skill damage by 12% for 20 seconds (if STR is main stat, amplifies skill damage by 2.5% instead; 7.5% for self)",
-      "Devotion: Increases skill damage by additional (INT / 750)%"
+      "Sigil - Amplifies skill damage by 2.5% (tripled for self) for 20 seconds",
+      "Devotion: Replaces skill damage amplification with (8 + INT / 800)% skill damage bonus"
     ]
   },
   {
@@ -4617,7 +4617,7 @@
       "Increases nearby allies' movement speed by 75",
       "Judgment - Stuns target for 0.5 seconds",
       "Sigil - Removes debuffs",
-      "Devotion: When chained with Holy Grace, grants immunity to debuffs for 3 seconds"
+      "Devotion: When chained with Holy Grace, grants immunity to debuffs for 2 seconds"
     ]
   },
   {
@@ -5057,7 +5057,7 @@
       "Creates a potion every 2 seconds for 20 seconds",
       "Potion lasts for 20 seconds and heals for INT X 3",
       "Increases target's main stat by (INT X 0.06) for 60 seconds",
-      "Chaining with Death Bomb creates 3 potions, increases Q's damage by 70~140% (based on hero LV) and increases enemies' magic damage taken by 5% for 4 seconds"
+      "Chaining with Death Bomb creates 3 potions, increases Q's damage by 70~140% (based on hero LV) and increases enemies' magic damage taken by 4% for 4 seconds"
     ]
   },
   {
@@ -5138,13 +5138,11 @@
     "hotkey": "[T] → [W]",
     "icon": "WitchT_W",
     "order": 10,
-    "passive": [
-      "Increases damage dealt by 5%",
-      "Reduces damage taken by 20% for Witch and Armaros, 10% for other allies",
-      "Increases attack speed by 25%"
-    ],
     "active": [
       "Brands target with power.",
+      "Increases final damage by 4%",
+      "Reduces damage taken by 20% for Witch and Armaros, 10% for other allies",
+      "Increases attack speed by 20%",
       "Can be applied on 3 targets",
       "Will dissipate after 25 seconds if Armaros is unsummoned"
     ]
@@ -5178,7 +5176,7 @@
       "\"Get away from there! It will shall soon become a zone for my experiments..\"",
       "- Witch",
       "Deals INT X 20 magic damage per second",
-      "Increases target's magic damage taken by 10%",
+      "Increases target's magic damage taken by 8%",
       "Lasts 7 seconds"
     ]
   },

@@ -93,7 +93,7 @@
                   "hero": "Paladin",
                   "key": "D → Q",
                   "skill": "Aura of Retribution",
-                  "value": "10%"
+                  "value": "8%"
                 },
                 {
                   "hero": "Priest",
@@ -723,8 +723,8 @@
                   "hero": "Paladin",
                   "key": "D → Q",
                   "skill": "Aura of Retribution",
-                  "via": "INT main stat",
-                  "value": "12% + (INT / 750)%"
+                  "via": "Devotion",
+                  "value": "(8 + INT / 800)%"
                 },
                 {
                   "hero": "Merchant",
@@ -909,7 +909,7 @@
                   "hero": "Shooter",
                   "key": "R",
                   "skill": "Distortion",
-                  "value": "(7 + INT / 600)%"
+                  "value": "(5 + INT / 1000)%"
                 },
                 {
                   "hero": "Paladin",
@@ -1052,7 +1052,7 @@
                   "hero": "Witch",
                   "key": "F",
                   "skill": "Death Field",
-                  "value": "10%"
+                  "value": "8%"
                 },
                 {
                   "hero": "Shooter",
@@ -1070,7 +1070,7 @@
                   "hero": "Witch",
                   "key": "E → Q",
                   "skill": "Mystical Cauldron",
-                  "value": "5%"
+                  "value": "4%"
                 }
               ]
             }
@@ -1297,7 +1297,7 @@
                   "key": "T → W",
                   "skill": "Mark of Power",
                   "via": "Buff",
-                  "value": "25%"
+                  "value": "20%"
                 },
                 {
                   "hero": "Martial Artist",
@@ -1915,7 +1915,7 @@
                   "key": "T → W",
                   "skill": "Mark of Power",
                   "via": "Buff",
-                  "value": "5%"
+                  "value": "4%"
                 }
               ]
             }

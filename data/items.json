@@ -2640,7 +2640,7 @@
       "allstat": 100,
       "hpregen": 20,
       "mpregen": 20,
-      "affinityiwpercent": 0.05,
+      "affinitywaterpercent": 0.05,
       "active": [
         "On use, creates a Droplet Barrier for 6 seconds",
         "Increases the user's MAGIC DEF by 90%",
@@ -4932,7 +4932,7 @@
     "stats": {
       "damage": 3750,
       "agi": 415,
-      "affinityiwpercent": 0.05,
+      "affinitywaterpercent": 0.05,
       "passive": [
         "On attack, 13% chance to activate Frost Strike",
         "Deals (MAIN STAT X 3) magic damage and reduces enemy's movement speed by 20% for 3 seconds"
@@ -5063,7 +5063,7 @@
       "armor": 30,
       "int": 210,
       "hp": 750,
-      "affinityiwpercent": 0.03,
+      "affinitywaterpercent": 0.03,
       "passive": [
         "On attack, 10% chance to temporarily boost your INT by 25 for 6 seconds"
       ]
@@ -5298,7 +5298,7 @@
       "damage": 3450,
       "int": 465,
       "hp": 1000,
-      "affinityiwpercent": 0.03,
+      "affinitywaterpercent": 0.03,
       "active": [
         "On use, activates Frozen Shard",
         "Deals (water affinity X (INT X 9)) magic damage and freezes enemies for 2 seconds"
@@ -12710,7 +12710,7 @@
       "damage": 4500,
       "int": 630,
       "hp": 1500,
-      "affinityiwpercent": 0.06,
+      "affinitywaterpercent": 0.06,
       "passive": [
         "On skill cast, empowers next attack with ice",
         "Next attack deals (INT X 3) magic damage and drenches enemy with wetness for 6 seconds"
@@ -13189,8 +13189,8 @@
       "dtpercent": -0.18,
       "spec": [
         "Merchant Specialty - Very Heavy Bag",
-        "Merchant - Bag Slam: Damage is increased by 150%, and it increases target's damage taken by 4% for 6 seconds.",
-        "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 5%"
+        "Merchant - Bag Slam: Damage is increased by 200%, and it increases target's damage taken by 4% for 6 seconds.",
+        "Merchant - Throwing Healing Potion: Duration increased by 5s"
       ]
     },
     "recipe": [
@@ -13271,8 +13271,8 @@
       "dtpercent": -0.2,
       "spec": [
         "Merchant Specialty - Very Heavy Bag",
-        "Merchant - Bag Slam: Damage is increased by 300%, and it increases target's damage taken by 4% for 6 seconds.",
-        "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 5%"
+        "Merchant - Bag Slam: Damage is increased by 200%, and it increases target's damage taken by 4% for 6 seconds.",
+        "Merchant - Throwing Healing Potion: Duration increased by 5s"
       ]
     },
     "recipe": [
@@ -15513,7 +15513,7 @@
       "damage": 5550,
       "int": 705,
       "hp": 1800,
-      "affinityiwpercent": 0.08,
+      "affinitywaterpercent": 0.08,
       "passive": [
         "On skill cast, empowers next attack",
         "Deals (INT X 4) magic damage"
@@ -15939,7 +15939,7 @@
       "str": 345,
       "agi": 605,
       "skilldamagepercent": 0.09,
-      "affinityiwpercent": 0.09,
+      "affinitywaterpercent": 0.09,
       "passive": [
         "On attack, chance to activate Glacial Storm",
         "Initially deals (water affinity X (AGI X 2 ~ 3)) magic damage",
@@ -16411,8 +16411,8 @@
       "dtpercent": -0.22,
       "spec": [
         "Merchant Specialty - Very Heavy Bag",
-        "Merchant - Bag Slam: Damage is increased by 400%, and it increases target's damage taken by 5% for 8 seconds",
-        "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 8%",
+        "Merchant - Bag Slam: Damage is increased by 250%, and it increases target's damage taken by 5% for 8 seconds",
+        "Merchant - Throwing Healing Potion: Duration increased by 5s",
         "Merchant - Throw Money: Each coin stuns for 0.5 seconds"
       ]
     },
@@ -17531,7 +17531,7 @@
       "armor": 115,
       "allstat": 215,
       "skilldamagepercent": 0.075,
-      "affinityiwpercent": 0.075,
+      "affinitywaterpercent": 0.075,
       "active": [
         "On use, activates Composure",
         "Increases skill damage by 7.5% and all stats by 115 for 12 seconds",
@@ -17574,7 +17574,7 @@
       "armor": 110,
       "allstat": 240,
       "critchancepercent": 0.1,
-      "affinitywlpercent": 0.075,
+      "affinitywindpercent": 0.075,
       "passive": [
         "15% chance to apply Serenity upon healing ally",
         "Increases skill damage by 5%",
@@ -17617,7 +17617,7 @@
     "stats": {
       "int": 325,
       "hp": 1200,
-      "affinityiwpercent": 0.06,
+      "affinitywaterpercent": 0.06,
       "passive": [
         "Increases nearby allies' magic defense by 8%"
       ],
@@ -18180,7 +18180,7 @@
       "hp": 1200,
       "mp": 3750,
       "skilldamagepercent": 0.11,
-      "affinityiwpercent": 0.07,
+      "affinitywaterpercent": 0.07,
       "active": [
         "On use, creates a Magical Passage"
       ]
@@ -20030,8 +20030,8 @@
       ],
       "spec": [
         "Merchant Specialty - Very Heavy Bag",
-        "Merchant - Bag Slam: Damage is increased by 400%, and it increases target's damage taken by 5% for 8 seconds",
-        "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 10%",
+        "Merchant - Bag Slam: Damage is increased by 250%, and it increases target's damage taken by 5% for 8 seconds",
+        "Merchant - Throwing Healing Potion: Duration increased by 5s",
         "Merchant - Throw Money: Each coin stuns for 0.5 seconds"
       ]
     },
@@ -20085,8 +20085,8 @@
       ],
       "spec": [
         "Merchant Specialty - Very Heavy Bag",
-        "Merchant - Bag Slam: Damage is increased by 500%, and it increases target's damage taken by 5% for 8 seconds",
-        "Merchant - Throwing Healing Potion: Duration increased by 5s, increases target's skill damage by 12.5%",
+        "Merchant - Bag Slam: Damage is increased by 300%, and it increases target's damage taken by 5% for 8 seconds",
+        "Merchant - Throwing Healing Potion: Duration increased by 5s",
         "Merchant - Throw Money: Changed into Devour"
       ]
     },
@@ -21156,7 +21156,7 @@
       "armor": 135,
       "allstat": 285,
       "skilldamagepercent": 0.1,
-      "affinityiwpercent": 0.075,
+      "affinitywaterpercent": 0.075,
       "active": [
         "On use, activates Composure",
         "Increases skill damage by 12.5% and all stats by 150 for 12 seconds",
@@ -21397,10 +21397,6 @@
       "passive": [
         "Empowers next attack with Holy Fist every 6 seconds",
         "Deals 3 additional attacks with (200% ATK DMG) physical damage"
-      ],
-      "spec": [
-        "Specialties - Summary Judgement, Holy Arts",
-        "Paladin - Divine Cross' damage is increased by 15%"
       ]
     },
     "recipe": [
@@ -21487,8 +21483,8 @@
       "hpregen": 180,
       "affinitylightpercent": 0.05,
       "passive": [
-        "On direct hit, applies Fervor (single-taget spells on allies)",
-        "Increases skill damage by 8% and MAIN STAT by 120 for 12 seconds"
+        "Lasts 12 seconds on a single effect hit, 1.5 seconds on a recovery effect hit",
+        "Increases skill damage by 8% and MAIN STAT by 120"
       ],
       "active": [
         "On use, activates Hope",
@@ -21841,8 +21837,8 @@
     "stats": {
       "int": 420,
       "hp": 1500,
-      "affinityiwpercent": 0.06,
-      "affinitywlpercent": 0.06,
+      "affinitywaterpercent": 0.06,
+      "affinitywindpercent": 0.06,
       "passive": [
         "Magic defense of nearby allies +10%"
       ],
@@ -21898,10 +21894,6 @@
       "active": [
         "On use empowers next attack with Demon's Grasp",
         "Cooldown: 10 seconds"
-      ],
-      "spec": [
-        "Specialties - Demon's Grasp",
-        "Paladin - Divine Cross' damage is increased by 20%"
       ]
     },
     "recipe": [
@@ -22126,7 +22118,7 @@
       "hp": 1500,
       "mp": 4500,
       "skilldamagepercent": 0.15,
-      "affinityiwpercent": 0.08,
+      "affinitywaterpercent": 0.08,
       "passive": [
         "On skill cast, (proc rate X 100)% chance to summon Ice Spikes",
         "Deals (water affinity X (INT X 3.75)) magic damage per spike (up to 5 spikes)"
@@ -22423,9 +22415,9 @@
     "level": 100,
     "stats": {
       "allstat": 345,
-      "affinityiwpercent": 0.05,
+      "affinitywaterpercent": 0.05,
       "affinityearthpercent": 0.05,
-      "affinitywlpercent": 0.05,
+      "affinitywindpercent": 0.05,
       "passive": [
         "Increases nearby allies' healing received by 15%"
       ],
@@ -23582,7 +23574,7 @@
       "damage": 9400,
       "int": 880,
       "hp": 2000,
-      "affinityiwpercent": 0.12,
+      "affinitywaterpercent": 0.12,
       "passive": [
         "On skill cast, empowers next attack with Frozen Tempest",
         "Deals (INT X 5) magic damage to target",
@@ -23692,7 +23684,7 @@
       "damage": 8400,
       "int": 790,
       "affinityflamepercent": 0.1,
-      "affinityiwpercent": 0.1,
+      "affinitywaterpercent": 0.1,
       "passive": [
         "On equip, activates Elemental Amplification",
         "If fire affinity is higher, increases fire affinity by 10%",
@@ -24110,7 +24102,7 @@
       "hp": 1500,
       "skilldamagepercent": 0.1,
       "mdpercent": 0.1,
-      "affinityiwpercent": 0.05,
+      "affinitywaterpercent": 0.05,
       "passive": [
         "On equip, enables Frost Aura",
         "Increases damage taken by enemies within 750 range by 3%"
@@ -24341,8 +24333,8 @@
       "armor": 250,
       "mainstat": 450,
       "mdpercent": 0.15,
-      "affinityiwpercent": 0.05,
-      "affinitywlpercent": 0.05,
+      "affinitywaterpercent": 0.05,
+      "affinitywindpercent": 0.05,
       "passive": [
         "On healing allies, activates Nature's Touch",
         "Increases target's all stats by 10% [Type-A], magic defense by 10% [Type-A]",
@@ -24439,8 +24431,8 @@
       "armor": 135,
       "allstat": 290,
       "critchancepercent": 0.1,
-      "affinitywlpercent": 0.1,
-      "affinityiwpercent": 0.06,
+      "affinitywindpercent": 0.1,
+      "affinitywaterpercent": 0.06,
       "affinitylightpercent": 0.06,
       "passive": [
         "15% chance to activate Serenity upon healing ally",
@@ -24632,7 +24624,7 @@
       "armor": 150,
       "allstat": 315,
       "skilldamagepercent": 0.15,
-      "affinityiwpercent": 0.1,
+      "affinitywaterpercent": 0.1,
       "passive": [
         "Skill cast has chance to trigger Eclipse",
         "30% chance to activate (affected by proc coefficient)",
@@ -25352,7 +25344,7 @@
       "hpregen": 200,
       "affinitylightpercent": 0.075,
       "passive": [
-        "On direct hit, applies Hope for 12 seconds",
+        "Lasts 12 seconds on a single effect hit, 1.5 seconds on a recovery effect hit",
         "Increases skill damage by 10% and MAIN STAT by 180"
       ],
       "active": [
@@ -25616,8 +25608,8 @@
       "int": 550,
       "hp": 2000,
       "skilldamagepercent": 0.075,
-      "affinityiwpercent": 0.075,
-      "affinitywlpercent": 0.075,
+      "affinitywaterpercent": 0.075,
+      "affinitywindpercent": 0.075,
       "passive": [
         "On healing or shielding allies, activates Aegis of Light",
         "Increases skill damage by 10%, reduces damage taken by 10% [Type-A], and increases movement speed by 30 for 4 seconds"
@@ -25937,8 +25929,8 @@
     "stats": {
       "allstat": 420,
       "affinityearthpercent": 0.075,
-      "affinityiwpercent": 0.075,
-      "affinitywlpercent": 0.075,
+      "affinitywaterpercent": 0.075,
+      "affinitywindpercent": 0.075,
       "passive": [
         "Skills have 5% chance to reset cooldown",
         "Increases nearby allies' healing received by 15% [Type-A]"
@@ -26075,7 +26067,7 @@
       "hp": 2000,
       "mp": 5000,
       "skilldamagepercent": 0.2,
-      "affinityiwpercent": 0.1,
+      "affinitywaterpercent": 0.1,
       "passive": [
         "Summons Soul Fragment on skill cast",
         "Deals (water affinity X (INT X 4)) magic damage per soul (can stack up to 5 souls)"
@@ -27672,7 +27664,7 @@
       "int": 1100,
       "hp": 2000,
       "skilldamagepercent": 0.15,
-      "affinityiwpercent": 0.15,
+      "affinitywaterpercent": 0.15,
       "affinitydarkpercent": 0.1,
       "passive": [
         "Eternal Frost activates upon 5 consecutive skill hits",
