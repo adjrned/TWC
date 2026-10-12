@@ -449,6 +449,13 @@
                   "key": "W → F",
                   "skill": "Refreshing Water",
                   "value": "INT × 0.06"
+                },
+                {
+                  "hero": "Wind Mage",
+                  "key": "E",
+                  "skill": "Mirror of Aeolus",
+                  "via": "Buff",
+                  "value": "INT × 0.03"
                 }
               ]
             }
