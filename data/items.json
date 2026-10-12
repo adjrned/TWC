@@ -10566,7 +10566,7 @@
       "dtpercent": -0.12,
       "spec": [
         "Merchant Specialty - Heavy Bag",
-        "Merchant - Bag Slam: damage increased by 100%"
+        "Merchant - Bag Slam: damage increased by 60%"
       ]
     },
     "recipe": [
@@ -11515,7 +11515,7 @@
       "dtpercent": -0.15,
       "spec": [
         "Merchant Specialty - Heavy Bag",
-        "Merchant - Bag Slam's damage is increased by 150%, and it increases target's damage taken by 4% for 6 seconds."
+        "Merchant - Bag Slam's damage is increased by 90%, and it increases target's damage taken by 4% for 6 seconds."
       ]
     },
     "recipe": [
@@ -11585,7 +11585,7 @@
       "dtpercent": -0.15,
       "spec": [
         "Merchant Specialty - Heavy Bag",
-        "Merchant - Bag Slam's damage is increased by 150%, and it increases target's damage taken by 4% for 6 seconds."
+        "Merchant - Bag Slam's damage is increased by 90%, and it increases target's damage taken by 4% for 6 seconds."
       ]
     },
     "recipe": [
@@ -21483,6 +21483,7 @@
       "hpregen": 180,
       "affinitylightpercent": 0.05,
       "passive": [
+        "Fervor is activated when a skill hits an ally",
         "Lasts 12 seconds on a single effect hit, 1.5 seconds on a recovery effect hit",
         "Increases skill damage by 8% and MAIN STAT by 120"
       ],
@@ -25344,6 +25345,7 @@
       "hpregen": 200,
       "affinitylightpercent": 0.075,
       "passive": [
+        "Hope is activated when a skill hits an ally",
         "Lasts 12 seconds on a single effect hit, 1.5 seconds on a recovery effect hit",
         "Increases skill damage by 10% and MAIN STAT by 180"
       ],
