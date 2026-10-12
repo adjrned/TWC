@@ -1,0 +1,117 @@
+{
+  "class": "Blaster",
+  "createdBy": "Eli",
+  "publishedAt": "2026-10-12T19:38:15.972Z",
+  "rows": [
+    {
+      "id": 9,
+      "name": "Early",
+      "slots": {
+        "weapon": [{ "name": "Bullet of Ruin", "src": "twicons/Bullet%20of%20Ruin.webp" }],
+        "helm": [{ "name": "Crown of Fervor", "src": "twicons/Crown%20of%20Fervor.webp" }],
+        "body": [{ "name": "Reactive Armor", "src": "twicons/Reactive%20Armor.webp" }],
+        "wings": [{ "name": "Slayer Boots", "src": "twicons/Slayer%20Boots.webp" }],
+        "accessory": [{ "name": "Ring of the Reaper", "src": "twicons/Ring%20of%20the%20Reaper.webp" }]
+      }
+    },
+    {
+      "id": 10,
+      "name": "SD",
+      "slots": {
+        "weapon": [{ "name": "Fiend Chaser", "src": "twicons/Fiend%20Chaser.webp" }],
+        "helm": [{ "name": "Crown of Rage", "src": "twicons/Crown%20of%20Rage.webp" }],
+        "body": [{ "name": "Hellspike Armor", "src": "twicons/Hellspike%20Armor.webp" }],
+        "wings": [{ "name": "Slayer Boots", "src": "twicons/Slayer%20Boots.webp" }],
+        "accessory": [{ "name": "Cold Ring of Death", "src": "twicons/Cold%20Ring%20of%20Death.webp" }]
+      }
+    },
+    {
+      "id": 12,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          { "name": "Chrono Chaser", "src": "twicons/Chrono%20Chaser.webp" },
+          { "name": "Last Word", "src": "twicons/Last%20Word.webp" }
+        ],
+        "helm": [{ "name": "Crown of Extreme Anger", "src": "twicons/Crown%20of%20Extreme%20Anger.webp" }],
+        "body": [{ "name": "Felspike Armor", "src": "twicons/Felspike%20Armor.webp" }],
+        "wings": [{ "name": "Storm", "src": "twicons/Storm.webp" }],
+        "accessory": [{ "name": "Ring of Frozen Soul", "src": "twicons/Ring%20of%20Frozen%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 13,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          { "name": "Chrono Chaser", "src": "twicons/Chrono%20Chaser.webp" },
+          { "name": "Last Word", "src": "twicons/Last%20Word.webp" }
+        ],
+        "helm": [{ "name": "Crown of Extreme Anger", "src": "twicons/Crown%20of%20Extreme%20Anger.webp" }],
+        "body": [{ "name": "Felspike Armor", "src": "twicons/Felspike%20Armor.webp" }],
+        "wings": [{ "name": "Bloodstorm", "src": "twicons/Bloodstorm.webp" }],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 15,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          { "name": "Soul Chaser", "src": "twicons/Soul%20Chaser.webp" },
+          { "name": "Final Omen", "src": "twicons/Final%20Omen.webp" }
+        ],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [
+          { "name": "Dread Incarnate", "src": "twicons/Dread%20Incarnate.webp" },
+          { "name": "Titan's Plates", "src": "twicons/Titan's%20Plates.webp" }
+        ],
+        "wings": [
+          { "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" },
+          { "name": "Blood Devourer", "src": "twicons/Blood%20Devourer.webp" }
+        ],
+        "accessory": [
+          { "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" },
+          { "name": "Ring of Malevolence", "src": "twicons/Ring%20of%20Malevolence.webp" }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          { "name": "Soul Chaser", "src": "twicons/Soul%20Chaser.webp" },
+          { "name": "Final Omen", "src": "twicons/Final%20Omen.webp" }
+        ],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [
+          { "name": "Dread Incarnate", "src": "twicons/Dread%20Incarnate.webp" },
+          { "name": "Titan's Plates", "src": "twicons/Titan's%20Plates.webp" }
+        ],
+        "wings": [
+          { "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" },
+          { "name": "Blood Devourer", "src": "twicons/Blood%20Devourer.webp" }
+        ],
+        "accessory": [
+          { "name": "Ring of Noble Soul", "src": "twicons/Ring%20of%20Noble%20Soul.webp" },
+          { "name": "Ring of Malevolence", "src": "twicons/Ring%20of%20Malevolence.webp" }
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "name": "Kam",
+      "slots": {
+        "weapon": [{ "name": "Apocalypse Prime", "src": "twicons/Apocalypse%20Prime.webp" }],
+        "helm": [{ "name": "Righteous Flame", "src": "twicons/Righteous%20Flame.webp" }],
+        "body": [{ "name": "Plates of Dawn", "src": "twicons/Plates%20of%20Dawn.webp" }],
+        "wings": [{ "name": "Void Seraph", "src": "twicons/Void%20Seraph.webp" }],
+        "accessory": [
+          { "name": "Celestial Wind", "src": "twicons/Celestial%20Wind.webp" },
+          { "name": "Primal Flame", "src": "twicons/Primal%20Flame.webp" }
+        ]
+      }
+    }
+  ]
+}
