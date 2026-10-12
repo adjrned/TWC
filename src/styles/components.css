@@ -337,3 +337,5 @@
 @media (prefers-reduced-motion: reduce) {
   #scrollTopBtn { transition: none; }
 }
+/* Skill tooltip: first line is flavor text */
+#floatTooltip .tt-flavor { color: var(--muted2); font-style: italic; }

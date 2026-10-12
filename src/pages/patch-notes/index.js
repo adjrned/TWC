@@ -3,6 +3,7 @@ import { t, tf, getLocale, getClassName } from '../../i18n.js';
 import { loadItems, getItem, rankInfo, iconSrc, localizedItemName } from '../../data/items.js';
 import { getIndex, SECTION_KEYS, HERO_ALIASES, BOSS_ALIASES, minorOf, splitSubject } from '../../data/patches.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
+import { loadSkills, skillFromNote } from '../../data/skills.js';
 import { hideItemTooltip } from '../../ui/tooltip.js';
 import { showToast } from '../../ui/toast.js';
 import { ROSTER } from '../../constants.js';
@@ -17,9 +18,10 @@ let allItems = [];
 
 async function loadData() {
   if (dataLoaded) return;
-  const [, items, bossesRes, heroesRes] = await Promise.all([
+  const [, items, , bossesRes, heroesRes] = await Promise.all([
     getIndex(),
     loadItems(),
+    loadSkills(),
     fetch('data/bosses.json').catch(() => null),
     fetch('data/heroes.json').catch(() => null),
   ]);
@@ -72,18 +74,33 @@ function subjectLink(name, terms) {
   return `<a href="${r.href}" class="pn-subject ${r.css}"${tip}>${fmt(r.label, terms)}</a>`;
 }
 
+// Hero class of a Characters subsection ("Mage (Fire)" → "Fire Mage"), or null.
+function heroClassOf(name) {
+  const cls = HERO_ALIASES[name] || name;
+  return heroByClass.has(cls) ? cls : null;
+}
+
+// A character note whose ability ("TQ - …", "Flame Shot (Q)") gets a skill tooltip.
+function skillLineHtml(text, terms, heroClass) {
+  const m = heroClass && skillFromNote(heroClass, text);
+  if (!m) return fmt(text, terms);
+  const key = esc(m.skill.heroClass + '|' + m.skill.name);
+  const color = esc(heroByClass.get(heroClass)?.color || '');
+  return `<span class="pn-skill" data-skill="${key}" data-color="${color}">${fmt(m.text, terms)}</span>${fmt(text.slice(m.text.length), terms)}`;
+}
+
 function lineHtml(text, terms, inList) {
   const sp = inList ? splitSubject(text) : null;
   if (sp && resolve(sp.subject)) return `${subjectLink(sp.subject, terms)} <span class="pn-dash">—</span> ${fmt(sp.rest, terms)}`;
   return fmt(text, terms);
 }
 
-// Nested arrays are sub-points of the preceding line.
-function listHtml(list, terms, inList) {
+// Nested arrays are sub-points of the preceding line. `heroClass` turns ability references into skill tooltips.
+function listHtml(list, terms, inList, heroClass = null) {
   let html = '';
   for (const x of list || []) {
-    if (Array.isArray(x)) html += `<ul class="pn-lines pn-nested">${listHtml(x, terms, false)}</ul>`;
-    else html += `<li>${lineHtml(x, terms, inList)}</li>`;
+    if (Array.isArray(x)) html += `<ul class="pn-lines pn-nested">${listHtml(x, terms, false, heroClass)}</ul>`;
+    else html += `<li>${heroClass ? skillLineHtml(x, terms, heroClass) : lineHtml(x, terms, inList)}</li>`;
   }
   return html;
 }
@@ -92,7 +109,7 @@ function subHeadHtml(name, terms) {
   const r = resolve(name);
   const style = r?.hero ? ` style="--hero:#${esc(r.hero.color)}"` : '';
   return r
-    ? `<a href="${r.href}" class="pn-sub-head ${r.css}"${r.kind === 'item' ? ` data-name="${esc(name)}"` : ''}${style}>${iconHtml(name, 'pn-icon', r.icon)}<span>${fmt(r.label, terms)}</span></a>`
+    ? `<a href="${r.href}" class="pn-sub-head ${r.css}${r.hero ? ' is-hero' : ''}"${r.kind === 'item' ? ` data-name="${esc(name)}"` : ''}${style}>${iconHtml(name, 'pn-icon', r.icon)}<span>${fmt(r.label, terms)}</span></a>`
     : `<div class="pn-sub-head"><span class="pn-icon pn-icon-none"></span><span>${fmt(name, terms)}</span></div>`;
 }
 
@@ -121,7 +138,7 @@ function patchHtml(patch, i) {
       return `<section class="pn-section pn-${SECTION_CSS[section.title] || 'misc'}">
         <h3>${esc(sectionTitle(section.title))} <span class="idb-count">${count}</span></h3>
         ${section.entries?.length ? `<ul class="pn-lines pn-fixes">${listHtml(section.entries, null, true)}</ul>` : ''}
-        ${section.subsections?.length ? `<div class="pn-subs">${section.subsections.map(sub => `<div class="pn-sub">${subHeadHtml(sub.name)}<ul class="pn-lines">${listHtml(sub.entries, null, false)}</ul></div>`).join('')}</div>` : ''}
+        ${section.subsections?.length ? `<div class="pn-subs">${section.subsections.map(sub => `<div class="pn-sub">${subHeadHtml(sub.name)}<ul class="pn-lines">${listHtml(sub.entries, null, false, section.title === 'Characters' ? heroClassOf(sub.name) : null)}</ul></div>`).join('')}</div>` : ''}
       </section>`;
     }).join('')}
   </article>`;
@@ -146,7 +163,8 @@ function filteredPatchHtml(patch, i, lines, terms) {
           if (!bySub.has(l.subject)) bySub.set(l.subject, []);
           bySub.get(l.subject).push(l);
         }
-        body = `<div class="pn-subs">${[...bySub.entries()].map(([name, sl]) => `<div class="pn-sub">${subHeadHtml(name, terms)}<ul class="pn-lines">${sl.map(l => `<li class="d${Math.min(l.depth, 2)}">${fmt(l.text, terms)}</li>`).join('')}</ul></div>`).join('')}</div>`;
+        const cls = name => (title === 'Characters' ? heroClassOf(name) : null);
+        body = `<div class="pn-subs">${[...bySub.entries()].map(([name, sl]) => `<div class="pn-sub">${subHeadHtml(name, terms)}<ul class="pn-lines">${sl.map(l => `<li class="d${Math.min(l.depth, 2)}">${skillLineHtml(l.text, terms, cls(name))}</li>`).join('')}</ul></div>`).join('')}</div>`;
       } else {
         body = `<ul class="pn-lines pn-fixes">${ls.map(l => `<li class="d${Math.min(l.depth, 2)}">${lineHtml(l.text, terms, l.depth === 0)}</li>`).join('')}</ul>`;
       }

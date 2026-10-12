@@ -61,6 +61,38 @@ export function showItemTooltip(dbItem, x, y, slotLabel = '') {
   place(ft, x, y);
 }
 
+// Hero skill: class, hotkey and cooldown under the name, then passive / active / toggle text.
+// A skill's first line is flavor text, shown muted like on the hero page.
+export function showSkillTooltip(skill, x, y, classColor = '') {
+  const ft = document.getElementById('floatTooltip');
+  if (!ft || !skill) return;
+  const name = document.getElementById('ftName');
+  name.textContent = skill.name;
+  name.className = 'tt-name';
+  const keys = (String(skill.hotkey).match(/Passive|[A-Z]/g) || []).join(' → ');
+  const cd = skill.cooldown != null ? t('heroes.cooldown', { n: skill.cooldown }) : '';
+  const cls = classColor ? `<span style="color:#${esc(classColor)}">${esc(skill.heroClass)}</span>` : esc(skill.heroClass);
+  document.getElementById('ftSlot').innerHTML = [cls, esc(keys), esc(cd)].filter(Boolean).join(' · ');
+  let first = true;
+  const block = (lines, cls, label) => {
+    if (!lines?.length) return '';
+    const body = lines.map(l => {
+      const cl = first ? ' class="tt-flavor"' : '';
+      first = false;
+      return `<div${cl}>${esc(l)}</div>`;
+    }).join('');
+    return `<div class="${cls}">${label ? `<span class="tt-active-label">${label}</span>` : ''}${body}</div>`;
+  };
+  const hasP = skill.passive?.length;
+  const hasA = skill.active?.length;
+  document.getElementById('ftStats').innerHTML =
+    block(skill.passive, 'tt-passive', hasP && (hasA || skill.toggle?.length) ? t('items.passive') : '') +
+    block(skill.active, 'tt-active', hasP ? t('items.active') : '') +
+    block(skill.toggle, 'tt-active', hasP || hasA ? t('heroes.toggle') : '');
+  ft.classList.add('show');
+  place(ft, x, y);
+}
+
 export function moveItemTooltip(x, y) {
   const ft = document.getElementById('floatTooltip');
   if (ft?.classList.contains('show')) place(ft, x, y);

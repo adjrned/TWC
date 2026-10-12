@@ -1,6 +1,7 @@
 import { esc } from './escape.js';
 import { iconSrc, getItem } from '../data/items.js';
-import { showItemTooltip, moveItemTooltip, hideItemTooltip } from './tooltip.js';
+import { showItemTooltip, showSkillTooltip, moveItemTooltip, hideItemTooltip } from './tooltip.js';
+import { getSkill } from '../data/skills.js';
 
 // Icon with a lettered fallback when the image is missing.
 export function iconHtml(name, cls, src = iconSrc(name)) {
@@ -8,16 +9,23 @@ export function iconHtml(name, cls, src = iconSrc(name)) {
   return `<span class="${cls}" data-initial="${esc(initials || '?')}"><img src="${src}" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.add('no-img');this.remove()"></span>`;
 }
 
-// Desktop hover preview for any element (inside `root`) carrying data-name.
+// Desktop hover preview for any element (inside `root`) carrying data-name (item) or
+// data-skill="Hero Class|Skill Name" (hero skill; the page must have called loadSkills()),
+// with an optional data-color (class color, hex without #).
 // Returns an unbind function — call it in page cleanup when `root` outlives the page (e.g. #app).
 export function bindItemHover(root) {
   if (!root || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return () => {};
   let current = null;
   const over = e => {
-    const el = e.target.closest('[data-name]');
+    const el = e.target.closest('[data-name], [data-skill]');
     if (el === current) return;
     current = el;
-    const item = el && getItem(el.dataset.name);
+    if (el?.dataset.skill) {
+      const [cls, name] = el.dataset.skill.split('|');
+      const skill = getSkill(cls, name);
+      if (skill) return showSkillTooltip(skill, e.clientX, e.clientY, el.dataset.color);
+    }
+    const item = el?.dataset.name && getItem(el.dataset.name);
     if (item) showItemTooltip(item, e.clientX, e.clientY);
     else hideItemTooltip();
   };

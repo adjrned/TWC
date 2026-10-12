@@ -216,3 +216,9 @@ a.pn-sub-head:hover span:last-child { text-decoration: underline; }
 .ph-head .ph-sec { margin-left: auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
 .ph-all { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--accent); text-decoration: none; }
 .ph-all:hover { text-decoration: underline; }
+
+/* Ability references in character notes; hover shows the skill tooltip */
+.pn-skill { color: var(--text); border-bottom: 1px dotted var(--muted2); cursor: help; }
+.pn-skill:hover { border-bottom-color: var(--accent); }
+/* Hero headings in their class color */
+.pn-sub-head.is-hero > span:last-child { color: var(--hero); }
