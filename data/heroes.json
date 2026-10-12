@@ -157,18 +157,16 @@
     ],
     "difficulty": 1,
     "tags": [
-      "Burst",
+      "DPS",
       "AoE"
     ],
-    "overview": "Damage scales with max MP. W opens up to two portals that keep attacking, and Q hits hardest at its center. T transforms into a demon with new skills and full MP, and F can be cast while transformed for a big burst window.",
+    "overview": "Damage scales with max MP. W opens up to two portals that keep attacking, and Q hits hardest at its center. T transforms into a demon with new skills and full MP, and F can be cast while transformed.",
     "strengths": [
-      "High burst during the transformation",
+      "Constant damage from portals that keep attacking (W)",
       "E absorbs incoming damage for the hero and allies, then reflects it back many times over",
       "R gives +10% damage and +25% max HP"
     ],
-    "weaknesses": [
-      "Revolves around the T transformation window"
-    ]
+    "weaknesses": []
   },
   {
     "id": "H02M",
