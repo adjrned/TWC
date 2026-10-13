@@ -1,0 +1,112 @@
+{
+  "class": "Alchemist",
+  "createdBy": "Renaldass",
+  "publishedAt": "2026-10-13T01:35:18.982Z",
+  "rows": [
+    {
+      "id": 462,
+      "name": "coin",
+      "slots": {
+        "weapon": [{ "name": "Staff of Contagion", "src": "twicons/Staff%20of%20Contagion.webp" }],
+        "helm": [{ "name": "Crown of Fervor", "src": "twicons/Crown%20of%20Fervor.webp" }],
+        "body": [{ "name": "Robe of the Reaper", "src": "twicons/Robe%20of%20the%20Reaper.webp" }],
+        "wings": [{ "name": "Wings of Nature", "src": "twicons/Wings%20of%20Nature.webp" }],
+        "accessory": [{ "name": "Ring of the Reaper", "src": "twicons/Ring%20of%20the%20Reaper.webp" }]
+      }
+    },
+    {
+      "id": 454,
+      "name": "sd",
+      "slots": {
+        "weapon": [{ "name": "Staff of Contagion", "src": "twicons/Staff%20of%20Contagion.webp" }],
+        "helm": [{ "name": "Crown of Rage", "src": "twicons/Crown%20of%20Rage.webp" }],
+        "body": [{ "name": "Medea, the Robe of the Witch", "src": "twicons/Medea,%20the%20Robe%20of%20the%20Witch.webp" }],
+        "wings": [{ "name": "Soul Eater", "src": "twicons/Soul%20Eater.webp" }],
+        "accessory": [{ "name": "Cold Ring of Death", "src": "twicons/Cold%20Ring%20of%20Death.webp" }]
+      }
+    },
+    {
+      "id": 455,
+      "name": "tower",
+      "slots": {
+        "weapon": [{ "name": "The Ender", "src": "twicons/The%20Ender.webp" }],
+        "helm": [{ "name": "Crown of Great Rage", "src": "twicons/Crown%20of%20Great%20Rage.webp" }],
+        "body": [{ "name": "Medea, the Robe of the Witch", "src": "twicons/Medea,%20the%20Robe%20of%20the%20Witch.webp" }],
+        "wings": [{ "name": "Soul Eater", "src": "twicons/Soul%20Eater.webp" }],
+        "accessory": [{ "name": "Cold Ring of Death", "src": "twicons/Cold%20Ring%20of%20Death.webp" }]
+      }
+    },
+    {
+      "id": 456,
+      "name": "aga",
+      "slots": {
+        "weapon": [{ "name": "Staff of Plague", "src": "twicons/Staff%20of%20Plague.webp" }],
+        "helm": [{ "name": "Crown of Extreme Anger", "src": "twicons/Crown%20of%20Extreme%20Anger.webp" }],
+        "body": [{ "name": "Thanatos, the Robe of Hell", "src": "twicons/Thanatos,%20the%20Robe%20of%20Hell.webp" }],
+        "wings": [
+          { "name": "Curse of Greed", "src": "twicons/Curse%20of%20Greed.webp" },
+          { "name": "Soul Devourer", "src": "twicons/Soul%20Devourer.webp" }
+        ],
+        "accessory": [{ "name": "Ring of Frozen Soul", "src": "twicons/Ring%20of%20Frozen%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 457,
+      "name": "duke",
+      "slots": {
+        "weapon": [{ "name": "Heartrender", "src": "twicons/Heartrender.webp" }],
+        "helm": [{ "name": "Crown of Extreme Anger", "src": "twicons/Crown%20of%20Extreme%20Anger.webp" }],
+        "body": [{ "name": "Thanatos, the Robe of Hell", "src": "twicons/Thanatos,%20the%20Robe%20of%20Hell.webp" }],
+        "wings": [
+          { "name": "Curse of Greed", "src": "twicons/Curse%20of%20Greed.webp" },
+          { "name": "Soul Devourer", "src": "twicons/Soul%20Devourer.webp" }
+        ],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 458,
+      "name": "gaia",
+      "slots": {
+        "weapon": [{ "name": "Heartrender", "src": "twicons/Heartrender.webp" }],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [{ "name": "Thanatos, the Robe of Hell", "src": "twicons/Thanatos,%20the%20Robe%20of%20Hell.webp" }],
+        "wings": [{ "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" }],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 459,
+      "name": "ac",
+      "slots": {
+        "weapon": [{ "name": "Heartrender", "src": "twicons/Heartrender.webp" }],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [{ "name": "Call of Gehenna", "src": "twicons/Call%20of%20Gehenna.webp" }],
+        "wings": [{ "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" }],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 460,
+      "name": "styr",
+      "slots": {
+        "weapon": [{ "name": "Soul Torch", "src": "twicons/Soul%20Torch.webp" }],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [{ "name": "Call of Gehenna", "src": "twicons/Call%20of%20Gehenna.webp" }],
+        "wings": [{ "name": "Blood Devourer", "src": "twicons/Blood%20Devourer.webp" }],
+        "accessory": [{ "name": "Ring of Noble Soul", "src": "twicons/Ring%20of%20Noble%20Soul.webp" }]
+      }
+    },
+    {
+      "id": 461,
+      "name": "kama",
+      "slots": {
+        "weapon": [{ "name": "Soulrender", "src": "twicons/Soulrender.webp" }],
+        "helm": [{ "name": "Righteous Flame", "src": "twicons/Righteous%20Flame.webp" }],
+        "body": [{ "name": "Animus, the Robe of Souls", "src": "twicons/Animus,%20the%20Robe%20of%20Souls.webp" }],
+        "wings": [{ "name": "Void Seraph", "src": "twicons/Void%20Seraph.webp" }],
+        "accessory": [{ "name": "Primal Flame", "src": "twicons/Primal%20Flame.webp" }]
+      }
+    }
+  ]
+}
