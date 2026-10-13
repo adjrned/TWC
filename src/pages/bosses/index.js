@@ -335,8 +335,9 @@ function initDropCalc(boss) {
 }
 
 // ── Simple drops list (for bosses without calculator data) ───────────────────
-function isSpecialDrop(item) {
-  return item.name.includes('Soulstone') || item.name.includes('Token');
+// Currency and boss icons sit outside the wish pool: not wishable, not counted in n, rate unchanged.
+function isFixedDrop(item) {
+  return isCurrencyItem(item) || item.type === 'Icon';
 }
 
 const SACRIFICE_BONUSES = [0, 0.8, 1.6, 2.0];
@@ -346,10 +347,10 @@ function calcWishRate(item, boss, wishTarget, sacrifice = 0) {
   if (!base || !boss.dropFormula) {
     return base ? base * (1 + SACRIFICE_BONUSES[sacrifice]) : base;
   }
-  if (isSpecialDrop(item)) return base;
+  if (isFixedDrop(item)) return base;
 
   const formula = boss.dropFormula;
-  const drops = itemData.filter(i => (i.dropped_by || []).includes(boss.name) && !isSpecialDrop(i));
+  const drops = itemData.filter(i => (i.dropped_by || []).includes(boss.name) && !isFixedDrop(i));
   const n = drops.length;
   const sacMult = 1 + SACRIFICE_BONUSES[sacrifice];
 
@@ -384,7 +385,7 @@ function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
             <span>${t('bosses.wish')}</span>
             <select id="wishSelect">
               <option value="">${t('bosses.none')}</option>
-              ${drops.filter(i => !isSpecialDrop(i)).map(i => `<option value="${esc(i.name)}" ${wishTarget === i.name ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}
+              ${drops.filter(i => !isFixedDrop(i)).map(i => `<option value="${esc(i.name)}" ${wishTarget === i.name ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}
             </select>
           </label>` : ''}
         ${showSacrifice ? `
