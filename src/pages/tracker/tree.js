@@ -41,6 +41,12 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
   if (!isLeaf && !ancestors.has(name)) {
     const next = new Set(ancestors);
     next.add(name);
+    // Only the unowned part gets crafted, so only it consumes materials. A fully
+    // owned item still shows its recipe, but against a scratch copy of the bag
+    // so it doesn't steal materials from sibling branches.
+    const stillNeeded = neededQty - consumed;
+    const craftQty = stillNeeded > 0 ? stillNeeded : neededQty;
+    const pool = stillNeeded > 0 ? remaining : new Map(remaining);
     for (const ingredient of item.recipe) {
       const entries = Object.entries(ingredient);
       const nonExcluded = entries.filter(([n]) => !isExcluded(n));
@@ -48,12 +54,12 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
 
       if (nonExcluded.length === 1) {
         const [matName, matQty] = nonExcluded[0];
-        node.children.push(buildRecipeTree(matName, neededQty * matQty, itemMap, ownedMap, remaining, next));
+        node.children.push(buildRecipeTree(matName, craftQty * matQty, itemMap, ownedMap, pool, next));
       } else {
-        const sorted = [...nonExcluded].sort((a, b) => (remaining.get(b[0]) || 0) - (remaining.get(a[0]) || 0));
+        const sorted = [...nonExcluded].sort((a, b) => (pool.get(b[0]) || 0) - (pool.get(a[0]) || 0));
         const [chosenName, chosenQty] = sorted[0];
         const alternatives = sorted.slice(1).map(([n]) => n);
-        const child = buildRecipeTree(chosenName, neededQty * chosenQty, itemMap, ownedMap, remaining, next);
+        const child = buildRecipeTree(chosenName, craftQty * chosenQty, itemMap, ownedMap, pool, next);
         child.alternatives = alternatives;
         node.children.push(child);
       }
