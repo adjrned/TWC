@@ -1,0 +1,106 @@
+{
+  "class": "Merchant",
+  "createdBy": "Mel_EteRnal",
+  "publishedAt": "2026-10-15T03:04:42.247Z",
+  "rows": [
+    {
+      "id": 160,
+      "name": "Just go support",
+      "slots": {
+        "weapon": [{ "name": "Bag of Corruption", "src": "twicons/Bag%20of%20Corruption.webp" }],
+        "helm": [{ "name": "Scale Protector", "src": "twicons/Scale%20Protector.webp" }],
+        "body": [{ "name": "Earthen Plates", "src": "twicons/Earthen%20Plates.webp" }],
+        "wings": [{ "name": "Wings of Purification", "src": "twicons/Wings%20of%20Purification.webp" }],
+        "accessory": [{ "name": "Ring of Intrusion", "src": "twicons/Ring%20of%20Intrusion.webp" }]
+      }
+    },
+    {
+      "id": 161,
+      "name": "Just go support",
+      "slots": {
+        "weapon": [{ "name": "Bag of Destruction", "src": "twicons/Bag%20of%20Destruction.webp" }],
+        "helm": [{ "name": "Protector's Will", "src": "twicons/Protector's%20Will.webp" }],
+        "body": [{ "name": "Creation of the Sky and Earth", "src": "twicons/Creation%20of%20the%20Sky%20and%20Earth.webp" }, { "name": "Requiem, the Armor of Lamentation", "src": "twicons/Requiem,%20the%20Armor%20of%20Lamentation.webp" }],
+        "wings": [{ "name": "Soul of the Dead", "src": "twicons/Soul%20of%20the%20Dead.webp" }],
+        "accessory": [{ "name": "Ring of Time", "src": "twicons/Ring%20of%20Time.webp" }, { "name": "Ispion, the Runed Ring", "src": "twicons/Ispion,%20the%20Runed%20Ring.webp" }]
+      }
+    },
+    {
+      "id": 162,
+      "name": "Just go support",
+      "slots": {
+        "weapon": [{ "name": "Bag of Destruction", "src": "twicons/Bag%20of%20Destruction.webp" }, { "name": "Bag of Universe", "src": "twicons/Bag%20of%20Universe.webp" }],
+        "helm": [{ "name": "Protector's Will", "src": "twicons/Protector's%20Will.webp" }, { "name": "Eye of the Flame Lord", "src": "twicons/Eye%20of%20the%20Flame%20Lord.webp" }],
+        "body": [{ "name": "Creation of the Sky and Earth", "src": "twicons/Creation%20of%20the%20Sky%20and%20Earth.webp" }, { "name": "Hades, the Armor of Despair", "src": "twicons/Hades,%20the%20Armor%20of%20Despair.webp" }],
+        "wings": [{ "name": "Protection of the Fairies", "src": "twicons/Protection%20of%20the%20Fairies.webp" }],
+        "accessory": [{ "name": "Ring of Fate", "src": "twicons/Ring%20of%20Fate.webp" }]
+      }
+    },
+    {
+      "id": 163,
+      "name": "Aga",
+      "slots": {
+        "weapon": [{ "name": "Bag of Despair", "src": "twicons/Bag%20of%20Despair.webp" }],
+        "helm": [{ "name": "Crown of Extreme Anger", "src": "twicons/Crown%20of%20Extreme%20Anger.webp" }],
+        "body": [{ "name": "Voidshard Armor", "src": "twicons/Voidshard%20Armor.webp" }],
+        "wings": [{ "name": "Archangel Wings", "src": "twicons/Archangel%20Wings.webp" }],
+        "accessory": [{ "name": "Ring of the One", "src": "twicons/Ring%20of%20the%20One.webp" }]
+      }
+    },
+    {
+      "id": 164,
+      "name": "Duke",
+      "slots": {
+        "weapon": [{ "name": "Bag of Despair", "src": "twicons/Bag%20of%20Despair.webp" }],
+        "helm": [{ "name": "Crown of Extreme Anger", "src": "twicons/Crown%20of%20Extreme%20Anger.webp" }],
+        "body": [{ "name": "Plates of Sanguine Fury", "src": "twicons/Plates%20of%20Sanguine%20Fury.webp" }],
+        "wings": [{ "name": "Archangel Wings", "src": "twicons/Archangel%20Wings.webp" }],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }, { "name": "Star of Apotheosis", "src": "twicons/Star%20of%20Apotheosis.webp" }]
+      }
+    },
+    {
+      "id": 165,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [{ "name": "Bag of Despair", "src": "twicons/Bag%20of%20Despair.webp" }],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [{ "name": "Plates of Sanguine Fury", "src": "twicons/Plates%20of%20Sanguine%20Fury.webp" }],
+        "wings": [{ "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" }],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }, { "name": "Star of Apotheosis", "src": "twicons/Star%20of%20Apotheosis.webp" }]
+      }
+    },
+    {
+      "id": 166,
+      "name": "AC",
+      "slots": {
+        "weapon": [{ "name": "Bag of Despair", "src": "twicons/Bag%20of%20Despair.webp" }],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [{ "name": "Dread Incarnate", "src": "twicons/Dread%20Incarnate.webp" }],
+        "wings": [{ "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" }],
+        "accessory": [{ "name": "Ring of Desolate Soul", "src": "twicons/Ring%20of%20Desolate%20Soul.webp" }, { "name": "Star of Apotheosis", "src": "twicons/Star%20of%20Apotheosis.webp" }]
+      }
+    },
+    {
+      "id": 167,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [{ "name": "Bag of Despair", "src": "twicons/Bag%20of%20Despair.webp" }],
+        "helm": [{ "name": "Crown of Cataclysm", "src": "twicons/Crown%20of%20Cataclysm.webp" }],
+        "body": [{ "name": "Dread Incarnate", "src": "twicons/Dread%20Incarnate.webp" }],
+        "wings": [{ "name": "Wings of Sacred Provenance", "src": "twicons/Wings%20of%20Sacred%20Provenance.webp" }],
+        "accessory": [{ "name": "Ring of Noble Soul", "src": "twicons/Ring%20of%20Noble%20Soul.webp" }, { "name": "Ring of Genesis", "src": "twicons/Ring%20of%20Genesis.webp" }]
+      }
+    },
+    {
+      "id": 168,
+      "name": "Kama",
+      "slots": {
+        "weapon": [{ "name": "Soul Rift", "src": "twicons/Soul%20Rift.webp" }],
+        "helm": [{ "name": "Righteous Flame", "src": "twicons/Righteous%20Flame.webp" }],
+        "body": [{ "name": "Plates of Dawn", "src": "twicons/Plates%20of%20Dawn.webp" }],
+        "wings": [{ "name": "Void Seraph", "src": "twicons/Void%20Seraph.webp" }],
+        "accessory": [{ "name": "Primal Flame", "src": "twicons/Primal%20Flame.webp" }]
+      }
+    }
+  ]
+}
