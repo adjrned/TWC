@@ -13,7 +13,7 @@ import {
   saveProfiles, loadProfileState, saveProfileState,
   deleteProfileState, migrateToProfiles, addCodeToProfileState,
 } from './storage.js';
-import { buildItemMap, buildOwnedMap, buildRecipeTree, buildComprehensiveData, flattenToLeaves, isExcluded } from './tree.js';
+import { buildItemMap, buildOwnedMap, buildRecipeTree, buildComprehensiveData, flattenTracked, isExcluded } from './tree.js';
 import { supportsFileHandles, pickFile, storeFileHandle, getFileHandle, removeFileHandle, readFileFromHandle } from './filehandle.js';
 
 let itemData = null;
@@ -302,9 +302,7 @@ function renderMaterials() {
 
   // Totals across every tracked item (shared inventory consumed once).
   const totals = new Map();
-  const sharedRemaining = new Map(ownedMap);
-  for (const itemName of trackerState.trackedItems) {
-    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap, new Map(), new Set(), sharedRemaining);
+  for (const leaves of flattenTracked(trackerState.trackedItems, itemMap, ownedMap).values()) {
     for (const [matName, needed] of leaves) {
       if (isExcluded(matName) || needed <= 0) continue;
       totals.set(matName, (totals.get(matName) || 0) + needed);

@@ -12,11 +12,21 @@ export function buildOwnedMap(inventory) {
   return new Map(Object.entries(inventory || {}));
 }
 
-export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = null, ancestors = new Set()) {
+// "Either" ingredients are resolved only after every fixed ingredient has taken
+// its share of the bag, so an alternative never grabs a material another recipe
+// needs outright (e.g. Mark of Lord vs Fragment of Hell). Picks whichever option
+// has the most left over.
+function pickAlternative(options, pool) {
+  return [...options].sort((a, b) => (pool.get(b[0]) || 0) - (pool.get(a[0]) || 0));
+}
+
+export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = null, ancestors = new Set(), deferred = null) {
   if (!remaining) {
     remaining = new Map();
     for (const [k, v] of ownedMap) remaining.set(k, v);
   }
+  const isRoot = !deferred;
+  if (isRoot) deferred = [];
 
   const item = itemMap.get(name);
   const available = remaining.get(name) || 0;
@@ -54,14 +64,22 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
 
       if (nonExcluded.length === 1) {
         const [matName, matQty] = nonExcluded[0];
-        node.children.push(buildRecipeTree(matName, craftQty * matQty, itemMap, ownedMap, pool, next));
+        node.children.push(buildRecipeTree(matName, craftQty * matQty, itemMap, ownedMap, pool, next, deferred));
       } else {
-        const sorted = [...nonExcluded].sort((a, b) => (pool.get(b[0]) || 0) - (pool.get(a[0]) || 0));
-        const [chosenName, chosenQty] = sorted[0];
-        const alternatives = sorted.slice(1).map(([n]) => n);
-        const child = buildRecipeTree(chosenName, craftQty * chosenQty, itemMap, ownedMap, pool, next);
-        child.alternatives = alternatives;
+        // Placeholder keeps the child's position; filled in once fixed needs are counted.
+        const child = {};
         node.children.push(child);
+        deferred.push({ child, options: nonExcluded, qty: craftQty, pool, ancestors: next });
+      }
+    }
+  }
+
+  if (isRoot) {
+    while (deferred.length) {
+      for (const { child, options, qty, pool, ancestors: anc } of deferred.splice(0)) {
+        const [[chosenName, chosenQty], ...rest] = pickAlternative(options, pool);
+        Object.assign(child, buildRecipeTree(chosenName, qty * chosenQty, itemMap, ownedMap, pool, anc, deferred));
+        child.alternatives = rest.map(([n]) => n);
       }
     }
   }
@@ -69,12 +87,44 @@ export function buildRecipeTree(name, neededQty, itemMap, ownedMap, remaining = 
   return node;
 }
 
-export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), ancestors = new Set(), remaining = null) {
+export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new Map(), ancestors = new Set(), remaining = null, deferred = null) {
   if (!remaining) {
     remaining = new Map();
     for (const [k, v] of ownedMap) remaining.set(k, v);
   }
+  const isRoot = !deferred;
+  if (isRoot) deferred = [];
 
+  walkLeaves(name, qty, itemMap, accumulator, ancestors, remaining, deferred);
+  if (isRoot) drainDeferred(deferred, itemMap, remaining);
+  return accumulator;
+}
+
+// Leaves needed per tracked item, sharing one bag across all of them. Alternatives
+// wait until every tracked item's fixed ingredients have been counted.
+export function flattenTracked(trackedItems, itemMap, ownedMap) {
+  const remaining = new Map(ownedMap);
+  const deferred = [];
+  const perItem = new Map();
+  for (const itemName of trackedItems) {
+    const acc = new Map();
+    perItem.set(itemName, acc);
+    walkLeaves(itemName, 1, itemMap, acc, new Set(), remaining, deferred);
+  }
+  drainDeferred(deferred, itemMap, remaining);
+  return perItem;
+}
+
+function drainDeferred(deferred, itemMap, remaining) {
+  while (deferred.length) {
+    for (const { options, qty, accumulator, ancestors } of deferred.splice(0)) {
+      const [[chosenName, chosenQty]] = pickAlternative(options, remaining);
+      walkLeaves(chosenName, qty * chosenQty, itemMap, accumulator, ancestors, remaining, deferred);
+    }
+  }
+}
+
+function walkLeaves(name, qty, itemMap, accumulator, ancestors, remaining, deferred) {
   const item = itemMap.get(name);
   const hasRecipe = item && item.recipe && item.recipe.length > 0;
 
@@ -83,11 +133,11 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
   remaining.set(name, available - consumed);
   const stillNeeded = qty - consumed;
 
-  if (stillNeeded <= 0) return accumulator;
+  if (stillNeeded <= 0) return;
 
   if (!hasRecipe || ancestors.has(name)) {
     accumulator.set(name, (accumulator.get(name) || 0) + stillNeeded);
-    return accumulator;
+    return;
   }
 
   const hasNonExcludedIngredients = item.recipe.some(ing =>
@@ -96,7 +146,7 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
 
   if (!hasNonExcludedIngredients) {
     accumulator.set(name, (accumulator.get(name) || 0) + stillNeeded);
-    return accumulator;
+    return;
   }
 
   const next = new Set(ancestors);
@@ -108,14 +158,11 @@ export function flattenToLeaves(name, qty, itemMap, ownedMap, accumulator = new 
 
     if (nonExcluded.length === 1) {
       const [matName, matQty] = nonExcluded[0];
-      flattenToLeaves(matName, stillNeeded * matQty, itemMap, ownedMap, accumulator, next, remaining);
+      walkLeaves(matName, stillNeeded * matQty, itemMap, accumulator, next, remaining, deferred);
     } else {
-      const sorted = [...nonExcluded].sort((a, b) => (remaining.get(b[0]) || 0) - (remaining.get(a[0]) || 0));
-      const [chosenName, chosenQty] = sorted[0];
-      flattenToLeaves(chosenName, stillNeeded * chosenQty, itemMap, ownedMap, accumulator, next, remaining);
+      deferred.push({ options: nonExcluded, qty: stillNeeded, accumulator, ancestors: next });
     }
   }
-  return accumulator;
 }
 
 const EXCLUDED_MATERIALS = new Set([
@@ -135,10 +182,7 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
 
   const totals = new Map();
   const usedFor = new Map();
-  const sharedRemaining = new Map();
-  for (const [k, v] of ownedMap) sharedRemaining.set(k, v);
-  for (const itemName of trackedItems) {
-    const leaves = flattenToLeaves(itemName, 1, itemMap, ownedMap, new Map(), new Set(), sharedRemaining);
+  for (const [itemName, leaves] of flattenTracked(trackedItems, itemMap, ownedMap)) {
     for (const [matName, needed] of leaves) {
       if (isExcluded(matName)) continue;
       totals.set(matName, (totals.get(matName) || 0) + needed);
@@ -162,6 +206,11 @@ export function buildComprehensiveData(trackedItems, itemMap, ownedMap, bossData
         groups[bossName].materials.push(entry);
       }
     }
+  }
+
+  // Within each boss, most-needed materials first.
+  for (const g of Object.values(groups)) {
+    g.materials.sort((a, b) => b.needed - a.needed || a.name.localeCompare(b.name));
   }
 
   const bossOrder = new Map();
