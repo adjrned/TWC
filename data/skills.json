@@ -3885,7 +3885,7 @@
     "order": 2,
     "active": [
       "Dashes rapidly.",
-      "Attack Damage X 0.6 + Main Stat X 7.5 magic damage",
+      "Attack Damage X 0.5 + Main Stat X 7.5 magic damage",
       "Summons 1 soul on first enemy hit",
       "Cooldown is reset when casting W/E",
       "INT: Applies single-hit effect and Max travel distance increased by 50%"
@@ -3919,7 +3919,7 @@
     "order": 4,
     "active": [
       "Summons illusions to strike your target.",
-      "Strikes nearby enemies 4 times with Attack Damage X 0.6 pure damage",
+      "Strikes nearby enemies 4 times with Attack Damage X 0.5 pure damage",
       "While casting, caster takes 25% reduced damage and moves faster",
       "Duration is reset when casting Q/W/EE/R",
       "Chain - Soul Break",
@@ -3937,7 +3937,7 @@
     "order": 5,
     "active": [
       "Unleashes a piercing strike that breaks souls.",
-      "Attack Damage X 0.6 + (STR + INT / 3) X 8 magic damage",
+      "Attack Damage X 0.5 + (STR + INT / 3) X 7/5 magic damage",
       "Consecutive casts increases damage by 25% (up to 50%)"
     ]
   },
@@ -3970,7 +3970,7 @@
     "order": 7,
     "active": [
       "Gathers souls into a singularity and launches it forward.",
-      "Main Stat X 25 magic damage",
+      "Main Stat X 20 magic damage",
       "Upon arrival, explodes to deal damage again and summons 5 souls",
       "STR: Explosion damage increased by 100%",
       "INT: Break effect added. Pushes enemies when cast from far range."
