@@ -3937,7 +3937,7 @@
     "order": 5,
     "active": [
       "Unleashes a piercing strike that breaks souls.",
-      "Attack Damage X 0.5 + (STR + INT / 3) X 7/5 magic damage",
+      "Attack Damage X 0.5 + (STR + INT / 3) X 7.5 magic damage",
       "Consecutive casts increases damage by 25% (up to 50%)"
     ]
   },
