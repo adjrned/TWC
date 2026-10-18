@@ -1366,7 +1366,7 @@
     "overview": "A utility support. E brews potions that heal and raise Main Stat, and pairing it with Q makes enemies take more magic damage. T summons a fallen angel who breaks barriers and marks up to 3 allies for +5% damage, damage reduction and attack speed.",
     "strengths": [
       "R freezes enemies and makes allies immune to harmful effects for 2 seconds",
-      "F makes enemies take 10% more magic damage",
+      "F makes enemies take more magic damage",
       "Breaks barriers (T → Q)"
     ],
     "weaknesses": [
