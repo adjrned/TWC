@@ -1130,8 +1130,7 @@
     ],
     "range": "Ranged",
     "filter": [
-      "DPS",
-      "Support"
+      "DPS"
     ],
     "difficulty": 2,
     "tags": [
