@@ -5,42 +5,42 @@
     "items": [
       {
         "name": "Parasitic Staff",
-        "base": 1.75,
+        "base": 2,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Hood of the Fallen",
-        "base": 1.75,
+        "base": 2,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Shroud of Perservance",
-        "base": 1.25,
+        "base": 1.5,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Proof of Purification",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Heart of Fire",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Dark Crystal",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
@@ -67,35 +67,35 @@
     "items": [
       {
         "name": "Dragonic Orb",
-        "base": 3.5,
+        "base": 1.75,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Ancient Hourglass",
-        "base": 3.5,
+        "base": 1.75,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Burning Bone Fragment",
-        "base": 5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Dragon's Eye",
-        "base": 5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Bone Dragon Icon",
-        "base": 0.5,
+        "base": 0.33,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
@@ -122,35 +122,35 @@
     "items": [
       {
         "name": "Griseus, the Sword of Protection",
-        "base": 1.75,
+        "base": 2,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Ring of the Storm",
-        "base": 1.75,
+        "base": 2,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Embrace of Nature",
-        "base": 1.25,
+        "base": 1.5,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Purified Water of Nature",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Fragment of the Wind",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
@@ -177,28 +177,28 @@
     "items": [
       {
         "name": "Guardian of the Skies",
-        "base": 1.25,
+        "base": 1.5,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Steel of God",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "God's Page",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Essence of Light",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
@@ -246,21 +246,21 @@
       },
       {
         "name": "Essence of Darkness",
-        "base": 2.5,
+        "base": 2.25,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Antimatter",
-        "base": 2.5,
+        "base": 2.25,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Frozen Debris",
-        "base": 2.5,
+        "base": 1.5,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
@@ -287,56 +287,56 @@
     "items": [
       {
         "name": "The Ender",
-        "base": 0.71428571,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.38333333,
+        "wishMult": 5.217391,
+        "wishIconMult": 7.826087,
         "iconMult": 1.5
       },
       {
         "name": "Armor of Grudge",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.47916667,
+        "wishMult": 5.217391,
+        "wishIconMult": 7.826087,
         "iconMult": 1.5
       },
       {
         "name": "Eyes of the Watcher",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.47916667,
+        "wishMult": 5.217391,
+        "wishIconMult": 7.826087,
         "iconMult": 1.5
       },
       {
         "name": "Ring of Destruction",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.47916667,
+        "wishMult": 5.217391,
+        "wishIconMult": 7.826087,
         "iconMult": 1.5
       },
       {
         "name": "Spearhead of Death",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.575,
+        "wishMult": 5.217391,
+        "wishIconMult": 7.826087,
         "iconMult": 1.5
       },
       {
         "name": "Fragment of Chaos",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.575,
+        "wishMult": 5.217391,
+        "wishIconMult": 7.826087,
         "iconMult": 1.5
       },
       {
         "name": "Death Fiend Icon",
-        "base": 0.14285714,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.75,
+        "wishMult": 1,
+        "wishIconMult": 1.5,
         "iconMult": 1.5
       },
       {
         "name": "Prius Platinum Coin",
-        "base": 0.38095238,
+        "base": 0.8,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -356,42 +356,42 @@
     "items": [
       {
         "name": "Shackles of Heaven",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Aegis of Storm",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Essence of Storm",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Shining Fragment of Ruins",
-        "base": 0.71428571,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.575,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Valtora Icon",
-        "base": 0.14285714,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.75,
+        "wishMult": 1,
+        "wishIconMult": 1.5,
         "iconMult": 1.5
       },
       {
         "name": "Prius Platinum Coin",
-        "base": 0.38095238,
+        "base": 0.8,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -411,42 +411,42 @@
     "items": [
       {
         "name": "Heart of Volcano",
-        "base": 1.30434783,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Aegis of Flame",
-        "base": 1.63043478,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Essence of Flame",
-        "base": 1.63043478,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Shining Fragment of Ruins",
-        "base": 1.30434783,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Ifrit Icon",
-        "base": 0.19565217,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.75,
+        "wishMult": 1,
+        "wishIconMult": 1.5,
         "iconMult": 1.5
       },
       {
         "name": "Prius Platinum Coin",
-        "base": 0.34782609,
+        "base": 0.9,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -466,42 +466,42 @@
     "items": [
       {
         "name": "Grail of Eternity",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Aegis of Sea",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Essence of Sea",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Shining Fragment of Ruins",
-        "base": 1.19047619,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.8625,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Nereid Icon",
-        "base": 0.14285714,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.75,
+        "wishMult": 1,
+        "wishIconMult": 1.5,
         "iconMult": 1.5
       },
       {
         "name": "Prius Platinum Coin",
-        "base": 0.47619048,
+        "base": 1,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -521,42 +521,42 @@
     "items": [
       {
         "name": "Curse of Greed",
-        "base": 0.71428571,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.575,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Fragment of Soul",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Fragment of Hell",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Mark of Lord",
-        "base": 0.95238095,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.71875,
+        "wishMult": 3.478261,
+        "wishIconMult": 5.217392,
         "iconMult": 1.5
       },
       {
         "name": "Agareth Icon",
-        "base": 0.14285714,
-        "wishMult": 2.5,
-        "wishIconMult": 3.75,
+        "base": 0.75,
+        "wishMult": 1,
+        "wishIconMult": 1.5,
         "iconMult": 1.5
       },
       {
         "name": "Prius Platinum Coin",
-        "base": 0.57142857,
+        "base": 1.25,
         "wishMult": null,
         "wishIconMult": null,
         "iconMult": 1
@@ -576,35 +576,35 @@
     "items": [
       {
         "name": "Crimson Rose",
-        "base": 0.32857143,
+        "base": 0.345,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Blood Essence",
-        "base": 0.41071429,
+        "base": 0.43125,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Emblem of Sacrifice",
-        "base": 0.41071429,
+        "base": 0.43125,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Soul Blossom",
-        "base": 0.41071429,
+        "base": 0.43125,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Duke's Soulstone",
-        "base": 0.15,
+        "base": 0.25,
         "wishMult": 1,
         "wishIconMult": 1.5,
         "iconMult": 1
@@ -624,35 +624,35 @@
     "items": [
       {
         "name": "Gown of Life",
-        "base": 0.27380952,
+        "base": 0.25875,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Essence of Earth",
-        "base": 0.3422619,
+        "base": 0.345,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Aegis of Earth",
-        "base": 0.3422619,
+        "base": 0.345,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Twisted Fragment of Ruins",
-        "base": 0.3422619,
+        "base": 0.345,
         "wishMult": 3.478261,
         "wishIconMult": 5.217391,
         "iconMult": 1.5
       },
       {
         "name": "Gaia's Soulstone",
-        "base": 0.15,
+        "base": 0.2,
         "wishMult": 1,
         "wishIconMult": 1,
         "iconMult": 1
@@ -679,14 +679,14 @@
       },
       {
         "name": "Arcane Core",
-        "base": 0.30666666,
+        "base": 0.30666667,
         "wishMult": 2.608696,
         "wishIconMult": 3.913043,
         "iconMult": 1.5
       },
       {
         "name": "Ancient Tome",
-        "base": 0.30666666,
+        "base": 0.30666667,
         "wishMult": 2.608696,
         "wishIconMult": 3.913043,
         "iconMult": 1.5
@@ -809,14 +809,14 @@
     "items": [
       {
         "name": "Death Scythe",
-        "base": 1.25,
+        "base": 1.5,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Staff of Souls",
-        "base": 1.25,
+        "base": 1.5,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
@@ -837,21 +837,21 @@
       },
       {
         "name": "Skeleton Bone",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Orb of Oblivion",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5
       },
       {
         "name": "Spirit of Abyss",
-        "base": 2.5,
+        "base": 3,
         "wishMult": 2.5,
         "wishIconMult": 3.75,
         "iconMult": 1.5

@@ -476,7 +476,7 @@
     "dropped_by": [
       "Protector of Nature"
     ],
-    "droprate": 0.33
+    "droprate": 0.5
   },
   {
     "id": "I016",
@@ -2024,7 +2024,7 @@
     "dropped_by": [
       "Ruler of Flames Ragnaar"
     ],
-    "droprate": 0.25
+    "droprate": 0.125
   },
   {
     "id": "I05U",
@@ -2140,7 +2140,7 @@
     "dropped_by": [
       "Ruler of Flames Ragnaar"
     ],
-    "droprate": 0.0075
+    "droprate": 0.006
   },
   {
     "id": "nspi",
@@ -2208,7 +2208,7 @@
     "dropped_by": [
       "Evil Lava Spawn"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "rnec",
@@ -2233,7 +2233,7 @@
     "dropped_by": [
       "Evil Lava Spawn"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "bfhr",
@@ -2258,7 +2258,7 @@
     "dropped_by": [
       "Evil Lava Spawn"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "stwa",
@@ -2284,7 +2284,7 @@
     "dropped_by": [
       "Evil Lava Spawn"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "blba",
@@ -2312,7 +2312,7 @@
     "dropped_by": [
       "Evil Lava Spawn"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "I0BU",
@@ -2396,7 +2396,7 @@
     "dropped_by": [
       "Tentacle Lord"
     ],
-    "droprate": 0.125
+    "droprate": 0.1
   },
   {
     "id": "I0BN",
@@ -2513,7 +2513,7 @@
     "dropped_by": [
       "Tentacle Lord"
     ],
-    "droprate": 0.125
+    "droprate": 0.05
   },
   {
     "id": "I0G6",
@@ -2537,7 +2537,7 @@
     "dropped_by": [
       "Tentacle Lord"
     ],
-    "droprate": 0.0075
+    "droprate": 0.006
   },
   {
     "id": "gvsm",
@@ -2602,7 +2602,7 @@
     "dropped_by": [
       "Guardian of Sea"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "I0OT",
@@ -2625,7 +2625,7 @@
     "dropped_by": [
       "Guardian of Sea"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "I0OU",
@@ -2651,7 +2651,7 @@
     "dropped_by": [
       "Guardian of Sea"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "I0OV",
@@ -2675,7 +2675,7 @@
     "dropped_by": [
       "Guardian of Sea"
     ],
-    "droprate": 0.25
+    "droprate": 0.2
   },
   {
     "id": "I0A3",
@@ -2766,7 +2766,7 @@
       "Giant Golem",
       "Golem Monster"
     ],
-    "droprate": 0.125
+    "droprate": 0.05
   },
   {
     "id": "I0A7",
@@ -2885,7 +2885,7 @@
       "The Devil's Right Arm Corrupt Angel"
     ],
     "droprate": [
-      0.125,
+      0.05,
       0.0005,
       0.125
     ]
@@ -2912,7 +2912,7 @@
     "dropped_by": [
       "Giant Golem"
     ],
-    "droprate": 0.0075
+    "droprate": 0.006
   },
   {
     "id": "dtsb",
@@ -3074,7 +3074,7 @@
     "dropped_by": [
       "Wallachia Mad Clown"
     ],
-    "droprate": 0.0033
+    "droprate": 0.005
   },
   {
     "id": "wcyc",
@@ -3115,7 +3115,7 @@
     "dropped_by": [
       "Mana Ancient"
     ],
-    "droprate": 0.1
+    "droprate": 0.05
   },
   {
     "id": "I06D",
@@ -3141,7 +3141,7 @@
     "dropped_by": [
       "Mana Ancient"
     ],
-    "droprate": 0.1
+    "droprate": 0.05
   },
   {
     "id": "I0AV",
@@ -3172,7 +3172,7 @@
       "Mana Ancient",
       "Fairy"
     ],
-    "droprate": 0.1
+    "droprate": 0.05
   },
   {
     "id": "I06E",
@@ -3206,7 +3206,7 @@
     "dropped_by": [
       "Mana Ancient"
     ],
-    "droprate": 0.1
+    "droprate": 0.05
   },
   {
     "id": "I0G9",
@@ -3230,7 +3230,7 @@
     "dropped_by": [
       "Mana Ancient"
     ],
-    "droprate": 0.01
+    "droprate": 0.006
   },
   {
     "id": "envl",
@@ -4509,7 +4509,7 @@
     "dropped_by": [
       "Castle Avalon Gatekeeper"
     ],
-    "droprate": 0.0033
+    "droprate": 0.005
   },
   {
     "id": "amrc",
@@ -5788,7 +5788,7 @@
     "dropped_by": [
       "Spirit Beast"
     ],
-    "droprate": 0.0033
+    "droprate": 0.005
   },
   {
     "id": "ccmd",
@@ -6982,7 +6982,7 @@
     "dropped_by": [
       "Bone Dragon"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "I0OZ",
@@ -7038,7 +7038,7 @@
     "dropped_by": [
       "Bone Dragon"
     ],
-    "droprate": 0.0025
+    "droprate": 0.0033
   },
   {
     "id": "rre1",
@@ -7092,7 +7092,7 @@
     "dropped_by": [
       "Skeletal King Desperia"
     ],
-    "droprate": 0.0125
+    "droprate": 0.015
   },
   {
     "id": "rat6",
@@ -7129,7 +7129,7 @@
     "dropped_by": [
       "Skeletal King Desperia"
     ],
-    "droprate": 0.0125
+    "droprate": 0.015
   },
   {
     "id": "ward",
@@ -7255,7 +7255,7 @@
     "dropped_by": [
       "Skeletal King Desperia"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "nflg",
@@ -7293,7 +7293,7 @@
     "dropped_by": [
       "Skeletal King Desperia"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "gsou",
@@ -7326,7 +7326,7 @@
     "dropped_by": [
       "Skeletal King Desperia"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "fgrg",
@@ -7377,7 +7377,7 @@
     "dropped_by": [
       "Zombie Lord"
     ],
-    "droprate": 0.0175
+    "droprate": 0.02
   },
   {
     "id": "crys",
@@ -7414,7 +7414,7 @@
     "dropped_by": [
       "Zombie Lord"
     ],
-    "droprate": 0.0175
+    "droprate": 0.02
   },
   {
     "id": "stel",
@@ -7490,7 +7490,7 @@
     "dropped_by": [
       "Zombie Lord"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "rde1",
@@ -7527,7 +7527,7 @@
     "dropped_by": [
       "Zombie Lord"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "I08P",
@@ -7563,7 +7563,7 @@
     "dropped_by": [
       "Zombie Lord"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "pomn",
@@ -7618,7 +7618,7 @@
     "dropped_by": [
       "Ancient Ent"
     ],
-    "droprate": 0.0125
+    "droprate": 0.015
   },
   {
     "id": "pgin",
@@ -7655,7 +7655,7 @@
     "dropped_by": [
       "Ancient Ent"
     ],
-    "droprate": 0.0175
+    "droprate": 0.02
   },
   {
     "id": "srtl",
@@ -7699,7 +7699,7 @@
     "dropped_by": [
       "Ancient Ent"
     ],
-    "droprate": 0.0175
+    "droprate": 0.02
   },
   {
     "id": "ofir",
@@ -7738,7 +7738,7 @@
     "dropped_by": [
       "Ancient Ent"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "shtm",
@@ -7837,7 +7837,7 @@
     "dropped_by": [
       "Archangel Samael"
     ],
-    "droprate": 0.0125
+    "droprate": 0.015
   },
   {
     "id": "I0E5",
@@ -7873,7 +7873,7 @@
     "dropped_by": [
       "Archangel Samael"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "I0E7",
@@ -7908,7 +7908,7 @@
     "dropped_by": [
       "Archangel Samael"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "I0E6",
@@ -7944,7 +7944,7 @@
     "dropped_by": [
       "Archangel Samael"
     ],
-    "droprate": 0.025
+    "droprate": 0.03
   },
   {
     "id": "sneg",
@@ -8110,7 +8110,7 @@
     "dropped_by": [
       "Shadow Dragon Irbert"
     ],
-    "droprate": 0.02
+    "droprate": 0.0225
   },
   {
     "id": "I08N",
@@ -8153,7 +8153,7 @@
     "dropped_by": [
       "Shadow Dragon Irbert"
     ],
-    "droprate": 0.02
+    "droprate": 0.0225
   },
   {
     "id": "I09N",
@@ -8191,7 +8191,7 @@
     "dropped_by": [
       "Shadow Dragon Irbert"
     ],
-    "droprate": 0.016
+    "droprate": 0.015
   },
   {
     "id": "shar",
@@ -8241,7 +8241,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.005
+    "droprate": 0.02
   },
   {
     "id": "oslo",
@@ -8275,7 +8275,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.0075
+    "droprate": 0.025
   },
   {
     "id": "sprn",
@@ -8314,7 +8314,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.0075
+    "droprate": 0.025
   },
   {
     "id": "ledg",
@@ -8344,7 +8344,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.0075
+    "droprate": 0.025
   },
   {
     "id": "I0DG",
@@ -8384,7 +8384,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.0075
+    "droprate": 0.03
   },
   {
     "id": "kygh",
@@ -8416,7 +8416,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.0075
+    "droprate": 0.03
   },
   {
     "id": "I0O0",
@@ -8436,11 +8436,11 @@
       "Underlord Agareth"
     ],
     "droprate": [
-      0.004,
-      0.004,
-      0.002,
-      0.0025,
-      0.003
+      0.008,
+      0.008,
+      0.009,
+      0.01,
+      0.0125
     ],
     "notes": [
       "Can be used to purchase items from the Collector NPC"
@@ -8469,7 +8469,7 @@
     "dropped_by": [
       "Death Fiend"
     ],
-    "droprate": 0.0015
+    "droprate": 0.0075
   },
   {
     "id": "infs",
@@ -8526,7 +8526,7 @@
     "dropped_by": [
       "Lightning God Valtora"
     ],
-    "droprate": 0.006
+    "droprate": 0.025
   },
   {
     "id": "I0IG",
@@ -8561,7 +8561,7 @@
     "dropped_by": [
       "Lightning God Valtora"
     ],
-    "droprate": 0.008
+    "droprate": 0.03
   },
   {
     "id": "I0IH",
@@ -8600,7 +8600,7 @@
     "dropped_by": [
       "Lightning God Valtora"
     ],
-    "droprate": 0.008
+    "droprate": 0.03
   },
   {
     "id": "phea",
@@ -8664,9 +8664,9 @@
       "Nereid"
     ],
     "droprate": [
-      0.004,
-      0.005,
-      0.006
+      0.02,
+      0.025,
+      0.03
     ]
   },
   {
@@ -8697,7 +8697,7 @@
     "dropped_by": [
       "Lightning God Valtora"
     ],
-    "droprate": 0.0015
+    "droprate": 0.0075
   },
   {
     "id": "I0P0",
@@ -8758,7 +8758,7 @@
     "dropped_by": [
       "Ifrit"
     ],
-    "droprate": 0.006
+    "droprate": 0.025
   },
   {
     "id": "I0IE",
@@ -8791,7 +8791,7 @@
     "dropped_by": [
       "Ifrit"
     ],
-    "droprate": 0.008
+    "droprate": 0.03
   },
   {
     "id": "I0IF",
@@ -8831,7 +8831,7 @@
     "dropped_by": [
       "Ifrit"
     ],
-    "droprate": 0.008
+    "droprate": 0.03
   },
   {
     "id": "I02D",
@@ -8861,7 +8861,7 @@
     "dropped_by": [
       "Ifrit"
     ],
-    "droprate": 0.0015
+    "droprate": 0.0075
   },
   {
     "id": "I0P1",
@@ -8915,7 +8915,7 @@
     "dropped_by": [
       "Nereid"
     ],
-    "droprate": 0.006
+    "droprate": 0.025
   },
   {
     "id": "I0II",
@@ -8957,7 +8957,7 @@
     "dropped_by": [
       "Nereid"
     ],
-    "droprate": 0.008
+    "droprate": 0.03
   },
   {
     "id": "I0IJ",
@@ -9003,7 +9003,7 @@
     "dropped_by": [
       "Nereid"
     ],
-    "droprate": 0.008
+    "droprate": 0.03
   },
   {
     "id": "I002",
@@ -9033,7 +9033,7 @@
     "dropped_by": [
       "Nereid"
     ],
-    "droprate": 0.0015
+    "droprate": 0.0075
   },
   {
     "id": "I0P2",
@@ -9095,7 +9095,7 @@
     "dropped_by": [
       "Underlord Agareth"
     ],
-    "droprate": 0.005
+    "droprate": 0.02
   },
   {
     "id": "I0NV",
@@ -9135,7 +9135,7 @@
     "dropped_by": [
       "Underlord Agareth"
     ],
-    "droprate": 0.0066
+    "droprate": 0.025
   },
   {
     "id": "I0NU",
@@ -9171,7 +9171,7 @@
     "dropped_by": [
       "Underlord Agareth"
     ],
-    "droprate": 0.0066
+    "droprate": 0.025
   },
   {
     "id": "I0NW",
@@ -9208,7 +9208,7 @@
     "dropped_by": [
       "Underlord Agareth"
     ],
-    "droprate": 0.0066
+    "droprate": 0.025
   },
   {
     "id": "I02S",
@@ -9231,9 +9231,9 @@
       "Legend Icon"
     ],
     "dropped_by": [
-      "Agareth"
+      "Underlord Agareth"
     ],
-    "droprate": 0.0015
+    "droprate": 0.0075
   },
   {
     "id": "I0P3",
@@ -9294,7 +9294,7 @@
     "dropped_by": [
       "Duke Lazarus"
     ],
-    "droprate": 0.007
+    "droprate": 0.012
   },
   {
     "id": "I0R2",
@@ -9337,7 +9337,7 @@
     "dropped_by": [
       "Duke Lazarus"
     ],
-    "droprate": 0.01
+    "droprate": 0.015
   },
   {
     "id": "I0R4",
@@ -9380,7 +9380,7 @@
     "dropped_by": [
       "Duke Lazarus"
     ],
-    "droprate": 0.01
+    "droprate": 0.015
   },
   {
     "id": "I0R3",
@@ -9426,7 +9426,7 @@
     "dropped_by": [
       "Duke Lazarus"
     ],
-    "droprate": 0.01
+    "droprate": 0.015
   },
   {
     "id": "I0O2",
@@ -9446,7 +9446,7 @@
     "dropped_by": [
       "Duke Lazarus"
     ],
-    "droprate": 0.0015
+    "droprate": 0.0025
   },
   {
     "id": "I0R6",
@@ -9508,7 +9508,7 @@
     "dropped_by": [
       "Gaia, the Earth Goddess"
     ],
-    "droprate": 0.006
+    "droprate": 0.009
   },
   {
     "id": "I05Q",
@@ -9557,7 +9557,7 @@
     "dropped_by": [
       "Gaia, the Earth Goddess"
     ],
-    "droprate": 0.008
+    "droprate": 0.012
   },
   {
     "id": "I09R",
@@ -9600,7 +9600,7 @@
     "dropped_by": [
       "Gaia, the Earth Goddess"
     ],
-    "droprate": 0.008
+    "droprate": 0.012
   },
   {
     "id": "I05P",
@@ -9644,7 +9644,7 @@
     "dropped_by": [
       "Gaia, the Earth Goddess"
     ],
-    "droprate": 0.008
+    "droprate": 0.012
   },
   {
     "id": "I0LY",
@@ -9664,7 +9664,7 @@
     "dropped_by": [
       "Gaia, the Earth Goddess"
     ],
-    "droprate": 0.0015
+    "droprate": 0.002
   },
   {
     "id": "I0R7",
@@ -9729,7 +9729,7 @@
     "dropped_by": [
       "Arcane Construct"
     ],
-    "droprate": 0.005
+    "droprate": 0.006
   },
   {
     "id": "I0LP",
@@ -9775,12 +9775,12 @@
     "dropped_by": [
       "Arcane Construct"
     ],
-    "droprate": 0.006
+    "droprate": 0.008
   },
   {
     "id": "I0O1",
     "name": "Ancient Tome",
-    "koreanname": "마도 핵",
+    "koreanname": "고대의 비서",
     "rank": "[Epic]",
     "grade": 5,
     "type": "Material",
@@ -9821,7 +9821,7 @@
     "dropped_by": [
       "Arcane Construct"
     ],
-    "droprate": 0.006
+    "droprate": 0.008
   },
   {
     "id": "I02W",
