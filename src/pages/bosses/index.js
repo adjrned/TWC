@@ -194,16 +194,42 @@ async function loadBossDropData() {
   if (!bossDropData) bossDropData = await loadBossDrops();
 }
 
-const PLAYER_BONUS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 47.5];
-
-// Boss-specific player scaling rules
+// Party size drop bonus. `from` is the first party size that gets the bonus
+// (defaults to min + 1, so the slider's lowest value has no bonus); `cap` limits the total.
+const ALTHEIA_RULE = { min: 3, max: 10, from: 4, perPlayer: 5 };
+const NEPTINOS_RULE = { min: 1, max: 10, from: 2, perPlayer: 7.5, cap: 65 };
 const BOSS_PLAYER_RULES = {
   'Styrix, the Harvester of Souls': { min: 5, max: 10, perPlayer: 20 },
   'Lightbringer Kamael': { min: 5, max: 10, perPlayer: 20 },
   'Arcane Construct': { min: 3, max: 6, perPlayer: 7.5 },
   'Arcane Lord': { min: 3, max: 6, perPlayer: 33.3 },
+  'Duke Lazarus': { min: 3, max: 10, from: 5, perPlayer: 5 },
+  'Gaia, the Earth Goddess': { min: 3, max: 10, from: 5, perPlayer: 5 },
+  'Death Fiend': ALTHEIA_RULE,
+  'Lightning God Valtora': ALTHEIA_RULE,
+  'Ifrit': ALTHEIA_RULE,
+  'Nereid': ALTHEIA_RULE,
+  'Underlord Agareth': ALTHEIA_RULE,
+  'Flame Nightmare': NEPTINOS_RULE,
+  'Spirit Beast': NEPTINOS_RULE,
+  'Corruptor Rectus': NEPTINOS_RULE,
+  'Turtle Lord': NEPTINOS_RULE,
 };
-const DEFAULT_PLAYER_RULES = { min: 3, max: 10 };
+// Everything else goes by tier. Field bosses drop loot on the floor and get no party bonus; Demon Lord Beriel sits in
+// Coins but scales like the Minor (powder) bosses.
+const LOWER_RULE = { min: 1, max: 10, from: 2, perPlayer: 12.5, cap: 50 };
+const CATEGORY_PLAYER_RULES = {
+  Minor: LOWER_RULE,
+  Coins: LOWER_RULE,
+  High: { min: 1, max: 10, from: 2, perPlayer: 5, cap: 47.5 },
+};
+const DEFAULT_PLAYER_RULES = { min: 3, max: 10, from: 3, perPlayer: 5 };
+
+// Party rules for a boss, or null for bosses with no party bonus (creeps).
+function playerRulesFor(bossName) {
+  const category = bossData?.find(b => b.name === bossName)?.category;
+  return BOSS_PLAYER_RULES[bossName] || CATEGORY_PLAYER_RULES[category] || null;
+}
 
 // Hard mode drop bonus per boss (multiplier). Nereid/Agareth give +75%, the rest +50%.
 const HARDMODE_MULT = {
@@ -215,21 +241,29 @@ const HARDMODE_MULT = {
 };
 const HARDMODE_BOSSES = new Set(Object.keys(HARDMODE_MULT));
 
-function getPlayerBonus(playerCount, bossName) {
-  const rules = BOSS_PLAYER_RULES[bossName];
-  if (rules) {
-    const effectivePlayers = Math.max(0, playerCount - rules.min);
-    return effectivePlayers * rules.perPlayer;
-  }
-  // Default: bonus starts at 3 players, +5% per player from 3 onwards
-  const effectivePlayers = Math.max(0, playerCount - 2);
-  return effectivePlayers * 5;
+function getPlayerBonus(playerCount, rules) {
+  if (!rules) return 0;
+  const steps = Math.max(0, playerCount - (rules.from ?? rules.min + 1) + 1);
+  return Math.min(rules.cap ?? Infinity, steps * rules.perPlayer);
+}
+
+const pctText = n => `${parseFloat(n.toFixed(2))}%`;
+const partyBonusText = (playerCount, rules) => {
+  const pct = getPlayerBonus(playerCount, rules);
+  return pct ? `+${pctText(pct)}` : '0%';
+};
+
+// One-line explanation of a boss's party rule, shown as the party slider's tooltip.
+function partyNote(rules) {
+  const from = rules.from ?? rules.min + 1;
+  const max = getPlayerBonus(rules.max, rules);
+  return t('bosses.partyNote', { per: parseFloat(rules.perPlayer.toFixed(2)), from, max: parseFloat(max.toFixed(2)) });
 }
 
 function calcDropRate(item, { wishing, hasIcon, seasonal, hardmode, playerCount, sacrifice = 0 }, bossName) {
   if (isCurrencyItem(item)) return item.base;
 
-  const playerPct = getPlayerBonus(playerCount, bossName);
+  const playerPct = getPlayerBonus(playerCount, playerRulesFor(bossName) || DEFAULT_PLAYER_RULES);
   const seasonalMult = seasonal ? 2 : 1;
   const hardmodeMult = (hardmode && HARDMODE_BOSSES.has(bossName)) ? HARDMODE_MULT[bossName] : 1;
   const sacMult = 1 + SACRIFICE_BONUSES[sacrifice];
@@ -261,7 +295,7 @@ function renderDropCalculator(boss) {
   if (!dropInfo) return '';
 
   const isNoWish = NO_WISH_BOSSES.has(boss.name);
-  const rules = BOSS_PLAYER_RULES[boss.name] || DEFAULT_PLAYER_RULES;
+  const rules = playerRulesFor(boss.name) || DEFAULT_PLAYER_RULES;
   const bossObj = bossData.find(b => b.name === boss.name);
   const showSacrifice = !isNoWish && bossObj && ['Late', 'Endgame'].includes(bossObj.category);
 
@@ -277,10 +311,11 @@ function renderDropCalculator(boss) {
           <label class="mdb-check"><input type="checkbox" id="calcHardmode"><span>${t('bosses.hardMode', { n: Math.round((HARDMODE_MULT[boss.name] - 1) * 100) })}</span></label>
         ` : ''}
         <label class="mdb-check"><input type="checkbox" id="calcSeasonal"><span>${t('bosses.seasonal')}</span></label>
-        <label class="mdb-range">
+        <label class="mdb-range mdb-tip" data-tip="${esc(partyNote(rules))}">
           <span>${t('bosses.party')}</span>
           <input type="range" id="calcPlayers" min="${rules.min}" max="${rules.max}" value="${rules.min}">
           <b id="calcPlayersVal">${rules.min}</b>
+          <em class="mdb-party-bonus" id="calcPartyBonus">${partyBonusText(rules.min, rules)}</em>
         </label>
         ${showSacrifice ? `
         <label class="mdb-range">
@@ -312,6 +347,7 @@ function initDropCalc(boss) {
     const playerCount = parseInt(document.getElementById('calcPlayers')?.value || '1');
     const sacrifice = parseInt(document.getElementById('calcSacrifice')?.value || '0');
     document.getElementById('calcPlayersVal').textContent = playerCount;
+    document.getElementById('calcPartyBonus').textContent = partyBonusText(playerCount, playerRulesFor(boss.name) || DEFAULT_PLAYER_RULES);
     const sacValEl = document.getElementById('calcSacrificeVal');
     if (sacValEl) {
       const sacBonus = SACRIFICE_BONUSES[sacrifice];
@@ -365,7 +401,18 @@ function calcWishRate(item, boss, wishTarget, sacrifice = 0) {
   return base * sacMult;
 }
 
-function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
+// Displayed rate for one row of the simple list ('' when the item has no known rate).
+function simpleRateText(item, boss, bossName, wishTarget, sacrifice, bonusMult) {
+  let rate = boss ? calcWishRate(item, boss, wishTarget, sacrifice) : dropRateFor(item, bossName);
+  if (rate && !isCurrencyItem(item)) rate = Math.min(1, rate * bonusMult);
+  return rate ? parseFloat((rate * 100).toFixed(4)) + '%' : '';
+}
+
+// Tiers where owning the boss icon gives +50% drop rate (calculator bosses handle it via iconMult).
+const ICON_BONUS_CATEGORIES = new Set(['Minor', 'Coins', 'High', 'Late', 'Endgame']);
+const ICON_BONUS_MULT = 1.5;
+
+function renderSimpleDrops(bossName, wishTarget, sacrifice = 0, players = null, hasIcon = false) {
   if (!itemData) return '';
   const boss = bossData.find(b => b.name === bossName);
   const drops = bossDrops(bossName);
@@ -375,11 +422,17 @@ function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
   const showSacrifice = showWish && ['Late', 'Endgame'].includes(boss.category);
   const sacBonus = SACRIFICE_BONUSES[sacrifice];
   const sacLabel = sacBonus ? `+${Math.round(sacBonus * 100)}%` : '0%';
+  const party = playerRulesFor(bossName);
+  const playerCount = party ? (players ?? party.min) : 0;
+  const showIcon = !!boss && ICON_BONUS_CATEGORIES.has(boss.category);
+  const bonusMult = (1 + getPlayerBonus(playerCount, party) / 100) * (showIcon && hasIcon ? ICON_BONUS_MULT : 1);
 
   return `
     <section class="boss-section">
       <h2>${t('bosses.drops')}</h2>
-      ${showWish || showSacrifice ? `<div class="mdb-calc">
+      ${showWish || showSacrifice || party || showIcon ? `<div class="mdb-calc">
+        ${showIcon ? `
+          <label class="mdb-check"><input type="checkbox" id="iconCheck" ${hasIcon ? 'checked' : ''}><span>${t('bosses.iconBonus')}</span></label>` : ''}
         ${showWish ? `
           <label class="idb-select">
             <span>${t('bosses.wish')}</span>
@@ -394,12 +447,18 @@ function renderSimpleDrops(bossName, wishTarget, sacrifice = 0) {
             <input type="range" id="sacrificeSlider" min="0" max="3" step="1" value="${sacrifice}">
             <b id="sacrificeValue">${sacLabel}</b>
           </label>` : ''}
+        ${party ? `
+          <label class="mdb-range mdb-tip" data-tip="${esc(partyNote(party))}">
+            <span>${t('bosses.party')}</span>
+            <input type="range" id="partySlider" min="${party.min}" max="${party.max}" value="${playerCount}">
+            <b id="partyValue">${playerCount}</b>
+            <em class="mdb-party-bonus" id="partyBonus">${partyBonusText(playerCount, party)}</em>
+          </label>` : ''}
       </div>` : ''}
       <div class="mdb-droplist">
-        ${drops.map(item => {
-          const effectiveRate = boss ? calcWishRate(item, boss, wishTarget, sacrifice) : dropRateFor(item, bossName);
-          const rate = effectiveRate ? parseFloat((effectiveRate * 100).toFixed(4)) + '%' : '';
-          return dropRowHtml(item, rate ? `<span class="boss-drop-rate">${rate}</span>` : '<span></span>', wishTarget === item.name ? 'drop-wished' : '');
+        ${drops.map((item, i) => {
+          const rate = simpleRateText(item, boss, bossName, wishTarget, sacrifice, bonusMult);
+          return dropRowHtml(item, rate ? `<span class="boss-drop-rate" data-idx="${i}">${rate}</span>` : '<span></span>', wishTarget === item.name ? 'drop-wished' : '');
         }).join('')}
       </div>
     </section>
@@ -444,18 +503,39 @@ function renderBossDetail(boss) {
 function initDropsControls(boss) {
   const select = document.getElementById('wishSelect');
   const slider = document.getElementById('sacrificeSlider');
+  const partySlider = document.getElementById('partySlider');
+  const iconCheck = document.getElementById('iconCheck');
+  const players = () => (partySlider ? parseInt(partySlider.value) : null);
 
   function rerender() {
     const wishVal = select ? select.value : '';
     const sacVal = slider ? parseInt(slider.value) : 0;
     const section = document.querySelector('.boss-section');
     if (section) {
-      section.outerHTML = renderSimpleDrops(boss.name, wishVal, sacVal);
+      section.outerHTML = renderSimpleDrops(boss.name, wishVal, sacVal, players(), !!iconCheck?.checked);
       initDropsControls(boss);
     }
   }
 
+  // Party size and icon only rescale the rates, so update them in place (live while dragging).
+  function updateRates() {
+    const rules = playerRulesFor(boss.name);
+    const bonusMult = (1 + getPlayerBonus(players() ?? 0, rules) / 100) * (iconCheck?.checked ? ICON_BONUS_MULT : 1);
+    const wishVal = select ? select.value : '';
+    const sacVal = slider ? parseInt(slider.value) : 0;
+    const drops = bossDrops(boss.name);
+    if (partySlider) {
+      document.getElementById('partyValue').textContent = players();
+      document.getElementById('partyBonus').textContent = partyBonusText(players(), rules);
+    }
+    document.querySelectorAll('.boss-section .boss-drop-rate[data-idx]').forEach(el => {
+      el.textContent = simpleRateText(drops[+el.dataset.idx], boss, boss.name, wishVal, sacVal, bonusMult);
+    });
+  }
+
   if (select) select.addEventListener('change', rerender);
+  if (partySlider) partySlider.addEventListener('input', updateRates);
+  if (iconCheck) iconCheck.addEventListener('change', updateRates);
   if (slider) {
     slider.addEventListener('input', () => {
       const val = parseInt(slider.value);
