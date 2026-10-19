@@ -111,6 +111,14 @@ export function weaponSubtype(type) {
   return 'shared';
 }
 
+// ── Search ───────────────────────────────────────────────────────────────────
+// Word forms that should all match each other (e.g. "amplify" finds "amplified", "amplifies").
+const SEARCH_STEMS = [[/\bamplif\w*/g, 'amplif']];
+
+export function stemQuery(q) {
+  return SEARCH_STEMS.reduce((s, [re, stem]) => s.replace(re, stem), q);
+}
+
 // ── Stats ────────────────────────────────────────────────────────────────────
 export const STAT_LABELS = {
   damage: 'Damage', armor: 'Armor', hp: 'HP', mp: 'MP',

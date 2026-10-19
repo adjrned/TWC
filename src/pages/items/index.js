@@ -11,7 +11,7 @@ import { getActiveProfile, isTrackedInActiveProfile, toggleTrackedInActiveProfil
 import {
   loadItems, getItem, getUsedIn, iconSrc, rankInfo, tierIndex, typeGroup, weaponSubtype,
   numericStats, formatStat, formatDropRate, dropRateFor, STAT_LABELS, STAT_SHORT, AFFINITY_ELEMENT,
-  localizedItemName, localizedNameByName, TIERS,
+  localizedItemName, localizedNameByName, TIERS, stemQuery,
 } from '../../data/items.js';
 
 // ── Filter definitions ───────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ function matches(item, s, terms, skip) {
 }
 
 function filterItems(items, s) {
-  const terms = s.q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const terms = stemQuery(s.q.toLowerCase()).trim().split(/\s+/).filter(Boolean);
   const out = [];
   for (const it of items) {
     const hit = matches(it, s, terms);
@@ -143,7 +143,7 @@ function filterItems(items, s) {
 }
 
 function facetCounts(items, s, dim, keyFn) {
-  const terms = s.q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const terms = stemQuery(s.q.toLowerCase()).trim().split(/\s+/).filter(Boolean);
   const counts = new Map();
   let total = 0;
   for (const it of items) {

@@ -4,6 +4,112 @@
     "Effects not listed here are their own type and stack with everything else.",
     "Items from the same upgrade series never stack with each other, even when their type is different."
   ],
+  "formula": {
+    "version": "v0.72a",
+    "intro": "Damage is calculated in this order, top to bottom.",
+    "steps": [
+      {
+        "name": "Base damage",
+        "text": "Basic attacks: damage after the target's armor. Skills and items: the value in the description."
+      },
+      {
+        "name": "Elemental affinity",
+        "text": "Applies to values shown in an element's color in the description, e.g. INT × 2 magic damage × fire affinity.",
+        "stacking": "Additive",
+        "example": "+10% and +15% = +25%"
+      },
+      {
+        "name": "Conditional damage increase",
+        "text": "Hero-specific bonuses while a condition is met.",
+        "examples": [
+          "Hermit: AGI as main stat (all skills)",
+          "Fighter / Reaper: while holding a combo",
+          "Lancer E / Gunner F: based on missing HP",
+          "Water Mage D / Knight T: specific skill chains",
+          "Bow Master R → E: increased damage taken",
+          "Lightning Mage F: based on dash distance"
+        ]
+      },
+      {
+        "name": "Critical strike",
+        "text": "The critical multiplier applies."
+      },
+      {
+        "name": "Bonus damage (+)",
+        "text": "Flat damage added on top. Ignores the crit multiplier, but some is affected by affinity or damage increases. Later steps (continuous, proc, skill, final damage) still apply when their conditions are met.",
+        "examples": [
+          "Sword Enchanter D, Thunderer W, Hermit Q: affected by affinity (Hermit Q also by Hermit D)",
+          "Items: Shadow Waltz, Ring of the Noble Soul"
+        ]
+      },
+      {
+        "name": "Continuous damage",
+        "text": "Damage every X seconds, “continuously deals” damage, multi-hits and repeating effects. Boosted by continuous damage increases.",
+        "examples": [
+          "Berserker D bleed, R, F (not the final hit)",
+          "Sword Enchanter R, F (not the final hit)",
+          "Dark Knight E (not combos)",
+          "Blaster T",
+          "Thunderer E / F",
+          "Fire Mage D burn",
+          "Warlock W / E / R / F",
+          "Reaper R consecutive attacks",
+          "Blood Weaver E / F"
+        ]
+      },
+      {
+        "name": "Proc damage",
+        "text": "Effects that count as attacks (including basic attacks), or that trigger on attack or on dealing damage.",
+        "examples": [
+          "Thunderer Q / W",
+          "Martial Artist Q / W / E / R / T",
+          "Swordsman D (Quick Draw)",
+          "Hermit Q extra hit",
+          "On attack: Grim Side, Shadow Waltz, Nebula's Fury",
+          "On dealing damage: Manifestation of Fear, Wings of Divine Origin"
+        ]
+      },
+      {
+        "name": "Skill damage",
+        "text": "The most common boost. Affects hero and item skills, not basic attacks.",
+        "stacking": "Additive",
+        "example": "+50% and +10% = +60%",
+        "cat": "skill-damage",
+        "examples": [
+          "Basic attacks that count as skills: Blaster W, Gunner Q / R, Thunderer Q / W, Sword Enchanter D, Hermit Q"
+        ]
+      },
+      {
+        "name": "Skill damage amplification",
+        "text": "Part of the skill damage step, but hero skills only, not item effects.",
+        "stacking": "Multiplicative",
+        "example": "+50% and +10% = +65%",
+        "cat": "unique-skill-damage-amplify",
+        "sub": true
+      },
+      {
+        "name": "Final damage",
+        "text": "Boosts all damage, including basic attacks. Rarer than skill damage.",
+        "stacking": "Multiplicative",
+        "example": "+50% and +10% = +65%",
+        "cat": "final-damage",
+        "examples": [
+          "Items: Gate of Abyss active, Horn of Dragon passive",
+          "Passives: Warlock R, Crusader T, Sniper T",
+          "Actives: Berserker T, Reaper F, Paladin F, Priest F"
+        ]
+      },
+      {
+        "name": "Fixed damage",
+        "text": "Flat % HP damage on special units under certain conditions. Applied last, so skill and final damage don't affect it.",
+        "examples": [
+          "Gaia (Plant): adds X% HP on hit",
+          "Kamael (Holy Shackles): adds X% HP when applying Muneve"
+        ]
+      }
+    ],
+    "after": "Then the target's damage reduction, magic defense and similar effects apply."
+  },
   "sections": [
     {
       "kind": "buff",
@@ -720,24 +826,11 @@
             {
               "entries": [
                 {
-                  "hero": "Paladin",
-                  "key": "D → Q",
-                  "skill": "Aura of Retribution",
-                  "via": "Devotion",
-                  "value": "(8 + INT / 800)%"
-                },
-                {
                   "hero": "Merchant",
                   "key": "W",
                   "skill": "Throwing Healing Potion",
                   "value": "6% + (STR / 500)%",
                   "via": "Buff"
-                },
-                {
-                  "hero": "Hermit",
-                  "key": "R",
-                  "skill": "Orb of Harmony",
-                  "value": "4% (12% self) + (Main Stat / 375)% with Harmony"
                 },
                 {
                   "hero": "Water Mage",
@@ -1816,31 +1909,6 @@
                   "value": "5% (chance on cast)"
                 },
                 {
-                  "item": "Primal Shard",
-                  "via": "Active",
-                  "value": "15% skill damage vs. target"
-                },
-                {
-                  "item": "Ordius, the Divine Lance",
-                  "via": "Passive",
-                  "value": "14% skill damage vs. target"
-                },
-                {
-                  "item": "Soul Chaser",
-                  "via": "Active",
-                  "value": "10% skill damage vs. target"
-                },
-                {
-                  "item": "Call of Gehenna",
-                  "via": "Passive",
-                  "value": "7% skill damage vs. target"
-                },
-                {
-                  "item": "Divine Vein",
-                  "via": "Passive",
-                  "value": "6% skill damage vs. target"
-                },
-                {
                   "hero": "Merchant",
                   "key": "F",
                   "skill": "Scroll of God's Blessing",
@@ -2459,6 +2527,183 @@
                   "item": "Grail of Eternity",
                   "via": "Passive",
                   "value": "1%"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unique-skill-damage-amplify",
+          "name": "Skill damage amplification",
+          "short": "Skill amplify",
+          "group": "unique",
+          "types": [
+            {
+              "entries": [
+                {
+                  "item": "Primal Shard",
+                  "via": "Active",
+                  "value": "15% vs. target"
+                },
+                {
+                  "item": "Ordius, the Divine Lance",
+                  "via": "Passive",
+                  "value": "14% vs. target"
+                },
+                {
+                  "item": "Animus, the Robe of Souls",
+                  "via": "Passive",
+                  "value": "0.3% per stack, +6% at max (max 12%)"
+                },
+                {
+                  "item": "Duskblade",
+                  "via": "Passive",
+                  "value": "10% vs. target"
+                },
+                {
+                  "item": "Soul Torch",
+                  "via": "Passive",
+                  "value": "10% vs. target"
+                },
+                {
+                  "item": "Soul Chaser",
+                  "via": "Passive / Active",
+                  "value": "10% vs. target (0.07% per stack passive)"
+                },
+                {
+                  "item": "Dread Incarnate",
+                  "via": "Active",
+                  "value": "10%"
+                },
+                {
+                  "item": "Primal Flame",
+                  "via": "Passive",
+                  "value": "2.5% per stack (max 10%)"
+                },
+                {
+                  "item": "Plates of Dawn",
+                  "via": "Active",
+                  "value": "8%"
+                },
+                {
+                  "item": "Soul Breath",
+                  "via": "Active",
+                  "value": "7.5%"
+                },
+                {
+                  "item": "Call of Gehenna",
+                  "via": "Passive",
+                  "value": "7% vs. target"
+                },
+                {
+                  "item": "Divine Vein",
+                  "via": "Passive",
+                  "value": "6% vs. target"
+                },
+                {
+                  "item": "Herald of the Void",
+                  "via": "Passive",
+                  "value": "6% (50+ stacks)"
+                },
+                {
+                  "item": "Harvester's Mask",
+                  "via": "Passive",
+                  "value": "0.6% per crit (max 6%)"
+                },
+                {
+                  "item": "Crimson Whisper",
+                  "via": "Passive",
+                  "value": "5% vs. target"
+                },
+                {
+                  "item": "Astral Fury",
+                  "via": "Passive",
+                  "value": "5%"
+                },
+                {
+                  "item": "Coil of Ouroboros",
+                  "via": "Active",
+                  "value": "5%"
+                },
+                {
+                  "item": "Ring of Genesis",
+                  "via": "Passive",
+                  "value": "5% (on ultimate cast)"
+                },
+                {
+                  "item": "Sanguis, the Robe of Sacrifice",
+                  "via": "Passive",
+                  "value": "0.1% per hit (max 2.5%)"
+                },
+                {
+                  "hero": "Martial Artist",
+                  "key": "F",
+                  "skill": "Nameless Arts",
+                  "via": "Self",
+                  "value": "70%"
+                },
+                {
+                  "hero": "Phantom Blade",
+                  "key": "T",
+                  "skill": "Release",
+                  "via": "Self",
+                  "value": "12% (6s)"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "T",
+                  "skill": "Philosopher's Stone",
+                  "via": "Self",
+                  "value": "12% (10s)"
+                },
+                {
+                  "hero": "Shrine Priestess",
+                  "key": "T",
+                  "skill": "Spirit Fusion",
+                  "via": "Self",
+                  "value": "12% (8s)"
+                },
+                {
+                  "hero": "Arcane Mage",
+                  "key": "W",
+                  "skill": "Flash Storm",
+                  "via": "Self",
+                  "value": "7.5% vs. target (stacks 2×, max 15%)"
+                },
+                {
+                  "hero": "Alchemist",
+                  "key": "Q",
+                  "skill": "Conjure Fire",
+                  "via": "Self",
+                  "value": "6% (6s)"
+                },
+                {
+                  "hero": "Hermit",
+                  "key": "R",
+                  "skill": "Orb of Harmony",
+                  "via": "Buff",
+                  "value": "4% (12% self) + (Main Stat / 375)% with Harmony"
+                },
+                {
+                  "hero": "Knight",
+                  "key": "T",
+                  "skill": "Seal of Mana",
+                  "via": "Buff",
+                  "value": "4% (allies and self)"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "D → Q",
+                  "skill": "Aura of Retribution",
+                  "via": "Sigil",
+                  "value": "2.5% (7.5% self)"
+                },
+                {
+                  "hero": "Paladin",
+                  "key": "D → Q",
+                  "skill": "Aura of Retribution",
+                  "via": "Devotion",
+                  "value": "(8 + INT / 800)%"
                 }
               ]
             }

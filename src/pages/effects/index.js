@@ -1,6 +1,6 @@
 import { esc } from '../../ui/escape.js';
 import { t, getClassName } from '../../i18n.js';
-import { loadItems, getItem, rankInfo, iconSrc, localizedNameByName } from '../../data/items.js';
+import { loadItems, getItem, rankInfo, iconSrc, localizedNameByName, stemQuery } from '../../data/items.js';
 import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
 import { loadSkills, getSkill } from '../../data/skills.js';
 
@@ -67,6 +67,7 @@ function typeLabelHtml(c, tp) {
   return `<div class="fx-type-label"><span class="fx-badge">${esc(t('fx.stacks'))}</span></div>`;
 }
 
+const FORMULA = 'formula';
 const SECTION_TITLE = { buff: 'fx.buffs', debuff: 'fx.debuffs', unique: 'fx.uniqueSection' };
 
 function categoryHtml(c, q) {
@@ -118,10 +119,36 @@ function categoryGroups() {
   return groups;
 }
 
+// Damage formula reference (effectsData.formula): the steps in calculation order.
+function formulaHtml() {
+  const f = effectsData.formula;
+  if (!f) return `<div class="idb-empty">${t('fx.empty')}</div>`;
+  let n = 0;
+  const step = st => `<li class="fx-step${st.sub ? ' sub' : ''}">
+    <span class="fx-step-num">${st.sub ? '' : ++n}</span>
+    <div class="fx-step-body">
+      <div class="fx-step-head">
+        <h3>${esc(st.name)}</h3>
+        ${st.stacking ? `<span class="fx-stacking">${esc(st.stacking)}</span>` : ''}
+        ${st.cat ? `<a class="fx-step-link" href="#/effects?cat=${encodeURIComponent(st.cat)}">${t('fx.seeEffects')}</a>` : ''}
+      </div>
+      <p>${esc(st.text)}${st.example ? ` <span class="fx-step-ex">${esc(st.example)}</span>` : ''}</p>
+      ${st.examples?.length ? `<ul class="fx-step-list">${st.examples.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    </div>
+  </li>`;
+  return `<section class="fx-formula">
+    <header class="fx-cat-head"><h3>${t('fx.group.formula')}</h3>${f.version ? `<span class="fx-stacking">${esc(f.version)}</span>` : ''}</header>
+    ${f.intro ? `<p class="fx-note">${esc(f.intro)}</p>` : ''}
+    <ol class="fx-steps">${f.steps.map(step).join('')}</ol>
+    ${f.after ? `<p class="fx-note fx-formula-after">${esc(f.after)}</p>` : ''}
+  </section>`;
+}
+
 const shown = (c, s) => (s.cat ? c.id === s.cat : !s.group || c.group === s.group);
 
 function renderList(s) {
-  const q = s.q.toLowerCase().trim();
+  if (s.group === FORMULA) return formulaHtml();
+  const q = stemQuery(s.q.toLowerCase()).trim();
   // All: buffs and debuffs side by side, Unique below them. A group or category shows on its own across the full width.
   const filtered = s.group || s.cat;
   const sections = effectsData.sections
@@ -137,13 +164,16 @@ function renderList(s) {
 
 // Tabs: All / Offense / Defense / Stats / Debuffs. A picked group adds a row of its categories.
 function renderTabs(s) {
-  const q = s.q.toLowerCase().trim();
+  const q = stemQuery(s.q.toLowerCase()).trim();
   const groups = categoryGroups();
   const count = cats => cats.reduce((n, c) => n + matchCount(c, q), 0);
   const tab = (id, label, n, kind = '') =>
     `<button type="button" class="idb-tab${kind ? ' fx-tab-' + kind : ''}" data-group="${esc(id)}" aria-pressed="${s.group === id}" ${n || !id ? '' : 'disabled'}>${label}<span>${n}</span></button>`;
   const active = groups.find(g => g.id === s.group);
-  return `<div class="idb-tabs">${tab('', t('items.all'), count(groups.flatMap(g => g.cats)))}${groups.map(g => tab(g.id, t('fx.group.' + g.id), count(g.cats), g.kind)).join('')}</div>
+  // Damage formula is reference info, not a category group: anchored to the right, no count.
+  const formula = effectsData.formula
+    ? `<button type="button" class="idb-tab fx-tab-formula" data-group="${FORMULA}" aria-pressed="${s.group === FORMULA}">${t('fx.group.formula')}</button>` : '';
+  return `<div class="idb-tabs">${tab('', t('items.all'), count(groups.flatMap(g => g.cats)))}${groups.map(g => tab(g.id, t('fx.group.' + g.id), count(g.cats), g.kind)).join('')}${formula}</div>
     ${active ? `<div class="idb-tiers">${active.cats.map(c => {
       const n = matchCount(c, q);
       return `<button type="button" class="idb-chip" data-cat="${esc(c.id)}" aria-pressed="${s.cat === c.id}" title="${esc(c.name)}" ${n ? '' : 'disabled'}>${esc(c.short || c.name)}<span>${n}</span></button>`;
@@ -155,7 +185,7 @@ export async function initEffects({ query }) {
   await loadData();
   const allCats = effectsData.sections.flatMap(sec => sec.categories);
   const cat = allCats.find(c => c.id === query.cat);
-  const group = cat ? cat.group : (allCats.some(c => c.group === query.group) ? query.group : '');
+  const group = cat ? cat.group : (allCats.some(c => c.group === query.group) || (query.group === FORMULA && effectsData.formula) ? query.group : '');
   const s = { q: query.q || '', group, cat: cat ? cat.id : '' };
 
   app.innerHTML = `

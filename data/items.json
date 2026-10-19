@@ -23082,7 +23082,7 @@
       "skilldamagepercent": 0.08,
       "passive": [
         "On basic attack, activates Twilight",
-        "Deals (90000 + AGI X 30) magic damage to target and takes 10% bonus skill damage for 4 seconds",
+        "Deals (90000 + AGI X 30) magic damage to target and amplifies skill damage it takes by 10% for 4 seconds",
         "Cooldown: 12 seconds, reduced by 1 second on each skill crit"
       ]
     },
@@ -23314,7 +23314,7 @@
       "skilldamagepercent": 0.2,
       "passive": [
         "Activates Weaponized Light every 7.5 seconds",
-        "Empowers next 5 attacks with (AD X 0.5 + AGI X 5) additional magic damage and increasing your skill damage dealt to target by 6% for 3 seconds"
+        "Empowers next 5 attacks with (AD X 0.5 + AGI X 5) additional magic damage and amplifying your skill damage dealt to target by 6% for 3 seconds"
       ],
       "active": [
         "On use, activates Light Bombardment",
@@ -23477,14 +23477,14 @@
       "skilldamagepercent": 0.175,
       "passive": [
         "Skill hits accumulates Soul Gauge",
-        "Each stack grants 0.07% bonus in damage dealt by skills",
+        "Each stack amplifies skill damage by 0.07%",
         "Can gain up to 10 stacks per second, and upon reaching 100 stacks, allows usage of empowered active effect regardless of cooldown",
         "Accumulates automatically outside of combat"
       ],
       "active": [
         "On use, activates Soul Chaser",
         "Breaks shield and deals (Attack Damage X 5 + Main Stat X 35) magic damage and stuns for 1 second",
-        "Empowered: Deals 25% bonus damage and increases your skill damage dealt to target by 10% for 6 seconds. Consumes all Soul Gauge and becomes unable to accumulate it for 15 seconds.",
+        "Empowered: Deals 25% bonus damage and amplifies your skill damage dealt to target by 10% for 6 seconds. Consumes all Soul Gauge and becomes unable to accumulate it for 15 seconds.",
         "Cooldown: 45 seconds"
       ]
     },
@@ -23830,7 +23830,6 @@
     "stats": {
       "armor": 280,
       "allstat": 300,
-      "attackspeedpercent": -0.75,
       "passive": [
         "Increases nearby allies stats by 7%, enemies' damage taken by 3% [Type-B]",
         "Obtains Twisted Souls during combat",
@@ -23950,7 +23949,7 @@
         "During combat, activates Ring of Blood",
         "Summons 5 orbs of blood that circle around user",
         "Each collision with enemy deals (5000 + INT X 2) magic damage",
-        "If target is a boss unit, increases INT by 10 and damage dealt by skills by 0.1% per hit (up to 25 stacks)",
+        "If target is a boss unit, increases INT by 10 and amplifies skill damage by 0.1% per hit (up to 25 stacks)",
         "Upon reaching max stacks, explodes and deals (INT X 20) magic damage to nearby enemies (900 range)",
         "Stacks last 6 seconds"
       ],
@@ -24158,7 +24157,7 @@
       "skilldamagepercent": 0.2,
       "passive": [
         "On skill hit, activates Hellspear",
-        "Deals (INT X 15) magic damage in AoE and increases your skill damage dealt to target by 7% for 4 seconds",
+        "Deals (INT X 15) magic damage in AoE and amplifies your skill damage dealt to target by 7% for 4 seconds",
         "Cooldown: 10 seconds, reduced by 2 seconds per skill cast (affected by proc coefficient)"
       ],
       "active": [
@@ -24212,7 +24211,7 @@
       "active": [
         "On use, activates Mayhem",
         "Sets ablaze a large area for 10 seconds, dealing 25000 damage per second",
-        "While the user is standing in the area, Dread will be set to max stacks and your skills will deal 10% bonus damage",
+        "While the user is standing in the area, Dread will be set to max stacks and your skill damage is amplified by 10%",
         "Cooldown: 75 seconds"
       ]
     },
@@ -24254,7 +24253,7 @@
         "On skill cast, activates Astral Fury",
         "Increases AGI by 150 and movement speed for 1.5 seconds",
         "Next 2 attacks strikes 2 additional times for 50% physical damage",
-        "On 3rd consecutive proc, increases damage dealt by skills by 5% for 4 seconds and next 3 attacks calls down comets, each dealing 12500 magic damage (can critically strike)",
+        "On 3rd consecutive proc, amplifies skill damage by 5% for 4 seconds and next 3 attacks calls down comets, each dealing 12500 magic damage (can critically strike)",
         "Proc cooldown: 0.5 seconds"
       ]
     },
@@ -24727,7 +24726,7 @@
       "passive": [
         "On attack, activates Harvester's Eye",
         "Increases ATK DMG by 20%, crit multplier by 0.30x, AGI by 400 for 7.5 seconds",
-        "While active, critical hits grant 1% bonus in skill damage (up to 10%)",
+        "While active, critical hits amplify skill damage by 0.6% (up to 6%)",
         "Cooldown: 15 seconds"
       ]
     },
@@ -25432,8 +25431,8 @@
       "skilldamagepercent": 0.175,
       "passive": [
         "On dealing damage, chance to deal 30% additional damage",
-        "On skill cast, 15% chance to increase damage dealt by 7.5% for 5 seconds",
-        "On ultimate cast, increases damage dealt by skills by 5% for 10 seconds",
+        "On skill cast, 15% chance to increase final damage by 7.5% for 5 seconds",
+        "On ultimate cast, amplifies skill damage by 5% for 10 seconds",
         "On being damaged, 10% chance to activate Absolute Protection"
       ]
     },
@@ -26076,7 +26075,7 @@
       ],
       "active": [
         "On ultimate cast, activates Soul Tide",
-        "For 8 seconds, your skills will deal 7.5% more damage",
+        "For 8 seconds, your skill damage is amplified by 7.5%",
         "Soul Fragment will spawn every second"
       ]
     },
@@ -27413,7 +27412,7 @@
         "Fires 1-2 additional arrows that deal 20% of Attack Power as pure damage (average of 1.8 arrows)",
         "These arrows trigger the 'Trigger on Attack' effect and can hit with a critical strike.",
         "Activates bloody mark when attacking",
-        "Leaves a mark on the target, increasing skill damage inflicted on the target by 5% for 5 seconds and accumulating blood energy on the target when attacking (maximum 50)",
+        "Leaves a mark on the target, amplifying skill damage inflicted on the target by 5% for 5 seconds and accumulating blood energy on the target when attacking (maximum 50)",
         "When the effect expires or the maximum stack is reached, the stacked blood explodes, dealing (Attack Power X 0.1 + Agility X 1) X stack magic damage.",
         "Cooldown: 15 seconds"
       ],
@@ -28012,7 +28011,7 @@
         "Stacking Void Aura during battle",
         "Stackable up to 100, gain 4 per second during combat, 1 per skill hit (Cooldown: 0.3 seconds)",
         "Increases agility by 3 and HP by 40 per stack.",
-        "When stacked more than 50 times, skill damage is increased by 6% and HP regenerates by 2% per second."
+        "When stacked more than 50 times, skill damage is amplified by 6% and HP regenerates by 2% per second."
       ],
       "active": [
         "Abyss Break activates when used",
@@ -28069,7 +28068,7 @@
       ],
       "active": [
         "Activates Dawn's Resolve upon use",
-        "The Moon Rune is fixed at maximum for 5 seconds and skill damage is increased by 8%.",
+        "The Moon Rune is fixed at maximum for 5 seconds and skill damage is amplified by 8%.",
         "Become immune to CC effects while active",
         "Cooldown: 30 seconds"
       ]
@@ -28600,7 +28599,7 @@
       "affinityflamepercent": 0.05,
       "passive": [
         "Acquire Primordial Flame upon casting skill",
-        "Increases skill damage by 2.5% and continuous damage by 2.5% for 6 seconds (stacks up to 4 times)"
+        "Amplifies skill damage by 2.5% and increases continuous damage by 2.5% for 6 seconds (stacks up to 4 times)"
       ],
       "active": [
         "Release the Primordial Flame upon use",
@@ -28843,7 +28842,7 @@
       ],
       "active": [
         "Activates Infinite Ring when used",
-        "Increases primary stat by 250 for 10 seconds, increases skill damage by 5%",
+        "Increases primary stat by 250 for 10 seconds, amplifies skill damage by 5%",
         "When casting a skill while in effect, the effect is amplified by (15 X skill coefficient)% up to 100%, and when the maximum is reached, resources are recovered by 33%.",
         "Cooldown: 30 seconds"
       ]

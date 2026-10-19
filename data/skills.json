@@ -1704,7 +1704,7 @@
     "color": "89a8f8",
     "hotkey": "[T]",
     "icon": "SwordsmanT",
-    "cooldown": 40,
+    "cooldown": 30,
     "order": 9,
     "active": [
       "Brutally slashes everything in range with rapid movements.",
