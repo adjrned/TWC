@@ -80,7 +80,7 @@
         ]
       },
       {
-        "name": "Skill damage amplification",
+        "name": "Skill amplify",
         "text": "Part of the skill damage step, but hero skills only, not item effects.",
         "stacking": "Multiplicative",
         "example": "+50% and +10% = +65%",
@@ -818,9 +818,10 @@
         },
         {
           "id": "skill-damage",
-          "name": "Skill damage increase",
+          "name": "Skill damage",
           "short": "Skill damage",
           "group": "offense",
+          "stacking": "Additive",
           "note": "Almost everything here stacks. Most ally buffs fall in this category, and hero skills scale with the caster's stats. Items from the same series still don't stack: Priest's E → E plus Eye of the Blood God stacks, but Eye of the Flame Lord plus Eye of the Blood God doesn't (only Eye of the Blood God applies).",
           "types": [
             {
@@ -2534,9 +2535,10 @@
         },
         {
           "id": "unique-skill-damage-amplify",
-          "name": "Skill damage amplification",
+          "name": "Skill amplify",
           "short": "Skill amplify",
           "group": "unique",
+          "stacking": "Multiplicative · hero skills only",
           "types": [
             {
               "entries": [
