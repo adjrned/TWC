@@ -5,6 +5,7 @@ import { t, getClassName, getLocale } from '../../i18n.js';
 import { fetchCreatorsForClass, hasLocalData, loadBuildFile } from '../../data/builds.js';
 import { save } from '../../data/storage.js';
 import { getItem, rankInfo, iconSrc } from '../../data/items.js';
+import { blaForBuild } from '../../ui/easterEgg.js';
 
 // Panel listing a class's community builds, each with a preview of its final phase.
 const fileCache = new Map();
@@ -98,6 +99,7 @@ export async function openBuildBrowser(onChosen) {
     if (creator && creator === state.selectedCreator) return closeBuildBrowser();
     if (hasLocalData(cls) && !confirm(t('builder.replaceConfirm', { cls: getClassName(cls) }))) return;
     await chooseBuild(cls, creator);
+    blaForBuild(creator);
     closeBuildBrowser();
     onChosen?.();
   };

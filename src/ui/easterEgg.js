@@ -17,6 +17,8 @@ const SPARK_COLORS = ['#f5a623', '#7cc5a1', '#fff3d6', '#e8736b', '#74a7f0'];
 
 let el = null;
 let raf = null;
+let stopTimer = null;
+const AUTO_DURATION = 5000; // ms an automatically started cat stays out
 let x = 0, y = 0, vx = 0, vy = 0, last = 0, lastCorner = 0;
 
 function element() {
@@ -126,6 +128,8 @@ export function isBlaRunning() {
 }
 
 export function stopBla() {
+  clearTimeout(stopTimer);
+  stopTimer = null;
   if (raf !== null) cancelAnimationFrame(raf);
   raf = null;
   el?.classList.remove('show', EDGE_CLASS);
@@ -133,7 +137,11 @@ export function stopBla() {
   syncButtons();
 }
 
-export function startBla() {
+// `duration` (ms) stops it on its own; without one it runs until toggled off.
+export function startBla({ duration } = {}) {
+  if (raf !== null && !stopTimer) return; // already turned on by hand: leave it running
+  clearTimeout(stopTimer);
+  stopTimer = duration ? setTimeout(stopBla, duration) : null;
   if (raf !== null) return;
   const cat = element();
   const [maxX, maxY] = bounds();
@@ -171,4 +179,17 @@ export function initEasterEgg() {
   });
   window.bla = bla;
   window.blaCorner = cornerFireworks; // see the fireworks without waiting for a corner
+}
+
+// ── Automatic triggers ────────────────────────────────────────
+// Ruzai's builds and a few favourite heroes let the cat out for a few seconds when opened.
+const BLA_CREATORS = new Set(['ruzai']);
+const BLA_HEROES = new Set(['Sniper', 'Lightning Mage', 'Sword Saint', 'Knight']);
+
+export function blaForBuild(creator) {
+  if (creator && BLA_CREATORS.has(creator.toLowerCase())) startBla({ duration: AUTO_DURATION });
+}
+
+export function blaForHero(heroClass) {
+  if (BLA_HEROES.has(heroClass)) startBla({ duration: AUTO_DURATION });
 }

@@ -6,6 +6,7 @@ import { slotIcon } from '../../ui/slotIcons.js';
 import { appendPatchHistory } from '../../ui/patchHistory.js';
 import { fetchCreatorsForClass } from '../../data/builds.js';
 import { fetchBuild, previewHtml, fmtBuildDate } from '../builder/buildBrowser.js';
+import { blaForHero } from '../../ui/easterEgg.js';
 
 let heroData = null;
 let skillData = null;
@@ -316,6 +317,7 @@ export async function initHeroes({ params, query }) {
       return;
     }
     app.innerHTML = renderHeroDetail(hero, skillData);
+    blaForHero(hero.heroClass);
     appendPatchHistory(app.querySelector('.idb-detail'), [hero.heroClass]);
     renderBuildLinks(hero.heroClass);
     const onClick = e => {
