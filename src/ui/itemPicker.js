@@ -31,7 +31,14 @@ let built = false;
 let filtered = [];
 let cursor = 0;
 let opts = null;
-const f = { tab: 'weapon', tier: '', sub: '', q: '' };
+const f = { tab: 'weapon', tier: '', sub: '', q: '', byScore: false };
+// Per-open cache of opts.annotate(item) results (e.g. the damage sim's per-item difference).
+let notes = new Map();
+const note = item => {
+  if (!opts.annotate) return null;
+  if (!notes.has(item.name)) notes.set(item.name, opts.annotate(item));
+  return notes.get(item.name);
+};
 const hayCache = new Map();
 
 function hay(item) {
@@ -78,6 +85,7 @@ function buildModal() {
     if (e.target.closest('[data-close]')) return closePicker();
     const tab = e.target.closest('[data-tab]');
     if (tab) { f.tab = tab.dataset.tab; f.sub = ''; el('pickerSearch').value = f.q = ''; return refresh(); }
+    if (e.target.closest('[data-byscore]')) { f.byScore = !f.byScore; return refresh(); }
     const chip = e.target.closest('[data-tier], [data-sub]');
     if (chip && !chip.disabled) {
       if ('tier' in chip.dataset) f.tier = f.tier === chip.dataset.tier ? '' : chip.dataset.tier;
@@ -141,6 +149,8 @@ function refresh(keepCursor = false) {
   filtered.sort((a, b) =>
     (EQUIP_GROUPS.has(typeGroup(b.type)) - EQUIP_GROUPS.has(typeGroup(a.type))) ||
     tierIndex(a) - tierIndex(b) || (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+  // Optional "best first" order by the annotation's score (higher first), keeping the tier order for ties.
+  if (opts.annotate && f.byScore) filtered.sort((a, b) => (note(b)?.score ?? -Infinity) - (note(a)?.score ?? -Infinity));
 
   el('pkTabs').innerHTML = opts.tabs.map(tb => {
     const active = !f.q && f.tab === tb.key;
@@ -155,6 +165,7 @@ function refresh(keepCursor = false) {
       const n = subCount(k);
       return `<button type="button" class="idb-chip" data-sub="${k}" aria-pressed="${f.sub === k}" ${n ? '' : 'disabled'}>${esc(getTypeName(SUBTYPE_LABEL[k]))}<span>${n}</span></button>`;
     }).join('')}</div>` : '') +
+    (opts.annotate ? `<div class="pk-chiprow"><button type="button" class="idb-chip pk-sortchip" data-byscore aria-pressed="${f.byScore}">${esc(opts.scoreLabel || '')}</button></div>` : '') +
     `<div class="pk-chiprow">${TIER_FILTERS.map(k => {
       const n = tierCount(k);
       return `<button type="button" class="idb-chip idb-tierchip ${TIERS[k].css}" data-tier="${k}" aria-pressed="${f.tier === k}" ${n ? '' : 'disabled'}><i></i>${TIERS[k].label}<span>${n}</span></button>`;
@@ -185,6 +196,7 @@ function rowHtml(item, i, isCurrent) {
       <span class="idb-type">${esc(getTypeName(item.type || ''))}${item.level ? ` · ${t('items.lv')} ${item.level}` : ''}</span>
     </span>
     <span class="idb-stats">${stats}</span>
+    ${opts.annotate ? (n => `<span class="pk-note ${esc(n?.cls || '')}" title="${esc(n?.title || '')}">${esc(n?.text ?? '')}</span>`)(note(item)) : ''}
     <span class="pk-right">${isCurrent ? `<span class="pk-equipped">${esc(opts.currentLabel)}</span>` : `<span class="idb-tier">${esc(ri.label)}</span>`}</span>
   </div>`;
 }
@@ -211,6 +223,9 @@ function pick(i) {
  */
 export async function openItemPicker(o) {
   opts = o;
+  notes = new Map();
+  f.byScore = !!o.byScore;
+  el('pickerModal')?.classList.toggle('has-notes', !!o.annotate);
   items = await loadItems();
   if (!built) buildModal();
 

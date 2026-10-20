@@ -566,6 +566,12 @@ tbody tr:hover .del-btn, .del-btn:focus-visible { opacity: 1; }
   vertical-align: middle;
 }
 .pk-right { text-align: right; }
+/* Optional per-item note column (the damage sim's damage difference): icon · name · note only. */
+#pickerModal.has-notes .pk-row { grid-template-columns: 36px minmax(0, 1fr) 120px; }
+#pickerModal.has-notes .pk-row .idb-stats, #pickerModal.has-notes .pk-row .pk-right { display: none; }
+.pk-note { text-align: right; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.pk-note.up { color: var(--accent3); }
+.pk-note.down { color: var(--danger); }
 .pk-equipped { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
 .picker-empty { padding: 40px 16px; text-align: center; color: var(--muted2); font-size: 13px; }
 
@@ -601,6 +607,7 @@ tbody tr:hover .del-btn, .del-btn:focus-visible { opacity: 1; }
   .pk-keys { display: none; }
   #pickerModal { height: calc(100vh - 24px); }
   .pk-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  #pickerModal.has-notes .pk-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
   .pk-row .idb-stats { grid-column: 2 / -1; grid-row: 2; font-size: 11px; max-height: none; }
 }
 
