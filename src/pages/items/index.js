@@ -45,6 +45,26 @@ const SORTS = [
   { key: 'stat',  label: () => t('items.sortStat') },
 ];
 
+// Stat-filter options that live in effect text rather than numeric stats. Items come from
+// the matching Effects tab category; `after` places the option in the Stat dropdown.
+const EFFECT_STATS = {
+  skillamp: { cat: 'unique-skill-damage-amplify', after: 'skilldamagepercent', label: () => t('items.skillAmp'), short: () => t('items.skillAmpShort') },
+};
+let effectValues = {}; // effect stat key → Map(item name → value text, e.g. "15% vs. target")
+
+async function loadEffectValues() {
+  try {
+    const data = await (await fetch('data/effects.json')).json();
+    const cats = data.sections.flatMap(sec => sec.categories);
+    for (const [key, def] of Object.entries(EFFECT_STATS)) {
+      const cat = cats.find(c => c.id === def.cat);
+      effectValues[key] = new Map((cat?.types || []).flatMap(ty => ty.entries).filter(e => e.item).map(e => [e.item, e.value]));
+    }
+  } catch { effectValues = {}; }
+}
+// Leading number of an effect value ("0.3% per stack…" → 0.3), for sorting.
+const effectNum = (key, item) => parseFloat(effectValues[key]?.get(item.name)) || 0;
+
 const DEFAULTS = { q: '', type: '', sub: '', rank: '', stat: '', sort: 'tier', view: 'list' };
 const VIEW_KEY = 'itemsView';
 const SCROLL_KEY = 'itemsScroll';
@@ -108,7 +128,7 @@ function matches(item, s, terms, skip) {
   if (skip !== 'type' && s.type && typeGroup(item.type) !== s.type) return -1;
   if (skip !== 'type' && s.type === 'weapon' && s.sub && weaponSubtype(item.type) !== s.sub) return -1;
   if (skip !== 'rank' && s.rank && rankInfo(item).key !== s.rank) return -1;
-  if (s.stat && typeof item.stats?.[s.stat] !== 'number') return -1;
+  if (s.stat && (EFFECT_STATS[s.stat] ? !effectValues[s.stat]?.has(item.name) : typeof item.stats?.[s.stat] !== 'number')) return -1;
   if (!terms.length) return 0;
   const h = hay(item);
   if (terms.every(x => h.name.includes(x))) return 0;
@@ -127,7 +147,8 @@ function filterItems(items, s) {
   const byName = (a, b) => a.it.name.localeCompare(b.it.name);
   const byTier = (a, b) => tierIndex(a.it) - tierIndex(b.it);
   const byLevel = (a, b) => (b.it.level || 0) - (a.it.level || 0);
-  const byStat = (a, b) => (b.it.stats?.[s.stat] || 0) - (a.it.stats?.[s.stat] || 0);
+  const statOf = it => (EFFECT_STATS[s.stat] ? effectNum(s.stat, it) : it.stats?.[s.stat] || 0);
+  const byStat = (a, b) => statOf(b.it) - statOf(a.it);
   const chain = {
     tier:  [byTier, byLevel, byName],
     level: [byLevel, byTier, byName],
@@ -160,9 +181,14 @@ function facetCounts(items, s, dim, keyFn) {
 function statsSummary(item, s, max) {
   let stats = numericStats(item);
   if (s.stat) stats = [...stats.filter(([k]) => k === s.stat), ...stats.filter(([k]) => k !== s.stat)];
-  const shown = stats.slice(0, max);
+  // Effect-based filter: lead with the effect's value, full text on hover.
+  const fxValue = EFFECT_STATS[s.stat] && effectValues[s.stat]?.get(item.name);
+  const fxChip = fxValue
+    ? `<span class="idb-stat hl" title="${esc(fxValue)}"><b>${esc(fxValue.match(/^[\d.]+%/)?.[0] || fxValue)}</b> ${esc(EFFECT_STATS[s.stat].short())}</span>`
+    : '';
+  const shown = stats.slice(0, fxChip ? max - 1 : max);
   const more = stats.length - shown.length;
-  return shown.map(([k, v]) => {
+  return fxChip + shown.map(([k, v]) => {
     const aff = AFFINITY_ELEMENT[k] ? ` is-affinity affinity-${AFFINITY_ELEMENT[k]}` : '';
     return `<span class="idb-stat${k === s.stat ? ' hl' : ''}${aff}"><b>${formatStat(k, v)}</b> ${esc(STAT_SHORT[k] || k)}</span>`;
   }).join('') + (more > 0 ? `<span class="idb-more">+${more}</span>` : '');
@@ -211,7 +237,7 @@ function renderShell(s, statKeys) {
         <span>${t('items.stat')}</span>
         <select data-k="stat">
           <option value="">${t('items.anyStat')}</option>
-          ${statKeys.map(k => `<option value="${k}" ${s.stat === k ? 'selected' : ''}>${esc(STAT_LABELS[k] || k)}</option>`).join('')}
+          ${statKeys.map(k => `<option value="${k}" ${s.stat === k ? 'selected' : ''}>${esc(EFFECT_STATS[k]?.label() || STAT_LABELS[k] || k)}</option>`).join('')}
         </select>
       </label>
       <label class="idb-select">
@@ -529,7 +555,14 @@ export async function initItems({ params, query }) {
   if (s.stat && !query.sort) s.sort = 'stat';
   if (s.sort === 'stat' && !s.stat) s.sort = 'tier';
 
+  await loadEffectValues();
   const statKeys = Object.keys(STAT_LABELS).filter(k => items.some(i => typeof i.stats?.[k] === 'number'));
+  for (const [key, def] of Object.entries(EFFECT_STATS)) {
+    if (!effectValues[key]?.size) continue;
+    const at = statKeys.indexOf(def.after);
+    statKeys.splice(at < 0 ? statKeys.length : at + 1, 0, key);
+  }
+  if (s.stat && !statKeys.includes(s.stat)) { s.stat = ''; if (s.sort === 'stat') s.sort = 'tier'; }
   app.innerHTML = renderShell(s, statKeys);
 
   const facetsEl = document.getElementById('idbFacets');
