@@ -19,8 +19,10 @@ const NUM = String.raw`\d+(?:\.\d+)?(?:\s*~\s*\d+(?:\.\d+)?)?`;
 const MUL = String.raw`\s*[X×x]\s*`;
 // A term is "STAT X n", a group "(STR + INT) X n", or a flat number.
 const TERM = String.raw`(?:\((?:${STAT_ALT})(?:\s*\+\s*(?:${STAT_ALT}))+\)${MUL}${NUM}|(?:${STAT_ALT})${MUL}${NUM}%?|\d[\d,]*(?:\.\d+)?(?![\d%~]))`;
+// The whole formula may be wrapped in parentheses: "(Attack Damage X 0.85 + AGI X 5) pure damage".
+const EXPR = String.raw`${TERM}(?:\s*\+\s*${TERM})*`;
 // An aside may sit between the formula and "damage": "X 2~4 (based on hero level) bonus damage".
-const DAMAGE_RE = new RegExp(String.raw`(${TERM}(?:\s*\+\s*${TERM})*)(?:\s*\([^)]*\))?\s*(bonus\s+)?(?:(magic|physical|pure)\s+)?damage`, 'gi');
+const DAMAGE_RE = new RegExp(String.raw`(\(\s*${EXPR}\s*\)|${EXPR})(?:\s*\([^)]*\))?\s*((?:bonus|additional)\s+)?(?:(magic|physical|pure)\s+)?damage`, 'gi');
 const GROUP_RE = new RegExp(String.raw`^\(([^)]*)\)${MUL}(${NUM})$`, 'i');
 const SINGLE_RE = new RegExp(String.raw`^(${STAT_ALT})${MUL}(${NUM})(%)?$`, 'i');
 
@@ -49,6 +51,8 @@ function topLevelParts(expr) {
 // "(STR + INT) X 9" → [{stat:'str', x:9}, {stat:'int', x:9}]
 export function parseTerms(expr) {
   const out = [];
+  const inner = expr.trim().match(/^\((.*)\)$/);
+  if (inner && !GROUP_RE.test(expr.trim()) && topLevelParts(inner[1]).length > 1) expr = inner[1];
   for (const raw of topLevelParts(expr)) {
     const part = raw.trim();
     const g = part.match(GROUP_RE);
@@ -203,6 +207,7 @@ export function parseConditional(line) {
   let value = null;
   const cap = text.match(/\(up to (\d+(?:\.\d+)?)%\)/i);
   const bonus = text.match(/(?:up to )?(\d+(?:\.\d+)?)%\s+(?:bonus|additional|more|increased)\s+damage/i)
+    || text.match(/\b(?:bonus|additional)\s+(\d+(?:\.\d+)?)%\s+damage/i)
     || text.match(/damage (?:is )?increased by (\d+(?:\.\d+)?)%/i)
     || text.match(/increases (?:its|their) damage by (\d+(?:\.\d+)?)%/i);
   const times = !bonus && text.match(/\bdeals?\s+(?:up to\s+)?(\d+(?:\.\d+)?)%\s+damage/i);

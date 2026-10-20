@@ -117,6 +117,8 @@ const STRINGS = {
     'sim.allStats': "All stats",
     'sim.mainStat': "Main stat",
     'sim.nParts': "{n} parts",
+    'sim.itemKey': "Item",
+    'sim.storedHintTyped': "Damage your skills dealt to the target during the mark. Type it in; blank counts as 0.",
     'sim.breakdownOf': "One hit of {part}",
     'sim.hit.countHint': "How many times this damage lands. Read from the skill text when it says so (e.g. 12 strikes, 8 seconds of per-second damage); blank = that default.",
     'sim.perHit': "{dmg} per hit × {n} hits",

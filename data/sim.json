@@ -98,6 +98,87 @@
           "chain": { "per": 0.75, "maxStacks": 4 }, "onlyHits": ["Throw Bomb"], "onlyParts": ["Throw Bomb#0"] }
       ]
     },
+    "Reaper": {
+      "modifiers": [
+        { "id": "rp-e-whirl", "label": "Death's Dash active: Whirl of Death +200%", "skill": "Death's Dash", "step": "conditional", "value": 2, "default": false, "onlyHits": ["Whirl of Death"] },
+        { "id": "rp-e-dash", "label": "Death's Dash active: Death's Dash +50%", "skill": "Death's Dash", "step": "conditional", "value": 0.5, "default": false, "onlyHits": ["Death's Dash"] }
+      ]
+    },
+    "Dark Knight": {
+      "extraHits": [
+        { "key": "Hollow Impact#explosion", "skill": "Hollow Impact", "hotkey": "[R]", "icon": "DarkKnightR", "field": "active",
+          "line": "Upon arrival, explodes to deal damage again (Main Stat X 20 magic damage)",
+          "terms": [{ "stat": "main", "x": 20 }], "type": "magic", "count": 1, "isSkill": true }
+      ],
+      "modifiers": [
+        { "id": "dk-r-str", "label": "STR: Explosion damage increased by 100%", "skill": "Hollow Impact", "step": "conditional", "value": 1, "mode": "str",
+          "onlyHits": ["Hollow Impact"], "onlyParts": ["Hollow Impact#explosion"] }
+      ]
+    },
+    "Assassin": {
+      "hits": {
+        "Night Fury#0": { "canCrit": true },
+        "Night Fury#1": { "canCrit": true }
+      },
+      "modifiers": [
+        { "id": "as-f-marks", "label": "Shadow Mark stacks (+6% each)", "skill": "Night Fury", "step": "conditional", "perStack": 0.06, "maxStacks": 5, "onlyHits": ["Night Fury"] },
+        { "id": "as-t-shadows", "label": "Shadow Rush: 5 shadows copy the skill at 50% (+250%)", "skill": "Shadow Rush", "step": "conditional", "value": 2.5, "default": false, "onlyHits": ["Shadow Slash", "Ambush"] }
+      ]
+    },
+    "Alchemist": {
+      "modifiers": [
+        { "id": "al-slam-armor", "label": "Conjure Earth armor stacks consumed (+20% each)", "skill": "Power Slam", "step": "conditional", "perStack": 0.2, "maxStacks": 10, "onlyHits": ["Power Slam"] }
+      ]
+    },
+    "Warlock": {
+      "modifiers": [
+        { "id": "wl-q-center", "label": "Crucifixion: target in the center (+100%)", "skill": "Crucifixion", "step": "conditional", "value": 1, "onlyHits": ["Crucifixion"] }
+      ]
+    },
+    "Wind Mage": {
+      "extraHits": [
+        { "key": "Mirror of Aeolus#0", "skill": "Mirror of Aeolus", "hotkey": "[E]", "icon": "WindMageE", "field": "active",
+          "line": "Upon expiration or casting again, deals INT X 20 + absorbed damage X 10 (max: INT X 200) magic damage to nearby enemies",
+          "terms": [{ "stat": "int", "x": 20 }], "type": "magic", "count": 1, "isSkill": true }
+      ],
+      "modifiers": [
+        { "id": "wm-e-absorbed", "label": "Mirror of Aeolus: absorbed damage at the cap (INT × 200 total)", "skill": "Mirror of Aeolus", "step": "conditional", "value": 9, "default": false, "onlyHits": ["Mirror of Aeolus"] }
+      ]
+    },
+    "Martial Artist": {
+      "extraHits": [
+        { "key": "Martial Movement#0", "skill": "Martial Movement", "hotkey": "[D]", "icon": "MartialArtistD", "field": "active",
+          "line": "On issuing attack order, launches a counter attack dealing (Received Damage + 7.5 X Attack Damage) pure damage (received damage not counted)",
+          "terms": [{ "stat": "ad", "x": 7.5 }], "type": "pure", "count": 1, "isSkill": true }
+      ]
+    },
+    "Paladin": {
+      "extraHits": [
+        { "key": "Divine Shield#0", "skill": "Divine Shield", "hotkey": "[T]", "icon": "PaladinT", "field": "active",
+          "line": "On recast, deals (STR X 25 X elapsed seconds) magic damage to nearby enemies (full 5 seconds)",
+          "terms": [{ "stat": "str", "x": 125 }], "type": "magic", "count": 1, "isSkill": true }
+      ]
+    },
+    "Elementalist": {
+      "extraHits": [
+        { "key": "Seal of Flame#0", "skill": "Seal of Flame", "hotkey": "[Q]", "icon": "ElementalistQ", "field": "active",
+          "line": "Jumps high and upon landing, deals INT X (5 + Elementalist's LV / 4) pure damage",
+          "terms": [{ "stat": "int", "x": 5, "xPerLevel": 0.25 }], "type": "pure", "count": 1, "isSkill": true }
+      ]
+    },
+    "Arcane Mage": {
+      "modifiers": [
+        { "id": "am-q-collide", "label": "Two Magic Stars collide: explosion for 500% (+500%)", "skill": "Magic Star", "step": "conditional", "value": 5, "default": false, "onlyHits": ["Magic Star"] }
+      ]
+    },
+    "Trickster": {
+      "hits": {
+        "Stage Finisher#0": { "count": 4, "canCrit": true }
+      },
+      "modifiers": [
+        { "id": "tr-t-marks", "label": "Stage Finisher marks on target: skill damage to target +5% each", "skill": "Stage Finisher", "step": "final", "perStack": 0.05, "maxStacks": 4 }
+      ]
+    },
     "Sniper": {
       "modifiers": [
         { "id": "sn-q-agi", "label": "Storm Shaft charges: AGI +5% each (Q)", "skill": "Storm Shaft", "step": "statPct", "stat": "agi", "perStack": 0.05, "maxStacks": 4 },
@@ -177,6 +258,119 @@
     "Crimson Whisper": { "modifiers": [
       { "label": "Bloody mark (target)", "step": "amplify", "value": 0.05 },
       { "label": "Storm Shaft: +1 max stack (charges and AGI)", "step": "info", "onlyHero": "Sniper", "raises": [{ "id": "sn-q-charges", "by": 1 }, { "id": "sn-q-agi", "by": 1 }] }
+    ] },
+    "Atricia, the Sword of Nightmares": {
+      "hits": [
+        { "skill": "Nightmare Slash", "line": "On skill cast, next attack deals (3000 + Main Stat X 6) pure damage (+1% per Nightmare Energy stack; crits if reactivated within 2 s)",
+          "terms": [{ "flat": 3000 }, { "stat": "main", "x": 6 }], "type": "pure", "count": 1, "proc": true },
+        { "skill": "Dream Ender", "line": "Consumes all stacks of Nightmare Energy, dealing (150000 + 25000 X stack) magic damage",
+          "terms": [{ "flat": 150000 }], "type": "magic", "count": 1 }
+      ],
+      "modifiers": [
+        { "label": "Nightmare Energy: Nightmare Slash +1% per stack", "step": "conditional", "perStack": 0.01, "maxStacks": 20, "onlyHits": ["Nightmare Slash"] },
+        { "label": "Nightmare Energy: Dream Ender +25,000 per stack", "step": "bonus", "perStack": 25000, "maxStacks": 20, "onlyHits": ["Dream Ender"] }
+      ]
+    },
+    "Grim Scythe": {
+      "hits": [
+        { "skill": "Grim Reaper", "line": "On skill cast, deals (MAIN STAT X 7.5) magic damage to nearby enemies (1.5 s cooldown)",
+          "terms": [{ "stat": "main", "x": 7.5 }], "type": "magic", "count": 1, "proc": true },
+        { "skill": "Culling", "line": "Consumes Mark of Death, dealing (MAIN STAT X 50 + 15% of damage dealt to target by your skills) magic damage",
+          "terms": [{ "stat": "main", "x": 50 }, { "stored": true, "x": 0.15, "label": "Skill damage dealt × 15%" }], "type": "magic", "count": 1 }
+      ]
+    },
+    "Agnitus, the Bow of Divine Fury": { "modifiers": [
+      { "label": "Storm Shaft: +3 max stacks (charges and AGI)", "step": "info", "onlyHero": "Sniper", "raises": [{ "id": "sn-q-charges", "by": 3 }, { "id": "sn-q-agi", "by": 3 }] }
+    ] },
+    "Akhelius, the Staff of Duality": { "modifiers": [
+      { "label": "Elemental Amplification: fire affinity +10% (fire higher)", "step": "affinity", "element": "flame", "value": 0.1, "ifHigher": ["water"], "ifElement": "flame" },
+      { "label": "Elemental Amplification: water affinity +10% (water higher)", "step": "affinity", "element": "water", "value": 0.1, "ifHigher": ["flame"], "ifElement": "water", "tieLoses": true },
+      { "label": "Elemental Release: skill damage 0.5 × fire affinity (fire higher)", "step": "skillDamage", "scale": [{ "affinity": "flame", "x": 0.5 }], "ifHigher": ["water"], "ifElement": "flame" }
+    ] },
+    "Blazing Sun": { "modifiers": [
+      { "label": "Rising Sun: attack damage +250 per stack", "step": "stat", "stat": "ad", "perStack": 250, "maxStacks": 15 },
+      { "label": "Rising Sun: STR +30 per stack", "step": "stat", "stat": "str", "perStack": 30, "maxStacks": 15 }
+    ] },
+    "Chains of Torment": { "modifiers": [
+      { "label": "Torment: 40,000 + 10 × consumed MP (8% max MP) magic damage on skill hit", "step": "bonus", "value": 40000, "scale": [{ "stat": "maxMp", "x": 0.8 }], "note": "MP above 50%. 5 s cooldown, so multi-hit parts overcount it." },
+      { "label": "Howling Soul: skill damage +15%", "step": "skillDamage", "value": 0.15 }
+    ] },
+    "Crimson Curse": { "modifiers": [
+      { "label": "Lunacy: attack damage +9,000", "step": "stat", "stat": "ad", "value": 9000 },
+      { "label": "Lunacy: main stat +425", "step": "stat", "stat": "main", "value": 425 }
+    ] },
+    "Crown of Cataclysm": { "modifiers": [
+      { "label": "Cataclysm: all stats +1.5% of consumed HP (50% of HP)", "step": "stat", "stat": "all", "scale": [{ "stat": "maxHp", "x": 0.0075 }] },
+      { "label": "Cataclysm: main stat doubled (+1.5% more of consumed HP)", "step": "stat", "stat": "main", "scale": [{ "stat": "maxHp", "x": 0.0075 }] },
+      { "label": "Cataclysm: fire affinity +10%", "step": "affinity", "element": "flame", "value": 0.1 },
+      { "label": "Cataclysm: 10,000 magic damage on magic hits", "step": "bonus", "value": 10000, "onlyTypes": ["magic"], "note": "0.75 s cooldown, so multi-hit parts overcount it." }
+    ] },
+    "Crown of Transcendance": { "modifiers": [
+      { "label": "Transcendance: all stats +200", "step": "stat", "stat": "all", "value": 200 },
+      { "label": "Transcendance: skill damage +15%", "step": "skillDamage", "value": 0.15 }
+    ] },
+    "Exitium, the Armor of Ruin": { "modifiers": [
+      { "label": "Mark of Ruin: damage dealt to target up to 8% by missing HP", "step": "final", "execute": { "min": 0, "max": 0.08, "fullAt": 0 } }
+    ] },
+    "Exsolus, the Armor of the Absolute": { "modifiers": [
+      { "label": "Mark of the Absolute: final damage up to 10% by missing HP", "step": "final", "execute": { "min": 0, "max": 0.1, "fullAt": 0 } }
+    ] },
+    "Godslayer Signet": { "modifiers": [
+      { "label": "End of the Gods: attack damage +11,000", "step": "stat", "stat": "ad", "value": 11000 },
+      { "label": "End of the Gods: main stat +600", "step": "stat", "stat": "main", "value": 600 },
+      { "label": "Mark of the Godslayer: amplify 3% per mark (hits over 300,000 base)", "step": "amplify", "perStack": 0.03, "maxStacks": 7, "note": "One hit consumes the marks. Amplify per the patch notes (user-confirmed)." }
+    ] },
+    "Living Flame": { "modifiers": [
+      { "label": "Burning Soul: attack damage +10%", "step": "statPct", "stat": "ad", "value": 0.1 }
+    ] },
+    "Mask of Truth": { "modifiers": [
+      { "label": "Eye of Truth: skills crit at a fixed 1.2× (3 s every 15 s)", "step": "conditional", "value": 0.2, "default": false }
+    ] },
+    "Prophetia, the Forbidden Truth": { "modifiers": [
+      { "label": "Forbidden Knowledge: INT +75 per stack", "step": "stat", "stat": "int", "perStack": 75, "maxStacks": 3, "default": false, "note": "Consumed by Forbidden Truth." },
+      { "label": "Forbidden Truth (3 stacks): INT +250 per stack, +10% per stack", "step": "stat", "stat": "int", "value": 975, "note": "250 × 3 × 1.3" },
+      { "label": "Forbidden Truth (3 stacks): skill damage +5% per stack, +10% per stack", "step": "skillDamage", "value": 0.195, "note": "5% × 3 × 1.3" }
+    ] },
+    "Ring of Eternity": { "modifiers": [
+      { "label": "Time Distortion: skill damage +7%", "step": "skillDamage", "value": 0.07 }
+    ] },
+    "Ring of Noble Soul": { "modifiers": [
+      { "label": "Radiance: main stat × 1.5 bonus damage per skill hit (30 times)", "step": "bonus", "scale": [{ "stat": "main", "x": 1.5 }] }
+    ] },
+    "Seal of Corruption": { "modifiers": [
+      { "label": "Corruption: STR +4 per stack", "step": "stat", "stat": "str", "perStack": 4, "maxStacks": 60 },
+      { "label": "Corruption: INT +4 per stack", "step": "stat", "stat": "int", "perStack": 4, "maxStacks": 60 }
+    ] },
+    "Spear of Judgment": { "modifiers": [
+      { "label": "Judgment: STR +100 per stack", "step": "stat", "stat": "str", "perStack": 100, "maxStacks": 4 },
+      { "label": "Judgment: skill damage +3% per stack", "step": "skillDamage", "perStack": 0.03, "maxStacks": 4 },
+      { "label": "Final Verdict: damage output +9%", "step": "final", "value": 0.09 }
+    ] },
+    "Star of Apotheosis": { "modifiers": [
+      { "label": "Apotheosis: all stats +750", "step": "stat", "stat": "all", "value": 750 }
+    ] },
+    "Sunstone": { "modifiers": [
+      { "label": "Sun's Blessing: main stat +150~450 by lost HP", "step": "stat", "stat": "main", "value": 450, "note": "Top of the range (low HP); 150 at full HP." }
+    ] },
+    "Titan's Plates": { "modifiers": [
+      { "label": "Titanic Roar: 15,000 + Max HP × 2.5 magic damage on skill cast", "step": "bonus", "value": 15000, "scale": [{ "stat": "maxHp", "x": 2.5 }], "note": "5 s cooldown, so multi-hit parts overcount it." },
+      { "label": "Titanic Roar: attack damage +450 per stack", "step": "stat", "stat": "ad", "perStack": 450, "maxStacks": 3 },
+      { "label": "Titanic Roar: STR +75 per stack", "step": "stat", "stat": "str", "perStack": 75, "maxStacks": 3 }
+    ] },
+    "Visage of Vengeance": { "modifiers": [
+      { "label": "Vengeance (6 stacks): main stat +200", "step": "stat", "stat": "main", "value": 200 }
+    ] },
+    "World Sunderer": { "modifiers": [
+      { "label": "Ruin: attack damage +600 per stack", "step": "stat", "stat": "ad", "perStack": 600, "maxStacks": 10 },
+      { "label": "Ruin: STR +40 per stack", "step": "stat", "stat": "str", "perStack": 40, "maxStacks": 10 },
+      { "label": "Ruin: INT +40 per stack", "step": "stat", "stat": "int", "perStack": 40, "maxStacks": 10 },
+      { "label": "Ruin: skill damage +2.5% per stack", "step": "skillDamage", "perStack": 0.025, "maxStacks": 10 },
+      { "label": "Paladin: Holy Divide deals 50% more damage", "step": "conditional", "value": 0.5, "onlyHero": "Paladin", "onlyHits": ["Holy Divide"] }
+    ] },
+    "Wings of Sacred Provenance": { "modifiers": [
+      { "label": "Sacred Flame: 33,000 magic damage on magic hits", "step": "bonus", "value": 33000, "onlyTypes": ["magic"], "note": "2 s cooldown, so multi-hit parts overcount it." },
+      { "label": "Sacred Dawn: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 5 },
+      { "label": "Sacred Dawn: fire affinity +0.5% per stack", "step": "affinity", "element": "flame", "perStack": 0.005, "maxStacks": 5 }
     ] }
   },
   "calibration": [

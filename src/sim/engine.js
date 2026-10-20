@@ -34,7 +34,11 @@ function modValue(m, stats, allyStat) {
   }
   const statOf = s => (m.ally ? allyStat : (s === 'main' ? stats.main : stats[s] ?? 0));
   for (const f of m.formula || []) v += (f.base + statOf(f.stat) / f.div) / 100;
-  for (const f of m.scale || []) v += f.max != null ? Math.min(statOf(f.stat) * f.x, f.max) : statOf(f.stat) * f.x;
+  for (const f of m.scale || []) {
+    // { affinity: 'flame', x } scales with that element's total affinity (fraction).
+    const base = f.affinity ? (stats.aff?.[f.affinity] ?? 0) : statOf(f.stat);
+    v += f.max != null ? Math.min(base * f.x, f.max) : base * f.x;
+  }
   return v;
 }
 
@@ -98,7 +102,8 @@ export function simulate(model, setup) {
   const storedDamage = term => {
     if (stored == null) {
       const typed = num(setup.stored);
-      stored = typed ?? (setup._noStored ? 0 : (simulate(model, { ...setup, skill: term.from, focus: '', _noStored: true })?.total ?? 0));
+      // Without a `from` skill there's nothing to default to: the stored amount must be typed.
+      stored = typed ?? (setup._noStored || !term.from ? 0 : (simulate(model, { ...setup, skill: term.from, focus: '', _noStored: true })?.total ?? 0));
     }
     return stored;
   };
@@ -168,17 +173,25 @@ export function simulate(model, setup) {
   if (usesHp && num(baseIn.hp) == null && !cfg.hpPerStr && !cfg.baseHp) warnings.push('maxHp');
 
   // ── Damage steps ──
-  // Each modifier's automatic value (ignoring any typed override), shown as the placeholder on the page.
-  for (const m of mods) m.auto = modValue({ ...m, override: null }, stats, allyStat);
-  // Stat-mode effects ("STR: …", "If AGI is highest …") apply only when that stat is the hero's highest.
-  const heroMode = STATS3.reduce((a, k) => (stats[k] > stats[a] ? k : a), main);
-  for (const m of mods) m.modeOff = !!m.mode && m.mode !== heroMode;
-  const live = applyNoStack(on.filter(m => m.step !== 'stat' && m.step !== 'statPct' && !m.modeOff), stats, allyStat);
-  const byStep = step => live.filter(m => m.step === step).map(m => ({ label: m.label, value: modValue(m, stats, allyStat), id: m.id }));
   const gearStat = key => gear.filter(g => g.item.stats?.[key]).map(g => ({ label: g.item.name, value: g.item.stats[key] }));
   const manualPct = k => (num(man[k]) ? [{ label: 'Manual', value: num(man[k]) / 100 }] : []);
   const sum = list => list.reduce((a, s) => a + s.value, 0);
   const prod = list => list.reduce((a, s) => a * (1 + s.value), 1);
+  // Stat-mode effects ("STR: …", "If AGI is highest …") apply only when that stat is the hero's highest.
+  const heroMode = STATS3.reduce((a, k) => (stats[k] > stats[a] ? k : a), main);
+  for (const m of mods) m.modeOff = !!m.mode && m.mode !== heroMode;
+  // Affinity totals per element, for "if fire affinity is higher" effects (Akhelius) and affinity-scaled values.
+  const affList = (el, from) => [...gearStat(ELEMENT_KEY[el]), ...gearStat('allaffinitypercent'),
+    ...from.filter(m => m.step === 'affinity' && (!m.element || m.element === el || m.element === 'all')).map(m => ({ label: m.label, value: modValue(m, stats, allyStat) })),
+    ...manualPct('affinity')];
+  const plain = on.filter(m => m.step === 'affinity' && !m.modeOff && !m.ifHigher);
+  stats.aff = Object.fromEntries(ELEMENTS.map(el => [el, sum(affList(el, plain))]));
+  for (const m of mods) if (m.ifHigher) m.modeOff = m.ifHigher.some(o => (m.tieLoses ? stats.aff[o] >= stats.aff[m.ifElement] : stats.aff[o] > stats.aff[m.ifElement]));
+  stats.aff = Object.fromEntries(ELEMENTS.map(el => [el, sum(affList(el, [...plain, ...on.filter(m => m.step === 'affinity' && m.ifHigher && !m.modeOff)]))]));
+  // Each modifier's automatic value (ignoring any typed override), shown as the placeholder on the page.
+  for (const m of mods) m.auto = modValue({ ...m, override: null }, stats, allyStat);
+  const live = applyNoStack(on.filter(m => m.step !== 'stat' && m.step !== 'statPct' && !m.modeOff), stats, allyStat);
+  const byStep = step => live.filter(m => m.step === step).map(m => ({ label: m.label, value: modValue(m, stats, allyStat), id: m.id }));
 
   // One hit of one part, step by step.
   function hitSteps(hit) {
@@ -191,20 +204,22 @@ export function simulate(model, setup) {
     };
     const skip = (id, note) => steps.push({ id, skipped: true, note, value: dmg });
 
+    // "INT X (5 + LV / 4)": xPerLevel adds to the coefficient per hero level.
+    const termStat = t => {
+      const x = +(t.x + (t.xPerLevel || 0) * level).toFixed(4);
+      return { label: `${t.stat} × ${x}`, value: (stats[t.stat] ?? 0) * x, stat: t.stat, x };
+    };
     const termSrc = hit.terms.map(t => (t.flat != null
       ? { label: 'Flat', value: t.flat }
       : t.stored
         ? { label: t.label || 'Stored damage', value: storedDamage(t) * (t.own ?? 1) * t.x, stored: true }
-        : { label: `${t.stat} × ${t.x}`, value: (stats[t.stat] ?? 0) * t.x, stat: t.stat, x: t.x }));
+        : termStat(t)));
     dmg = sum(termSrc);
     steps.push({ id: 'base', op: '=', factor: dmg, sources: termSrc, value: dmg });
 
     let affFactor = 1;
     if (hit.element) {
-      const key = ELEMENT_KEY[hit.element];
-      const list = [...gearStat(key), ...gearStat('allaffinitypercent'),
-        ...live.filter(m => m.step === 'affinity' && (!m.element || m.element === hit.element || m.element === 'all')).map(m => ({ label: m.label, value: modValue(m, stats, allyStat) })),
-        ...manualPct('affinity')];
+      const list = affList(hit.element, live);
       affFactor = 1 + sum(list);
       push('affinity', '×', affFactor, list);
     } else skip('affinity', 'noElement');

@@ -3,7 +3,7 @@
 //   - skill damage lines the parser can't read
 //   - equipment with passive/active text that has neither curated sim data nor an Effects tab entry
 import { readFileSync, writeFileSync } from 'node:fs';
-import { unparsedDamageLines } from '../src/sim/parse.js';
+import { unparsedDamageLines, parseConditional, parseExecute } from '../src/sim/parse.js';
 
 const read = f => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), 'utf8'));
 const skills = read('skills.json');
@@ -15,7 +15,10 @@ const fxItems = new Set(effects.sections.flatMap(s => s.categories).flatMap(c =>
 const curatedItems = new Set(Object.keys(sim.items || {}));
 const curatedHeroes = new Set(Object.keys(sim.heroes || {}));
 
-const lines = unparsedDamageLines(skills);
+// Lines read as conditionals / executes, "last … deals double damage", or on skills curated in sim.json are handled.
+const curatedSkill = (hero, skill) => [...(sim.heroes?.[hero]?.modifiers || []), ...(sim.heroes?.[hero]?.extraHits || [])].some(m => m.skill === skill);
+const lines = unparsedDamageLines(skills).filter(l => !parseConditional(l.line) && !parseExecute(l.line)
+  && !/\blast \w+ deals double damage/i.test(l.line) && !curatedSkill(l.hero, l.skill));
 const itemTodo = items
   .filter(i => i.grade > 0 && (i.stats?.passive || i.stats?.active) && !curatedItems.has(i.name) && !fxItems.has(i.name))
   .sort((a, b) => b.grade - a.grade || a.name.localeCompare(b.name));

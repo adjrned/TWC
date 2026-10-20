@@ -78,14 +78,15 @@ const keyText = hotkey => (String(hotkey || '').match(/Passive|[A-Z]/g) || []).m
 function skillBarHtml(hits, hero, sel) {
   const seen = new Map();
   for (const h of hits) {
-    if (!seen.has(h.skill)) seen.set(h.skill, { hotkey: h.hotkey, icon: h.icon, n: 0 });
+    if (!seen.has(h.skill)) seen.set(h.skill, { hotkey: h.hotkey, icon: h.icon, item: h.item, n: 0 });
     seen.get(h.skill).n++;
   }
-  return `<div class="sim-skillbar">${[...seen].map(([name, v]) => `<button type="button" class="sim-skill${name === sel ? ' active' : ''}" data-pick-skill="${esc(name)}" data-skill="${esc(hero.heroClass + '|' + name)}" data-color="${esc(hero.color || '')}" aria-pressed="${name === sel}">
-      ${iconHtml(name, 'sim-skill-icon', iconSrc(v.icon || name))}
-      <kbd>${esc(keyText(v.hotkey))}</kbd>
+  // Item hits show the item's icon and tooltip.
+  return `<div class="sim-skillbar">${[...seen].map(([name, v]) => `<button type="button" class="sim-skill${name === sel ? ' active' : ''}" data-pick-skill="${esc(name)}" ${v.item ? `data-name="${esc(v.item)}"` : `data-skill="${esc(hero.heroClass + '|' + name)}"`} data-color="${esc(hero.color || '')}" aria-pressed="${name === sel}">
+      ${v.item ? iconHtml(v.item, 'sim-skill-icon') : iconHtml(name, 'sim-skill-icon', iconSrc(v.icon || name))}
+      <kbd>${esc(v.item ? t('sim.itemKey') : keyText(v.hotkey))}</kbd>
     </button>`).join('')}</div>
-    ${sel ? `<p class="sim-skill-name"><kbd class="hs-key">${esc(keyText(seen.get(sel)?.hotkey))}</kbd> <b>${esc(sel)}</b>${seen.get(sel)?.n > 1 ? ` <span>${esc(t('sim.nParts', { n: seen.get(sel).n }))}</span>` : ''}</p>` : ''}`;
+    ${sel ? `<p class="sim-skill-name"><kbd class="hs-key">${esc(seen.get(sel)?.item ? t('sim.itemKey') : keyText(seen.get(sel)?.hotkey))}</kbd> <b>${esc(sel)}</b>${seen.get(sel)?.item ? ` <span>${esc(localizedNameByName(seen.get(sel).item))}</span>` : ''}${seen.get(sel)?.n > 1 ? ` <span>${esc(t('sim.nParts', { n: seen.get(sel).n }))}</span>` : ''}</p>` : ''}`;
 }
 
 function gearHtml(s) {
@@ -117,7 +118,9 @@ function modValueText(m) {
   if (m.perStack) return `${show(m.perStack)} ${t('sim.perStack')}${m.atMax ? ` (+${show(m.atMax)} ${t('sim.atMax')})` : ''}`;
   if (m.atMax) return `+${show(m.atMax)} ${t('sim.atMax')}`;
   if (m.formula?.length) return m.formula.map(f => `(${f.base} + ${STAT_LABEL[f.stat] || f.stat} / ${f.div})%`).join(' + ');
-  if (m.scale?.length) return m.scale.map(f => `${STAT_LABEL[f.stat] || f.stat} × ${f.x}`).join(' + ');
+  if (m.scale?.length) {
+    return m.scale.map(f => `${f.affinity ? `${t('sim.el.' + f.affinity)} ${t('sim.step.affinity')}` : STAT_LABEL[f.stat] || f.stat} × ${f.x}`).join(' + ');
+  }
   return show(m.value || 0);
 }
 
@@ -245,7 +248,7 @@ function partsHtml(r, s) {
         <div class="sim-seg" role="group" aria-label="${esc(t('sim.hit.type'))}">${types.map(([v, l]) => `<button type="button" class="t-${v}${p.type === v ? ' on' : ''}" data-part-type="${v}" aria-pressed="${p.type === v}">${esc(l)}</button>`).join('')}</div>
         <select class="sim-el affinity-${esc(p.element || 'none')}" data-part-element title="${esc(t('sim.hit.element'))}">${els.map(([v, l]) => `<option value="${esc(v)}" ${p.element === v ? 'selected' : ''}>${esc(v ? l : t('sim.noElement'))}</option>`).join('')}</select>
         <label class="sim-check"><input type="checkbox" data-part-crit ${p.crit ? 'checked' : ''}> ${esc(t('sim.hit.crit'))}</label>
-        ${p.terms.some(x => x.stored) ? `<label class="sim-mini sim-stored" title="${esc(t('sim.storedHint', { from: p.terms.find(x => x.stored).from }))}">${esc(t('sim.stored'))}
+        ${p.terms.some(x => x.stored) ? `<label class="sim-mini sim-stored" title="${esc(p.terms.find(x => x.stored).from ? t('sim.storedHint', { from: p.terms.find(x => x.stored).from }) : t('sim.storedHintTyped'))}">${esc(t('sim.stored'))}
           <input type="number" min="0" step="any" data-stored value="${esc(s.stored ?? '')}" placeholder="${esc(r.stored != null ? fmt(r.stored) : '')}"></label>` : ''}
       </div>
     </li>`;
