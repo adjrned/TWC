@@ -131,6 +131,8 @@ export function simulate(model, setup) {
   const statMods = on.filter(m => m.step === 'stat' || m.step === 'statPct');
   const pre = Object.fromEntries(STATS3.map(k => [k, base[k] + flat[k]]));
   pre.main = pre[main];
+  // Max HP before stat buffs, for HP-scaled stat effects (Righteous Flame's Holy Fire).
+  pre.maxHp = (num(baseIn.hp) ?? cfg.baseHp + cfg.hpPerStr * base.str) + cfg.hpPerStr * flat.str + flat.hp;
   for (const m of applyNoStack(statMods, pre, allyStat)) {
     const v = modValue(m, pre, allyStat);
     (m.step === 'stat' ? addFlat : addPct)(m.stat || 'main', v, m.label);
@@ -214,8 +216,14 @@ export function simulate(model, setup) {
       for (let k = 0; k < c; k++) sumStacks += Math.min(k, m.chain.maxStacks);
       return m.chain.per * sumStacks / c;
     };
+    // "+0% / +75% / +150% / +225% / +300% …" per hit, so the cap is visible.
+    const chainLabel = (m, n) => {
+      const c = Math.max(1, Math.round(n));
+      const per = Array.from({ length: Math.min(c, m.chain.maxStacks + 2) }, (_, k) => `+${Math.round(Math.min(k, m.chain.maxStacks) * m.chain.per * 100)}%`);
+      return `${m.label}: ${per.join(' / ')}${c > per.length ? ' …' : ''} → avg over ${c} hits`;
+    };
     const cond = [...live.filter(m => m.step === 'conditional' && (!m.onlyParts || m.onlyParts.includes(hit.key))).map(m => ({
-      label: m.chain ? `${m.label} (avg over ${Math.round(hit.count)} hits)` : m.label,
+      label: m.chain ? chainLabel(m, hit.count) : m.label,
       value: m.chain && m.override == null ? chainAvg(m, hit.count) : modValue(m, stats, allyStat), id: m.id,
     })), ...manualPct('conditional')];
     if (cond.length) push('conditional', '×', prod(cond), cond); else skip('conditional', 'none');
@@ -227,7 +235,8 @@ export function simulate(model, setup) {
     } else skip('crit', 'noCrit');
 
     // Bonus damage marked "affinity" (e.g. Primal Shard's Eternal Frost) is scaled by the hit's affinity.
-    const bonus = [...live.filter(m => m.step === 'bonus').map(m => {
+    // Bonus damage can be limited to a damage type ("when dealing magic damage").
+    const bonus = [...live.filter(m => m.step === 'bonus' && (!m.onlyTypes || m.onlyTypes.includes(hit.type))).map(m => {
       const v = modValue(m, stats, allyStat);
       return m.affinity && affFactor !== 1 ? { label: `${m.label} × affinity ${+affFactor.toFixed(4)}`, value: v * affFactor } : { label: m.label, value: v };
     }), ...(num(man.bonus) ? [{ label: 'Manual', value: num(man.bonus) }] : [])];

@@ -114,6 +114,21 @@
     "Lightbringer": { "modifiers": [
       { "label": "Sword of Justice: next skills amplified 25% (target)", "step": "amplify", "value": 0.25 }
     ] },
+    "Righteous Flame": { "modifiers": [
+      { "label": "Holy Fire: all stats +1.5% of consumed HP (50% of HP)", "step": "stat", "stat": "all", "scale": [{ "stat": "maxHp", "x": 0.0075 }] },
+      { "label": "Holy Fire: main stat +0.5% more of consumed HP (2% total)", "step": "stat", "stat": "main", "scale": [{ "stat": "maxHp", "x": 0.0025 }] },
+      { "label": "Holy Fire: fire affinity +10%", "step": "affinity", "element": "flame", "value": 0.1 },
+      { "label": "Holy Fire: 15,000 magic damage on magic hits", "step": "bonus", "value": 15000, "onlyTypes": ["magic"], "note": "0.75 s cooldown, so multi-hit parts overcount it." },
+      { "label": "Holy Fire stacks: skill damage +1% each", "step": "skillDamage", "perStack": 0.01, "maxStacks": 10 },
+      { "label": "Holy Fire stacks: fire affinity +0.3% each", "step": "affinity", "element": "flame", "perStack": 0.003, "maxStacks": 10 },
+      { "label": "Holy Fire stacks: light affinity +0.3% each", "step": "affinity", "element": "light", "perStack": 0.003, "maxStacks": 10 }
+    ] },
+    "Plates of Dawn": { "modifiers": [
+      { "label": "Moonlight Fall: STR +70 per stack", "step": "stat", "stat": "str", "perStack": 70, "maxStacks": 5 },
+      { "label": "Moonlight Fall: attack damage +500 per stack", "step": "stat", "stat": "ad", "perStack": 500, "maxStacks": 5 },
+      { "label": "Moonlight Fall: 12,000 + Max HP × 1.5 magic damage on hit", "step": "bonus", "value": 12000, "scale": [{ "stat": "maxHp", "x": 1.5 }], "note": "0.5 s cooldown, so multi-hit parts overcount it." },
+      { "label": "Dawn's Resolve: skill amplify 8%", "step": "amplify", "value": 0.08 }
+    ] },
     "Primal Shard": { "modifiers": [
       { "label": "Eternal Frost (INT × 9 bonus)", "step": "bonus", "scale": [{ "stat": "int", "x": 9 }], "affinity": true, "note": "Part of the skill's own hit; scaled by its affinity." },
       { "label": "Nightmare Shard (target)", "step": "amplify", "value": 0.15 }
