@@ -58,7 +58,7 @@ const STAT_LABELS = {
   armor:        'Armor',
   armorType:    'Armor Type',
   magicResist:  'Magic Resist',
-  damageResist: 'Damage Resist',
+  damageResist: 'Damage Reduction',
   attackDamage: 'Attack Damage',
   attackSpread: 'Attack Spread',
   attackRange:  'Attack Range',
@@ -82,11 +82,21 @@ function fmtShort(v) {
   return String(n);
 }
 
-function renderStatTable(stats) {
+// Stats shown as percentages. A list value means one entry per fight phase.
+const PERCENT_STATS = new Set(['damageResist']);
+
+// `shown` (a boss's optional shownStats) limits which stats are displayed; the rest stay in the data.
+function renderStatTable(stats, shown) {
   if (!stats) return '';
+  const row = (label, value) => `<div class="mdb-statrow"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
   const rows = Object.entries(stats)
-    .filter(([, v]) => v !== '' && v !== null && v !== undefined)
-    .map(([k, v]) => `<div class="mdb-statrow"><dt>${esc(tf('bstat.' + k, STAT_LABELS[k] || k))}</dt><dd>${esc(fmtNum(v))}</dd></div>`)
+    .filter(([k, v]) => v !== '' && v !== null && v !== undefined && (!shown || shown.includes(k)))
+    .map(([k, v]) => {
+      const label = tf('bstat.' + k, STAT_LABELS[k] || k);
+      const fmt = x => fmtNum(x) + (PERCENT_STATS.has(k) ? '%' : '');
+      if (!Array.isArray(v)) return row(label, fmt(v));
+      return v.map((x, i) => row(`${label} · ${t('bosses.phase', { n: i + 1 })}`, fmt(x))).join('');
+    })
     .join('');
   return `<dl class="mdb-stats">${rows}</dl>`;
 }
@@ -492,7 +502,8 @@ function renderBossDetail(boss) {
           </div>
         </header>
         ${boss.location ? `<p class="mdb-location">${esc(boss.location)}</p>` : ''}
-        ${boss.stats && Object.keys(boss.stats).length ? renderStatTable(boss.stats) : ''}
+        ${boss.stats && Object.keys(boss.stats).length ? renderStatTable(boss.stats, boss.shownStats) : ''}
+        ${boss.mechanics?.length ? `<ul class="mdb-mechanics">${boss.mechanics.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
       </article>
       ${drops ? `<div class="idb-side">${drops}</div>` : ''}
     </div>

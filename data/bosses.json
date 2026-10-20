@@ -4220,7 +4220,7 @@
       "armor": "1240",
       "armorType": "Heavy",
       "magicResist": "0",
-      "damageResist": ".25",
+      "damageResist": "25",
       "attackDamage": "7993",
       "attackSpread": "8",
       "attackRange": "750",
@@ -4308,7 +4308,7 @@
       "armor": "1390",
       "armorType": "Heavy",
       "magicResist": "0",
-      "damageResist": ".25",
+      "damageResist": "25",
       "attackDamage": "8890",
       "attackSpread": "8",
       "attackRange": "225",
@@ -4358,7 +4358,7 @@
       "armor": "1210",
       "armorType": "Heavy",
       "magicResist": "0",
-      "damageResist": ".6",
+      "damageResist": "60",
       "attackDamage": "6231",
       "attackSpread": "8",
       "attackRange": "250",
@@ -4445,7 +4445,7 @@
       "armor": "1315",
       "armorType": "Heavy",
       "magicResist": "0",
-      "damageResist": ".50",
+      "damageResist": "50",
       "attackDamage": "9882",
       "attackSpread": "8",
       "attackRange": "1500",
@@ -4574,10 +4574,10 @@
     "type": "Boss",
     "limit": "None",
     "respawn": "4",
-    "location": "Through the destroyed demonic portal during the Hell Invasion",
+    "location": "Summon the Demon Lord, then destroy the portal that appears",
     "conditions": "Level 100, Demon Lord summoned, and Demonic portal destroyed",
     "stats": {
-      "health": "13500000",
+      "health": "18500000",
       "healthRegen": "15000",
       "mana": "100",
       "manaRegen": "25",
@@ -4591,6 +4591,15 @@
       "attackSpeed": "1",
       "moveSpeed": "500"
     },
+    "shownStats": [
+      "health",
+      "damageResist"
+    ],
+    "mechanics": [
+      "HP +25% per player from 4 players",
+      "Phase 1 and 2: immune to stuns and freezes of 2.5 seconds or less",
+      "Phase 3: immune to all status effects except pauses"
+    ],
     "empoweredStats": {
       "damageResist": "75"
     },
@@ -4782,10 +4791,10 @@
     "type": "Boss",
     "limit": "None",
     "respawn": "3",
-    "location": "Through the portal in front of Wallachia castle (next to Death Knight)",
+    "location": "Enter the Blood Garden in Wallachia, through the portal in front of Wallachia Castle (next to the Death Knight)",
     "conditions": "Level 100",
     "stats": {
-      "health": "30000000",
+      "health": "25000000",
       "healthRegen": "50000",
       "mana": "100",
       "manaRegen": "25",
@@ -4799,6 +4808,15 @@
       "attackSpeed": ".5",
       "moveSpeed": "0"
     },
+    "shownStats": [
+      "health",
+      "damageResist"
+    ],
+    "mechanics": [
+      "HP +25% per player from 5 players",
+      "Phase 1: immune to stuns of 2.5 seconds or less",
+      "Phase 2: immune to all crowd control"
+    ],
     "empoweredStats": {
       "damageResist": "40",
       "attackDamage": "10392",
@@ -4962,9 +4980,17 @@
     "type": "Boss",
     "limit": "None",
     "respawn": "3",
-    "location": "Teleporter: second page, option [2]. Top right corner portal.",
+    "location": "Enter the Chamber of Earth in the Tower of Elements (requires the Earth Key)",
     "conditions": "Level 100",
-    "stats": {},
+    "stats": {
+      "health": "40000000",
+      "damageResist": "33"
+    },
+    "mechanics": [
+      "HP +30% per player from 5 players",
+      "Immune to stuns of 3 seconds or less",
+      "Immune to knockback"
+    ],
     "empoweredStats": {},
     "drops": [
       "I01Z",
@@ -4991,8 +5017,18 @@
     "type": "Boss",
     "limit": "None",
     "respawn": "3",
-    "location": "Right side of Golem Cave",
-    "conditions": "Level 100, destroy Stange Rock",
+    "location": "Destroy the Strange Stone in the mine, then enter through the Ancient Ruins entrance that appears",
+    "conditions": "Level 100, destroy the Strange Stone",
+    "stats": {
+      "health": "47500000",
+      "damageResist": "33"
+    },
+    "mechanics": [
+      "Up to 6 players can enter",
+      "HP +33.3% per player from 4 players",
+      "Immune to stuns of 3 seconds or less",
+      "Immune to knockback"
+    ],
     "drops": [
       "I095",
       "I0LP",
@@ -5015,9 +5051,16 @@
     "type": "Boss",
     "limit": "None",
     "respawn": "3",
-    "location": "The altar can be reached by talking to 'Suspicious Man' located around shore area down from cave",
+    "location": "Talk to the suspicious old man on the coast below the mine to travel to the Altar of Souls",
     "conditions": "Level 100",
-    "stats": {},
+    "stats": {
+      "health": "72500000",
+      "damageResist": "50"
+    },
+    "mechanics": [
+      "HP +30% per player from 6 players",
+      "Immune to stuns and knockback"
+    ],
     "drops": [
       "rlif",
       "I02V",
@@ -5040,8 +5083,18 @@
     "level": "130",
     "category": "Endgame",
     "type": "Boss",
-    "location": "Portal in Castle Avalon",
-    "stats": {},
+    "location": "Enter through the Holy Altar inside the Holy City of Avalon",
+    "stats": {
+      "health": "85000000",
+      "damageResist": [
+        "70",
+        "80"
+      ]
+    },
+    "mechanics": [
+      "HP +30% per player from 6 players",
+      "Immune to stuns and knockback"
+    ],
     "wishable": false,
     "dropFormula": {
       "wish": 1,
