@@ -9,8 +9,11 @@ const STAT_WORDS = [
   [/^(main stat|primary stat)$/i, 'main'],
   [/^max(imum)? (mp|mana)$/i, 'maxMp'],
   [/^max(imum)? (hp|health)$/i, 'maxHp'],
+  // "Each orb deals MP X 0.7": a bare MP / HP means the max value.
+  [/^mp$/i, 'maxMp'],
+  [/^hp$/i, 'maxHp'],
 ];
-const STAT_ALT = 'Attack Damage|Attack Power|Agility|Strength|Intelligence|Main Stat|Primary Stat|Max(?:imum)? MP|Max(?:imum)? Mana|Max(?:imum)? HP|Max(?:imum)? Health|AGI|STR|INT';
+const STAT_ALT = 'Attack Damage|Attack Power|Agility|Strength|Intelligence|Main Stat|Primary Stat|Max(?:imum)? MP|Max(?:imum)? Mana|Max(?:imum)? HP|Max(?:imum)? Health|AGI|STR|INT|MP|HP';
 // Coefficients may be ranges ("X 2~4", based on hero level); the sim uses the top of the range.
 const NUM = String.raw`\d+(?:\.\d+)?(?:\s*~\s*\d+(?:\.\d+)?)?`;
 const MUL = String.raw`\s*[X×x]\s*`;
@@ -74,6 +77,7 @@ const MULTI_RE = new RegExp(String.raw`\b(\d+)\s+(?:[a-z]+\s+){0,2}(?:${MULTI_WO
 // "per second for 8 seconds" → 8, "every 0.125 seconds" for 1 second → 8. Defaults to 1.
 export function hitCount(line) {
   const times = line.match(/(\d+)\s+(?:additional\s+)?times,?\s+each/i)
+    || line.match(/\b(?:attack|strike|hit|slash)(?:e?s)?\s+(\d+)\s+times/i)
     || line.match(/damage\s+(\d+)\s+times/i)
     || line.match(/strikes?\s+(\d+)\s+additional\s+times/i);
   if (times) return Number(times[1]);
@@ -176,6 +180,62 @@ export function heroExecutes(skills, heroClass) {
         step: ex.final ? 'final' : 'conditional', execute: ex,
         // A skill's own execute applies to that skill; "increases damage you deal" is a buff for everything.
         onlyHits: ex.final ? undefined : [sk.name],
+      });
+    }
+  }
+  return out;
+}
+
+// Conditional damage boosts written on a skill: "STR: Deals 50% bonus damage", "Empowered: Deals 300% damage",
+// "If target is SHATTERED, consumes it to deal 200% damage", "30% bonus damage per 3 souls … (up to 150%)",
+// "If AGI is highest, your skills deal 100% more damage". Returns { value (fraction added), mode, all, cond } or null.
+const MODE_RE = /^(STR|AGI|INT):\s*/i;
+const COND_RE = /\b(if|when|while|against|to (?:\w+ )?(?:enemies|units|targets)|already|consecutive|recast|cast again|combined|empowered|chance|enhanced|consum|landing|each stack|per (?:consumed )?stack|for each|each second|burning|bleeding|stunned|slowed|frozen|afflicted|marked)/i;
+export function parseConditional(line) {
+  // Not skill-damage boosts: executes, reductions, attack damage / basic attacks, damage-over-time riders.
+  if (parseExecute(line) || /damage taken|reduc|decreas|chance to deal|absorb|heal|attack damage|basic attack|enhanced attack|over \d+(?:\.\d+)? seconds/i.test(line)) return null;
+  let text = line;
+  let mode = null;
+  const pre = text.match(MODE_RE);
+  if (pre) { mode = pre[1].toLowerCase(); text = text.slice(pre[0].length); }
+  const highest = text.match(/^if (STR|AGI|INT) is (?:highest|main stat),?\s*/i);
+  if (highest) { mode = highest[1].toLowerCase(); text = text.slice(highest[0].length); }
+  let value = null;
+  const cap = text.match(/\(up to (\d+(?:\.\d+)?)%\)/i);
+  const bonus = text.match(/(?:up to )?(\d+(?:\.\d+)?)%\s+(?:bonus|additional|more|increased)\s+damage/i)
+    || text.match(/damage (?:is )?increased by (\d+(?:\.\d+)?)%/i)
+    || text.match(/increases (?:its|their) damage by (\d+(?:\.\d+)?)%/i);
+  const times = !bonus && text.match(/\bdeals?\s+(?:up to\s+)?(\d+(?:\.\d+)?)%\s+damage/i);
+  if (bonus) value = Number(cap ? cap[1] : bonus[1]) / 100;
+  else if (times) value = Number(times[1]) / 100 - 1;
+  if (value == null || value <= 0) return null;
+  return {
+    value, mode,
+    final: /total damage/i.test(text),
+    all: /your skills|total damage/i.test(text),
+    // Lines with a condition start off; plain mode lines ("STR: Deals 50% bonus damage") start on.
+    cond: COND_RE.test(text.replace(/^deals?\b/i, '')),
+  };
+}
+
+// Conditional modifiers for one hero, read from its skill text. `skip` = skill names already curated.
+export function heroConditionals(skills, heroClass, skip = new Set()) {
+  const out = [];
+  const own = skills.filter(s => s.heroClass === heroClass);
+  for (const sk of own.filter(s => !skip.has(s.name))) {
+    let n = 0;
+    for (const field of FIELDS) for (const line of sk[field] || []) {
+      const c = parseConditional(line);
+      if (!c) continue;
+      // A line whose subject is another of the hero's skills boosts that skill ("Dimension Collapse obtains 40% …",
+      // "Fireball's base damage …", "While active, Whirl of Death (Q) will deal …"). The subject is the text before the verb.
+      const subject = line.replace(/^(mode|str|agi|int):\s*/i, '').replace(/^while [\w ]+?,\s*/i, '')
+        .split(/\b(?:deals?|obtains|will|has|have|damage|is|are)\b|'s\b/i)[0].toLowerCase();
+      const startsWithSkill = own.some(o => subject.trimStart().startsWith(o.name.toLowerCase()));
+      const named = startsWithSkill ? own.filter(o => subject.includes(o.name.toLowerCase())).map(o => o.name) : [];
+      out.push({
+        id: `cond:${sk.name}#${n++}`, label: line, skill: sk.name, step: c.final ? 'final' : 'conditional', value: c.value,
+        mode: c.mode, default: !c.cond, onlyHits: c.all ? undefined : (named.length ? named : [sk.name]),
       });
     }
   }

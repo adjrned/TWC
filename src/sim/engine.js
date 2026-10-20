@@ -155,7 +155,10 @@ export function simulate(model, setup) {
   // ── Damage steps ──
   // Each modifier's automatic value (ignoring any typed override), shown as the placeholder on the page.
   for (const m of mods) m.auto = modValue({ ...m, override: null }, stats, allyStat);
-  const live = applyNoStack(on.filter(m => m.step !== 'stat' && m.step !== 'statPct'), stats, allyStat);
+  // Stat-mode effects ("STR: …", "If AGI is highest …") apply only when that stat is the hero's highest.
+  const heroMode = STATS3.reduce((a, k) => (stats[k] > stats[a] ? k : a), main);
+  for (const m of mods) m.modeOff = !!m.mode && m.mode !== heroMode;
+  const live = applyNoStack(on.filter(m => m.step !== 'stat' && m.step !== 'statPct' && !m.modeOff), stats, allyStat);
   const byStep = step => live.filter(m => m.step === step).map(m => ({ label: m.label, value: modValue(m, stats, allyStat), id: m.id }));
   const gearStat = key => gear.filter(g => g.item.stats?.[key]).map(g => ({ label: g.item.name, value: g.item.stats[key] }));
   const manualPct = k => (num(man[k]) ? [{ label: 'Manual', value: num(man[k]) / 100 }] : []);

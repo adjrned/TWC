@@ -38,6 +38,29 @@
         { "id": "lm-e-charged", "label": "Charged (+100%)", "skill": "Discharge", "step": "conditional", "value": 1, "default": false, "onlyHits": ["Discharge", "Hypercharge"] }
       ]
     },
+    "Fighter": {
+      "modifiers": [
+        { "id": "ft-combo-skill", "label": "Combo Mastery: skill damage +15% per stack (D)", "skill": "Combo Mastery", "step": "conditional", "perStack": 0.15, "maxStacks": 4 },
+        { "id": "ft-combo-ad", "label": "Combo Mastery: attack damage +12% per stack (D)", "skill": "Combo Mastery", "step": "statPct", "stat": "ad", "perStack": 0.12, "maxStacks": 4 }
+      ]
+    },
+    "Knight": {
+      "hits": {
+        "Mana Blast#0": { "count": 3 }
+      },
+      "extraHits": [
+        { "key": "Mana Blaster#orbs", "skill": "Mana Blaster", "hotkey": "[R]", "icon": "KnightR", "field": "active",
+          "line": "If 3 orbs are charged, it sends all 3 orbs to target location with each orb dealing 400% max MP",
+          "terms": [{ "stat": "maxMp", "x": 4 }], "type": "magic", "count": 3, "isSkill": true }
+      ],
+      "modifiers": [
+        { "id": "kn-d-mp", "label": "Release Mana: Max MP + (STR + INT) × 5 (D)", "skill": "Release Mana", "step": "stat", "stat": "mp",
+          "scale": [{ "stat": "str", "x": 5 }, { "stat": "int", "x": 5 }] },
+        { "id": "kn-f-channel", "label": "Excalibur fully channeled (1.5 s × +50% per second)", "skill": "Excalibur", "step": "conditional", "value": 0.75, "onlyHits": ["Excalibur"] },
+        { "id": "kn-t-seal", "label": "Seal of Mana: +20% per stack consumed (T)", "skill": "Seal of Mana", "step": "conditional", "perStack": 0.2, "maxStacks": 6 },
+        { "id": "kn-t-amp", "label": "Seal of Mana active: skill amplify 4% (T)", "skill": "Seal of Mana", "step": "amplify", "value": 0.04 }
+      ]
+    },
     "Sniper": {
       "modifiers": [
         { "id": "sn-q-agi", "label": "Storm Shaft charges: AGI +5% each (Q)", "skill": "Storm Shaft", "step": "statPct", "stat": "agi", "perStack": 0.05, "maxStacks": 4 },
@@ -47,6 +70,10 @@
     }
   },
   "items": {
+    "Void Seraph": { "modifiers": [
+      { "label": "Dark Flame: fire affinity +1% per stack", "step": "affinity", "element": "flame", "perStack": 0.01, "maxStacks": 5 },
+      { "label": "Dark Flame: 15,000 bonus damage on skill hit", "step": "bonus", "value": 15000, "note": "0.4 s cooldown, so multi-hit parts overcount it." }
+    ] },
     "Primal Shard": { "modifiers": [
       { "label": "Eternal Frost (INT × 9 bonus)", "step": "bonus", "scale": [{ "stat": "int", "x": 9 }], "affinity": true, "note": "Part of the skill's own hit; scaled by its affinity." },
       { "label": "Nightmare Shard (target)", "step": "amplify", "value": 0.15 }

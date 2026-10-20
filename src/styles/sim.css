@@ -212,3 +212,9 @@
 .sim-stattable input { field-sizing: fixed; width: 9ch; }
 .sim-part-opts input[type=number] { field-sizing: fixed; width: 4ch; }
 .sim-target-hp { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.sim-mod.modeoff .sim-mod-label { color: var(--muted); }
+.sim-mod.modeoff .sim-mode { color: var(--danger); }
+.sim-mode { color: var(--accent2); }
+.sim-mod.unmodelled .sim-mod-label { color: var(--muted); }
+.sim-mod.unmodelled .sim-mod-main > input { visibility: hidden; }
+.sim-unmodelled { color: var(--muted); font-style: italic; }

@@ -142,12 +142,12 @@ const autoText = m => (m.auto == null ? '' : PCT_STEPS.has(m.step) ? String(+(m.
 function modRow(m) {
   const st = m.state || {};
   const unit = PCT_STEPS.has(m.step) ? '%' : '';
-  return `<li class="sim-mod${m.on ? ' on' : ''}${m.blocked ? ' blocked' : ''}" data-mod="${esc(m.id)}">
+  return `<li class="sim-mod${m.on ? ' on' : ''}${m.blocked ? ' blocked' : ''}${m.modeOff ? ' modeoff' : ''}${m.unmodelled ? ' unmodelled' : ''}" data-mod="${esc(m.id)}">
     <label class="sim-mod-main">
       <input type="checkbox" data-mod-on ${m.on ? 'checked' : ''} ${m.step === 'info' ? 'disabled' : ''}>
       ${modIcon(m)}
       <span class="sim-mod-label">${esc(m.label)}
-        <small>${esc(stepText(m))} · ${esc(modValueText(m))}${m.via ? ` · ${esc(m.via)}` : ''}${m.blocked ? ` · ${esc(t('sim.blockedBy', { name: m.blocked }))}` : ''}${m.raisedBy ? ` · +${esc(m.raisedBy.join(', '))}` : ''}${m.note ? ` · ${esc(m.note)}` : ''}</small>
+        <small>${m.unmodelled ? `<span class="sim-unmodelled">${esc(t(m.defensive ? 'sim.noDamageEffect' : 'sim.unmodelled'))}</span>` : `${esc(stepText(m))} · ${esc(modValueText(m))}`}${m.via ? ` · ${esc(m.via)}` : ''}${m.mode ? ` · <span class="sim-mode">${esc(t('sim.modeOnly', { mode: m.mode.toUpperCase() }))}</span>` : ''}${m.blocked ? ` · ${esc(t('sim.blockedBy', { name: m.blocked }))}` : ''}${m.raisedBy ? ` · +${esc(m.raisedBy.join(', '))}` : ''}${m.note ? ` · ${esc(m.note)}` : ''}</small>
       </span>
     </label>
     ${m.maxStacks ? `<label class="sim-mini sim-col-stacks" title="${esc(t('sim.stacks'))}"><input type="number" min="0" max="${m.maxStacks}" step="1" data-mod-stacks value="${esc(st.stacks ?? '')}" placeholder="${m.maxStacks}"><span>/${m.maxStacks}</span></label>` : '<span class="sim-col-stacks"></span>'}
@@ -403,6 +403,7 @@ export async function initSim() {
       if (!li) continue;
       li.classList.toggle('on', mod.on);
       li.classList.toggle('blocked', !!mod.blocked);
+      li.classList.toggle('modeoff', !!mod.modeOff);
       const v = li.querySelector('[data-mod-value]');
       if (v) v.placeholder = autoText(mod);
     }
@@ -532,6 +533,17 @@ export async function initSim() {
       current: () => new Set([s.gear[slot]].filter(Boolean)),
       currentLabel: t('picker.equipped'),
       onPick: item => { s.gear[slot] = item.name; renderAll(); },
+      // Damage difference of each item vs. what's in the slot now, best first.
+      annotate: (() => {
+        const base = run()?.total ?? 0;
+        return item => {
+          if (!item.stats || !Object.keys(item.stats).some(k => typeof item.stats[k] === 'number')) return null;
+          const d = (simulate(m, { ...s, gear: { ...s.gear, [slot]: item.name } })?.total ?? base) - base;
+          return { score: d, text: item.name === s.gear[slot] ? '' : signed(d), cls: d > 0.5 ? 'up' : d < -0.5 ? 'down' : '', title: t('sim.deltaSwap') };
+        };
+      })(),
+      byScore: true,
+      scoreLabel: t('sim.bestFirst'),
     });
   });
 

@@ -1,6 +1,6 @@
 // Damage sim model: turns loaded data (items, skills, heroes, effects, sim) into the
 // hits and modifiers the engine works with. No DOM; shared by the page and node scripts.
-import { parseHeroHits, parseFxValue, heroExecutes } from './parse.js';
+import { parseHeroHits, parseFxValue, heroExecutes, heroConditionals } from './parse.js';
 
 export const GEAR_SLOTS = ['weapon', 'helm', 'body', 'wings', 'accessory', 'icon'];
 
@@ -50,11 +50,38 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     return [...parsed, ...(cur.extraHits || [])].filter(h => !h.hidden);
   }
 
+  // Dual-stat heroes swap skills by stat mode: "INT: Changed into Unholy Light" on Phantom Rush means
+  // Phantom Rush is the STR-mode skill and Unholy Light the INT-mode one.
+  const skillModes = cls => {
+    const out = new Map();
+    const other = { str: 'int', int: 'str' };
+    for (const sk of skills.filter(x => x.heroClass === cls)) {
+      for (const line of [...(sk.active || []), ...(sk.passive || [])]) {
+        const mm = line.match(/^(STR|INT):\s*Changed (?:to|into)\s+(.+?)\s*$/i);
+        if (!mm) continue;
+        const mode = mm[1].toLowerCase();
+        out.set(sk.name, other[mode]);
+        out.set(mm[2], mode);
+      }
+    }
+    return out;
+  };
+  // Does a passive line change how hard a hit lands? Healing, regen, shields, damage taken, defense
+  // and speed lines don't.
+  const affectsDamage = line => {
+    if (/heal|regen|shield|revive|immun|stealth|movement speed|attack speed|magic defense|charges? \d|store/i.test(line)) return false;
+    const rest = line.replace(/(?:reduces?|reduced|decreases?)\s+(?:\w+\s+){0,3}damage(?:\s+(?:taken|received))?|damage\s+(?:taken|received)|received damage/gi, '');
+    return /damage|crit|amplif|\b(STR|AGI|INT)\b|main stat|affinity/i.test(rest);
+  };
+  const curatedSkills = cls => new Set((curated.heroes?.[cls]?.modifiers || []).map(x => x.skill).filter(Boolean));
+
   // Curated modifiers (data/sim.json) for a hero and the equipped items.
   function curatedMods(cls, gearNames) {
     const out = [];
     for (const m of curated.heroes?.[cls]?.modifiers || []) out.push({ ...m, group: m.group || 'hero', source: { hero: cls, skill: m.skill } });
     for (const m of heroExecutes(skills, cls)) out.push({ ...m, group: 'hero', source: { hero: cls, skill: m.skill } });
+    // Skill-text conditionals, except for skills already written up in sim.json.
+    for (const m of heroConditionals(skills, cls, curatedSkills(cls))) out.push({ ...m, group: 'hero', source: { hero: cls, skill: m.skill } });
     for (const name of gearNames) {
       for (const m of curated.items?.[name]?.modifiers || []) out.push({ ...m, id: m.id || `${name}:${m.label}`, group: m.group || 'gear', source: { item: name } });
     }
@@ -65,7 +92,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
   // Effects tab entries as modifiers. Curated items/heroes replace their Effects entries.
   function effectMods(cls, gearNames) {
     const gear = new Set(gearNames);
-    const heroCurated = !!curated.heroes?.[cls]?.modifiers;
+    const heroSkills = curatedSkills(cls);
     const out = [];
     for (const c of fxCats) {
       const map = CAT_STEP[c.id];
@@ -79,7 +106,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
             else if (map.target) group = 'target';
             else return;
           } else if (e.hero) {
-            if (e.hero === cls) { if (heroCurated) return; group = 'hero'; }
+            if (e.hero === cls) { if (heroSkills.has(e.skill)) return; group = 'hero'; }
             else if (map.target) group = 'target';
             // Other heroes' buffs; entries without "via" in buff categories are ally buffs too.
             else if (ALLY_VIA.has(e.via) || !e.via) group = 'ally';
@@ -95,6 +122,8 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
             fxType: tp.type ? `${c.id}|${tp.type}` : null, cat: c.id,
             source: e.item ? { item: e.item } : { hero: e.hero, skill: e.skill, key: e.key },
             ally: group === 'ally' || (group === 'target' && !!e.hero && e.hero !== cls),
+            // "(STR)" / "(INT)" entries only apply in that stat mode (dual-stat heroes like Dark Knight).
+            mode: e.hero === cls ? (String(e.value).match(/\((STR|AGI|INT)\b/i)?.[1].toLowerCase() || null) : null,
             default: (group === 'gear' || group === 'hero') && !v.chance,
           };
           const id = `fx:${c.id}:${tp.type || ''}:${i}`;
@@ -117,8 +146,22 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
   }
 
   function modsFor(cls, gearNames, hit) {
-    const all = [...curatedMods(cls, gearNames), ...effectMods(cls, gearNames)]
-      .filter(m => (!m.onlyHits || (hit && m.onlyHits.includes(hit.skill))) && (!m.onlyHero || m.onlyHero === cls));
+    const modes = skillModes(cls);
+    const every = [...curatedMods(cls, gearNames), ...effectMods(cls, gearNames)]
+      .map(m => (!m.mode && m.source?.hero === cls && modes.has(m.source.skill) ? { ...m, mode: modes.get(m.source.skill) } : m));
+    const all = every.filter(m => (!m.onlyHits || (hit && m.onlyHits.includes(hit.skill))) && (!m.onlyHero || m.onlyHero === cls));
+    // Every hero passive is listed: ones without any sim effect (or damage part) show as info rows,
+    // so it's clear what isn't modelled yet.
+    const covered = new Set([...every.map(m => m.source?.hero === cls && m.source.skill).filter(Boolean),
+      ...hits(cls).filter(h => h.field === 'passive').map(h => h.skill)]);
+    for (const sk of skills.filter(s => s.heroClass === cls && s.passive?.length > 1 && !covered.has(s.name))) {
+      all.push({
+        id: `passive:${sk.name}`, label: `${sk.name}: ${sk.passive.slice(1).join(' · ')}`, step: 'info', group: 'hero',
+        source: { hero: cls, skill: sk.name }, unmodelled: true, mode: modes.get(sk.name) || null,
+        // Purely defensive / utility passives (damage taken, healing, mana, speed) can't change a hit.
+        defensive: !sk.passive.slice(1).some(affectsDamage),
+      });
+    }
     // "raises": an item that adds max stacks to another modifier (Crimson Whisper → Storm Shaft charges).
     const byId = new Map(all.map((m, i) => [m.id, i]));
     for (const m of all) for (const r of m.raises || []) {
