@@ -26963,15 +26963,15 @@
       "attackspeedpercent": 0.05,
       "skilldamagepercent": 0.02,
       "critchancepercent": 0.02,
-      "drpercent": 0.02,
+      "dtpercent": -0.02,
       "damagedealtpercent": 0.02,
       "hp": 250,
       "mp": 250,
       "hpregen": 7.5,
       "mpregen": 7.5,
-      "expgainpercent": 0.5,
       "passive": [
-        "Deltirama ~ Gnosis personal loot drop rate increased by 50%"
+        "Deltirama ~ Gnosis personal loot drop rate increased by 50%",
+        "Shareable with all characters on the same account"
       ]
     },
     "recipe": [
@@ -27008,7 +27008,7 @@
     "type": "Icon",
     "color": "008000",
     "stats": {
-      "allstat": 45,
+      "allstat": 75,
       "attackspeedpercent": 0.05,
       "critchancepercent": 0.025,
       "dtpercent": -0.025,
@@ -27021,9 +27021,7 @@
       "expgainpercent": 0.5,
       "passive": [
         "Deltirama ~ Alteia personal loot drop rate increased by 50%",
-        "~5% Chance to activate Elemental Fury on attack and skill cast",
-        "Requires 1 second cooldown interval for checking the proc",
-        "Increases MAIN STAT by 2% for 30 seconds"
+        "Shareable with all characters on the same account"
       ]
     },
     "recipe": [
