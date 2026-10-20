@@ -1,6 +1,6 @@
 // Damage sim model: turns loaded data (items, skills, heroes, effects, sim) into the
 // hits and modifiers the engine works with. No DOM; shared by the page and node scripts.
-import { parseHeroHits, parseFxValue } from './parse.js';
+import { parseHeroHits, parseFxValue, heroExecutes } from './parse.js';
 
 export const GEAR_SLOTS = ['weapon', 'helm', 'body', 'wings', 'accessory', 'icon'];
 
@@ -54,6 +54,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
   function curatedMods(cls, gearNames) {
     const out = [];
     for (const m of curated.heroes?.[cls]?.modifiers || []) out.push({ ...m, group: m.group || 'hero', source: { hero: cls, skill: m.skill } });
+    for (const m of heroExecutes(skills, cls)) out.push({ ...m, group: 'hero', source: { hero: cls, skill: m.skill } });
     for (const name of gearNames) {
       for (const m of curated.items?.[name]?.modifiers || []) out.push({ ...m, id: m.id || `${name}:${m.label}`, group: m.group || 'gear', source: { item: name } });
     }

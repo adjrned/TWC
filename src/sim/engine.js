@@ -25,6 +25,13 @@ function modValue(m, stats, allyStat) {
   let v = m.value || 0;
   if (m.perStack) v += m.perStack * (m.stacks ?? 0);
   if (m.atMax && m.maxStacks && m.stacks >= m.maxStacks) v += m.atMax;
+  // Execute: scales with the target's missing HP (m.targetHp, 0–1).
+  if (m.execute) {
+    const ex = m.execute, hp = m.targetHp ?? 1;
+    if (ex.below != null) return hp < ex.below ? ex.max : 0;
+    const frac = Math.max(0, Math.min(1, (1 - hp) / (1 - (ex.fullAt || 0))));
+    return ex.min + (ex.max - ex.min) * frac;
+  }
   const statOf = s => (m.ally ? allyStat : (s === 'main' ? stats.main : stats[s] ?? 0));
   for (const f of m.formula || []) v += (f.base + statOf(f.stat) / f.div) / 100;
   for (const f of m.scale || []) v += f.max != null ? Math.min(statOf(f.stat) * f.x, f.max) : statOf(f.stat) * f.x;
@@ -83,6 +90,8 @@ export function simulate(model, setup) {
   const gear = Object.entries(setup.gear || {}).map(([slot, name]) => ({ slot, item: name && model.itemByName.get(name) })).filter(g => g.item);
   const gearNames = gear.map(g => g.item.name);
   const mods = resolveMods(model.modsFor(cls, gearNames, hit), setup.mods);
+  const targetHp = Math.max(0, Math.min(100, num(setup.targetHp) ?? 100)) / 100;
+  for (const m of mods) if (m.execute) m.targetHp = targetHp;
   const on = mods.filter(m => m.on);
 
   // ── Stats ──

@@ -96,6 +96,10 @@ const STRINGS = {
    
     'sim.hit.continuous': "Continuous",
     'sim.hit.count': "Hits",
+    'sim.targetHp': "Target HP",
+    'sim.execBelow': "{v} below {hp} target HP",
+    'sim.execRange': "{min}–{max} by missing HP (max at {hp} HP)",
+    'sim.targetHpHint': "The target's remaining HP. Execute effects (bonus damage from missing HP) scale with it; 100% = no execute bonus.",
     'sim.col.stacks': "Stacks",
     'sim.col.value': "Value",
     'sim.col.damage': "Damage",
@@ -528,6 +532,7 @@ const STRINGS = {
    
     'sim.conditions': "조건",
     'sim.hit.count': "타격 수",
+    'sim.targetHp': "대상 HP",
     'sim.col.stacks': "중첩",
     'sim.col.value': "수치",
     'sim.col.damage': "데미지",
@@ -931,6 +936,7 @@ const STRINGS = {
    
     'sim.conditions': "条件",
     'sim.hit.count': "命中次数",
+    'sim.targetHp': "目标生命值",
     'sim.col.stacks': "层数",
     'sim.col.value': "数值",
     'sim.col.damage': "伤害",

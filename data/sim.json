@@ -3,7 +3,8 @@
   "notes": [
     "Hand-curated damage sim data. Item base stats come from items.json and skill formulas are parsed from skills.json; this file adds conditions, stacks and procs the text can't express.",
     "Values: % steps use fractions (0.15 = 15%), flat steps use plain numbers. perStack × stacks is added to value; atMax is added at max stacks.",
-    "An item or hero listed here replaces its Effects tab entries in the sim."
+    "An item or hero listed here replaces its Effects tab entries in the sim.",
+    "hpPerStr 5 / baseHp 6740 are fitted to one in-game reading (L105 Water Mage: 21,890 Max HP with 1,850 STR and 5,900 gear HP); unconfirmed."
   ],
   "defaults": {
     "baseMain": { "100": 697, "105": 772, "perLevel": 15 },
@@ -11,8 +12,8 @@
     "adBase": 9,
     "mpPerInt": 5,
     "baseMp": 2115,
-    "hpPerStr": 0,
-    "baseHp": 0,
+    "hpPerStr": 5,
+    "baseHp": 6740,
     "critBase": 2
   },
   "heroes": {
@@ -41,8 +42,7 @@
       "modifiers": [
         { "id": "sn-q-agi", "label": "Storm Shaft charges: AGI +5% each (Q)", "skill": "Storm Shaft", "step": "statPct", "stat": "agi", "perStack": 0.05, "maxStacks": 4 },
         { "id": "sn-q-charges", "label": "Storm Shaft charges consumed (+100% each)", "skill": "Storm Shaft", "step": "conditional", "perStack": 1, "maxStacks": 4, "onlyHits": ["Storm Shaft"] },
-        { "id": "sn-t-range", "label": "Snipe passive: max distance (T)", "skill": "Snipe", "step": "final", "value": 0.3 },
-        { "id": "sn-f-missing", "label": "Target missing health (up to +40%)", "skill": "Demolition", "step": "conditional", "value": 0.4, "default": false, "onlyHits": ["Demolition"] }
+        { "id": "sn-t-range", "label": "Snipe passive: max distance (T)", "skill": "Snipe", "step": "final", "value": 0.3 }
       ]
     }
   },

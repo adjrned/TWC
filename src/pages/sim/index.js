@@ -106,6 +106,11 @@ function gearHtml(s) {
 
 function modValueText(m) {
   if (m.raw) return m.raw;
+  if (m.execute) {
+    const ex = m.execute, pc = v => `${+(v * 100).toFixed(1)}%`;
+    if (ex.below != null) return t('sim.execBelow', { v: pc(ex.max), hp: pc(ex.below) });
+    return t('sim.execRange', { min: pc(ex.min), max: pc(ex.max), hp: pc(ex.fullAt || 0) });
+  }
   if (m.step === 'info') return '';
   const pct = PCT_STEPS.has(m.step);
   const show = v => (pct ? fmtPct(v) : fmt(v));
@@ -154,7 +159,11 @@ function modRow(m) {
 function modsHtml(r, s) {
   const by = Object.fromEntries(GROUPS.map(g => [g, []]));
   for (const m of r.mods) (by[m.group] || by.ally).push({ ...m, state: s.mods[m.id] });
-  return GROUPS.map(g => {
+  // Target HP drives execute effects (bonus damage from the target's missing HP); shown when the hero has one.
+  const targetHp = r.mods.some(m => m.execute)
+    ? `<label class="sim-inline sim-target-hp" title="${esc(t('sim.targetHpHint'))}">${esc(t('sim.targetHp'))} <input type="number" min="0" max="100" step="any" data-target-hp value="${esc(s.targetHp ?? '')}" placeholder="100"> %</label>`
+    : '';
+  return targetHp + GROUPS.map(g => {
     if (!by[g].length) return '';
     const onCount = by[g].filter(m => m.on).length;
     const open = g === 'hero' || g === 'gear' || onCount > 0;
@@ -539,6 +548,7 @@ export async function initSim() {
   });
   modsEl.addEventListener('input', e => {
     const el = e.target;
+    if (el.matches('[data-target-hp]')) { s.targetHp = el.value === '' ? undefined : Number(el.value); return renderResult(); }
     const li = el.closest('[data-mod]');
     if (!li) return;
     const st = modState(li.dataset.mod);

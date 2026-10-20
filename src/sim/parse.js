@@ -66,7 +66,7 @@ export function parseTerms(expr) {
   return out;
 }
 
-const MULTI_WORDS = 'strikes|slashes|arrows|hits|bolts|waves|projectiles|blades|meteors|swords|explosions|shots|missiles|shards|comets|attacks';
+const MULTI_WORDS = 'strikes|slashes|arrows|hits|bolts|waves|projectiles|blades|meteors|swords|explosions|shots|missiles|shards|comets|attacks|spears|lances|daggers|knives|bullets|beams|rockets|fireballs|blasts|stars|souls|spirits|pillars|thorns|feathers|cards|coins|bombs|grenades|punches|kicks|stabs';
 const MULTI_RE = new RegExp(String.raw`\b(\d+)\s+(?:[a-z]+\s+){0,2}(?:${MULTI_WORDS})\b`, 'i');
 
 // How many times a damage line hits, read from the same line:
@@ -141,6 +141,42 @@ export function parseHeroHits(skills, heroClass) {
     if (lines.some(l => /\blast \w+ deals double damage/i.test(l))) {
       const multi = out.slice(start).find(h => h.count > 1);
       if (multi) { multi.count += 1; multi.countNote = 'lastDouble'; }
+    }
+  }
+  return out;
+}
+
+// Execute effects: bonus damage that scales with the target's missing HP.
+// "up to 40% bonus damage based on target's missing HP (max damage reached at 40% HP)",
+// "by 15~35% based on target's missing HP", "100% bonus damage to enemies below 40% HP".
+// Returns { min, max, fullAt, below, final } as fractions, or null. Own-HP effects ("based on missing HP"
+// without target/enemy) aren't executes.
+export function parseExecute(line) {
+  const below = line.match(/(\d+(?:\.\d+)?)%\s+bonus damage to enemies below (\d+(?:\.\d+)?)% HP/i);
+  if (below) return { min: 0, max: Number(below[1]) / 100, below: Number(below[2]) / 100, final: false };
+  if (!/(target's|enemy's|enemies'?) (missing (hp|health)|lost health)/i.test(line)) return null;
+  const by = line.match(/by (\d+(?:\.\d+)?)\s*~\s*(\d+(?:\.\d+)?)%/i);
+  const upTo = line.match(/up to (\d+(?:\.\d+)?)(?:\s*~\s*(\d+(?:\.\d+)?))?%/i);
+  if (!by && !upTo) return null;
+  const min = by ? Number(by[1]) / 100 : 0;
+  const max = Number(by ? by[2] : upTo[2] || upTo[1]) / 100;
+  const full = line.match(/max damage reached at (\d+(?:\.\d+)?)% HP/i);
+  return { min, max, fullAt: full ? Number(full[1]) / 100 : 0, final: /increases damage you deal/i.test(line) };
+}
+
+// Execute modifiers for one hero, read from its skill text.
+export function heroExecutes(skills, heroClass) {
+  const out = [];
+  for (const sk of skills.filter(s => s.heroClass === heroClass)) {
+    for (const field of FIELDS) for (const line of sk[field] || []) {
+      const ex = parseExecute(line);
+      if (!ex) continue;
+      out.push({
+        id: `exec:${sk.name}`, label: line.replace(/^(empowered|str|agi|int):\s*/i, ''), skill: sk.name,
+        step: ex.final ? 'final' : 'conditional', execute: ex,
+        // A skill's own execute applies to that skill; "increases damage you deal" is a buff for everything.
+        onlyHits: ex.final ? undefined : [sk.name],
+      });
     }
   }
   return out;
