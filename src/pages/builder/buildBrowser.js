@@ -57,8 +57,13 @@ export async function openBuildBrowser(onChosen) {
   const cls = state.selectedClass;
   if (!el || !cls) return;
   const creators = await fetchCreatorsForClass(cls);
-  const datas = await Promise.all(creators.map(c => fetchBuild(cls, c)));
 
+  // Open straight away; each card fills in its phase count, date and preview once its file arrives.
+  const cardMeta = data => {
+    const phases = (data?.rows || []).length;
+    return `<span class="bb-meta">${[phases ? t('builder.phases', { n: phases }) : '', fmtBuildDate(data?.publishedAt)].filter(Boolean).join(' · ')}</span>
+          ${previewHtml(data) || '<span class="bb-preview bb-loading"></span>'}`;
+  };
   el.innerHTML = `
     <div class="bb-head">
       <h2>${t('builder.communityBuilds', { cls: esc(getClassName(cls)) })}</h2>
@@ -66,14 +71,11 @@ export async function openBuildBrowser(onChosen) {
     </div>
     ${creators.length ? '' : `<p class="bb-none">${t('builder.noBuilds')}</p>`}
     <div class="bb-cards">
-      ${creators.map((c, i) => {
-        const data = datas[i];
-        const phases = (data?.rows || []).length;
+      ${creators.map(c => {
         const active = state.selectedCreator === c;
         return `<button type="button" class="bb-card${active ? ' active' : ''}" data-creator="${esc(c)}">
           <span class="bb-creator">${esc(c)}${active ? ` <span class="bb-current">${t('builder.current')}</span>` : ''}</span>
-          <span class="bb-meta">${[phases ? t('builder.phases', { n: phases }) : '', fmtBuildDate(data?.publishedAt)].filter(Boolean).join(' · ')}</span>
-          ${previewHtml(data)}
+          <span class="bb-card-body">${cardMeta(null)}</span>
         </button>`;
       }).join('')}
       <button type="button" class="bb-card bb-blank" data-creator="">
@@ -83,6 +85,10 @@ export async function openBuildBrowser(onChosen) {
     </div>`;
   el.hidden = false;
   document.getElementById('buildBrowserBtn')?.setAttribute('aria-expanded', 'true');
+  creators.forEach(c => fetchBuild(cls, c).then(data => {
+    const body = [...el.querySelectorAll('.bb-card')].find(b => b.dataset.creator === c)?.querySelector('.bb-card-body');
+    if (body) body.innerHTML = cardMeta(data);
+  }));
 
   el.onclick = async e => {
     if (e.target.closest('[data-bb-close]')) return closeBuildBrowser();

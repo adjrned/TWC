@@ -7,6 +7,8 @@
   - Dense, scannable layouts over decorative cards. Motion only on interaction.
 */
 :root {
+  /* Game icons have a bevel baked into the art; zooming in crops it so only our border shows. */
+  --icon-zoom: 1.2;
   /* ── Surfaces ── */
   --bg:      #0c0d10;
   --bg2:     #121419;
@@ -99,4 +101,10 @@ a { color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Icons that are a bare <img> (no clipping frame): zoom, then clip back to the original box. */
+.bp-class-icon, .custom-select-option .opt-icon, .trk-profile img, .trk-char-icon, .trk-src img, .trk-boss img {
+  transform: scale(var(--icon-zoom));
+  clip-path: inset(calc((1 - 1 / var(--icon-zoom)) * 50%) round 3px);
 }

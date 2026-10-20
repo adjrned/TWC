@@ -3,8 +3,10 @@ import { COLS, buildFileName, buildFileNameForCreator } from '../../constants.js
 import { importExportBuildData } from '../../data/builds.js';
 import { save } from '../../data/storage.js';
 import { showToast } from '../../ui/toast.js';
+import { t } from '../../i18n.js';
 import { syncClassUI } from './classPicker.js';
 import { render } from './render.js';
+import { buildShareUrl } from './share.js';
 
 export function buildExportJson() {
   return {
@@ -33,25 +35,33 @@ export function exportData() {
     : 'twrpg-builds.json';
   a.download = dlName;
   a.click();
-  showToast('Exported! Commit to builds/ folder to publish.');
+  showToast(t('builder.exported'));
 }
 
-export async function copyToClipboard() {
-  if (!state.selectedClass) { showToast('Select a hero class first!'); return; }
-  const json = JSON.stringify(buildExportJson(), null, 2);
+async function copyText(text) {
   try {
-    await navigator.clipboard.writeText(json);
-    showToast('JSON copied to clipboard!');
-  } catch(e) {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
     const ta = document.createElement('textarea');
-    ta.value = json;
+    ta.value = text;
     ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     ta.remove();
-    showToast('JSON copied to clipboard!');
   }
+}
+
+export async function copyToClipboard() {
+  if (!state.selectedClass) { showToast(t('builder.selectFirst')); return; }
+  await copyText(JSON.stringify(buildExportJson(), null, 2));
+  showToast(t('builder.jsonCopied'));
+}
+
+export async function copyShareLink() {
+  if (!state.selectedClass) { showToast(t('builder.selectFirst')); return; }
+  await copyText(await buildShareUrl());
+  showToast(t('builder.linkCopied'));
 }
 
 export function openImport() {
@@ -65,7 +75,7 @@ export function closeImport() {
 export function doImport() {
   try {
     const d = JSON.parse(document.getElementById('importText').value.trim());
-    if (!importExportBuildData(d)) { showToast('Unrecognised format.'); return; }
-    save(); syncClassUI(); render(); closeImport(); showToast('Imported!');
-  } catch(e) { showToast('Invalid JSON — check your data.'); }
+    if (!importExportBuildData(d)) { showToast(t('builder.badFormat')); return; }
+    save(); syncClassUI(); render(); closeImport(); showToast(t('builder.imported'));
+  } catch(e) { showToast(t('builder.badJson')); }
 }

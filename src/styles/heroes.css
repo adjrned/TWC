@@ -57,7 +57,7 @@
   border-radius: 4px;
 }
 .hl-portrait { width: 48px; height: 48px; }
-.hl-portrait img, .hd-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hl-portrait img, .hd-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(var(--icon-zoom)); }
 .hl-text { display: flex; flex-direction: column; min-width: 0; }
 .hl-name { font-size: 14px; font-weight: 600; }
 .hl-class { font-size: 12px; color: var(--muted2); }
@@ -72,7 +72,22 @@
 /* ── Detail: hero card ── */
 .hd-layout { grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); }
 .hd-head { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; }
-.hd-portrait { width: 72px; height: 72px; }
+.hd-portrait {
+  width: 72px; height: 72px;
+  /* Soft glow in the hero's color, as on the Build Planner banner. */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hero, var(--accent)) 50%, transparent),
+              0 0 22px -2px color-mix(in srgb, var(--hero, var(--accent)) 65%, transparent);
+}
+/* Same lighting as the Build Planner banner; fixed sizes because this card is tall. */
+.idb-card.hd-card {
+  background:
+    radial-gradient(460px 300px at 0 0, color-mix(in srgb, var(--hero, var(--accent)) 22%, transparent), transparent 70%),
+    radial-gradient(320px 240px at 100% 100%, color-mix(in srgb, var(--hero, var(--accent)) 7%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255,255,255,0.025), transparent 160px),
+    #08090b;
+  border-color: color-mix(in srgb, var(--hero, #353943) 25%, #353943);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 0 0 1px rgba(255,255,255,0.025);
+}
 .hd-card h1 { color: var(--text); font-size: 20px; }
 .hd-class { color: var(--text); }
 .hd-stat { color: var(--stat); font-weight: 600; }
@@ -165,7 +180,7 @@
   border: 1px solid var(--skill, var(--border2));
   border-radius: 3px;
 }
-.hs-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hs-icon img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(var(--icon-zoom)); }
 .hs-title { min-width: 0; }
 .hs-title h3 { font-size: 14px; font-weight: 600; color: var(--text); }
 .hs-meta {

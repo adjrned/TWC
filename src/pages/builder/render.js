@@ -3,10 +3,13 @@ import { COLS } from '../../constants.js';
 import { esc } from '../../ui/escape.js';
 import { getItem, rankInfo } from '../../data/items.js';
 import { getSlotsFor, iconSrc } from './slots.js';
-import { deleteRow, renameRow, onDragStart, onDragOver, onDrop, onDragEnd } from './rows.js';
+import { deleteRow, renameRow, trackPhase, moveRow, onDragStart, onDragOver, onDrop, onDragEnd } from './rows.js';
 import { openPicker } from './picker.js';
 import { openSlotMenu } from './slotMenu.js';
 import { getRowName, t } from '../../i18n.js';
+import { slotIcon } from '../../ui/slotIcons.js';
+
+const TRACK_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>';
 
 function tileHtml(item, cls) {
   const ri = rankInfo(getItem(item.name));
@@ -24,13 +27,19 @@ export function render() {
   document.getElementById('bpEmpty').hidden = hasClass;
   if (!hasClass) { tbody.innerHTML = ''; return; }
 
-  tbody.innerHTML = state.rows.map(row => {
+  const last = state.rows.length - 1;
+  tbody.innerHTML = state.rows.map((row, i) => {
     const slotMap = getSlotsFor(row.id);
     return `<tr data-id="${row.id}" draggable="true">
       <td class="row-cell">
         <div class="row-inner">
           <span class="drag-handle" title="${esc(t('builder.dragHint'))}">⠿</span>
           <input class="row-name-input" value="${esc(getRowName(row.name))}" title="${esc(t('builder.renameHint'))}" aria-label="${esc(t('builder.renameHint'))}">
+          <span class="move-btns">
+            <button type="button" class="move-btn" data-dir="-1" title="${esc(t('builder.moveUp'))}" aria-label="${esc(t('builder.moveUp'))}" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button type="button" class="move-btn" data-dir="1" title="${esc(t('builder.moveDown'))}" aria-label="${esc(t('builder.moveDown'))}" ${i === last ? 'disabled' : ''}>▼</button>
+          </span>
+          <button type="button" class="track-btn" title="${esc(t('builder.trackPhase'))}" aria-label="${esc(t('builder.trackPhase'))}">${TRACK_ICON}</button>
           <button type="button" class="del-btn" title="${esc(t('builder.removeRow'))}" aria-label="${esc(t('builder.removeRow'))}">✕</button>
         </div>
       </td>
@@ -39,7 +48,7 @@ export function render() {
         const cls = ['slot-drop', primary ? 'filled' : '', alt ? 'has-alt' : ''].filter(Boolean).join(' ');
         return `<td class="slot-cell">
           <button type="button" class="${cls}" data-rowid="${row.id}" data-col="${col}" aria-label="${esc(t('col.' + col))}${primary ? ': ' + esc(primary.name) : ''}">
-            ${primary ? tileHtml(primary, 'tile-primary') + (alt ? tileHtml(alt, 'tile-alt') : '') : '<span class="slot-plus">+</span>'}
+            ${primary ? tileHtml(primary, 'tile-primary') + (alt ? tileHtml(alt, 'tile-alt') : '') : `<span class="slot-empty">${slotIcon(col, 20)}</span>`}
           </button>
         </td>`;
       }).join('')}
@@ -54,6 +63,10 @@ export function bindGridEvents(root) {
   const rowIdOf = el => +el.closest('tr').dataset.id;
 
   const onClick = e => {
+    const move = e.target.closest('.move-btn');
+    if (move) return moveRow(rowIdOf(move), +move.dataset.dir);
+    const track = e.target.closest('.track-btn');
+    if (track) return trackPhase(rowIdOf(track));
     const del = e.target.closest('.del-btn');
     if (del) return deleteRow(rowIdOf(del));
     const drop = e.target.closest('.slot-drop');

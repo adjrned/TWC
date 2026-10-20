@@ -105,7 +105,7 @@ a.pn-sub-head:hover span:last-child { text-decoration: underline; }
   border: 1px solid var(--tier, var(--hero, var(--border2)));
   border-radius: 3px;
 }
-.pn-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pn-icon img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(var(--icon-zoom)); }
 .pn-icon-none { background: var(--bg3); border-style: dashed; }
 
 @media (max-width: 600px) {

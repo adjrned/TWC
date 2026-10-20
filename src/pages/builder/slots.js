@@ -1,6 +1,7 @@
 import { state } from '../../state.js';
 import { iconSrc as libraryIconSrc } from '../../data/items.js';
 import { showToast } from '../../ui/toast.js';
+import { t } from '../../i18n.js';
 import { save } from '../../data/storage.js';
 import { render } from './render.js';
 
@@ -19,7 +20,7 @@ export function iconSrc(item) {
 }
 
 export function setSlotItem(rowId, col, idx, item) {
-  if (!state.selectedClass) { showToast('Select a hero class first!'); return; }
+  if (!state.selectedClass) { showToast(t('builder.selectFirst')); return; }
   if (!state.builds[state.selectedClass]) state.builds[state.selectedClass] = {};
   if (!state.builds[state.selectedClass][rowId]) state.builds[state.selectedClass][rowId] = {};
   const arr = [...(state.builds[state.selectedClass][rowId][col] || [])];

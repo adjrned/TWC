@@ -143,3 +143,18 @@ export function toggleTrackedInActiveProfile(name) {
   saveProfileState(profile.id, state);
   return { profile, tracked: i < 0 };
 }
+
+// Adds several items at once (Build Planner "Track this phase"). Prefers the profile for that hero,
+// then the active one. Returns null when there is no profile yet.
+export function trackItemsForClass(heroClass, names) {
+  const data = loadProfiles();
+  const forHero = data.profiles.filter(p => p.heroClass === heroClass);
+  const profile = forHero.find(p => p.id === data.activeProfileId) || forHero[0]
+    || data.profiles.find(p => p.id === data.activeProfileId);
+  if (!profile) return null;
+  const state = loadProfileState(profile.id);
+  const added = [...new Set(names)].filter(n => !state.trackedItems.includes(n));
+  state.trackedItems.push(...added);
+  saveProfileState(profile.id, state);
+  return { profile, added: added.length };
+}

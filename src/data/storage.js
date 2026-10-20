@@ -9,6 +9,8 @@ export function save() {
       builds: state.builds,
       selectedClass: state.selectedClass,
       selectedCreator: state.selectedCreator,
+      creatorName: state.creatorName,
+      publishedAt: state.publishedAt,
     }));
   } catch(e) {}
 }
@@ -34,6 +36,8 @@ export function load() {
       }
       state.selectedClass = d.selectedClass || null;
       state.selectedCreator = d.selectedCreator || null;
+      state.creatorName = d.creatorName || '';
+      state.publishedAt = d.publishedAt || '';
     }
   } catch(e) {}
 }

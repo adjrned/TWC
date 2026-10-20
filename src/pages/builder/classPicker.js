@@ -4,8 +4,12 @@ import { fetchBuildCountsForAllClasses, fetchCreatorsForClass, hasLocalData, loa
 import { save } from '../../data/storage.js';
 import { showToast } from '../../ui/toast.js';
 import { render } from './render.js';
-import { openBuildBrowser, closeBuildBrowser, isBuildBrowserOpen, fmtBuildDate } from './buildBrowser.js';
+import { withUndo } from './rows.js';
+import { openBuildBrowser, closeBuildBrowser, isBuildBrowserOpen, fmtBuildDate, fetchBuild } from './buildBrowser.js';
 import { t, getClassName } from '../../i18n.js';
+import { loadSkills, hotkeyPath } from '../../data/skills.js';
+import { iconSrc } from '../../data/items.js';
+import { esc } from '../../ui/escape.js';
 
 export function updateBuildHash() {
   const params = new URLSearchParams();
@@ -170,13 +174,16 @@ export async function resetToTemplate() {
 
 export function clearAllRows() {
   if (!state.selectedClass) return;
-  if (!confirm(t('builder.clearConfirm'))) return;
-  if (state.builds[state.selectedClass]) {
-    for (const rowId of Object.keys(state.builds[state.selectedClass])) {
-      state.builds[state.selectedClass][rowId] = {};
-    }
-  }
-  save(); render(); showToast(t('builder.cleared'));
+  withUndo(t('builder.cleared'), () => {
+    for (const rowId of Object.keys(state.builds[state.selectedClass] || {})) state.builds[state.selectedClass][rowId] = {};
+  });
+}
+
+// Hero roster (name, main stat, tags) for the banner, fetched once.
+let heroesPromise = null;
+function loadHeroes() {
+  if (!heroesPromise) heroesPromise = fetch('data/heroes.json').then(r => (r.ok ? r.json() : [])).catch(() => []);
+  return heroesPromise;
 }
 
 export async function syncClassUI() {
@@ -184,15 +191,13 @@ export async function syncClassUI() {
   const label = document.getElementById('classPickerLabel');
   const icon = document.getElementById('classPickerIcon');
   const buildBtn = document.getElementById('buildBrowserBtn');
-  const colName = document.getElementById('heroColName');
-  const colSubtitle = document.getElementById('heroColSubtitle');
-  const iconWrap = document.getElementById('heroColIconWrap');
-  const imgEl = document.getElementById('heroColIconImg');
 
   document.querySelectorAll('#classPickerDropdown .custom-select-option').forEach(el =>
     el.classList.toggle('selected', el.dataset.value === cls));
   document.getElementById('resetTemplateBtn').hidden = !(cls && state.selectedCreator);
   document.getElementById('clearAllBtn').hidden = !cls;
+  document.getElementById('bpHero').hidden = !cls;
+  document.getElementById('bpShareBtn').hidden = !cls;
 
   if (!cls) {
     label.textContent = t('builder.selectClass');
@@ -209,20 +214,53 @@ export async function syncClassUI() {
   icon.src = classIconPath(cls);
   icon.hidden = false;
 
-  const creators = await fetchCreatorsForClass(cls);
+  const [creators, heroes, skills] = await Promise.all([fetchCreatorsForClass(cls), loadHeroes(), loadSkills()]);
+  creators.forEach(c => fetchBuild(cls, c)); // warm the cache so the build browser opens with previews
   buildBtn.hidden = false;
   document.getElementById('buildBrowserValue').textContent =
     state.selectedCreator || (hasLocalData(cls) ? t('builder.custom') : t('builder.chooseBuild'));
   buildBtn.title = t(creators.length === 1 ? 'builder.oneBuild' : 'builder.nBuilds', { n: creators.length });
+  syncHeroBanner(cls, (Array.isArray(heroes) ? heroes : Object.values(heroes)).find(h => h.heroClass === cls),
+    skills.filter(sk => sk.heroClass === cls).sort((a, b) => (a.order ?? 99) - (b.order ?? 99)));
+}
 
-  colName.textContent = getClassName(cls);
-  colSubtitle.textContent = [
-    state.creatorName ? t('builder.by', { name: state.creatorName }) : '',
-    state.creatorName ? fmtBuildDate(state.publishedAt) : '',
-  ].filter(Boolean).join(' · ');
-  iconWrap.classList.add('visible');
-  imgEl.style.display = 'none';
-  const test = new Image();
-  test.onload = () => { imgEl.src = test.src; imgEl.style.display = 'block'; };
-  test.src = classIconPath(cls);
+// Banner above the grid: who the hero is, and whose build this is.
+function syncHeroBanner(cls, hero, skills = []) {
+  const heroHref = hero ? '#/heroes/' + encodeURIComponent(hero.id) : '#/heroes';
+  const img = document.getElementById('bpHeroImg');
+  img.onerror = () => { img.hidden = true; };
+  img.hidden = false;
+  img.src = classIconPath(cls);
+  document.getElementById('bpHeroPortrait').href = heroHref;
+  document.getElementById('bpHero').style.setProperty('--hero', hero ? '#' + hero.color : '');
+
+  // Character name (links to the hero page) · main stat · range · difficulty, then tags and overview.
+  const diff = hero?.difficulty
+    ? `<span class="hd-diff" title="${esc(t('heroes.difficulty'))} ${hero.difficulty}/3">${esc(t('heroes.difficulty'))} ${[1, 2, 3].map(n => `<i class="${n <= hero.difficulty ? 'on' : ''}"></i>`).join('')}</span>`
+    : '';
+  const facts = hero ? [
+    `<a class="bp-hero-name" href="${heroHref}">${esc(hero.name)}</a>`,
+    hero.mainstat ? esc(t('stat.' + hero.mainstat)) : '',
+    hero.range ? esc(t(hero.range === 'Ranged' ? 'heroes.ranged' : 'heroes.melee')) : '',
+    diff,
+  ].filter(Boolean) : [esc(getClassName(cls))];
+  document.getElementById('bpHeroSub').innerHTML = facts.join('<span class="bp-sep">·</span>')
+    + (hero?.tags?.length ? `<span class="bp-hero-tags">${hero.tags.map(tag => `<span class="hd-tag">${esc(tag)}</span>`).join('')}</span>` : '');
+  document.getElementById('bpHeroOverview').textContent = hero?.overview || '';
+
+  // Skill icons: hover shows the skill tooltip (desktop); tapping opens the hero page.
+  document.getElementById('bpHeroSkills').innerHTML = skills.map(sk => {
+    const keys = hotkeyPath(sk.hotkey).map(k => (k === 'Passive' ? t('builder.passiveKey') : k)).join('→');
+    return `<a class="bp-skill" href="${heroHref}" data-skill="${esc(cls + '|' + sk.name)}" data-color="${esc(hero?.color || '')}" aria-label="${esc(sk.name)}">
+      <span class="bp-skill-icon"><img src="${esc(iconSrc(sk.icon || sk.name))}" alt="" loading="lazy" onerror="this.remove()"></span>
+      <span class="bp-skill-key">${esc(keys)}</span>
+    </a>`;
+  }).join('');
+
+  // Community builds show their publish date beside the Build picker.
+  const author = state.creatorName || state.selectedCreator;
+  const date = author ? fmtBuildDate(state.publishedAt) : '';
+  const dateEl = document.getElementById('bpBuildDate');
+  dateEl.textContent = date ? t('builder.updated', { date }) : '';
+  dateEl.title = author ? t('builder.by', { name: author }) : '';
 }
