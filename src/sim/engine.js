@@ -7,6 +7,7 @@ const ELEMENT_KEY = { flame: 'affinityflamepercent', water: 'affinitywaterpercen
 export const ELEMENTS = Object.keys(ELEMENT_KEY);
 const STATS3 = ['str', 'agi', 'int'];
 
+const fmtNum = n => Math.round(n).toLocaleString('en-US');
 const num = v => (v === '' || v == null || Number.isNaN(Number(v)) ? null : Number(v));
 
 // Resolves which modifiers are on, their stack counts and values.
@@ -63,7 +64,8 @@ export function simulate(model, setup) {
   const cls = setup.hero;
   const hero = model.heroByClass.get(cls);
   if (!hero) return null;
-  const main = String(hero.mainstat || 'STR').toLowerCase();
+  // The main stat can be switched on the page (Knight / Dark Knight / Paladin INT builds).
+  const main = ['str', 'agi', 'int'].includes(setup.main) ? setup.main : String(hero.mainstat || 'STR').toLowerCase();
   const over = setup.over || {};
   const man = setup.manual || {};
   const cfg = { ...model.heroConfig(cls) };
@@ -95,6 +97,18 @@ export function simulate(model, setup) {
       autoCount: h0.count ?? 1,
     };
   });
+  // Riders (Fire Mage Burn): extra damage every hero hit leaves behind, a share of that hit's damage.
+  for (const r of model.riders(cls)) {
+    for (const parent of parts.filter(p => !p.item && !p.riderOf)) {
+      const key = `${parent.key}~${r.id}`;
+      const ps = partState[key] || {};
+      parts.push({
+        key, skill, rider: r, riderOf: parent.key, label: r.label, line: r.line, terms: [], icon: parent.icon,
+        on: parent.on && (ps.on ?? true), type: ps.type || r.type || parent.type, element: '', crit: false,
+        continuous: !!r.continuous, isSkill: false, count: Math.max(0, num(ps.count) ?? parent.count), autoCount: parent.count,
+      });
+    }
+  }
   const hit = parts.find(p => p.key === setup.focus) || parts.find(p => p.on) || parts[0];
 
   // Summons that store damage (Merchant's Cursed Doll): "damage taken" is what you put into it, counted
@@ -210,7 +224,16 @@ export function simulate(model, setup) {
       const x = +(t.x + (t.xPerLevel || 0) * level).toFixed(4);
       return { label: `${t.stat} × ${x}`, value: (stats[t.stat] ?? 0) * x, stat: t.stat, x };
     };
-    const termSrc = hit.terms.map(t => (t.flat != null
+    // A rider's base is its share of the parent hit (before target effects), with a stat floor.
+    const R = hit.rider;
+    const parent = R && parts.find(p => p.key === hit.riderOf);
+    const termSrc = R ? [(() => {
+      const share = R.of * (parent?.beforeTarget ?? 0);
+      const floor = sum((R.min || []).map(termStat));
+      return floor > share
+        ? { label: `${R.label}: ${(R.min || []).map(t => `${t.stat} × ${t.x}`).join(' + ')} (minimum)`, value: floor }
+        : { label: `${+(R.of * 100).toFixed(2)}% × ${fmtNum(parent?.beforeTarget ?? 0)}`, value: share };
+    })()] : hit.terms.map(t => (t.flat != null
       ? { label: 'Flat', value: t.flat }
       : t.stored
         ? { label: t.label || 'Stored damage', value: storedDamage(t) * (t.own ?? 1) * t.x, stored: true }
@@ -219,7 +242,9 @@ export function simulate(model, setup) {
     steps.push({ id: 'base', op: '=', factor: dmg, sources: termSrc, value: dmg });
 
     let affFactor = 1;
-    if (hit.element) {
+    // Riders copy an already-multiplied hit: only continuous damage and the target's steps apply.
+    if (R) for (const id of ['affinity', 'conditional', 'crit', 'bonus']) skip(id, 'rider');
+    else if (hit.element) {
       const list = affList(hit.element, live);
       affFactor = 1 + sum(list);
       push('affinity', '×', affFactor, list);
@@ -242,9 +267,9 @@ export function simulate(model, setup) {
       label: m.chain ? chainLabel(m, hit.count) : m.label,
       value: m.chain && m.override == null ? chainAvg(m, hit.count) : modValue(m, stats, allyStat), id: m.id,
     })), ...manualPct('conditional')];
-    if (cond.length) push('conditional', '×', prod(cond), cond); else skip('conditional', 'none');
+    if (R) { /* skipped above */ } else if (cond.length) push('conditional', '×', prod(cond), cond); else skip('conditional', 'none');
 
-    if (hit.crit) {
+    if (R) { /* skipped above */ } else if (hit.crit) {
       const list = [{ label: 'Base', value: cfg.critBase }, ...gearStat('critmultiplier'), ...byStep('critMult'),
         ...(num(man.critMult) ? [{ label: 'Manual', value: num(man.critMult) }] : [])];
       push('crit', '×', sum(list), list);
@@ -256,7 +281,7 @@ export function simulate(model, setup) {
       const v = modValue(m, stats, allyStat);
       return m.affinity && affFactor !== 1 ? { label: `${m.label} × affinity ${+affFactor.toFixed(4)}`, value: v * affFactor } : { label: m.label, value: v };
     }), ...(num(man.bonus) ? [{ label: 'Manual', value: num(man.bonus) }] : [])];
-    if (bonus.length) push('bonus', '+', sum(bonus), bonus); else skip('bonus', 'none');
+    if (R) { /* skipped above */ } else if (bonus.length) push('bonus', '+', sum(bonus), bonus); else skip('bonus', 'none');
 
     if (hit.continuous) { const l = [...gearStat('periodicdamagepercent'), ...byStep('continuous')]; push('continuous', '×', 1 + sum(l), l); }
     else skip('continuous', 'notContinuous');
@@ -268,10 +293,10 @@ export function simulate(model, setup) {
       push('skillDamage', '×', 1 + sum(sd), sd);
       const amp = [...byStep('amplify'), ...manualPct('amplify')];
       if (amp.length) push('amplify', '×', prod(amp), amp); else skip('amplify', 'none');
-    } else { skip('skillDamage', 'notSkill'); skip('amplify', 'notSkill'); }
+    } else { skip('skillDamage', R ? 'rider' : 'notSkill'); skip('amplify', R ? 'rider' : 'notSkill'); }
 
     const fin = [...gearStat('damagedealtpercent'), ...byStep('final'), ...manualPct('final')];
-    if (fin.length) push('final', '×', prod(fin), fin); else skip('final', 'none');
+    if (R) skip('final', 'rider'); else if (fin.length) push('final', '×', prod(fin), fin); else skip('final', 'none');
 
     const beforeTarget = dmg;
     const taken = [...byStep('targetTaken'), ...manualPct('targetTaken')];
@@ -290,7 +315,8 @@ export function simulate(model, setup) {
   }
 
   // Multi-hit: every hit of a part is calculated the same way, then multiplied by its hit count.
-  for (const p of parts) {
+  // Parents first: riders read their parent's damage.
+  for (const p of [...parts.filter(x => !x.rider), ...parts.filter(x => x.rider)]) {
     Object.assign(p, hitSteps(p));
     p.subtotal = p.perHit * p.count;
     p.subBefore = p.beforeTarget * p.count;

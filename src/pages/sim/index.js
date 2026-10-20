@@ -71,7 +71,7 @@ function heroPickerHtml(m, sel) {
     </div>`;
 }
 
-const termsText = h => h.terms.map(x => (x.flat != null ? fmt(x.flat) : x.stored ? `${t('sim.storedShort')} × ${+((x.own ?? 1) * x.x * 100).toFixed(2)}%` : `${STAT_LABEL[x.stat] || x.stat} × ${x.x}`)).join(' + ');
+const termsText = h => (h.rider ? h.label : h.terms.map(x => (x.flat != null ? fmt(x.flat) : x.stored ? `${t('sim.storedShort')} × ${+((x.own ?? 1) * x.x * 100).toFixed(2)}%` : `${STAT_LABEL[x.stat] || x.stat} × ${x.x}`)).join(' + '));
 const keyText = hotkey => (String(hotkey || '').match(/Passive|[A-Z]/g) || []).map(k => (k === 'Passive' ? 'P' : k)).join('→');
 
 // Skill bar: one icon button per skill with damage, in skill order (hover shows the skill tooltip).
@@ -344,6 +344,9 @@ export async function initSim() {
       <div class="sim-row">
         ${heroPickerHtml(m, s.hero)}
         <label class="idb-select sim-level"><span>${esc(t('sim.level'))}</span><input type="number" id="simLevel" min="1" max="109" value="${esc(s.level)}"></label>
+        <label class="idb-select sim-main"><span>${esc(t('sim.mainStat'))}</span><select id="simMain">
+          ${['str', 'agi', 'int'].map(k => `<option value="${k}" ${(s.main || String(hero.mainstat || 'STR').toLowerCase()) === k ? 'selected' : ''}>${k.toUpperCase()}${k === String(hero.mainstat || '').toLowerCase() ? ` (${esc(t('sim.default'))})` : ''}</option>`).join('')}
+        </select></label>
         <label class="idb-select sim-build"><span>${esc(t('sim.loadBuild'))}</span><select id="simBuild">
           <option value="">${esc(builds.length ? t('sim.pickBuild') : t('sim.noBuilds'))}</option>
           ${builds.map((b, bi) => `<optgroup label="${esc(b.label)}">${b.rows.map((row, ri) => `<option value="${bi}:${ri}">${esc(b.label)} · ${esc(row.name)}</option>`).join('')}</optgroup>`).join('')}
@@ -428,6 +431,11 @@ export async function initSim() {
   setupEl.addEventListener('change', e => {
     const el = e.target;
     if (el.id === 'simLevel') { s.level = Number(el.value) || 100; return renderResult(); }
+    if (el.id === 'simMain') {
+      const def = String(m.heroByClass.get(s.hero)?.mainstat || '').toLowerCase();
+      s.main = el.value === def ? undefined : el.value;
+      return renderAll();
+    }
     if (el.id === 'simBuild' && el.value) {
       const [bi, ri] = el.value.split(':').map(Number);
       const row = builds[bi]?.rows[ri];

@@ -12,6 +12,7 @@
 .sim-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .sim-row .idb-select { flex: 1 1 180px; }
 .sim-level { flex: 0 0 120px !important; }
+.sim-main { flex: 0 0 170px !important; }
 .sim-level input, .sim-row .idb-select select, .sim-hit select {
   height: 100%; flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: var(--text); font: inherit; padding: 0 8px;
 }

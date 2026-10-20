@@ -175,7 +175,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     // Every hero passive is listed: ones without any sim effect (or damage part) show as info rows,
     // so it's clear what isn't modelled yet.
     const covered = new Set([...every.map(m => m.source?.hero === cls && m.source.skill).filter(Boolean),
-      ...hits(cls).filter(h => h.field === 'passive').map(h => h.skill)]);
+      ...hits(cls).filter(h => h.field === 'passive').map(h => h.skill), ...(curated.heroes?.[cls]?.riders || []).map(r => r.skill)]);
     for (const sk of skills.filter(s => s.heroClass === cls && s.passive?.length > 1 && !covered.has(s.name))) {
       all.push({
         id: `passive:${sk.name}`, label: `${sk.name}: ${sk.passive.slice(1).join(' · ')}`, step: 'info', group: 'hero',
@@ -195,6 +195,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
 
   return {
     items, itemByName, heroByClass, curated, heroConfig, baseMainAt, hits, modsFor, skillAvailable,
+    riders: cls => curated.heroes?.[cls]?.riders || [],
     heroList: () => heroes.filter(h => h.heroClass && h.mainstat),
     calibration: curated.calibration || [],
   };

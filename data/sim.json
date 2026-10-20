@@ -98,6 +98,13 @@
           "chain": { "per": 0.75, "maxStacks": 4 }, "onlyHits": ["Throw Bomb"], "onlyParts": ["Throw Bomb#0"] }
       ]
     },
+    "Fire Mage": {
+      "riders": [
+        { "id": "burn", "skill": "Flame Mastery", "label": "Burn (Flame Mastery): 40% of the hit over 2 s",
+          "line": "Landing attacks or skills inflict Burn, dealing 40% additional damage (minimum INT X 2.5) over 2 seconds",
+          "of": 0.4, "min": [{ "stat": "int", "x": 2.5 }], "continuous": true }
+      ]
+    },
     "Reaper": {
       "modifiers": [
         { "id": "rp-e-whirl", "label": "Death's Dash active: Whirl of Death +200%", "skill": "Death's Dash", "step": "conditional", "value": 2, "default": false, "onlyHits": ["Whirl of Death"] },
