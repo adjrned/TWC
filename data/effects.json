@@ -14,9 +14,15 @@
       },
       {
         "name": "Elemental affinity",
-        "text": "Applies to values shown in an element's color in the description, e.g. INT × 2 magic damage × fire affinity.",
-        "stacking": "Additive",
-        "example": "+10% and +15% = +25%"
+        "text": "Any value shown in an element's color in the skill description is multiplied by that element's affinity. The affinity total itself is additive: all sources of the same element add together.",
+        "sample": {
+          "element": "flame",
+          "value": "INT × 2",
+          "after": " magic damage",
+          "result": "(INT × 2) × fire affinity"
+        },
+        "stacking": "Multiplicative",
+        "example": "+10% and +15% fire affinity = +25% fire affinity"
       },
       {
         "name": "Conditional damage increase",
@@ -1910,6 +1916,30 @@
                   "value": "5% (chance on cast)"
                 },
                 {
+                  "item": "Immortal Icon",
+                  "value": "3%"
+                },
+                {
+                  "item": "Legend Icon",
+                  "value": "2.5%"
+                },
+                {
+                  "item": "Agareth Icon",
+                  "value": "2%"
+                },
+                {
+                  "item": "Grandmaster Icon",
+                  "value": "2%"
+                },
+                {
+                  "item": "Shadow Dragon Icon",
+                  "value": "1%"
+                },
+                {
+                  "item": "Bone Dragon Icon",
+                  "value": "0.5%"
+                },
+                {
                   "hero": "Merchant",
                   "key": "F",
                   "skill": "Scroll of God's Blessing",
@@ -2445,11 +2475,6 @@
                 },
                 {
                   "item": "Nereid Icon",
-                  "via": "Passive",
-                  "value": "2%"
-                },
-                {
-                  "item": "Legend Icon",
                   "via": "Passive",
                   "value": "2%"
                 },

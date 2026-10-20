@@ -133,6 +133,7 @@ function formulaHtml() {
         ${st.cat ? `<a class="fx-step-link" href="#/effects?cat=${encodeURIComponent(st.cat)}">${t('fx.seeEffects')}</a>` : ''}
       </div>
       <p>${esc(st.text)}${st.example ? ` <span class="fx-step-ex">${esc(st.example)}</span>` : ''}</p>
+      ${st.sample ? `<p class="fx-step-sample"><span class="fx-aff affinity-${esc(st.sample.element)}">${esc(st.sample.value)}</span>${esc(st.sample.after || '')} <span class="fx-step-arrow">→</span> ${esc(st.sample.result)}</p>` : ''}
       ${st.examples?.length ? `<ul class="fx-step-list">${st.examples.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
     </div>
   </li>`;
