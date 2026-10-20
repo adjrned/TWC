@@ -81,6 +81,13 @@ export function builderHTML() {
     <div class="bp-foot">
       <button class="btn" onclick="addRow()">${t('builder.addRow')}</button>
       <span class="bp-hint">${t('builder.hint')}</span>
+      <div class="bp-altview" role="group" aria-label="${t('builder.altView')}">
+        <span>${t('builder.altView')}</span>
+        <div class="idb-seg">
+          <button type="button" data-altview="side">${t('builder.altSide')}</button>
+          <button type="button" data-altview="corner">${t('builder.altCorner')}</button>
+        </div>
+      </div>
     </div>
   </div>
 `;

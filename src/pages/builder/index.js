@@ -16,6 +16,7 @@ import { builderHTML } from './template.js';
 import { decodeShareCode } from './share.js';
 import { showToast } from '../../ui/toast.js';
 import { bindItemHover } from '../../ui/itemUi.js';
+import { blaForBuild } from '../../ui/easterEgg.js';
 
 // "More" menu in the toolbar: import/export and the rarely used reset/clear actions.
 function bindMoreMenu() {
@@ -43,6 +44,23 @@ function bindMoreMenu() {
     document.removeEventListener('pointerdown', onDocDown);
     document.removeEventListener('keydown', onKey);
   };
+}
+
+// Alternate items side by side with the primary, or as a small badge on its corner (phones always use the badge).
+const ALT_VIEW_KEY = 'bpAltView';
+function bindAltView() {
+  const grid = document.getElementById('bpGrid');
+  const apply = view => {
+    grid.classList.toggle('alt-corner', view === 'corner');
+    grid.querySelectorAll('[data-altview]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.altview === view)));
+  };
+  apply(localStorage.getItem(ALT_VIEW_KEY) === 'corner' ? 'corner' : 'side');
+  grid.querySelector('.bp-altview').addEventListener('click', e => {
+    const btn = e.target.closest('[data-altview]');
+    if (!btn) return;
+    localStorage.setItem(ALT_VIEW_KEY, btn.dataset.altview);
+    apply(btn.dataset.altview);
+  });
 }
 
 export async function initBuilder(ctx) {
@@ -83,6 +101,9 @@ export async function initBuilder(ctx) {
     await loadBuildFile(state.selectedClass, state.selectedCreator);
   }
 
+  // Opening a build by link (e.g. from a hero page) counts as opening it.
+  if (query.creator && state.selectedCreator === query.creator) blaForBuild(query.creator);
+
   await syncClassUI();
   render();
   updateBuildHash();
@@ -92,6 +113,7 @@ export async function initBuilder(ctx) {
   const unbindGrid = bindGridEvents(document.getElementById('bpGrid'));
 
   const unbindMore = bindMoreMenu();
+  bindAltView();
   const unbindSkills = bindItemHover(document.getElementById('bpHero'));
   document.getElementById('bpShareBtn').addEventListener('click', copyShareLink);
 

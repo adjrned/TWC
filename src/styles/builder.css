@@ -388,6 +388,21 @@ tbody tr:hover .del-btn, .del-btn:focus-visible { opacity: 1; }
   border-top: 1px solid var(--border);
 }
 .bp-hint { font-size: 12px; color: var(--muted); }
+.bp-altview { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--muted2); }
+.bp-altview .idb-seg { height: 28px; }
+.bp-altview .idb-seg button { width: auto; padding: 0 10px; font: inherit; font-size: 12px; }
+
+/* Corner view: the alternate sits as a badge on the primary's bottom-right corner. */
+#bpGrid.alt-corner .slot-drop.has-alt { position: relative; }
+#bpGrid.alt-corner .slot-drop .slot-icon-tile.tile-alt {
+  position: absolute;
+  right: -8px; bottom: -8px;
+  width: 30px; height: 30px;
+  border-radius: 5px;
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--card), 0 2px 8px rgba(0,0,0,0.6);
+}
+#bpGrid.alt-corner .tile-alt .tile-alt-tag { display: none; }
 #emptyState { display: none; padding: 32px 16px; text-align: center; color: var(--muted2); font-size: 13px; }
 
 /* ── Slot menu ── */
@@ -616,7 +631,8 @@ tbody tr:hover .del-btn, .del-btn:focus-visible { opacity: 1; }
   .bp-table tbody tr:hover .row-cell { background: none; }
   .row-name-input { width: auto; }
   .slot-cell { padding: 0; }
-  /* No room for pairs: the alternate becomes a small badge on the primary's corner. */
+  /* No room for pairs: always the corner badge, so the switch is hidden. */
+  .bp-altview { display: none; }
   .slot-drop.has-alt { position: relative; }
   .slot-drop .slot-icon-tile.tile-alt {
     position: absolute;
@@ -624,6 +640,7 @@ tbody tr:hover .del-btn, .del-btn:focus-visible { opacity: 1; }
     width: 26px; height: 26px;
     border-radius: 4px;
     opacity: 1;
+    box-shadow: 0 0 0 2px var(--card), 0 2px 8px rgba(0,0,0,0.6);
   }
   .tile-alt .tile-alt-tag { display: none; }
 }
