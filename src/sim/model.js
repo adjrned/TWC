@@ -124,7 +124,8 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
             ally: group === 'ally' || (group === 'target' && !!e.hero && e.hero !== cls),
             // "(STR)" / "(INT)" entries only apply in that stat mode (dual-stat heroes like Dark Knight).
             mode: e.hero === cls ? (String(e.value).match(/\((STR|AGI|INT)\b/i)?.[1].toLowerCase() || null) : null,
-            default: (group === 'gear' || group === 'hero') && !v.chance,
+            // A hero's own ally buffs (Merchant F Scroll, W potion) start off: they're usually cast on someone else.
+            default: (group === 'gear' || group === 'hero') && !v.chance && !(e.hero === cls && (ALLY_VIA.has(e.via) || /allies|\(target\)/i.test(e.value))),
           };
           const id = `fx:${c.id}:${tp.type || ''}:${i}`;
           const pctPart = (v.pct || v.pctTerms.length) ? { value: v.pct / 100, formula: v.pctTerms } : null;
@@ -145,11 +146,20 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     return out;
   }
 
+  // Skills an item swaps in or out (Merchant bags: Throw Bomb, Cursed Doll, Devour…), from sim.json "skillGates".
+  function skillAvailable(cls, skill, gearNames) {
+    const g = curated.heroes?.[cls]?.skillGates?.[skill];
+    if (!g) return true;
+    const has = list => [].concat(list).some(r => gearNames.includes(r));
+    return (!g.requires || has(g.requires)) && (!g.requiresNot || !has(g.requiresNot));
+  }
+
   function modsFor(cls, gearNames, hit) {
     const modes = skillModes(cls);
     const every = [...curatedMods(cls, gearNames), ...effectMods(cls, gearNames)]
       .map(m => (!m.mode && m.source?.hero === cls && modes.has(m.source.skill) ? { ...m, mode: modes.get(m.source.skill) } : m));
-    const all = every.filter(m => (!m.onlyHits || (hit && m.onlyHits.includes(hit.skill))) && (!m.onlyHero || m.onlyHero === cls));
+    const all = every.filter(m => (!m.onlyHits || (hit && m.onlyHits.includes(hit.skill))) && (!m.onlyHero || m.onlyHero === cls)
+      && !(m.source?.hero === cls && m.source.skill && !skillAvailable(cls, m.source.skill, gearNames)));
     // Every hero passive is listed: ones without any sim effect (or damage part) show as info rows,
     // so it's clear what isn't modelled yet.
     const covered = new Set([...every.map(m => m.source?.hero === cls && m.source.skill).filter(Boolean),
@@ -172,7 +182,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
   }
 
   return {
-    items, itemByName, heroByClass, curated, heroConfig, baseMainAt, hits, modsFor,
+    items, itemByName, heroByClass, curated, heroConfig, baseMainAt, hits, modsFor, skillAvailable,
     heroList: () => heroes.filter(h => h.heroClass && h.mainstat),
     calibration: curated.calibration || [],
   };

@@ -61,6 +61,43 @@
         { "id": "kn-t-amp", "label": "Seal of Mana active: skill amplify 4% (T)", "skill": "Seal of Mana", "step": "amplify", "value": 0.04 }
       ]
     },
+    "Merchant": {
+      "skillGates": {
+        "This Bag is Kinda Dangerous!": { "requires": ["Bag of Explosion", "Bag of Despair", "Soul Rift"] },
+        "This Bag isn't a Decoration!": { "requiresNot": ["Bag of Explosion", "Bag of Despair", "Soul Rift"] },
+        "Throw Bomb": { "requires": ["Bag of Explosion", "Bag of Despair", "Soul Rift"] },
+        "Throwing Healing Potion": { "requiresNot": ["Bag of Explosion", "Bag of Despair", "Soul Rift"] },
+        "Soul Bomb": { "requires": ["Soul Rift"] },
+        "Life Shield Scroll": { "requiresNot": ["Soul Rift"] },
+        "Dangerous Explosive": { "requires": ["Bag of Explosion"] },
+        "Cursed Doll": { "requires": ["Bag of Despair", "Soul Rift"] },
+        "Holy Water of Resurrection": { "requiresNot": ["Bag of Explosion", "Bag of Despair", "Soul Rift"] },
+        "Devour": { "requires": ["Bag of All Evils"] },
+        "Throw Money": { "requiresNot": ["Bag of All Evils"] }
+      },
+      "hits": {
+        "Throw Bomb#0": { "count": 10 },
+        "Throw Bomb#1": { "hidden": true }
+      },
+      "extraHits": [
+        { "key": "Throw Bomb#mark", "skill": "Throw Bomb", "hotkey": "[W]", "icon": "MerchantW2", "field": "active", "requires": "Soul Rift",
+          "line": "Soul Rift: leaves a mark that deals Strength x 4 magic damage every 0.6 seconds for 3 seconds",
+          "terms": [{ "stat": "str", "x": 4 }], "type": "magic", "count": 5, "continuous": true, "isSkill": true },
+        { "key": "Soul Bomb#0", "skill": "Soul Bomb", "hotkey": "[E]", "icon": "MerchantE", "field": "active",
+          "line": "Soul Rift: Soul Bomb explosion deals Strength x 50~125 magic damage (top of the range)",
+          "terms": [{ "stat": "str", "x": 125 }], "type": "magic", "count": 1, "isSkill": true },
+        { "key": "Dangerous Explosive#0", "skill": "Dangerous Explosive", "hotkey": "[T]", "icon": "MerchantT2", "field": "active",
+          "line": "After 10 seconds, explodes dealing STR X 40 + damage taken X 5% pure damage (damage from Merchant counts 4x)",
+          "terms": [{ "stat": "str", "x": 40 }, { "stored": true, "from": "Throw Bomb", "own": 4, "x": 0.05, "label": "Damage taken × 4 × 5%" }], "type": "pure", "count": 1, "isSkill": true },
+        { "key": "Cursed Doll#0", "skill": "Cursed Doll", "hotkey": "[T]", "icon": "MerchantT3", "field": "active",
+          "line": "After 10 seconds, explodes dealing STR X 60 + damage taken X 5% pure damage (damage from Merchant counts 4x)",
+          "terms": [{ "stat": "str", "x": 60 }, { "stored": true, "from": "Throw Bomb", "own": 4, "x": 0.05, "label": "Damage taken × 4 × 5%" }], "type": "pure", "count": 1, "isSkill": true }
+      ],
+      "modifiers": [
+        { "id": "mc-chain", "label": "Chain explosion: +75% per bomb already exploded (max +300%)", "skill": "Throw Bomb", "step": "conditional",
+          "chain": { "per": 0.75, "maxStacks": 4 }, "onlyHits": ["Throw Bomb"], "onlyParts": ["Throw Bomb#0"] }
+      ]
+    },
     "Sniper": {
       "modifiers": [
         { "id": "sn-q-agi", "label": "Storm Shaft charges: AGI +5% each (Q)", "skill": "Storm Shaft", "step": "statPct", "stat": "agi", "perStack": 0.05, "maxStacks": 4 },
@@ -73,6 +110,9 @@
     "Void Seraph": { "modifiers": [
       { "label": "Dark Flame: fire affinity +1% per stack", "step": "affinity", "element": "flame", "perStack": 0.01, "maxStacks": 5 },
       { "label": "Dark Flame: 15,000 bonus damage on skill hit", "step": "bonus", "value": 15000, "note": "0.4 s cooldown, so multi-hit parts overcount it." }
+    ] },
+    "Lightbringer": { "modifiers": [
+      { "label": "Sword of Justice: next skills amplified 25% (target)", "step": "amplify", "value": 0.25 }
     ] },
     "Primal Shard": { "modifiers": [
       { "label": "Eternal Frost (INT × 9 bonus)", "step": "bonus", "scale": [{ "stat": "int", "x": 9 }], "affinity": true, "note": "Part of the skill's own hit; scaled by its affinity." },

@@ -68,7 +68,12 @@ export function simulate(model, setup) {
 
   // A skill is made of damage parts (Sword Saint F: 8 pulls + a final slash). Each part has its own
   // hit count, damage type, element and crit; the skill total is the sum of the included parts.
-  const hits = model.hits(cls);
+  const gear = Object.entries(setup.gear || {}).map(([slot, name]) => ({ slot, item: name && model.itemByName.get(name) })).filter(g => g.item);
+  const gearNames = gear.map(g => g.item.name);
+  // Parts tied to an item ("requires": Soul Rift's bomb mark, Soul Bomb) only exist while it's equipped.
+  const has = list => [].concat(list).some(r => gearNames.includes(r));
+  const hits = model.hits(cls).filter(h => (!h.requires || has(h.requires)) && (!h.requiresNot || !has(h.requiresNot))
+    && model.skillAvailable(cls, h.skill, gearNames));
   const skills = [...new Set(hits.map(h => h.skill))];
   const skill = skills.includes(setup.skill) ? setup.skill : (hits.find(h => h.key === setup.hit)?.skill || skills[0]);
   if (!skill) return null;
@@ -87,8 +92,16 @@ export function simulate(model, setup) {
   });
   const hit = parts.find(p => p.key === setup.focus) || parts.find(p => p.on) || parts[0];
 
-  const gear = Object.entries(setup.gear || {}).map(([slot, name]) => ({ slot, item: name && model.itemByName.get(name) })).filter(g => g.item);
-  const gearNames = gear.map(g => g.item.name);
+  // Summons that store damage (Merchant's Cursed Doll): "damage taken" is what you put into it, counted
+  // `own` times for your own damage. Defaults to your total for the skill named in the term (e.g. Throw Bomb).
+  let stored = null;
+  const storedDamage = term => {
+    if (stored == null) {
+      const typed = num(setup.stored);
+      stored = typed ?? (setup._noStored ? 0 : (simulate(model, { ...setup, skill: term.from, focus: '', _noStored: true })?.total ?? 0));
+    }
+    return stored;
+  };
   const mods = resolveMods(model.modsFor(cls, gearNames, hit), setup.mods);
   const targetHp = Math.max(0, Math.min(100, num(setup.targetHp) ?? 100)) / 100;
   for (const m of mods) if (m.execute) m.targetHp = targetHp;
@@ -178,7 +191,9 @@ export function simulate(model, setup) {
 
     const termSrc = hit.terms.map(t => (t.flat != null
       ? { label: 'Flat', value: t.flat }
-      : { label: `${t.stat} × ${t.x}`, value: (stats[t.stat] ?? 0) * t.x, stat: t.stat, x: t.x }));
+      : t.stored
+        ? { label: t.label || 'Stored damage', value: storedDamage(t) * (t.own ?? 1) * t.x, stored: true }
+        : { label: `${t.stat} × ${t.x}`, value: (stats[t.stat] ?? 0) * t.x, stat: t.stat, x: t.x }));
     dmg = sum(termSrc);
     steps.push({ id: 'base', op: '=', factor: dmg, sources: termSrc, value: dmg });
 
@@ -192,7 +207,17 @@ export function simulate(model, setup) {
       push('affinity', '×', affFactor, list);
     } else skip('affinity', 'noElement');
 
-    const cond = [...byStep('conditional'), ...manualPct('conditional')];
+    // Chain stacks (Merchant bombs): hit k of n gets min(k, max) stacks; the part uses the average.
+    const chainAvg = (m, n) => {
+      const c = Math.max(1, Math.round(n));
+      let sumStacks = 0;
+      for (let k = 0; k < c; k++) sumStacks += Math.min(k, m.chain.maxStacks);
+      return m.chain.per * sumStacks / c;
+    };
+    const cond = [...live.filter(m => m.step === 'conditional' && (!m.onlyParts || m.onlyParts.includes(hit.key))).map(m => ({
+      label: m.chain ? `${m.label} (avg over ${Math.round(hit.count)} hits)` : m.label,
+      value: m.chain && m.override == null ? chainAvg(m, hit.count) : modValue(m, stats, allyStat), id: m.id,
+    })), ...manualPct('conditional')];
     if (cond.length) push('conditional', '×', prod(cond), cond); else skip('conditional', 'none');
 
     if (hit.crit) {
@@ -248,5 +273,5 @@ export function simulate(model, setup) {
   const included = parts.filter(p => p.on);
   const total = included.reduce((a, p) => a + p.subtotal, 0);
   const beforeTarget = included.reduce((a, p) => a + p.subBefore, 0);
-  return { skill, skills, hit, parts, hits, stats, statTable, main, cfg, baseMain, mods, steps: hit.steps, beforeTarget, total, warnings };
+  return { skill, skills, hit, parts, hits, stored, stats, statTable, main, cfg, baseMain, mods, steps: hit.steps, beforeTarget, total, warnings };
 }

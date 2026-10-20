@@ -218,3 +218,4 @@
 .sim-mod.unmodelled .sim-mod-label { color: var(--muted); }
 .sim-mod.unmodelled .sim-mod-main > input { visibility: hidden; }
 .sim-unmodelled { color: var(--muted); font-style: italic; }
+.sim-part-opts .sim-stored input[type=number] { width: 11ch; }

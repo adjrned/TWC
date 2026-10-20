@@ -71,7 +71,7 @@ function heroPickerHtml(m, sel) {
     </div>`;
 }
 
-const termsText = h => h.terms.map(x => (x.flat != null ? fmt(x.flat) : `${STAT_LABEL[x.stat] || x.stat} × ${x.x}`)).join(' + ');
+const termsText = h => h.terms.map(x => (x.flat != null ? fmt(x.flat) : x.stored ? `${t('sim.storedShort')} × ${+((x.own ?? 1) * x.x * 100).toFixed(2)}%` : `${STAT_LABEL[x.stat] || x.stat} × ${x.x}`)).join(' + ');
 const keyText = hotkey => (String(hotkey || '').match(/Passive|[A-Z]/g) || []).map(k => (k === 'Passive' ? 'P' : k)).join('→');
 
 // Skill bar: one icon button per skill with damage, in skill order (hover shows the skill tooltip).
@@ -245,6 +245,8 @@ function partsHtml(r, s) {
         <div class="sim-seg" role="group" aria-label="${esc(t('sim.hit.type'))}">${types.map(([v, l]) => `<button type="button" class="t-${v}${p.type === v ? ' on' : ''}" data-part-type="${v}" aria-pressed="${p.type === v}">${esc(l)}</button>`).join('')}</div>
         <select class="sim-el affinity-${esc(p.element || 'none')}" data-part-element title="${esc(t('sim.hit.element'))}">${els.map(([v, l]) => `<option value="${esc(v)}" ${p.element === v ? 'selected' : ''}>${esc(v ? l : t('sim.noElement'))}</option>`).join('')}</select>
         <label class="sim-check"><input type="checkbox" data-part-crit ${p.crit ? 'checked' : ''}> ${esc(t('sim.hit.crit'))}</label>
+        ${p.terms.some(x => x.stored) ? `<label class="sim-mini sim-stored" title="${esc(t('sim.storedHint', { from: p.terms.find(x => x.stored).from }))}">${esc(t('sim.stored'))}
+          <input type="number" min="0" step="any" data-stored value="${esc(s.stored ?? '')}" placeholder="${esc(r.stored != null ? fmt(r.stored) : '')}"></label>` : ''}
       </div>
     </li>`;
   }).join('')}</ul>`;
@@ -449,6 +451,7 @@ export async function initSim() {
   });
   setupEl.addEventListener('input', e => {
     const el = e.target;
+    if (el.matches('[data-stored]')) { s.stored = el.value === '' ? undefined : Number(el.value); return renderResult(); }
     if (!el.matches('[data-part-count]')) return;
     partState(el.closest('[data-part]').dataset.part).count = el.value === '' ? undefined : Number(el.value);
     renderResult();
