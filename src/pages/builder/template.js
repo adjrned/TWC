@@ -68,7 +68,7 @@ export function builderHTML() {
       <table id="grid" class="bp-table">
         <thead>
           <tr>
-            <th class="bp-hero-th">${t('builder.phase')}</th>
+            <th class="bp-hero-th"><span class="th-icon">${slotIcon('phase', 20)}</span><span class="th-label">${t('builder.phase')}</span></th>
             ${COLS.map(c => `<th class="bp-col-th"><span class="th-icon">${slotIcon(c, 20)}</span><span class="th-label">${t('col.' + c)}</span></th>`).join('')}
           </tr>
         </thead>

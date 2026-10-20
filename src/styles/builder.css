@@ -235,8 +235,8 @@
   white-space: nowrap;
   vertical-align: bottom;
 }
-.bp-col-th .th-icon { display: block; color: var(--muted); margin-bottom: 4px; line-height: 0; }
-.bp-col-th .th-icon svg { display: inline-block; }
+.bp-table thead .th-icon { display: block; color: var(--muted); margin-bottom: 4px; line-height: 0; }
+.bp-table thead .th-icon svg { display: inline-block; }
 
 /* Hero column (sticky on narrow screens) */
 .bp-hero-th, .bp-table .row-cell {
