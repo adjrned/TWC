@@ -1996,13 +1996,6 @@
                   "value": "10% (STR main stat)"
                 },
                 {
-                  "hero": "Dark Knight",
-                  "key": "D",
-                  "skill": "Dark Arts",
-                  "via": "Self",
-                  "value": "10% skill damage vs. target (STR)"
-                },
-                {
                   "hero": "Sword Enchanter",
                   "key": "E",
                   "skill": "Power Enchant",
@@ -2689,6 +2682,13 @@
                   "skill": "Spirit Fusion",
                   "via": "Self",
                   "value": "12% (8s)"
+                },
+                {
+                  "hero": "Dark Knight",
+                  "key": "D",
+                  "skill": "Dark Arts",
+                  "via": "Self",
+                  "value": "10% vs. target (STR)"
                 },
                 {
                   "hero": "Arcane Mage",
