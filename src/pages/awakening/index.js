@@ -66,6 +66,7 @@ function levelsHtml() {
     <div class="aw-card">
       <h3>${t('awk.levels')}<span class="aw-ver">v0.74a</span></h3>
       <p>${t('awk.levelsNote')}</p>
+      <p>${t('awk.levelsNote2')}</p>
       <ul class="aw-lv">
         ${LEVEL_COSTS.map(([lv, name, n]) => `<li><span class="aw-lv-step">${lv - 1} <i>→</i> ${lv}</span>${itemChip(name, n)}</li>`).join('')}
       </ul>

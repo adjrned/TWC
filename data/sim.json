@@ -1,0 +1,111 @@
+{
+  "version": "v0.74a",
+  "notes": [
+    "Hand-curated damage sim data. Item base stats come from items.json and skill formulas are parsed from skills.json; this file adds conditions, stacks and procs the text can't express.",
+    "Values: % steps use fractions (0.15 = 15%), flat steps use plain numbers. perStack × stacks is added to value; atMax is added at max stacks.",
+    "An item or hero listed here replaces its Effects tab entries in the sim."
+  ],
+  "defaults": {
+    "baseMain": { "100": 697, "105": 772, "perLevel": 15 },
+    "adPerMain": 3,
+    "adBase": 9,
+    "mpPerInt": 5,
+    "baseMp": 2115,
+    "hpPerStr": 0,
+    "baseHp": 0,
+    "critBase": 2
+  },
+  "heroes": {
+    "Water Mage": {
+      "hits": {
+        "Ice Age#0": { "element": "water", "canCrit": false }
+      },
+      "modifiers": [
+        { "id": "wm-d-sd", "label": "Frozen Emotion (D)", "skill": "Frozen Emotion", "step": "skillDamage", "formula": [{ "base": 4, "stat": "int", "div": 800 }] },
+        { "id": "wm-d-vuln", "label": "Vulnerable: empowered skill (D)", "skill": "Frozen Emotion", "step": "conditional", "value": 2, "default": false,
+          "onlyHits": ["Ice Shard", "Frozen Burst", "Tidal Riding", "Frost Nova", "Glacier Orb"], "note": "Ice Age does not get the empower." },
+        { "id": "wm-t-chain", "label": "Glacier Orb chain (+300%)", "skill": "Glacier Orb", "step": "conditional", "value": 3, "default": false, "onlyHits": ["Ice Shard"] }
+      ]
+    },
+    "Lightning Mage": {
+      "hits": {
+        "Lightning Blade#0": { "canCrit": true }
+      },
+      "modifiers": [
+        { "id": "lm-f-dash", "label": "Max dash distance (+100%)", "skill": "Lightning Blade", "step": "conditional", "value": 1, "onlyHits": ["Lightning Blade"] },
+        { "id": "lm-burst-orbs", "label": "Lightning Orbs consumed (+100% each)", "skill": "Static Burst", "step": "conditional", "perStack": 1, "maxStacks": 10, "onlyHits": ["Static Burst"] },
+        { "id": "lm-e-charged", "label": "Charged (+100%)", "skill": "Discharge", "step": "conditional", "value": 1, "default": false, "onlyHits": ["Discharge", "Hypercharge"] }
+      ]
+    },
+    "Sniper": {
+      "modifiers": [
+        { "id": "sn-q-agi", "label": "Storm Shaft charges: AGI +5% each (Q)", "skill": "Storm Shaft", "step": "statPct", "stat": "agi", "perStack": 0.05, "maxStacks": 4 },
+        { "id": "sn-q-charges", "label": "Storm Shaft charges consumed (+100% each)", "skill": "Storm Shaft", "step": "conditional", "perStack": 1, "maxStacks": 4, "onlyHits": ["Storm Shaft"] },
+        { "id": "sn-t-range", "label": "Snipe passive: max distance (T)", "skill": "Snipe", "step": "final", "value": 0.3 },
+        { "id": "sn-f-missing", "label": "Target missing health (up to +40%)", "skill": "Demolition", "step": "conditional", "value": 0.4, "default": false, "onlyHits": ["Demolition"] }
+      ]
+    }
+  },
+  "items": {
+    "Primal Shard": { "modifiers": [
+      { "label": "Eternal Frost (INT × 9 bonus)", "step": "bonus", "scale": [{ "stat": "int", "x": 9 }], "affinity": true, "note": "Part of the skill's own hit; scaled by its affinity." },
+      { "label": "Nightmare Shard (target)", "step": "amplify", "value": 0.15 }
+    ] },
+    "Frostmoon Crown": { "modifiers": [
+      { "label": "Dark Eclipse: all stats", "step": "stat", "stat": "all", "value": 400 },
+      { "label": "Dark Eclipse: skill damage", "step": "skillDamage", "value": 0.15 }
+    ] },
+    "Animus, the Robe of Souls": { "modifiers": [
+      { "label": "Soul stacks: INT +30 each", "step": "stat", "stat": "int", "perStack": 30, "maxStacks": 20 },
+      { "label": "Soul stacks: amplify 0.3% each, +6% at max", "step": "amplify", "perStack": 0.003, "maxStacks": 20, "atMax": 0.06 }
+    ] },
+    "Soul Breath": { "modifiers": [
+      { "label": "Soul Tide (after ultimate cast)", "step": "amplify", "value": 0.075 }
+    ] },
+    "Primal Flame": { "modifiers": [
+      { "label": "Primordial Flame: amplify 2.5% each", "step": "amplify", "perStack": 0.025, "maxStacks": 4 },
+      { "label": "Primordial Flame: continuous 2.5% each", "step": "continuous", "perStack": 0.025, "maxStacks": 4 },
+      { "label": "Release: all stats 200 + 50 per stack", "step": "stat", "stat": "all", "value": 200, "perStack": 50, "maxStacks": 4 }
+    ] },
+    "Celestial Wind": { "modifiers": [
+      { "label": "Heavenly Wind: main stat +200", "step": "stat", "stat": "main", "value": 200 },
+      { "label": "Heavenly Wind: 25% chance +20%", "step": "final", "value": 0.2, "default": false, "chance": true }
+    ] },
+    "Coil of Ouroboros": { "modifiers": [
+      { "label": "Infinite Ring: main stat (fully amplified)", "step": "stat", "stat": "main", "value": 500 },
+      { "label": "Infinite Ring: amplify (fully amplified)", "step": "amplify", "value": 0.1 }
+    ] },
+    "Soulstorm": { "modifiers": [
+      { "label": "Skill damage 6% per stack", "step": "skillDamage", "perStack": 0.06, "maxStacks": 3 }
+    ] },
+    "Ordius, the Divine Lance": { "modifiers": [
+      { "label": "Mark of Light (target)", "step": "amplify", "value": 0.14 }
+    ] },
+    "Eye of Annihilation": { "modifiers": [
+      { "label": "Annihilation (target)", "step": "final", "value": 0.1 }
+    ] },
+    "Embrace of Death": { "modifiers": [
+      { "label": "Soul Rend: main stat +50 per stack", "step": "stat", "stat": "main", "perStack": 50, "maxStacks": 8 },
+      { "label": "Soul Rend at max stacks (+10% total)", "step": "final", "maxStacks": 8, "atMax": 0.1 }
+    ] },
+    "Astral Fury": { "modifiers": [
+      { "label": "Astral Fury: AGI +150", "step": "stat", "stat": "agi", "value": 150 },
+      { "label": "3rd consecutive proc: amplify", "step": "amplify", "value": 0.05 }
+    ] },
+    "Crimson Whisper": { "modifiers": [
+      { "label": "Bloody mark (target)", "step": "amplify", "value": 0.05 },
+      { "label": "Storm Shaft: +1 max stack (charges and AGI)", "step": "info", "onlyHero": "Sniper", "raises": [{ "id": "sn-q-charges", "by": 1 }, { "id": "sn-q-agi", "by": 1 }] }
+    ] }
+  },
+  "calibration": [
+    {
+      "note": "Water Mage F on a dummy (Sherry P., L105, Kam gear + Primal Flame + Immortal Icon). Max MP 36,325 in game, which is where the base MP default comes from.",
+      "expect": 4513082,
+      "tolerance": 0.01,
+      "setup": {
+        "hero": "Water Mage", "level": 105, "hit": "Ice Age#0",
+        "gear": { "weapon": "Primal Shard", "helm": "Frostmoon Crown", "body": "Animus, the Robe of Souls", "wings": "Soul Breath", "accessory": "Primal Flame", "icon": "Immortal Icon" }
+      }
+    }
+  ]
+}

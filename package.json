@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "icons": "node scripts/convert-icons.mjs",
-    "share-dict": "node scripts/update-share-dict.mjs"
+    "share-dict": "node scripts/update-share-dict.mjs",
+    "sim-check": "node scripts/sim-check.mjs",
+    "sim-coverage": "node scripts/sim-coverage.mjs"
   },
   "devDependencies": {
     "sharp": "^0.35.5",
