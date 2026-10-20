@@ -22,6 +22,7 @@ function resolveMods(mods, setupMods = {}) {
 function modValue(m, stats, allyStat) {
   const pct = PCT_STEPS.has(m.step);
   if (m.override != null) return pct ? m.override / 100 : m.override;
+  if (m.belowHp != null && (m.targetHp ?? 1) >= m.belowHp) return 0;
   let v = m.value || 0;
   if (m.perStack) v += m.perStack * (m.stacks ?? 0);
   if (m.atMax && m.maxStacks && m.stacks >= m.maxStacks) v += m.atMax;
@@ -109,7 +110,7 @@ export function simulate(model, setup) {
   };
   const mods = resolveMods(model.modsFor(cls, gearNames, hit), setup.mods);
   const targetHp = Math.max(0, Math.min(100, num(setup.targetHp) ?? 100)) / 100;
-  for (const m of mods) if (m.execute) m.targetHp = targetHp;
+  for (const m of mods) if (m.execute || m.belowHp != null) m.targetHp = targetHp;
   const on = mods.filter(m => m.on);
 
   // ── Stats ──

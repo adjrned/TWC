@@ -274,13 +274,16 @@ export function parseFxValue(raw, { self = false } = {}) {
   if (activeM) s = activeM[1] + '%';
   const max = s.match(/\((?:max|up to)\s*(\d+(?:\.\d+)?)%\)/i);
   if (max && /per\b/i.test(s)) s = max[1] + '%';
+  // "7.5% vs. target (stacks 2×, max 15%)": the stacked cap.
+  const stackMax = s.match(/\(stacks \d+×,\s*max (\d+(?:\.\d+)?)%\)/i);
+  if (stackMax) s = stackMax[1] + '%';
   const times = s.match(/per (?:stack|sword)[^(]*\(×(\d+)\)/i);
   s = s.replace(/^up to\s*/i, '').replace(/(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)%/, '$2%');
   const out = { pct: 0, pctTerms: [], flat: 0, flatTerms: [], onlyStat: null, chance };
   const lead = s.match(new RegExp(`^(${STAT_FX})\\s+(?=\\d)`, 'i'));
   if (lead) { out.onlyStat = fxStat(lead[1]); s = s.slice(lead[0].length); }
   // Cut trailing notes like "(target)", "vs. target", "(10% chance)".
-  s = s.replace(/\s*\((?!max)(?![^)]*[/×])[^)]*\)/g, '').replace(/\s+(vs\.|on|for|at|when|while|in|per)\b.*$/i, '');
+  s = s.replace(/\s*\((?!max)(?![^)]*[/×])[^)]*\)/g, '').replace(/\s+(?:vs\.|(?:on|for|at|when|while|in|per|below|under|above)\b).*$/i, '');
   let found = false;
   s = s.replace(new RegExp(`\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\+\\s*(${STAT_FX})\\s*\\/\\s*(\\d+)\\s*\\)%`, 'gi'), (_, b, st, d) => {
     out.pctTerms.push({ base: Number(b), stat: fxStat(st), div: Number(d) }); found = true; return '';

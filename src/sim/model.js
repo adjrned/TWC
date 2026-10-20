@@ -20,7 +20,11 @@ const CAT_STEP = {
   'magic-damage-taken': { step: 'targetMagicTaken', target: true },
   'unique-magic-damage-taken': { step: 'targetMagicTaken', target: true },
 };
-const ALLY_VIA = new Set(['Buff', 'Aura', 'Sigil', 'Devotion', 'Harmony', "Raguel's passive"]);
+const belowHp = value => {
+  const m = String(value).match(/(?:below|under) (\d+(?:\.\d+)?)% HP/i);
+  return m ? Number(m[1]) / 100 : undefined;
+};
+const ALLY_VIA =new Set(['Buff', 'Aura', 'Sigil', 'Devotion', 'Harmony', "Raguel's passive"]);
 
 // Steps whose values are fractions (0.15 = 15%); everything else is a flat amount.
 export const PCT_STEPS = new Set(['statPct', 'affinity', 'conditional', 'continuous', 'proc', 'skillDamage', 'amplify', 'final', 'targetTaken', 'targetMagicTaken']);
@@ -125,6 +129,8 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
           const base = {
             label: e.item || `${e.hero} ${e.key || ''} ${e.skill || ''}`.replace(/\s+/g, ' ').trim(),
             via: e.via, raw: e.value, group, chance: v.chance,
+            // "15% vs. enemies below 50% HP" only applies while the target-HP input is under that.
+            belowHp: belowHp(e.value),
             fxType: tp.type ? `${c.id}|${tp.type}` : null, cat: c.id,
             source: e.item ? { item: e.item } : { hero: e.hero, skill: e.skill, key: e.key },
             ally: group === 'ally' || (group === 'target' && !!e.hero && e.hero !== cls),
