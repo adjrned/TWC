@@ -32,7 +32,8 @@ let model = null;
 
 async function loadModel() {
   if (model) return model;
-  const get = f => fetch(f).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  // no-cache: revalidate so data edits (sim.json is updated often) show up without a hard refresh.
+  const get = f => fetch(f, { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null);
   const [items, skills, heroes, effects, sim] = await Promise.all([loadItems(), loadSkills(), get('data/heroes.json'), get('data/effects.json'), get('data/sim.json')]);
   model = buildModel({ items, skills, heroes: heroes || [], effects, sim });
   return model;

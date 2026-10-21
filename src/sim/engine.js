@@ -36,10 +36,12 @@ function modValue(m, stats, allyStat) {
   }
   const statOf = s => (m.ally ? allyStat : (s === 'main' ? stats.main : stats[s] ?? 0));
   for (const f of m.formula || []) v += (f.base + statOf(f.stat) / f.div) / 100;
+  // scalePerStack: the scaled amount repeats once per stack (Primal Flame: main stat × 12.5 per proc).
+  const reps = m.scalePerStack ? (m.stacks ?? 0) : 1;
   for (const f of m.scale || []) {
     // { affinity: 'flame', x } scales with that element's total affinity (fraction).
     const base = f.affinity ? (stats.aff?.[f.affinity] ?? 0) : statOf(f.stat);
-    v += f.max != null ? Math.min(base * f.x, f.max) : base * f.x;
+    v += (f.max != null ? Math.min(base * f.x, f.max) : base * f.x) * reps;
   }
   return v;
 }
@@ -283,8 +285,11 @@ export function simulate(model, setup) {
 
     // Bonus damage marked "affinity" (e.g. Primal Shard's Eternal Frost) is scaled by the hit's affinity.
     // Bonus damage can be limited to a damage type ("when dealing magic damage").
-    const bonus = [...live.filter(m => m.step === 'bonus' && (!m.onlyTypes || m.onlyTypes.includes(hit.type))).map(m => {
-      const v = modValue(m, stats, allyStat);
+    // "perCast" bonus damage lands once per skill cast: on the first included part, spread over its hits.
+    const castPart = parts.find(p => p.on && !p.rider && !p.item);
+    const bonus = [...live.filter(m => m.step === 'bonus' && (!m.onlyTypes || m.onlyTypes.includes(hit.type))
+      && (!m.perCast || hit.key === castPart?.key)).map(m => {
+      const v = modValue(m, stats, allyStat) / (m.perCast ? Math.max(1, hit.count) : 1);
       return m.affinity && affFactor !== 1 ? { label: `${m.label} × affinity ${+affFactor.toFixed(4)}`, value: v * affFactor } : { label: m.label, value: v };
     }), ...(num(man.bonus) ? [{ label: 'Manual', value: num(man.bonus) }] : [])];
     if (R) { /* skipped above */ } else if (bonus.length) push('bonus', '+', sum(bonus), bonus); else skip('bonus', 'none');

@@ -232,7 +232,10 @@
     "Soul Breath": { "modifiers": [
       { "label": "Soul Tide (after ultimate cast)", "step": "amplify", "value": 0.075 }
     ] },
-    "Primal Flame": { "modifiers": [
+    "Primal Flame": {
+      "modifiers": [
+      { "label": "Release: every 5 skill hits deal main stat × 12.5 magic damage (once per stack)", "step": "bonus", "scale": [{ "stat": "main", "x": 12.5 }],
+        "scalePerStack": true, "maxStacks": 4, "perCast": true, "note": "Stacks = procs that land during this cast." },
       { "label": "Primordial Flame: amplify 2.5% each", "step": "amplify", "perStack": 0.025, "maxStacks": 4 },
       { "label": "Primordial Flame: continuous 2.5% each", "step": "continuous", "perStack": 0.025, "maxStacks": 4 },
       { "label": "Release: all stats 200 + 50 per stack", "step": "stat", "stat": "all", "value": 200, "perStack": 50, "maxStacks": 4 }
