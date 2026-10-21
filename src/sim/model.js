@@ -24,6 +24,9 @@ const belowHp = value => {
   const m = String(value).match(/(?:below|under) (\d+(?:\.\d+)?)% HP/i);
   return m ? Number(m[1]) / 100 : undefined;
 };
+// Flat bonus damage procs (Dark Flame, Torment…) are separate damage, not part of the ability, so they start off.
+// Kept on: bonus baked into the hit (Primal Shard's Eternal Frost) and bonuses tied to one ability (Dream Ender stacks).
+const bonusDefault = m => (m.step === 'bonus' ? !!(m.affinity || m.onlyHits) : undefined);
 const notSelfItem = item => [...(item?.stats?.passive || []), ...(item?.stats?.active || [])].some(l => /excluding self|does not apply to self/i.test(l));
 const ALLY_VIA =new Set(['Buff', 'Aura', 'Sigil', 'Devotion', 'Harmony', "Raguel's passive"]);
 
@@ -94,7 +97,9 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     // Skill-text conditionals, except for skills already written up in sim.json.
     for (const m of heroConditionals(skills, cls, curatedSkills(cls))) out.push({ ...m, group: 'hero', source: { hero: cls, skill: m.skill } });
     for (const name of gearNames) {
-      for (const m of (curated.items?.[name]?.modifiers || []).filter(x => !x.party || x.self)) out.push({ ...m, id: m.id || `${name}:${m.label}`, group: m.group || 'gear', source: { item: name } });
+      for (const m of (curated.items?.[name]?.modifiers || []).filter(x => !x.party || x.self)) {
+        out.push({ ...m, id: m.id || `${name}:${m.label}`, group: m.group || 'gear', source: { item: name }, default: m.default ?? bonusDefault(m) });
+      }
     }
     // "party" item effects are buffs a teammate's item gives you (Heaven's Door's orb, Aeon Sphere…): listed
     // under ally buffs, and only reach the wearer when also marked "self" (auras).
