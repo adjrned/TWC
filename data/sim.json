@@ -402,26 +402,16 @@
       { "label": "Bloody mark (target)", "step": "amplify", "value": 0.05 },
       { "label": "Storm Shaft: +1 max stack (charges and AGI)", "step": "info", "onlyHero": "Sniper", "raises": [{ "id": "sn-q-charges", "by": 1 }, { "id": "sn-q-agi", "by": 1 }] }
     ] },
-    "Atricia, the Sword of Nightmares": {
-      "hits": [
-        { "skill": "Nightmare Slash", "line": "On skill cast, next attack deals (3000 + Main Stat X 6) pure damage (+1% per Nightmare Energy stack; crits if reactivated within 2 s)",
-          "terms": [{ "flat": 3000 }, { "stat": "main", "x": 6 }], "type": "pure", "count": 1, "proc": true },
-        { "skill": "Dream Ender", "line": "Consumes all stacks of Nightmare Energy, dealing (150000 + 25000 X stack) magic damage",
-          "terms": [{ "flat": 150000 }], "type": "magic", "count": 1 }
-      ],
-      "modifiers": [
-        { "label": "Nightmare Energy: Nightmare Slash +1% per stack", "step": "conditional", "perStack": 0.01, "maxStacks": 20, "onlyHits": ["Nightmare Slash"] },
-        { "label": "Nightmare Energy: Dream Ender +25,000 per stack", "step": "bonus", "perStack": 25000, "maxStacks": 20, "onlyHits": ["Dream Ender"] }
-      ]
-    },
-    "Grim Scythe": {
-      "hits": [
-        { "skill": "Grim Reaper", "line": "On skill cast, deals (MAIN STAT X 7.5) magic damage to nearby enemies (1.5 s cooldown)",
-          "terms": [{ "stat": "main", "x": 7.5 }], "type": "magic", "count": 1, "proc": true },
-        { "skill": "Culling", "line": "Consumes Mark of Death, dealing (MAIN STAT X 50 + 15% of damage dealt to target by your skills) magic damage",
-          "terms": [{ "stat": "main", "x": 50 }, { "stored": true, "x": 0.15, "label": "Skill damage dealt × 15%" }], "type": "magic", "count": 1 }
-      ]
-    },
+    "Atricia, the Sword of Nightmares": { "modifiers": [
+      { "label": "Nightmare Slash: next attack after a skill deals 3,000 + main stat × 6 pure damage (+1% per Nightmare Energy)", "step": "bonus", "value": 3000,
+        "scale": [{ "stat": "main", "x": 6 }], "stackMult": 0.01, "maxStacks": 20, "perCast": true },
+      { "label": "Dream Ender (active): 150,000 + 25,000 per Nightmare Energy magic damage", "step": "bonus", "value": 150000, "perStack": 25000, "maxStacks": 20, "perCast": true }
+    ] },
+    "Grim Scythe": { "modifiers": [
+      { "label": "Grim Reaper: main stat × 7.5 magic damage on skill cast", "step": "bonus", "scale": [{ "stat": "main", "x": 7.5 }], "perCast": true, "note": "1.5 s cooldown." },
+      { "label": "Culling (active): main stat × 50 + 15% of your skill damage on the target", "step": "bonus", "scale": [{ "stat": "main", "x": 50 }], "perCast": true,
+        "note": "The 15% part isn't counted; type the full amount as the value to include it." }
+    ] },
     "Agnitus, the Bow of Divine Fury": { "modifiers": [
       { "label": "Storm Shaft: +3 max stacks (charges and AGI)", "step": "info", "onlyHero": "Sniper", "raises": [{ "id": "sn-q-charges", "by": 3 }, { "id": "sn-q-agi", "by": 3 }] }
     ] },

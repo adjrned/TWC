@@ -43,6 +43,8 @@ function modValue(m, stats, allyStat) {
     const base = f.affinity ? (stats.aff?.[f.affinity] ?? 0) : statOf(f.stat);
     v += (f.max != null ? Math.min(base * f.x, f.max) : base * f.x) * reps;
   }
+  // stackMult: each stack raises the whole amount by a share (Atricia: +1% per Nightmare Energy).
+  if (m.stackMult) v *= 1 + m.stackMult * (m.stacks ?? 0);
   return v;
 }
 
@@ -102,7 +104,7 @@ export function simulate(model, setup) {
   // Riders (Fire Mage Burn, Wings of the Void): extra damage a hero hit leaves behind, a share of that hit's damage.
   // "perCast" riders (Cape of Deep Abyss) trigger once per skill cast, on its first included part.
   for (const r of model.riders(cls, gearNames)) {
-    const heroParts = parts.filter(p => !p.item && !p.riderOf && (!r.skillsOnly || p.isSkill));
+    const heroParts = parts.filter(p => !p.riderOf && (!r.skillsOnly || p.isSkill));
     for (const parent of r.perCast ? heroParts.filter(p => p.on).slice(0, 1) : heroParts) {
       const key = `${parent.key}~${r.id}`;
       const ps = partState[key] || {};
@@ -286,7 +288,7 @@ export function simulate(model, setup) {
     // Bonus damage marked "affinity" (e.g. Primal Shard's Eternal Frost) is scaled by the hit's affinity.
     // Bonus damage can be limited to a damage type ("when dealing magic damage").
     // "perCast" bonus damage lands once per skill cast: on the first included part, spread over its hits.
-    const castPart = parts.find(p => p.on && !p.rider && !p.item);
+    const castPart = parts.find(p => p.on && !p.rider);
     const bonus = [...live.filter(m => m.step === 'bonus' && (!m.onlyTypes || m.onlyTypes.includes(hit.type))
       && (!m.perCast || hit.key === castPart?.key)).map(m => {
       const v = modValue(m, stats, allyStat) / (m.perCast ? Math.max(1, hit.count) : 1);

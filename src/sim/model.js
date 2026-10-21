@@ -52,16 +52,10 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     return b[100] + (level - 100) * (b.perLevel || 0);
   };
 
-  // Item damage (Atricia's Dream Ender, Grim Scythe's Culling…) from sim.json item "hits"; each only exists
-  // while the item is equipped. Item hits aren't skills unless marked.
-  const itemHits = Object.entries(curated.items || {}).flatMap(([name, it]) => (it.hits || []).map(h => ({
-    isSkill: false, field: 'active', ...h, key: `${name}:${h.key || h.skill}`, item: name, requires: name,
-  })));
-
   function hits(cls) {
     const cur = curated.heroes?.[cls] || {};
     const parsed = parseHeroHits(skills, cls).map(h => ({ ...h, ...(cur.hits?.[h.key] || {}) }));
-    return [...parsed, ...(cur.extraHits || []), ...itemHits].filter(h => !h.hidden);
+    return [...parsed, ...(cur.extraHits || [])].filter(h => !h.hidden);
   }
 
   // Dual-stat heroes swap skills by stat mode: "INT: Changed into Unholy Light" on Phantom Rush means
