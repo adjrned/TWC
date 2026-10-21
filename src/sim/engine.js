@@ -224,8 +224,9 @@ export function simulate(model, setup) {
   const manualPct = k => (num(man[k]) ? [{ label: 'Manual', value: num(man[k]) / 100 }] : []);
   const sum = list => list.reduce((a, s) => a + s.value, 0);
   const prod = list => list.reduce((a, s) => a * (1 + s.value), 1);
-  // Stat-mode effects ("STR: …", "If AGI is highest …") apply only when that stat is the hero's highest.
-  const heroMode = STATS3.reduce((a, k) => (stats[k] > stats[a] ? k : a), main);
+  // Stat-mode effects ("STR: …", "If AGI is highest …") apply only in that stat's mode: the main stat
+  // picked on the page, otherwise the hero's highest stat.
+  const heroMode = STATS3.includes(setup.main) ? setup.main : STATS3.reduce((a, k) => (stats[k] > stats[a] ? k : a), main);
   for (const m of mods) m.modeOff = !!m.mode && m.mode !== heroMode;
   // Affinity totals per element, for "if fire affinity is higher" effects (Akhelius) and affinity-scaled values.
   const affList = (el, from) => [...gearStat(ELEMENT_KEY[el]), ...gearStat('allaffinitypercent'),

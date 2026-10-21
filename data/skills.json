@@ -1234,7 +1234,7 @@
       "Attack damage X 1.5 + AGI X 7.5 magic damage",
       "Deals up to 300% bonus damage based on knockback distance",
       "INT Main Stat: Breaks barrier effects",
-      "Increases target's magic damage taken by 4%"
+      "INT Main Stat: Increases target's magic damage taken by 4%"
     ]
   },
   {
@@ -3711,7 +3711,7 @@
     "active": [
       "Performs a mighty slash with mana-infused sword.",
       "Consumes Max MP X 40%",
-      "Attack Damage X 0.7 + Max MP X 0.7 magic damage",
+      "Attack Damage X 0.8 + Max MP X 0.7 magic damage",
       "Reactivates with halved effectiveness on attack for 4 seconds"
     ]
   },

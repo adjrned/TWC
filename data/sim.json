@@ -190,6 +190,7 @@
         "Stage Finisher#0": { "count": 4, "canCrit": true }
       },
       "modifiers": [
+        { "id": "tr-e-marks", "label": "Devil's Mirror: +200% per mark consumed", "skill": "Devil's Mirror", "step": "conditional", "perStack": 2, "maxStacks": 4, "onlyHits": ["Devil's Mirror"] },
         { "id": "tr-t-marks", "label": "Stage Finisher marks on target: skill damage to target +5% each", "skill": "Stage Finisher", "step": "final", "perStack": 0.05, "maxStacks": 4 }
       ]
     },
@@ -569,6 +570,13 @@
     "Witch": {
       "modifiers": [
         {
+          "id": "wi-tw-final",
+          "label": "Mark of Power on yourself: final damage +4%",
+          "skill": "Mark of Power",
+          "step": "final",
+          "value": 0.04
+        },
+        {
           "id": "wi-q-channel",
           "label": "Death Bomb fully channeled (up to 500%)",
           "skill": "Death Bomb",
@@ -709,14 +717,17 @@
       {"label": "Active: crit multiplier +0.25×", "step": "critMult", "value": 0.25}
     ] },
     "Oblivion": { "keepEffects": true, "modifiers": [
+      {"label": "Devastation: enemy magic damage taken +1% (6 s)", "step": "targetMagicTaken", "value": 0.01},
       {"label": "Active: STR +45 per stack", "step": "stat", "perStack": 45, "maxStacks": 10, "stat": "str"},
       {"label": "Active: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10}
     ] },
     "Desolation": { "keepEffects": true, "modifiers": [
+      {"label": "Devastation: enemy magic damage taken +2% (6 s)", "step": "targetMagicTaken", "value": 0.02},
       {"label": "Active: STR +55 per stack", "step": "stat", "perStack": 55, "maxStacks": 10, "stat": "str"},
       {"label": "Active: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10}
     ] },
     "Chaos": { "keepEffects": true, "modifiers": [
+      {"label": "Devastation: enemy magic damage taken +2% (6 s)", "step": "targetMagicTaken", "value": 0.02},
       {"label": "Active: STR +60 per stack", "step": "stat", "perStack": 60, "maxStacks": 10, "stat": "str"},
       {"label": "Active: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10}
     ] },
@@ -781,6 +792,120 @@
     ] },
     "Wings of the Void": { "riders": [
       {"label": "Void Corrosion: 17% of the hit over 3 s", "line": "On direct skill hit, deals 17% of damage dealt over 3 seconds", "of": 0.17, "continuous": true, "skillsOnly": true}
+    ] },
+    "Blazing Heart": { "keepEffects": true, "modifiers": [
+      { "label": "Burning Fervor: STR +30 per stack", "step": "stat", "stat": "str", "perStack": 30, "maxStacks": 5 },
+      { "label": "Burning Fervor: attack damage +450 per stack", "step": "stat", "stat": "ad", "perStack": 450, "maxStacks": 5 }
+    ] },
+    "Armor of Grudge": { "modifiers": [
+      {"label": "Grudge: attack damage +6,000 (1.5 s every 6 s)", "step": "stat", "stat": "ad", "value": 6000, "default": false}
+    ] },
+    "Calamity": { "modifiers": [
+      {"label": "Ruin: attack damage +450 per stack", "step": "stat", "perStack": 450, "maxStacks": 10, "stat": "ad"},
+      {"label": "Ruin: STR +30 per stack", "step": "stat", "perStack": 30, "maxStacks": 10, "stat": "str"},
+      {"label": "Ruin: INT +30 per stack", "step": "stat", "perStack": 30, "maxStacks": 10, "stat": "int"},
+      {"label": "Ruin: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10},
+      {"label": "Sword of Calamity (active): main stat × 60 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 60}], "note": "Up to +100% by missing HP isn't counted."}
+    ] },
+    "Crimson Hatred": { "modifiers": [
+      {"label": "Skill cast: INT +75 per stack", "step": "stat", "perStack": 75, "maxStacks": 5, "stat": "int"},
+      {"label": "Skill cast: fire affinity +2.5% per stack", "step": "affinity", "perStack": 0.025, "maxStacks": 5, "element": "flame"}
+    ] },
+    "Crown of Absolute Zero": { "modifiers": [
+      {"label": "Composure: all stats +150", "step": "stat", "stat": "all", "value": 150},
+      {"label": "Composure: skill damage +12.5%", "step": "skillDamage", "value": 0.125}
+    ] },
+    "Crown of Extreme Anger": { "modifiers": [
+      {"label": "Extreme Anger: all stats +1.25% of consumed HP (50% of HP)", "step": "stat", "stat": "all", "scale": [{"stat": "maxHp", "x": 0.00625}]},
+      {"label": "Extreme Anger: main stat doubled (+1.25% more of consumed HP)", "step": "stat", "stat": "main", "scale": [{"stat": "maxHp", "x": 0.00625}]},
+      {"label": "Extreme Anger: fire affinity +7.5%", "step": "affinity", "element": "flame", "value": 0.075}
+    ] },
+    "Crown of Great Rage": { "modifiers": [
+      {"label": "Great Rage: all stats +1.25% of consumed HP (40% max HP)", "step": "stat", "stat": "all", "scale": [{"stat": "maxHp", "x": 0.005}]},
+      {"label": "Great Rage: main stat doubled (+1.25% more of consumed HP)", "step": "stat", "stat": "main", "scale": [{"stat": "maxHp", "x": 0.005}]},
+      {"label": "Great Rage: fire affinity +5%", "step": "affinity", "element": "flame", "value": 0.05}
+    ] },
+    "Curse of Greed": { "modifiers": [
+      {"label": "Greed: skill damage +1% per stack", "step": "skillDamage", "perStack": 0.01, "maxStacks": 25}
+    ] },
+    "Felspike Armor": { "modifiers": [
+      {"label": "Hellspike: attack damage +1,500 (2.5 s)", "step": "stat", "stat": "ad", "value": 1500},
+      {"label": "Empowered Hellspike (active): Max HP × 7.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "maxHp", "x": 7.5}]}
+    ] },
+    "Latea, the Ring of Overlord": { "modifiers": [
+      {"label": "On dealing damage: 20% chance for 20% bonus damage", "step": "conditional", "value": 0.2, "default": false, "chance": true}
+    ] },
+    "Mask of Demigod": { "modifiers": [
+      {"label": "Demigod Infusion: AGI +240, +10% per skill cast", "step": "stat", "stat": "agi", "value": 240, "perStack": 24, "maxStacks": 10},
+      {"label": "Demigod Infusion: crit multiplier +0.25×, +10% per skill cast", "step": "critMult", "value": 0.25, "perStack": 0.025, "maxStacks": 10}
+    ] },
+    "Prophetia, the Origin of Knowledge": { "modifiers": [
+      {"label": "Magic Focus: INT +375, +30 per second", "step": "stat", "stat": "int", "value": 375, "perStack": 30, "maxStacks": 8, "note": "Stacks = seconds into the 8 s active."},
+      {"label": "Magic Focus: skill damage +5%, +0.5% per second", "step": "skillDamage", "value": 0.05, "perStack": 0.005, "maxStacks": 8}
+    ] },
+    "Ring of Destruction": { "modifiers": [
+      {"label": "On dealing damage: 15% chance for 40% bonus damage", "step": "conditional", "value": 0.4, "default": false, "chance": true}
+    ] },
+    "Ring of Hope": { "modifiers": [
+      {"label": "Fervor (hit by an ally's skill): skill damage +8%", "step": "skillDamage", "value": 0.08, "party": true},
+      {"label": "Fervor (hit by an ally's skill): main stat +120", "step": "stat", "stat": "main", "value": 120, "party": true}
+    ] },
+    "Ring of Insanity": { "modifiers": [
+      {"label": "Madness (15% on attack): attack damage +7,500", "step": "stat", "stat": "ad", "value": 7500, "default": false, "chance": true},
+      {"label": "Madness (15% on attack): main stat +375", "step": "stat", "stat": "main", "value": 375, "default": false, "chance": true}
+    ] },
+    "Soul Fist": { "modifiers": [
+      {"label": "Soul Resonance: on-hit damage +10% (4 s)", "step": "proc", "value": 0.1}
+    ] },
+    "Thanatos, the Robe of Hell": { "modifiers": [
+      {"label": "Devastation: INT +330", "step": "stat", "stat": "int", "value": 330},
+      {"label": "Devastation (active, 20 stacks): INT × 120 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 120}]}
+    ] },
+    "Wings of Immortal": { "modifiers": [
+      {"label": "Main stat +9 per stack (every 3 s)", "step": "stat", "perStack": 9, "maxStacks": 50, "stat": "main"}
+    ] },
+    "Crescendo of Madness": { "modifiers": [
+      {"label": "Shades of Madness (active): 5 shades × 50,000 magic damage", "step": "bonus", "perCast": true, "value": 250000}
+    ] },
+    "Crimson Rose": { "modifiers": [
+      {"label": "Death and Decay (active): 20,000 per second for 15 s, ramping to +100% over 5 s", "step": "bonus", "perCast": true, "value": 560000}
+    ] },
+    "Diabolic Mask": { "modifiers": [
+      {"label": "Diabolic Flame: main stat × 6 pure damage on attack", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 6}]}
+    ] },
+    "Endless Snow": { "modifiers": [
+      {"label": "Frozen Tempest: next attack INT × 5 + tempest INT × 25 over 8 s", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 30}]},
+      {"label": "Dawn of Ice (active): INT × 25 + shatter INT × 2.5 × 20 hits", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 75}], "note": "The shatter's +12.5% of damage dealt isn't counted."}
+    ] },
+    "Final Omen": { "modifiers": [
+      {"label": "Bullets of Omen: main stat × 7.5 + attack damage × 1.4 per bullet", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 7.5}, {"stat": "ad", "x": 1.4}], "scalePerStack": true, "maxStacks": 4}
+    ] },
+    "Last Word": { "modifiers": [
+      {"label": "Bullets of Penance: main stat × 7.5 + attack damage × 1.2 per bullet", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 7.5}, {"stat": "ad", "x": 1.2}], "scalePerStack": true, "maxStacks": 3}
+    ] },
+    "Fulminata, the Bringer of Storms": { "modifiers": [
+      {"label": "Eye of the Storm at 400% charge: INT × 37.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 37.5}], "note": "Guaranteed crit in game; not applied here."}
+    ] },
+    "Chrono Chaser": { "modifiers": [
+      {"label": "Chrono Chaser (active): initial hit + 1.4× per second for 4 s", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 49.5}, {"stat": "main", "x": 330}]}
+    ] },
+    "Ethenos, the Staff of Chaos": { "modifiers": [
+      {"label": "Big Bang (active): INT × 105 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 105}]}
+    ] },
+    "Ethenos, the True Staff of Space": { "modifiers": [
+      {"label": "Dimensional Explosion (active): INT × 75 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 75}]}
+    ] },
+    "Power of Beriel": { "modifiers": [
+      {"label": "Grasp of Demon Lord (active): attack damage × 7.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 7.5}]}
+    ] },
+    "Soulbane": { "modifiers": [
+      {"label": "Soul Bombardment (active): 4 arrows × AGI × 30", "step": "bonus", "perCast": true, "scale": [{"stat": "agi", "x": 120}]}
+    ] },
+    "Wings of Flame Lord": { "modifiers": [
+      {"label": "Flame Descent (active): attack damage × 2.25 + main stat × 20", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 2.25}, {"stat": "main", "x": 20}]}
+    ] },
+    "Eternal Winter": { "modifiers": [
+      {"label": "Permafrost (active): Max MP × 3 + Max MP × 1.5 per second for 3 s", "step": "bonus", "perCast": true, "scale": [{"stat": "maxMp", "x": 7.5}]}
     ] },
     "Ring of Genesis": { "modifiers": [
       { "label": "On dealing damage: chance for 30% additional damage", "step": "conditional", "value": 0.3, "default": false, "chance": true, "note": "Chance isn't stated." },
