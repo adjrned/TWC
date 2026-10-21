@@ -80,6 +80,8 @@ const MULTI_RE = new RegExp(String.raw`\b(\d+)\s+(?:[a-z]+\s+){0,2}(?:${MULTI_WO
 // "Calls down 12 lightning strikes … each dealing" → 12, "Slashes 3 times, each" → 3,
 // "per second for 8 seconds" → 8, "every 0.125 seconds" for 1 second → 8. Defaults to 1.
 export function hitCount(line) {
+  const twice = line.match(/\b(?:attack|strike|hit|slash)(?:e?s)?\s+(twice|thrice)\b/i);
+  if (twice) return twice[1].toLowerCase() === 'twice' ? 2 : 3;
   const times = line.match(/(\d+)\s+(?:additional\s+)?times,?\s+each/i)
     || line.match(/\b(?:attack|strike|hit|slash)(?:e?s)?\s+(\d+)\s+times/i)
     || line.match(/damage\s+(\d+)\s+times/i)
@@ -93,6 +95,35 @@ export function hitCount(line) {
     if (every) return Math.max(1, Math.floor(Number(dur[1]) / Number(every[1]) + 1e-9));
     // Damage per second × duration ("per second for 2.5 seconds" → 2.5).
     if (/per second|every second/i.test(line)) return Math.max(1, Number(dur[1]));
+  }
+  return 1;
+}
+
+const WORD_NUM = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12 };
+// Hit counts written on another line of the same skill: "Every second, inflict …" + "Lasts 7 seconds",
+// "Each arrow deals …" + "Summons 12 arrows", "Each bullet deals …" + "A total of 10 bullets are fired".
+function skillLevelCount(line, lines) {
+  const others = lines.filter(l => l !== line);
+  if (/per second|every second/i.test(line) && !/for\s+(?:up to\s+)?\d|over\s+\d/i.test(line)) {
+    for (const l of others) {
+      const d = l.match(/^(?:lasts|can be channeled (?:for|up to))\s+(\d+(?:\.\d+)?)\s+seconds?/i);
+      if (d) return Number(d[1]);
+    }
+  }
+  const every = line.match(/every\s+(\d+(?:\.\d+)?)\s+seconds?/i);
+  if (every && !/for\s+\d/i.test(line)) {
+    for (const l of others) {
+      const d = l.match(/^lasts\s+(\d+(?:\.\d+)?)\s+seconds?/i);
+      if (d) return Math.max(1, Math.floor(Number(d[1]) / Number(every[1]) + 1e-9));
+    }
+  }
+  const each = line.match(/\beach\s+([a-z]+?)s?\s+(?:deals|inflicts|dealing)/i);
+  if (each) {
+    const noun = each[1].toLowerCase();
+    for (const l of others) {
+      const m = l.match(new RegExp(String.raw`\b(\d+|${Object.keys(WORD_NUM).join('|')})\s+(?:[a-z]+\s+){0,3}?${noun}(?:e?s)?\b`, 'i'));
+      if (m) return Number(m[1]) || WORD_NUM[m[1].toLowerCase()];
+    }
   }
   return 1;
 }
@@ -132,6 +163,7 @@ export function parseHeroHits(skills, heroClass) {
     for (const field of FIELDS) {
       for (const line of sk[field] || []) {
         for (const h of parseDamageLine(line)) {
+          if (h.count === 1) h.count = skillLevelCount(line, FIELDS.flatMap(f => sk[f] || []));
           out.push({
             key: `${sk.name}#${n++}`, skill: sk.name, hotkey: sk.hotkey, icon: sk.icon, field, line, ...h,
             // "Counts as basic attack" (Sniper Glide, Lightseeker Light Dash) only means it triggers

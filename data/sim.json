@@ -18,6 +18,7 @@
   },
   "heroes": {
     "Water Mage": {
+      "element": "water",
       "hits": {
         "Ice Age#0": { "element": "water", "canCrit": false }
       },
@@ -29,6 +30,7 @@
       ]
     },
     "Lightning Mage": {
+      "element": "wind",
       "hits": {
         "Lightning Blade#0": { "canCrit": true }
       },
@@ -99,6 +101,7 @@
       ]
     },
     "Fire Mage": {
+      "element": "flame",
       "riders": [
         { "id": "burn", "skill": "Flame Mastery", "label": "Burn (Flame Mastery): 40% of the hit over 2 s",
           "line": "Landing attacks or skills inflict Burn, dealing 40% additional damage (minimum INT X 2.5) over 2 seconds",
@@ -112,6 +115,7 @@
       ]
     },
     "Dark Knight": {
+      "element": "dark",
       "extraHits": [
         { "key": "Hollow Impact#explosion", "skill": "Hollow Impact", "hotkey": "[R]", "icon": "DarkKnightR", "field": "active",
           "line": "Upon arrival, explodes to deal damage again (Main Stat X 20 magic damage)",
@@ -138,11 +142,13 @@
       ]
     },
     "Warlock": {
+      "element": "dark",
       "modifiers": [
         { "id": "wl-q-center", "label": "Crucifixion: target in the center (+100%)", "skill": "Crucifixion", "step": "conditional", "value": 1, "onlyHits": ["Crucifixion"] }
       ]
     },
     "Wind Mage": {
+      "element": "wind",
       "extraHits": [
         { "key": "Mirror of Aeolus#0", "skill": "Mirror of Aeolus", "hotkey": "[E]", "icon": "WindMageE", "field": "active",
           "line": "Upon expiration or casting again, deals INT X 20 + absorbed damage X 10 (max: INT X 200) magic damage to nearby enemies",
@@ -160,6 +166,7 @@
       ]
     },
     "Paladin": {
+      "element": "light",
       "extraHits": [
         { "key": "Divine Shield#0", "skill": "Divine Shield", "hotkey": "[T]", "icon": "PaladinT", "field": "active",
           "line": "On recast, deals (STR X 25 X elapsed seconds) magic damage to nearby enemies (full 5 seconds)",
@@ -186,11 +193,414 @@
         { "id": "tr-t-marks", "label": "Stage Finisher marks on target: skill damage to target +5% each", "skill": "Stage Finisher", "step": "final", "perStack": 0.05, "maxStacks": 4 }
       ]
     },
+    "Berserker": {
+      "extraHits": [
+        {
+          "key": "Howling#0",
+          "skill": "Howling",
+          "hotkey": "[W]",
+          "icon": "BerserkerW",
+          "field": "active",
+          "line": "Max HP (1 + 0.03 X hero level) pure damage",
+          "terms": [
+            {
+              "stat": "maxHp",
+              "x": 1,
+              "xPerLevel": 0.03
+            }
+          ],
+          "type": "pure",
+          "count": 1,
+          "isSkill": true
+        }
+      ],
+      "modifiers": [
+        {
+          "id": "bz-e-ad",
+          "label": "Blood Fury: attack damage up to STR × 5 (by missing HP)",
+          "skill": "Blood Fury",
+          "step": "stat",
+          "stat": "ad",
+          "scale": [
+            {
+              "stat": "str",
+              "x": 5
+            }
+          ],
+          "keepEffects": true,
+          "note": "Full value at low HP."
+        },
+        {
+          "id": "bz-e-final",
+          "label": "Blood Fury: final damage up to 15% (by missing HP)",
+          "skill": "Blood Fury",
+          "step": "final",
+          "value": 0.15,
+          "keepEffects": true,
+          "note": "Full value at low HP."
+        }
+      ]
+    },
+    "Blaster": {
+      "hits": {
+        "Buster Shot#0": {
+          "canCrit": true
+        },
+        "Mecha Blast#0": {
+          "canCrit": true
+        },
+        "Orbital Bombardment#1": {
+          "canCrit": true
+        },
+        "Homing Missile#0": {
+          "count": 20
+        },
+        "Mecha Call#0": {
+          "count": 4
+        }
+      },
+      "modifiers": [
+        {
+          "id": "bl-e-attacks",
+          "label": "Buster Shot passive: +15% (×2) is for basic attacks only",
+          "skill": "Buster Shot",
+          "step": "info"
+        }
+      ]
+    },
+    "Blood Weaver": {
+      "hits": {
+        "Blood Claw#0": {
+          "count": 5
+        }
+      },
+      "modifiers": [
+        {
+          "id": "bw-d-hp",
+          "label": "Blood Mastery: max HP + INT × 3",
+          "skill": "Blood Mastery",
+          "step": "stat",
+          "stat": "hp",
+          "scale": [
+            {
+              "stat": "int",
+              "x": 3
+            }
+          ]
+        },
+        {
+          "id": "bw-q-chain",
+          "label": "Blood Claw: +100% per consecutive cast (5 casts)",
+          "skill": "Blood Claw",
+          "step": "conditional",
+          "chain": {
+            "per": 1,
+            "maxStacks": 4
+          },
+          "onlyHits": [
+            "Blood Claw"
+          ]
+        }
+      ]
+    },
+    "Crusader": {
+      "element": "light",
+      "modifiers": [
+        {
+          "id": "cr-q-taken",
+          "label": "Remains of Rage: target takes 12% more damage (3 s)",
+          "skill": "Remains of Rage",
+          "step": "targetTaken",
+          "value": 0.12,
+          "keepEffects": true
+        },
+        {
+          "id": "cr-r-q",
+          "label": "1st Sword Dance: next Remains of Rage +300%",
+          "skill": "1st Sword Dance: Strike",
+          "step": "conditional",
+          "value": 3,
+          "default": false,
+          "onlyHits": [
+            "Remains of Rage"
+          ],
+          "keepEffects": true
+        },
+        {
+          "id": "cr-rr-e",
+          "label": "2nd Sword Dance: next Strike of Honor +200%",
+          "skill": "2nd Sword Dance: Sword",
+          "step": "conditional",
+          "value": 2,
+          "default": false,
+          "onlyHits": [
+            "Strike of Honor"
+          ],
+          "keepEffects": true
+        },
+        {
+          "id": "cr-t-sword",
+          "label": "Max Amplification: Execution Sword +150%",
+          "skill": "Max Amplification: Execution Sword",
+          "step": "conditional",
+          "value": 1.5,
+          "default": false,
+          "onlyHits": [
+            "Execution Sword"
+          ],
+          "keepEffects": true
+        }
+      ]
+    },
+    "Gunner": {
+      "hits": {
+        "Fanning#0": {
+          "count": 6
+        }
+      }
+    },
+    "Lancer": {
+      "modifiers": [
+        {
+          "id": "ln-w-emp",
+          "label": "Empowered Flash Strike: D/Q/W/E deal 100% more to the target (5 s)",
+          "skill": "Flash Strike",
+          "step": "conditional",
+          "value": 1,
+          "default": false,
+          "onlyHits": [
+            "Oriental Spear Mastery",
+            "Pierce",
+            "Flash Strike",
+            "Nerve Strike"
+          ],
+          "keepEffects": true
+        }
+      ]
+    },
+    "Lightseeker": {
+      "element": "light",
+      "hits": {
+        "Converging Light#0": {
+          "count": 3
+        }
+      },
+      "modifiers": [
+        {
+          "id": "ls-r-charge",
+          "label": "Light Seeker fully charged (up to 500%)",
+          "skill": "Light Seeker",
+          "step": "conditional",
+          "value": 4,
+          "onlyHits": [
+            "Light Seeker"
+          ],
+          "note": "Read as 500% of the base hit."
+        },
+        {
+          "id": "ls-r-empower",
+          "label": "Empowering Light consumed: +15% per stack",
+          "skill": "Light Seeker",
+          "step": "conditional",
+          "perStack": 0.15,
+          "maxStacks": 20,
+          "onlyHits": [
+            "Light Seeker"
+          ]
+        },
+        {
+          "id": "ls-f-empower",
+          "label": "Empowering Light consumed: +5% per stack",
+          "skill": "Light of Judgment",
+          "step": "conditional",
+          "perStack": 0.05,
+          "maxStacks": 20,
+          "onlyHits": [
+            "Light of Judgment"
+          ]
+        },
+        {
+          "id": "ls-t",
+          "label": "Enlightenment: damage dealt by skills +25% (10 s)",
+          "skill": "Enlightenment",
+          "step": "final",
+          "value": 0.25
+        }
+      ]
+    },
+    "Phantom Blade": {
+      "hits": {
+        "Daze#0": {
+          "canCrit": true
+        },
+        "Obliterate#0": {
+          "canCrit": true
+        }
+      }
+    },
+    "Shooter": {
+      "element": "magitek",
+      "modifiers": [
+        {
+          "id": "sh-q-consec",
+          "label": "Twin Star consecutive hits: +50% each (up to 2)",
+          "skill": "Twin Star",
+          "step": "conditional",
+          "perStack": 0.5,
+          "maxStacks": 2,
+          "default": false,
+          "onlyHits": [
+            "Twin Star"
+          ]
+        }
+      ]
+    },
+    "Shrine Priestess": {
+      "element": "fusion",
+      "modifiers": [
+        {
+          "id": "sp-q-charge",
+          "label": "Water Explosion fully charged (3 s, +100% per second)",
+          "skill": "Water Explosion",
+          "step": "conditional",
+          "value": 3,
+          "onlyHits": [
+            "Water Explosion"
+          ]
+        }
+      ]
+    },
+    "Sword Enchanter": {
+      "modifiers": [
+        {
+          "id": "se-e-self",
+          "label": "Power Enchant: damage dealt +5% (self)",
+          "skill": "Power Enchant",
+          "step": "final",
+          "value": 0.05,
+          "keepEffects": true
+        }
+      ]
+    },
+    "Swordsman": {
+      "extraHits": [
+        {
+          "key": "Slice#0",
+          "skill": "Slice",
+          "hotkey": "[Q] → [W]",
+          "icon": "SwordsmanQ_W",
+          "field": "active",
+          "line": "Dashes forward, slashing everything on the path: AGI X (5 + Hero Level / 5) pure damage",
+          "terms": [
+            {
+              "stat": "agi",
+              "x": 5,
+              "xPerLevel": 0.2
+            }
+          ],
+          "type": "pure",
+          "count": 1,
+          "isSkill": true
+        }
+      ],
+      "modifiers": [
+        {
+          "id": "sw-r-agi",
+          "label": "Swords of Illusion: AGI +2% per sword",
+          "skill": "Sword of Illusion",
+          "step": "statPct",
+          "stat": "agi",
+          "perStack": 0.02,
+          "maxStacks": 8
+        },
+        {
+          "id": "sw-r-consec",
+          "label": "Consecutive swords: +100% after the first",
+          "skill": "Sword of Illusion",
+          "step": "conditional",
+          "chain": {
+            "per": 1,
+            "maxStacks": 1
+          },
+          "onlyHits": [
+            "Sword of Illusion"
+          ],
+          "keepEffects": true
+        }
+      ]
+    },
+    "Thunderer": {
+      "element": "wind",
+      "hits": {
+        "Three Talon Strike#0": {
+          "type": "pure"
+        }
+      },
+      "modifiers": [
+        {
+          "id": "th-field-ad",
+          "label": "Magnetic Field (full): attack damage + (STR + AGI) × 2.5",
+          "skill": "Magnetic Field",
+          "step": "stat",
+          "stat": "ad",
+          "scale": [
+            {
+              "stat": "str",
+              "x": 2.5
+            },
+            {
+              "stat": "agi",
+              "x": 2.5
+            }
+          ]
+        },
+        {
+          "id": "th-r-field",
+          "label": "Heart Break: consumes Magnetic Field for up to +150%",
+          "skill": "Heart Break",
+          "step": "conditional",
+          "value": 1.5,
+          "onlyHits": [
+            "Heart Break"
+          ]
+        }
+      ]
+    },
+    "Witch": {
+      "modifiers": [
+        {
+          "id": "wi-q-channel",
+          "label": "Death Bomb fully channeled (up to 500%)",
+          "skill": "Death Bomb",
+          "step": "conditional",
+          "value": 4,
+          "onlyHits": [
+            "Death Bomb"
+          ],
+          "note": "Read as 500% of the base hit."
+        },
+        {
+          "id": "wi-e-q",
+          "label": "Mystical Cauldron chained: Death Bomb +140%",
+          "skill": "Mystical Cauldron",
+          "step": "conditional",
+          "value": 1.4,
+          "default": false,
+          "onlyHits": [
+            "Death Bomb"
+          ],
+          "keepEffects": true
+        }
+      ]
+    },
+    "Priest": { "element": "light" },
+    "Soul Weaver": { "element": "dark" },
     "Sniper": {
+      "elements": { "Explosive Shot": "flame" },
       "modifiers": [
         { "id": "sn-q-agi", "label": "Storm Shaft charges: AGI +5% each (Q)", "skill": "Storm Shaft", "step": "statPct", "stat": "agi", "perStack": 0.05, "maxStacks": 4 },
         { "id": "sn-q-charges", "label": "Storm Shaft charges consumed (+100% each)", "skill": "Storm Shaft", "step": "conditional", "perStack": 1, "maxStacks": 4, "onlyHits": ["Storm Shaft"] },
-        { "id": "sn-t-range", "label": "Snipe passive: max distance (T)", "skill": "Snipe", "step": "final", "value": 0.3 }
+        { "id": "sn-t-range", "label": "Snipe passive: max distance (T)", "skill": "Snipe", "step": "conditional", "value": 0.3 }
       ]
     }
   },
@@ -242,7 +652,7 @@
     ] },
     "Celestial Wind": { "modifiers": [
       { "label": "Heavenly Wind: main stat +200", "step": "stat", "stat": "main", "value": 200 },
-      { "label": "Heavenly Wind: 25% chance +20%", "step": "final", "value": 0.2, "default": false, "chance": true }
+      { "label": "Heavenly Wind: 25% chance +20%", "step": "conditional", "value": 0.2, "default": false, "chance": true }
     ] },
     "Heaven's Door": { "modifiers": [
       { "label": "Heaven's Light (healed by an ally): main stat +60", "step": "stat", "stat": "main", "value": 60, "party": true, "fxType": "main-stat|A:flat" },
@@ -340,7 +750,7 @@
       {"label": "Skill damage +2.5% per stack", "step": "skillDamage", "perStack": 0.025, "maxStacks": 4}
     ] },
     "Ring of the One": { "keepEffects": true, "modifiers": [
-      {"label": "On dealing damage: 20% chance for 25% additional damage", "step": "final", "value": 0.25, "default": false, "chance": true}
+      {"label": "On dealing damage: 20% chance for 25% additional damage", "step": "conditional", "value": 0.25, "default": false, "chance": true}
     ] },
     "Cosmic Reaper": { "keepEffects": true, "modifiers": [
       {"label": "Active: AGI +300", "step": "stat", "stat": "agi", "value": 300}
@@ -373,7 +783,7 @@
       {"label": "Void Corrosion: 17% of the hit over 3 s", "line": "On direct skill hit, deals 17% of damage dealt over 3 seconds", "of": 0.17, "continuous": true, "skillsOnly": true}
     ] },
     "Ring of Genesis": { "modifiers": [
-      { "label": "On dealing damage: chance for 30% additional damage", "step": "final", "value": 0.3, "default": false, "chance": true, "note": "Chance isn't stated." },
+      { "label": "On dealing damage: chance for 30% additional damage", "step": "conditional", "value": 0.3, "default": false, "chance": true, "note": "Chance isn't stated." },
       { "label": "On skill cast: 15% chance for final damage +7.5% (5 s)", "step": "final", "value": 0.075, "default": false, "chance": true },
       { "label": "On ultimate cast: skill amplify 5% (10 s)", "step": "amplify", "value": 0.05 }
     ] },

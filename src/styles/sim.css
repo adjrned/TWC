@@ -220,3 +220,8 @@
 .sim-mod.unmodelled .sim-mod-main > input { visibility: hidden; }
 .sim-unmodelled { color: var(--muted); font-style: italic; }
 .sim-part-opts .sim-stored input[type=number] { width: 11ch; }
+
+.sim-skill.nodmg { opacity: .5; }
+.sim-skill.nodmg:hover, .sim-skill.nodmg.active { opacity: 1; }
+.sim-nodmg ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted2); }
+.sim-nodmg li { margin: 2px 0; }

@@ -11,7 +11,7 @@ import { load as loadPlanner } from '../../data/storage.js';
 import { fetchCreatorsForClass } from '../../data/builds.js';
 import { fetchBuild } from '../builder/buildBrowser.js';
 import { buildModel, GEAR_SLOTS, PCT_STEPS } from '../../sim/model.js';
-import { simulate, ELEMENTS } from '../../sim/engine.js';
+import { simulate, ELEMENT_OPTIONS } from '../../sim/engine.js';
 
 const STORE_KEY = 'simState';
 const SLOT_TAB = { weapon: 'weapon', helm: 'headwear', body: 'armor', wings: 'wings', accessory: 'accessory', icon: 'all' };
@@ -75,18 +75,14 @@ function heroPickerHtml(m, sel) {
 const termsText = h => (h.rider ? h.label : h.terms.map(x => (x.flat != null ? fmt(x.flat) : x.stored ? `${t('sim.storedShort')} × ${+((x.own ?? 1) * x.x * 100).toFixed(2)}%` : `${STAT_LABEL[x.stat] || x.stat} × ${x.x}`)).join(' + '));
 const keyText = hotkey => (String(hotkey || '').match(/Passive|[A-Z]/g) || []).map(k => (k === 'Passive' ? 'P' : k)).join('→');
 
-// Skill bar: one icon button per skill with damage, in skill order (hover shows the skill tooltip).
-function skillBarHtml(hits, hero, sel) {
-  const seen = new Map();
-  for (const h of hits) {
-    if (!seen.has(h.skill)) seen.set(h.skill, { hotkey: h.hotkey, icon: h.icon, n: 0 });
-    seen.get(h.skill).n++;
-  }
-  return `<div class="sim-skillbar">${[...seen].map(([name, v]) => `<button type="button" class="sim-skill${name === sel ? ' active' : ''}" data-pick-skill="${esc(name)}" data-skill="${esc(hero.heroClass + '|' + name)}" data-color="${esc(hero.color || '')}" aria-pressed="${name === sel}">
+// Skill bar: one icon button per skill in skill order, dimmed when it has no damage (hover shows the skill tooltip).
+function skillBarHtml(list, hero, sel) {
+  const seen = new Map(list.map(sk => [sk.name, { hotkey: sk.hotkey, icon: sk.icon, n: sk.parts, damage: sk.damage }]));
+  return `<div class="sim-skillbar">${[...seen].map(([name, v]) => `<button type="button" class="sim-skill${name === sel ? ' active' : ''}${v.damage ? '' : ' nodmg'}" data-pick-skill="${esc(name)}" data-skill="${esc(hero.heroClass + '|' + name)}" data-color="${esc(hero.color || '')}" aria-pressed="${name === sel}">
       ${iconHtml(name, 'sim-skill-icon', iconSrc(v.icon || name))}
       <kbd>${esc(keyText(v.hotkey))}</kbd>
     </button>`).join('')}</div>
-    ${sel ? `<p class="sim-skill-name"><kbd class="hs-key">${esc(keyText(seen.get(sel)?.hotkey))}</kbd> <b>${esc(sel)}</b>${seen.get(sel)?.n > 1 ? ` <span>${esc(t('sim.nParts', { n: seen.get(sel).n }))}</span>` : ''}</p>` : ''}`;
+    ${sel ? `<p class="sim-skill-name"><kbd class="hs-key">${esc(keyText(seen.get(sel)?.hotkey))}</kbd> <b>${esc(sel)}</b>${seen.get(sel)?.n > 1 ? ` <span>${esc(t('sim.nParts', { n: seen.get(sel).n }))}</span>` : ''}${seen.get(sel) && !seen.get(sel).damage ? ` <span>${esc(t('sim.noDamage'))}</span>` : ''}</p>` : ''}`;
 }
 
 function gearHtml(s) {
@@ -234,7 +230,7 @@ function updateStats(el, r) {
 // A skill's damage parts: include, hit count, damage type, element and crit per part.
 function partsHtml(r, s) {
   const types = ['physical', 'magic', 'pure'].map(v => [v, t('sim.type.' + v)]);
-  const els = [['', t('sim.none')], ...ELEMENTS.map(e => [e, t('sim.el.' + e)])];
+  const els = [['', t('sim.none')], ...ELEMENT_OPTIONS.map(e => [e, t('sim.el.' + e)])];
   return `<ul class="sim-parts">${r.parts.map(p => {
     const st = s.parts?.[p.key] || {};
     return `<li class="sim-part${p.on ? ' on' : ''}${p.key === r.hit.key ? ' focus' : ''}" data-part="${esc(p.key)}">
@@ -255,7 +251,19 @@ function partsHtml(r, s) {
   }).join('')}</ul>`;
 }
 
+// A skill without damage lines: show its text so it's clear what it does (its effects are in the conditions list).
+function noDamageHtml(r, s) {
+  const sk = getSkill(s.hero, r.skill);
+  const lines = [...(sk?.active || []), ...(sk?.toggle || []), ...(sk?.passive || [])];
+  return `<div class="sim-nodmg"><p class="sim-hint">${esc(t('sim.noDamageHint'))}</p>
+    ${lines.length ? `<ul>${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}</div>`;
+}
+
 function resultHtml(r) {
+  if (!r.hit) {
+    return `<div class="sim-total"><span>${esc(t('sim.total'))} · ${esc(r.skill)}</span><b>—</b><small>${esc(t('sim.noDamage'))}</small></div>
+      <p class="sim-hint">${esc(t('sim.formulaNote'))} <a href="#/effects?group=formula">${esc(t('sim.formulaLink'))}</a></p>`;
+  }
   const label = id => t('sim.step.' + id);
   const srcText = s => s.sources?.map(x => `${esc(x.stat ? `${STAT_LABEL[x.stat] || x.stat} × ${x.x}` : x.label)}: ${x.stat ? fmt(x.value) : (s.op === '+' || s.id === 'base' || s.id === 'crit' ? (s.id === 'crit' ? '+' + (+x.value.toFixed(3)) : fmt(x.value)) : fmtPct(x.value))}`).join(' · ') || '';
   const h = r.hit;
@@ -338,7 +346,7 @@ export async function initSim() {
   }
 
   function renderSetup(r) {
-    const hits = r ? r.hits : m.hits(s.hero);
+    const list = r ? r.skillList : [];
     const hero = m.heroByClass.get(s.hero) || {};
     setupEl.innerHTML = `
       <div class="sim-row">
@@ -352,8 +360,8 @@ export async function initSim() {
           ${builds.map((b, bi) => `<optgroup label="${esc(b.label)}">${b.rows.map((row, ri) => `<option value="${bi}:${ri}">${esc(b.label)} · ${esc(row.name)}</option>`).join('')}</optgroup>`).join('')}
         </select></label>
       </div>
-      ${skillBarHtml(hits, hero, r?.skill)}
-      ${r ? partsHtml(r, s) : `<p class="sim-empty">${esc(t('sim.noHits'))}</p>`}
+      ${skillBarHtml(list, hero, r?.skill)}
+      ${r?.parts.length ? partsHtml(r, s) : r ? noDamageHtml(r, s) : `<p class="sim-empty">${esc(t('sim.noHits'))}</p>`}
       <h4 class="sim-sub">${esc(t('sim.gear'))}</h4>
       <div class="sim-gear">${gearHtml(s)}</div>`;
     updateDeltas();

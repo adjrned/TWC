@@ -81,7 +81,10 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     const rest = line.replace(/(?:reduces?|reduced|decreases?)\s+(?:\w+\s+){0,3}damage(?:\s+(?:taken|received))?|damage\s+(?:taken|received)|received damage/gi, '');
     return /damage|crit|amplif|\b(STR|AGI|INT)\b|main stat|affinity/i.test(rest);
   };
-  const curatedSkills = cls => new Set((curated.heroes?.[cls]?.modifiers || []).map(x => x.skill).filter(Boolean));
+  // Skills written up in sim.json replace their text conditionals, and their Effects entries too unless every
+  // curated modifier on the skill only adds to them ("keepEffects").
+  const curatedSkills = (cls, { fx = false } = {}) => new Set((curated.heroes?.[cls]?.modifiers || [])
+    .filter(x => !fx || !x.keepEffects).map(x => x.skill).filter(Boolean));
 
   // Curated modifiers (data/sim.json) for a hero and the equipped items.
   function curatedMods(cls, gearNames) {
@@ -109,7 +112,7 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
   // Effects tab entries as modifiers. Curated items/heroes replace their Effects entries.
   function effectMods(cls, gearNames) {
     const gear = new Set(gearNames);
-    const heroSkills = curatedSkills(cls);
+    const heroSkills = curatedSkills(cls, { fx: true });
     const out = [];
     for (const c of fxCats) {
       const map = CAT_STEP[c.id];
@@ -182,7 +185,11 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
 
   function modsFor(cls, gearNames, hit) {
     const modes = skillModes(cls);
-    const every = [...curatedMods(cls, gearNames), ...effectMods(cls, gearNames)]
+    const fx = effectMods(cls, gearNames);
+    // A skill-text conditional that the Effects tab already lists (same skill, step and value) is the same effect.
+    const fxKeys = new Set(fx.filter(m => m.source?.hero === cls).map(m => `${m.source.skill}|${m.step}|${(+m.value || 0).toFixed(4)}`));
+    const own = curatedMods(cls, gearNames).filter(m => !String(m.id).startsWith('cond:') || !fxKeys.has(`${m.source.skill}|${m.step}|${(+m.value || 0).toFixed(4)}`));
+    const every = [...own, ...fx]
       .map(m => (!m.mode && m.source?.hero === cls && modes.has(m.source.skill) ? { ...m, mode: modes.get(m.source.skill) } : m));
     const all = every.filter(m => (!m.onlyHits || (hit && m.onlyHits.includes(hit.skill))) && (!m.onlyHero || m.onlyHero === cls)
       && !(m.source?.hero === cls && m.source.skill && !skillAvailable(cls, m.source.skill, gearNames)));
@@ -209,6 +216,12 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
 
   return {
     items, itemByName, heroByClass, curated, heroConfig, baseMainAt, hits, modsFor, skillAvailable,
+    // Default element of a hero's skills (sim.json hero "element", per-skill "elements" overrides; "" = none).
+    heroElement: (cls, skill) => {
+      const h = curated.heroes?.[cls] || {};
+      return h.elements?.[skill] ?? h.element;
+    },
+    skillList: cls => skills.filter(s => s.heroClass === cls).sort((a, b) => (a.order || 0) - (b.order || 0)),
     riders: (cls, gearNames = []) => [...(curated.heroes?.[cls]?.riders || []),
       ...gearNames.flatMap(n => (curated.items?.[n]?.riders || []).map(r => ({ ...r, id: r.id || n, source: { item: n } })))],
     heroList: () => heroes.filter(h => h.heroClass && h.mainstat),

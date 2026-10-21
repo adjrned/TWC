@@ -5,6 +5,19 @@ import { PCT_STEPS } from './model.js';
 
 const ELEMENT_KEY = { flame: 'affinityflamepercent', water: 'affinitywaterpercent', wind: 'affinitywindpercent', earth: 'affinityearthpercent', light: 'affinitylightpercent', dark: 'affinitydarkpercent' };
 export const ELEMENTS = Object.keys(ELEMENT_KEY);
+// Mixed elements read other affinities: Magitek (Shooter) = 70% of the highest; Fusion (Shrine Priestess)
+// = higher of fire / water + half of the lower.
+const MIXED = {
+  magitek: tot => {
+    const best = ELEMENTS.reduce((a, el) => (tot[el] > tot[a] ? el : a), ELEMENTS[0]);
+    return [{ label: `Magitek: 70% of ${best} ${+(tot[best] * 100).toFixed(2)}%`, value: 0.7 * tot[best] }];
+  },
+  fusion: tot => {
+    const [hi, lo] = tot.flame >= tot.water ? ['flame', 'water'] : ['water', 'flame'];
+    return [{ label: `Fusion: ${hi} ${+(tot[hi] * 100).toFixed(2)}% + half of ${lo} ${+(tot[lo] * 100).toFixed(2)}%`, value: tot[hi] + 0.5 * tot[lo] }];
+  },
+};
+export const ELEMENT_OPTIONS = [...ELEMENTS, ...Object.keys(MIXED)];
 const STATS3 = ['str', 'agi', 'int'];
 
 const fmtNum = n => Math.round(n).toLocaleString('en-US');
@@ -85,8 +98,17 @@ export function simulate(model, setup) {
   const has = list => [].concat(list).some(r => gearNames.includes(r));
   const hits = model.hits(cls).filter(h => (!h.requires || has(h.requires)) && (!h.requiresNot || !has(h.requiresNot))
     && model.skillAvailable(cls, h.skill, gearNames));
-  const skills = [...new Set(hits.map(h => h.skill))];
-  const skill = skills.includes(setup.skill) ? setup.skill : (hits.find(h => h.key === setup.hit)?.skill || skills[0]);
+  // Every skill the hero has right now is listed, in skill order, damage or not (buffs and passives still
+  // show their effects in the conditions list).
+  const hitSkills = new Set(hits.map(h => h.skill));
+  const skillList = [...model.skillList(cls).filter(sk => model.skillAvailable(cls, sk.name, gearNames)),
+    ...hits.filter(h => !model.skillList(cls).some(sk => sk.name === h.skill))]
+    .filter((sk, i, arr) => arr.findIndex(x => (x.name || x.skill) === (sk.name || sk.skill)) === i)
+    .map(sk => ({ name: sk.name || sk.skill, hotkey: sk.hotkey, icon: sk.icon, damage: hitSkills.has(sk.name || sk.skill),
+      parts: hits.filter(h => h.skill === (sk.name || sk.skill)).length }));
+  const skills = skillList.map(sk => sk.name);
+  const skill = skills.includes(setup.skill) ? setup.skill
+    : (hits.find(h => h.key === setup.hit)?.skill || skillList.find(sk => sk.damage)?.name || skills[0]);
   if (!skill) return null;
   const partState = setup.parts || {};
   const parts = hits.filter(h => h.skill === skill).map(h0 => {
@@ -95,7 +117,7 @@ export function simulate(model, setup) {
       ...h0,
       on: ps.on ?? !h0.alt,
       type: ps.type || h0.type,
-      element: ps.element ?? h0.element ?? '',
+      element: ps.element ?? h0.element ?? model.heroElement(cls, h0.skill) ?? '',
       crit: ps.crit ?? h0.canCrit ?? false,
       count: Math.max(0, num(ps.count) ?? h0.count ?? 1),
       autoCount: h0.count ?? 1,
@@ -209,6 +231,9 @@ export function simulate(model, setup) {
   const affList = (el, from) => [...gearStat(ELEMENT_KEY[el]), ...gearStat('allaffinitypercent'),
     ...from.filter(m => m.step === 'affinity' && (!m.element || m.element === el || m.element === 'all')).map(m => ({ label: m.label, value: modValue(m, stats, allyStat) })),
     ...manualPct('affinity')];
+  const affListOf = (el, from) => (MIXED[el]
+    ? MIXED[el](Object.fromEntries(ELEMENTS.map(e => [e, sum(affList(e, from))])))
+    : affList(el, from));
   const plain = on.filter(m => m.step === 'affinity' && !m.modeOff && !m.ifHigher);
   stats.aff = Object.fromEntries(ELEMENTS.map(el => [el, sum(affList(el, plain))]));
   for (const m of mods) if (m.ifHigher) m.modeOff = m.ifHigher.some(o => (m.tieLoses ? stats.aff[o] >= stats.aff[m.ifElement] : stats.aff[o] > stats.aff[m.ifElement]));
@@ -255,7 +280,7 @@ export function simulate(model, setup) {
     // Riders copy an already-multiplied hit: only continuous damage and the target's steps apply.
     if (R) for (const id of ['affinity', 'conditional', 'crit', 'bonus']) skip(id, 'rider');
     else if (hit.element) {
-      const list = affList(hit.element, live);
+      const list = affListOf(hit.element, live);
       affFactor = 1 + sum(list);
       push('affinity', '×', affFactor, list);
     } else skip('affinity', 'noElement');
@@ -337,5 +362,5 @@ export function simulate(model, setup) {
   const included = parts.filter(p => p.on);
   const total = included.reduce((a, p) => a + p.subtotal, 0);
   const beforeTarget = included.reduce((a, p) => a + p.subBefore, 0);
-  return { skill, skills, hit, parts, hits, stored, stats, statTable, main, cfg, baseMain, mods, steps: hit.steps, beforeTarget, total, warnings };
+  return { skill, skills, skillList, hit, parts, hits, stored, stats, statTable, main, cfg, baseMain, mods, steps: hit?.steps || [], beforeTarget, total, warnings };
 }
