@@ -4,7 +4,7 @@
     "Hand-curated damage sim data. Item base stats come from items.json and skill formulas are parsed from skills.json; this file adds conditions, stacks and procs the text can't express.",
     "Values: % steps use fractions (0.15 = 15%), flat steps use plain numbers. perStack × stacks is added to value; atMax is added at max stacks.",
     "An item or hero listed here replaces its Effects tab entries in the sim.",
-    "hpPerStr 5 / baseHp 6740 are fitted to one in-game reading (L105 Water Mage: 21,890 Max HP with 1,850 STR and 5,900 gear HP); unconfirmed."
+    "Hero attribute tooltip (in game): STR = 5 HP per point, INT = 5 MP per point, primary attribute = 3 damage per point. AGI (crit chance, attack speed) is ignored. baseHp 6740 is fitted to one reading (L105 Water Mage: 21,890 Max HP with 1,850 STR and 5,900 gear HP)."
   ],
   "defaults": {
     "baseMain": { "100": 697, "105": 772, "perLevel": 15 },

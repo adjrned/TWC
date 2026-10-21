@@ -141,7 +141,10 @@ export function simulate(model, setup) {
 
   const baseMain = num(over.baseMain) ?? model.baseMainAt(cls, level);
   const base = {};
-  for (const k of STATS3) base[k] = num(baseIn[k]) ?? (k === main ? baseMain : 0);
+  // Base stats stay with the hero's own primary attribute; switching the primary only moves its
+  // 3 damage per point (and "main stat" effects) to the chosen stat.
+  const ownMain = String(hero.mainstat || 'STR').toLowerCase();
+  for (const k of STATS3) base[k] = num(baseIn[k]) ?? (k === ownMain ? baseMain : 0);
   for (const { item } of gear) {
     const s = item.stats || {};
     for (const k of STATS3) addFlat(k, s[k], item.name);
