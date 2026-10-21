@@ -241,6 +241,11 @@
       { "label": "Heavenly Wind: main stat +200", "step": "stat", "stat": "main", "value": 200 },
       { "label": "Heavenly Wind: 25% chance +20%", "step": "final", "value": 0.2, "default": false, "chance": true }
     ] },
+    "Ring of Genesis": { "modifiers": [
+      { "label": "On dealing damage: chance for 30% additional damage", "step": "final", "value": 0.3, "default": false, "chance": true, "note": "Chance isn't stated." },
+      { "label": "On skill cast: 15% chance for final damage +7.5% (5 s)", "step": "final", "value": 0.075, "default": false, "chance": true },
+      { "label": "On ultimate cast: skill amplify 5% (10 s)", "step": "amplify", "value": 0.05 }
+    ] },
     "Coil of Ouroboros": { "modifiers": [
       { "label": "Infinite Ring: main stat (fully amplified)", "step": "stat", "stat": "main", "value": 500 },
       { "label": "Infinite Ring: amplify (fully amplified)", "step": "amplify", "value": 0.1 }
