@@ -20,7 +20,7 @@ const curatedSkill = (hero, skill) => [...(sim.heroes?.[hero]?.modifiers || []),
 const lines = unparsedDamageLines(skills).filter(l => !parseConditional(l.line) && !parseExecute(l.line)
   && !/\blast \w+ deals double damage/i.test(l.line) && !curatedSkill(l.hero, l.skill));
 const itemTodo = items
-  .filter(i => i.grade > 0 && (i.stats?.passive || i.stats?.active) && !curatedItems.has(i.name) && !fxItems.has(i.name))
+  .filter(i => i.grade > 0 && (i.stats?.passive || i.stats?.active) && !curatedItems.has(i.name) && !fxItems.has(i.name) && !sim.reviewed?.[i.name])
   .sort((a, b) => b.grade - a.grade || a.name.localeCompare(b.name));
 const heroes = [...new Set(skills.map(s => s.heroClass))].sort();
 
@@ -35,6 +35,9 @@ const out = [
   '',
   `## Items with effect text and no sim/Effects data (${itemTodo.length}), highest grade first`,
   ...itemTodo.map(i => `[grade ${i.grade}] ${i.name}`),
+  '',
+  `## Reviewed and left out (${Object.keys(sim.reviewed || {}).length}; sim.json "reviewed")`,
+  ...Object.entries(Object.values(sim.reviewed || {}).reduce((a, r) => ({ ...a, [r]: (a[r] || 0) + 1 }), {})).map(([r, n]) => `${n} × ${r}`),
   '',
 ];
 writeFileSync(new URL('../sim-todo.txt', import.meta.url), out.join('\n'));

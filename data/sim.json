@@ -4,6 +4,7 @@
     "Hand-curated damage sim data. Item base stats come from items.json and skill formulas are parsed from skills.json; this file adds conditions, stacks and procs the text can't express.",
     "Values: % steps use fractions (0.15 = 15%), flat steps use plain numbers. perStack × stacks is added to value; atMax is added at max stacks.",
     "An item or hero listed here replaces its Effects tab entries in the sim.",
+    "\"reviewed\" lists items checked and left out of the sim on purpose, with the reason (the coverage script skips them).",
     "Hero attribute tooltip (in game): STR = 5 HP per point, INT = 5 MP per point, primary attribute = 3 damage per point. AGI (crit chance, attack speed) is ignored. baseHp 6740 is fitted to one reading (L105 Water Mage: 21,890 Max HP with 1,850 STR and 5,900 gear HP)."
   ],
   "defaults": {
@@ -907,6 +908,260 @@
     "Eternal Winter": { "modifiers": [
       {"label": "Permafrost (active): Max MP × 3 + Max MP × 1.5 per second for 3 s", "step": "bonus", "perCast": true, "scale": [{"stat": "maxMp", "x": 7.5}]}
     ] },
+    "Bell of Light": { "modifiers": [
+      {"label": "Aura: nearby allies' HP +1,500", "step": "stat", "stat": "hp", "value": 1500, "party": true, "self": false}
+    ] },
+    "Bloody Hatred": { "modifiers": [
+      {"label": "Skill cast: INT +45 per stack", "step": "stat", "perStack": 45, "maxStacks": 5, "stat": "int"},
+      {"label": "Skill cast: fire affinity +2% per stack", "step": "affinity", "perStack": 0.02, "maxStacks": 5, "element": "flame"}
+    ] },
+    "Bone Necklace": { "modifiers": [
+      {"label": "Anger: skill damage +10%", "step": "skillDamage", "value": 0.1, "default": false, "note": "One of three random effects every 8 s."}
+    ] },
+    "Crown of Composure": { "modifiers": [
+      {"label": "Active: all stats +115", "step": "stat", "stat": "all", "value": 115},
+      {"label": "Active: skill damage +7.5%", "step": "skillDamage", "value": 0.075}
+    ] },
+    "Crown of Rage": { "modifiers": [
+      {"label": "Rage: all stats +1.25% of consumed HP (40% max HP)", "step": "stat", "stat": "all", "scale": [{"stat": "maxHp", "x": 0.005}]},
+      {"label": "Rage: main stat doubled (+1.25% more of consumed HP)", "step": "stat", "stat": "main", "scale": [{"stat": "maxHp", "x": 0.005}]},
+      {"label": "Rage: fire affinity +5%", "step": "affinity", "element": "flame", "value": 0.05}
+    ] },
+    "Crown of Serenity": { "modifiers": [
+      {"label": "Serenity (15% on healing an ally): skill damage +5%", "step": "skillDamage", "value": 0.05, "default": false, "chance": true}
+    ] },
+    "Death Scythe": { "modifiers": [
+      {"label": "Active: skill damage +5%", "step": "skillDamage", "value": 0.05},
+      {"label": "Active: main stat × 22.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 22.5}]}
+    ] },
+    "Dragon Mask": { "modifiers": [
+      {"label": "Active: main stat +180, +10% per skill cast", "step": "stat", "stat": "main", "value": 180, "perStack": 18, "maxStacks": 10},
+      {"label": "Active: crit multiplier +0.2×, +10% per skill cast", "step": "critMult", "value": 0.2, "perStack": 0.02, "maxStacks": 10}
+    ] },
+    "Embrace of Nature": { "modifiers": [
+      {"label": "Active on self: HP +1,800", "step": "stat", "stat": "hp", "value": 1800},
+      {"label": "Active on self: skill damage +5%", "step": "skillDamage", "value": 0.05}
+    ] },
+    "Guardian of the Skies": { "modifiers": [
+      {"label": "Every 4th attack: main stat +50 (4 s)", "step": "stat", "stat": "main", "value": 50},
+      {"label": "Active: main stat × 40 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 40}]}
+    ] },
+    "Laktrisha, the Illusional Sword of Poison": { "modifiers": [
+      {"label": "Active: AGI +375", "step": "stat", "stat": "agi", "value": 375}
+    ] },
+    "Levante, the Sword of Love and Hate": { "modifiers": [
+      {"label": "Resonance: attack damage +525 per nearby ally", "step": "stat", "perStack": 525, "maxStacks": 5, "stat": "ad"},
+      {"label": "Resonance: skill damage +1% per nearby ally", "step": "skillDamage", "perStack": 0.01, "maxStacks": 5}
+    ] },
+    "Medea, the Robe of the Witch": { "modifiers": [
+      {"label": "Orb pickup: INT +30 each", "step": "stat", "perStack": 30, "maxStacks": 4, "stat": "int"},
+      {"label": "Orb pickup: skill damage +1% each", "step": "skillDamage", "perStack": 0.01, "maxStacks": 4},
+      {"label": "Active: INT +150", "step": "stat", "stat": "int", "value": 150},
+      {"label": "Active: skill damage +6%", "step": "skillDamage", "value": 0.06},
+      {"label": "Active: INT × 3.75 magic damage per orb", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 3.75}], "scalePerStack": true, "maxStacks": 4}
+    ] },
+    "Prophetia, the Greater Source of Mana": { "modifiers": [
+      {"label": "Active: INT +300", "step": "stat", "stat": "int", "value": 300},
+      {"label": "Active: skill damage +5%", "step": "skillDamage", "value": 0.05}
+    ] },
+    "Ring of Fervor": { "modifiers": [
+      {"label": "Fervor (hit by an ally's single-target spell): skill damage +6%", "step": "skillDamage", "value": 0.06, "party": true},
+      {"label": "Fervor: main stat +90", "step": "stat", "stat": "main", "value": 90, "party": true}
+    ] },
+    "Ring of Strike": { "modifiers": [
+      {"label": "Absolute Strike (7.5% on attack): attack damage +6,000", "step": "stat", "stat": "ad", "value": 6000, "default": false, "chance": true},
+      {"label": "Absolute Strike: main stat +300", "step": "stat", "stat": "main", "value": 300, "default": false, "chance": true}
+    ] },
+    "Robe of the Reaper": { "modifiers": [
+      {"label": "Active (40% HP): INT +250", "step": "stat", "stat": "int", "value": 250}
+    ] },
+    "Ruinbringer": { "modifiers": [
+      {"label": "Ruin: attack damage +450 per stack", "step": "stat", "perStack": 450, "maxStacks": 10, "stat": "ad"},
+      {"label": "Ruin: STR +24 per stack", "step": "stat", "perStack": 24, "maxStacks": 10, "stat": "str"},
+      {"label": "Ruin: INT +24 per stack", "step": "stat", "perStack": 24, "maxStacks": 10, "stat": "int"},
+      {"label": "Ruin: skill damage +1% per stack", "step": "skillDamage", "perStack": 0.01, "maxStacks": 10},
+      {"label": "Active: STR × 6 + INT × 12 + 1% max HP magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "str", "x": 6}, {"stat": "int", "x": 12}, {"stat": "maxHp", "x": 0.01}]}
+    ] },
+    "Staff of Abyss": { "modifiers": [
+      {"label": "Mad Enhancement: skill damage +10% [Type-B]", "step": "skillDamage", "value": 0.1, "fxType": "skill-damage|B"},
+      {"label": "Mad Enhancement (healed by the wearer): skill damage +10% [Type-B]", "step": "skillDamage", "value": 0.1, "party": true, "fxType": "skill-damage|B"}
+    ] },
+    "Wings of Slayer": { "modifiers": [
+      {"label": "Decimation: AGI +27 per stack", "step": "stat", "perStack": 27, "maxStacks": 10, "stat": "agi"},
+      {"label": "Decimation at max stacks: skill damage +10%", "step": "skillDamage", "maxStacks": 10, "atMax": 0.1}
+    ] },
+    "Bloodsoul Plates": { "modifiers": [
+      {"label": "Active: main stat × 20 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 20}]}
+    ] },
+    "Dante's Inferno": { "modifiers": [
+      {"label": "Bullets of Ruin: main stat × 7.5 + attack damage × 0.85 per bullet", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 7.5}, {"stat": "ad", "x": 0.85}], "scalePerStack": true, "maxStacks": 3}
+    ] },
+    "Punisher": { "modifiers": [
+      {"label": "Bullets of Punishment: main stat × 7.5 + attack damage per bullet", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 7.5}, {"stat": "ad", "x": 1}], "scalePerStack": true, "maxStacks": 3}
+    ] },
+    "Devil Chaser": { "modifiers": [
+      {"label": "Active: attack damage × 6 + main stat × 40", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 6}, {"stat": "main", "x": 40}]}
+    ] },
+    "Fiend Chaser": { "modifiers": [
+      {"label": "Active: attack damage × 7.5 + main stat × 50", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 7.5}, {"stat": "main", "x": 50}]}
+    ] },
+    "Ethenos, the Staff of Space": { "modifiers": [
+      {"label": "Active: INT × 45 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 45}]}
+    ] },
+    "Griseus, the Sword of Protection": { "modifiers": [
+      {"label": "Active on an enemy: Max MP × 2 pure damage", "step": "bonus", "perCast": true, "scale": [{"stat": "maxMp", "x": 2}]}
+    ] },
+    "Hellspike Armor": { "modifiers": [
+      {"label": "Release Spike (active): 100% max HP pure damage", "step": "bonus", "perCast": true, "scale": [{"stat": "maxHp", "x": 1}]}
+    ] },
+    "Maw of Greed": { "modifiers": [
+      {"label": "Active: attack damage × 6 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 6}]}
+    ] },
+    "Meacronacer, the Sword of Thousand Illusions": { "modifiers": [
+      {"label": "Active: 6 slams × main stat × 20 / 12", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 10}]}
+    ] },
+    "Oceanus, the Sword of Light": { "modifiers": [
+      {"label": "Active: 2 daggers per stack × main stat × 2", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 4}], "scalePerStack": true, "maxStacks": 6}
+    ] },
+    "Tiberius, the Spear of Lightning": { "modifiers": [
+      {"label": "Active: 2 spears per stack × main stat × 2", "step": "bonus", "perCast": true, "scale": [{"stat": "main", "x": 4}], "scalePerStack": true, "maxStacks": 6}
+    ] },
+    "Wings of Phoenix": { "modifiers": [
+      {"label": "Active: attack damage × 0.75 + main stat × 12.5", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 0.75}, {"stat": "main", "x": 12.5}]}
+    ] },
+    "Winter's Heart": { "modifiers": [
+      {"label": "Active: 4.5% max MP magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "maxMp", "x": 0.045}]}
+    ] },
+    "Aglaia, the Spear of Heavenly Flows": { "modifiers": [
+      {"label": "STR +25 per stack", "step": "stat", "perStack": 25, "maxStacks": 3, "stat": "str"},
+      {"label": "Skill damage +2.5% per stack", "step": "skillDamage", "perStack": 0.025, "maxStacks": 3}
+    ] },
+    "Avenger": { "modifiers": [
+      {"label": "Active (spell blocked): AGI +300", "step": "stat", "stat": "agi", "value": 300, "default": false}
+    ] },
+    "Belius, the Archdevil's Staff": { "modifiers": [
+      {"label": "Active: INT × 22.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 22.5}]}
+    ] },
+    "Blazing Soul": { "modifiers": [
+      {"label": "Fervor: attack damage +750 per stack", "step": "stat", "perStack": 750, "maxStacks": 5, "stat": "ad"}
+    ] },
+    "Bullet of Ruin": { "modifiers": [
+      {"label": "Bullets of Ruin: attack damage × 0.85 + main stat × 7.5 per bullet", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 0.85}, {"stat": "main", "x": 7.5}], "scalePerStack": true, "maxStacks": 3}
+    ] },
+    "Chaser": { "modifiers": [
+      {"label": "Active: 6 projectiles × AGI × 2.5", "step": "bonus", "perCast": true, "scale": [{"stat": "agi", "x": 15}]}
+    ] },
+    "Crimson Pumpkin Rod": { "modifiers": [
+      {"label": "Skill cast: INT +15 per stack", "step": "stat", "perStack": 15, "maxStacks": 5, "stat": "int"},
+      {"label": "Skill cast: fire affinity +1.5% per stack", "step": "affinity", "perStack": 0.015, "maxStacks": 5, "element": "flame"},
+      {"label": "Active: 10,000 + INT × 20 magic damage", "step": "bonus", "perCast": true, "value": 10000, "scale": [{"stat": "int", "x": 20}]}
+    ] },
+    "Crown of Fervor": { "modifiers": [
+      {"label": "INT + 2% of max HP (max 240)", "step": "stat", "stat": "int", "scale": [{"stat": "maxHp", "x": 0.02, "max": 240}]}
+    ] },
+    "Deathbringer": { "modifiers": [
+      {"label": "Active: STR +200", "step": "stat", "stat": "str", "value": 200},
+      {"label": "Active: INT +200", "step": "stat", "stat": "int", "value": 200},
+      {"label": "Active: attack damage +4,500", "step": "stat", "stat": "ad", "value": 4500},
+      {"label": "Active: 1% max HP + STR × 3.75 + INT × 7.5", "step": "bonus", "perCast": true, "scale": [{"stat": "maxHp", "x": 0.01}, {"stat": "str", "x": 3.75}, {"stat": "int", "x": 7.5}]}
+    ] },
+    "Devil Blaster": { "modifiers": [
+      {"label": "Active: attack damage × 5 + main stat × 35", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 5}, {"stat": "main", "x": 35}]}
+    ] },
+    "Eye of the Abyss": { "modifiers": [
+      {"label": "Aura: nearby allies' skill damage +4%", "step": "skillDamage", "value": 0.04, "party": true, "self": true, "fxType": "abyss-eye-skill-damage"}
+    ] },
+    "Void Eye": { "modifiers": [
+      {"label": "Aura: nearby allies' skill damage +4%", "step": "skillDamage", "value": 0.04, "party": true, "self": true, "fxType": "abyss-eye-skill-damage"}
+    ] },
+    "Grim Visage": { "modifiers": [
+      {"label": "Grim Vengeance (HP above 40%): main stat +135", "step": "stat", "stat": "main", "value": 135},
+      {"label": "Grim Vengeance: crit multiplier +0.2×", "step": "critMult", "value": 0.2}
+    ] },
+    "Hatred": { "modifiers": [
+      {"label": "INT from damage dealt (max 180)", "step": "stat", "stat": "int", "value": 180},
+      {"label": "Active: INT × 12.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 12.5}]}
+    ] },
+    "Laksha, the Ancient Sword of Poison": { "modifiers": [
+      {"label": "Active (10 stacks): AGI × 2 per stack", "step": "bonus", "perCast": true, "scale": [{"stat": "agi", "x": 20}]}
+    ] },
+    "Niflheim": { "modifiers": [
+      {"label": "Active: attack damage +4,500", "step": "stat", "stat": "ad", "value": 4500},
+      {"label": "Active: STR +300", "step": "stat", "stat": "str", "value": 300}
+    ] },
+    "Prophetia, the Source of Mana": { "modifiers": [
+      {"label": "Active: INT +225", "step": "stat", "stat": "int", "value": 225},
+      {"label": "Active: max MP +1,500", "step": "stat", "stat": "mp", "value": 1500}
+    ] },
+    "Retus, the Bullet of Judgment": { "modifiers": [
+      {"label": "Iron Bullet: attack damage × 0.7 + main stat × 7.5", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 0.7}, {"stat": "main", "x": 7.5}]}
+    ] },
+    "Ring of Nightmare": { "modifiers": [
+      {"label": "Nightmare (5% on attack): attack damage +4,500", "step": "stat", "stat": "ad", "value": 4500, "default": false, "chance": true},
+      {"label": "Nightmare: main stat +270", "step": "stat", "stat": "main", "value": 270, "default": false, "chance": true}
+    ] },
+    "Scale Protector": { "modifiers": [
+      {"label": "Active: max HP +6,000", "step": "stat", "stat": "hp", "value": 6000},
+      {"label": "Active: max MP +2,250", "step": "stat", "stat": "mp", "value": 2250}
+    ] },
+    "Skull Seal": { "modifiers": [
+      {"label": "Excess healing into max HP (max 750)", "step": "stat", "stat": "hp", "value": 750, "default": false}
+    ] },
+    "Staff of Contagion": { "modifiers": [
+      {"label": "Active: INT × 20 magic damage over 8 s", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 20}]}
+    ] },
+    "Visvire, the Hammer of Storm": { "modifiers": [
+      {"label": "STR +40 (6 s)", "step": "stat", "stat": "str", "value": 40}
+    ] },
+    "Wings of Fury": { "modifiers": [
+      {"label": "AGI +18 per stack", "step": "stat", "perStack": 18, "maxStacks": 10, "stat": "agi"}
+    ] },
+    "Winter Rose": { "modifiers": [
+      {"label": "10% on attack: INT +25", "step": "stat", "stat": "int", "value": 25, "default": false, "chance": true}
+    ] },
+    "Cape of Corrupt Flame": { "riders": [
+      {"label": "Corrupt Flame: 10% of the hit over 3 s", "line": "Deals 10% additional damage over 3 seconds (effect stacks)", "of": 0.1, "continuous": true}
+    ] },
+    "Candy Bag": { "modifiers": [
+      {"label": "Candies: STR, AGI and INT +15 each", "step": "stat", "stat": "all", "value": 15}
+    ] },
+    "Fruit Candy Pouch": { "modifiers": [
+      {"label": "Candies: STR, AGI and INT +20 each", "step": "stat", "stat": "all", "value": 20}
+    ] },
+    "Death Visage": { "modifiers": [
+      {"label": "Active (HP above 40%): main stat +105", "step": "stat", "stat": "main", "value": 105},
+      {"label": "Active: crit multiplier +0.1×", "step": "critMult", "value": 0.1}
+    ] },
+    "Flame Soul": { "modifiers": [
+      {"label": "STR +5 per stack", "step": "stat", "stat": "str", "perStack": 5, "maxStacks": 8}
+    ] },
+    "Hood of Reaper": { "modifiers": [
+      {"label": "INT +60", "step": "stat", "stat": "int", "value": 60}
+    ] },
+    "Benziena, the Rod of Earth": { "modifiers": [
+      {"label": "Active: INT × 45 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 45}]}
+    ] },
+    "Dragon Blaster": { "modifiers": [
+      {"label": "Active: attack damage × 4 + main stat × 30", "step": "bonus", "perCast": true, "scale": [{"stat": "ad", "x": 4}, {"stat": "main", "x": 30}]}
+    ] },
+    "Dragonstaff Irave": { "modifiers": [
+      {"label": "Active: INT × 12.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 12.5}]}
+    ] },
+    "True Dragonstaff Irave": { "modifiers": [
+      {"label": "Active: INT × 12.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 12.5}]}
+    ] },
+    "Klenetia, the Holy Staff": { "modifiers": [
+      {"label": "Active: INT × 12.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 12.5}]}
+    ] },
+    "Klenetia, the True Holy Staff": { "modifiers": [
+      {"label": "Active: INT × 12.5 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "int", "x": 12.5}]}
+    ] },
+    "Red Cross": { "modifiers": [
+      {"label": "Active: AGI × 3.75 magic damage", "step": "bonus", "perCast": true, "scale": [{"stat": "agi", "x": 3.75}]}
+    ] },
+    "Tentacle Horn": { "modifiers": [
+      {"label": "Active: 750 + main stat × 7.5 magic damage", "step": "bonus", "perCast": true, "value": 750, "scale": [{"stat": "main", "x": 7.5}]}
+    ] },
     "Ring of Genesis": { "modifiers": [
       { "label": "On dealing damage: chance for 30% additional damage", "step": "conditional", "value": 0.3, "default": false, "chance": true, "note": "Chance isn't stated." },
       { "label": "On skill cast: 15% chance for final damage +7.5% (5 s)", "step": "final", "value": 0.075, "default": false, "chance": true },
@@ -1040,6 +1295,157 @@
       { "label": "Sacred Dawn: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 5 },
       { "label": "Sacred Dawn: fire affinity +0.5% per stack", "step": "affinity", "element": "flame", "perStack": 0.005, "maxStacks": 5 }
     ] }
+  },
+  "reviewed": {
+    "Abyssal Pickaxe": "no damage effect",
+    "Alchatratz, the Archdevil's Cannon": "basic-attack / movement proc",
+    "Alkate, the True Unholy Bow": "basic-attack / movement proc",
+    "Alkate, the Unholy Bow": "basic-attack / movement proc",
+    "Ancient Hourglass": "basic-attack / movement proc",
+    "Archangel Halo": "utility (heal, shield, CC)",
+    "Asmodeus, the Archdevil's Greatsword": "basic-attack / movement proc",
+    "Athanasia, the Armor of the Reaper": "death / low-HP trigger",
+    "Bag of Sentience": "no damage effect",
+    "Bag of Universe": "no damage effect",
+    "Bahanar, the Sword of Illusion": "basic-attack / movement proc",
+    "Bahanar, the True Sword of Illusion": "basic-attack / movement proc",
+    "Benziena, the Earthen Pillar": "no damage effect",
+    "Benziena, the Earthen Soul": "no damage effect",
+    "Blood Cannon Tepes": "basic-attack / movement proc",
+    "Bloodsword Tepethia": "basic-attack / movement proc",
+    "Brave Heart": "utility (heal, shield, CC)",
+    "Bullet of Destruction": "basic-attack / movement proc",
+    "Cape of the Count": "basic-attack / movement proc",
+    "Chaos Pickaxe": "no damage effect",
+    "Chronos, the Cannon of Time": "basic-attack / movement proc",
+    "Claws of Beriel": "basic-attack / movement proc",
+    "Claws of Destruction": "basic-attack / movement proc",
+    "Cold Ring of Death": "pays out damage received",
+    "Dekaros, the Unholy Armor": "basic-attack / movement proc",
+    "Demonic Fist": "basic-attack / movement proc",
+    "Demonis, the Devil Lord's Ring": "no damage effect",
+    "Draconic Skin Rusalka": "basic-attack / movement proc",
+    "Dragon Cannon Belenus": "basic-attack / movement proc",
+    "Dragon Wings": "utility (heal, shield, CC)",
+    "Dragon's Helm Agron": "utility (heal, shield, CC)",
+    "Dragonbow Aience": "basic-attack / movement proc",
+    "Dragonsword Lainhart": "basic-attack / movement proc",
+    "Droplet Orb": "utility (heal, shield, CC)",
+    "Eana, the Holy Cannon": "basic-attack / movement proc",
+    "Eana, the True Holy Cannon": "basic-attack / movement proc",
+    "Earthen Plates": "death / low-HP trigger",
+    "Espishu, the Sword of Chaos": "basic-attack / movement proc",
+    "Espishu, the Sword of Eternity": "basic-attack / movement proc",
+    "Espishu, the True Sword of Chaos": "basic-attack / movement proc",
+    "Espishu, the True Sword of Eternity": "basic-attack / movement proc",
+    "Everfrostbane": "affinity × stat damage (not supported yet)",
+    "Eximelia, the True Unholy Sword": "basic-attack / movement proc",
+    "Eximelia, the Unholy Sword": "basic-attack / movement proc",
+    "Fairy Garment": "no damage effect",
+    "Fairy Robe": "no damage effect",
+    "Fairy Wings": "utility (heal, shield, CC)",
+    "Flame Explosion": "basic-attack / movement proc",
+    "Frost Fairy Wings": "utility (heal, shield, CC)",
+    "Frostbane": "basic-attack / movement proc",
+    "Frozen Heart": "utility (heal, shield, CC)",
+    "Frozen Robe": "utility (heal, shield, CC)",
+    "Gown of Life": "no damage effect",
+    "Grim Heart": "utility (heal, shield, CC)",
+    "Griveddon, the Bow of Certain Destruction": "basic-attack / movement proc",
+    "Guardian Vest": "utility (heal, shield, CC)",
+    "Halo of Judgment": "basic-attack / movement proc",
+    "Heart of Volcano": "utility (heal, shield, CC)",
+    "Heartseeker": "basic-attack / movement proc",
+    "Heaven's Fist": "basic-attack / movement proc",
+    "Helm of Everfrost": "basic-attack / movement proc",
+    "Hood of Apocrypha": "utility (heal, shield, CC)",
+    "Hood of Everfrost": "basic-attack / movement proc",
+    "Hood of Grim Reaper": "death / low-HP trigger",
+    "Hood of Mage": "no damage effect",
+    "Hood of the Fallen": "death / low-HP trigger",
+    "Horn of Devil": "basic-attack / movement proc",
+    "Horn of Lightning God": "basic-attack / movement proc",
+    "Hungry Bat Wings": "basic-attack / movement proc",
+    "Hydro Buster": "affinity × stat damage (not supported yet)",
+    "Inferno": "basic-attack / movement proc",
+    "Irbeth, the Sword of Lightning": "affinity × stat damage (not supported yet)",
+    "Karonphniamm, the Holy Sword": "basic-attack / movement proc",
+    "Karonphniamm, the True Holy Sword": "basic-attack / movement proc",
+    "Latea, the Ring of Chaos": "basic-attack / movement proc",
+    "Leoreus, the Greatsword of Explosion": "affinity × stat damage (not supported yet)",
+    "Leoreus, the Greatsword of Flame": "affinity × stat damage (not supported yet)",
+    "Maw of Beriel": "basic-attack / movement proc",
+    "Maw of Monster": "basic-attack / movement proc",
+    "Mithril Pickaxe": "no damage effect",
+    "Okelanq, the Bow of Frost": "basic-attack / movement proc",
+    "Okelanq, the Spear of Frost": "basic-attack / movement proc",
+    "Pheles, the Bow of God": "affinity × stat damage (not supported yet)",
+    "Pheles, the Bow of Skies": "affinity × stat damage (not supported yet)",
+    "Pheles, the Bow of Wind": "no damage effect",
+    "Plates of Regeneration": "death / low-HP trigger",
+    "Pumpkin Rod": "no damage effect",
+    "Pure Crystal Wings": "no damage effect",
+    "Purefrost Gauntlet": "basic-attack / movement proc",
+    "Purified Water": "no damage effect",
+    "Radiance of the One": "basic-attack / movement proc",
+    "Rainmaker": "affinity × stat damage (not supported yet)",
+    "Reactive Armor": "basic-attack / movement proc",
+    "Retus, the Iron Bullet": "basic-attack / movement proc",
+    "Ring of Desolate Soul": "pays out damage received",
+    "Ring of Fate": "death / low-HP trigger",
+    "Ring of Frozen Soul": "pays out damage received",
+    "Ring of Holy Light": "utility (heal, shield, CC)",
+    "Ring of Intrusion": "no damage effect",
+    "Ring of Light": "no damage effect",
+    "Ring of Resonance": "no damage effect",
+    "Ring of Revival": "death / low-HP trigger",
+    "Ring of Time": "death / low-HP trigger",
+    "Ring of the Reaper": "utility (heal, shield, CC)",
+    "Ring of the Sage": "no damage effect",
+    "Ripple Snow": "affinity × stat damage (not supported yet)",
+    "Robe of Everfrost": "basic-attack / movement proc",
+    "Robe of the Mage": "utility (heal, shield, CC)",
+    "Robe of the Sage": "utility (heal, shield, CC)",
+    "Sacred Armor": "basic-attack / movement proc",
+    "Sacred Helm": "utility (heal, shield, CC)",
+    "Sanguiel, the Bloodspear": "basic-attack / movement proc",
+    "Sanguiel, the Bloodspear of Domination": "basic-attack / movement proc",
+    "Sanguiel, the Bloodspear of Requiem": "basic-attack / movement proc",
+    "Seal of Deceiver": "pays out damage received",
+    "Shackles of Heaven": "utility (heal, shield, CC)",
+    "Soul Devourer": "no damage effect",
+    "Soul Drinker": "no damage effect",
+    "Soul Eater": "no damage effect",
+    "Soul Rift": "no damage effect",
+    "Soul of the Dead": "death / low-HP trigger",
+    "Soulstalker": "basic-attack / movement proc",
+    "Spiritus, the Sword of Elements": "basic-attack / movement proc",
+    "Staff of Domination": "utility (heal, shield, CC)",
+    "Stalker": "basic-attack / movement proc",
+    "Storm": "no damage effect",
+    "Storm Headdress": "utility (heal, shield, CC)",
+    "Teperua, the Ring of Blood": "no damage effect",
+    "Tepethia, the Bloodsword of Domination": "basic-attack / movement proc",
+    "Tepethia, the Crimson Sword of Requiem": "basic-attack / movement proc",
+    "Tidal Robe": "basic-attack / movement proc",
+    "Trident": "no damage effect",
+    "Triple Snow": "affinity × stat damage (not supported yet)",
+    "True Blood Cannon Tepes": "basic-attack / movement proc",
+    "True Dragon Armor Magron": "basic-attack / movement proc",
+    "True Dragon Cannon Belenus": "basic-attack / movement proc",
+    "True Dragon Helm Agron": "utility (heal, shield, CC)",
+    "True Dragonbow Aience": "basic-attack / movement proc",
+    "True Dragonsword Lainhart": "basic-attack / movement proc",
+    "Trueblood Ring": "no damage effect",
+    "Tunic of Subtlety": "no damage effect",
+    "Twin Snow": "basic-attack / movement proc",
+    "Vest of Protection": "utility (heal, shield, CC)",
+    "Wanderer's Cape": "utility (heal, shield, CC)",
+    "Water Cannon": "affinity × stat damage (not supported yet)",
+    "Wings of Frost Lord": "affinity × stat damage (not supported yet)",
+    "Winter Robe": "affinity × stat damage (not supported yet)",
+    "Winter's Tear": "affinity × stat damage (not supported yet)",
+    "Yggrect, the Archdevil's Bow": "basic-attack / movement proc"
   },
   "calibration": [
     {
