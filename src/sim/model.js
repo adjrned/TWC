@@ -24,6 +24,7 @@ const belowHp = value => {
   const m = String(value).match(/(?:below|under) (\d+(?:\.\d+)?)% HP/i);
   return m ? Number(m[1]) / 100 : undefined;
 };
+const notSelfItem = item => [...(item?.stats?.passive || []), ...(item?.stats?.active || [])].some(l => /excluding self|does not apply to self/i.test(l));
 const ALLY_VIA =new Set(['Buff', 'Aura', 'Sigil', 'Devotion', 'Harmony', "Raguel's passive"]);
 
 // Steps whose values are fractions (0.15 = 15%); everything else is a flat amount.
@@ -93,7 +94,14 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
     // Skill-text conditionals, except for skills already written up in sim.json.
     for (const m of heroConditionals(skills, cls, curatedSkills(cls))) out.push({ ...m, group: 'hero', source: { hero: cls, skill: m.skill } });
     for (const name of gearNames) {
-      for (const m of curated.items?.[name]?.modifiers || []) out.push({ ...m, id: m.id || `${name}:${m.label}`, group: m.group || 'gear', source: { item: name } });
+      for (const m of (curated.items?.[name]?.modifiers || []).filter(x => !x.party || x.self)) out.push({ ...m, id: m.id || `${name}:${m.label}`, group: m.group || 'gear', source: { item: name } });
+    }
+    // "party" item effects are buffs a teammate's item gives you (Heaven's Door's orb, Aeon Sphere…): listed
+    // under ally buffs, and only reach the wearer when also marked "self" (auras).
+    for (const [name, it] of Object.entries(curated.items || {})) {
+      for (const m of (it.modifiers || []).filter(x => x.party && !(x.self && gearNames.includes(name)))) {
+        out.push({ ...m, id: m.id || `${name}:${m.label}`, group: 'ally', ally: true, default: m.default ?? false, source: { item: name } });
+      }
     }
     for (const m of curated.party || []) out.push({ ...m, group: m.group || 'ally', default: m.default ?? false, source: { text: m.label } });
     return out;
@@ -111,9 +119,15 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
           if (e.text) return;
           let group;
           if (e.item) {
-            if (curated.items?.[e.item]?.modifiers) return;
-            if (gear.has(e.item)) group = 'gear';
+            // Curated items replace their Effects entries, unless they only add to them ("keepEffects").
+            if (curated.items?.[e.item]?.modifiers && !curated.items[e.item].keepEffects) return;
+            // Auras and buffs can come from a teammate wearing the item. Buffs given by healing allies and
+            // "excluding self" auras never reach the wearer.
+            const team = ALLY_VIA.has(e.via);
+            const notSelf = e.via === 'Buff' || /allies only/i.test(e.value) || notSelfItem(itemByName.get(e.item));
+            if (gear.has(e.item) && !(team && notSelf)) group = 'gear';
             else if (map.target) group = 'target';
+            else if (team) group = 'ally';
             else return;
           } else if (e.hero) {
             if (e.hero === cls) { if (heroSkills.has(e.skill)) return; group = 'hero'; }
@@ -143,8 +157,9 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
           const pctPart = (v.pct || v.pctTerms.length) ? { value: v.pct / 100, formula: v.pctTerms } : null;
           const flatPart = (v.flat || v.flatTerms.length) ? { value: v.flat, scale: v.flatTerms } : null;
           if (map.split) {
-            if (flatPart) out.push({ ...base, ...flatPart, id: id + ':flat', step: 'stat', stat: map.stat });
-            if (pctPart) out.push({ ...base, ...pctPart, id: id + ':pct', step: 'statPct', stat: map.stat });
+            // "60 + 3%" splits in two; each half only competes with the same half of other items.
+            if (flatPart) out.push({ ...base, ...flatPart, id: id + ':flat', step: 'stat', stat: map.stat, fxType: base.fxType && base.fxType + ':flat' });
+            if (pctPart) out.push({ ...base, ...pctPart, id: id + ':pct', step: 'statPct', stat: map.stat, fxType: base.fxType && base.fxType + ':pct' });
             return;
           }
           if (!pctPart) return;
@@ -195,7 +210,8 @@ export function buildModel({ items, skills, heroes, effects, sim }) {
 
   return {
     items, itemByName, heroByClass, curated, heroConfig, baseMainAt, hits, modsFor, skillAvailable,
-    riders: cls => curated.heroes?.[cls]?.riders || [],
+    riders: (cls, gearNames = []) => [...(curated.heroes?.[cls]?.riders || []),
+      ...gearNames.flatMap(n => (curated.items?.[n]?.riders || []).map(r => ({ ...r, id: r.id || n, source: { item: n } })))],
     heroList: () => heroes.filter(h => h.heroClass && h.mainstat),
     calibration: curated.calibration || [],
   };

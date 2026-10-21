@@ -97,15 +97,18 @@ export function simulate(model, setup) {
       autoCount: h0.count ?? 1,
     };
   });
-  // Riders (Fire Mage Burn): extra damage every hero hit leaves behind, a share of that hit's damage.
-  for (const r of model.riders(cls)) {
-    for (const parent of parts.filter(p => !p.item && !p.riderOf)) {
+  // Riders (Fire Mage Burn, Wings of the Void): extra damage a hero hit leaves behind, a share of that hit's damage.
+  // "perCast" riders (Cape of Deep Abyss) trigger once per skill cast, on its first included part.
+  for (const r of model.riders(cls, gearNames)) {
+    const heroParts = parts.filter(p => !p.item && !p.riderOf && (!r.skillsOnly || p.isSkill));
+    for (const parent of r.perCast ? heroParts.filter(p => p.on).slice(0, 1) : heroParts) {
       const key = `${parent.key}~${r.id}`;
       const ps = partState[key] || {};
+      const auto = r.perCast ? 1 : parent.count;
       parts.push({
-        key, skill, rider: r, riderOf: parent.key, label: r.label, line: r.line, terms: [], icon: parent.icon,
+        key, skill, rider: r, riderOf: parent.key, label: r.label, line: r.line, terms: [], icon: parent.icon, source: r.source,
         on: parent.on && (ps.on ?? true), type: ps.type || r.type || parent.type, element: '', crit: false,
-        continuous: !!r.continuous, isSkill: false, count: Math.max(0, num(ps.count) ?? parent.count), autoCount: parent.count,
+        continuous: !!r.continuous, isSkill: false, count: Math.max(0, num(ps.count) ?? auto), autoCount: auto,
       });
     }
   }

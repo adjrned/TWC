@@ -241,6 +241,134 @@
       { "label": "Heavenly Wind: main stat +200", "step": "stat", "stat": "main", "value": 200 },
       { "label": "Heavenly Wind: 25% chance +20%", "step": "final", "value": 0.2, "default": false, "chance": true }
     ] },
+    "Heaven's Door": { "modifiers": [
+      { "label": "Heaven's Light (healed by an ally): main stat +60", "step": "stat", "stat": "main", "value": 60, "party": true, "fxType": "main-stat|A:flat" },
+      { "label": "Heaven's Light (healed by an ally): main stat +3%", "step": "statPct", "stat": "main", "value": 0.03, "party": true, "fxType": "main-stat|A:pct" },
+      { "label": "Heaven's Door orb: skill damage +12%", "step": "skillDamage", "value": 0.12, "party": true, "fxType": "orb-skill-damage" }
+    ] },
+    "Aeon Sphere": { "modifiers": [
+      { "label": "Eternal Blessing (healed by an ally): main stat +150", "step": "stat", "stat": "main", "value": 150, "party": true, "fxType": "main-stat|A:flat" },
+      { "label": "Eternal Blessing (healed by an ally): main stat +3%", "step": "statPct", "stat": "main", "value": 0.03, "party": true, "fxType": "main-stat|A:pct" },
+      { "label": "Aeon Sphere orb: skill damage +16%", "step": "skillDamage", "value": 0.16, "party": true, "fxType": "orb-skill-damage", "note": "Doesn't stack with Heaven's Door's orb." }
+    ] },
+    "Aegis of Avalon": { "modifiers": [
+      { "label": "Light Reverberation aura: main stat +160", "step": "stat", "stat": "main", "value": 160, "party": true, "self": true, "fxType": "main-stat|A:flat" },
+      { "label": "Light Reverberation aura: main stat +4%", "step": "statPct", "stat": "main", "value": 0.04, "party": true, "self": true, "fxType": "main-stat|A:pct" },
+      { "label": "Light Reverberation (healed by an ally): skill damage +4%", "step": "skillDamage", "value": 0.04, "party": true }
+    ] },
+    "Eye of the Blood God": { "modifiers": [
+      { "label": "Aura: attack damage +7.5%", "step": "statPct", "stat": "ad", "value": 0.075, "party": true, "self": true, "fxType": "attack-damage|C:pct" },
+      { "label": "Crimson Eye attached: skill damage +5%", "step": "skillDamage", "value": 0.05, "party": true }
+    ] },
+    "Heart of Life": { "modifiers": [
+      { "label": "Aura: attack damage + INT × 0.7 (max 2,400)", "step": "stat", "stat": "ad", "scale": [{ "stat": "int", "x": 0.7, "max": 2400 }], "party": true, "self": true, "fxType": "attack-damage|A:flat" },
+      { "label": "Healed by the wearer: aura bonus +50%", "step": "stat", "stat": "ad", "scale": [{ "stat": "int", "x": 0.35, "max": 1200 }], "party": true, "note": "12 s cooldown per target." }
+    ] },
+    "Requiem, the Armor of Lamentation": { "keepEffects": true, "modifiers": [
+      {"label": "Anger: skill damage +10%", "step": "skillDamage", "value": 0.1, "default": false, "note": "One of three random effects every 8 s."}
+    ] },
+    "Cage of Twisted Souls": { "keepEffects": true, "modifiers": [
+      {"label": "Souls: skill damage +2% each", "step": "skillDamage", "perStack": 0.02, "maxStacks": 5}
+    ] },
+    "Soulrender": { "keepEffects": true, "modifiers": [
+      {"label": "Soul Steal: main stat +15 per stack", "step": "stat", "perStack": 15, "maxStacks": 30, "stat": "main"}
+    ] },
+    "Cape of Insatiable Hunger": { "keepEffects": true, "modifiers": [
+      {"label": "Active: attack damage +500", "step": "stat", "stat": "ad", "value": 500}
+    ] },
+    "Plates of Sanguine Fury": { "keepEffects": true, "modifiers": [
+      {"label": "Active: damage dealt +8%", "step": "final", "value": 0.08}
+    ] },
+    "Wings of Night Lord": { "keepEffects": true, "modifiers": [
+      {"label": "AGI +36 per second (up to 10)", "step": "stat", "perStack": 36, "maxStacks": 10, "stat": "agi"}
+    ] },
+    "Vest of Divine Winds": { "keepEffects": true, "modifiers": [
+      {"label": "Active: AGI +75", "step": "stat", "stat": "agi", "value": 75}
+    ] },
+    "Wings of Blood Lord": { "keepEffects": true, "modifiers": [
+      {"label": "Attack damage +450 per stack", "step": "stat", "perStack": 450, "maxStacks": 5, "stat": "ad"}
+    ] },
+    "Bloodstorm": { "keepEffects": true, "modifiers": [
+      {"label": "Skill cast: skill damage +5% per stack", "step": "skillDamage", "perStack": 0.05, "maxStacks": 3}
+    ] },
+    "Madness of Old Gods": { "keepEffects": true, "modifiers": [
+      {"label": "Active: main stat +300", "step": "stat", "stat": "main", "value": 300},
+      {"label": "Active: crit multiplier +0.25×", "step": "critMult", "value": 0.25}
+    ] },
+    "Oblivion": { "keepEffects": true, "modifiers": [
+      {"label": "Active: STR +45 per stack", "step": "stat", "perStack": 45, "maxStacks": 10, "stat": "str"},
+      {"label": "Active: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10}
+    ] },
+    "Desolation": { "keepEffects": true, "modifiers": [
+      {"label": "Active: STR +55 per stack", "step": "stat", "perStack": 55, "maxStacks": 10, "stat": "str"},
+      {"label": "Active: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10}
+    ] },
+    "Chaos": { "keepEffects": true, "modifiers": [
+      {"label": "Active: STR +60 per stack", "step": "stat", "perStack": 60, "maxStacks": 10, "stat": "str"},
+      {"label": "Active: skill damage +1.5% per stack", "step": "skillDamage", "perStack": 0.015, "maxStacks": 10}
+    ] },
+    "Hell Riser": { "keepEffects": true, "modifiers": [
+      {"label": "Active: INT +120", "step": "stat", "stat": "int", "value": 120},
+      {"label": "Active: attack damage +3,000", "step": "stat", "stat": "ad", "value": 3000}
+    ] },
+    "Armageddon": { "keepEffects": true, "modifiers": [
+      {"label": "Active: INT +225", "step": "stat", "stat": "int", "value": 225},
+      {"label": "Active: attack damage +3,750", "step": "stat", "stat": "ad", "value": 3750}
+    ] },
+    "Prelude to Demise": { "keepEffects": true, "modifiers": [
+      {"label": "Active: INT +444", "step": "stat", "stat": "int", "value": 444},
+      {"label": "Active: attack damage +4,444", "step": "stat", "stat": "ad", "value": 4444}
+    ] },
+    "Crimson Reaper": { "keepEffects": true, "modifiers": [
+      {"label": "Active: AGI +240", "step": "stat", "stat": "agi", "value": 240}
+    ] },
+    "Ring of the Storm": { "keepEffects": true, "modifiers": [
+      {"label": "Skill cast: skill damage +3% per stack", "step": "skillDamage", "perStack": 0.03, "maxStacks": 4}
+    ] },
+    "Frostshard Armor": { "keepEffects": true, "modifiers": [
+      {"label": "Active: STR +10%", "step": "statPct", "stat": "str", "value": 0.1}
+    ] },
+    "Heaven's Fall": { "keepEffects": true, "modifiers": [
+      {"label": "Blessing (healed by an ally): skill damage +12%", "step": "skillDamage", "value": 0.12, "party": true},
+      {"label": "Blessing awakening (20 heals): skill damage +8% more", "step": "skillDamage", "value": 0.08, "party": true}
+    ] },
+    "Splitting of the Sky and Earth": { "keepEffects": true, "modifiers": [
+      {"label": "STR +75 per stack", "step": "stat", "perStack": 75, "maxStacks": 4, "stat": "str"},
+      {"label": "Skill damage +2.5% per stack", "step": "skillDamage", "perStack": 0.025, "maxStacks": 4}
+    ] },
+    "Ring of the One": { "keepEffects": true, "modifiers": [
+      {"label": "On dealing damage: 20% chance for 25% additional damage", "step": "final", "value": 0.25, "default": false, "chance": true}
+    ] },
+    "Cosmic Reaper": { "keepEffects": true, "modifiers": [
+      {"label": "Active: AGI +300", "step": "stat", "stat": "agi", "value": 300}
+    ] },
+    "Divine Slayer": { "keepEffects": true, "modifiers": [
+      {"label": "Active: AGI +450", "step": "stat", "stat": "agi", "value": 450}
+    ] },
+    "Ruler of the Skies": { "keepEffects": true, "modifiers": [
+      {"label": "Active: all stats +150", "step": "stat", "stat": "all", "value": 150}
+    ] },
+    "Eternal Flame": { "keepEffects": true, "modifiers": [
+      {"label": "Heat: skill damage +1% per stack", "step": "skillDamage", "perStack": 0.01, "maxStacks": 15},
+      {"label": "Heat: fire affinity +1% per stack", "step": "affinity", "perStack": 0.01, "maxStacks": 15, "element": "flame"}
+    ] },
+    "Spirit Flame": { "keepEffects": true, "modifiers": [
+      {"label": "Heat: skill damage +1% per stack", "step": "skillDamage", "perStack": 0.01, "maxStacks": 15},
+      {"label": "Heat: fire affinity +1% per stack", "step": "affinity", "perStack": 0.01, "maxStacks": 15, "element": "flame"},
+      {"label": "Spirit Flame (Heat above 10): damage dealt to target +2.5%", "step": "final", "value": 0.025}
+    ] },
+    "Call of Gehenna": { "keepEffects": true, "modifiers": [
+      {"label": "Active: INT +400", "step": "stat", "stat": "int", "value": 400}
+    ] },
+    "Cloak of the Fallen Shadows": { "riders": [
+      {"label": "Corruption: 12.5% of the hit over 3 s", "line": "On single-target hits, deals 12.5% bonus damage over 3 seconds (effect stacks)", "of": 0.125, "continuous": true, "note": "Single-target hits only."}
+    ] },
+    "Cape of Deep Abyss": { "riders": [
+      {"label": "Drowning Abyss: 15% per skill cast over 3 s", "line": "Single-target spells deal 15% bonus damage per skill cast over 3 seconds", "of": 0.15, "continuous": true, "perCast": true, "skillsOnly": true}
+    ] },
+    "Wings of the Void": { "riders": [
+      {"label": "Void Corrosion: 17% of the hit over 3 s", "line": "On direct skill hit, deals 17% of damage dealt over 3 seconds", "of": 0.17, "continuous": true, "skillsOnly": true}
+    ] },
     "Ring of Genesis": { "modifiers": [
       { "label": "On dealing damage: chance for 30% additional damage", "step": "final", "value": 0.3, "default": false, "chance": true, "note": "Chance isn't stated." },
       { "label": "On skill cast: 15% chance for final damage +7.5% (5 s)", "step": "final", "value": 0.075, "default": false, "chance": true },
