@@ -62,6 +62,7 @@ global navItems := Map()    ; page -> { box, icon, label } in the sidebar
 global popovers := Map()    ; hover popovers by name (AddPopover)
 global chatHook := InputHook("V")       ; records the WC3 chat line (ChatEnter)
 global toastGui := 0, toastText := 0   ; the themed toast (Toast)
+global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.0.0"
@@ -368,12 +369,38 @@ AddToPage(name, ctrls*) {
 ; ============================================================================
 NavClick(name, *) => ShowPage(name)
 
+; Painting is frozen while a page switches or the save list re-fills, then
+; done once: otherwise each of ~100 control changes repaints on its own
+; (page switches took 110-400 ms). Nested freezes paint when the outer ends.
+Freeze() {
+    global freezeDepth, mainGui
+    if freezeDepth++ = 0
+        SendMessage(0x0B, 0, 0, mainGui)                       ; WM_SETREDRAW off
+}
+Thaw(rect := 0) {
+    global freezeDepth, mainGui
+    if --freezeDepth > 0
+        return
+    SendMessage(0x0B, 1, 0, mainGui)                           ; WM_SETREDRAW on
+    DllCall("RedrawWindow", "ptr", mainGui.Hwnd, "ptr", rect, "ptr", 0, "uint", 0x485)   ; INVALIDATE|ERASE|ALLCHILDREN|UPDATENOW
+}
+
 ShowPage(name) {
     global pages, navItems, navBar, titleText, currentPage, C, mainGui
+    static shown := ""                     ; page whose controls are visible now
+    Freeze()
+    try ShowPageInner(name, shown)
+    shown := name
+    Thaw()                                 ; also clears corner pixels of the page we left
+}
+ShowPageInner(name, shown) {
+    global pages, navItems, navBar, titleText, currentPage, C, mainGui
     currentPage := name
+    ; only the page we leave and the one we open change (first time: all)
     for pg, arr in pages
-        for c in arr
-            c.Visible := (pg = name)
+        if shown = "" || pg = shown || pg = name
+            for c in arr
+                c.Visible := (pg = name)
     titleText.Text := PageInfo(name).title
     for nm, it in navItems {
         on := nm = name
@@ -394,8 +421,6 @@ ShowPage(name) {
         case "settings": RefreshSettings()
         case "overlay":  RefreshOverlay()
     }
-    ; rounded (region) boxes on the page we left can leave corner pixels behind
-    DllCall("RedrawWindow", "ptr", mainGui.Hwnd, "ptr", 0, "ptr", 0, "uint", 0x485)   ; INVALIDATE|ERASE|ALLCHILDREN|UPDATENOW
 }
 
 ; ============================================================================
@@ -568,12 +593,11 @@ ToggleShowHidden() {
 RenderSaves() {
     global
     ; paint once at the end instead of once per row control (~60 of them)
-    SendMessage(0x0B, 0, 0, mainGui)                    ; WM_SETREDRAW off
+    Freeze()
     try RenderSaveRows()
-    SendMessage(0x0B, 1, 0, mainGui)                    ; WM_SETREDRAW on
     local c := saveCard
     local rc := Buffer(16), _ := NumPut("int", c.x, "int", c.y, "int", c.x + c.w, "int", c.y + c.h, rc)
-    DllCall("RedrawWindow", "ptr", mainGui.Hwnd, "ptr", rc, "ptr", 0, "uint", 0x485)   ; INVALIDATE|ERASE|ALLCHILDREN|UPDATENOW
+    Thaw(rc)
 }
 RenderSaveRows() {
     global
