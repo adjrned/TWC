@@ -46,6 +46,11 @@ don't fire mid-message.
 - **Loader** (default) — search saves, pin favourites as one-click **Quick Load**
   buttons, per-file loading messages, hide/unhide. Double-click or **LOAD** loads
   the selected save. In-game: `-l`/`-load <name>`, `-ll`/`-loadlast`.
+  The save folder is found automatically: `Documents\Warcraft III\CustomMapData\TWRPG`
+  (also when Documents is redirected to OneDrive, and the Public Test realm), or
+  `<install folder>\CustomMapData\TWRPG` for classic 1.26/1.27 (from the registry
+  or a running game). The first one holding TWRPG saves wins. A folder you pick
+  under Settings overrides it until you press **Auto-detect**.
 - **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
   `-chest im lagging`, GET GOOD). Message is multi-line: one chat line per row.
 - **Remap** — remap 12 spells / 6 inventory / 2 mouse inputs with per-spell

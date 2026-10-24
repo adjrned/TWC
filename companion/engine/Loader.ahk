@@ -5,6 +5,7 @@
 class LoaderEngine {
     section := "Loader"
     hiddenMap := Map()
+    detected := ""          ; cached detect() result
 
     __New() {
         this.loadHidden()
@@ -17,11 +18,89 @@ class LoaderEngine {
     }
 
     hiddenPath => A_ScriptDir "\HiddenFiles.txt"
-    folder => Ini(this.section, "folder", A_MyDocuments "\Warcraft III\CustomMapData\TWRPG")
+    static SUB := "CustomMapData\TWRPG"
+
+    ; The folder you picked, if it still exists; otherwise wherever TWRPG saves
+    ; are found (see candidates); otherwise the usual Reforged location.
+    folder {
+        get {
+            f := Ini(this.section, "folder", "")
+            if f && DirExist(f)
+                return f
+            if !this.detected || !DirExist(this.detected)
+                this.detected := this.detect()
+            return this.detected ? this.detected : A_MyDocuments "\Warcraft III\" LoaderEngine.SUB
+        }
+    }
+    folderFound => DirExist(this.folder) ? 1 : 0
+    folderAuto => !(Ini(this.section, "folder", "") && DirExist(Ini(this.section, "folder", "")))
+
+    ; Where WC3 keeps TWRPG saves, most likely first:
+    ;  Reforged / 1.28+: <Documents>\Warcraft III\CustomMapData\TWRPG (Documents
+    ;    may be redirected to OneDrive), PTR uses "Warcraft III Public Test";
+    ;  1.26/1.27 (classic): <install folder>\CustomMapData\TWRPG.
+    candidates() {
+        docs := [A_MyDocuments, EnvGet("USERPROFILE") "\Documents"]
+        for od in [EnvGet("OneDrive"), EnvGet("OneDriveConsumer"), EnvGet("OneDriveCommercial")]
+            if od
+                docs.Push(od "\Documents")
+        Loop Files, EnvGet("USERPROFILE") "\OneDrive*", "D"
+            docs.Push(A_LoopFileFullPath "\Documents")
+        out := []
+        for d in docs
+            for game in ["Warcraft III", "Warcraft III Public Test"]
+                out.Push(d "\" game "\" LoaderEngine.SUB)
+        for dir in this.installDirs()
+            out.Push(dir "\" LoaderEngine.SUB)
+        seen := Map(), uniq := []
+        for p in out
+            if !seen.Has(StrLower(p))
+                seen[StrLower(p)] := 1, uniq.Push(p)
+        return uniq
+    }
+
+    ; classic WC3 install folders: Blizzard's registry keys, plus a running game
+    installDirs() {
+        dirs := []
+        for key in ["HKCU\Software\Blizzard Entertainment\Warcraft III",
+                    "HKLM\SOFTWARE\WOW6432Node\Blizzard Entertainment\Warcraft III",
+                    "HKLM\SOFTWARE\Blizzard Entertainment\Warcraft III"]
+            for val in ["InstallPath", "InstallPathX"]
+                try if (p := RegRead(key, val))
+                    dirs.Push(RTrim(p, "\"))
+        for exe in ["war3.exe", "Warcraft III.exe", "Frozen Throne.exe"]
+            if pid := ProcessExist(exe) {
+                try {
+                    SplitPath(ProcessGetPath(pid), , &dir)
+                    dirs.Push(dir)
+                    SplitPath(dir, , &parent)       ; Reforged: <install>\_retail_\x86_64\
+                    dirs.Push(parent)
+                }
+            }
+        return dirs
+    }
+
+    ; first candidate holding a TWRPG save, else the first that exists
+    detect() {
+        existing := ""
+        for p in this.candidates() {
+            if !DirExist(p)
+                continue
+            if !existing
+                existing := p
+            Loop Files, p "\*.txt"
+                if LoaderEngine.IsSave(FileRead(A_LoopFileFullPath, "UTF-8"))
+                    return p
+        }
+        return existing
+    }
+
+    static IsSave(text) => RegExMatch(text, "----------(?:Hero Inventory|영웅 아이템)----------")
 
     ; -- RPC endpoints -------------------------------------------------------
     config(args := 0) {
-        return { folder: this.folder, convert: Integer(Ini(this.section, "convert", 1)) }
+        return { folder: this.folder, found: this.folderFound, auto: this.folderAuto,
+            convert: Integer(Ini(this.section, "convert", 1)) }
     }
 
     files(args := 0) {
@@ -34,8 +113,7 @@ class LoaderEngine {
             isHidden := this.hiddenMap.Has(A_LoopFileName) ? 1 : 0
             if isHidden && !showHidden
                 continue
-            text := FileRead(A_LoopFileFullPath, "UTF-8")
-            if !RegExMatch(text, "----------(?:Hero Inventory|영웅 아이템)----------")
+            if !LoaderEngine.IsSave(FileRead(A_LoopFileFullPath, "UTF-8"))
                 continue
             out.Push({
                 name: A_LoopFileName,
@@ -101,6 +179,13 @@ class LoaderEngine {
         folder := SelectFolder()
         if folder
             SetIni(folder, this.section, "folder")
+        return { folder: this.folder }
+    }
+
+    ; forget the picked folder and go back to auto-detection
+    autoFolder(args := 0) {
+        try IniDelete(iniFile, this.section, "folder")
+        this.detected := ""
         return { folder: this.folder }
     }
 

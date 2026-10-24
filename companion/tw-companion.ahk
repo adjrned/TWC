@@ -55,6 +55,7 @@ global controlsToDrag := Map()
 
 ; loader controls
 global searchEdit, fileListBox, convertCb, quickBtns := [], quickNames := []
+global emptyTitle, emptySub, emptyBtn
 global fileNames := []
 ; macros
 global macroListBox, macroCapBtn, macroMsgEdit, macroPendingHK := "", macroPendingLabel := "", macroSel := -1
@@ -64,7 +65,7 @@ global enSpells, enInv, enMouse
 ; host
 global hostEdits := Map()
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -371,6 +372,13 @@ BuildLoaderPage() {
     ApplyDark(fileListBox.Hwnd)
     AddToPage("loader", fileListBox)
 
+    ; empty state, shown in the list's card when there's nothing to list
+    emptyTitle := mainGui.AddText("x40 y0 w680 h24 Center +Background" C.card " c" C.text, "")
+    emptyTitle.SetFont("s11 w600", "Segoe UI")
+    emptySub := mainGui.AddText("x40 y0 w680 h40 Center +Background" C.card " c" C.muted, "")
+    emptyBtn := MkButton("Choose folder", 300, 0, 160, 32, C.accent, C.onAccent, (*) => (loader.setFolder(Map()), RefreshFiles()))
+    AddToPage("loader", emptyTitle, emptySub, emptyBtn)
+
     convertCb := mainGui.AddCheckbox("x40 y508 h24 +Background" C.panel " c" C.text, " Use -convert (Reforged name fix)")
     convertCb.Value := Integer(Ini("Loader", "convert", 1))
     convertCb.OnEvent("Click", (c, *) => loader.setConvert(Map("value", c.Value)))
@@ -396,6 +404,35 @@ RefreshFiles() {
     fileListBox.Delete()
     if items.Length
         fileListBox.Add(items)
+    ShowEmptyState(items.Length ? "" : EmptyReason())
+}
+
+; why the save list is empty -> [title, subtitle, show "Choose folder"]
+EmptyReason() {
+    global loader, searchEdit
+    cfg := loader.config(Map())
+    if !cfg.found
+        return ["No TWRPG save folder found",
+            "Looked in Documents\Warcraft III\CustomMapData\TWRPG (including OneDrive)`nand Warcraft III's install folder. Pick the folder with your saves.", true]
+    if searchEdit.Value != ""
+        return ['No saves match "' searchEdit.Value '"', "", false]
+    return ["No saves in this folder yet", cfg.folder "`nTWRPG writes your saves here. Wrong folder? Pick another one.", true]
+}
+
+ShowEmptyState(reason) {
+    global fileListBox, emptyTitle, emptySub, emptyBtn, boxes
+    on := reason != ""
+    fileListBox.Visible := !on
+    for ctl in [emptyTitle, emptySub]
+        ctl.Visible := on
+    emptyBtn.Visible := on && reason[3]
+    if !on
+        return
+    b := boxes[fileListBox.Hwnd]
+    top := b.y + Max(16, (b.h - 120) // 2)
+    emptyTitle.Move(b.x + 2, top, b.w - 4), emptyTitle.Text := reason[1]
+    emptySub.Move(b.x + 2, top + 30, b.w - 4), emptySub.Text := reason[2]
+    emptyBtn.Move(b.x + (b.w - 160) // 2, top + 80)
 }
 
 RefreshQuick() {
@@ -673,21 +710,25 @@ BuildSettingsPage() {
     postDelayEdit := mainGui.AddEdit("x270 y" (y + 36) " w80 h24 Number +Background" C.well " c" C.text, "1000")
     loadDelayEdit.OnEvent("Change", (*) => settings.set(Map("key", "loadDelay", "value", loadDelayEdit.Value + 0)))
     postDelayEdit.OnEvent("Change", (*) => settings.set(Map("key", "postLoadDelay", "value", postDelayEdit.Value + 0)))
-    l3 := mainGui.AddText("x40 y" (y + 82) " w120 h20 +Background" C.panel " c" C.muted, "TWRPG folder")
-    folderEdit := mainGui.AddEdit("x40 y" (y + 102) " w520 h24 ReadOnly +Background" C.well " c" C.text, "")
-    setBtn := MkButton("Set", 570, y + 100, 60, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
-    openBtn := MkButton("Open", 636, y + 100, 60, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
+    folderLabel := mainGui.AddText("x40 y" (y + 82) " w460 h20 +Background" C.panel " c" C.muted, "TWRPG folder")
+    l3 := folderLabel
+    folderEdit := mainGui.AddEdit("x40 y" (y + 102) " w440 h24 ReadOnly +Background" C.well " c" C.text, "")
+    setBtn := MkButton("Change", 490, y + 100, 72, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
+    openBtn := MkButton("Open", 568, y + 100, 60, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
+    autoBtn := MkButton("Auto-detect", 634, y + 100, 86, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
     resetBtn := MkButton("Reset all settings", 40, y + 142, 180, 30, C.chip, C.text, (*) => ResetAll())
-    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, resetBtn)
+    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, loader
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, loader
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
     loadDelayEdit.Value := s.loadDelay
     postDelayEdit.Value := s.postLoadDelay
-    folderEdit.Value := loader.config(Map()).folder
+    cfg := loader.config(Map())
+    folderEdit.Value := cfg.folder
+    folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
 ResetAll() {
