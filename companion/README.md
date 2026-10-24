@@ -36,7 +36,6 @@ the first run) and zips it with `assets\`, the WebView2 loader DLL and
 
 ## Run from source
 
-
 Double-click **`tw-companion.ahk`**. It relaunches itself as admin (WC3 Reforged
 usually runs elevated, and key sends need matching elevation).
 
