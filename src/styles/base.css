@@ -1,5 +1,14 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Bundled (not Google Fonts) so the desktop overlay works offline. */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/cinzel-700-latin.woff2') format('woff2');
+}
+
 /*
   Design principles
   - Chrome is neutral; the game's own icons and tier colours carry the colour.

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/overlay-manifest.mjs",
+    "overlay": "npm run build && node scripts/overlay-bundle.mjs",
     "preview": "vite preview",
     "icons": "node scripts/convert-icons.mjs",
     "share-dict": "node scripts/update-share-dict.mjs",

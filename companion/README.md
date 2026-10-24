@@ -1,0 +1,118 @@
+# TW Companion
+
+A light TWRPG loader / helper for Warcraft III with a dark-navy + gold "glossy"
+look. Pure **AutoHotkey v2** — a borderless window on a baked gradient/glow
+background with native controls on top. It opens instantly and uses almost no
+memory, since it's meant to be flashed open, load a save, and close.
+
+## Requirements
+
+- [AutoHotkey v2](https://www.autohotkey.com/) (v2.0+).
+- Warcraft III with TWRPG.
+
+The companion window itself is pure AHK. The **TWRPG overlay** additionally uses
+the Microsoft Edge WebView2 Runtime (built into Windows 11; on Windows 10 install
+it from Microsoft if the overlay won't start). Warcraft III must run in
+**Windowed Fullscreen** (or windowed) for anything to draw over it.
+
+## Run
+
+Double-click **`tw-companion.ahk`**. It relaunches itself as admin (WC3 Reforged
+usually runs elevated, and key sends need matching elevation).
+
+- Settings persist to `tw-companion.ini` (next to the script).
+- Hidden files persist to `HiddenFiles.txt`.
+
+## Control hotkeys (fixed)
+
+| Key | Action | Where |
+|-----|--------|-------|
+| `F10` | toggle the tool on/off | in WC3 |
+| `F8`  | show/hide the window | anywhere |
+| `Pause` | pause the game | in WC3 |
+| `Esc` | hide the window | window focused |
+| `Alt+Esc` | exit | anywhere |
+| `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay |
+| `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay |
+
+A tiny always-on-top overlay (top-left) shows the tool state. When the tool is
+OFF, remap/macro hotkeys are suspended. With *Auto-disable while chatting* on
+(default), pressing `Enter` in WC3 temporarily suspends the tool so macro keys
+don't fire mid-message.
+
+## Sections (nav in the window)
+
+- **Loader** (default) — search saves, pin favourites as one-click **Quick Load**
+  buttons, per-file loading messages, hide/unhide. Double-click or **LOAD** loads
+  the selected save. In-game: `-l`/`-load <name>`, `-ll`/`-loadlast`.
+- **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
+  `-chest im lagging`, GET GOOD). Message is multi-line: one chat line per row.
+- **Remap** — remap 12 spells / 6 inventory / 2 mouse inputs with per-spell
+  quickcast; select a row and use *Set Your Key* / *Set Game Key* / *Toggle QC*,
+  plus per-group enable checkboxes.
+- **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
+  incrementer. In-game: `-h`/`-host`, `-hp`/`-hostpub`.
+- **Settings** — startup behaviour, load timing, TWRPG folder, reset.
+- **Overlay** — hotkeys, dock side, opacity, unload timer, update options.
+
+## TWRPG overlay
+
+The TWRPG site (build planner, items, tracker, monsters, heroes, effects, patch
+notes) in a panel docked over the game, like Path of Exile's Awakened Trade:
+
+- `Shift+Space` in Warcraft III opens it focused; `Shift+Space` again, `Esc`,
+  clicking back into the game, or switching apps hides it and gives the game
+  focus back. `Esc` first closes whatever is open in the page (menus, pickers,
+  search) and only hides the panel when there's nothing left to close.
+- `Ctrl+Shift+Space` **pins** it: it stays on screen semi-transparent and
+  clicks go through to the game, as a reference while you play.
+  `Shift+Space` unpins it.
+- The hotkeys are off while you type in WC3 chat, so `Shift+Space` stays a space.
+- Docks right by default (left / full on the Overlay page); drag the inner
+  edge to resize. Width, zoom (`Ctrl+wheel`) and the last page are remembered.
+- Works fully **offline**: the site is bundled in `web/TWC` and served locally
+  as `https://twc.local/TWC/`. Your planner/tracker data is stored in
+  `%AppData%\tw-companion\webview` (separate from the website's).
+- Links to other sites open in your normal browser; share links point at the
+  public site.
+- The WebView starts on first use and closes after being hidden for 10 minutes
+  (configurable), so it uses no memory until you need it.
+
+### Updates
+
+**Update data now** (Overlay page), **Check for updates** (overlay sidebar) or
+the tray menu downloads the latest site from GitHub Pages. Only changed files are
+downloaded; each is checked against its SHA-256 from `overlay-manifest.txt`, then
+the new copy replaces `web/TWC` in one move (the old one is kept if anything fails).
+On start it checks quietly and tells you when there's an update (or installs it
+with *Install updates automatically*). The source URL is `updateUrl` under
+`[Overlay]` in `tw-companion.ini`.
+
+To refresh the bundle from a local checkout of the site instead:
+`npm run overlay` at the repo root (builds the site and copies `dist/` into `companion/web/TWC`).
+
+## Architecture
+
+```
+tw-companion.ahk    window (baked-bg + native controls), pages, hotkeys, wiring
+lib/Common.ahk      helpers, INI, InputHook, RegisterHotkey
+lib/WebView2/       thqby's WebView2.ahk (MIT) + Microsoft's WebView2Loader.dll
+lib/ComVar.ahk, lib/Promise.ahk   its dependencies
+engine/             GUI-free logic that the window calls directly:
+  Loader Macros Remap Host Settings Updater
+ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
+web/TWC/            offline copy of the TWRPG site (managed by the updater)
+assets/bg.png       pre-rendered gradient + glow + framed panel + brand
+```
+
+The window is one borderless Gui: a full-size `Picture` shows `assets/bg.png`,
+and native controls (Edit, ListBox, Checkbox, and Text styled as flat buttons)
+sit on top, coloured to match the baked panel so they blend. Sections are shown
+by toggling control visibility (no tab-control chrome). The engine classes are
+plain AHK objects the window calls directly — no IPC, no bridge.
+
+### Regenerating the background
+
+`assets/bg.png` is 760×600 and matches the window layout. To tweak it, re-run a
+Pillow script that draws the gradient, glows, panel frame and brand text (see the
+project notes), or replace the PNG with your own at the same size.

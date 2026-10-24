@@ -2,3 +2,7 @@ node_modules
 dist
 .claude/
 sim-todo.txt
+# Desktop companion: generated offline site bundle + personal settings
+companion/web/
+companion/tw-companion.ini
+companion/HiddenFiles.txt

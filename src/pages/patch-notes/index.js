@@ -6,6 +6,7 @@ import { iconHtml, bindItemHover } from '../../ui/itemUi.js';
 import { loadSkills, skillFromNote } from '../../data/skills.js';
 import { hideItemTooltip } from '../../ui/tooltip.js';
 import { showToast } from '../../ui/toast.js';
+import { shareBase } from '../../overlay.js';
 import { ROSTER } from '../../constants.js';
 
 const BATCH = 15;          // patches rendered per scroll batch (unfiltered view)
@@ -368,7 +369,7 @@ export async function initPatchNotes({ params = {}, query = {} } = {}) {
     }
     const copy = e.target.closest('[data-copy]');
     if (copy) {
-      const url = `${location.origin}${location.pathname}#/patch-notes/${copy.dataset.copy}`;
+      const url = `${shareBase()}#/patch-notes/${copy.dataset.copy}`;
       try { await navigator.clipboard.writeText(url); showToast(t('pn.linkCopied')); }
       catch (err) { showToast(url); }
     }

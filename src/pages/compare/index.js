@@ -7,6 +7,7 @@ import {
 import { getPins, setPins, togglePin, onPinsChange, COMPARE_MAX } from '../../data/compare.js';
 import { iconHtml } from '../../ui/itemUi.js';
 import { showToast } from '../../ui/toast.js';
+import { shareHref } from '../../overlay.js';
 
 // Stats where a lower (more negative) value is the better one.
 const LOWER_IS_BETTER = new Set(['dtpercent', 'revivaltimepercent']);
@@ -125,7 +126,7 @@ export async function initCompare({ query }) {
     if (rm) return togglePin(rm.dataset.remove);
     if (e.target.closest('[data-clear]')) return setPins([]);
     if (e.target.closest('[data-share]')) {
-      try { await navigator.clipboard.writeText(location.href); } catch (err) {}
+      try { await navigator.clipboard.writeText(shareHref()); } catch (err) {}
       showToast(t('compare.linkCopied'));
     }
   };

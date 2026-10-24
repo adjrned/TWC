@@ -3,6 +3,7 @@ import { COLS, DEFAULT_ROWS } from '../../constants.js';
 import { loadItems } from '../../data/items.js';
 import { buildExportJson } from './exportImport.js';
 import { fetchBuild } from './buildBrowser.js';
+import { shareBase } from '../../overlay.js';
 
 // Share links (#/?b=…) pack the build into bits, then base64url:
 //   header   3 bits version · 7 bits hero · 4 bits item-number width · 6 bits phase count
@@ -69,7 +70,7 @@ const fingerprint = rows => JSON.stringify(rows.map(r => [r.name, ...COLS.map(c 
 })]));
 
 export async function buildShareUrl() {
-  const base = `${location.origin}${location.pathname}#/?`;
+  const base = `${shareBase()}#/?`;
   const data = buildExportJson();
 
   const cls = state.selectedClass, creator = state.selectedCreator;

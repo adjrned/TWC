@@ -333,3 +333,15 @@
   .bn-sheet-foot .locale-switcher { margin-bottom: 0; }
   .bn-sheet-foot .locale-btn { padding: 6px 12px; font-size: 12px; }
 }
+
+/* Desktop overlay (tw-companion): data version + update button in the footers. */
+.ov-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.ov-ver { font-size: 11px; color: var(--muted2); }
+.ov-bar .ov-update { font-size: 12px; padding: 6px 10px; }
+.bn-sheet-foot:has(.ov-bar) { flex-wrap: wrap; }
+.bn-sheet-foot .ov-bar { flex: 1 0 100%; flex-direction: row; align-items: center; justify-content: space-between; margin: 0; }

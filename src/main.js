@@ -16,6 +16,7 @@ import { getLocale, setLocale } from './i18n.js';
 import { initCompareTray } from './ui/compareTray.js';
 import { initEasterEgg } from './ui/easterEgg.js';
 import { initScrollTop } from './ui/scrollTop.js';
+import { initOverlay } from './overlay.js';
 
 import { t } from './i18n.js';
 
@@ -66,6 +67,7 @@ function initMoreSheet() {
 
 initMoreSheet();
 initLocaleSwitcher();
+initOverlay();
 
 const sidebarToggle = document.getElementById('sidebarToggle');
 const sidebar = document.getElementById('sidebar');
