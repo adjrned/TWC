@@ -40,7 +40,8 @@ Running `tw-companion.ahk` (not the exe), the companion keeps itself on the
 latest commit of the `beta` branch: on start and every 5 minutes it compares
 its files with GitHub's (by git blob hash), downloads only the changed ones
 and restarts (in the middle of a game: once Warcraft III isn't focused). Tray
-menu: *Check for companion updates*. Settings, `HiddenFiles.txt` and `web\`
+menu: *Check for companion updates*, or *Check for updates* on the Settings page
+(which also shows the current commit and when it last checked). Settings, `HiddenFiles.txt` and `web\`
 are never touched. `[SelfUpdate] branch=` / `auto=0` in the ini change the
 branch or turn it off; a `.no-self-update` file next to the script turns it
 off too (for a dev checkout whose files are ahead of GitHub).

@@ -104,7 +104,7 @@ global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card un
 ; host
 global hostEdits := Map()
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -1358,7 +1358,10 @@ BuildSettingsPage() {
     openBtn := MkButton("Open", 568, y + 100, 60, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
     autoBtn := MkButton("Auto-detect", 634, y + 100, 86, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
     resetBtn := MkButton("Reset all settings", 40, y + 142, 180, 30, C.chip, C.text, (*) => ResetAll())
-    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn)
+    ; companion updates: which commit this is, when it last looked, and a button
+    updLabel := mainGui.AddText("x40 y" (y + 196) " w500 h20 +Background" C.panel " c" C.muted, "")
+    updBtn := MkButton("Check for updates", 560, y + 192, 160, 28, C.chip, C.text, (*) => UpdateButton())
+    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn, updLabel, updBtn)
 }
 RefreshSettings() {
     global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader
@@ -1371,6 +1374,7 @@ RefreshSettings() {
     convertCb.Value := cfg.convert
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
+    RefreshUpdateLabel()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
 ResetAll() {
@@ -1730,6 +1734,8 @@ SelfUpdateCheck(manual := false) {
     try r := selfUpdate.check()
     catch as e
         return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
+    SetIni(A_Now, selfUpdate.section, "lastCheck")
+    RefreshUpdateLabel()
     if !r.files.Length {
         SetIni(r.commit, selfUpdate.section, "commit")
         return manual ? Toast("The companion is up to date (" SubStr(r.commit, 1, 7) ")") : 0
@@ -1745,6 +1751,34 @@ SelfUpdateCheck(manual := false) {
         Toast("Companion updated (" n "), restarting…")
         SetTimer(() => Reload(), -1500)
     }
+}
+; Settings: "Updates: beta · 84486dc · checked 2 min ago"
+RefreshUpdateLabel() {
+    global updLabel, updBtn, selfUpdate, version
+    if !IsSet(updLabel)
+        return
+    if A_IsCompiled {
+        updLabel.Text := "Installed version " version "  ·  new versions come as downloads"
+        updBtn.Text := "Open downloads"
+        return
+    }
+    if FileExist(A_ScriptDir "\.no-self-update") {
+        updLabel.Text := "Updates are off on this computer (.no-self-update)"
+        return
+    }
+    c := selfUpdate.commit, last := Ini(selfUpdate.section, "lastCheck", "")
+    ago := ""
+    if last {
+        m := DateDiff(A_Now, last, "Minutes")
+        ago := m < 1 ? "just now" : m < 60 ? m " min ago" : m < 1440 ? (m // 60) " h ago" : (m // 1440) " d ago"
+    }
+    updLabel.Text := "Updates: " selfUpdate.branch "  ·  " (c ? SubStr(c, 1, 7) : "not checked yet")
+        . (ago ? "  ·  checked " ago : "") "  ·  automatic every 5 min"
+}
+UpdateButton() {
+    if A_IsCompiled
+        return Run("https://github.com/adjrned/TWC/releases")
+    SelfUpdateCheck(true)
 }
 RestartWhenIdle() {
     if !WinActive(WarcraftIII) && !KeyCaptureActive()
