@@ -1,19 +1,20 @@
-// Converts twicons/*.jpg → twicons/*.webp (same name, same dimensions).
+// Converts icon-sources/*.jpg → public/twicons/*.webp (same name, same dimensions).
 // Only (re)builds a .webp when it is missing or older than its .jpg, so it's
 // cheap to re-run after adding icons:  npm run icons
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 
-const DIR = 'twicons';
+const SRC = 'icon-sources';
+const OUT = 'public/twicons';
 const QUALITY = 82;
 
-const jpgs = fs.readdirSync(DIR).filter(f => f.toLowerCase().endsWith('.jpg'));
+const jpgs = fs.readdirSync(SRC).filter(f => f.toLowerCase().endsWith('.jpg'));
 let converted = 0, skipped = 0, before = 0, after = 0;
 
 for (const file of jpgs) {
-  const src = path.join(DIR, file);
-  const dest = src.replace(/\.jpg$/i, '.webp');
+  const src = path.join(SRC, file);
+  const dest = path.join(OUT, file.replace(/\.jpg$/i, '.webp'));
   const srcStat = fs.statSync(src);
   before += srcStat.size;
   if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= srcStat.mtimeMs) {

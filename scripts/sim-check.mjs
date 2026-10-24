@@ -1,11 +1,11 @@
-// Runs data/sim.json calibration cases (in-game test hits) through the damage sim engine.
+// Runs public/data/sim.json calibration cases (in-game test hits) through the damage sim engine.
 // Usage: npm run sim-check            → pass/fail per case
 //        npm run sim-check -- --steps → also print each case's step breakdown
 import { readFileSync } from 'node:fs';
 import { buildModel } from '../src/sim/model.js';
 import { simulate } from '../src/sim/engine.js';
 
-const read = f => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), 'utf8'));
+const read = f => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
 const model = buildModel({
   items: read('items.json'), skills: read('skills.json'), heroes: read('heroes.json'),
   effects: read('effects.json'), sim: read('sim.json'),

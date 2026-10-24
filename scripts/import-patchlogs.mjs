@@ -1,5 +1,5 @@
 // Imports plain-text patch logs (one file per patch, e.g. "v72b-patchlog.txt") into
-// data/patch-notes.json, replacing any existing patch with the same version.
+// public/data/patch-notes.json, replacing any existing patch with the same version.
 //
 //   node scripts/import-patchlogs.mjs <dir>
 //
@@ -13,7 +13,7 @@ import { fixPatches } from './patch-note-fixes.mjs';
 import { compareVersions } from './versions.mjs';
 
 const DIR = process.argv[2];
-const OUT = 'data/patch-notes.json';
+const OUT = 'public/data/patch-notes.json';
 if (!DIR) { console.error('usage: node scripts/import-patchlogs.mjs <dir>'); process.exit(1); }
 
 const SECTIONS = {

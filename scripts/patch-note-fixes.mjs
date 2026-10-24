@@ -1,6 +1,6 @@
 // Spelling fixes for patch notes, so names match our item / boss / hero / skill data
 // (search, subject links and "Patch history" panels all match on exact names).
-// Used by import-changelog.mjs; run directly to fix data/patch-notes.json in place:
+// Used by import-changelog.mjs; run directly to fix public/data/patch-notes.json in place:
 //
 //   node scripts/patch-note-fixes.mjs
 //
@@ -116,7 +116,7 @@ export const TYPOS = [
 export const fixText = s => TYPOS.reduce((t, [re, to]) => t.replace(re, to), s);
 
 // Every name a subject can link to, keyed by lowercase.
-export function loadCanonicalNames(dir = 'data') {
+export function loadCanonicalNames(dir = 'public/data') {
   const read = f => JSON.parse(fs.readFileSync(`${dir}/${f}`, 'utf8'));
   const names = new Map();
   const add = n => n && !names.has(n.toLowerCase()) && names.set(n.toLowerCase(), n);
@@ -159,7 +159,7 @@ export function fixPatches(patches, names = loadCanonicalNames()) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const OUT = 'data/patch-notes.json';
+  const OUT = 'public/data/patch-notes.json';
   const patches = JSON.parse(fs.readFileSync(OUT, 'utf8'));
   const n = fixPatches(patches);
   fs.writeFileSync(OUT, JSON.stringify(patches, null, 1) + '\n');

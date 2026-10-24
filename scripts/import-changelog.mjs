@@ -1,5 +1,5 @@
 // Imports historical patch notes from sfarmani/twrpg-info's changelog.json and
-// merges them into data/patch-notes.json (our own entries win on conflicts).
+// merges them into public/data/patch-notes.json (our own entries win on conflicts).
 //
 //   node scripts/import-changelog.mjs [path-or-url]
 //
@@ -12,7 +12,7 @@ import { fixPatches } from './patch-note-fixes.mjs';
 import { compareVersions } from './versions.mjs';
 
 const SRC = process.argv[2] || 'https://raw.githubusercontent.com/sfarmani/twrpg-info/master/changelog.json';
-const OUT = 'data/patch-notes.json';
+const OUT = 'public/data/patch-notes.json';
 
 const SECTIONS = [
   ['bugs', 'Bug Fixes', 'list'],

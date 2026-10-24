@@ -1,11 +1,11 @@
-// Damage sim coverage report: what still needs hand entry in data/sim.json.
+// Damage sim coverage report: what still needs hand entry in public/data/sim.json.
 // Writes sim-todo.txt (repo root) and prints a summary.
 //   - skill damage lines the parser can't read
 //   - equipment with passive/active text that has neither curated sim data nor an Effects tab entry
 import { readFileSync, writeFileSync } from 'node:fs';
 import { unparsedDamageLines, parseConditional, parseExecute } from '../src/sim/parse.js';
 
-const read = f => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), 'utf8'));
+const read = f => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
 const skills = read('skills.json');
 const items = read('items.json');
 const effects = read('effects.json');
