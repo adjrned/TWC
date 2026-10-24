@@ -75,7 +75,9 @@ global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.1.0-beta"
-global toolEnabled := true, chatting := false, toolEnableHistory := true
+; toolEnabled: the manual F10 pause; chatting: WC3 chat is open. Remaps and
+; macros are live while the tool is on and chat is closed (RegisterHotkey).
+global toolEnabled := true, chatting := false
 global showMain := false
 global loader, macros, quickcast, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
@@ -129,12 +131,9 @@ updater := UpdaterEngine()
 selfUpdate := SelfUpdateEngine()
 webOverlay := OverlayPanel(updater)
 
-BuildOverlay()
 BuildWindow()
 
 ; startup behaviour
-if !Ini("Settings", "enableToolOnStart", 0)
-    ToggleTool()
 if Ini("Settings", "hideOnStart", 0)
     mainGui.Hide()
 else {
@@ -1321,11 +1320,8 @@ DoHost(private) {
 ; ============================================================================
 BuildSettingsPage() {
     global
-    labels := Map("enableToolOnStart", "Enable tool on start",
-        "enableToolAfterLoad", "Enable tool after loading a save",
-        "summonBagAfterLoad", "Summon bag (Esc) after loading",
-        "hideOnStart", "Hide window on start",
-        "autoToggleTool", "Auto-disable tool while chatting (Enter)")
+    labels := Map("summonBagAfterLoad", "Summon bag (Esc) after loading",
+        "hideOnStart", "Hide window on start")
     y := 160
     for key, text in labels {
         cb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " " text)
@@ -1459,12 +1455,14 @@ OverlayCheck(key, ctrl, *) => webOverlay.set(key, ctrl.Value)
 ; ============================================================================
 ;  Shared: tool toggle, overlay, show/hide, toast
 ; ============================================================================
+; F10 / the sidebar switch: pause remaps and macros by hand (e.g. to use the
+; game's own keys for a moment, or if chat tracking ever gets it wrong)
 ToggleTool() {
     global toolEnabled := !toolEnabled
-    UpdateOverlay()
     UpdateToolPill()
     macros.refresh()
     remap.refresh()
+    Toast(toolEnabled ? "Remaps and macros on" : "Remaps and macros paused (F10 to resume)", "", 2000)
 }
 
 UpdateToolPill() {
@@ -1542,22 +1540,17 @@ ChatWatch() {
         chatHook.Start()
     }
 }
+; while chat is open, remaps and macros stand aside so typing works
 ChatOpened() {
-    global chatting := true, toolEnabled, toolEnableHistory
-    if Ini("Settings", "autoToggleTool", 1) {
-        toolEnableHistory := toolEnabled, toolEnabled := false
-        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
-    }
+    global chatting := true
+    macros.refresh(), remap.refresh()
 }
 ChatClosed() {
-    global chatting, toolEnabled, toolEnableHistory
+    global chatting
     if !chatting
         return
     chatting := false
-    if Ini("Settings", "autoToggleTool", 1) {
-        toolEnabled := toolEnableHistory
-        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
-    }
+    macros.refresh(), remap.refresh()
 }
 MsgEditFocused() {
     global msgEdit
@@ -1708,28 +1701,6 @@ SelfUpdateCheck(manual := false) {
 RestartWhenIdle() {
     if !WinActive(WarcraftIII) && !KeyCaptureActive()
         Reload()
-}
-
-; ============================================================================
-;  Overlay
-; ============================================================================
-BuildOverlay() {
-    global overlay, overlayText, C
-    overlay := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-overlay")
-    overlay.BackColor := C.win
-    UISetFont(overlay, "s10 w600")
-    overlayText := overlay.AddText("+BackgroundTrans w140 h22", "")
-    WinSetTransparent(210, overlay)
-    UpdateOverlay()
-    if !Ini("Settings", "hideOverlay", 0)
-        overlay.Show("x0 y0 NoActivate")
-}
-UpdateOverlay() {
-    global overlayText, C
-    if !IsSet(overlayText)
-        return
-    overlayText.Opt("+c" (toolEnabled ? C.accent : C.dim))
-    overlayText.Text := toolEnabled ? "◆ TW ON" : "◇ TW OFF"
 }
 
 ; ============================================================================

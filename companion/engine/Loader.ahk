@@ -400,8 +400,6 @@ class LoaderEngine {
         } finally {
             BlockInput("Off")
         }
-        if Integer(Ini("Settings", "enableToolAfterLoad", 0)) && !toolEnabled
-            ToggleTool()
         ; only a load that went through counts as "last" (-ll, -sn)
         SetIni(name, this.section, "selectedFile")
         this.sessionLast := name

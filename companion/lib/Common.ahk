@@ -118,7 +118,8 @@ class RegisterHotkey {
         global toolEnabled
         if !this.key
             return
-        active := this.enable && (!this.gated || toolEnabled)
+        global chatting
+        active := this.enable && (!this.gated || (toolEnabled && !(IsSet(chatting) && chatting)))
         HotIfWinActive(this.win)
         cb := (*) => this.fn.Call()
         try Hotkey(this.key, cb, active ? "On" : "Off")

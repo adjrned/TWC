@@ -55,7 +55,7 @@ usually runs elevated, and key sends need matching elevation).
 
 | Key | Action | Where |
 |-----|--------|-------|
-| `F10` | toggle the tool on/off | in WC3 |
+| `F10` | pause / resume remaps and macros | in WC3 |
 | `F8`  | show/hide the window | anywhere |
 | `Pause` | pause the game | in WC3 |
 | `Esc` | hide the window | window focused |
@@ -63,10 +63,9 @@ usually runs elevated, and key sends need matching elevation).
 | `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay |
 | `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay |
 
-A tiny always-on-top overlay (top-left) shows the tool state. When the tool is
-OFF, remap/macro hotkeys are suspended. With *Auto-disable while chatting* on
-(default), pressing `Enter` in WC3 temporarily suspends the tool so macro keys
-don't fire mid-message.
+Remaps and macros are always on, except while the WC3 chat box is open (the
+companion follows `Enter` / `Esc` / clicks), so typing is never interrupted.
+`F10` (or the sidebar's On | Off) pauses them by hand, with a short toast.
 
 ## Sections (nav in the window)
 
