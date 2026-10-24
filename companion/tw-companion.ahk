@@ -18,6 +18,7 @@
 #Include engine\Loader.ahk
 #Include engine\Macros.ahk
 #Include engine\Quickcast.ahk
+#Include engine\ChatBox.ahk
 #Include engine\Remap.ahk
 #Include engine\Host.ahk
 #Include engine\Settings.ahk
@@ -79,7 +80,7 @@ global version := "1.1.0-beta"
 ; macros are live while the tool is on and chat is closed (RegisterHotkey).
 global toolEnabled := true, chatting := false
 global showMain := false
-global loader, macros, quickcast, remap, host, settings, updater, selfUpdate, webOverlay
+global loader, macros, quickcast, chatBox, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -124,6 +125,7 @@ SetKeyDelay(Integer(Ini("Settings", "keyDelay", 10)))
 loader := LoaderEngine()
 macros := MacrosEngine()
 quickcast := QuickcastEngine()
+chatBox := ChatBoxEngine()
 remap := RemapEngine()
 host := HostEngine()
 settings := SettingsEngine()
@@ -146,6 +148,7 @@ A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(tr
 A_TrayMenu.Insert("4&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
+SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
 SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 
@@ -1542,8 +1545,11 @@ ChatWatch() {
 }
 ; while chat is open, remaps and macros stand aside so typing works
 ChatOpened() {
-    global chatting := true
+    global chatting := true, chatBox
     macros.refresh(), remap.refresh()
+    ; first chat in this game window: find where its chat box is drawn
+    if WinActive(WarcraftIII) && !chatBox.current()
+        SetTimer(() => chatBox.locate(), -150)
 }
 ChatClosed() {
     global chatting
@@ -1551,6 +1557,25 @@ ChatClosed() {
         return
     chatting := false
     macros.refresh(), remap.refresh()
+}
+; The screen has the last word on chat: Enter tracking is instant but can
+; drift (chat opened or closed by clicking, menus), so the chat box itself is
+; checked 5 times a second. Closing only follows a box that was seen open, so
+; the lobby (always-open chat, no box) keeps the Enter tracking.
+ChatBoxPoll() {
+    global chatBox, chatting
+    static seenOpen := false
+    if !WinActive(WarcraftIII) || !(g := chatBox.current())
+        return
+    if chatBox.isOpen(g) {
+        seenOpen := true
+        if !chatting
+            ChatOpened()
+    } else if seenOpen {
+        seenOpen := false
+        if chatting
+            ChatClosed()
+    }
 }
 MsgEditFocused() {
     global msgEdit

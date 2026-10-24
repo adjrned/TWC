@@ -11,7 +11,6 @@
 class QuickcastEngine {
     section := "Quickcast"
     cache := Map()              ; calibration key -> parsed calibration (or 0)
-    pathOf := Map()             ; WC3 window -> "reforged" / "classic"
     cal := 0                    ; calibration in progress: { step, p1, p2, normal }
     calHotkey := "$Insert"
 
@@ -24,19 +23,7 @@ class QuickcastEngine {
     }
     set(key, value) => SetIni(value, this.section, key)
 
-    ; "reforged_1920x1080" for the running game, "" if it isn't running
-    windowKey() {
-        if !(hwnd := WinExist(WarcraftIII))
-            return ""
-        if !this.pathOf.Has(hwnd) {
-            try path := WinGetProcessPath(hwnd)
-            catch
-                path := ""
-            this.pathOf[hwnd] := InStr(path, "_retail_") ? "reforged" : "classic"
-        }
-        WinGetClientPos(, , &cw, &ch, hwnd)
-        return this.pathOf[hwnd] "_" cw "x" ch
-    }
+    windowKey() => WC3WindowKey()
     ; the calibration for the game as it is now (0 = none / not running)
     current() {
         if !(k := this.windowKey())
@@ -175,6 +162,22 @@ class QuickcastEngine {
             empty.Push(Integer("0x" v))
         return { p1: [p[1] + 0, p[2] + 0], p2: [p[3] + 0, p[4] + 0], empty: empty }
     }
+}
+
+; "reforged_1920x1080" / "classic_1920x1080" for the running game ("" if it
+; isn't): screen layouts differ by version and size. Reforged runs from _retail_.
+WC3WindowKey() {
+    static kind := Map()            ; WC3 window -> "reforged" / "classic"
+    if !(hwnd := WinExist(WarcraftIII))
+        return ""
+    if !kind.Has(hwnd) {
+        try path := WinGetProcessPath(hwnd)
+        catch
+            path := ""
+        kind[hwnd] := InStr(path, "_retail_") ? "reforged" : "classic"
+    }
+    WinGetClientPos(, , &cw, &ch, hwnd)
+    return kind[hwnd] "_" cw "x" ch
 }
 
 ; how far apart two 0xRRGGBB colours are (sum of channel differences, 0-765)

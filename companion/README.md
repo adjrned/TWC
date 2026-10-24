@@ -63,8 +63,12 @@ usually runs elevated, and key sends need matching elevation).
 | `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay |
 | `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay |
 
-Remaps and macros are always on, except while the WC3 chat box is open (the
-companion follows `Enter` / `Esc` / clicks), so typing is never interrupted.
+Remaps and macros are always on, except while the WC3 chat box is open, so
+typing is never interrupted. The companion follows `Enter` / `Esc` / clicks and
+also checks the chat box on screen 5 times a second (its gold border; the place
+is known for 1.28 at 1920x1080 and found by itself the first time chat opens
+elsewhere), which corrects the tracking when chat is opened or closed some
+other way.
 `F10` (or the sidebar's On | Off) pauses them by hand, with a short toast.
 
 ## Sections (nav in the window)
@@ -177,7 +181,7 @@ lib/Common.ahk      helpers, INI, InputHook, RegisterHotkey
 lib/WebView2/       thqby's WebView2.ahk (MIT) + Microsoft's WebView2Loader.dll
 lib/ComVar.ahk, lib/Promise.ahk   its dependencies
 engine/             GUI-free logic that the window calls directly:
-  Loader Remap Quickcast Macros Host Settings Updater SelfUpdate
+  Loader Remap Quickcast ChatBox Macros Host Settings Updater SelfUpdate
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
 assets/bg.png       pre-rendered page + card panel + TWRPG wordmark
