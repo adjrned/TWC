@@ -217,10 +217,9 @@ class RemapEngine {
         global quickcast
         static hinted := false
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
-        cal := s.forceLch ? 0 : quickcast.current()
-        lch := !cal && (s.forceLch || s.lchFallback)
-        ; not set up (and no LCH): the key alone, with a one-time hint
-        if !cal && !lch && !hinted {
+        cal := quickcast.current()
+        ; not set up for this game window: the key alone, with a one-time hint
+        if !cal && !hinted {
             hinted := true
             Toast("Quickcast isn't set up for this game window: Remap > Quickcast setup", "", 5000)
         }
@@ -228,8 +227,6 @@ class RemapEngine {
         loop {
             if cal
                 this.quickSmart(game, q, cal)
-            else if lch
-                this.quickLch(game, q)
             else
                 SendInput(q this.keyText(game))
             if !s.repeat || !this.stillHeld(base, start)
@@ -263,17 +260,6 @@ class RemapEngine {
         }
         return false
     }
-    ; LCH's method (no calibration needed): save the selection to groups 9 and
-    ; 0, cast with a click, then reselect, in case the click selected a unit
-    ; because the cast didn't happen. Two groups so the recall is never a
-    ; double-tap (which would move the camera).
-    quickLch(game, q) {
-        SendInput("{Ctrl Down}{9}{0}{Ctrl Up}")
-        SendInput(q this.keyText(game))
-        SendInput(q "{Click}")
-        SendInput("{9}{0}")
-    }
-
     clickMouse(side, yourKey) {
         SendInput(this.queued(yourKey) "{Click " side "}")
     }

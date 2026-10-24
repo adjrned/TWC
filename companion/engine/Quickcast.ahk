@@ -13,13 +13,14 @@ class QuickcastEngine {
     cache := Map()              ; calibration key -> parsed calibration (or 0)
     cal := 0                    ; calibration in progress: { step, p1, p2, normal }
     calHotkey := "$Insert"
+    static STEPS := ["Point at Move (the command card's top-left button) and press Insert",
+        "Point at the command card's bottom-right button and press Insert",
+        "Press A (Attack): the card shows only Cancel. Then press Insert"]
 
     ; -- settings --------------------------------------------------------------
     get() {
         return { repeat: Integer(Ini(this.section, "repeat", 1)),
             interval: Integer(Ini(this.section, "interval", 40)),
-            forceLch: Integer(Ini(this.section, "forceLch", 0)),
-            lchFallback: Integer(Ini(this.section, "lchFallback", 0)),
             window: this.windowKey(), calibrated: this.current() ? 1 : 0 }
     }
     set(key, value) => SetIni(value, this.section, key)
@@ -48,18 +49,23 @@ class QuickcastEngine {
     }
 
     ; -- calibration (in game, three presses of Insert) -------------------------
+    ; Remaps and macros pause meanwhile (qcCalibrating), so A is the game's Attack
+    ; even if it's bound. Esc cancels.
     calibrateStart(onDone) {
+        global qcCalibrating
         if !WinExist(WarcraftIII) {
-            Toast("Start Warcraft III first, with a hero selected", "error")
+            Toast("Start Warcraft III first, in a game with your hero selected", "error")
             return onDone(0, "")
         }
         this.cal := { step: 1, onDone: onDone }
+        qcCalibrating := true, RefreshHotkeys()
         HotIfWinActive(WarcraftIII)
         Hotkey(this.calHotkey, (*) => this.calibrateStep(), "On")
         HotIfWinActive()
         WinActivate(WarcraftIII)
-        Toast("Quickcast setup 1/3: point at your hero's Move button and press Insert", "", 0)
+        this.stepToast(1)
     }
+    stepToast(n) => Toast("Quickcast setup " n "/3  ·  " QuickcastEngine.STEPS[n] "  ·  Esc cancels", "", 0)
     calibrateStep() {
         c := this.cal
         if !c
@@ -69,17 +75,17 @@ class QuickcastEngine {
         MouseGetPos(&mx, &my)
         if c.step = 1 {
             c.p1 := [(mx - wx) / cw, (my - wy) / ch], c.step := 2
-            Toast("Quickcast setup 2/3: point at the bottom-right button (Skill R) and press Insert", "", 0)
+            this.stepToast(2)
         } else if c.step = 2 {
             c.p2 := [(mx - wx) / cw, (my - wy) / ch]
             if c.p2[1] - c.p1[1] < 0.03 || c.p2[2] - c.p1[2] < 0.03
-                return this.calibrateEnd(0, "That wasn't below and right of Move. Run the setup again.")
+                return this.calibrateEnd(0, "That button wasn't below and right of Move. Run the setup again.")
             g := this.grabCard(c)
             c.normal := []
             loop 11
                 c.normal.Push(this.slotColor(c, g, A_Index))
             c.step := 3
-            Toast("Quickcast setup 3/3: press a skill that needs a target (e.g. Q), then Insert", "", 0)
+            this.stepToast(3)
         } else {
             g := this.grabCard(c)
             c.empty := []
@@ -96,7 +102,7 @@ class QuickcastEngine {
             if black >= 10
                 return this.calibrateEnd(0, "The companion can't see the game. Use windowed or windowed fullscreen mode.")
             if changed < 4
-                return this.calibrateEnd(0, "The command card didn't change. Was a skill waiting for a target? Try again.")
+                return this.calibrateEnd(0, "The command card didn't change: press A first, then Insert while it shows only Cancel")
             k := this.windowKey()
             SetIni(this.serialize(c), this.section, "cal_" k)
             this.cache.Delete(k)
@@ -104,9 +110,13 @@ class QuickcastEngine {
         }
     }
     calibrateEnd(ok, msg) {
+        global qcCalibrating
+        if !this.cal
+            return
         HotIfWinActive(WarcraftIII)
         try Hotkey(this.calHotkey, "Off")
         HotIfWinActive()
+        qcCalibrating := false, RefreshHotkeys()
         done := this.cal.onDone
         this.cal := 0
         Toast(msg, ok ? "" : "error")

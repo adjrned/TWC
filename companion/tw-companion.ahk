@@ -80,7 +80,7 @@ global version := "1.1.0-beta"
 ; toolEnabled: the manual F10 pause; chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).
-global toolEnabled := true, chatting := false, inGame := false
+global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false
 global showMain := false
 global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
@@ -1222,52 +1222,65 @@ RemapClear() {
     remap.setKey(Map("group", remapSel.group, "index", remapSel.index, "key", "-"))
     RefreshRemap()
 }
-; Quickcast settings, in the .modal style of Dialog: how quickcast works now,
-; the in-game setup, hold to repeat, and LCH's method as a forced fallback
+; Quickcast setup window, in the .modal style of Dialog: the status for the
+; running game, the three in-game steps, hold to repeat, and the buttons
 QuickcastSettings() {
     global C, mainGui, quickcast, UI_FONT
-    s := quickcast.get(), w := 480
+    s := quickcast.get(), w := 460, x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     g.BackColor := C.frame                           ; = the 1px border
     g.MarginX := 0, g.MarginY := 0
     card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
-    t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, "Quickcast")
+    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Quickcast")
     t.SetFont("s13 w700", "Cinzel")
-    status := !s.window ? "Warcraft III isn't running: start it to check the setup"
-        : s.forceLch ? "Using LCH's method (set below)"
-        : s.calibrated ? "Smart quickcast is set up for " StrReplace(s.window, "_", " ")
-        : "Not set up for " StrReplace(s.window, "_", " ") " yet: " (s.lchFallback ? "using LCH's method" : "quickcast slots just send their key")
-    st := g.AddText("x26 y58 w" (w - 52) " h20 +Background" C.card " c" (s.calibrated && !s.forceLch ? C.accent : C.muted), status)
+    where := StrReplace(StrReplace(StrReplace(s.window, "_", " "), "classic", "1.28"), "reforged", "Reforged")
+    status := !s.window ? "Start Warcraft III to set it up"
+        : s.calibrated ? "Set up for " where
+        : "Not set up for " where " yet"
+    st := g.AddText("x" x " y56 w" tw " h20 +Background" C.card " c" (s.calibrated ? C.accent : C.muted), (s.calibrated ? "✓  " : "") status)
     UISetFont(st, "s10 w600")
-    body := "Smart quickcast sends the key, then clicks only once the game is waiting for a target, "
-        . "so a skill on cooldown or out of mana never clicks a unit. It needs a quick setup in game "
-        . "(three presses of Insert), once per game version and window size. Until then, "
-        . "quickcast slots just send their key.`n`n"
-        . "LCH's method works without the setup, but it saves your selection to control "
-        . "groups 9 and 0 for every cast, so you can't use those groups yourself."
-    bt := g.AddText("x26 y88 w" (w - 52) " +Background" C.card " c" C.dim, body)
-    UISetFont(bt, "s9")
-    bh := TextHeight(bt, body, w - 52), bt.Move(, , , bh)
-    y := 88 + bh + 18
-    g.SetFont("s10", UI_FONT)                         ; before the checkboxes, so they size to it
-    rep := g.AddCheckbox("x26 y" y " w250 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat it, every")
-    iv := g.AddEdit("x280 y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
-    ms := g.AddText("x334 y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
-    fb := g.AddCheckbox("x26 y" (y + 32) " w400 h22 +Background" C.card " c" C.text (s.lchFallback ? " Checked" : ""), " Use LCH's method until it's set up")
-    fb.OnEvent("Click", (c, *) => quickcast.set("lchFallback", c.Value))
-    y += 32
-    lch := g.AddCheckbox("x26 y" (y + 32) " w400 h22 +Background" C.card " c" C.text (s.forceLch ? " Checked" : ""), " Always use LCH's method")
+    intro := "Casts at the cursor the moment you press the key, and clicks only when the game is "
+        . "waiting for a target, so a cooldown or missing mana never clicks a unit. Until it's set "
+        . "up, quickcast slots just send their key."
+    it := g.AddText("x" x " y82 w" tw " +Background" C.card " c" C.dim, intro)
+    UISetFont(it, "s9")
+    y := 82 + TextHeight(it, intro, tw) + 18
+    it.Move(, , , y - 100)
+
+    ; the three steps, as on screen during the setup
+    hd := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.muted, "SETUP IN GAME")
+    UISetFont(hd, "s8 w600")
+    y += 26
+    for i, step in QuickcastEngine.STEPS {
+        n := g.AddText("x" x " y" y " w20 h20 Center 0x200 +Background" C.navOn " c" C.accent, i)
+        UISetFont(n, "s8 w700"), Box.Round(n, 20, 20, 10)
+        l := g.AddText("x" (x + 32) " y" (y + 1) " w" (tw - 32) " +Background" C.card " c" C.text, step)
+        UISetFont(l, "s9")
+        lh := Max(20, TextHeight(l, step, tw - 32)), l.Move(, , , lh)
+        y += lh + 10
+    }
+    nt := g.AddText("x" (x + 32) " y" y " w" (tw - 32) " h18 +Background" C.card " c" C.dim, "Once per game version and window size. Esc cancels.")
+    UISetFont(nt, "s8")
+    y += 30
+    g.AddText("x" x " y" y " w" tw " h1 +Background" C.border)     ; divider
+    y += 16
+
+    g.SetFont("s10", UI_FONT)                         ; before the checkbox, so it sizes to it
+    rep := g.AddCheckbox("x" x " y" y " w226 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat, every")
+    iv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
+    ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
     rep.OnEvent("Click", (c, *) => quickcast.set("repeat", c.Value))
     iv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("interval", Max(15, Min(1000, c.Value + 0)))))
-    lch.OnEvent("Click", (c, *) => quickcast.set("forceLch", c.Value))
-    by := y + 32 + 22 + 26
-    setup := g.AddText("x" (w - 26 - 104 - 8 - 150) " y" by " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Set up in game")
-    close := g.AddText("x" (w - 26 - 104) " y" by " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    y += 44
+
+    label := s.calibrated ? "Set up again" : "Set up in game"
+    setup := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, label)
+    close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
     for b in [setup, close]
-        UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh2), Box.Round(b, bw, bh2, 4)
+        UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
     setup.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), quickcast.calibrateStart(QuickcastSetupDone)))
     close.OnEvent("Click", (*) => g.Destroy())
-    h := by + 34 + 24
+    h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
@@ -1604,6 +1617,13 @@ InGamePoll() {
         macros.refresh(), remap.refresh()
     }
 }
+; refresh every gated hotkey (tool pause, chat, in game, quickcast setup)
+RefreshHotkeys() {
+    if IsSet(macros) && macros
+        macros.refresh()
+    if IsSet(remap) && remap
+        remap.refresh()
+}
 MsgEditFocused() {
     global msgEdit
     try return ControlGetFocus("ahk_id " mainGui.Hwnd) = msgEdit.Hwnd
@@ -1808,5 +1828,5 @@ $Enter::
 $NumpadEnter::
 $+Enter:: ChatEnter(ThisHotkey)
 $~LButton::
-$~Esc:: (ChatClosed(), ChatRestart())
+$~Esc:: (ChatClosed(), ChatRestart(), quickcast.cal && quickcast.calibrateEnd(0, "Quickcast setup cancelled"))
 #HotIf
