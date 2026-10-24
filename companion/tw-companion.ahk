@@ -1,5 +1,8 @@
 ﻿#Requires AutoHotkey v2.0
 #SingleInstance Force
+;@Ahk2Exe-SetName TW Companion
+;@Ahk2Exe-SetDescription TW Companion
+;@Ahk2Exe-SetCopyright By Ruzai
 ; ============================================================================
 ;  TW Companion - light native TWRPG loader for Warcraft III.
 ;  Borderless window on a baked background in the site's theme; native controls on top.
@@ -70,7 +73,7 @@ global toastGui := 0, toastText := 0   ; the themed toast (Toast)
 global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
-global version := "1.0.0"
+global version := "1.1.0-beta"
 global toolEnabled := true, chatting := false, toolEnableHistory := true
 global showMain := false
 global loader, macros, quickcast, remap, host, settings, updater, webOverlay
@@ -183,13 +186,13 @@ BuildWindow() {
         UISetFont(t, "s9 w600"), t.OnEvent("Click", (*) => ToggleTool())
         t.GetPos(, , &tw, &th), Box.Round(t, tw, th, 4)
     }
-    verText := mainGui.AddText("x14 y" (fy + 38) " w50 h16 +Background" C.side " c" C.dim, "v" version)
+    verText := mainGui.AddText("x14 y" (fy + 38) " w66 h16 +Background" C.side " c" C.dim, "v" version)
     UISetFont(verText, "s8")
     ; "By" muted, the name in the accent (the site's "Made by Ruzai")
     nameText := mainGui.AddText("x" (SIDE_W - 84) " y" (fy + 38) " w70 h16 Right +Background" C.side " c" C.accent, "Ruzai")
     UISetFont(nameText, "s8 w600")
     nw := TextWidth(nameText, "Ruzai")
-    byText := mainGui.AddText("x" (SIDE_W - 14 - nw - 40) " y" (fy + 38) " w36 h16 Right +Background" C.side " c" C.dim, "By")
+    byText := mainGui.AddText("x" (SIDE_W - 14 - nw - 22) " y" (fy + 38) " w18 h16 Right +Background" C.side " c" C.dim, "By")
     UISetFont(byText, "s8")
 
     MkButton("✕", W - 40, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => HideMainWindow())

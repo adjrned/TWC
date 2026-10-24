@@ -9,3 +9,7 @@ companion/HiddenFiles.txt
 
 # sample saves for trying the companion Loader
 companion/test-saves/
+
+# companion build output and downloaded build tools
+companion/dist/
+companion/build/.tools/

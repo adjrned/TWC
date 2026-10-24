@@ -16,7 +16,26 @@ the Microsoft Edge WebView2 Runtime (built into Windows 11; on Windows 10 instal
 it from Microsoft if the overlay won't start). Warcraft III must run in
 **Windowed Fullscreen** (or windowed) for anything to draw over it.
 
-## Run
+## Install (players)
+
+Download `TWC-Companion-<version>.zip`, unzip it anywhere and run
+**`TW Companion.exe`**: no AutoHotkey install needed. The zip's `README.txt`
+covers SmartScreen, updating (unzip over the old folder; settings are kept) and
+uninstalling.
+
+## Build the zip
+
+```
+powershell -ExecutionPolicy Bypass -File companionuilduild.ps1
+```
+
+Compiles `tw-companion.ahk` with Ahk2Exe (downloaded into `build\.tools` on
+the first run) and zips it with `assets\`, the WebView2 loader DLL and
+`build\README.txt` into `companion\dist\`. The version comes from
+`global version` in `tw-companion.ahk`.
+
+## Run from source
+
 
 Double-click **`tw-companion.ahk`**. It relaunches itself as admin (WC3 Reforged
 usually runs elevated, and key sends need matching elevation).

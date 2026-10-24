@@ -276,7 +276,10 @@ class OverlayPanel {
 
         dataDir := A_AppData "\tw-companion\webview"
         DirCreate(dataDir)
-        this.wvc := WebView2.create(g.Hwnd, , 0, dataDir)
+        ; the loader DLL by full path: a compiled companion has no script folder of
+        ; its own for WebView2.ahk to look next to
+        dll := A_ScriptDir "\lib\WebView2\" (A_PtrSize * 8) "bit\WebView2Loader.dll"
+        this.wvc := WebView2.create(g.Hwnd, , 0, dataDir, "", 0, dll)
         try this.wvc.DefaultBackgroundColor := 0x100D0CFF    ; site --bg #0C0D10 (bytes A,R,G,B): no white flash
         z := Ini(this.section, "zoom", "")
         if z
