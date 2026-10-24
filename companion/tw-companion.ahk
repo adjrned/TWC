@@ -58,6 +58,9 @@ UISetFont(ctl, opts) {
 global boxes := Map()       ; control hwnd -> the Box drawn behind it (StyleControl)
 global buttons := Map()     ; MkButton hwnd -> its background colour (picks the style)
 global navItems := Map()    ; page -> { box, icon, label } in the sidebar
+global popovers := Map()    ; hover popovers by name (AddPopover)
+global chatHook := InputHook("V")       ; records the WC3 chat line (ChatEnter)
+global toastGui := 0, toastText := 0   ; the themed toast (Toast)
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.0.0"
@@ -69,7 +72,7 @@ global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
 ; loader controls
-global searchEdit, hiddenChip, helpBtn, helpGui := 0, msgLabel, msgEdit, loadBtn
+global searchEdit, hiddenChip, helpBtn, msgLabel, msgSummary, msgInfo, msgEdit, loadBtn
 global emptyTitle, emptySub, emptyBtn
 global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list (BuildSaveList)
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map()
@@ -385,15 +388,22 @@ BuildLoaderPage() {
     searchEdit.OnEvent("Change", (*) => SearchChanged())
     SendMessage(0x1501, 1, StrPtr("Search saves…"), searchEdit)    ; EM_SETCUEBANNER
     hiddenChip := MkButton("", 570, 162, 150, 28, C.chip, C.muted, (*) => ToggleShowHidden())
-    helpBtn := MkButton("?", 530, 162, 30, 28, C.chip, C.muted, (*) => ShowLoaderHelp(true))
+    helpBtn := MkButton("?", 530, 162, 30, 28, C.chip, C.muted, (*) => ShowPopover("commands"))
     AddToPage("loader", searchEdit, hiddenChip, helpBtn)
 
     ; load message for the selected save (rows themselves: BuildSaveList)
-    msgLabel := mainGui.AddText("x40 y486 w540 h18 +Background" C.panel " c" C.muted, "Load message")
+    msgLabel := mainGui.AddText("x40 y486 w250 h18 +Background" C.panel " c" C.muted, "Load message")
+    ; what will actually be sent, and an ⓘ explaining how it works
+    msgSummary := mainGui.AddText("x290 y486 w266 h18 Right +Background" C.panel " c" C.dim, "")
+    UISetFont(msgSummary, "s9")
+    msgInfo := mainGui.AddText("x562 y484 w18 h20 Center 0x200 +Background" C.panel " c" C.muted, Chr(0xE946))
+    msgInfo.SetFont("s9", ICON_FONT)
+    msgInfo.OnEvent("Click", (*) => ShowPopover("message"))     ; also makes it report hovers
+    AddToPage("loader", msgSummary, msgInfo)
     msgEdit := mainGui.AddEdit("x40 y506 w540 h32 +Background" C.well " c" C.text, "")
     UISetFont(msgEdit, "s10")
     msgEdit.OnEvent("Change", (*) => SaveMessageChanged())
-    SendMessage(0x1501, 1, StrPtr("Optional: said in chat when this save loads. Use | between lines to pick one at random"), msgEdit)
+    SendMessage(0x1501, 1, StrPtr("e.g.  gl hf | sniper time | brb   (optional)"), msgEdit)
     loadBtn := MkButton("LOAD", 600, 504, 120, 36, C.accent, C.onAccent, (*) => LoadSelected())
     AddToPage("loader", msgLabel, msgEdit, loadBtn)
 }
@@ -446,7 +456,23 @@ BuildSaveList() {
     Box.Round(emptyBtn, 160, 32, 4)
     AddToPage("loader", emptyTitle, emptySub, emptyBtn)
     OnMessage(0x20A, SaveListWheel)
-    OnMessage(0x200, LoaderHelpHover)      ; WM_MOUSEMOVE: hover the "?"
+    AddPopover("commands", helpBtn, [
+        ["Load from Warcraft III chat", ""],
+        ["-l sniper", "loads the closest match: exact name, then starts with, then contains"],
+        ["-l 2", "loads your 2nd ★ favourite"],
+        ["-l  /  -ll", "reloads the save you loaded last"],
+        ["-sn", "saves the next number: after knight#92 it types -save knight#93"],
+        ["", "Also -load and -loadlast. Loader commands are never sent to chat."]])
+    AddPopover("message", msgInfo, [
+        ["Load message", ""],
+        ["What", "A chat line the companion types in Warcraft III each time this save loads, right before its -load codes."],
+        ["When", "Every load: LOAD, double-click, Enter, -l, -ll and favourites."],
+        ["Random", "Separate options with  |  and one of them is picked at random each load."],
+        ["Example", "gl hf | sniper time | brb    →  sends one of these three"],
+        ["Series", "Numbered saves (knight#91, #92…) share one message for the whole series."],
+        ["Empty", "Leave it blank to send nothing."],
+        ["", "It's sent like anything you type in chat, so other players can see it."]], "above-right")
+    OnMessage(0x200, PopoverHover)         ; WM_MOUSEMOVE: open a popover when its anchor is hovered
 }
 
 RefreshFiles() {
@@ -617,7 +643,7 @@ SaveListWheel(wParam, lParam, msg, hwnd) {
 }
 
 ShowSelectedMessage() {
-    global saveSel, msgEdit, msgLabel, loader, saveFiles
+    global saveSel, msgEdit, msgLabel, msgSummary, loader, saveFiles
     i := SaveIndex(saveSel)
     msgEdit.Enabled := i > 0
     msgLabel.Text := !i ? "Load message"
@@ -625,15 +651,26 @@ ShowSelectedMessage() {
     v := i ? saveFiles[i].msg : ""
     if msgEdit.Value != v
         msgEdit.Value := v
+    msgSummary.Text := i ? MessageSummary(v) : ""
+}
+
+; what a load message will send: nothing / the line / one of N at random
+MessageSummary(raw) {
+    n := 0
+    for o in StrSplit(raw, "|")
+        if Trim(o) != ""
+            n++
+    return n = 0 ? "nothing is sent" : n = 1 ? "sent once per load" : n " options · one picked at random"
 }
 
 SaveMessageChanged() {
-    global saveSel, msgEdit, loader, saveFiles
+    global saveSel, msgEdit, msgSummary, loader, saveFiles
     i := SaveIndex(saveSel)
     if !i
         return
     e := saveFiles[i]
     loader.setMessage(Map("name", e.key, "msg", Trim(msgEdit.Value)))
+    msgSummary.Text := MessageSummary(msgEdit.Value)
     had := e.msg != ""
     for f in saveFiles                      ; a series shares one message
         if f.key = e.key
@@ -677,63 +714,81 @@ LoadSelected() {
         Toast("Select a save first", "error")
 }
 
-; "?" popover: the in-game commands. Shows while hovering (or after a click)
-; and hides once the mouse leaves the button.
-ShowLoaderHelp(show) {
-    global helpGui, helpBtn, mainGui, C
-    static HELP := [
-        ["Load from Warcraft III chat", ""],
-        ["-l sniper", "loads the closest match: exact, starts with, contains"],
-        ["-l 2", "loads your 2nd ★ favourite"],
-        ["-l  /  -ll", "reloads the save you loaded last"],
-        ["-sn", "saves the next number: after knight#92, -save knight#93"],
-        ["", "Also -load and -loadlast. Loader commands never show in chat."]]
+; ---- hover popovers (the "?" and ⓘ helps) ------------------------------------
+; A popover is a small card that opens while the mouse is over its anchor (or
+; after a click) and closes once the mouse leaves both. Lines:
+;   ["Title", ""]      heading
+;   ["key", "text"]    a row; text wraps
+;   ["", "text"]       muted footnote
+AddPopover(name, anchor, lines, place := "below-right") {
+    global popovers
+    popovers[name] := { anchor: anchor, lines: lines, place: place, gui: 0, w: 0, h: 0 }
+}
+ShowPopover(name, show := true) {
+    global popovers, mainGui, C
+    p := popovers[name]
     if !show {
-        if helpGui
-            helpGui.Hide()
+        if p.gui
+            p.gui.Hide()
         return
     }
-    if !helpGui {
-        helpGui := Gui("-Caption +ToolWindow +Owner" mainGui.Hwnd)
-        helpGui.BackColor := C.frame                       ; 1px border around the card
-        helpGui.MarginX := 1, helpGui.MarginY := 1
-        card := helpGui.AddText("x1 y1 w460 h150 +Background" C.card)
+    if !p.gui {
+        g := Gui("-Caption +ToolWindow +Owner" mainGui.Hwnd)
+        g.BackColor := C.frame                           ; = the 1px border
+        g.MarginX := 0, g.MarginY := 0
+        w := 470, card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
         y := 14
-        for line in HELP {
+        for line in p.lines {
             if line[2] = "" {
-                t := helpGui.AddText("x18 y" y " w430 h20 +Background" C.card " c" C.text, line[1])
+                t := g.AddText("x18 y" y " w" (w - 36) " h20 +Background" C.card " c" C.text, line[1])
                 UISetFont(t, "s10 w600")
+                y += 26
             } else if line[1] = "" {
-                t := helpGui.AddText("x18 y" (y + 4) " w430 h18 +Background" C.card " c" C.dim, line[2])
+                t := g.AddText("x18 y" (y + 2) " w" (w - 36) " +Background" C.card " c" C.dim, line[2])
                 UISetFont(t, "s9")
+                th := TextHeight(t, line[2], w - 36), t.Move(, , , th)
+                y += th + 10
             } else {
-                k := helpGui.AddText("x18 y" y " w96 h20 +Background" C.card " c" C.accent, line[1])
+                k := g.AddText("x18 y" y " w80 h18 +Background" C.card " c" C.accent, line[1])
                 UISetFont(k, "s9 w600")
-                v := helpGui.AddText("x116 y" y " w336 h20 +Background" C.card " c" C.muted, line[2])
+                v := g.AddText("x100 y" y " w" (w - 118) " +Background" C.card " c" C.muted, line[2])
                 UISetFont(v, "s9")
+                th := Max(18, TextHeight(v, line[2], w - 118)), v.Move(, , , th)
+                y += th + 8
             }
-            y += 24
         }
-        card.Move(, , , y + 6)
-        helpGui.Show("Hide w462 h" (y + 8))
+        h := y + 6
+        card.Move(, , , h - 2)
+        g.Show("Hide w" w " h" h)
+        p.gui := g, p.w := w, p.h := h
     }
-    helpBtn.GetPos(&bx, &by, &bw, &bh)
+    p.anchor.GetPos(&ax, &ay, &aw, &ah)
     WinGetClientPos(&wx, &wy, , , mainGui)
-    helpGui.Show("NA x" (wx + bx + bw - 462) " y" (wy + by + bh + 6))
-    SetTimer(HelpHoverCheck, 120)
+    x := InStr(p.place, "right") ? wx + ax + aw - p.w : wx + ax
+    y := InStr(p.place, "above") ? wy + ay - p.h - 6 : wy + ay + ah + 6
+    p.gui.Show("NA x" x " y" y)
+    SetTimer(PopoverHoverCheck, 120)
 }
-HelpHoverCheck() {
-    global helpBtn, helpGui
+PopoverHoverCheck() {
+    global popovers
     MouseGetPos(, , &win, &ctl, 2)
-    if !helpGui || (ctl = helpBtn.Hwnd) || (win = helpGui.Hwnd)
-        return
-    SetTimer(HelpHoverCheck, 0)
-    ShowLoaderHelp(false)
+    anyOpen := false
+    for name, p in popovers {
+        if !p.gui || !DllCall("IsWindowVisible", "ptr", p.gui.Hwnd)
+            continue
+        if ctl = p.anchor.Hwnd || win = p.gui.Hwnd
+            anyOpen := true
+        else
+            p.gui.Hide()
+    }
+    if !anyOpen
+        SetTimer(PopoverHoverCheck, 0)
 }
-LoaderHelpHover(wParam, lParam, msg, hwnd) {
-    global helpBtn, helpGui
-    if IsSet(helpBtn) && hwnd = helpBtn.Hwnd && !(helpGui && WinExist("ahk_id " helpGui.Hwnd " ahk_class AutoHotkeyGUI") && DllCall("IsWindowVisible", "ptr", helpGui.Hwnd))
-        ShowLoaderHelp(true)
+PopoverHover(wParam, lParam, msg, hwnd) {
+    global popovers
+    for name, p in popovers
+        if hwnd = p.anchor.Hwnd && !(p.gui && DllCall("IsWindowVisible", "ptr", p.gui.Hwnd))
+            ShowPopover(name)
 }
 
 ; insertion sort with a comparator (save lists are small)
@@ -1121,7 +1176,6 @@ PauseGame() => SendInput("{F10}{m}{F10}")
 ; Enter opens chat, Enter again sends it. While it's open the typed line is
 ; recorded; if it's a loader command (-l, -ll...) it's discarded with Esc and
 ; run instead, so it never shows up in chat. Otherwise Enter goes through.
-global chatHook := InputHook("V")
 ChatEnter(hk) {
     global chatting, chatHook, loader
     key := InStr(hk, "+") ? "+{Enter}" : InStr(hk, "Numpad") ? "{NumpadEnter}" : "{Enter}"
@@ -1168,7 +1222,6 @@ MsgEditFocused() {
 ; Toast mirrors the site's #toast: dark card, 1px accent border, bold accent
 ; text (square corners: window regions can't keep a 1px border on a curve). Over the game it sits top-centre; otherwise at the bottom of the
 ; window (or screen). ms = 0 keeps it up until the next Toast / HideToast().
-global toastGui := 0, toastText := 0
 Toast(msg, kind := "", ms := 3500) {
     global toastGui, toastText, C, UI_FONT, mainGui, W, H
     ; tw/th, not w/h: names are case-insensitive and W/H are the window size

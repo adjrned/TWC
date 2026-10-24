@@ -47,7 +47,9 @@ don't fire mid-message.
   click ☆ to make a save a favourite (★ saves stay on top, the rest are newest
   first), click the eye to hide one (**Show hidden** brings them back, dimmed).
   Select a save to edit its **load message**: a chat line sent when it loads;
-  separate options with `|` and one is picked at random each time. Double-click,
+  separate options with `|` and one is picked at random each time. The ⓘ next
+  to the field explains it, and the text beside it shows what will be sent
+  (nothing / once per load / N options picked at random). Double-click,
   Enter or **LOAD** loads the selected save (arrows / PgUp / PgDn / wheel to move).
   `-convert <name>` is sent automatically (turn it off under Settings).
   **In-game commands** (also under the **?** next to search): type in WC3 chat
