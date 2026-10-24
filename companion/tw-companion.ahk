@@ -160,21 +160,23 @@ BuildWindow() {
     }
     navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
 
-    ; sidebar footer: caption + version, then tool On | Off as a full-width
-    ; segmented control (like the site's language switcher)
+    ; sidebar footer: tool On | Off as a full-width segmented control (like
+    ; the site's language switcher)
+    ; like the site's .sidebar-footer: the switch, then a small credit line
+    ; (version left, author right)
     local fy := H - 64, sw := SIDE_W - 28, half := (sw - 3) // 2
-    toolCap := mainGui.AddText("x14 y" fy " w" (sw - 44) " h16 +Background" C.side " c" C.dim, "TOOL  ·  F10")
-    UISetFont(toolCap, "s8 w600")
-    verText := mainGui.AddText("x" (SIDE_W - 58) " y" fy " w44 h16 Right +Background" C.side " c" C.dim, "v" version)
-    UISetFont(verText, "s8")
-    Box("", 14, fy + 20, sw, 30, C.side, C.frame, 5)
-    toolOn := mainGui.AddText("x16 y" (fy + 22) " w" half " h26 Center 0x200 +Background" C.side, "On")
-    mainGui.AddText("x" (16 + half) " y" (fy + 26) " w1 h18 +Background" C.frame)    ; divider
-    toolOff := mainGui.AddText("x" (17 + half) " y" (fy + 22) " w" (sw - 4 - half - 1) " h26 Center 0x200 +Background" C.side, "Off")
+    Box("", 14, fy, sw, 30, C.side, C.frame, 5)
+    toolOn := mainGui.AddText("x16 y" (fy + 2) " w" half " h26 Center 0x200 +Background" C.side, "On")
+    mainGui.AddText("x" (16 + half) " y" (fy + 6) " w1 h18 +Background" C.frame)    ; divider
+    toolOff := mainGui.AddText("x" (17 + half) " y" (fy + 2) " w" (sw - 4 - half - 1) " h26 Center 0x200 +Background" C.side, "Off")
     for t in [toolOn, toolOff] {
         UISetFont(t, "s9 w600"), t.OnEvent("Click", (*) => ToggleTool())
         t.GetPos(, , &tw, &th), Box.Round(t, tw, th, 4)
     }
+    verText := mainGui.AddText("x14 y" (fy + 38) " w50 h16 +Background" C.side " c" C.dim, "v" version)
+    UISetFont(verText, "s8")
+    byText := mainGui.AddText("x" (SIDE_W - 84) " y" (fy + 38) " w70 h16 Right +Background" C.side " c" C.dim, "By Ruzai")
+    UISetFont(byText, "s8")
 
     MkButton("✕", W - 40, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
