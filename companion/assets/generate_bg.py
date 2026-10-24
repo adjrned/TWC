@@ -1,4 +1,4 @@
-"""Regenerate assets/bg.png (920x510) for TW Companion, laid out like the TWRPG
+"""Regenerate assets/bg.png (880x510) for TW Companion, laid out like the TWRPG
 site: a sidebar (--bg2) with the Cinzel "TWC" wordmark and a footer divider,
 the page background (--bg), and a page-header divider. Colours are the site's
 tokens (src/styles/base.css) and must match the C palette in tw-companion.ahk;
@@ -8,9 +8,9 @@ Run from the assets/ folder:  py generate_bg.py
 """
 from PIL import Image, ImageDraw, ImageFont
 
-W, H = 920, 510
-SIDE_W = 190          # sidebar width
-CX = 214              # content left edge (page header, controls)
+W, H = 880, 510
+SIDE_W = 150          # sidebar width
+CX = 174              # content left edge (page header, controls)
 DIVIDER_Y = 62        # line under the toolbar row (page title + controls)
 FOOTER_Y = H - 76     # line above the sidebar footer
 

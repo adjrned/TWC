@@ -162,7 +162,7 @@ window calls directly — no IPC, no bridge.
 
 ### Regenerating the background
 
-`assets/bg.png` is 920×510 and matches the window layout (`W`, `H`, `SIDE_W`,
+`assets/bg.png` is 880×510 and matches the window layout (`W`, `H`, `SIDE_W`,
 `CX` in `tw-companion.ahk`). To tweak it, edit and
 run `assets/generate_bg.py` (Pillow) from the `assets/` folder. Its colours are the
 site's tokens from `src/styles/base.css`, the same ones as the `C` palette in

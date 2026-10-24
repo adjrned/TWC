@@ -37,7 +37,7 @@ global C := {
     muted:   "9A9EAA",   ; --muted2
     dim:     "6F7380" }  ; --muted
 ; window, sidebar width, and where page content starts (see assets/generate_bg.py)
-global W := 920, H := 510, SIDE_W := 190, CX := 214, CY := 76
+global W := 880, H := 510, SIDE_W := 150, CX := 174, CY := 76
 global TB_Y := 20           ; toolbar row: page title + that page's main controls
 global NAV_ORDER := ["loader", "macros", "remap", "host", "settings", "overlay"]
 global ICON_FONT := "Segoe Fluent Icons"
@@ -163,9 +163,9 @@ BuildWindow() {
     ; sidebar footer: caption + version, then tool On | Off as a full-width
     ; segmented control (like the site's language switcher)
     local fy := H - 64, sw := SIDE_W - 28, half := (sw - 3) // 2
-    toolCap := mainGui.AddText("x14 y" fy " w100 h16 +Background" C.side " c" C.dim, "TOOL  ·  F10")
+    toolCap := mainGui.AddText("x14 y" fy " w" (sw - 44) " h16 +Background" C.side " c" C.dim, "TOOL  ·  F10")
     UISetFont(toolCap, "s8 w600")
-    verText := mainGui.AddText("x" (SIDE_W - 84) " y" fy " w70 h16 Right +Background" C.side " c" C.dim, "v" version)
+    verText := mainGui.AddText("x" (SIDE_W - 58) " y" fy " w44 h16 Right +Background" C.side " c" C.dim, "v" version)
     UISetFont(verText, "s8")
     Box("", 14, fy + 20, sw, 30, C.side, C.frame, 5)
     toolOn := mainGui.AddText("x16 y" (fy + 22) " w" half " h26 Center 0x200 +Background" C.side, "On")
