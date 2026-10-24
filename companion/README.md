@@ -66,7 +66,7 @@ usually runs elevated, and key sends need matching elevation).
 Remaps and macros are always on, except while the WC3 chat box is open, so
 typing is never interrupted. The companion follows `Enter` / `Esc` / clicks and
 also checks the chat box on screen 5 times a second (its gold border; the place
-is known for 1.28 at 1920x1080 and found by itself the first time chat opens
+is known for 1.28 and Reforged at 1920x1080 and found by itself the first time chat opens
 elsewhere), which corrects the tracking when chat is opened or closed some
 other way.
 `F10` (or the sidebar's On | Off) pauses them by hand, with a short toast.

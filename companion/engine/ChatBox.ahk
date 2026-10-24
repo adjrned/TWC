@@ -10,8 +10,10 @@
 class ChatBoxEngine {
     section := "Chat"
     geo := Map()                ; window key -> { t, b, l, r } as fractions of the client, or 0
-    ; measured: 1.28, 1920x1080 (border at y 697 / 742, x 605 / 1314)
-    static DEFAULTS := Map("classic_1920x1080", "0.6454,0.6870,0.3151,0.6844")
+    ; measured at 1920x1080: 1.28 (border at y 697 / 742, x 605 / 1314) and
+    ; Reforged (lower, just above its HUD: y 795 / 841, x 603 / 1316)
+    static DEFAULTS := Map("classic_1920x1080", "0.6454,0.6870,0.3151,0.6844",
+        "reforged_1920x1080", "0.7361,0.7787,0.3141,0.6854")
 
     current() {
         if !(k := WC3WindowKey())
