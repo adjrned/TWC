@@ -40,6 +40,8 @@ global C := {
 global W := 920, H := 510, SIDE_W := 190, CX := 214, CY := 104
 global NAV_ORDER := ["loader", "macros", "remap", "host", "settings", "overlay"]
 global ICON_FONT := "Segoe Fluent Icons"
+; the site's system-ui font on Windows 11; classic Segoe UI on older systems
+global UI_FONT := FileExist(A_WinDir "\Fonts\SegUIVar.ttf") ? "Segoe UI Variable Text" : "Segoe UI"
 global boxes := Map()       ; control hwnd -> the Box drawn behind it (StyleControl)
 global buttons := Map()     ; MkButton hwnd -> its background colour (picks the style)
 global navItems := Map()    ; page -> { box, icon, label } in the sidebar
@@ -119,7 +121,7 @@ BuildWindow() {
     global
     mainGui := Gui("-Caption +Border", "TW Companion")
     mainGui.BackColor := C.win
-    mainGui.SetFont("s10", "Segoe UI")
+    mainGui.SetFont("s10", UI_FONT)
     mainGui.OnEvent("Close", (*) => HideMainWindow())
     mainGui.OnEvent("Escape", (*) => HideMainWindow())
 
@@ -133,24 +135,28 @@ BuildWindow() {
         ic := mainGui.AddText("x22 y" y " w22 h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).icon)
         ic.SetFont("s11", ICON_FONT)
         lb := mainGui.AddText("x52 y" y " w" (SIDE_W - 66) " h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).nav)
-        lb.SetFont("s10 w500", "Segoe UI")
+        lb.SetFont("s10 w500", UI_FONT)
         for t in [ic, lb]
             t.OnEvent("Click", NavClick.Bind(name))
         navItems[name] := { box: bx, icon: ic, label: lb }
     }
     navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
 
-    ; sidebar footer: tool on/off as a segmented control (like the site's
-    ; language switcher), then the version line
-    toolLabel := mainGui.AddText("x14 y" (H - 62) " w60 h26 0x200 +Background" C.side " c" C.dim, "TOOL")
-    toolLabel.SetFont("s8 w600", "Segoe UI")
-    Box("", 62, H - 62, 92, 26, C.side, C.frame, 4)
-    toolOn := mainGui.AddText("x63 y" (H - 61) " w45 h24 Center 0x200 +Background" C.side, "ON")
-    toolOff := mainGui.AddText("x108 y" (H - 61) " w45 h24 Center 0x200 +Background" C.side, "OFF")
-    for t in [toolOn, toolOff]
-        t.SetFont("s8 w600", "Segoe UI"), t.OnEvent("Click", (*) => ToggleTool())
-    verText := mainGui.AddText("x14 y" (H - 28) " w" (SIDE_W - 28) " h16 +Background" C.side " c" C.dim, "TW Companion v" version)
-    verText.SetFont("s8", "Segoe UI")
+    ; sidebar footer: caption + version, then tool On | Off as a full-width
+    ; segmented control (like the site's language switcher)
+    local fy := H - 64, sw := SIDE_W - 28, half := (sw - 3) // 2
+    toolCap := mainGui.AddText("x14 y" fy " w100 h16 +Background" C.side " c" C.dim, "TOOL  ·  F10")
+    toolCap.SetFont("s8 w600", UI_FONT)
+    verText := mainGui.AddText("x" (SIDE_W - 84) " y" fy " w70 h16 Right +Background" C.side " c" C.dim, "v" version)
+    verText.SetFont("s8", UI_FONT)
+    Box("", 14, fy + 20, sw, 30, C.side, C.frame, 5)
+    toolOn := mainGui.AddText("x16 y" (fy + 22) " w" half " h26 Center 0x200 +Background" C.side, "On")
+    mainGui.AddText("x" (16 + half) " y" (fy + 26) " w1 h18 +Background" C.frame)    ; divider
+    toolOff := mainGui.AddText("x" (17 + half) " y" (fy + 22) " w" (sw - 4 - half - 1) " h26 Center 0x200 +Background" C.side, "Off")
+    for t in [toolOn, toolOff] {
+        t.SetFont("s9 w600", UI_FONT), t.OnEvent("Click", (*) => ToggleTool())
+        t.GetPos(, , &tw, &th), Box.Round(t, tw, th, 4)
+    }
 
     MkButton("✕", W - 40, 14, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
@@ -158,7 +164,7 @@ BuildWindow() {
     titleText := mainGui.AddText("x" CX " y22 w600 h34 +Background" C.panel " c" C.text, "")
     titleText.SetFont("s19 w700", "Cinzel")
     subtitleText := mainGui.AddText("x" CX " y60 w600 h20 +Background" C.panel " c" C.muted, "")
-    subtitleText.SetFont("s10", "Segoe UI")
+    subtitleText.SetFont("s10", UI_FONT)
 
     ; pages are laid out from (40, 160); shift them into the content area
     BuildLoaderPage()
@@ -176,12 +182,16 @@ BuildWindow() {
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
     BuildSaveList()
-    ; search icon inside the loader's search box, like the site's search inputs
-    searchEdit.GetPos(&sx, &sy, , &sh)
-    searchIcon := mainGui.AddText("x" (sx + 1) " y" sy " w26 h" sh " Center 0x200 +Background" C.well " c" C.dim, Chr(0xE721))
+    ; search icon inside the loader's search box, like the site's search inputs.
+    ; The edit starts right of it: an edit repaints its whole rect, so any
+    ; overlap would wipe the icon.
+    sb := boxes[searchEdit.Hwnd]
+    searchIcon := mainGui.AddText("x" (sb.x + 1) " y" (sb.y + 1) " w30 h" (sb.h - 2) " Center 0x200 +Background" C.well " c" C.dim, Chr(0xE721))
     searchIcon.SetFont("s9", ICON_FONT)
     AddToPage("loader", searchIcon)
-    SendMessage(0xD3, 1, 30, searchEdit)    ; EM_SETMARGINS left: room for the icon
+    searchEdit.GetPos(, &sy, , &sh)
+    searchEdit.Move(sb.x + 31, sy, sb.w - 32, sh)
+    SendMessage(0xD3, 1, 0, searchEdit)     ; EM_SETMARGINS left: the icon is the padding
 
     OnMessage(0x201, WM_LBUTTONDOWN)
     UpdateToolPill()
@@ -297,7 +307,7 @@ StrTitle(s) => StrUpper(SubStr(s, 1, 1)) SubStr(s, 2)
 MkButton(label, x, y, w, h, bg, fg, handler) {
     global mainGui, buttons
     b := mainGui.AddText("x" x " y" y " w" w " h" h " Center 0x200 +Background" bg " c" fg, label)
-    b.SetFont("s9 w600", "Segoe UI")
+    b.SetFont("s9 w600", UI_FONT)
     b.OnEvent("Click", handler)
     buttons[b.Hwnd] := bg
     return b
@@ -353,7 +363,7 @@ ShowPage(name) {
 BuildLoaderPage() {
     global
     searchEdit := mainGui.AddEdit("x40 y162 w482 h28 +Background" C.well " c" C.text, "")
-    searchEdit.SetFont("s10", "Segoe UI")
+    searchEdit.SetFont("s10", UI_FONT)
     searchEdit.OnEvent("Change", (*) => SearchChanged())
     SendMessage(0x1501, 1, StrPtr("Search saves…"), searchEdit)    ; EM_SETCUEBANNER
     hiddenChip := MkButton("", 570, 162, 150, 28, C.chip, C.muted, (*) => ToggleShowHidden())
@@ -363,7 +373,7 @@ BuildLoaderPage() {
     ; load message for the selected save (rows themselves: BuildSaveList)
     msgLabel := mainGui.AddText("x40 y486 w540 h18 +Background" C.panel " c" C.muted, "Load message")
     msgEdit := mainGui.AddEdit("x40 y506 w540 h32 +Background" C.well " c" C.text, "")
-    msgEdit.SetFont("s10", "Segoe UI")
+    msgEdit.SetFont("s10", UI_FONT)
     msgEdit.OnEvent("Change", (*) => SaveMessageChanged())
     SendMessage(0x1501, 1, StrPtr("Optional: said in chat when this save loads. Use | between lines to pick one at random"), msgEdit)
     loadBtn := MkButton("LOAD", 600, 504, 120, 36, C.accent, C.onAccent, (*) => LoadSelected())
@@ -392,7 +402,7 @@ BuildSaveList() {
             else if col[1] != "name"
                 opt .= " Center"
             local t := mainGui.AddText(opt, "")
-            t.SetFont(col[1] = "name" ? "s10 w500" : col[1] = "date" ? "s9" : "s10", (col[1] = "name" || col[1] = "date") ? "Segoe UI" : ICON_FONT)
+            t.SetFont(col[1] = "name" ? "s10 w500" : col[1] = "date" ? "s9" : "s10", (col[1] = "name" || col[1] = "date") ? UI_FONT : ICON_FONT)
             row.%col[1]% := t
             AddToPage("loader", t)
         }
@@ -408,7 +418,7 @@ BuildSaveList() {
     }
     ; empty state sits in the card
     emptyTitle := mainGui.AddText("x" x " y0 w" w " h24 Center +Background" C.card " c" C.text, "")
-    emptyTitle.SetFont("s11 w600", "Segoe UI")
+    emptyTitle.SetFont("s11 w600", UI_FONT)
     emptySub := mainGui.AddText("x" x " y0 w" w " h40 Center +Background" C.card " c" C.muted, "")
     emptyBtn := MkButton("Choose folder", 0, 0, 160, 32, C.accent, C.onAccent, (*) => (loader.setFolder(Map()), RefreshFiles()))
     Box.Round(emptyBtn, 160, 32, 4)
@@ -621,15 +631,15 @@ ShowLoaderHelp(show) {
         for line in HELP {
             if line[2] = "" {
                 t := helpGui.AddText("x18 y" y " w430 h20 +Background" C.card " c" C.text, line[1])
-                t.SetFont("s10 w600", "Segoe UI")
+                t.SetFont("s10 w600", UI_FONT)
             } else if line[1] = "" {
                 t := helpGui.AddText("x18 y" (y + 4) " w430 h18 +Background" C.card " c" C.dim, line[2])
-                t.SetFont("s9", "Segoe UI")
+                t.SetFont("s9", UI_FONT)
             } else {
                 k := helpGui.AddText("x18 y" y " w96 h20 +Background" C.card " c" C.accent, line[1])
                 k.SetFont("s9 w600", "Consolas")
                 v := helpGui.AddText("x116 y" y " w336 h20 +Background" C.card " c" C.muted, line[2])
-                v.SetFont("s9", "Segoe UI")
+                v.SetFont("s9", UI_FONT)
             }
             y += 24
         }
@@ -672,14 +682,14 @@ SortBy(arr, cmp) {
 BuildMacrosPage() {
     global
     macroListBox := mainGui.AddListBox("x40 y162 w680 h214 +Background" C.well " c" C.text, [])
-    macroListBox.SetFont("s10", "Segoe UI")
+    macroListBox.SetFont("s10", UI_FONT)
     macroListBox.OnEvent("DoubleClick", (*) => MacroEditSelected())
     ApplyDark(macroListBox.Hwnd)
     lbl := mainGui.AddText("x40 y384 w150 h18 +Background" C.panel " c" C.muted, "Hotkey")
     lbl2 := mainGui.AddText("x200 y384 w300 h18 +Background" C.panel " c" C.muted, "Message (line per row)")
     macroCapBtn := MkButton("click to set", 40, 404, 150, 28, C.chip, C.text, (*) => MacroCapture())
     macroMsgEdit := mainGui.AddEdit("x200 y404 w520 h52 Multi +Background" C.well " c" C.text, "")
-    macroMsgEdit.SetFont("s10", "Segoe UI")
+    macroMsgEdit.SetFont("s10", UI_FONT)
     addBtn := MkButton("Add / Update", 40, 470, 140, 30, C.accent, C.onAccent, (*) => MacroSave())
     delBtn := MkButton("Delete", 190, 470, 90, 30, C.chip, C.text, (*) => MacroDelete())
     newBtn := MkButton("New", 290, 470, 80, 30, C.chip, C.text, (*) => MacroNew())
@@ -826,7 +836,7 @@ BuildHostPage() {
     mk(id, label, x, y, w) {
         lbl := mainGui.AddText("x" x " y" y " w" w " h16 +Background" C.panel " c" C.muted, label)
         e := mainGui.AddEdit("x" x " y" (y + 20) " w" w " h26 +Background" C.well " c" C.text, "")
-        e.SetFont("s10", "Segoe UI")
+        e.SetFont("s10", UI_FONT)
         hostEdits[id] := e
         AddToPage("host", lbl, e)
     }
@@ -926,7 +936,7 @@ BuildOverlayPage() {
     }
     num(key, x, y) {
         e := mainGui.AddEdit("x" x " y" y " w60 h24 Number +Background" C.well " c" C.text, "")
-        e.SetFont("s10", "Segoe UI")
+        e.SetFont("s10", UI_FONT)
         e.OnEvent("Change", (c, *) => (c.Value != "" && webOverlay.set(key, c.Value + 0)))
         AddToPage("overlay", e)
         return e
@@ -1112,7 +1122,7 @@ BuildOverlay() {
     global overlay, overlayText, C
     overlay := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-overlay")
     overlay.BackColor := C.win
-    overlay.SetFont("s10 w600", "Segoe UI")
+    overlay.SetFont("s10 w600", UI_FONT)
     overlayText := overlay.AddText("+BackgroundTrans w140 h22", "")
     WinSetTransparent(210, overlay)
     UpdateOverlay()
