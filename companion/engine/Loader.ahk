@@ -106,6 +106,10 @@ class LoaderEngine {
     ; star / hide / message key for a save: its series, or the file itself
     static KeyOf(name) => (s := LoaderEngine.Series(name)) ? s.key : name
 
+    ; the file name TWRPG writes for "-save <name>": it drops spaces and saves
+    ; lowercase ("-save Sorc 3" -> sorc3.txt)
+    static TwrpgName(name) => StrLower(RegExReplace(name, "\s+"))
+
     ; name for the next save in a series: the highest number on disk + 1 (so
     ; going back to an older save never overwrites a newer one). ref is a save
     ; or series name; default = the save loaded through the companion this
@@ -122,7 +126,7 @@ class LoaderEngine {
         for f in this.files(Map("showHidden", 1))
             if (fs := LoaderEngine.Series(f.name)) && fs.key = s.key && fs.num > top
                 top := fs.num, s.sep := fs.sep, s.width := fs.width
-        return s.stem s.sep Format("{:0" s.width "}", top + 1)
+        return LoaderEngine.TwrpgName(s.stem s.sep Format("{:0" s.width "}", top + 1))
     }
 
     ; -- RPC endpoints -------------------------------------------------------
@@ -300,7 +304,8 @@ class LoaderEngine {
 
     ; save file name for what was typed after -l, or ""
     resolve(arg) {
-        q := StrLower(StrReplace(arg, ".txt", ""))
+        ; compare without spaces: TWRPG never writes them ("-l sorc 3" -> sorc3)
+        q := LoaderEngine.TwrpgName(StrReplace(arg, ".txt", ""))
         pins := Map()
         for i, n in this.pinned()
             pins[n] := i
@@ -310,7 +315,7 @@ class LoaderEngine {
         ; "-l 92" finds knight#92
         if IsInteger(q) && Integer(q) >= 1 && Integer(q) <= pins.Count {
             for f in files
-                if StrLower(StrReplace(f.name, ".txt", "")) == q
+                if LoaderEngine.TwrpgName(StrReplace(f.name, ".txt", "")) == q
                     return f.name
             for n, i in pins
                 if i = Integer(q)
@@ -319,9 +324,9 @@ class LoaderEngine {
         ; ties: favourite, not hidden, then the highest number in a series, then newest
         best := "", bestScore := 0, bestNum := -1, bestKey := ""
         for f in files {
-            n := StrLower(StrReplace(f.name, ".txt", ""))
+            n := LoaderEngine.TwrpgName(StrReplace(f.name, ".txt", ""))
             score := n == q ? 3 : SubStr(n, 1, StrLen(q)) == q ? 2 : InStr(n, q) ? 1 : 0
-            if f.series && StrLower(f.series.stem) == q
+            if f.series && LoaderEngine.TwrpgName(f.series.stem) == q
                 score := 3                                  ; "-l knight" = the series
             if !score
                 continue

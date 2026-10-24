@@ -61,7 +61,9 @@ don't fire mid-message.
   - `-sn` / `-savenext` (optionally `-sn <name>`): types `-save <next number>`
     for the save you loaded through the companion this session, e.g.
     `-save knight#93` after `knight#92` (not one remembered from an earlier day:
-    you may be on another hero)
+    you may be on another hero). TWRPG's `-save` drops spaces and saves
+    lowercase (`-save Sorc 3` writes `sorc3.txt`), so `-sn` types names that
+    way, and `-l` ignores spaces when matching (`-l sorc 3` finds `sorc3`)
 
   **Numbered saves.** Saves ending in a number (`knight#91`, `knight#92`, or
   `sniper_007`) are one *series*: a single row showing the newest number with a
