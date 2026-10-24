@@ -130,6 +130,7 @@ A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.show())
 A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
 A_TrayMenu.Insert("3&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
+SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 
 ; ============================================================================
 ;  Window construction
@@ -472,10 +473,10 @@ BuildSaveList() {
     AddPopover("commands", helpBtn, [
         ["Load from Warcraft III chat", ""],
         ["-l sniper", "loads the closest match: exact name, then starts with, then contains"],
-        ["-l 2", "loads your 2nd ★ favourite"],
+        ["-l 2", "loads your 2nd ★ favourite (other numbers match names: -l 92 finds knight#92)"],
         ["-l  /  -ll", "reloads the save you loaded last"],
-        ["-sn", "saves the next number: after knight#92 it types -save knight#93"],
-        ["", "Also -load and -loadlast. Loader commands are never sent to chat."]])
+        ["-sn", "saves the next number of the save you loaded with the companion: after knight#92 it types -save knight#93"],
+        ["", "Also -load and -loadlast. Loader commands are never sent to chat. Keyboard and mouse are held for the second or two a load takes."]])
     AddPopover("message", msgInfo, [
         ["Load message", ""],
         ["What", "A chat line the companion types in Warcraft III each time this save loads, right before its -load codes."],
@@ -739,8 +740,11 @@ ShowEmptyState(reason) {
 
 LoadSelected() {
     global saveSel, saveFiles, loader
-    if i := SaveIndex(saveSel)
-        loader.load(Map("name", saveFiles[i].name))      ; a series row loads its newest number
+    if i := SaveIndex(saveSel) {
+        r := loader.load(Map("name", saveFiles[i].name))      ; a series row loads its newest number
+        if r.HasProp("error") && r.error = "not found"         ; deleted outside the companion
+            RefreshFiles()
+    }
     else
         Toast("Select a save first", "error")
 }
@@ -1204,40 +1208,60 @@ ShowHideMain() {
 PauseGame() => SendInput("{F10}{m}{F10}")
 
 ; ---- WC3 chat ---------------------------------------------------------------
-; Enter opens chat, Enter again sends it. While it's open the typed line is
-; recorded; if it's a loader command (-l, -ll...) it's discarded with Esc and
-; run instead, so it never shows up in chat. Otherwise Enter goes through.
+; Loader commands are spotted by what was typed, not by tracking whether chat is
+; open (that can drift: menus, alt-tab, the lobby's always-open chat box).
+; chatHook records keys typed in WC3 since the last Enter / Esc / click. On
+; Enter, if that is exactly a loader command (-l, -ll, -sn...), the chat box is
+; emptied and closed with an empty Enter (no message, nothing in the lobby)
+; and the command runs; otherwise Enter goes through untouched.
+; `chatting` is only kept for the tool's auto-disable while typing.
 ChatEnter(hk) {
     global chatting, chatHook, loader
     key := InStr(hk, "+") ? "+{Enter}" : InStr(hk, "Numpad") ? "{NumpadEnter}" : "{Enter}"
-    if !chatting {
-        SendInput(key)
-        ChatOpened()
+    line := chatHook.Input
+    ChatRestart()
+    if loader.isCommand(line) {
+        SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
+        ChatClosed()
+        ; then forget what the command itself typed (-load codes, -save ...)
+        SetTimer(() => (loader.command(line), ChatRestart()), -80)
         return
     }
-    line := chatHook.Input
-    ChatClosed()
-    if loader.isCommand(line) {
-        SendInput("{Esc}")
-        SetTimer(() => loader.command(line), -80)
-    } else {
-        SendInput(key)
+    SendInput(key)
+    if chatting
+        ChatClosed()
+    else
+        ChatOpened()
+}
+; start a fresh line (only while WC3 is the active window: never record what
+; you type in other apps)
+ChatRestart() {
+    global chatHook
+    chatHook.Stop()
+    if WinActive(WarcraftIII)
+        chatHook.Start()
+}
+ChatWatch() {
+    global chatHook
+    if !WinActive(WarcraftIII) {
+        if chatHook.InProgress
+            chatHook.Stop()
+    } else if !chatHook.InProgress {
+        chatHook.Start()
     }
 }
 ChatOpened() {
-    global chatting := true, chatHook, toolEnabled, toolEnableHistory
-    chatHook.Stop(), chatHook.Start()
+    global chatting := true, toolEnabled, toolEnableHistory
     if Ini("Settings", "autoToggleTool", 1) {
         toolEnableHistory := toolEnabled, toolEnabled := false
         UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
     }
 }
 ChatClosed() {
-    global chatting, chatHook, toolEnabled, toolEnableHistory
+    global chatting, toolEnabled, toolEnableHistory
     if !chatting
         return
     chatting := false
-    chatHook.Stop()
     if Ini("Settings", "autoToggleTool", 1) {
         toolEnabled := toolEnableHistory
         UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
@@ -1401,5 +1425,5 @@ $Enter::
 $NumpadEnter::
 $+Enter:: ChatEnter(ThisHotkey)
 $~LButton::
-$~Esc:: ChatClosed()
+$~Esc:: (ChatClosed(), ChatRestart())
 #HotIf

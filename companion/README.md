@@ -55,10 +55,13 @@ don't fire mid-message.
   **In-game commands** (also under the **?** next to search): type in WC3 chat
   - `-l sniper` / `-load sniper`: the closest match (exact name, then starts
     with, then contains; favourites, then newest, win ties)
-  - `-l 2`: your 2nd ★ favourite
+  - `-l 2`: your 2nd ★ favourite (numbers beyond your favourites match names,
+    so `-l 92` finds `knight#92`)
   - `-l`, `-ll`, `-loadlast`: the save you loaded last
   - `-sn` / `-savenext` (optionally `-sn <name>`): types `-save <next number>`
-    for the series you last loaded, e.g. `-save knight#93` after `knight#92`
+    for the save you loaded through the companion this session, e.g.
+    `-save knight#93` after `knight#92` (not one remembered from an earlier day:
+    you may be on another hero)
 
   **Numbered saves.** Saves ending in a number (`knight#91`, `knight#92`, or
   `sniper_007`) are one *series*: a single row showing the newest number with a
@@ -68,9 +71,13 @@ don't fire mid-message.
   again never overwrites a newer one; your separator and zero padding are kept
   (`sniper_007` → `sniper_008`).
 
-  These never reach chat: while chat is open the companion records the line, and
-  on Enter a loader command is closed with Esc and run instead. Anything else is
-  sent normally.
+  These never reach chat. The companion records what you type in WC3 (only while
+  WC3 is focused) since the last Enter/Esc/click; if a line is exactly a loader
+  command, the chat box is emptied and closed and the command runs. Anything
+  else is sent normally. This works in game and in the lobby, and doesn't depend
+  on tracking whether chat is open. During a load, keyboard and mouse are held
+  for the second or two it takes, so nothing you press lands inside the codes.
+  Loading types your codes in chat, so only load once you're in the game.
   The save folder is found automatically: `Documents\Warcraft III\CustomMapData\TWRPG`
   (also when Documents is redirected to OneDrive, and the Public Test realm), or
   `<install folder>\CustomMapData\TWRPG` for classic 1.26/1.27 (from the registry

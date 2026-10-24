@@ -71,10 +71,9 @@ Join(sep, params*) {
 }
 
 ; ---- warcraft chat ---------------------------------------------------------
+; one SendInput per line, so nothing you press can land in the middle of it
 wc3Chat(text) {
-    SendInput("{Enter}")
-    SendInput("{Text}" text)
-    SendInput("{Enter}")
+    SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
 }
 
 FocusWarcraft() {

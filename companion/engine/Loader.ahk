@@ -6,6 +6,7 @@ class LoaderEngine {
     section := "Loader"
     hiddenMap := Map()
     detected := ""          ; cached detect() result
+    sessionLast := ""       ; save loaded / saved through the companion since it started (-sn follows it)
 
     __New() {
         this.loadHidden()
@@ -107,10 +108,11 @@ class LoaderEngine {
 
     ; name for the next save in a series: the highest number on disk + 1 (so
     ; going back to an older save never overwrites a newer one). ref is a save
-    ; or series name; default = the save you loaded last. Unnumbered names
-    ; start a series at #2 (the unnumbered save counts as #1).
+    ; or series name; default = the save loaded through the companion this
+    ; session (not one remembered from an earlier day: you may be on another
+    ; hero now). Unnumbered names start a series at #2 (they count as #1).
     nextSave(ref := "") {
-        ref := RegExReplace(ref != "" ? ref : Ini(this.section, "selectedFile", ""), "i)\.txt$")
+        ref := RegExReplace(ref != "" ? ref : this.sessionLast, "i)\.txt$")
         if ref = ""
             return ""
         s := LoaderEngine.Series(ref)
@@ -262,13 +264,14 @@ class LoaderEngine {
         if m[1] = "sn" || m[1] = "savenext" {
             name := this.nextSave(arg)
             if name = ""
-                return Push("toast", { kind: "error", msg: "Load a save first, or use -sn <name>" })
+                return Push("toast", { kind: "error", msg: "Load a save with the companion first, or type -sn <name>" })
             if !FocusWarcraft()
                 return Push("toast", { kind: "error", msg: "Warcraft III not found" })
             wc3Chat("-save " name)
             ; that's now the save to continue from: -ll loads it, the next -sn
             ; counts up from it even before TWRPG has written the file
             SetIni(name ".txt", this.section, "selectedFile")
+            this.sessionLast := name ".txt"
             return Push("toast", { msg: "Saved as " name })
         }
         if arg = "" {
@@ -302,15 +305,16 @@ class LoaderEngine {
         for i, n in this.pinned()
             pins[n] := i
         files := this.files(Map("showHidden", 1))
-        ; a number is a favourite, unless a save is literally called that
-        if IsInteger(q) {
+        ; a number is a favourite slot (when you have that many favourites and no
+        ; save is literally called that); otherwise it's matched as a name, so
+        ; "-l 92" finds knight#92
+        if IsInteger(q) && Integer(q) >= 1 && Integer(q) <= pins.Count {
             for f in files
                 if StrLower(StrReplace(f.name, ".txt", "")) == q
                     return f.name
             for n, i in pins
                 if i = Integer(q)
                     return InStr(n, "#*") ? this.latestOf(n, files) : n
-            return ""
         }
         ; ties: favourite, not hidden, then the highest number in a series, then newest
         best := "", bestScore := 0, bestNum := -1, bestKey := ""
@@ -342,7 +346,6 @@ class LoaderEngine {
             Push("toast", { kind: "error", msg: "File not found: " name })
             return { error: "not found" }
         }
-        SetIni(name, this.section, "selectedFile")
         text := FileRead(path, "UTF-8")
 
         ; saves are WC3 preload files - call Preload( "User Name: X" ) - so stop at the quote
@@ -371,21 +374,32 @@ class LoaderEngine {
 
         HideMainWindow()
         delay := Integer(Ini("Settings", "loadDelay", 200))
-        if msg := this.pickMessage(this.messageFor(name))
-            wc3Chat(msg)
-        if Integer(Ini(this.section, "convert", 1))
-            wc3Chat("-convert " userName)
-        for code in codes {
-            Sleep(delay)
-            wc3Chat(code)
+        ; keyboard/mouse are held for the 1-2 s this takes: a key or Enter
+        ; pressed mid-load would land inside the codes (needs admin, which the
+        ; companion has; Ctrl+Alt+Del always releases it)
+        BlockInput("On")
+        try {
+            if msg := this.pickMessage(this.messageFor(name))
+                wc3Chat(msg)
+            if Integer(Ini(this.section, "convert", 1))
+                wc3Chat("-convert " userName)
+            for code in codes {
+                Sleep(delay)
+                wc3Chat(code)
+            }
+            wc3Chat("-refresh")
+            Sleep(Integer(Ini("Settings", "postLoadDelay", 1000)))
+            ControlSend("{f1}{Ctrl Down}{1}{Ctrl Up}", , WarcraftIII)
+            if Integer(Ini("Settings", "summonBagAfterLoad", 0))
+                ControlSend("{Esc}", , WarcraftIII)
+        } finally {
+            BlockInput("Off")
         }
-        wc3Chat("-refresh")
-        Sleep(Integer(Ini("Settings", "postLoadDelay", 1000)))
-        ControlSend("{f1}{Ctrl Down}{1}{Ctrl Up}", , WarcraftIII)
-        if Integer(Ini("Settings", "summonBagAfterLoad", 0))
-            ControlSend("{Esc}", , WarcraftIII)
         if Integer(Ini("Settings", "enableToolAfterLoad", 0)) && !toolEnabled
             ToggleTool()
+        ; only a load that went through counts as "last" (-ll, -sn)
+        SetIni(name, this.section, "selectedFile")
+        this.sessionLast := name
         Push("toast", { kind: "ok", msg: "Loaded " StrReplace(name, ".txt", "") " (" codes.Length " codes)" })
         return { ok: 1 }
     }
