@@ -85,11 +85,23 @@ don't fire mid-message.
   `<install folder>\CustomMapData\TWRPG` for classic 1.26/1.27 (from the registry
   or a running game). The first one holding TWRPG saves wins. A folder you pick
   under Settings overrides it until you press **Auto-detect**.
+- **Remap** — your own keys for the WC3 HUD: the Command Card (TWRPG's layout:
+  Move Stop Hold Attack / Patrol D T F / Q W E R), inventory slots 1–6
+  (Numpad 7 8 4 5 1 2) and both mouse buttons. *HUD* shows them laid out
+  like the game (click a slot, press a key); *List* is the same as a table.
+  Unset slots keep the game's key; Shift + your key still queues; a key can
+  only be on one slot (setting it again moves it), and keys the companion
+  uses (F8, F10, macros, overlay) are refused. Esc or Backspace (or *Clear*)
+  clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.
+  **Quickcast** casts at the cursor; held, it repeats (every 40 ms by default).
+  *Quickcast setup* on the toolbar runs a one-time setup in game (Insert three
+  times: over Move, over the bottom-right button, then while a skill waits for
+  a target), per game version and window size. After that the companion clicks
+  only when the command card shows the game is waiting for a target, read from
+  the screen, no injection, same on 1.28 and Reforged. Without a setup it uses
+  LCH's method (selection saved to control groups 9 and 0 around each cast).
 - **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
   `-chest im lagging`, GET GOOD). Message is multi-line: one chat line per row.
-- **Remap** — remap 12 spells / 6 inventory / 2 mouse inputs with per-spell
-  quickcast; select a row and use *Set Your Key* / *Set Game Key* / *Toggle QC*,
-  plus per-group enable checkboxes.
 - **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
   incrementer. In-game: `-h`/`-host`, `-hp`/`-hostpub`.
 - **Settings** — startup behaviour, load timing, TWRPG folder, reset.
@@ -139,7 +151,7 @@ lib/Common.ahk      helpers, INI, InputHook, RegisterHotkey
 lib/WebView2/       thqby's WebView2.ahk (MIT) + Microsoft's WebView2Loader.dll
 lib/ComVar.ahk, lib/Promise.ahk   its dependencies
 engine/             GUI-free logic that the window calls directly:
-  Loader Macros Remap Host Settings Updater
+  Loader Remap Quickcast Macros Host Settings Updater
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
 assets/bg.png       pre-rendered page + card panel + TWRPG wordmark

@@ -1,88 +1,158 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
-;  RemapEngine - spell / inventory / mouse remapping with quickcast.
+;  RemapEngine - your keys for the WC3 command card, inventory and mouse.
+;  Slots follow the HUD: the 4x3 command card (TWRPG's layout), the 2x3
+;  inventory and the two mouse buttons. A slot you give a key to sends that
+;  slot's game key; a slot without one is left alone (the game's key works).
 ; ============================================================================
 class RemapEngine {
     section := "Remap"
-    static SPELL_KEYS := ["Q","W","E","R","D","F","A","S","T","G","X","C"]
+    ; command card, row by row as on screen; game = the key WC3 / TWRPG uses
+    static CARD := [
+        { name: "Move",    game: "M" }, { name: "Stop",    game: "S" }, { name: "Hold",    game: "H" }, { name: "Attack",  game: "A" },
+        { name: "Patrol",  game: "P" }, { name: "Skill D", game: "D" }, { name: "Skill T", game: "T" }, { name: "Skill F", game: "F" },
+        { name: "Skill Q", game: "Q" }, { name: "Skill W", game: "W" }, { name: "Skill E", game: "E" }, { name: "Skill R", game: "R" }]
+    ; inventory slots 1-6 (left to right, top to bottom) are numpad keys in WC3
     static INV_TARGETS := ["Numpad7","Numpad8","Numpad4","Numpad5","Numpad1","Numpad2"]
+    static MOUSE := ["Left", "Right"]
+    static NO_QC := Map(2, 1, 3, 1)        ; Stop and Hold never take a target
     registered := []
 
     __New() {
-        ; seed spell defaults on first run
-        loop 12 {
-            if Ini(this.section, "spellNew" A_Index, "") == ""
-                SetIni("$" RemapEngine.SPELL_KEYS[A_Index], this.section, "spellNew" A_Index)
-            if Ini(this.section, "spellOrig" A_Index, "") == ""
-                SetIni(RemapEngine.SPELL_KEYS[A_Index], this.section, "spellOrig" A_Index)
-        }
+        this.migrate()
         this.registerAll()
     }
 
-    ; -- RPC endpoints -------------------------------------------------------
+    ; -- reading -------------------------------------------------------------
+    gameKey(group, i) {
+        return group = "card" ? RemapEngine.CARD[i].game : group = "inv" ? RemapEngine.INV_TARGETS[i] : RemapEngine.MOUSE[i]
+    }
+    yourKey(group, i) => Ini(this.section, group i, "")
+    count(group) => group = "card" ? 12 : group = "inv" ? 6 : 2
+    slotName(group, i) => group = "card" ? RemapEngine.CARD[i].name : group = "inv" ? "Item " i : RemapEngine.MOUSE[i] " click"
+    qcAllowed(group, i) => group = "inv" || (group = "card" && !RemapEngine.NO_QC.Has(i))
+
+    ; every slot, in HUD order: card 1-12, inventory 1-6, mouse 1-2
     get(args := 0) {
-        spells := []
-        loop 12 {
-            n := Ini(this.section, "spellNew" A_Index, "")
-            o := Ini(this.section, "spellOrig" A_Index, "")
-            spells.Push({
-                new: n, newLabel: ReadableHotkey(n),
-                orig: o, origLabel: ReadableHotkey(o),
-                qc: Integer(Ini(this.section, "spellQC" A_Index, 0))
-            })
-        }
-        inv := []
-        loop 6 {
-            n := Ini(this.section, "inv" A_Index, "")
-            inv.Push({ new: n, newLabel: ReadableHotkey(n), target: RemapEngine.INV_TARGETS[A_Index] })
-        }
-        mouse := []
-        sides := ["Left click", "Right click"]
-        loop 2 {
-            n := Ini(this.section, "mouse" A_Index, "")
-            mouse.Push({ new: n, newLabel: ReadableHotkey(n), side: sides[A_Index] })
-        }
-        return {
-            enableSpells: Integer(Ini(this.section, "enableSpells", 0)),
-            enableInv: Integer(Ini(this.section, "enableInv", 0)),
-            enableMouse: Integer(Ini(this.section, "enableMouse", 0)),
-            spells: spells, inv: inv, mouse: mouse
-        }
+        slots := []
+        for group in ["card", "inv", "mouse"]
+            loop this.count(group) {
+                i := A_Index, k := this.yourKey(group, i), g := this.gameKey(group, i)
+                slots.Push({ group: group, index: i, name: this.slotName(group, i),
+                    game: g, gameLabel: group = "inv" ? "Num " SubStr(g, 7) : group = "mouse" ? "" : ReadableHotkey(g),
+                    key: k, keyLabel: ReadableHotkey(k),
+                    qc: this.qcAllowed(group, i) ? Integer(Ini(this.section, group "QC" i, 0)) : 0,
+                    qcAllowed: this.qcAllowed(group, i) })
+            }
+        for s in slots
+            s.note := this.note(s, slots)
+        return { slots: slots }
     }
 
-    capture(args) {
-        plain := args.Has("plain") ? args["plain"] : 0
-        key := plain ? KeyWaitAny() : KeyWaitCombo()
-        if key == "Escape"
-            return { key: "", label: "" }
+    ; what to know about a slot's binding, as one line ("" = nothing)
+    note(s, slots) {
+        ; its own game key was taken by another slot, so the game key alone no longer reaches it
+        if !s.key && s.group != "mouse"
+            for o in slots
+                if o.key && Norm(o.key) = Norm(s.game)
+                    return "Your " o.keyLabel " key now does " o.name ". Give " s.name " a key of its own."
+        if !s.key
+            return ""
+        k := Norm(s.key)
+        if RegExMatch(k, "^\d$")
+            return k " no longer selects control group " k " (Ctrl+" k " still sets it)."
+        if RegExMatch(k, "^f[1-3]$")
+            return s.keyLabel " no longer selects hero " SubStr(k, 2) "."
+        for o in slots
+            if o.group = "card" && o != s && Norm(o.game) = k && !o.key
+                return s.keyLabel " was " o.name "'s key. It now does " s.name "."
+        return ""
+    }
+
+    ; -- capture / editing ---------------------------------------------------
+    ; Esc / Backspace / Delete clear the slot (key "-")
+    capture(args := 0) {
+        key := RegExReplace(KeyWaitCombo(), "[<>]")    ; either Shift/Ctrl/Alt
+        if key = "Escape" || key = "Backspace" || key = "Delete"
+            return { key: "-", label: "" }
         return { key: key, label: ReadableHotkey(key) }
     }
 
-    ; field: "new" (spell/inv/mouse hotkey) or "orig" (plain game key)
+    ; your key for a slot ("-" = clear). Returns { ok, msg }: msg says what
+    ; else changed, or why it was refused.
     setKey(args) {
-        group := args["group"], index := Integer(args["index"]), field := args["field"], key := args["key"]
-        stored := field == "orig" ? key : (key ? "$" key : "")
-        iniKey := group == "spell" ? (field == "orig" ? "spellOrig" : "spellNew") index
-                : group == "inv"   ? "inv" index
-                : "mouse" index
-        SetIni(stored, this.section, iniKey)
+        group := args["group"], i := Integer(args["index"]), key := args["key"]
+        if key = "-" {
+            SetIni("", this.section, group i)
+            this.registerAll()
+            return { ok: 1, msg: "" }
+        }
+        if why := this.reserved(key)
+            return { ok: 0, msg: ReadableHotkey(key) " is " why "." }
+        msg := ""
+        ; one key, one slot: take it from wherever it was
+        for g in ["card", "inv", "mouse"]
+            loop this.count(g)
+                if !(g = group && A_Index = i) && (o := this.yourKey(g, A_Index)) && Norm(o) = Norm(key) {
+                    SetIni("", this.section, g A_Index)
+                    msg := ReadableHotkey(key) " moved from " this.slotName(g, A_Index) "."
+                }
+        SetIni("$" key, this.section, group i)
         this.registerAll()
-        return { ok: 1 }
+        return { ok: 1, msg: msg }
+    }
+
+    ; keys the companion already uses for something else
+    reserved(key) {
+        global macros, webOverlay
+        k := Norm(key)
+        for c in [["f8", "the show / hide window key"], ["f10", "the tool toggle"], ["pause", "the pause key"],
+                  ["enter", "the chat key"], ["numpadenter", "the chat key"], ["escape", "WC3's cancel key"]]
+            if k = c[1]
+                return c[2]
+        if IsSet(macros) && macros
+            for m in macros.list()
+                if Norm(m.hotkey) = k
+                    return "a macro (" StrSplit(m.text, "`n")[1] ")"
+        if IsSet(webOverlay) && webOverlay {
+            s := webOverlay.get()
+            if s.hotkey && Norm(s.hotkey) = k
+                return "the overlay key"
+            if s.pinHotkey && Norm(s.pinHotkey) = k
+                return "the overlay pin key"
+        }
+        return ""
     }
 
     setQc(args) {
-        SetIni(args["value"], this.section, "spellQC" Integer(args["index"]))
+        SetIni(args["value"], this.section, args["group"] "QC" Integer(args["index"]))
         this.registerAll()
         return { ok: 1 }
     }
 
-    setEnable(args) {
-        key := args["group"] == "spell" ? "enableSpells"
-             : args["group"] == "inv"   ? "enableInv"
-             : "enableMouse"
-        SetIni(args["value"], this.section, key)
-        this.registerAll()
-        return { ok: 1 }
+    ; older settings: per-group switches and game key overrides are dropped, the old list
+    ; (Spell 1-12: your key -> game key) becomes card slots, by game key
+    migrate() {
+        for k in ["enableSpells", "enableInv", "enableMouse"]     ; per-group switches, gone
+            try IniDelete(iniFile, this.section, k)
+        loop 12                                                  ; per-slot game key overrides, gone
+            try IniDelete(iniFile, this.section, "cardGame" A_Index)
+        if Ini(this.section, "spellNew1", "") = "" && Ini(this.section, "spellOrig1", "") = ""
+            return
+        loop 12 {
+            r := A_Index
+            n := Ini(this.section, "spellNew" r, ""), o := Ini(this.section, "spellOrig" r, "")
+            qc := Ini(this.section, "spellQC" r, 0)
+            if n && o && Norm(n) != Norm(o)
+                for i, c in RemapEngine.CARD
+                    if Norm(c.game) = Norm(o) && this.yourKey("card", i) = "" {
+                        SetIni(n, this.section, "card" i)
+                        SetIni(qc, this.section, "cardQC" i)
+                        break
+                    }
+            for k in ["spellNew", "spellOrig", "spellQC"]
+                try IniDelete(iniFile, this.section, k r)
+        }
     }
 
     ; -- registration --------------------------------------------------------
@@ -92,38 +162,26 @@ class RemapEngine {
             reg.refresh()
         }
         this.registered := []
-
-        spellsOn := Integer(Ini(this.section, "enableSpells", 0))
-        loop 12 {
-            i := A_Index
-            newKey := Ini(this.section, "spellNew" i, "")
-            origKey := Ini(this.section, "spellOrig" i, "")
-            if !newKey || !origKey
-                continue
-            qc := Integer(Ini(this.section, "spellQC" i, 0))
-            fn := qc ? this.castQuick.Bind(this, origKey) : this.castPlain.Bind(this, origKey)
-            this.registered.Push(RegisterHotkey(newKey, fn, WarcraftIII, spellsOn))
-        }
-
-        invOn := Integer(Ini(this.section, "enableInv", 0))
-        loop 6 {
-            i := A_Index
-            newKey := Ini(this.section, "inv" i, "")
-            if !newKey
-                continue
-            fn := this.castPlain.Bind(this, RemapEngine.INV_TARGETS[i])
-            this.registered.Push(RegisterHotkey(newKey, fn, WarcraftIII, invOn))
-        }
-
-        mouseOn := Integer(Ini(this.section, "enableMouse", 0))
-        sides := ["Left", "Right"]
-        loop 2 {
-            i := A_Index
-            newKey := Ini(this.section, "mouse" i, "")
-            if !newKey
-                continue
-            fn := this.clickMouse.Bind(this, sides[i])
-            this.registered.Push(RegisterHotkey(newKey, fn, WarcraftIII, mouseOn))
+        used := Map()                           ; every key a slot was given
+        for group in ["card", "inv", "mouse"]
+            loop this.count(group)
+                if k := this.yourKey(group, A_Index)
+                    used[Norm(k)] := 1
+        for group in ["card", "inv", "mouse"] {
+            loop this.count(group) {
+                i := A_Index, key := this.yourKey(group, i), game := this.gameKey(group, i)
+                qc := this.qcAllowed(group, i) && Integer(Ini(this.section, group "QC" i, 0))
+                ; quickcast on a slot without a key of its own: its game key quickcasts
+                ; (unless another slot was given that key)
+                if !key && qc && !used.Has(Norm(game))
+                    key := "$" game
+                if !key
+                    continue
+                fn := group = "mouse" ? this.clickMouse.Bind(this, game, key)
+                    : qc ? this.castQuick.Bind(this, game, key)
+                    : this.castPlain.Bind(this, game, key)
+                this.registered.Push(RegisterHotkey(key, fn, WarcraftIII, true))
+            }
         }
     }
 
@@ -133,20 +191,70 @@ class RemapEngine {
     }
 
     ; -- actions -------------------------------------------------------------
-    clean(key) => StrReplace(StrReplace(key, "$", ""), "*", "")
+    ; "{q}", never "{Q}": an upper-case letter is sent with Shift (a queued order)
+    keyText(key) {
+        key := RegExReplace(key, "[$*~]")
+        return "{" (StrLen(key) = 1 ? StrLower(key) : key) "}"
+    }
+    ; Shift held on a key that doesn't use Shift itself = WC3's queue (shift-queue)
+    queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
-    castPlain(key) {
-        SendInput("{" this.clean(key) "}")
+    castPlain(game, yourKey) {
+        SendInput(this.queued(yourKey) this.keyText(game))
     }
 
-    castQuick(key) {
+    ; Quickcast: the ability goes off at the cursor. Held, it repeats until the
+    ; key is let go (one hotkey thread loops; the key's auto-repeat is ignored).
+    castQuick(game, yourKey) {
+        global quickcast
+        q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
+        cal := s.forceLch ? 0 : quickcast.current()
+        loop {
+            if cal
+                this.quickSmart(game, q, cal)
+            else
+                this.quickLch(game, q)
+            if !s.repeat || !GetKeyState(base, "P") || !WinActive(WarcraftIII)
+                break
+            Sleep(s.interval)
+            if !GetKeyState(base, "P")
+                break
+        }
+    }
+    ; send the key, then click only once the game waits for a target: an
+    ; instant spell, a cooldown or "not enough mana" never gets a stray click
+    quickSmart(game, q, cal) {
+        global quickcast
+        SendInput(q this.keyText(game))
+        t := A_TickCount
+        while A_TickCount - t < 90 {        ; the card changes a frame or two later
+            Sleep(10)
+            if quickcast.targeting(cal) {
+                SendInput(q "{Click}")
+                return true
+            }
+        }
+        return false
+    }
+    ; LCH's method (no calibration needed): save the selection to groups 9 and
+    ; 0, cast with a click, then reselect, in case the click selected a unit
+    ; because the cast didn't happen. Two groups so the recall is never a
+    ; double-tap (which would move the camera).
+    quickLch(game, q) {
         SendInput("{Ctrl Down}{9}{0}{Ctrl Up}")
-        SendInput("{" this.clean(key) "}")
-        MouseClick("Left")
+        SendInput(q this.keyText(game))
+        SendInput(q "{Click}")
         SendInput("{9}{0}")
     }
 
-    clickMouse(side) {
-        MouseClick(side)
+    clickMouse(side, yourKey) {
+        SendInput(this.queued(yourKey) "{Click " side "}")
     }
 }
+
+; "$*<^+q" -> "^+q": the modifiers and key, without hotkey options or sides
+Norm(key) => StrLower(RegExReplace(key, "[$*~<>]"))
+; just the modifier symbols of a hotkey ("^+" for "$^+q")
+HotkeyMods(key) => RegExMatch(Norm(key), "^[#!^+]*(?=.)", &m) ? m[0] : ""
+; just the key of a hotkey ("q" for "$^+q"), for GetKeyState
+HotkeyBase(key) => SubStr(Norm(key), StrLen(HotkeyMods(key)) + 1)

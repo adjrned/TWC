@@ -14,6 +14,7 @@
 #Include lib\Common.ahk
 #Include engine\Loader.ahk
 #Include engine\Macros.ahk
+#Include engine\Quickcast.ahk
 #Include engine\Remap.ahk
 #Include engine\Host.ahk
 #Include engine\Settings.ahk
@@ -39,7 +40,11 @@ global C := {
 ; window, sidebar width, and where page content starts (see assets/generate_bg.py)
 global W := 880, H := 510, SIDE_W := 150, CX := 174, CY := 76
 global TB_Y := 20           ; toolbar row: page title + that page's main controls
-global NAV_ORDER := ["loader", "macros", "remap", "host", "settings", "overlay"]
+; Display scaling: GUI sizes and positions are in 96-DPI units (AHK scales
+; them), but window regions, text measurement and screen coordinates are in
+; real pixels. DPI_K converts (1.5 at 150%).
+global DPI_K := A_ScreenDPI / 96
+global NAV_ORDER := ["loader", "remap", "macros", "host", "settings", "overlay"]
 global ICON_FONT := "Segoe Fluent Icons"
 ; the site's system-ui font on Windows 11; classic Segoe UI on older systems
 global UI_FONT := FileExist(A_WinDir "\Fonts\SegUIVar.ttf") ? "Segoe UI Variable Text" : "Segoe UI"
@@ -68,7 +73,7 @@ global freezeDepth := 0                 ; Freeze/Thaw nesting
 global version := "1.0.0"
 global toolEnabled := true, chatting := false, toolEnableHistory := true
 global showMain := false
-global loader, macros, remap, host, settings, updater, webOverlay
+global loader, macros, quickcast, remap, host, settings, updater, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -82,8 +87,11 @@ global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
 global macroListBox, macroCapBtn, macroMsgEdit, macroPendingHK := "", macroPendingLabel := "", macroSel := -1
 ; remap
-global remapListBox, remapMap := []
-global enSpells, enInv, enMouse
+global remapListBox, remapListHdr, remapDetail, remapStatus, remapInfo, remapSetBtn, remapClearBtn, remapQcBtn
+global remapViewBtns := Map(), remapTiles := [], remapTileAt := Map(), remapListCtrls := [], remapHudCtrls := []
+global remapSlots := [], remapSel := { group: "card", index: 9 }      ; Skill Q
+global remapListCache := "", remapViewShown := ""
+global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
 ; host
 global hostEdits := Map()
 ; settings
@@ -109,6 +117,7 @@ SetKeyDelay(Integer(Ini("Settings", "keyDelay", 10)))
 
 loader := LoaderEngine()
 macros := MacrosEngine()
+quickcast := QuickcastEngine()
 remap := RemapEngine()
 host := HostEngine()
 settings := SettingsEngine()
@@ -142,7 +151,7 @@ BuildWindow() {
     mainGui.BackColor := C.win
     mainGui.SetFont("s10", UI_FONT)
     mainGui.OnEvent("Close", (*) => HideMainWindow())
-    mainGui.OnEvent("Escape", (*) => HideMainWindow())
+    mainGui.OnEvent("Escape", (*) => EscHide())
 
     bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, A_ScriptDir "\assets\bg.png")
 
@@ -192,8 +201,8 @@ BuildWindow() {
 
     ; pages are laid out from (40, 160); shift them into the content area
     BuildLoaderPage()
-    BuildMacrosPage()
     BuildRemapPage()
+    BuildMacrosPage()
     BuildHostPage()
     BuildSettingsPage()
     BuildOverlayPage()
@@ -203,10 +212,12 @@ BuildWindow() {
             ctl.Move(x + CX - 40, y + CY - 160)
         }
     LayoutLoader()
+    LayoutRemap()
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
     BuildSaveList()
+    BuildRemapTiles()
     ; search icon inside the loader's search box, like the site's search inputs.
     ; The edit starts right of it: an edit repaints its whole rect, so any
     ; overlap would wipe the icon.
@@ -238,8 +249,8 @@ LayoutLoader() {
 PageInfo(name) {
     static info := Map(
         "loader",   { nav: "Loader",   icon: Chr(0xE8E5), title: "Loader" },
-        "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros" },
         "remap",    { nav: "Remap",    icon: Chr(0xE8AB), title: "Remap" },
+        "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros" },
         "host",     { nav: "Host",     icon: Chr(0xE716), title: "Host" },
         "settings", { nav: "Settings", icon: Chr(0xE713), title: "Settings" },
         "overlay",  { nav: "Overlay",  icon: Chr(0xE8A7), title: "Overlay" })
@@ -276,10 +287,14 @@ class Box {
     Fill {
         set => (this.inner.Opt("+Background" Value), this.inner.Redraw())
     }
+    Border {
+        set => (this.outer.Opt("+Background" Value), this.outer.Redraw())
+    }
     static Round(ctl, w, h, r) {
         if r <= 0
             return
-        rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", w + 1, "int", h + 1, "int", r * 2, "int", r * 2, "ptr")
+        k := DPI_K, rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", Round(w * k) + 1, "int", Round(h * k) + 1,
+            "int", Round(r * 2 * k), "int", Round(r * 2 * k), "ptr")
         DllCall("SetWindowRgn", "ptr", ctl.Hwnd, "ptr", rgn, "int", 1)
     }
 }
@@ -415,8 +430,8 @@ ShowPageInner(name, shown) {
     }
     switch name {
         case "loader":   RefreshFiles()
-        case "macros":   RefreshMacros()
         case "remap":    RefreshRemap()
+        case "macros":   RefreshMacros()
         case "host":     RefreshHost()
         case "settings": RefreshSettings()
         case "overlay":  RefreshOverlay()
@@ -692,7 +707,7 @@ SaveListWheel(wParam, lParam, msg, hwnd) {
         return
     mx := lParam << 48 >> 48, my := lParam << 32 >> 48       ; signed screen coords
     WinGetClientPos(&wx, &wy, , , mainGui)
-    mx -= wx, my -= wy
+    mx := (mx - wx) / DPI_K, my := (my - wy) / DPI_K
     if mx < saveCard.x || mx > saveCard.x + saveCard.w || my < saveCard.y || my > saveCard.y + saveCard.h
         return
     step := (wParam << 32 >> 48) > 0 ? -3 : 3
@@ -829,8 +844,9 @@ ShowPopover(name, show := true) {
     }
     p.anchor.GetPos(&ax, &ay, &aw, &ah)
     WinGetClientPos(&wx, &wy, , , mainGui)
-    x := InStr(p.place, "right") ? wx + ax + aw - p.w : wx + ax
-    y := InStr(p.place, "above") ? wy + ay - p.h - 6 : wy + ay + ah + 6
+    k := DPI_K
+    x := Round(InStr(p.place, "right") ? wx + (ax + aw - p.w) * k : wx + ax * k)
+    y := Round(InStr(p.place, "above") ? wy + (ay - p.h - 6) * k : wy + (ay + ah + 6) * k)
     p.gui.Show("NA x" x " y" y)
     SetTimer(PopoverHoverCheck, 120)
 }
@@ -945,44 +961,194 @@ MacroNew() {
 }
 
 ; ============================================================================
-;  Remap page
+;  Remap page - two views of the same slots: HUD (laid out like the WC3 HUD:
+;  inventory, command card, mouse) and List (a table). Both share the detail row.
 ; ============================================================================
 BuildRemapPage() {
     global
-    remapListBox := mainGui.AddListBox("x40 y162 w680 h276 +Background" C.well " c" C.text, [])
+    ; view switch, moved to the toolbar row by LayoutRemap
+    for v in ["hud", "list"] {
+        local b := MkButton(v = "hud" ? "HUD" : "List", 40, 160, 50, 24, C.chip, C.muted, RemapSetView.Bind(v))
+        UISetFont(b, "s8 w600")
+        remapViewBtns[v] := b
+        AddToPage("remap", b)
+    }
+    remapQcSetupBtn := MkButton("Quickcast setup", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
+    UISetFont(remapQcSetupBtn, "s8 w600")
+    AddToPage("remap", remapQcSetupBtn)
+    ; List: column header over a list
+    remapListHdr := mainGui.AddText("x49 y160 w660 h18 +Background" C.panel " c" C.dim,
+        Fmt("Slot", 12) Fmt("Game key", 11) Fmt("Your key", 18) "Quickcast")
+    remapListHdr.SetFont("s10", "Consolas")
+    remapListBox := mainGui.AddListBox("x40 y182 w680 h232 0x100 +Background" C.well " c" C.text, [])     ; 0x100: no integral height, fill down to the card
     remapListBox.SetFont("s10", "Consolas")
+    remapListBox.OnEvent("Change", (*) => RemapListSelect())
+    remapListBox.OnEvent("DoubleClick", (*) => RemapCapture())
     ApplyDark(remapListBox.Hwnd)
-    yourBtn := MkButton("Set Your Key", 40, 448, 130, 28, C.chip, C.text, (*) => RemapSet("new"))
-    gameBtn := MkButton("Set Game Key", 178, 448, 130, 28, C.chip, C.text, (*) => RemapSet("orig"))
-    qcBtn := MkButton("Toggle QC", 316, 448, 110, 28, C.chip, C.text, (*) => RemapToggleQc())
-    enSpells := mainGui.AddCheckbox("x40 y488 h22 +Background" C.panel " c" C.text, " Remap spells")
-    enInv := mainGui.AddCheckbox("x220 y488 h22 +Background" C.panel " c" C.text, " Remap inventory")
-    enMouse := mainGui.AddCheckbox("x420 y488 h22 +Background" C.panel " c" C.text, " Remap mouse")
-    enSpells.OnEvent("Click", (c, *) => (remap.setEnable(Map("group", "spell", "value", c.Value))))
-    enInv.OnEvent("Click", (c, *) => (remap.setEnable(Map("group", "inv", "value", c.Value))))
-    enMouse.OnEvent("Click", (c, *) => (remap.setEnable(Map("group", "mouse", "value", c.Value))))
-    AddToPage("remap", remapListBox, yourBtn, gameBtn, qcBtn, enSpells, enInv, enMouse)
+    remapListCtrls := [remapListHdr, remapListBox]
+    ; selected slot (the card under both views, placed by LayoutRemap): name,
+    ; what it does, a note, and its buttons
+    remapDetail := mainGui.AddText("x40 y160 w380 h26 0x200 +Background" C.card " c" C.text, "")
+    UISetFont(remapDetail, "s13 w600")
+    remapStatus := mainGui.AddText("x40 y160 w380 h20 0x200 +Background" C.card " c" C.muted, "")
+    UISetFont(remapStatus, "s10")
+    remapInfo := mainGui.AddText("x40 y160 w380 h40 +Background" C.card " c" C.dim, "")
+    UISetFont(remapInfo, "s9")
+    ; the size of the HUD + List pair in the toolbar
+    remapSetBtn := MkButton("Bind Key", 40, 160, 102, 24, C.accent, C.onAccent, (*) => RemapCapture())
+    remapClearBtn := MkButton("Clear", 40, 160, 102, 24, C.chip, C.text, (*) => RemapClear())
+    remapQcBtn := MkButton("", 40, 160, 102, 24, C.chip, C.text, (*) => RemapToggleQc())
+    for b in [remapSetBtn, remapClearBtn, remapQcBtn]
+        UISetFont(b, "s8 w600")
+    AddToPage("remap", remapListHdr, remapListBox, remapDetail, remapStatus, remapInfo, remapSetBtn, remapClearBtn, remapQcBtn)
 }
-RefreshRemap() {
-    global remap, remapListBox, remapMap, enSpells, enInv, enMouse
-    d := remap.get()
-    enSpells.Value := d.enableSpells, enInv.Value := d.enableInv, enMouse.Value := d.enableMouse
-    remapMap := []
+; the view switch sits on the toolbar row, right of the title
+LayoutRemap() {
+    global
+    local R := W - 52
+    remapViewBtns["hud"].Move(R - 104, TB_Y + 2)
+    remapQcSetupBtn.Move(R - 104 - 12 - 110, TB_Y + 2)
+    remapViewBtns["list"].Move(R - 52, TB_Y + 2)
+    ; detail card along the bottom (its box: BuildRemapTiles)
+    local y := REMAP_CARD_Y, bx := CX + 680 - 18 - 102
+    remapDetail.Move(CX + 18, y + 14)
+    remapStatus.Move(CX + 18, y + 44)
+    remapInfo.Move(CX + 18, y + 72)
+    remapSetBtn.Move(bx, y + 26), remapClearBtn.Move(bx, y + 56), remapQcBtn.Move(bx, y + 86)   ; one column, centred
+}
+; HUD: tiles laid out like the game (window coordinates, built after the
+; page shift): inventory 2x3 | command card 4x3 | mouse
+BuildRemapTiles() {
+    global
+    local tw := 76, th := 72, gap := 8, y0 := CY + 22
+    remapCard := Box("remap", CX, REMAP_CARD_Y, 680, H - 28 - REMAP_CARD_Y, C.card, C.border, 6)
+    local groups := [["inv", "Inventory", CX, 2], ["card", "Command Card", CX + 176, 4], ["mouse", "Mouse", CX + 520, 2]]
+    local gr, hdr, ctl
+    for gr in groups {
+        hdr := mainGui.AddText("x" gr[3] " y" CY " w200 h18 +Background" C.panel " c" C.muted, gr[2])
+        UISetFont(hdr, "s9 w600")
+        AddToPage("remap", hdr), remapHudCtrls.Push(hdr)
+        loop remap.count(gr[1]) {
+            local i := A_Index, col := Mod(i - 1, gr[4]), row := (i - 1) // gr[4]
+            local x := gr[3] + col * (tw + gap), y := y0 + row * (th + gap)
+            local t := { group: gr[1], index: i, box: Box("remap", x, y, tw, th, C.card, C.frame, 5) }
+            local qcOk := remap.qcAllowed(gr[1], i)
+            t.top := mainGui.AddText("x" (x + 7) " y" (y + 4) " w" (tw - (qcOk ? 36 : 12)) " h16 +Background" C.card " c" C.muted, "")
+            UISetFont(t.top, "s8")
+            t.mid := mainGui.AddText("x" (x + 2) " y" (y + 22) " w" (tw - 4) " h28 Center 0x200 +Background" C.card " c" C.text, "")
+            t.game := mainGui.AddText("x" (x + 7) " y" (y + 53) " w" (tw - 14) " h14 Right +Background" C.card " c" C.dim, "")
+            UISetFont(t.game, "s7")
+            for ctl in [t.top, t.mid, t.game]
+                ctl.OnEvent("Click", RemapTileClick.Bind(gr[1], i)), remapTileAt[ctl.Hwnd] := t
+            AddToPage("remap", t.top, t.mid, t.game)
+            remapHudCtrls.Push(t.top, t.mid, t.game)
+            ; quickcast pill, top right: always shown where quickcast applies, click to toggle
+            t.qc := 0
+            if qcOk {
+                t.qc := mainGui.AddText("x" (x + tw - 30) " y" (y + 5) " w24 h14 Center 0x200 +Background" C.chip " c" C.dim, "QC")
+                UISetFont(t.qc, "s7 w700")
+                Box.Round(t.qc, 24, 14, 3)
+                t.qc.OnEvent("Click", RemapTileQc.Bind(gr[1], i)), remapTileAt[t.qc.Hwnd] := t
+                AddToPage("remap", t.qc), remapHudCtrls.Push(t.qc)
+            }
+            remapTiles.Push(t)
+        }
+    }
+    mainGui.OnEvent("ContextMenu", RemapContext)     ; right-click a slot: toggle its quickcast
+}
+; Only what changed is touched, each control repainting itself: repainting the
+; whole window on every click (Freeze/Thaw) made the page flicker.
+RefreshRemap(capturing := false) {
+    global remap, remapSel, remapSlots, remapViewBtns, remapListCtrls, remapHudCtrls, remapTiles, remapListBox,
+        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C
+    d := remap.get(), view := Ini("Remap", "view", "hud") = "list" ? "list" : "hud", hud := view = "hud", sel := 0
+    remapSlots := d.slots
+    for s in d.slots
+        if s.group = remapSel.group && s.index = remapSel.index
+            sel := s
+    ; view switch, selected one tinted (like the Overlay page's Dock)
+    if remapViewShown != view {
+        remapViewShown := view
+        for v, b in remapViewBtns {
+            bg := v = view ? C.navOn : C.chip
+            b.Opt("+Background" bg " +c" (v = view ? C.accent : C.muted)), b.Redraw()
+            boxes[b.Hwnd].Fill := bg
+        }
+    }
+    if currentPage = "remap" {
+        for ctl in remapListCtrls
+            SetShown(ctl, !hud)
+        for ctl in remapHudCtrls
+            ctl.Visible := hud
+        for t in remapTiles
+            t.box.Visible := hud
+    }
+    ; List
     items := []
-    for i, s in d.spells {
-        remapMap.Push({ group: "spell", index: i })
-        items.Push(Fmt("Spell " i, 10) Fmt(s.newLabel ? s.newLabel : "-", 8) "→ " Fmt(s.origLabel ? s.origLabel : "-", 8) (s.qc ? " ·QC" : ""))
+    for s in d.slots
+        items.Push(Fmt(s.name, 12) Fmt(s.gameLabel ? s.gameLabel : "-", 11)
+            Fmt(capturing && s = sel ? "press a key…" : s.key ? s.keyLabel : "-", 18)
+            (s.qcAllowed ? (s.qc ? "on" : "off") : ""))
+    joined := ""
+    for it in items
+        joined .= it "`n"
+    if joined != remapListCache {
+        remapListCache := joined
+        remapListBox.Delete()
+        remapListBox.Add(items)
     }
-    for i, s in d.inv {
-        remapMap.Push({ group: "inv", index: i })
-        items.Push(Fmt("Item " i, 10) Fmt(s.newLabel ? s.newLabel : "-", 8) "→ " s.target)
+    for i, s in d.slots
+        if s = sel && remapListBox.Value != i
+            remapListBox.Choose(i)
+    ; HUD
+    for t in remapTiles {
+        s := RemapSlot(t.group, t.index), on := s = sel, bg := on ? C.navOn : C.card
+        border := on ? C.accent : s.key ? C.muted : C.frame
+        mid := capturing && on ? "press…" : s.key ? s.keyLabel : s.gameLabel ? s.gameLabel : "–"
+        midC := s.key || (capturing && on) ? C.accent : C.dim
+        game := s.key && s.gameLabel ? "→ " s.gameLabel : ""
+        state := bg "|" border "|" mid "|" midC "|" game "|" s.name
+        if !t.HasProp("state") || t.state != state {
+            t.state := state
+            t.box.Border := border          ; outer first: its repaint covers the inner fill
+            t.box.Fill := bg
+            t.top.Text := s.name, t.mid.Text := mid, t.game.Text := game
+            UISetFont(t.mid, (StrLen(mid) > 6 ? "s9" : "s13") " w600")
+            t.mid.Opt("+c" midC)
+            for ctl in [t.top, t.mid, t.game]
+                ctl.Opt("+Background" bg), ctl.Redraw()
+        }
+        if t.qc && (!t.HasProp("qcOn") || t.qcOn != s.qc) {
+            t.qcOn := s.qc
+            t.qc.Opt("+Background" (s.qc ? C.accent : C.chip) " +c" (s.qc ? C.onAccent : C.dim)), t.qc.Redraw()
+        }
     }
-    for i, s in d.mouse {
-        remapMap.Push({ group: "mouse", index: i })
-        items.Push(Fmt(s.side, 10) Fmt(s.newLabel ? s.newLabel : "-", 8))
+    ; detail card
+    if !sel
+        return
+    SetText(remapDetail, sel.name)
+    does := sel.group = "mouse" ? sel.name : sel.gameLabel
+    status := capturing ? "Press a key…"
+        : sel.key ? "Your key  " sel.keyLabel "   →   " (sel.group = "mouse" ? "clicks " StrLower(sel.game) : "sends " does) (sel.qc ? "   ·   quickcast" : "")
+        : sel.qc ? "No key of its own   ·   " does " quickcasts"
+        : "No key set" (sel.group = "mouse" ? "" : "   ·   the game's " does " works as usual")
+    if remapStatus.Text != status
+        remapStatus.Opt("+c" (capturing || sel.key ? C.text : C.muted)), remapStatus.Text := status
+    if currentPage = "remap" {
+        SetShown(remapQcBtn, sel.qcAllowed)
     }
-    remapListBox.Delete()
-    remapListBox.Add(items)
+    SetText(remapQcBtn, "Quickcast: " (sel.qc ? "On" : "Off"))
+    info := sel.note ? sel.note
+        : capturing ? "Any key or combo.  Esc or Backspace clears the slot."
+        : hud ? "Click a slot, then press a key. QC (or right-click) toggles quickcast. Shift + your key queues, like in WC3."
+        : "Double-click a row (or Bind Key), then press a key. Shift + your key queues, like in WC3."
+    if remapInfo.Text != info
+        remapInfo.Opt("+c" (sel.note ? C.accent : C.dim)), remapInfo.Text := info
+}
+; set a control's text only when it differs (every set repaints it)
+SetText(ctl, v) {
+    if ctl.Text != v
+        ctl.Text := v
 }
 Fmt(s, n) {
     s := "" s
@@ -990,31 +1156,114 @@ Fmt(s, n) {
         s .= " "
     return s
 }
-RemapSelected() {
-    global remapListBox, remapMap
-    idx := remapListBox.Value
-    return (idx && idx <= remapMap.Length) ? remapMap[idx] : 0
+RemapSlot(group, index) {
+    global remapSlots
+    for s in remapSlots
+        if s.group = group && s.index = index
+            return s
+    return 0
 }
-RemapSet(field) {
-    global remap
-    sel := RemapSelected()
-    if !sel
-        return
-    if field = "orig" && sel.group != "spell"
-        return
-    r := remap.capture(Map("plain", field = "orig" ? 1 : 0))
-    if r.key
-        remap.setKey(Map("group", sel.group, "index", sel.index, "field", field, "key", r.key))
+; switching views shows/hides ~70 controls: paint the content area once
+RemapSetView(v, *) {
+    global SIDE_W, W, H
+    SetIni(v, "Remap", "view")
+    Freeze()
+    try RefreshRemap()
+    rc := Buffer(16), NumPut("int", SIDE_W + 1, "int", 0, "int", W, "int", H, rc)
+    Thaw(rc)
+}
+RemapListSelect() {
+    global remapListBox, remapSlots, remapSel
+    i := remapListBox.Value
+    if i && i <= remapSlots.Length
+        remapSel := { group: remapSlots[i].group, index: remapSlots[i].index }
     RefreshRemap()
 }
+RemapTileQc(group, index, *) {
+    global remapSel := { group: group, index: index }
+    RemapToggleQc()
+}
+RemapContext(gui, ctrl, *) {
+    global remapTileAt
+    if ctrl && remapTileAt.Has(ctrl.Hwnd) && (t := remapTileAt[ctrl.Hwnd]).qc
+        RemapTileQc(t.group, t.index)
+}
+RemapTileClick(group, index, *) {
+    global remapSel := { group: group, index: index }
+    RemapCapture()
+}
+RemapCapture() {
+    global remap, remapSel
+    RefreshRemap(true)
+    r := remap.capture()
+    if r.key {
+        res := remap.setKey(Map("group", remapSel.group, "index", remapSel.index, "key", r.key))
+        if res.msg
+            Toast(res.msg, res.ok ? "" : "error")
+    }
+    RefreshRemap()
+}
+RemapClear() {
+    global remap, remapSel
+    remap.setKey(Map("group", remapSel.group, "index", remapSel.index, "key", "-"))
+    RefreshRemap()
+}
+; Quickcast settings, in the .modal style of Dialog: how quickcast works now,
+; the in-game setup, hold to repeat, and LCH's method as a forced fallback
+QuickcastSettings() {
+    global C, mainGui, quickcast, UI_FONT
+    s := quickcast.get(), w := 480
+    g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    g.BackColor := C.frame                           ; = the 1px border
+    g.MarginX := 0, g.MarginY := 0
+    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, "Quickcast")
+    t.SetFont("s13 w700", "Cinzel")
+    status := !s.window ? "Warcraft III isn't running: start it to check the setup"
+        : s.forceLch ? "Using LCH's method (set below)"
+        : s.calibrated ? "Smart quickcast is set up for " StrReplace(s.window, "_", " ")
+        : "Not set up for " StrReplace(s.window, "_", " ") " yet: using LCH's method"
+    st := g.AddText("x26 y58 w" (w - 52) " h20 +Background" C.card " c" (s.calibrated && !s.forceLch ? C.accent : C.muted), status)
+    UISetFont(st, "s10 w600")
+    body := "Smart quickcast sends the key, then clicks only once the game is waiting for a target, "
+        . "so a skill on cooldown or out of mana never clicks a unit. It needs a quick setup in game "
+        . "(three presses of Insert), once per game version and window size.`n`n"
+        . "Until then LCH's method is used: it saves your selection to control groups 9 and 0 "
+        . "for every cast, so don't use those groups yourself."
+    bt := g.AddText("x26 y88 w" (w - 52) " +Background" C.card " c" C.dim, body)
+    UISetFont(bt, "s9")
+    bh := TextHeight(bt, body, w - 52), bt.Move(, , , bh)
+    y := 88 + bh + 18
+    g.SetFont("s10", UI_FONT)                         ; before the checkboxes, so they size to it
+    rep := g.AddCheckbox("x26 y" y " w250 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat it, every")
+    iv := g.AddEdit("x280 y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
+    ms := g.AddText("x334 y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
+    lch := g.AddCheckbox("x26 y" (y + 32) " w400 h22 +Background" C.card " c" C.text (s.forceLch ? " Checked" : ""), " Always use LCH's method")
+    rep.OnEvent("Click", (c, *) => quickcast.set("repeat", c.Value))
+    iv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("interval", Max(15, Min(1000, c.Value + 0)))))
+    lch.OnEvent("Click", (c, *) => quickcast.set("forceLch", c.Value))
+    by := y + 32 + 22 + 26
+    setup := g.AddText("x" (w - 26 - 104 - 8 - 150) " y" by " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Set up in game")
+    close := g.AddText("x" (w - 26 - 104) " y" by " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    for b in [setup, close]
+        UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh2), Box.Round(b, bw, bh2, 4)
+    setup.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), quickcast.calibrateStart(QuickcastSetupDone)))
+    close.OnEvent("Click", (*) => g.Destroy())
+    h := by + 34 + 24
+    card.Move(, , , h - 2)
+    g.OnEvent("Escape", (*) => g.Destroy())
+    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+}
+; the in-game setup ended: its toast already said how it went
+QuickcastSetupDone(ok, msg) {
+}
 RemapToggleQc() {
-    global remap
-    sel := RemapSelected()
-    if !sel || sel.group != "spell"
+    global remap, remapSel
+    s := RemapSlot(remapSel.group, remapSel.index)
+    if !s || !s.qcAllowed
         return
-    d := remap.get()
-    cur := d.spells[sel.index].qc
-    remap.setQc(Map("index", sel.index, "value", cur ? 0 : 1))
+    remap.setQc(Map("group", s.group, "index", s.index, "value", s.qc ? 0 : 1))
     RefreshRemap()
 }
 
@@ -1222,7 +1471,12 @@ ShowMainWindow() {
     global showMain := true
     ShowPage(currentPage)               ; before Show, so other pages' controls never flash
     mainGui.Show("w" W " h" H)
-    try WinSetRegion("0-0 w" W " h" H " R14-14", mainGui.Hwnd)
+    try WinSetRegion("0-0 w" Round(W * DPI_K) " h" Round(H * DPI_K) " R" Round(14 * DPI_K) "-" Round(14 * DPI_K), mainGui.Hwnd)
+}
+; Esc hides the window, except when it was the answer to "press a key"
+EscHide() {
+    if !KeyCaptureActive()
+        HideMainWindow()
 }
 HideMainWindow() {
     global showMain := false
@@ -1321,13 +1575,13 @@ Toast(msg, kind := "", ms := 3500) {
     toastText.Move(1, 1, tw - 2, th - 2), toastText.Text := msg
     if WinActive(WarcraftIII) {
         WinGetClientPos(&ax, &ay, &aw, , WarcraftIII)
-        tx := ax + (aw - tw) // 2, ty := ay + 80
+        tx := Round(ax + (aw - tw * DPI_K) / 2), ty := Round(ay + 80 * DPI_K)
     } else if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
         WinGetPos(&ax, &ay, , , mainGui)
-        tx := ax + (W - tw) // 2, ty := ay + H - th - 30
+        tx := Round(ax + (W - tw) * DPI_K / 2), ty := Round(ay + (H - th - 30) * DPI_K)
     } else {
         MonitorGetWorkArea(MonitorGetPrimary(), &l, &t, &r, &b)
-        tx := l + (r - l - tw) // 2, ty := b - th - 30
+        tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(b - (th + 30) * DPI_K)
     }
     toastGui.Show("NA x" tx " y" ty " w" tw " h" th)
     SetTimer(HideToast, ms > 0 ? -ms : 0)
@@ -1337,25 +1591,25 @@ HideToast() {
     if toastGui
         toastGui.Hide()
 }
-; pixel width of s in ctl's font
+; width of s in ctl's font (in GUI units, like control sizes)
 TextWidth(ctl, s) {
     hdc := DllCall("GetDC", "ptr", ctl.Hwnd, "ptr")
     old := DllCall("SelectObject", "ptr", hdc, "ptr", SendMessage(0x31, 0, 0, ctl), "ptr")   ; WM_GETFONT
     DllCall("GetTextExtentPoint32W", "ptr", hdc, "str", s, "int", StrLen(s), "int64*", &size := 0)
     DllCall("SelectObject", "ptr", hdc, "ptr", old)
     DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
-    return size & 0xFFFFFFFF
+    return Round((size & 0xFFFFFFFF) / DPI_K)
 }
 
-; pixel height of s word-wrapped to width in ctl's font
+; height of s word-wrapped to width in ctl's font (GUI units in and out)
 TextHeight(ctl, s, width) {
     hdc := DllCall("GetDC", "ptr", ctl.Hwnd, "ptr")
     old := DllCall("SelectObject", "ptr", hdc, "ptr", SendMessage(0x31, 0, 0, ctl), "ptr")
-    rc := Buffer(16, 0), NumPut("int", width, rc, 8)
+    rc := Buffer(16, 0), NumPut("int", Round(width * DPI_K), rc, 8)
     DllCall("DrawTextW", "ptr", hdc, "str", s, "int", -1, "ptr", rc, "uint", 0x410)   ; DT_CALCRECT | DT_WORDBREAK
     DllCall("SelectObject", "ptr", hdc, "ptr", old)
     DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
-    return NumGet(rc, 12, "int")
+    return Round(NumGet(rc, 12, "int") / DPI_K)
 }
 
 ; Modal dialog in the site's .modal style (card, Cinzel title, muted text,
@@ -1392,7 +1646,7 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     g.OnEvent("Close", (*) => g.Destroy())
     if owned {
         WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-        pos := "x" (ox + (ow - w) // 2) " y" (oy + (oh - h) // 2)
+        pos := "x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2)
     } else {
         pos := "Center"
     }
@@ -1436,7 +1690,7 @@ UpdateOverlay() {
 ;  Control hotkeys
 ; ============================================================================
 #HotIf WinActive("TW Companion")
-$~Esc:: HideMainWindow()
+$~Esc:: EscHide()
 #HotIf WinActive("TW Companion") && currentPage = "loader" && !MsgEditFocused()
 Up:: SaveMove(-1)
 Down:: SaveMove(1)

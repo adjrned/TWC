@@ -13,20 +13,28 @@ Ini(section, key, default := "") => IniRead(iniFile, section, key, default)
 SetIni(value, section, key) => IniWrite(value, iniFile, section, key)
 
 ; ---- input capture ---------------------------------------------------------
+; while waiting for a key (and briefly after), Esc is an answer, not "hide"
+global keyCapturing := false, keyCaptureEnd := 0
+KeyCaptureActive() => keyCapturing || A_TickCount - keyCaptureEnd < 400
+
 KeyWaitAny() {
+    global keyCapturing := true, keyCaptureEnd
     ihGlobal.VisibleNonText := false
     ihGlobal.KeyOpt("{All}", "E")
     ihGlobal.Start()
-    ihGlobal.Wait()
+    try ihGlobal.Wait()
+    finally keyCapturing := false, keyCaptureEnd := A_TickCount
     return ihGlobal.EndKey
 }
 
 KeyWaitCombo() {
+    global keyCapturing := true, keyCaptureEnd
     ihGlobal.VisibleNonText := false
     ihGlobal.KeyOpt("{All}", "E")
     ihGlobal.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-E")
     ihGlobal.Start()
-    ihGlobal.Wait()
+    try ihGlobal.Wait()
+    finally keyCapturing := false, keyCaptureEnd := A_TickCount
     return ihGlobal.EndMods . ihGlobal.EndKey
 }
 
