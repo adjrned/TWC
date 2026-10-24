@@ -107,7 +107,7 @@ class RemapEngine {
     reserved(key) {
         global macros, webOverlay
         k := Norm(key)
-        for c in [["f8", "the show / hide window key"], ["f10", "the tool toggle"], ["pause", "the pause key"],
+        for c in [["f8", "the show / hide window key"], ["pause", "the pause key"],
                   ["enter", "the chat key"], ["numpadenter", "the chat key"], ["escape", "WC3's cancel key"]]
             if k = c[1]
                 return c[2]

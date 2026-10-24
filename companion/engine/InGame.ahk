@@ -20,6 +20,11 @@ class InGameEngine {
         return this.barSeen()
     }
     distrust() => this.trusted[WC3WindowKey()] := false
+    ; false when this window's bar can't be read (then "in a game" is assumed)
+    reliable() {
+        k := WC3WindowKey()
+        return !(this.trusted.Has(k) && !this.trusted[k])
+    }
 
     ; Where the bar sits across the screen depends on the aspect ratio and the
     ; version (16:9, 16:10 or 4:3; centred, or stretched on 1.28 without a

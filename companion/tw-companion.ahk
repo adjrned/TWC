@@ -8,7 +8,7 @@
 ;  Borderless window on a baked background in the site's theme; native controls on top.
 ;  Opens loader-first; other sections are nav pages.
 ;
-;  Control hotkeys:  F10 toggle (WC3) · F8 show/hide · Pause pause (WC3)
+;  Control hotkeys:  hold Esc 1.5 s pause remaps (WC3) · F8 show/hide · Pause pause (WC3)
 ;                    Esc hide window · Alt+Esc exit
 ;  Overlay (TWRPG site over the game): Shift+Space show/hide ·
 ;                    Ctrl+Shift+Space pin (configurable on the Overlay page)
@@ -77,10 +77,10 @@ global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.1.0-beta"
-; toolEnabled: the manual F10 pause; chatting: WC3 chat is open; inGame: in a
+; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).
-global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false
+global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global showMain := false
 global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
@@ -1483,14 +1483,14 @@ OverlayCheck(key, ctrl, *) => webOverlay.set(key, ctrl.Value)
 ; ============================================================================
 ;  Shared: tool toggle, overlay, show/hide, toast
 ; ============================================================================
-; F10 / the sidebar switch: pause remaps and macros by hand (e.g. to use the
+; Esc held 1.5 s / the sidebar switch: pause remaps and macros by hand (e.g. to use the
 ; game's own keys for a moment, or if chat tracking ever gets it wrong)
 ToggleTool() {
     global toolEnabled := !toolEnabled
     UpdateToolPill()
     macros.refresh()
     remap.refresh()
-    Toast(toolEnabled ? "Remaps and macros on" : "Remaps and macros paused (F10 to resume)", "", 2000)
+    Toast(toolEnabled ? "Remaps and macros on" : "Remaps and macros paused (hold Esc to resume)", "", 2000)
 }
 
 UpdateToolPill() {
@@ -1570,7 +1570,8 @@ ChatWatch() {
 }
 ; while chat is open, remaps and macros stand aside so typing works
 ChatOpened() {
-    global chatting := true, chatBox
+    global chatting, chatBox, chatSince
+    chatting := true, chatSince := A_TickCount
     macros.refresh(), remap.refresh()
     ; first chat in this game window: find where its chat box is drawn
     if WinActive(WarcraftIII) && !chatBox.current()
@@ -1588,7 +1589,7 @@ ChatClosed() {
 ; checked 5 times a second. Closing only follows a box that was seen open, so
 ; the lobby (always-open chat, no box) keeps the Enter tracking.
 ChatBoxPoll() {
-    global chatBox, chatting, inGame, inGameEng
+    global chatBox, chatting, inGame, inGameEng, chatSince
     static seenOpen := false
     if !WinActive(WarcraftIII) || !(g := chatBox.current())
         return
@@ -1604,6 +1605,23 @@ ChatBoxPoll() {
         seenOpen := false
         if chatting
             ChatClosed()
+    } else if chatting && inGame && inGameEng.reliable() && A_TickCount - chatSince > 800 {
+        ; "chatting" but no chat box in a game: an Enter or Esc that wasn't
+        ; chat (closing the game menu, a dialog). Don't leave remaps off.
+        ChatClosed()
+    }
+}
+; Esc in the game: the game gets one Esc (however long it's held, so nothing
+; spams it), chat counts as closed, a quickcast setup is cancelled, and
+; holding it 1.5 s pauses / resumes remaps and macros.
+EscInGame() {
+    SendInput("{Esc}")
+    ChatClosed(), ChatRestart()
+    if quickcast.cal
+        return quickcast.calibrateEnd(0, "Quickcast setup cancelled")
+    if !KeyWait("Esc", "T1.5") {
+        ToggleTool()
+        KeyWait("Esc")
     }
 }
 ; remaps and macros only in a game: in menus they'd type into text fields
@@ -1822,11 +1840,10 @@ $*F8:: ShowHideMain()
 $!Esc:: ExitApp
 
 #HotIf WinActive(WarcraftIII)
-$~F10:: ToggleTool()
 $~Pause:: PauseGame()
 $Enter::
 $NumpadEnter::
 $+Enter:: ChatEnter(ThisHotkey)
 $~LButton::
-$~Esc:: (ChatClosed(), ChatRestart(), quickcast.cal && quickcast.calibrateEnd(0, "Quickcast setup cancelled"))
+$Esc:: EscInGame()
 #HotIf

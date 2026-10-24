@@ -24,7 +24,7 @@ Uninstall
 
 Keys
   F8           show / hide the window
-  F10          pause / resume remaps and macros (in Warcraft III)
+  Hold Esc     pause / resume remaps and macros (1.5 s, in Warcraft III)
   Shift+Space  TWRPG overlay (in Warcraft III)
   Alt+Esc      quit
 

@@ -56,7 +56,7 @@ usually runs elevated, and key sends need matching elevation).
 
 | Key | Action | Where |
 |-----|--------|-------|
-| `F10` | pause / resume remaps and macros | in WC3 |
+| hold `Esc` 1.5 s | pause / resume remaps and macros (a tap is a normal Esc) | in WC3 |
 | `F8`  | show/hide the window | anywhere |
 | `Pause` | pause the game | in WC3 |
 | `Esc` | hide the window | window focused |
@@ -71,7 +71,8 @@ also checks the chat box on screen 5 times a second (its gold border; the place
 is known for 1.28 and Reforged at 1920x1080 and found by itself the first time chat opens
 elsewhere), which corrects the tracking when chat is opened or closed some
 other way.
-`F10` (or the sidebar's On | Off) pauses them by hand, with a short toast.
+Holding `Esc` for 1.5 s (or the sidebar's On | Off) pauses them by hand, with a
+short toast. F10 is left to the game (its menu).
 
 ## Sections (nav in the window)
 
@@ -123,7 +124,7 @@ other way.
   like the game (click a slot, press a key); *List* is the same as a table.
   Unset slots keep the game's key; Shift + your key still queues; a key can
   only be on one slot (setting it again moves it), and keys the companion
-  uses (F8, F10, macros, overlay) are refused. Esc or Backspace (or *Clear*)
+  uses (F8, Esc, macros, overlay) are refused. Esc or Backspace (or *Clear*)
   clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.
   **Quickcast** casts at the cursor; held, it repeats (every 40 ms by default).
   *Quickcast setup* on the toolbar runs a one-time setup in game, per game
