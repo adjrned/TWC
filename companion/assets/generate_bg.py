@@ -1,67 +1,54 @@
-"""Regenerate assets/bg.png (760x600) for TW Companion.
+"""Regenerate assets/bg.png (904x500) for TW Companion, laid out like the TWRPG
+site: a sidebar (--bg2) with the Cinzel wordmark, a content surface, and a
+page-header divider. Colours are the site's tokens (src/styles/base.css) and
+must match the C palette in tw-companion.ahk; geometry must match W, H, SIDE_W
+and CX there.
 Requires Pillow:  py -m pip install Pillow
 Run from the assets/ folder:  py generate_bg.py
-Geometry (panel rect) must match the layout in tw-companion.ahk.
 """
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
-W, H = 760, 600
-PX, PY, PW, PH = 20, 86, 720, 470   # central panel
+W, H = 904, 500
+SIDE_W = 176          # sidebar width
+CX = 200              # content left edge (page header, controls)
+DIVIDER_Y = 84        # line under the page header
 
-
-def lerp(a, b, t):
-    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
-
-
-def glow(cx, cy, r, color, alpha):
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color + (alpha,))
-    return layer.filter(ImageFilter.GaussianBlur(r * 0.5))
+SIDE = (18, 20, 25)        # --bg2
+PANEL = (22, 24, 29)       # content surface (C.panel)
+BORDER = (35, 38, 46)      # --border
+TEXT = (230, 228, 223)     # --text
+ACCENT = (245, 166, 35)    # --accent
 
 
-def font(name, size):
-    try:
-        return ImageFont.truetype("C:/Windows/Fonts/" + name, size)
-    except Exception:
-        return ImageFont.load_default()
+def cinzel(size):
+    f = ImageFont.truetype("Cinzel.ttf", size)
+    f.set_variation_by_axes([700])
+    return f
 
 
-def spaced(s, n=2):
-    return (" " * n).join(list(s))
+def spaced_text(d, x, y, s, fnt, fill, spacing):
+    """Draw s letter by letter with extra spacing (CSS letter-spacing)."""
+    for ch in s:
+        d.text((x, y), ch, font=fnt, fill=fill)
+        x += d.textlength(ch, font=fnt) + spacing
+    return x
 
 
-# gradient base
-top, bot = (23, 29, 78), (8, 11, 34)
-base = Image.new("RGB", (W, H))
-px = base.load()
-for y in range(H):
-    c = lerp(top, bot, y / (H - 1))
-    for x in range(W):
-        px[x, y] = c
-img = base.convert("RGBA")
-
-# glows
-img = Image.alpha_composite(img, glow(110, 40, 300, (232, 201, 119), 60))
-img = Image.alpha_composite(img, glow(710, 560, 340, (96, 110, 255), 55))
-img = Image.alpha_composite(img, glow(400, 300, 420, (60, 74, 150), 24))
-
-# panel
-panel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-ImageDraw.Draw(panel).rounded_rectangle(
-    [PX, PY, PX + PW, PY + PH], radius=18, fill=(19, 26, 70, 235))
-img = Image.alpha_composite(img, panel)
+img = Image.new("RGB", (W, H), PANEL)
 d = ImageDraw.Draw(img)
-d.rounded_rectangle([PX, PY, PX + PW, PY + PH], radius=18,
-                    outline=(185, 146, 68, 255), width=1)
-d.line([PX + 14, PY + 1, PX + PW - 14, PY + 1], fill=(255, 235, 190, 55), width=1)
 
-# brand: gold diamond + wordmark + tagline
-cx, cy, r = 38, 34, 7
-d.polygon([(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)], fill=(236, 208, 138))
-d.polygon([(cx, cy - r + 3), (cx + r - 3, cy), (cx, cy + r - 3), (cx - r + 3, cy)], fill=(20, 26, 66))
-d.text((54, 21), spaced("TW COMPANION", 2), font=font("seguisb.ttf", 23), fill=(236, 208, 138))
-d.text((56, 54), "T W R P G   \u00b7   S A V E   L O A D E R", font=font("segoeui.ttf", 11), fill=(138, 144, 192))
+# sidebar + its right border, like .sidebar
+d.rectangle([0, 0, SIDE_W - 1, H], fill=SIDE)
+d.line([SIDE_W, 0, SIDE_W, H], fill=BORDER, width=1)
 
-img.convert("RGB").save("bg.png", "PNG")
+# wordmark: "TW" in the accent, "Companion" in text colour (site logo style)
+logo = cinzel(16)
+x = spaced_text(d, 22, 28, "TW", logo, ACCENT, 0.5)
+spaced_text(d, x, 28, "Companion", logo, TEXT, 0.5)
+d.line([12, 66, SIDE_W - 13, 66], fill=BORDER, width=1)
+
+# page header divider, like .page-header's border-bottom
+d.line([CX, DIVIDER_Y, W - 24, DIVIDER_Y], fill=BORDER, width=1)
+
+img.save("bg.png", "PNG")
 print("wrote bg.png", img.size)

@@ -2,7 +2,7 @@
 #SingleInstance Force
 ; ============================================================================
 ;  TW Companion - light native TWRPG loader for Warcraft III.
-;  Borderless window on a baked glossy background; native controls on top.
+;  Borderless window on a baked background in the site's theme; native controls on top.
 ;  Opens loader-first; other sections are nav pages.
 ;
 ;  Control hotkeys:  F10 toggle (WC3) · F8 show/hide · Pause pause (WC3)
@@ -20,24 +20,31 @@
 #Include engine\Updater.ahk
 #Include ui\OverlayPanel.ahk
 
-; ---- palette ---------------------------------------------------------------
+; ---- palette: the site's theme (src/styles/base.css) -------------------------
 global C := {
-    win:    "080B26",
-    panel:  "131A46",
-    well:   "0C1030",
-    gold:   "ECD08A",
-    goldbtn:"C9A24B",
-    chip:   "1E2658",
-    text:   "E6E8F5",
-    muted:  "9AA0C8" }
-global W := 760, H := 600
+    win:     "0C0D10",   ; --bg (status badge)
+    side:    "121419",   ; --bg2, sidebar          } baked into assets/bg.png
+    panel:   "16181D",   ; content surface         }
+    well:    "16181D",   ; inputs and lists: the surface itself, set off by a 1px frame
+    frame:   "30343E",   ; --border2, 1px input borders
+    chip:    "23262E",   ; buttons
+    accent:  "F5A623",   ; --accent
+    onAccent:"1A1004",   ; text on .btn.primary
+    navOn:   "29231A",   ; .nav-link.active: accent at 10% over the sidebar
+    text:    "E6E4DF",   ; --text
+    muted:   "9A9EAA",   ; --muted2
+    dim:     "6F7380" }  ; --muted
+; window, sidebar width, and where page content starts (see assets/generate_bg.py)
+global W := 904, H := 500, SIDE_W := 176, CX := 200, CY := 100
+global NAV_ORDER := ["loader", "macros", "remap", "host", "settings", "overlay"]
+global frames := Map()      ; Edit/ListBox hwnd -> its 4 border lines (FrameControl)
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.0.0"
 global toolEnabled := true, chatting := false, toolEnableHistory := true
 global showMain := false
 global loader, macros, remap, host, settings, updater, webOverlay
-global mainGui, bgPic, titleText, toolPill
+global mainGui, bgPic, titleText, subtitleText, navBar, toolPill
 global pages := Map(), navText := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
@@ -68,6 +75,8 @@ if !A_IsAdmin {
 }
 
 ProcessSetPriority("High")
+; Cinzel (the site's display font) for headings, loaded for this process only
+DllCall("gdi32\AddFontResourceEx", "str", A_ScriptDir "\assets\Cinzel.ttf", "uint", 0x10, "ptr", 0)
 SetKeyDelay(Integer(Ini("Settings", "keyDelay", 10)))
 
 loader := LoaderEngine()
@@ -108,33 +117,100 @@ BuildWindow() {
 
     bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, A_ScriptDir "\assets\bg.png")
 
-    ; nav
-    navX := Map("loader", 40, "macros", 108, "remap", 180, "host", 246, "settings", 296, "overlay", 372)
-    navW := Map("loader", 62, "macros", 66, "remap", 60, "host", 44, "settings", 70, "overlay", 66)
-    for name, x in navX {
-        t := mainGui.AddText("x" x " y98 w" navW[name] " h22 Center 0x200 +Background" C.panel, StrTitle(name))
-        t.SetFont("s10 Bold", "Segoe UI")
+    ; sidebar nav, like the site's: vertical links, active one tinted with an accent bar
+    for i, name in NAV_ORDER {
+        t := mainGui.AddText("x12 y" (84 + (i - 1) * 36) " w152 h32 0x200 +Background" C.side " c" C.muted, "    " PageInfo(name).nav)
+        t.SetFont("s10 w600", "Segoe UI")
         t.OnEvent("Click", NavClick.Bind(name))
         navText[name] := t
     }
+    navBar := mainGui.AddText("x12 y84 w3 h32 +Background" C.accent)
 
-    ; tool pill + close
-    toolPill := MkButton("", 548, 96, 132, 26, C.chip, C.muted, (*) => ToggleTool())
-    MkButton("✕", 712, 96, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
+    ; tool toggle at the bottom of the sidebar, close at the top right
+    toolPill := MkButton("", 12, H - 52, 152, 32, C.chip, C.muted, (*) => ToggleTool())
+    MkButton("✕", W - 40, 14, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
-    ; section title
-    titleText := mainGui.AddText("x40 y128 w400 h26 +Background" C.panel, "")
-    titleText.SetFont("s15", "Segoe UI Semibold")
+    ; page header: Cinzel title + subtitle (divider is baked into bg.png)
+    titleText := mainGui.AddText("x" CX " y22 w560 h30 +Background" C.panel " c" C.text, "")
+    titleText.SetFont("s17 w700", "Cinzel")
+    subtitleText := mainGui.AddText("x" CX " y54 w560 h20 +Background" C.panel " c" C.muted, "")
+    subtitleText.SetFont("s10", "Segoe UI")
 
+    ; pages are laid out from (40, 160); shift them into the content area
     BuildLoaderPage()
     BuildMacrosPage()
     BuildRemapPage()
     BuildHostPage()
     BuildSettingsPage()
     BuildOverlayPage()
+    for pg, arr in pages
+        for ctl in arr {        ; not `c`: names are case-insensitive, that's the palette
+            ctl.GetPos(&x, &y)
+            ctl.Move(x + CX - 40, y + CY - 160)
+        }
+    for pg, arr in pages.Clone()
+        for ctl in arr.Clone()
+            if ctl.Type = "Edit" || ctl.Type = "ListBox"
+                FrameControl(pg, ctl)
 
     OnMessage(0x201, WM_LBUTTONDOWN)
     UpdateToolPill()
+}
+
+PageInfo(name) {
+    static info := Map(
+        "loader",   { nav: "Loader",   title: "Loader",   sub: "Search, pin and load your saves" },
+        "macros",   { nav: "Macros",   title: "Macros",   sub: "Hotkeys that type chat lines for you" },
+        "remap",    { nav: "Remap",    title: "Remap",    sub: "Spell, inventory and mouse keys" },
+        "host",     { nav: "Host",     title: "Host",     sub: "Host lobbies through a bot" },
+        "settings", { nav: "Settings", title: "Settings", sub: "Startup, timing and your TWRPG folder" },
+        "overlay",  { nav: "Overlay",  title: "Overlay",  sub: "The TWRPG site over the game  ·  Shift+Space" })
+    return info[name]
+}
+
+; Native Edit/ListBox borders are thick and white; swap them for a 1px
+; --border2 frame drawn with four Text lines (kept in step by SyncFrame).
+; Single-line edits shrink to their text height inside the frame, which keeps
+; the original rect, so the text sits vertically centred like a site input.
+FrameControl(page, ctrl) {
+    global mainGui, frames, C
+    ctrl.Opt("-E0x200 -Border")
+    DllCall("SetWindowPos", "ptr", ctrl.Hwnd, "ptr", 0, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x37)   ; FRAMECHANGED, no move/size/z/activate
+    ctrl.GetPos(&x, &y, &w, &h)
+    box := { x: x, y: y, w: w, h: h }
+    if ctrl.Type = "Edit" {
+        SendMessage(0xD3, 3, 10 | (10 << 16), ctrl)   ; EM_SETMARGINS: 10px left/right
+        if !(ControlGetStyle(ctrl) & 0x4) {            ; not ES_MULTILINE
+            th := 20
+            ctrl.Move(x + 1, y + (h - th) // 2, w - 2, th)
+        } else {
+            ctrl.Move(x + 1, y + 1, w - 2, h - 2)
+        }
+    } else {
+        ctrl.Move(x + 8, y + 6, w - 10, h - 12)      ; list: inner padding (scrollbar keeps the right edge)
+    }
+    lines := []
+    loop 4 {
+        l := mainGui.AddText("x0 y0 w1 h1 +Background" C.frame)
+        lines.Push(l)
+        AddToPage(page, l)
+    }
+    frames[ctrl.Hwnd] := { lines: lines, box: box }
+    SyncFrame(ctrl)
+}
+; redraw a control's frame; pass the new outer rect when the control moves
+SyncFrame(ctrl, x?, y?, w?, h?) {
+    global frames
+    if !frames.Has(ctrl.Hwnd)
+        return
+    f := frames[ctrl.Hwnd], b := f.box
+    if IsSet(y) {
+        b.x := x, b.y := y, b.w := w, b.h := h
+        ctrl.Move(x + 8, y + 6, w - 10, h - 12)
+    }
+    l := f.lines
+    l[1].Move(b.x, b.y, b.w, 1), l[2].Move(b.x, b.y + b.h - 1, b.w, 1)
+    l[3].Move(b.x, b.y, 1, b.h), l[4].Move(b.x + b.w - 1, b.y, 1, b.h)
 }
 
 ; drag window by clicking the background
@@ -169,14 +245,20 @@ AddToPage(name, ctrls*) {
 NavClick(name, *) => ShowPage(name)
 
 ShowPage(name) {
-    global pages, navText, titleText, currentPage, C
+    global pages, navText, navBar, titleText, subtitleText, currentPage, C
     currentPage := name
     for pg, arr in pages
         for c in arr
             c.Visible := (pg = name)
-    titleText.Text := SectionTitle(name)
-    for nm, t in navText
-        t.Opt("+c" (nm = name ? C.gold : C.muted))
+    titleText.Text := PageInfo(name).title
+    subtitleText.Text := PageInfo(name).sub
+    for nm, t in navText {
+        t.Opt((nm = name ? "+c" C.text " +Background" C.navOn : "+c" C.muted " +Background" C.side)), t.Redraw()
+        if nm = name {
+            t.GetPos(, &y)
+            navBar.Move(, y), navBar.Redraw()
+        }
+    }
     switch name {
         case "loader":   RefreshFiles(), RefreshQuick()
         case "macros":   RefreshMacros()
@@ -187,11 +269,6 @@ ShowPage(name) {
     }
 }
 
-SectionTitle(name) {
-    m := Map("loader","Loader","macros","Macros","remap","Remap","host","Host","settings","Settings","overlay","TWRPG Overlay")
-    return m[name]
-}
-
 ; ============================================================================
 ;  Loader page
 ; ============================================================================
@@ -200,6 +277,7 @@ BuildLoaderPage() {
     searchEdit := mainGui.AddEdit("x40 y162 w680 h28 +Background" C.well " c" C.text, "")
     searchEdit.SetFont("s10", "Segoe UI")
     searchEdit.OnEvent("Change", (*) => RefreshFiles())
+    SendMessage(0x1501, 1, StrPtr("Search saves…"), searchEdit)    ; EM_SETCUEBANNER
     AddToPage("loader", searchEdit)
 
     ; quick-load chips (up to 8)
@@ -207,7 +285,7 @@ BuildLoaderPage() {
     loop 8 {
         i := A_Index
         x := 40 + Mod(i - 1, 8) * 86
-        b := MkButton("", x, 200, 80, 32, C.chip, C.gold, QuickClick.Bind(i))
+        b := MkButton("", x, 200, 80, 32, C.chip, C.accent, QuickClick.Bind(i))
         b.Visible := false
         quickBtns.Push(b)
         AddToPage("loader", b)
@@ -227,7 +305,7 @@ BuildLoaderPage() {
     pinBtn := MkButton("Pin",  360, 506, 56, 28, C.chip, C.text, (*) => PinSelected())
     hideBtn := MkButton("Hide", 422, 506, 60, 28, C.chip, C.text, (*) => HideSelected())
     msgBtn := MkButton("Msg",  488, 506, 56, 28, C.chip, C.text, (*) => MsgSelected())
-    loadBtn := MkButton("LOAD", 600, 504, 120, 32, C.goldbtn, "1A1508", (*) => LoadSelected())
+    loadBtn := MkButton("LOAD", 600, 504, 120, 32, C.accent, C.onAccent, (*) => LoadSelected())
     AddToPage("loader", pinBtn, hideBtn, msgBtn, loadBtn)
 }
 
@@ -247,7 +325,7 @@ RefreshFiles() {
 }
 
 RefreshQuick() {
-    global quickBtns, quickNames, loader
+    global quickBtns, quickNames, loader, searchEdit, fileListBox, frames, mainGui
     quickNames := loader.pinned()
     for i, b in quickBtns {
         if i <= quickNames.Length {
@@ -257,6 +335,12 @@ RefreshQuick() {
             b.Visible := false
         }
     }
+    ; no pinned saves: let the list take the quick-load row's space
+    s := frames[searchEdit.Hwnd].box, l := frames[fileListBox.Hwnd].box
+    quickBtns[1].GetPos(, &qy, , &qh)
+    top := quickNames.Length ? qy + qh + 12 : s.y + s.h + 12
+    SyncFrame(fileListBox, l.x, top, l.w, l.y + l.h - top)
+    WinRedraw(mainGui)
 }
 
 SelectedFileName() {
@@ -316,7 +400,7 @@ BuildMacrosPage() {
     macroCapBtn := MkButton("click to set", 40, 404, 150, 28, C.chip, C.text, (*) => MacroCapture())
     macroMsgEdit := mainGui.AddEdit("x200 y404 w520 h52 Multi +Background" C.well " c" C.text, "")
     macroMsgEdit.SetFont("s10", "Segoe UI")
-    addBtn := MkButton("Add / Update", 40, 470, 140, 30, C.goldbtn, "1A1508", (*) => MacroSave())
+    addBtn := MkButton("Add / Update", 40, 470, 140, 30, C.accent, C.onAccent, (*) => MacroSave())
     delBtn := MkButton("Delete", 190, 470, 90, 30, C.chip, C.text, (*) => MacroDelete())
     newBtn := MkButton("New", 290, 470, 80, 30, C.chip, C.text, (*) => MacroNew())
     AddToPage("macros", macroListBox, lbl, lbl2, macroCapBtn, macroMsgEdit, addBtn, delBtn, newBtn)
@@ -469,11 +553,11 @@ BuildHostPage() {
     mk("botName", "Bot name", 40, 160, 300)
     mk("trigger", "Trigger", 360, 160, 160)
     mk("gameName", "Game name", 40, 220, 260)
-    incBtn := MkButton("+1", 312, 240, 40, 26, C.chip, C.gold, (*) => HostInc())
+    incBtn := MkButton("+1", 312, 240, 40, 26, C.chip, C.accent, (*) => HostInc())
     mk("exBefore", "Extra command before host", 40, 288, 680)
     mk("exAfter", "Extra command after host", 40, 348, 680)
-    privBtn := MkButton("HOST PRIVATE LOBBY", 40, 420, 330, 36, C.goldbtn, "1A1508", (*) => DoHost(1))
-    pubBtn := MkButton("HOST PUBLIC LOBBY", 390, 420, 330, 36, C.chip, C.gold, (*) => DoHost(0))
+    privBtn := MkButton("HOST PRIVATE LOBBY", 40, 420, 330, 36, C.accent, C.onAccent, (*) => DoHost(1))
+    pubBtn := MkButton("HOST PUBLIC LOBBY", 390, 420, 330, 36, C.chip, C.accent, (*) => DoHost(0))
     AddToPage("host", incBtn, privBtn, pubBtn)
 }
 RefreshHost() {
@@ -592,8 +676,8 @@ BuildOverlayPage() {
         y += 30
     }
     ovVersionText := lbl("", 40, 434, 680)
-    openBtn := MkButton("Open overlay", 40, 466, 150, 32, C.goldbtn, "1A1508", (*) => (HideMainWindow(), webOverlay.show()))
-    updBtn := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.gold, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
+    openBtn := MkButton("Open overlay", 40, 466, 150, 32, C.accent, C.onAccent, (*) => (HideMainWindow(), webOverlay.show()))
+    updBtn := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.accent, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
     AddToPage("overlay", openBtn, updBtn)
 }
 RefreshOverlay() {
@@ -602,7 +686,7 @@ RefreshOverlay() {
     ovHkBtn.Text := s.hotkey ? ReadableHotkey(s.hotkey) : "none"
     ovPinBtn.Text := s.pinHotkey ? ReadableHotkey(s.pinHotkey) : "none"
     for side, b in ovSideBtns
-        b.Opt("+c" (side = s.side ? C.gold : C.muted)), b.Redraw()
+        b.Opt("+c" (side = s.side ? C.accent : C.muted)), b.Redraw()
     ovOpacityEdit.Value := s.opacity
     ovPinOpacityEdit.Value := s.pinOpacity
     ovUnloadEdit.Value := s.unloadMinutes
@@ -638,15 +722,15 @@ UpdateToolPill() {
     global toolPill, C
     if !IsSet(toolPill)
         return
-    toolPill.Text := toolEnabled ? "● TOOL ON" : "○ TOOL OFF"
-    toolPill.Opt("+c" (toolEnabled ? C.gold : C.muted))
+    toolPill.Text := toolEnabled ? "●  Tool on" : "○  Tool off"
+    toolPill.Opt("+c" (toolEnabled ? C.accent : C.muted))
 }
 
 ShowMainWindow() {
     global showMain := true
+    ShowPage(currentPage)               ; before Show, so other pages' controls never flash
     mainGui.Show("w" W " h" H)
-    try WinSetRegion("0-0 w" W " h" H " R18-18", mainGui.Hwnd)
-    ShowPage(currentPage)
+    try WinSetRegion("0-0 w" W " h" H " R14-14", mainGui.Hwnd)
 }
 HideMainWindow() {
     global showMain := false
@@ -682,7 +766,7 @@ BuildOverlay() {
     global overlay, overlayText, C
     overlay := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-overlay")
     overlay.BackColor := C.win
-    overlay.SetFont("s10 bold", "Segoe UI")
+    overlay.SetFont("s10 w600", "Segoe UI")
     overlayText := overlay.AddText("+BackgroundTrans w140 h22", "")
     WinSetTransparent(210, overlay)
     UpdateOverlay()
@@ -693,7 +777,7 @@ UpdateOverlay() {
     global overlayText, C
     if !IsSet(overlayText)
         return
-    overlayText.Opt("+c" (toolEnabled ? C.gold : "66708F"))
+    overlayText.Opt("+c" (toolEnabled ? C.accent : C.dim))
     overlayText.Text := toolEnabled ? "◆ TW ON" : "◇ TW OFF"
 }
 

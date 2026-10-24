@@ -34,22 +34,21 @@ KeyWaitCombo() {
 ReadableHotkey(hotkey, fullName := false) {
     if !hotkey
         return ""
+    ; "^+Space" -> "Ctrl+Shift+Space", "<!f5" -> "LAlt+F5"
     sideMap := Map("<", "L", ">", "R")
     shortMap := Map("#", "Win+", "!", "Alt+", "^", "Ctrl+", "+", "Shift+")
-    hotkey := StrUpper(hotkey)
-    hotkey := StrReplace(hotkey, "$", "")
-    hotkey := StrReplace(hotkey, "~", "")
-    hotkey := StrReplace(hotkey, "*", "")
-    for k, v in sideMap
-        hotkey := StrReplace(hotkey, k, v)
-    for k, v in shortMap {
-        replaced := StrReplace(hotkey, k, v)
-        if replaced != hotkey {
-            hotkey := replaced
-            break
-        }
+    hotkey := StrReplace(StrReplace(StrReplace(hotkey, "$"), "~"), "*")
+    mods := "", side := "", i := 1
+    while i < StrLen(hotkey) && InStr("<>#!^+", ch := SubStr(hotkey, i, 1)) {
+        if sideMap.Has(ch)
+            side := sideMap[ch]
+        else
+            mods .= side shortMap[ch], side := ""
+        i++
     }
-    return hotkey
+    key := SubStr(hotkey, i)
+    key := StrLen(key) = 1 || RegExMatch(key, "i)^F\d+$") ? StrUpper(key) : StrUpper(SubStr(key, 1, 1)) StrLower(SubStr(key, 2))
+    return mods key
 }
 
 ; ---- misc helpers ----------------------------------------------------------

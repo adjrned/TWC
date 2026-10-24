@@ -1,8 +1,9 @@
 # TW Companion
 
-A light TWRPG loader / helper for Warcraft III with a dark-navy + gold "glossy"
-look. Pure **AutoHotkey v2** — a borderless window on a baked gradient/glow
-background with native controls on top. It opens instantly and uses almost no
+A light TWRPG loader / helper for Warcraft III, styled like the TWRPG site
+(dark neutral surfaces, one orange accent, Cinzel headings). Pure
+**AutoHotkey v2** — a borderless window on a baked background with native
+controls on top. It opens instantly and uses almost no
 memory, since it's meant to be flashed open, load a save, and close.
 
 ## Requirements
@@ -102,17 +103,25 @@ engine/             GUI-free logic that the window calls directly:
   Loader Macros Remap Host Settings Updater
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
-assets/bg.png       pre-rendered gradient + glow + framed panel + brand
+assets/bg.png       pre-rendered page + card panel + TWRPG wordmark
+assets/Cinzel.ttf   the site's display font (OFL, see Cinzel-OFL.txt), loaded
+                    privately at startup for section titles
 ```
 
-The window is one borderless Gui: a full-size `Picture` shows `assets/bg.png`,
-and native controls (Edit, ListBox, Checkbox, and Text styled as flat buttons)
-sit on top, coloured to match the baked panel so they blend. Sections are shown
-by toggling control visibility (no tab-control chrome). The engine classes are
-plain AHK objects the window calls directly — no IPC, no bridge.
+The window is one borderless Gui laid out like the site: a sidebar with the
+TWCompanion wordmark and vertical nav (active link tinted, with an accent bar),
+and a content area with a page header (Cinzel title, subtitle, divider). A
+full-size `Picture` shows `assets/bg.png`, and native controls (Edit, ListBox,
+Checkbox, and Text styled as flat buttons) sit on top, coloured to match. Edits
+and lists drop their native borders for a 1px frame (`FrameControl`). Pages
+are built at (40, 160) and shifted into the content area, and shown by
+toggling control visibility. The engine classes are plain AHK objects the
+window calls directly — no IPC, no bridge.
 
 ### Regenerating the background
 
-`assets/bg.png` is 760×600 and matches the window layout. To tweak it, re-run a
-Pillow script that draws the gradient, glows, panel frame and brand text (see the
-project notes), or replace the PNG with your own at the same size.
+`assets/bg.png` is 904×500 and matches the window layout (`W`, `H`, `SIDE_W`,
+`CX` in `tw-companion.ahk`). To tweak it, edit and
+run `assets/generate_bg.py` (Pillow) from the `assets/` folder. Its colours are the
+site's tokens from `src/styles/base.css`, the same ones as the `C` palette in
+`tw-companion.ahk`; keep the two in step if the site's theme changes.
