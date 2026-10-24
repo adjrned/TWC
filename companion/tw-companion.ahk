@@ -645,7 +645,6 @@ ShowLoaderHelp(show) {
         }
         card.Move(, , , y + 6)
         helpGui.Show("Hide w462 h" (y + 8))
-        WinSetRegion("0-0 w462 h" (y + 8) " R10-10", helpGui)
     }
     helpBtn.GetPos(&bx, &by, &bw, &bh)
     WinGetClientPos(&wx, &wy, , , mainGui)
@@ -920,7 +919,7 @@ RefreshSettings() {
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
 ResetAll() {
-    if MsgBox("Reset all settings and restart?", "Reset", "YesNo") = "Yes"
+    if Dialog("This clears every setting, macro, remap and favourite, then restarts the companion.", "Reset settings", ["Reset", "Cancel"]) = "Reset"
         settings.reset(Map())
 }
 
@@ -1094,16 +1093,103 @@ MsgEditFocused() {
     return false
 }
 
-Toast(msg, kind := "") {
-    if WinActive(WarcraftIII) {
-        WinGetClientPos(&x, &y, &w, , WarcraftIII)
-        CoordMode("ToolTip", "Screen")
-        ToolTip(msg, x + w // 2 - 120, y + 80)
-        CoordMode("ToolTip", "Client")
-    } else {
-        ToolTip(msg)
+; ---- themed toast + dialog (instead of ToolTip / MsgBox) ---------------------
+; Toast mirrors the site's #toast: dark card, 1px accent border, bold accent
+; text (square corners: window regions can't keep a 1px border on a curve). Over the game it sits top-centre; otherwise at the bottom of the
+; window (or screen). ms = 0 keeps it up until the next Toast / HideToast().
+global toastGui := 0, toastText := 0
+Toast(msg, kind := "", ms := 3500) {
+    global toastGui, toastText, C, UI_FONT, mainGui, W, H
+    ; tw/th, not w/h: names are case-insensitive and W/H are the window size
+    if !toastGui {
+        toastGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x08000000")    ; never takes focus
+        toastGui.BackColor := C.accent                                         ; = the 1px border
+        toastGui.MarginX := 0, toastGui.MarginY := 0
+        toastText := toastGui.AddText("x1 y1 w10 h10 Center 0x200 +Background13151A c" C.accent, "")
+        toastText.SetFont("s10 w700", UI_FONT)
     }
-    SetTimer(() => ToolTip(), -3500)
+    tw := TextWidth(toastText, msg) + 54, th := 40
+    toastText.Move(1, 1, tw - 2, th - 2), toastText.Text := msg
+    if WinActive(WarcraftIII) {
+        WinGetClientPos(&ax, &ay, &aw, , WarcraftIII)
+        tx := ax + (aw - tw) // 2, ty := ay + 80
+    } else if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
+        WinGetPos(&ax, &ay, , , mainGui)
+        tx := ax + (W - tw) // 2, ty := ay + H - th - 30
+    } else {
+        MonitorGetWorkArea(MonitorGetPrimary(), &l, &t, &r, &b)
+        tx := l + (r - l - tw) // 2, ty := b - th - 30
+    }
+    toastGui.Show("NA x" tx " y" ty " w" tw " h" th)
+    SetTimer(HideToast, ms > 0 ? -ms : 0)
+}
+HideToast() {
+    global toastGui
+    if toastGui
+        toastGui.Hide()
+}
+; pixel width of s in ctl's font
+TextWidth(ctl, s) {
+    hdc := DllCall("GetDC", "ptr", ctl.Hwnd, "ptr")
+    old := DllCall("SelectObject", "ptr", hdc, "ptr", SendMessage(0x31, 0, 0, ctl), "ptr")   ; WM_GETFONT
+    DllCall("GetTextExtentPoint32W", "ptr", hdc, "str", s, "int", StrLen(s), "int64*", &size := 0)
+    DllCall("SelectObject", "ptr", hdc, "ptr", old)
+    DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
+    return size & 0xFFFFFFFF
+}
+
+; pixel height of s word-wrapped to width in ctl's font
+TextHeight(ctl, s, width) {
+    hdc := DllCall("GetDC", "ptr", ctl.Hwnd, "ptr")
+    old := DllCall("SelectObject", "ptr", hdc, "ptr", SendMessage(0x31, 0, 0, ctl), "ptr")
+    rc := Buffer(16, 0), NumPut("int", width, rc, 8)
+    DllCall("DrawTextW", "ptr", hdc, "str", s, "int", -1, "ptr", rc, "uint", 0x410)   ; DT_CALCRECT | DT_WORDBREAK
+    DllCall("SelectObject", "ptr", hdc, "ptr", old)
+    DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
+    return NumGet(rc, 12, "int")
+}
+
+; Modal dialog in the site's .modal style (card, Cinzel title, muted text,
+; .btn buttons; the first button is the primary one). Returns the label
+; clicked, or the last button's label on Esc / close.
+Dialog(text, title := "TW Companion", buttons := ["OK"]) {
+    global C, UI_FONT, mainGui
+    owned := IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
+    g := Gui("-Caption +ToolWindow +AlwaysOnTop" (owned ? " +Owner" mainGui.Hwnd : ""))
+    g.BackColor := C.frame                           ; = the 1px border
+    g.MarginX := 0, g.MarginY := 0
+    w := 440, res := { v: buttons[buttons.Length] }
+    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, title)
+    t.SetFont("s13 w700", "Cinzel")
+    body := g.AddText("x26 y58 w" (w - 52) " +Background" C.card " c" C.muted, text)
+    body.SetFont("s10", UI_FONT)
+    bh := TextHeight(body, text, w - 52)
+    body.Move(, , , bh)
+    by := 58 + bh + 24, bx := w - 26
+    loop buttons.Length {
+        i := buttons.Length - A_Index + 1, label := buttons[i]
+        primary := i = 1
+        b := g.AddText("x" (bx - 104) " y" by " w104 h34 Center 0x200 +Background" (primary ? C.accent : C.chip)
+            " c" (primary ? C.onAccent : C.text), label)
+        b.SetFont("s9 w600", UI_FONT)
+        b.OnEvent("Click", ((l, *) => (res.v := l, g.Destroy())).Bind(label))
+        Box.Round(b, 104, 34, 4)
+        bx -= 112
+    }
+    h := by + 34 + 24
+    card.Move(, , , h - 2)
+    g.OnEvent("Escape", (*) => g.Destroy())
+    g.OnEvent("Close", (*) => g.Destroy())
+    if owned {
+        WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+        pos := "x" (ox + (ow - w) // 2) " y" (oy + (oh - h) // 2)
+    } else {
+        pos := "Center"
+    }
+    g.Show(pos " w" w " h" h)
+    WinWaitClose("ahk_id " g.Hwnd)
+    return res.v
 }
 Push(event, data) {
     if event = "toast"

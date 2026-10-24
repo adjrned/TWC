@@ -251,7 +251,7 @@ class OverlayPanel {
         if this.wv
             return true
         if !FileExist(this.updater.appDir "\index.html") {
-            if MsgBox("The overlay's offline data isn't installed yet.`nDownload it now (about 10 MB)?", "TW Companion", "YesNo Icon?") = "Yes"
+            if Dialog("The overlay's offline copy of the TWRPG site isn't installed yet. Download it now? (about 10 MB)", "Overlay data", ["Download", "Not now"]) = "Download"
                 this.runUpdate(true)
             if !FileExist(this.updater.appDir "\index.html")
                 return false
@@ -261,7 +261,7 @@ class OverlayPanel {
             return true
         } catch as e {
             this.unload()
-            MsgBox("Couldn't start the overlay (WebView2):`n" e.Message "`n`nIs the Microsoft Edge WebView2 Runtime installed?", "TW Companion", "Icon!")
+            Dialog("WebView2 said: " e.Message "`n`nIs the Microsoft Edge WebView2 Runtime installed?", "Overlay couldn't start")
             return false
         }
     }
@@ -385,10 +385,10 @@ class OverlayPanel {
             this.postUpdate("downloading", manual, { done: 0, total: r.changed })
             onProgress(done, total) {
                 this.postUpdate("downloading", manual, { done: done, total: total })
-                ToolTip("Updating overlay data " done "/" total)
+                Toast("Updating overlay data  " done " / " total, "", 0)
             }
             res := this.updater.apply(onProgress, () => this.releaseFiles())
-            ToolTip()
+            HideToast()
             if !res.ok {
                 this.postUpdate("error", manual, { message: res.message })
                 Toast(res.message, "error")
