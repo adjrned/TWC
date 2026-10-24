@@ -6,3 +6,6 @@ sim-todo.txt
 companion/web/
 companion/tw-companion.ini
 companion/HiddenFiles.txt
+
+# sample saves for trying the companion Loader
+companion/test-saves/

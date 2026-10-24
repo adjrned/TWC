@@ -156,9 +156,17 @@ class LoaderEngine {
         return out
     }
 
+    ; favourites, by key; entries saved per file before series existed
+    ; (knight#91.txt) are folded into their series key (knight#*) once
     pinned(args := 0) {
         raw := Ini(this.section, "pinned", "")
-        return raw ? StrSplit(raw, "|") : []
+        out := [], seen := Map()
+        for n in (raw ? StrSplit(raw, "|") : [])
+            if !seen.Has(k := LoaderEngine.KeyOf(n))
+                seen[k] := 1, out.Push(k)
+        if (fixed := Join("|", out*)) != raw
+            SetIni(fixed, this.section, "pinned")
+        return out
     }
 
     pinToggle(args) {
@@ -258,6 +266,9 @@ class LoaderEngine {
             if !FocusWarcraft()
                 return Push("toast", { kind: "error", msg: "Warcraft III not found" })
             wc3Chat("-save " name)
+            ; that's now the save to continue from: -ll loads it, the next -sn
+            ; counts up from it even before TWRPG has written the file
+            SetIni(name ".txt", this.section, "selectedFile")
             return Push("toast", { msg: "Saved as " name })
         }
         if arg = "" {
@@ -334,7 +345,8 @@ class LoaderEngine {
         SetIni(name, this.section, "selectedFile")
         text := FileRead(path, "UTF-8")
 
-        if !RegExMatch(text, "(?:User Name|아이디):\s*([^\r\n]+)", &m) {
+        ; saves are WC3 preload files - call Preload( "User Name: X" ) - so stop at the quote
+        if !RegExMatch(text, '(?:User Name|아이디):\s*([^"\r\n]+)', &m) {
             Push("toast", { kind: "error", msg: "No user name in " name })
             return { error: "no name" }
         }
@@ -384,7 +396,7 @@ class LoaderEngine {
         try {
             for f in StrSplit(FileRead(this.hiddenPath, "UTF-8"), "`n")
                 if Trim(f)
-                    this.hiddenMap.Set(Trim(f), true)
+                    this.hiddenMap.Set(LoaderEngine.KeyOf(Trim(f)), true)   ; per-file -> series key
         }
     }
 
