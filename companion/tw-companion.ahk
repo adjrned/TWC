@@ -22,6 +22,7 @@
 #Include engine\Host.ahk
 #Include engine\Settings.ahk
 #Include engine\Updater.ahk
+#Include engine\SelfUpdate.ahk
 #Include ui\OverlayPanel.ahk
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------
@@ -76,7 +77,7 @@ global freezeDepth := 0                 ; Freeze/Thaw nesting
 global version := "1.1.0-beta"
 global toolEnabled := true, chatting := false, toolEnableHistory := true
 global showMain := false
-global loader, macros, quickcast, remap, host, settings, updater, webOverlay
+global loader, macros, quickcast, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -125,6 +126,7 @@ remap := RemapEngine()
 host := HostEngine()
 settings := SettingsEngine()
 updater := UpdaterEngine()
+selfUpdate := SelfUpdateEngine()
 webOverlay := OverlayPanel(updater)
 
 BuildOverlay()
@@ -141,9 +143,12 @@ else {
 
 A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.show())
 A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
-A_TrayMenu.Insert("3&")
+A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(true))
+A_TrayMenu.Insert("4&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
+SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
+SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 
 ; ============================================================================
 ;  Window construction
@@ -1665,6 +1670,44 @@ Push(event, data) {
 ; dark-mode a control (best effort)
 ApplyDark(hwnd) {
     try DllCall("uxtheme\SetWindowTheme", "ptr", hwnd, "str", "DarkMode_Explorer", "ptr", 0)
+}
+
+; ---- self-update (source copies) ---------------------------------------------
+; New commits on the branch are downloaded right away; the companion restarts
+; at once, or (in the middle of a game) as soon as Warcraft III isn't focused.
+; A ".no-self-update" file next to the script turns it off (the dev machine,
+; whose files are ahead of GitHub).
+SelfUpdateCheck(manual := false) {
+    global selfUpdate
+    if A_IsCompiled {
+        if manual
+            Toast("This is the installed version: download the latest release to update")
+        return
+    }
+    if FileExist(A_ScriptDir "\.no-self-update") || (!manual && !selfUpdate.enabled)
+        return manual ? Toast("Self-update is off on this computer (.no-self-update)") : 0
+    try r := selfUpdate.check()
+    catch as e
+        return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
+    if !r.files.Length {
+        SetIni(r.commit, selfUpdate.section, "commit")
+        return manual ? Toast("The companion is up to date (" SubStr(r.commit, 1, 7) ")") : 0
+    }
+    try selfUpdate.apply(r)
+    catch as e
+        return Toast("Companion update failed: " e.Message, "error")
+    n := r.files.Length " file" (r.files.Length = 1 ? "" : "s")
+    if WinActive(WarcraftIII) {
+        Toast("Companion updated (" n "): it restarts when you leave the game", "", 6000)
+        SetTimer(RestartWhenIdle, 2000)
+    } else {
+        Toast("Companion updated (" n "), restarting…")
+        SetTimer(() => Reload(), -1500)
+    }
+}
+RestartWhenIdle() {
+    if !WinActive(WarcraftIII) && !KeyCaptureActive()
+        Reload()
 }
 
 ; ============================================================================

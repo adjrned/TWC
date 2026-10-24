@@ -13,3 +13,4 @@ companion/test-saves/
 # companion build output and downloaded build tools
 companion/dist/
 companion/build/.tools/
+companion/.no-self-update

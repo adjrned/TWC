@@ -36,6 +36,15 @@ the first run) and zips it with `assets\`, the WebView2 loader DLL and
 
 ## Run from source
 
+Running `tw-companion.ahk` (not the exe), the companion keeps itself on the
+latest commit of the `beta` branch: on start and every 5 minutes it compares
+its files with GitHub's (by git blob hash), downloads only the changed ones
+and restarts (in the middle of a game: once Warcraft III isn't focused). Tray
+menu: *Check for companion updates*. Settings, `HiddenFiles.txt` and `web\`
+are never touched. `[SelfUpdate] branch=` / `auto=0` in the ini change the
+branch or turn it off; a `.no-self-update` file next to the script turns it
+off too (for a dev checkout whose files are ahead of GitHub).
+
 Double-click **`tw-companion.ahk`**. It relaunches itself as admin (WC3 Reforged
 usually runs elevated, and key sends need matching elevation).
 
@@ -169,7 +178,7 @@ lib/Common.ahk      helpers, INI, InputHook, RegisterHotkey
 lib/WebView2/       thqby's WebView2.ahk (MIT) + Microsoft's WebView2Loader.dll
 lib/ComVar.ahk, lib/Promise.ahk   its dependencies
 engine/             GUI-free logic that the window calls directly:
-  Loader Remap Quickcast Macros Host Settings Updater
+  Loader Remap Quickcast Macros Host Settings Updater SelfUpdate
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
 assets/bg.png       pre-rendered page + card panel + TWRPG wordmark
