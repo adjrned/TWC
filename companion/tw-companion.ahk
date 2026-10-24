@@ -19,6 +19,7 @@
 #Include engine\Macros.ahk
 #Include engine\Quickcast.ahk
 #Include engine\ChatBox.ahk
+#Include engine\InGame.ahk
 #Include engine\Remap.ahk
 #Include engine\Host.ahk
 #Include engine\Settings.ahk
@@ -76,11 +77,12 @@ global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.1.0-beta"
-; toolEnabled: the manual F10 pause; chatting: WC3 chat is open. Remaps and
-; macros are live while the tool is on and chat is closed (RegisterHotkey).
-global toolEnabled := true, chatting := false
+; toolEnabled: the manual F10 pause; chatting: WC3 chat is open; inGame: in a
+; game, not a menu. Remaps and macros are live while the tool is on, in a
+; game, with chat closed (RegisterHotkey).
+global toolEnabled := true, chatting := false, inGame := false
 global showMain := false
-global loader, macros, quickcast, chatBox, remap, host, settings, updater, selfUpdate, webOverlay
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -126,6 +128,7 @@ loader := LoaderEngine()
 macros := MacrosEngine()
 quickcast := QuickcastEngine()
 chatBox := ChatBoxEngine()
+inGameEng := InGameEngine()
 remap := RemapEngine()
 host := HostEngine()
 settings := SettingsEngine()
@@ -149,6 +152,7 @@ A_TrayMenu.Insert("4&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
+SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
 SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
 SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 
@@ -1232,14 +1236,15 @@ QuickcastSettings() {
     status := !s.window ? "Warcraft III isn't running: start it to check the setup"
         : s.forceLch ? "Using LCH's method (set below)"
         : s.calibrated ? "Smart quickcast is set up for " StrReplace(s.window, "_", " ")
-        : "Not set up for " StrReplace(s.window, "_", " ") " yet: using LCH's method"
+        : "Not set up for " StrReplace(s.window, "_", " ") " yet: " (s.lchFallback ? "using LCH's method" : "quickcast slots just send their key")
     st := g.AddText("x26 y58 w" (w - 52) " h20 +Background" C.card " c" (s.calibrated && !s.forceLch ? C.accent : C.muted), status)
     UISetFont(st, "s10 w600")
     body := "Smart quickcast sends the key, then clicks only once the game is waiting for a target, "
         . "so a skill on cooldown or out of mana never clicks a unit. It needs a quick setup in game "
-        . "(three presses of Insert), once per game version and window size.`n`n"
-        . "Until then LCH's method is used: it saves your selection to control groups 9 and 0 "
-        . "for every cast, so don't use those groups yourself."
+        . "(three presses of Insert), once per game version and window size. Until then, "
+        . "quickcast slots just send their key.`n`n"
+        . "LCH's method works without the setup, but it saves your selection to control "
+        . "groups 9 and 0 for every cast, so you can't use those groups yourself."
     bt := g.AddText("x26 y88 w" (w - 52) " +Background" C.card " c" C.dim, body)
     UISetFont(bt, "s9")
     bh := TextHeight(bt, body, w - 52), bt.Move(, , , bh)
@@ -1248,6 +1253,9 @@ QuickcastSettings() {
     rep := g.AddCheckbox("x26 y" y " w250 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat it, every")
     iv := g.AddEdit("x280 y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
     ms := g.AddText("x334 y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
+    fb := g.AddCheckbox("x26 y" (y + 32) " w400 h22 +Background" C.card " c" C.text (s.lchFallback ? " Checked" : ""), " Use LCH's method until it's set up")
+    fb.OnEvent("Click", (c, *) => quickcast.set("lchFallback", c.Value))
+    y += 32
     lch := g.AddCheckbox("x26 y" (y + 32) " w400 h22 +Background" C.card " c" C.text (s.forceLch ? " Checked" : ""), " Always use LCH's method")
     rep.OnEvent("Click", (c, *) => quickcast.set("repeat", c.Value))
     iv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("interval", Max(15, Min(1000, c.Value + 0)))))
@@ -1563,18 +1571,33 @@ ChatClosed() {
 ; checked 5 times a second. Closing only follows a box that was seen open, so
 ; the lobby (always-open chat, no box) keeps the Enter tracking.
 ChatBoxPoll() {
-    global chatBox, chatting
+    global chatBox, chatting, inGame, inGameEng
     static seenOpen := false
     if !WinActive(WarcraftIII) || !(g := chatBox.current())
         return
     if chatBox.isOpen(g) {
         seenOpen := true
+        if !inGame {                    ; chat in a game, but no menu bar seen: a HUD
+            inGameEng.distrust()        ; we can't read, so count it as in a game
+            InGamePoll()
+        }
         if !chatting
             ChatOpened()
     } else if seenOpen {
         seenOpen := false
         if chatting
             ChatClosed()
+    }
+}
+; remaps and macros only in a game: in menus they'd type into text fields
+InGamePoll() {
+    global inGame, inGameEng
+    if !WinActive(WarcraftIII)
+        return
+    v := inGameEng.inGame()
+    if v != inGame {
+        inGame := v
+        macros.refresh(), remap.refresh()
     }
 }
 MsgEditFocused() {

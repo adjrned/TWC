@@ -63,8 +63,9 @@ usually runs elevated, and key sends need matching elevation).
 | `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay |
 | `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay |
 
-Remaps and macros are always on, except while the WC3 chat box is open, so
-typing is never interrupted. The companion follows `Enter` / `Esc` / clicks and
+Remaps and macros are on in a game, never in menus or lobbies (the game's menu
+bar at the top left says which, read from the screen once a second), and they
+step aside while the WC3 chat box is open, so typing is never interrupted. The companion follows `Enter` / `Esc` / clicks and
 also checks the chat box on screen 5 times a second (its gold border; the place
 is known for 1.28 and Reforged at 1920x1080 and found by itself the first time chat opens
 elsewhere), which corrects the tracking when chat is opened or closed some
@@ -128,8 +129,9 @@ other way.
   times: over Move, over the bottom-right button, then while a skill waits for
   a target), per game version and window size. After that the companion clicks
   only when the command card shows the game is waiting for a target, read from
-  the screen, no injection, same on 1.28 and Reforged. Without a setup it uses
-  LCH's method (selection saved to control groups 9 and 0 around each cast).
+  the screen, no injection, same on 1.28 and Reforged. Without a setup,
+  quickcast slots just send their key; LCH's method (selection saved to
+  control groups 9 and 0 around each cast) is an option in the setup window.
 - **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
   `-chest im lagging`, GET GOOD). Message is multi-line: one chat line per row.
 - **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
@@ -181,7 +183,7 @@ lib/Common.ahk      helpers, INI, InputHook, RegisterHotkey
 lib/WebView2/       thqby's WebView2.ahk (MIT) + Microsoft's WebView2Loader.dll
 lib/ComVar.ahk, lib/Promise.ahk   its dependencies
 engine/             GUI-free logic that the window calls directly:
-  Loader Remap Quickcast ChatBox Macros Host Settings Updater SelfUpdate
+  Loader Remap Quickcast ChatBox InGame Macros Host Settings Updater SelfUpdate
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
 assets/bg.png       pre-rendered page + card panel + TWRPG wordmark

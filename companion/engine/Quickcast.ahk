@@ -19,6 +19,7 @@ class QuickcastEngine {
         return { repeat: Integer(Ini(this.section, "repeat", 1)),
             interval: Integer(Ini(this.section, "interval", 40)),
             forceLch: Integer(Ini(this.section, "forceLch", 0)),
+            lchFallback: Integer(Ini(this.section, "lchFallback", 0)),
             window: this.windowKey(), calibrated: this.current() ? 1 : 0 }
     }
     set(key, value) => SetIni(value, this.section, key)

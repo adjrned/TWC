@@ -215,14 +215,23 @@ class RemapEngine {
     ; moving mid-press) can never leave it casting forever.
     castQuick(game, yourKey) {
         global quickcast
+        static hinted := false
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         cal := s.forceLch ? 0 : quickcast.current()
+        lch := !cal && (s.forceLch || s.lchFallback)
+        ; not set up (and no LCH): the key alone, with a one-time hint
+        if !cal && !lch && !hinted {
+            hinted := true
+            Toast("Quickcast isn't set up for this game window: Remap > Quickcast setup", "", 5000)
+        }
         this.holding[base] := true, start := A_TickCount
         loop {
             if cal
                 this.quickSmart(game, q, cal)
-            else
+            else if lch
                 this.quickLch(game, q)
+            else
+                SendInput(q this.keyText(game))
             if !s.repeat || !this.stillHeld(base, start)
                 break
             Sleep(s.interval)
@@ -235,9 +244,9 @@ class RemapEngine {
         this.holding[base] := false
     }
     stillHeld(base, start) {
-        global toolEnabled, chatting
+        global toolEnabled, chatting, inGame
         return this.holding.Get(base, false) && GetKeyState(base, "P") && WinActive(WarcraftIII)
-            && toolEnabled && !chatting && A_TickCount - start < 20000
+            && toolEnabled && !chatting && inGame && A_TickCount - start < 20000
     }
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
