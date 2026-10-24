@@ -142,8 +142,6 @@ class LoaderEngine {
             }
         if idx
             list.RemoveAt(idx)
-        else if list.Length >= 10
-            return { error: "Quick Load is full (10 max)", pinned: list }
         else
             list.Push(name)
         SetIni(list.Length ? Join("|", list*) : "", this.section, "pinned")
@@ -158,6 +156,15 @@ class LoaderEngine {
             this.hiddenMap.Set(name, true)
         this.writeHidden()
         return { ok: 1 }
+    }
+
+    ; "a | b | c" -> one of the options at random (flavour text)
+    pickMessage(raw) {
+        opts := []
+        for o in StrSplit(raw, "|")
+            if Trim(o) != ""
+                opts.Push(Trim(o))
+        return opts.Length ? opts[Random(1, opts.Length)] : ""
     }
 
     setMessage(args) {
@@ -251,7 +258,7 @@ class LoaderEngine {
 
         HideMainWindow()
         delay := Integer(Ini("Settings", "loadDelay", 200))
-        if msg := Ini(this.section "Msg", name, "")
+        if msg := this.pickMessage(Ini(this.section "Msg", name, ""))
             wc3Chat(msg)
         if Integer(Ini(this.section, "convert", 1))
             wc3Chat("-convert " userName)

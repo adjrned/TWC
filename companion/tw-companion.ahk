@@ -54,9 +54,11 @@ global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
 ; loader controls
-global searchEdit, fileListBox, convertCb, quickBtns := [], quickNames := []
+global searchEdit, hiddenChip, msgLabel, msgEdit, loadBtn
 global emptyTitle, emptySub, emptyBtn
-global fileNames := []
+global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list (BuildSaveList)
+global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false
+global SAVE_ROWS := 8, SAVE_ROW_H := 34
 ; macros
 global macroListBox, macroCapBtn, macroMsgEdit, macroPendingHK := "", macroPendingLabel := "", macroSel := -1
 ; remap
@@ -65,7 +67,7 @@ global enSpells, enInv, enMouse
 ; host
 global hostEdits := Map()
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -173,6 +175,7 @@ BuildWindow() {
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
+    BuildSaveList()
     ; search icon inside the loader's search box, like the site's search inputs
     searchEdit.GetPos(&sx, &sy, , &sh)
     searchIcon := mainGui.AddText("x" (sx + 1) " y" sy " w26 h" sh " Center 0x200 +Background" C.well " c" C.dim, Chr(0xE721))
@@ -333,7 +336,7 @@ ShowPage(name) {
         }
     }
     switch name {
-        case "loader":   RefreshFiles(), RefreshQuick()
+        case "loader":   RefreshFiles()
         case "macros":   RefreshMacros()
         case "remap":    RefreshRemap()
         case "host":     RefreshHost()
@@ -349,67 +352,217 @@ ShowPage(name) {
 ; ============================================================================
 BuildLoaderPage() {
     global
-    searchEdit := mainGui.AddEdit("x40 y162 w680 h28 +Background" C.well " c" C.text, "")
+    searchEdit := mainGui.AddEdit("x40 y162 w520 h28 +Background" C.well " c" C.text, "")
     searchEdit.SetFont("s10", "Segoe UI")
-    searchEdit.OnEvent("Change", (*) => RefreshFiles())
+    searchEdit.OnEvent("Change", (*) => SearchChanged())
     SendMessage(0x1501, 1, StrPtr("Search saves…"), searchEdit)    ; EM_SETCUEBANNER
-    AddToPage("loader", searchEdit)
+    hiddenChip := MkButton("", 570, 162, 150, 28, C.chip, C.muted, (*) => ToggleShowHidden())
+    AddToPage("loader", searchEdit, hiddenChip)
 
-    ; quick-load chips (up to 8)
-    quickBtns := []
-    loop 8 {
-        i := A_Index
-        x := 40 + Mod(i - 1, 8) * 86
-        b := MkButton("", x, 200, 80, 32, C.chip, C.accent, QuickClick.Bind(i))
-        b.Visible := false
-        quickBtns.Push(b)
-        AddToPage("loader", b)
+    ; load message for the selected save (rows themselves: BuildSaveList)
+    msgLabel := mainGui.AddText("x40 y486 w540 h18 +Background" C.panel " c" C.muted, "Load message")
+    msgEdit := mainGui.AddEdit("x40 y506 w540 h32 +Background" C.well " c" C.text, "")
+    msgEdit.SetFont("s10", "Segoe UI")
+    msgEdit.OnEvent("Change", (*) => SaveMessageChanged())
+    SendMessage(0x1501, 1, StrPtr("Optional: said in chat when this save loads. Use | between lines to pick one at random"), msgEdit)
+    loadBtn := MkButton("LOAD", 600, 504, 120, 36, C.accent, C.onAccent, (*) => LoadSelected())
+    AddToPage("loader", msgLabel, msgEdit, loadBtn)
+}
+
+; The save list, drawn like the site's item rows: ☆/★ favourite, name, message
+; badge, date, and a hide toggle per row. A fixed pool of row controls is
+; re-filled as you scroll (wheel / arrows); built after the page shift, so it
+; uses window coordinates.
+BuildSaveList() {
+    global
+    local x := CX, y := CY + 42, w := 680, h := SAVE_ROWS * SAVE_ROW_H + 2
+    saveCard := Box("loader", x, y, w, h, C.card, C.border, 6)
+    saveBar := mainGui.AddText("x" (x + 1) " y0 w3 h" (SAVE_ROW_H - 1) " +Background" C.accent)
+    saveThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
+    AddToPage("loader", saveBar, saveThumb)
+    ; columns: star | name | message badge | date | hide
+    local cols := [["star", 4, 36], ["name", 40, 400], ["msg", 440, 30], ["date", 470, 160], ["eye", 630, 40]]
+    loop SAVE_ROWS {
+        local i := A_Index, ry := y + 1 + (i - 1) * SAVE_ROW_H, row := { idx: i }
+        for col in cols {
+            local opt := "x" (x + col[2]) " y" ry " w" col[3] " h" (SAVE_ROW_H - 1) " 0x200 +Background" C.card
+            if col[1] = "date"
+                opt .= " Right"
+            else if col[1] != "name"
+                opt .= " Center"
+            local t := mainGui.AddText(opt, "")
+            t.SetFont(col[1] = "name" ? "s10 w500" : col[1] = "date" ? "s9" : "s10", (col[1] = "name" || col[1] = "date") ? "Segoe UI" : ICON_FONT)
+            row.%col[1]% := t
+            AddToPage("loader", t)
+        }
+        row.sep := mainGui.AddText("x" (x + 1) " y" (ry + SAVE_ROW_H - 1) " w" (w - 2) " h1 +Background" C.border)
+        AddToPage("loader", row.sep)
+        row.star.OnEvent("Click", SaveRowClick.Bind(i, "star"))
+        row.eye.OnEvent("Click", SaveRowClick.Bind(i, "eye"))
+        for k in ["name", "msg", "date"] {
+            row.%k%.OnEvent("Click", SaveRowClick.Bind(i, "select"))
+            row.%k%.OnEvent("DoubleClick", SaveRowClick.Bind(i, "load"))
+        }
+        saveRows.Push(row)
     }
-
-    fileListBox := mainGui.AddListBox("x40 y244 w680 h250 +Background" C.well " c" C.text, [])
-    fileListBox.SetFont("s10", "Segoe UI")
-    fileListBox.OnEvent("DoubleClick", (*) => LoadSelected())
-    ApplyDark(fileListBox.Hwnd)
-    AddToPage("loader", fileListBox)
-
-    ; empty state, shown in the list's card when there's nothing to list
-    emptyTitle := mainGui.AddText("x40 y0 w680 h24 Center +Background" C.card " c" C.text, "")
+    ; empty state sits in the card
+    emptyTitle := mainGui.AddText("x" x " y0 w" w " h24 Center +Background" C.card " c" C.text, "")
     emptyTitle.SetFont("s11 w600", "Segoe UI")
-    emptySub := mainGui.AddText("x40 y0 w680 h40 Center +Background" C.card " c" C.muted, "")
-    emptyBtn := MkButton("Choose folder", 300, 0, 160, 32, C.accent, C.onAccent, (*) => (loader.setFolder(Map()), RefreshFiles()))
+    emptySub := mainGui.AddText("x" x " y0 w" w " h40 Center +Background" C.card " c" C.muted, "")
+    emptyBtn := MkButton("Choose folder", 0, 0, 160, 32, C.accent, C.onAccent, (*) => (loader.setFolder(Map()), RefreshFiles()))
+    Box.Round(emptyBtn, 160, 32, 4)
     AddToPage("loader", emptyTitle, emptySub, emptyBtn)
-
-    convertCb := mainGui.AddCheckbox("x40 y508 h24 +Background" C.panel " c" C.text, " Use -convert (Reforged name fix)")
-    convertCb.Value := Integer(Ini("Loader", "convert", 1))
-    convertCb.OnEvent("Click", (c, *) => loader.setConvert(Map("value", c.Value)))
-    AddToPage("loader", convertCb)
-
-    pinBtn := MkButton("Pin",  360, 506, 56, 28, C.chip, C.text, (*) => PinSelected())
-    hideBtn := MkButton("Hide", 422, 506, 60, 28, C.chip, C.text, (*) => HideSelected())
-    msgBtn := MkButton("Msg",  488, 506, 56, 28, C.chip, C.text, (*) => MsgSelected())
-    loadBtn := MkButton("LOAD", 600, 504, 120, 32, C.accent, C.onAccent, (*) => LoadSelected())
-    AddToPage("loader", pinBtn, hideBtn, msgBtn, loadBtn)
+    OnMessage(0x20A, SaveListWheel)
 }
 
 RefreshFiles() {
-    global fileListBox, fileNames, searchEdit, loader
-    files := loader.files(Map("filter", searchEdit.Value, "showHidden", 1))
-    fileNames := []
-    items := []
-    for f in files {
-        fileNames.Push(f.name)
-        tag := (f.hidden ? "  [hidden]" : "") (f.msg ? "  [msg]" : "")
-        items.Push(StrReplace(f.name, ".txt", "") "        " f.date tag)
+    global
+    local all := loader.files(Map("filter", searchEdit.Value, "showHidden", 1))
+    local pins := Map(), hiddenCount := 0
+    for i, n in loader.pinned()
+        pins[n] := i
+    saveFiles := []
+    for f in all {
+        f.pinned := pins.Has(f.name) ? pins[f.name] : 0
+        if f.hidden
+            hiddenCount++
+        if !f.hidden || showHidden
+            saveFiles.Push(f)
     }
-    fileListBox.Delete()
-    if items.Length
-        fileListBox.Add(items)
-    ShowEmptyState(items.Length ? "" : EmptyReason())
+    ; favourites first (in the order you starred them), then most recent
+    SortBy(saveFiles, (a, b) => (a.pinned && b.pinned) ? a.pinned - b.pinned
+        : a.pinned ? -1 : b.pinned ? 1 : (a.sortKey < b.sortKey) - (a.sortKey > b.sortKey))
+    hiddenChip.Text := (showHidden ? "Hide hidden" : "Show hidden") (hiddenCount ? "  (" hiddenCount ")" : "")
+    if !SaveIndex(saveSel)
+        saveSel := saveFiles.Length ? saveFiles[1].name : ""
+    saveOffset := Max(0, Min(saveOffset, saveFiles.Length - SAVE_ROWS))
+    RenderSaves()
+    ShowEmptyState(saveFiles.Length ? "" : EmptyReason())
+    ShowSelectedMessage()
+}
+
+SearchChanged() {
+    global saveOffset := 0
+    RefreshFiles()
+}
+ToggleShowHidden() {
+    global showHidden := !showHidden
+    RefreshFiles()
+}
+
+RenderSaves() {
+    global
+    local sel := SaveIndex(saveSel)
+    saveBar.Visible := false
+    for row in saveRows {
+        local idx := saveOffset + row.idx, has := idx <= saveFiles.Length
+        for k in ["star", "name", "msg", "date", "eye", "sep"]
+            row.%k%.Visible := has
+        if !has
+            continue
+        local f := saveFiles[idx], on := idx = sel, bg := on ? C.navOn : C.card
+        row.star.Text := Chr(f.pinned ? 0xE735 : 0xE734)
+        row.star.Opt("+Background" bg " +c" (f.pinned ? C.accent : C.dim))
+        row.name.Text := StrReplace(f.name, ".txt", "")
+        row.name.Opt("+Background" bg " +c" (f.hidden ? C.dim : C.text))
+        row.msg.Text := f.msg ? Chr(0xE8BD) : ""
+        row.msg.Opt("+Background" bg " +c" C.muted)
+        row.date.Text := f.date "  "
+        row.date.Opt("+Background" bg " +c" C.muted)
+        row.eye.Text := Chr(f.hidden ? 0xED1A : 0xE890)
+        row.eye.Opt("+Background" bg " +c" (f.hidden ? C.accent : C.dim))
+        for k in ["star", "name", "msg", "date", "eye"]
+            row.%k%.Redraw()
+        if on {
+            row.name.GetPos(, &ry)
+            saveBar.Move(, ry), saveBar.Visible := true
+        }
+    }
+    ; scroll position, like a thin overlay scrollbar
+    local over := saveFiles.Length > SAVE_ROWS
+    saveThumb.Visible := over
+    if over {
+        local trackH := saveCard.h - 8, th := Max(18, trackH * SAVE_ROWS // saveFiles.Length)
+        saveThumb.Move(, saveCard.y + 4 + (trackH - th) * saveOffset // (saveFiles.Length - SAVE_ROWS), , th)
+    }
+}
+
+SaveIndex(name) {
+    global saveFiles
+    for i, f in saveFiles
+        if f.name == name
+            return i
+    return 0
+}
+
+SaveRowClick(i, what, *) {
+    global saveFiles, saveOffset, saveSel, loader
+    idx := saveOffset + i
+    if idx > saveFiles.Length
+        return
+    f := saveFiles[idx]
+    switch what {
+        case "star": loader.pinToggle(Map("name", f.name)), RefreshFiles()
+        case "eye":  loader.hideToggle(Map("name", f.name)), RefreshFiles()
+        case "load": saveSel := f.name, LoadSelected()
+        default:     saveSel := f.name, RenderSaves(), ShowSelectedMessage()
+    }
+}
+
+; move the selection by n rows, keeping it in view
+SaveMove(n) {
+    global saveFiles, saveOffset, saveSel, SAVE_ROWS
+    if !saveFiles.Length
+        return
+    i := Max(1, Min(saveFiles.Length, SaveIndex(saveSel) + n))
+    saveSel := saveFiles[i].name
+    if i <= saveOffset
+        saveOffset := i - 1
+    else if i > saveOffset + SAVE_ROWS
+        saveOffset := i - SAVE_ROWS
+    RenderSaves(), ShowSelectedMessage()
+}
+
+SaveListWheel(wParam, lParam, msg, hwnd) {
+    global mainGui, currentPage, saveCard, saveOffset, saveFiles, SAVE_ROWS
+    if currentPage != "loader" || !WinActive("ahk_id " mainGui.Hwnd)
+        return
+    mx := lParam << 48 >> 48, my := lParam << 32 >> 48       ; signed screen coords
+    WinGetClientPos(&wx, &wy, , , mainGui)
+    mx -= wx, my -= wy
+    if mx < saveCard.x || mx > saveCard.x + saveCard.w || my < saveCard.y || my > saveCard.y + saveCard.h
+        return
+    step := (wParam << 32 >> 48) > 0 ? -3 : 3
+    saveOffset := Max(0, Min(saveOffset + step, saveFiles.Length - SAVE_ROWS))
+    RenderSaves()
+    return 0
+}
+
+ShowSelectedMessage() {
+    global saveSel, msgEdit, msgLabel, loader, saveFiles
+    i := SaveIndex(saveSel)
+    msgEdit.Enabled := i > 0
+    msgLabel.Text := i ? "Load message  ·  " StrReplace(saveSel, ".txt", "") : "Load message"
+    v := i ? saveFiles[i].msg : ""
+    if msgEdit.Value != v
+        msgEdit.Value := v
+}
+
+SaveMessageChanged() {
+    global saveSel, msgEdit, loader, saveFiles
+    i := SaveIndex(saveSel)
+    if !i
+        return
+    loader.setMessage(Map("name", saveSel, "msg", Trim(msgEdit.Value)))
+    had := saveFiles[i].msg != ""
+    saveFiles[i].msg := Trim(msgEdit.Value)
+    if had != (saveFiles[i].msg != "")
+        RenderSaves()
 }
 
 ; why the save list is empty -> [title, subtitle, show "Choose folder"]
 EmptyReason() {
-    global loader, searchEdit
+    global loader, searchEdit, showHidden
     cfg := loader.config(Map())
     if !cfg.found
         return ["No TWRPG save folder found",
@@ -420,76 +573,35 @@ EmptyReason() {
 }
 
 ShowEmptyState(reason) {
-    global fileListBox, emptyTitle, emptySub, emptyBtn, boxes
+    global emptyTitle, emptySub, emptyBtn, saveCard
     on := reason != ""
-    fileListBox.Visible := !on
     for ctl in [emptyTitle, emptySub]
         ctl.Visible := on
     emptyBtn.Visible := on && reason[3]
     if !on
         return
-    b := boxes[fileListBox.Hwnd]
+    b := saveCard
     top := b.y + Max(16, (b.h - 120) // 2)
     emptyTitle.Move(b.x + 2, top, b.w - 4), emptyTitle.Text := reason[1]
     emptySub.Move(b.x + 2, top + 30, b.w - 4), emptySub.Text := reason[2]
     emptyBtn.Move(b.x + (b.w - 160) // 2, top + 80)
 }
 
-RefreshQuick() {
-    global quickBtns, quickNames, loader, searchEdit, fileListBox, boxes, mainGui
-    quickNames := loader.pinned()
-    for i, b in quickBtns {
-        if i <= quickNames.Length
-            b.Text := StrReplace(quickNames[i], ".txt", "")
-        SetShown(b, i <= quickNames.Length)
-    }
-    ; no pinned saves: let the list take the quick-load row's space
-    s := boxes[searchEdit.Hwnd], l := boxes[fileListBox.Hwnd], q := boxes[quickBtns[1].Hwnd]
-    top := quickNames.Length ? q.y + q.h + 12 : s.y + s.h + 12
-    l.Move(l.x, top, l.w, l.y + l.h - top)
-    PlaceInBox(fileListBox)
-}
-
-SelectedFileName() {
-    global fileListBox, fileNames
-    idx := fileListBox.Value
-    return (idx && idx <= fileNames.Length) ? fileNames[idx] : ""
-}
-
 LoadSelected() {
-    n := SelectedFileName()
-    if n
-        loader.load(Map("name", n))
+    global saveSel, loader
+    if saveSel
+        loader.load(Map("name", saveSel))
     else
         Toast("Select a save first", "error")
 }
-QuickClick(i, *) {
-    global quickNames, loader
-    if i <= quickNames.Length
-        loader.load(Map("name", quickNames[i]))
-}
-PinSelected() {
-    n := SelectedFileName()
-    if n {
-        loader.pinToggle(Map("name", n))
-        RefreshQuick()
-    }
-}
-HideSelected() {
-    n := SelectedFileName()
-    if n {
-        loader.hideToggle(Map("name", n))
-        RefreshFiles()
-    }
-}
-MsgSelected() {
-    n := SelectedFileName()
-    if !n
-        return
-    ib := InputBox("Message shown in chat when this save loads:", "Loading Message", "w360 h130")
-    if ib.Result != "Cancel" {
-        loader.setMessage(Map("name", n, "msg", ib.Value))
-        RefreshFiles()
+
+; insertion sort with a comparator (save lists are small)
+SortBy(arr, cmp) {
+    loop arr.Length - 1 {
+        i := A_Index + 1, v := arr[i], j := i - 1
+        while j >= 1 && cmp(arr[j], v) > 0
+            arr[j + 1] := arr[j], j--
+        arr[j + 1] := v
     }
 }
 
@@ -704,6 +816,10 @@ BuildSettingsPage() {
         AddToPage("settings", cb)
         y += 30
     }
+    convertCb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " Send -convert before loading (Reforged name fix)")
+    convertCb.OnEvent("Click", (c, *) => loader.setConvert(Map("value", c.Value)))
+    AddToPage("settings", convertCb)
+    y += 30
     l1 := mainGui.AddText("x40 y" (y + 8) " w220 h20 +Background" C.panel " c" C.muted, "Delay between codes (ms)")
     loadDelayEdit := mainGui.AddEdit("x270 y" (y + 4) " w80 h24 Number +Background" C.well " c" C.text, "200")
     l2 := mainGui.AddText("x40 y" (y + 40) " w220 h20 +Background" C.panel " c" C.muted, "Delay after load (ms)")
@@ -720,13 +836,14 @@ BuildSettingsPage() {
     AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, loader
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
     loadDelayEdit.Value := s.loadDelay
     postDelayEdit.Value := s.postLoadDelay
     cfg := loader.config(Map())
+    convertCb.Value := cfg.convert
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
 }
@@ -858,6 +975,11 @@ ShowHideMain() {
         ShowMainWindow()
 }
 PauseGame() => SendInput("{F10}{m}{F10}")
+MsgEditFocused() {
+    global msgEdit
+    try return ControlGetFocus("ahk_id " mainGui.Hwnd) = msgEdit.Hwnd
+    return false
+}
 
 Toast(msg, kind := "") {
     ToolTip(msg)
@@ -900,6 +1022,12 @@ UpdateOverlay() {
 ; ============================================================================
 #HotIf WinActive("TW Companion")
 $~Esc:: HideMainWindow()
+#HotIf WinActive("TW Companion") && currentPage = "loader" && !MsgEditFocused()
+Up:: SaveMove(-1)
+Down:: SaveMove(1)
+PgUp:: SaveMove(-SAVE_ROWS)
+PgDn:: SaveMove(SAVE_ROWS)
+Enter:: LoadSelected()
 #HotIf
 
 $*F8:: ShowHideMain()

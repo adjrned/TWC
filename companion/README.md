@@ -43,9 +43,14 @@ don't fire mid-message.
 
 ## Sections (nav in the window)
 
-- **Loader** (default) — search saves, pin favourites as one-click **Quick Load**
-  buttons, per-file loading messages, hide/unhide. Double-click or **LOAD** loads
-  the selected save. In-game: `-l`/`-load <name>`, `-ll`/`-loadlast`.
+- **Loader** (default) — your saves as a list like the site's item rows:
+  click ☆ to make a save a favourite (★ saves stay on top, the rest are newest
+  first), click the eye to hide one (**Show hidden** brings them back, dimmed).
+  Select a save to edit its **load message**: a chat line sent when it loads;
+  separate options with `|` and one is picked at random each time. Double-click,
+  Enter or **LOAD** loads the selected save (arrows / PgUp / PgDn / wheel to move).
+  `-convert <name>` is sent automatically (turn it off under Settings).
+  In-game: `-l`/`-load <name>`, `-ll`/`-loadlast`.
   The save folder is found automatically: `Documents\Warcraft III\CustomMapData\TWRPG`
   (also when Documents is redirected to OneDrive, and the Public Test realm), or
   `<install folder>\CustomMapData\TWRPG` for classic 1.26/1.27 (from the registry
