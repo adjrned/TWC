@@ -26,7 +26,7 @@ uninstalling.
 ## Build the zip
 
 ```
-powershell -ExecutionPolicy Bypass -File companionuilduild.ps1
+powershell -ExecutionPolicy Bypass -File companion\build\build.ps1
 ```
 
 Compiles `tw-companion.ahk` with Ahk2Exe (downloaded into `build\.tools` on
