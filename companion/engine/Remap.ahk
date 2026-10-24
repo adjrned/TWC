@@ -17,6 +17,7 @@ class RemapEngine {
     static MOUSE := ["Left", "Right"]
     static NO_QC := Map(2, 1, 3, 1)        ; Stop and Hold never take a target
     registered := []
+    holding := Map()            ; quickcast key -> held (cleared by its key-up hotkey)
 
     __New() {
         this.migrate()
@@ -181,6 +182,9 @@ class RemapEngine {
                     : qc ? this.castQuick.Bind(this, game, key)
                     : this.castPlain.Bind(this, game, key)
                 this.registered.Push(RegisterHotkey(key, fn, WarcraftIII, true))
+                ; quickcast repeats while held: its key-up ends the repeat
+                if qc && group != "mouse"
+                    this.registered.Push(RegisterHotkey(key " up", this.released.Bind(this, HotkeyBase(key)), WarcraftIII, true))
             }
         }
     }
@@ -205,21 +209,35 @@ class RemapEngine {
 
     ; Quickcast: the ability goes off at the cursor. Held, it repeats until the
     ; key is let go (one hotkey thread loops; the key's auto-repeat is ignored).
+    ; It stops on the first of: the key's own key-up, the key no longer down,
+    ; the game losing focus (overlay, alt-tab), the tool going Off or chat
+    ; opening, or 20 s as a last resort, so a key-up that went missing (focus
+    ; moving mid-press) can never leave it casting forever.
     castQuick(game, yourKey) {
         global quickcast
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         cal := s.forceLch ? 0 : quickcast.current()
+        this.holding[base] := true, start := A_TickCount
         loop {
             if cal
                 this.quickSmart(game, q, cal)
             else
                 this.quickLch(game, q)
-            if !s.repeat || !GetKeyState(base, "P") || !WinActive(WarcraftIII)
+            if !s.repeat || !this.stillHeld(base, start)
                 break
             Sleep(s.interval)
-            if !GetKeyState(base, "P")
+            if !this.stillHeld(base, start)
                 break
         }
+        this.holding[base] := false
+    }
+    released(base) {
+        this.holding[base] := false
+    }
+    stillHeld(base, start) {
+        global toolEnabled, chatting
+        return this.holding.Get(base, false) && GetKeyState(base, "P") && WinActive(WarcraftIII)
+            && toolEnabled && !chatting && A_TickCount - start < 20000
     }
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
