@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 W, H = 920, 510
 SIDE_W = 190          # sidebar width
 CX = 214              # content left edge (page header, controls)
-DIVIDER_Y = 90        # line under the page header
+DIVIDER_Y = 62        # line under the toolbar row (page title + controls)
 FOOTER_Y = H - 76     # line above the sidebar footer
 
 BG = (12, 13, 16)          # --bg
@@ -54,7 +54,7 @@ x = (SIDE_W - spaced_width(d, "TWC", logo, sp)) / 2
 x = spaced_text(d, x, 24, "TW", logo, ACCENT, sp)
 spaced_text(d, x, 24, "C", logo, TEXT, sp)
 
-# page header divider, like .page-header's border-bottom
+# toolbar divider, like .page-header's border-bottom
 d.line([CX, DIVIDER_Y, W - 24, DIVIDER_Y], fill=BORDER, width=1)
 
 img.save("bg.png", "PNG")

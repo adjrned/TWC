@@ -37,7 +37,8 @@ global C := {
     muted:   "9A9EAA",   ; --muted2
     dim:     "6F7380" }  ; --muted
 ; window, sidebar width, and where page content starts (see assets/generate_bg.py)
-global W := 920, H := 510, SIDE_W := 190, CX := 214, CY := 104
+global W := 920, H := 510, SIDE_W := 190, CX := 214, CY := 76
+global TB_Y := 20           ; toolbar row: page title + that page's main controls
 global NAV_ORDER := ["loader", "macros", "remap", "host", "settings", "overlay"]
 global ICON_FONT := "Segoe Fluent Icons"
 ; the site's system-ui font on Windows 11; classic Segoe UI on older systems
@@ -67,7 +68,7 @@ global version := "1.0.0"
 global toolEnabled := true, chatting := false, toolEnableHistory := true
 global showMain := false
 global loader, macros, remap, host, settings, updater, webOverlay
-global mainGui, bgPic, titleText, subtitleText, navBar, toolOn, toolOff, searchIcon
+global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
@@ -75,8 +76,8 @@ global controlsToDrag := Map()
 global searchEdit, hiddenChip, helpBtn, msgLabel, msgSummary, msgInfo, msgEdit, loadBtn
 global emptyTitle, emptySub, emptyBtn
 global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list (BuildSaveList)
-global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map()
-global SAVE_ROWS := 8, SAVE_ROW_H := 34
+global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
+global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
 global macroListBox, macroCapBtn, macroMsgEdit, macroPendingHK := "", macroPendingLabel := "", macroSel := -1
 ; remap
@@ -174,13 +175,12 @@ BuildWindow() {
         t.GetPos(, , &tw, &th), Box.Round(t, tw, th, 4)
     }
 
-    MkButton("✕", W - 40, 14, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
+    MkButton("✕", W - 40, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
-    ; page header, like .page-header: Cinzel title, subtitle, divider (baked)
-    titleText := mainGui.AddText("x" CX " y22 w600 h34 +Background" C.panel " c" C.text, "")
-    titleText.SetFont("s19 w700", "Cinzel")
-    subtitleText := mainGui.AddText("x" CX " y60 w600 h20 +Background" C.panel " c" C.muted, "")
-    UISetFont(subtitleText, "s10")
+    ; toolbar: compact Cinzel page title (the divider under it is baked into
+    ; bg.png); pages put their main controls on the same row
+    titleText := mainGui.AddText("x" CX " y" TB_Y " w150 h28 0x200 +Background" C.panel " c" C.text, "")
+    titleText.SetFont("s14 w700", "Cinzel")
 
     ; pages are laid out from (40, 160); shift them into the content area
     BuildLoaderPage()
@@ -194,6 +194,7 @@ BuildWindow() {
             ctl.GetPos(&x, &y)
             ctl.Move(x + CX - 40, y + CY - 160)
         }
+    LayoutLoader()
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
@@ -213,14 +214,27 @@ BuildWindow() {
     UpdateToolPill()
 }
 
+; Loader: search, ? and Show hidden share the toolbar row with the title; the
+; load-message row sits at the bottom, under the save list
+LayoutLoader() {
+    global
+    local R := W - 52                      ; stop short of the close button
+    hiddenChip.Move(R - 140, TB_Y, 140, 28)
+    helpBtn.Move(R - 178, TB_Y, 30, 28)
+    searchEdit.Move(CX + 160, TB_Y, R - 186 - (CX + 160), 28)
+    msgLabel.Move(CX, H - 82), msgSummary.Move(CX + 250, H - 82), msgInfo.Move(CX + 522, H - 84)
+    msgEdit.Move(CX, H - 62, 540, 32)
+    loadBtn.Move(CX + 560, H - 64, 120, 36)
+}
+
 PageInfo(name) {
     static info := Map(
-        "loader",   { nav: "Loader",   icon: Chr(0xE8E5), title: "Loader",   sub: "Search, pin and load your saves" },
-        "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros",   sub: "Hotkeys that type chat lines for you" },
-        "remap",    { nav: "Remap",    icon: Chr(0xE8AB), title: "Remap",    sub: "Spell, inventory and mouse keys" },
-        "host",     { nav: "Host",     icon: Chr(0xE716), title: "Host",     sub: "Host lobbies through a bot" },
-        "settings", { nav: "Settings", icon: Chr(0xE713), title: "Settings", sub: "Startup, timing and your TWRPG folder" },
-        "overlay",  { nav: "Overlay",  icon: Chr(0xE8A7), title: "Overlay",  sub: "The TWRPG site over the game  ·  Shift+Space" })
+        "loader",   { nav: "Loader",   icon: Chr(0xE8E5), title: "Loader" },
+        "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros" },
+        "remap",    { nav: "Remap",    icon: Chr(0xE8AB), title: "Remap" },
+        "host",     { nav: "Host",     icon: Chr(0xE716), title: "Host" },
+        "settings", { nav: "Settings", icon: Chr(0xE713), title: "Settings" },
+        "overlay",  { nav: "Overlay",  icon: Chr(0xE8A7), title: "Overlay" })
     return info[name]
 }
 
@@ -348,13 +362,12 @@ AddToPage(name, ctrls*) {
 NavClick(name, *) => ShowPage(name)
 
 ShowPage(name) {
-    global pages, navItems, navBar, titleText, subtitleText, currentPage, C, mainGui
+    global pages, navItems, navBar, titleText, currentPage, C, mainGui
     currentPage := name
     for pg, arr in pages
         for c in arr
             c.Visible := (pg = name)
     titleText.Text := PageInfo(name).title
-    subtitleText.Text := PageInfo(name).sub
     for nm, it in navItems {
         on := nm = name
         bg := on ? C.navOn : C.side
@@ -414,7 +427,7 @@ BuildLoaderPage() {
 ; uses window coordinates.
 BuildSaveList() {
     global
-    local x := CX, y := CY + 42, w := 680, h := SAVE_ROWS * SAVE_ROW_H + 2
+    local x := CX, y := CY, w := 680, h := SAVE_ROWS * SAVE_ROW_H + 2
     saveCard := Box("loader", x, y, w, h, C.card, C.border, 6)
     saveBar := mainGui.AddText("x" (x + 1) " y0 w3 h" (SAVE_ROW_H - 1) " +Background" C.accent)
     saveThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
@@ -475,9 +488,16 @@ BuildSaveList() {
     OnMessage(0x200, PopoverHover)         ; WM_MOUSEMOVE: open a popover when its anchor is hovered
 }
 
-RefreshFiles() {
+; reload := false re-groups the saves already read (expand, search, show
+; hidden) instead of reading every file from disk again
+RefreshFiles(reload := true) {
     global
-    local all := loader.files(Map("filter", searchEdit.Value, "showHidden", 1))
+    if reload || !IsObject(saveCache)
+        saveCache := loader.files(Map("showHidden", 1))
+    local all := [], q := searchEdit.Value
+    for f in saveCache
+        if q = "" || InStr(f.name, q)
+            all.Push(f)
     local pins := Map(), hiddenCount := 0, groups := Map(), tops := []
     for i, n in loader.pinned()
         pins[n] := i
@@ -531,14 +551,24 @@ RefreshFiles() {
 
 SearchChanged() {
     global saveOffset := 0
-    RefreshFiles()
+    RefreshFiles(false)
 }
 ToggleShowHidden() {
     global showHidden := !showHidden
-    RefreshFiles()
+    RefreshFiles(false)
 }
 
 RenderSaves() {
+    global
+    ; paint once at the end instead of once per row control (~60 of them)
+    SendMessage(0x0B, 0, 0, mainGui)                    ; WM_SETREDRAW off
+    try RenderSaveRows()
+    SendMessage(0x0B, 1, 0, mainGui)                    ; WM_SETREDRAW on
+    local c := saveCard
+    local rc := Buffer(16), _ := NumPut("int", c.x, "int", c.y, "int", c.x + c.w, "int", c.y + c.h, rc)
+    DllCall("RedrawWindow", "ptr", mainGui.Hwnd, "ptr", rc, "ptr", 0, "uint", 0x485)   ; INVALIDATE|ERASE|ALLCHILDREN|UPDATENOW
+}
+RenderSaveRows() {
     global
     local sel := SaveIndex(saveSel)
     saveBar.Visible := false
@@ -563,8 +593,6 @@ RenderSaves() {
         row.msg.Text := f.msg && !child ? Chr(0xE8BD) : ""
         row.eye.Text := child ? "" : Chr(f.hidden ? 0xED1A : 0xE890)
         row.eye.Opt("+Background" bg " +c" (f.hidden ? C.accent : C.dim))
-        for k in ["star", "name", "count", "msg", "date", "eye"]
-            row.%k%.Redraw()
         if on {
             row.name.GetPos(, &ry)
             saveBar.Move(, ry), saveBar.Visible := true
@@ -606,7 +634,7 @@ SaveRowClick(i, what, *) {
                     expanded.Delete(f.key)
                 else
                     expanded[f.key] := 1
-                saveSel := f.id, RefreshFiles()
+                saveSel := f.id, RefreshFiles(false)
             }
         case "load": saveSel := f.id, LoadSelected()
         default:     saveSel := f.id, RenderSaves(), ShowSelectedMessage()
@@ -664,7 +692,7 @@ MessageSummary(raw) {
 }
 
 SaveMessageChanged() {
-    global saveSel, msgEdit, msgSummary, loader, saveFiles
+    global saveSel, msgEdit, msgSummary, loader, saveFiles, saveCache
     i := SaveIndex(saveSel)
     if !i
         return
@@ -673,6 +701,9 @@ SaveMessageChanged() {
     msgSummary.Text := MessageSummary(msgEdit.Value)
     had := e.msg != ""
     for f in saveFiles                      ; a series shares one message
+        if f.key = e.key
+            f.msg := Trim(msgEdit.Value)
+    for f in saveCache                      ; keep the cached read in step
         if f.key = e.key
             f.msg := Trim(msgEdit.Value)
     if had != (e.msg != "")

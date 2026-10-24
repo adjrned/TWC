@@ -141,8 +141,8 @@ assets/Cinzel.ttf   the site's display font (OFL, see Cinzel-OFL.txt), loaded
 The window is one borderless Gui laid out like the site: a sidebar with the
 TWCompanion wordmark, icon + label nav (the active link tinted, with an orange
 icon and an accent bar on the sidebar edge) and a footer with the tool ON/OFF
-switch; then the page background with a page header (Cinzel title, subtitle,
-divider). A full-size `Picture` shows `assets/bg.png`, and native controls sit
+switch; then the page background with a compact toolbar row (Cinzel page
+title plus that page's main controls, e.g. the Loader's search) over a divider. A full-size `Picture` shows `assets/bg.png`, and native controls sit
 on top. Native borders are dropped: `Box` draws a filled, bordered, rounded
 rectangle *behind* a control (Text controls slotted after the picture in the
 z-order, rounded with a window region), so inputs get the site's `--bg2` field
