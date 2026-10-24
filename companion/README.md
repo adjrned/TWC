@@ -50,7 +50,15 @@ don't fire mid-message.
   separate options with `|` and one is picked at random each time. Double-click,
   Enter or **LOAD** loads the selected save (arrows / PgUp / PgDn / wheel to move).
   `-convert <name>` is sent automatically (turn it off under Settings).
-  In-game: `-l`/`-load <name>`, `-ll`/`-loadlast`.
+  **In-game commands** (also under the **?** next to search): type in WC3 chat
+  - `-l sniper` / `-load sniper`: the closest match (exact name, then starts
+    with, then contains; favourites, then newest, win ties)
+  - `-l 2`: your 2nd ★ favourite
+  - `-l`, `-ll`, `-loadlast`: the save you loaded last
+
+  These never reach chat: while chat is open the companion records the line, and
+  on Enter a loader command is closed with Esc and run instead. Anything else is
+  sent normally.
   The save folder is found automatically: `Documents\Warcraft III\CustomMapData\TWRPG`
   (also when Documents is redirected to OneDrive, and the Public Test realm), or
   `<install folder>\CustomMapData\TWRPG` for classic 1.26/1.27 (from the registry

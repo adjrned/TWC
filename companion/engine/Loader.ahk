@@ -9,12 +9,6 @@ class LoaderEngine {
 
     __New() {
         this.loadHidden()
-        HotIfWinActive(WarcraftIII)
-        Hotstring(":*XB0:-l",       (*) => this.hotstrLoad())
-        Hotstring(":*XB0:-load",    (*) => this.hotstrLoad())
-        Hotstring(":XB0:-ll",       (*) => this.load(Map("useLast", 1)))
-        Hotstring(":XB0:-loadlast", (*) => this.load(Map("useLast", 1)))
-        HotIfWinActive()
     }
 
     hiddenPath => A_ScriptDir "\HiddenFiles.txt"
@@ -196,25 +190,67 @@ class LoaderEngine {
         return { folder: this.folder }
     }
 
-    hotstrLoad() {
-        input := this.getTypedInput()
-        if !input
-            input := Ini(this.section, "selectedFile", "")
-        else if SubStr(input, 1, 1) == " "
-            input := SubStr(input, 2)
-        else
-            return
-        if !InStr(input, ".txt")
-            input .= ".txt"
-        this.load(Map("name", input))
+    ; -- chat commands -------------------------------------------------------
+    ; The main script hands every finished WC3 chat line to isCommand(); loader
+    ; commands are kept out of chat and run here instead:
+    ;   -l <name> / -load <name>   best match: exact, then starts with, then
+    ;                              contains (favourites, then newest, win ties)
+    ;   -l <n>                     favourite number n
+    ;   -l / -ll / -loadlast       the last save you loaded
+    static CMD := "i)^\s*-(l|load|ll|loadlast)(?:\s+(.*?))?\s*$"
+
+    isCommand(line) {
+        if !RegExMatch(line, LoaderEngine.CMD, &m)
+            return false
+        return !(m[2] != "" && (m[1] = "ll" || m[1] = "loadlast"))
     }
 
-    getTypedInput() {
-        hook := InputHook("V", "{Enter}")
-        hook.VisibleNonText := false
-        hook.Start()
-        hook.Wait()
-        return hook.Input
+    command(line) {
+        RegExMatch(line, LoaderEngine.CMD, &m)
+        arg := Trim(m[2])
+        if arg = "" {
+            last := Ini(this.section, "selectedFile", "")
+            if !last && (fav := this.pinned()).Length
+                last := fav[1]
+            if !last
+                return Push("toast", { kind: "error", msg: "No save loaded yet. Try -l <name>" })
+            return this.load(Map("name", last))
+        }
+        name := this.resolve(arg)
+        if !name
+            return Push("toast", { kind: "error", msg: 'No save matches "' arg '"' })
+        Push("toast", { msg: "Loading " StrReplace(name, ".txt", "") "…" })
+        return this.load(Map("name", name))
+    }
+
+    ; save file name for what was typed after -l, or ""
+    resolve(arg) {
+        q := StrLower(StrReplace(arg, ".txt", ""))
+        pins := Map()
+        for i, n in this.pinned()
+            pins[n] := i
+        files := this.files(Map("showHidden", 1))
+        ; a number is a favourite, unless a save is literally called that
+        if IsInteger(q) {
+            for f in files
+                if StrLower(StrReplace(f.name, ".txt", "")) == q
+                    return f.name
+            for n, i in pins
+                if i = Integer(q)
+                    return n
+            return ""
+        }
+        best := "", bestScore := 0, bestKey := ""
+        for f in files {
+            n := StrLower(StrReplace(f.name, ".txt", ""))
+            score := n == q ? 3 : SubStr(n, 1, StrLen(q)) == q ? 2 : InStr(n, q) ? 1 : 0
+            if !score
+                continue
+            score := score * 10 + (pins.Has(f.name) ? 5 : 0) + (f.hidden ? 0 : 1)
+            if score > bestScore || (score = bestScore && f.sortKey > bestKey)
+                best := f.name, bestScore := score, bestKey := f.sortKey
+        }
+        return best
     }
 
     load(args) {

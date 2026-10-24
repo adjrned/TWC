@@ -54,7 +54,7 @@ global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
 ; loader controls
-global searchEdit, hiddenChip, msgLabel, msgEdit, loadBtn
+global searchEdit, hiddenChip, helpBtn, helpGui := 0, msgLabel, msgEdit, loadBtn
 global emptyTitle, emptySub, emptyBtn
 global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list (BuildSaveList)
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false
@@ -352,12 +352,13 @@ ShowPage(name) {
 ; ============================================================================
 BuildLoaderPage() {
     global
-    searchEdit := mainGui.AddEdit("x40 y162 w520 h28 +Background" C.well " c" C.text, "")
+    searchEdit := mainGui.AddEdit("x40 y162 w482 h28 +Background" C.well " c" C.text, "")
     searchEdit.SetFont("s10", "Segoe UI")
     searchEdit.OnEvent("Change", (*) => SearchChanged())
     SendMessage(0x1501, 1, StrPtr("Search saves…"), searchEdit)    ; EM_SETCUEBANNER
     hiddenChip := MkButton("", 570, 162, 150, 28, C.chip, C.muted, (*) => ToggleShowHidden())
-    AddToPage("loader", searchEdit, hiddenChip)
+    helpBtn := MkButton("?", 530, 162, 30, 28, C.chip, C.muted, (*) => ShowLoaderHelp(true))
+    AddToPage("loader", searchEdit, hiddenChip, helpBtn)
 
     ; load message for the selected save (rows themselves: BuildSaveList)
     msgLabel := mainGui.AddText("x40 y486 w540 h18 +Background" C.panel " c" C.muted, "Load message")
@@ -413,6 +414,7 @@ BuildSaveList() {
     Box.Round(emptyBtn, 160, 32, 4)
     AddToPage("loader", emptyTitle, emptySub, emptyBtn)
     OnMessage(0x20A, SaveListWheel)
+    OnMessage(0x200, LoaderHelpHover)      ; WM_MOUSEMOVE: hover the "?"
 }
 
 RefreshFiles() {
@@ -593,6 +595,65 @@ LoadSelected() {
         loader.load(Map("name", saveSel))
     else
         Toast("Select a save first", "error")
+}
+
+; "?" popover: the in-game commands. Shows while hovering (or after a click)
+; and hides once the mouse leaves the button.
+ShowLoaderHelp(show) {
+    global helpGui, helpBtn, mainGui, C
+    static HELP := [
+        ["Load from Warcraft III chat", ""],
+        ["-l sniper", "loads the closest match: exact, starts with, contains"],
+        ["-l 2", "loads your 2nd ★ favourite"],
+        ["-l  /  -ll", "reloads the save you loaded last"],
+        ["", "Also -load and -loadlast. Loader commands never show in chat."]]
+    if !show {
+        if helpGui
+            helpGui.Hide()
+        return
+    }
+    if !helpGui {
+        helpGui := Gui("-Caption +ToolWindow +Owner" mainGui.Hwnd)
+        helpGui.BackColor := C.frame                       ; 1px border around the card
+        helpGui.MarginX := 1, helpGui.MarginY := 1
+        card := helpGui.AddText("x1 y1 w460 h150 +Background" C.card)
+        y := 14
+        for line in HELP {
+            if line[2] = "" {
+                t := helpGui.AddText("x18 y" y " w430 h20 +Background" C.card " c" C.text, line[1])
+                t.SetFont("s10 w600", "Segoe UI")
+            } else if line[1] = "" {
+                t := helpGui.AddText("x18 y" (y + 4) " w430 h18 +Background" C.card " c" C.dim, line[2])
+                t.SetFont("s9", "Segoe UI")
+            } else {
+                k := helpGui.AddText("x18 y" y " w96 h20 +Background" C.card " c" C.accent, line[1])
+                k.SetFont("s9 w600", "Consolas")
+                v := helpGui.AddText("x116 y" y " w336 h20 +Background" C.card " c" C.muted, line[2])
+                v.SetFont("s9", "Segoe UI")
+            }
+            y += 24
+        }
+        card.Move(, , , y + 6)
+        helpGui.Show("Hide w462 h" (y + 8))
+        WinSetRegion("0-0 w462 h" (y + 8) " R10-10", helpGui)
+    }
+    helpBtn.GetPos(&bx, &by, &bw, &bh)
+    WinGetClientPos(&wx, &wy, , , mainGui)
+    helpGui.Show("NA x" (wx + bx + bw - 462) " y" (wy + by + bh + 6))
+    SetTimer(HelpHoverCheck, 120)
+}
+HelpHoverCheck() {
+    global helpBtn, helpGui
+    MouseGetPos(, , &win, &ctl, 2)
+    if !helpGui || (ctl = helpBtn.Hwnd) || (win = helpGui.Hwnd)
+        return
+    SetTimer(HelpHoverCheck, 0)
+    ShowLoaderHelp(false)
+}
+LoaderHelpHover(wParam, lParam, msg, hwnd) {
+    global helpBtn, helpGui
+    if IsSet(helpBtn) && hwnd = helpBtn.Hwnd && !(helpGui && WinExist("ahk_id " helpGui.Hwnd " ahk_class AutoHotkeyGUI") && DllCall("IsWindowVisible", "ptr", helpGui.Hwnd))
+        ShowLoaderHelp(true)
 }
 
 ; insertion sort with a comparator (save lists are small)
@@ -975,6 +1036,48 @@ ShowHideMain() {
         ShowMainWindow()
 }
 PauseGame() => SendInput("{F10}{m}{F10}")
+
+; ---- WC3 chat ---------------------------------------------------------------
+; Enter opens chat, Enter again sends it. While it's open the typed line is
+; recorded; if it's a loader command (-l, -ll...) it's discarded with Esc and
+; run instead, so it never shows up in chat. Otherwise Enter goes through.
+global chatHook := InputHook("V")
+ChatEnter(hk) {
+    global chatting, chatHook, loader
+    key := InStr(hk, "+") ? "+{Enter}" : InStr(hk, "Numpad") ? "{NumpadEnter}" : "{Enter}"
+    if !chatting {
+        SendInput(key)
+        ChatOpened()
+        return
+    }
+    line := chatHook.Input
+    ChatClosed()
+    if loader.isCommand(line) {
+        SendInput("{Esc}")
+        SetTimer(() => loader.command(line), -80)
+    } else {
+        SendInput(key)
+    }
+}
+ChatOpened() {
+    global chatting := true, chatHook, toolEnabled, toolEnableHistory
+    chatHook.Stop(), chatHook.Start()
+    if Ini("Settings", "autoToggleTool", 1) {
+        toolEnableHistory := toolEnabled, toolEnabled := false
+        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
+    }
+}
+ChatClosed() {
+    global chatting, chatHook, toolEnabled, toolEnableHistory
+    if !chatting
+        return
+    chatting := false
+    chatHook.Stop()
+    if Ini("Settings", "autoToggleTool", 1) {
+        toolEnabled := toolEnableHistory
+        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
+    }
+}
 MsgEditFocused() {
     global msgEdit
     try return ControlGetFocus("ahk_id " mainGui.Hwnd) = msgEdit.Hwnd
@@ -982,7 +1085,14 @@ MsgEditFocused() {
 }
 
 Toast(msg, kind := "") {
-    ToolTip(msg)
+    if WinActive(WarcraftIII) {
+        WinGetClientPos(&x, &y, &w, , WarcraftIII)
+        CoordMode("ToolTip", "Screen")
+        ToolTip(msg, x + w // 2 - 120, y + 80)
+        CoordMode("ToolTip", "Client")
+    } else {
+        ToolTip(msg)
+    }
     SetTimer(() => ToolTip(), -3500)
 }
 Push(event, data) {
@@ -1036,27 +1146,9 @@ $!Esc:: ExitApp
 #HotIf WinActive(WarcraftIII)
 $~F10:: ToggleTool()
 $~Pause:: PauseGame()
-$~+Enter::
-$~NumpadEnter::
-$~Enter::
-{
-    global chatting, toolEnabled, toolEnableHistory
-    if !Ini("Settings", "autoToggleTool", 1)
-        return
-    if !chatting {
-        chatting := true, toolEnableHistory := toolEnabled, toolEnabled := false
-    } else {
-        chatting := false, toolEnabled := toolEnableHistory
-    }
-    UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
-}
+$Enter::
+$NumpadEnter::
+$+Enter:: ChatEnter(ThisHotkey)
 $~LButton::
-$~Esc::
-{
-    global chatting, toolEnabled, toolEnableHistory
-    if chatting {
-        chatting := false, toolEnabled := toolEnableHistory
-        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
-    }
-}
+$~Esc:: ChatClosed()
 #HotIf
