@@ -59,7 +59,7 @@ global controlsToDrag := Map()
 global searchEdit, hiddenChip, helpBtn, helpGui := 0, msgLabel, msgEdit, loadBtn
 global emptyTitle, emptySub, emptyBtn
 global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list (BuildSaveList)
-global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false
+global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map()
 global SAVE_ROWS := 8, SAVE_ROW_H := 34
 ; macros
 global macroListBox, macroCapBtn, macroMsgEdit, macroPendingHK := "", macroPendingLabel := "", macroSel := -1
@@ -392,7 +392,7 @@ BuildSaveList() {
     saveThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
     AddToPage("loader", saveBar, saveThumb)
     ; columns: star | name | message badge | date | hide
-    local cols := [["star", 4, 36], ["name", 40, 400], ["msg", 440, 30], ["date", 470, 160], ["eye", 630, 40]]
+    local cols := [["star", 4, 36], ["name", 40, 290], ["count", 330, 110], ["msg", 440, 30], ["date", 470, 160], ["eye", 630, 40]]
     loop SAVE_ROWS {
         local i := A_Index, ry := y + 1 + (i - 1) * SAVE_ROW_H, row := { idx: i }
         for col in cols {
@@ -402,13 +402,15 @@ BuildSaveList() {
             else if col[1] != "name"
                 opt .= " Center"
             local t := mainGui.AddText(opt, "")
-            t.SetFont(col[1] = "name" ? "s10 w500" : col[1] = "date" ? "s9" : "s10", (col[1] = "name" || col[1] = "date") ? UI_FONT : ICON_FONT)
+            t.SetFont(col[1] = "name" ? "s10 w500" : (col[1] = "date" || col[1] = "count") ? "s9" : "s10",
+                (col[1] = "name" || col[1] = "date" || col[1] = "count") ? UI_FONT : ICON_FONT)
             row.%col[1]% := t
             AddToPage("loader", t)
         }
         row.sep := mainGui.AddText("x" (x + 1) " y" (ry + SAVE_ROW_H - 1) " w" (w - 2) " h1 +Background" C.border)
         AddToPage("loader", row.sep)
         row.star.OnEvent("Click", SaveRowClick.Bind(i, "star"))
+        row.count.OnEvent("Click", SaveRowClick.Bind(i, "expand"))
         row.eye.OnEvent("Click", SaveRowClick.Bind(i, "eye"))
         for k in ["name", "msg", "date"] {
             row.%k%.OnEvent("Click", SaveRowClick.Bind(i, "select"))
@@ -430,23 +432,51 @@ BuildSaveList() {
 RefreshFiles() {
     global
     local all := loader.files(Map("filter", searchEdit.Value, "showHidden", 1))
-    local pins := Map(), hiddenCount := 0
+    local pins := Map(), hiddenCount := 0, groups := Map(), tops := []
     for i, n in loader.pinned()
         pins[n] := i
-    saveFiles := []
+    ; numbered saves (knight#91, #92...) collapse into one row per series
     for f in all {
-        f.pinned := pins.Has(f.name) ? pins[f.name] : 0
-        if f.hidden
-            hiddenCount++
-        if !f.hidden || showHidden
-            saveFiles.Push(f)
+        if f.series {
+            if !groups.Has(f.key)
+                groups[f.key] := []
+            groups[f.key].Push(f)
+        } else {
+            tops.Push({ kind: "file", id: f.name, name: f.name, key: f.name, label: StrReplace(f.name, ".txt", ""),
+                pinned: pins.Has(f.name) ? pins[f.name] : 0, hidden: f.hidden, msg: f.msg, date: f.date, sortKey: f.sortKey, files: 0 })
+        }
     }
+    for key, fs in groups {
+        SortBy(fs, (a, b) => b.series.num - a.series.num)              ; newest number first
+        local newest := ""
+        for f in fs
+            if !newest || f.sortKey > newest
+                newest := f.sortKey
+        local top := fs[1]
+        tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: StrReplace(top.name, ".txt", ""),
+            pinned: pins.Has(key) ? pins[key] : 0, hidden: top.hidden, msg: top.msg, date: top.date, sortKey: newest, files: fs })
+    }
+    for e in tops
+        if e.hidden
+            hiddenCount++
     ; favourites first (in the order you starred them), then most recent
-    SortBy(saveFiles, (a, b) => (a.pinned && b.pinned) ? a.pinned - b.pinned
+    SortBy(tops, (a, b) => (a.pinned && b.pinned) ? a.pinned - b.pinned
         : a.pinned ? -1 : b.pinned ? 1 : (a.sortKey < b.sortKey) - (a.sortKey > b.sortKey))
+    saveFiles := []
+    for e in tops {
+        if e.hidden && !showHidden
+            continue
+        saveFiles.Push(e)
+        if e.kind = "series" && expanded.Has(e.key)
+            loop e.files.Length - 1 {
+                local f := e.files[A_Index + 1]
+                saveFiles.Push({ kind: "child", id: f.name, name: f.name, key: e.key, label: StrReplace(f.name, ".txt", ""),
+                    pinned: 0, hidden: e.hidden, msg: e.msg, date: f.date, sortKey: f.sortKey, files: 0 })
+            }
+    }
     hiddenChip.Text := (showHidden ? "Hide hidden" : "Show hidden") (hiddenCount ? "  (" hiddenCount ")" : "")
     if !SaveIndex(saveSel)
-        saveSel := saveFiles.Length ? saveFiles[1].name : ""
+        saveSel := saveFiles.Length ? saveFiles[1].id : ""
     saveOffset := Max(0, Min(saveOffset, saveFiles.Length - SAVE_ROWS))
     RenderSaves()
     ShowEmptyState(saveFiles.Length ? "" : EmptyReason())
@@ -468,22 +498,26 @@ RenderSaves() {
     saveBar.Visible := false
     for row in saveRows {
         local idx := saveOffset + row.idx, has := idx <= saveFiles.Length
-        for k in ["star", "name", "msg", "date", "eye", "sep"]
+        for k in ["star", "name", "count", "msg", "date", "eye", "sep"]
             row.%k%.Visible := has
         if !has
             continue
-        local f := saveFiles[idx], on := idx = sel, bg := on ? C.navOn : C.card
-        row.star.Text := Chr(f.pinned ? 0xE735 : 0xE734)
+        local f := saveFiles[idx], on := idx = sel, bg := on ? C.navOn : C.card, child := f.kind = "child"
+        row.star.Text := child ? "" : Chr(f.pinned ? 0xE735 : 0xE734)
         row.star.Opt("+Background" bg " +c" (f.pinned ? C.accent : C.dim))
-        row.name.Text := StrReplace(f.name, ".txt", "")
-        row.name.Opt("+Background" bg " +c" (f.hidden ? C.dim : C.text))
+        row.name.Text := (child ? "      " : "") f.label
+        row.name.Opt("+Background" bg " +c" (f.hidden || child ? C.dim : C.text))
+        row.count.Text := f.kind = "series" && f.files.Length > 1
+            ? f.files.Length " saves  " (expanded.Has(f.key) ? "▾" : "▸") : ""
+        row.count.Opt("+Background" bg " +c" C.muted)
         row.msg.Text := f.msg ? Chr(0xE8BD) : ""
         row.msg.Opt("+Background" bg " +c" C.muted)
         row.date.Text := f.date "  "
         row.date.Opt("+Background" bg " +c" C.muted)
-        row.eye.Text := Chr(f.hidden ? 0xED1A : 0xE890)
+        row.msg.Text := f.msg && !child ? Chr(0xE8BD) : ""
+        row.eye.Text := child ? "" : Chr(f.hidden ? 0xED1A : 0xE890)
         row.eye.Opt("+Background" bg " +c" (f.hidden ? C.accent : C.dim))
-        for k in ["star", "name", "msg", "date", "eye"]
+        for k in ["star", "name", "count", "msg", "date", "eye"]
             row.%k%.Redraw()
         if on {
             row.name.GetPos(, &ry)
@@ -499,25 +533,37 @@ RenderSaves() {
     }
 }
 
-SaveIndex(name) {
+SaveIndex(id) {
     global saveFiles
     for i, f in saveFiles
-        if f.name == name
+        if f.id == id
             return i
     return 0
 }
 
 SaveRowClick(i, what, *) {
-    global saveFiles, saveOffset, saveSel, loader
+    global saveFiles, saveOffset, saveSel, loader, expanded
     idx := saveOffset + i
     if idx > saveFiles.Length
         return
     f := saveFiles[idx]
     switch what {
-        case "star": loader.pinToggle(Map("name", f.name)), RefreshFiles()
-        case "eye":  loader.hideToggle(Map("name", f.name)), RefreshFiles()
-        case "load": saveSel := f.name, LoadSelected()
-        default:     saveSel := f.name, RenderSaves(), ShowSelectedMessage()
+        case "star":
+            if f.kind != "child"
+                loader.pinToggle(Map("name", f.key)), RefreshFiles()
+        case "eye":
+            if f.kind != "child"
+                loader.hideToggle(Map("name", f.key)), RefreshFiles()
+        case "expand":
+            if f.kind = "series" && f.files.Length > 1 {
+                if expanded.Has(f.key)
+                    expanded.Delete(f.key)
+                else
+                    expanded[f.key] := 1
+                saveSel := f.id, RefreshFiles()
+            }
+        case "load": saveSel := f.id, LoadSelected()
+        default:     saveSel := f.id, RenderSaves(), ShowSelectedMessage()
     }
 }
 
@@ -527,7 +573,7 @@ SaveMove(n) {
     if !saveFiles.Length
         return
     i := Max(1, Min(saveFiles.Length, SaveIndex(saveSel) + n))
-    saveSel := saveFiles[i].name
+    saveSel := saveFiles[i].id
     if i <= saveOffset
         saveOffset := i - 1
     else if i > saveOffset + SAVE_ROWS
@@ -554,7 +600,8 @@ ShowSelectedMessage() {
     global saveSel, msgEdit, msgLabel, loader, saveFiles
     i := SaveIndex(saveSel)
     msgEdit.Enabled := i > 0
-    msgLabel.Text := i ? "Load message  ·  " StrReplace(saveSel, ".txt", "") : "Load message"
+    msgLabel.Text := !i ? "Load message"
+        : "Load message  ·  " (saveFiles[i].kind = "file" ? saveFiles[i].label : "every " RegExReplace(saveFiles[i].key, "#\*$") " save")
     v := i ? saveFiles[i].msg : ""
     if msgEdit.Value != v
         msgEdit.Value := v
@@ -565,10 +612,13 @@ SaveMessageChanged() {
     i := SaveIndex(saveSel)
     if !i
         return
-    loader.setMessage(Map("name", saveSel, "msg", Trim(msgEdit.Value)))
-    had := saveFiles[i].msg != ""
-    saveFiles[i].msg := Trim(msgEdit.Value)
-    if had != (saveFiles[i].msg != "")
+    e := saveFiles[i]
+    loader.setMessage(Map("name", e.key, "msg", Trim(msgEdit.Value)))
+    had := e.msg != ""
+    for f in saveFiles                      ; a series shares one message
+        if f.key = e.key
+            f.msg := Trim(msgEdit.Value)
+    if had != (e.msg != "")
         RenderSaves()
 }
 
@@ -600,9 +650,9 @@ ShowEmptyState(reason) {
 }
 
 LoadSelected() {
-    global saveSel, loader
-    if saveSel
-        loader.load(Map("name", saveSel))
+    global saveSel, saveFiles, loader
+    if i := SaveIndex(saveSel)
+        loader.load(Map("name", saveFiles[i].name))      ; a series row loads its newest number
     else
         Toast("Select a save first", "error")
 }
@@ -616,6 +666,7 @@ ShowLoaderHelp(show) {
         ["-l sniper", "loads the closest match: exact, starts with, contains"],
         ["-l 2", "loads your 2nd ★ favourite"],
         ["-l  /  -ll", "reloads the save you loaded last"],
+        ["-sn", "saves the next number: after knight#92, -save knight#93"],
         ["", "Also -load and -loadlast. Loader commands never show in chat."]]
     if !show {
         if helpGui

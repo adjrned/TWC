@@ -55,6 +55,16 @@ don't fire mid-message.
     with, then contains; favourites, then newest, win ties)
   - `-l 2`: your 2nd ★ favourite
   - `-l`, `-ll`, `-loadlast`: the save you loaded last
+  - `-sn` / `-savenext` (optionally `-sn <name>`): types `-save <next number>`
+    for the series you last loaded, e.g. `-save knight#93` after `knight#92`
+
+  **Numbered saves.** Saves ending in a number (`knight#91`, `knight#92`, or
+  `sniper_007`) are one *series*: a single row showing the newest number with a
+  "N saves ▸" badge (click it to list the older ones), and one star, hide toggle
+  and load message for the whole series. `-l knight` loads the newest number.
+  `-sn` uses the highest number on disk + 1, so loading an older save and saving
+  again never overwrites a newer one; your separator and zero padding are kept
+  (`sniper_007` → `sniper_008`).
 
   These never reach chat: while chat is open the companion records the line, and
   on Enter a loader command is closed with Esc and run instead. Anything else is

@@ -91,6 +91,38 @@ class LoaderEngine {
 
     static IsSave(text) => RegExMatch(text, "----------(?:Hero Inventory|영웅 아이템)----------")
 
+    ; -- numbered saves --------------------------------------------------------
+    ; People save as knight#91, knight#92... ("-save knight#92" in TWRPG). Those
+    ; files form a series: one row in the list, one star / hide / load message
+    ; (stored under the series key "knight#*"), and -sn saves the next number.
+    ; "knight#91" -> { stem: "knight", sep: "#", num: 91, width: 2, key: "knight#*" }
+    static Series(name) {
+        n := RegExReplace(name, "i)\.txt$")
+        if !RegExMatch(n, "^(.*?[^\d\s#_.\-])(\s*[#_.\-]?\s*)(\d+)$", &m)
+            return 0
+        return { stem: m[1], sep: m[2], num: Integer(m[3]), width: StrLen(m[3]), key: StrLower(m[1]) "#*" }
+    }
+    ; star / hide / message key for a save: its series, or the file itself
+    static KeyOf(name) => (s := LoaderEngine.Series(name)) ? s.key : name
+
+    ; name for the next save in a series: the highest number on disk + 1 (so
+    ; going back to an older save never overwrites a newer one). ref is a save
+    ; or series name; default = the save you loaded last. Unnumbered names
+    ; start a series at #2 (the unnumbered save counts as #1).
+    nextSave(ref := "") {
+        ref := RegExReplace(ref != "" ? ref : Ini(this.section, "selectedFile", ""), "i)\.txt$")
+        if ref = ""
+            return ""
+        s := LoaderEngine.Series(ref)
+        if !s
+            s := { stem: ref, sep: "#", num: 1, width: 1, key: StrLower(ref) "#*" }
+        top := s.num
+        for f in this.files(Map("showHidden", 1))
+            if (fs := LoaderEngine.Series(f.name)) && fs.key = s.key && fs.num > top
+                top := fs.num, s.sep := fs.sep, s.width := fs.width
+        return s.stem s.sep Format("{:0" s.width "}", top + 1)
+    }
+
     ; -- RPC endpoints -------------------------------------------------------
     config(args := 0) {
         return { folder: this.folder, found: this.folderFound, auto: this.folderAuto,
@@ -104,17 +136,21 @@ class LoaderEngine {
         Loop Files, this.folder "\*.txt" {
             if filter && !InStr(A_LoopFileName, filter)
                 continue
-            isHidden := this.hiddenMap.Has(A_LoopFileName) ? 1 : 0
+            key := LoaderEngine.KeyOf(A_LoopFileName)
+            isHidden := this.hiddenMap.Has(key) || this.hiddenMap.Has(A_LoopFileName) ? 1 : 0
             if isHidden && !showHidden
                 continue
             if !LoaderEngine.IsSave(FileRead(A_LoopFileFullPath, "UTF-8"))
                 continue
+            s := LoaderEngine.Series(A_LoopFileName)
             out.Push({
                 name: A_LoopFileName,
+                key: key,
+                series: s,
                 date: FormatTime(A_LoopFileTimeModified, "MM/dd/yy  hh:mm tt"),
                 sortKey: A_LoopFileTimeModified,
                 hidden: isHidden,
-                msg: Ini(this.section "Msg", A_LoopFileName, "")
+                msg: this.messageFor(A_LoopFileName)
             })
         }
         return out
@@ -150,6 +186,12 @@ class LoaderEngine {
             this.hiddenMap.Set(name, true)
         this.writeHidden()
         return { ok: 1 }
+    }
+
+    ; load message for a save: its series' one, else its own
+    messageFor(name) {
+        m := Ini(this.section "Msg", LoaderEngine.KeyOf(name), "")
+        return m != "" ? m : Ini(this.section "Msg", name, "")
     }
 
     ; "a | b | c" -> one of the options at random (flavour text)
@@ -197,7 +239,8 @@ class LoaderEngine {
     ;                              contains (favourites, then newest, win ties)
     ;   -l <n>                     favourite number n
     ;   -l / -ll / -loadlast       the last save you loaded
-    static CMD := "i)^\s*-(l|load|ll|loadlast)(?:\s+(.*?))?\s*$"
+    ;   -sn / -savenext [name]     "-save <next number>" for that series
+    static CMD := "i)^\s*-(l|load|ll|loadlast|sn|savenext)(?:\s+(.*?))?\s*$"
 
     isCommand(line) {
         if !RegExMatch(line, LoaderEngine.CMD, &m)
@@ -208,10 +251,19 @@ class LoaderEngine {
     command(line) {
         RegExMatch(line, LoaderEngine.CMD, &m)
         arg := Trim(m[2])
+        if m[1] = "sn" || m[1] = "savenext" {
+            name := this.nextSave(arg)
+            if name = ""
+                return Push("toast", { kind: "error", msg: "Load a save first, or use -sn <name>" })
+            if !FocusWarcraft()
+                return Push("toast", { kind: "error", msg: "Warcraft III not found" })
+            wc3Chat("-save " name)
+            return Push("toast", { msg: "Saved as " name })
+        }
         if arg = "" {
             last := Ini(this.section, "selectedFile", "")
             if !last && (fav := this.pinned()).Length
-                last := fav[1]
+                last := InStr(fav[1], "#*") ? this.latestOf(fav[1]) : fav[1]
             if !last
                 return Push("toast", { kind: "error", msg: "No save loaded yet. Try -l <name>" })
             return this.load(Map("name", last))
@@ -221,6 +273,15 @@ class LoaderEngine {
             return Push("toast", { kind: "error", msg: 'No save matches "' arg '"' })
         Push("toast", { msg: "Loading " StrReplace(name, ".txt", "") "…" })
         return this.load(Map("name", name))
+    }
+
+    ; newest-numbered file of a series key
+    latestOf(key, files := 0) {
+        best := "", top := -1
+        for f in (files ? files : this.files(Map("showHidden", 1)))
+            if f.key = key && f.series && f.series.num > top
+                best := f.name, top := f.series.num
+        return best
     }
 
     ; save file name for what was typed after -l, or ""
@@ -237,18 +298,22 @@ class LoaderEngine {
                     return f.name
             for n, i in pins
                 if i = Integer(q)
-                    return n
+                    return InStr(n, "#*") ? this.latestOf(n, files) : n
             return ""
         }
-        best := "", bestScore := 0, bestKey := ""
+        ; ties: favourite, not hidden, then the highest number in a series, then newest
+        best := "", bestScore := 0, bestNum := -1, bestKey := ""
         for f in files {
             n := StrLower(StrReplace(f.name, ".txt", ""))
             score := n == q ? 3 : SubStr(n, 1, StrLen(q)) == q ? 2 : InStr(n, q) ? 1 : 0
+            if f.series && StrLower(f.series.stem) == q
+                score := 3                                  ; "-l knight" = the series
             if !score
                 continue
-            score := score * 10 + (pins.Has(f.name) ? 5 : 0) + (f.hidden ? 0 : 1)
-            if score > bestScore || (score = bestScore && f.sortKey > bestKey)
-                best := f.name, bestScore := score, bestKey := f.sortKey
+            score := score * 10 + (pins.Has(f.key) || pins.Has(f.name) ? 5 : 0) + (f.hidden ? 0 : 1)
+            num := f.series ? f.series.num : -1
+            if score > bestScore || (score = bestScore && (num > bestNum || (num = bestNum && f.sortKey > bestKey)))
+                best := f.name, bestScore := score, bestNum := num, bestKey := f.sortKey
         }
         return best
     }
@@ -294,7 +359,7 @@ class LoaderEngine {
 
         HideMainWindow()
         delay := Integer(Ini("Settings", "loadDelay", 200))
-        if msg := this.pickMessage(Ini(this.section "Msg", name, ""))
+        if msg := this.pickMessage(this.messageFor(name))
             wc3Chat(msg)
         if Integer(Ini(this.section, "convert", 1))
             wc3Chat("-convert " userName)
