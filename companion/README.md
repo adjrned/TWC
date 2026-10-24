@@ -109,18 +109,21 @@ assets/Cinzel.ttf   the site's display font (OFL, see Cinzel-OFL.txt), loaded
 ```
 
 The window is one borderless Gui laid out like the site: a sidebar with the
-TWCompanion wordmark and vertical nav (active link tinted, with an accent bar),
-and a content area with a page header (Cinzel title, subtitle, divider). A
-full-size `Picture` shows `assets/bg.png`, and native controls (Edit, ListBox,
-Checkbox, and Text styled as flat buttons) sit on top, coloured to match. Edits
-and lists drop their native borders for a 1px frame (`FrameControl`). Pages
-are built at (40, 160) and shifted into the content area, and shown by
+TWCompanion wordmark, icon + label nav (the active link tinted, with an orange
+icon and an accent bar on the sidebar edge) and a footer with the tool ON/OFF
+switch; then the page background with a page header (Cinzel title, subtitle,
+divider). A full-size `Picture` shows `assets/bg.png`, and native controls sit
+on top. Native borders are dropped: `Box` draws a filled, bordered, rounded
+rectangle *behind* a control (Text controls slotted after the picture in the
+z-order, rounded with a window region), so inputs get the site's `--bg2` field
+with a `--border2` edge, lists sit in a `--card`, and buttons look like `.btn`.
+Pages are built at (40, 160) and shifted into the content area, and shown by
 toggling control visibility. The engine classes are plain AHK objects the
 window calls directly — no IPC, no bridge.
 
 ### Regenerating the background
 
-`assets/bg.png` is 904×500 and matches the window layout (`W`, `H`, `SIDE_W`,
+`assets/bg.png` is 920×510 and matches the window layout (`W`, `H`, `SIDE_W`,
 `CX` in `tw-companion.ahk`). To tweak it, edit and
 run `assets/generate_bg.py` (Pillow) from the `assets/` folder. Its colours are the
 site's tokens from `src/styles/base.css`, the same ones as the `C` palette in

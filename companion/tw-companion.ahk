@@ -22,12 +22,14 @@
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------
 global C := {
-    win:     "0C0D10",   ; --bg (status badge)
-    side:    "121419",   ; --bg2, sidebar          } baked into assets/bg.png
-    panel:   "16181D",   ; content surface         }
-    well:    "16181D",   ; inputs and lists: the surface itself, set off by a 1px frame
-    frame:   "30343E",   ; --border2, 1px input borders
-    chip:    "23262E",   ; buttons
+    win:     "0C0D10",   ; --bg: content area, status badge     } baked into
+    side:    "121419",   ; --bg2: sidebar                       } assets/bg.png
+    panel:   "0C0D10",   ; behind labels/checkboxes (= --bg)
+    well:    "121419",   ; --bg2: inputs
+    card:    "14161B",   ; --card: lists
+    border:  "23262E",   ; --border: cards
+    frame:   "30343E",   ; --border2: inputs, buttons
+    chip:    "191C22",   ; --bg3: .btn
     accent:  "F5A623",   ; --accent
     onAccent:"1A1004",   ; text on .btn.primary
     navOn:   "29231A",   ; .nav-link.active: accent at 10% over the sidebar
@@ -35,17 +37,20 @@ global C := {
     muted:   "9A9EAA",   ; --muted2
     dim:     "6F7380" }  ; --muted
 ; window, sidebar width, and where page content starts (see assets/generate_bg.py)
-global W := 904, H := 500, SIDE_W := 176, CX := 200, CY := 100
+global W := 920, H := 510, SIDE_W := 190, CX := 214, CY := 104
 global NAV_ORDER := ["loader", "macros", "remap", "host", "settings", "overlay"]
-global frames := Map()      ; Edit/ListBox hwnd -> its 4 border lines (FrameControl)
+global ICON_FONT := "Segoe Fluent Icons"
+global boxes := Map()       ; control hwnd -> the Box drawn behind it (StyleControl)
+global buttons := Map()     ; MkButton hwnd -> its background colour (picks the style)
+global navItems := Map()    ; page -> { box, icon, label } in the sidebar
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.0.0"
 global toolEnabled := true, chatting := false, toolEnableHistory := true
 global showMain := false
 global loader, macros, remap, host, settings, updater, webOverlay
-global mainGui, bgPic, titleText, subtitleText, navBar, toolPill
-global pages := Map(), navText := Map(), currentPage := "loader"
+global mainGui, bgPic, titleText, subtitleText, navBar, toolOn, toolOff, searchIcon
+global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
 ; loader controls
@@ -117,23 +122,39 @@ BuildWindow() {
 
     bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, A_ScriptDir "\assets\bg.png")
 
-    ; sidebar nav, like the site's: vertical links, active one tinted with an accent bar
+    ; sidebar nav, like the site's .nav-link: icon + label, the active one tinted
+    ; with an orange icon and an accent bar on the sidebar's edge
     for i, name in NAV_ORDER {
-        t := mainGui.AddText("x12 y" (84 + (i - 1) * 36) " w152 h32 0x200 +Background" C.side " c" C.muted, "    " PageInfo(name).nav)
-        t.SetFont("s10 w600", "Segoe UI")
-        t.OnEvent("Click", NavClick.Bind(name))
-        navText[name] := t
+        y := 84 + (i - 1) * 38
+        bx := Box("", 10, y, SIDE_W - 20, 34, C.side, C.side, 4)
+        ic := mainGui.AddText("x22 y" y " w22 h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).icon)
+        ic.SetFont("s11", ICON_FONT)
+        lb := mainGui.AddText("x52 y" y " w" (SIDE_W - 66) " h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).nav)
+        lb.SetFont("s10 w500", "Segoe UI")
+        for t in [ic, lb]
+            t.OnEvent("Click", NavClick.Bind(name))
+        navItems[name] := { box: bx, icon: ic, label: lb }
     }
-    navBar := mainGui.AddText("x12 y84 w3 h32 +Background" C.accent)
+    navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
 
-    ; tool toggle at the bottom of the sidebar, close at the top right
-    toolPill := MkButton("", 12, H - 52, 152, 32, C.chip, C.muted, (*) => ToggleTool())
+    ; sidebar footer: tool on/off as a segmented control (like the site's
+    ; language switcher), then the version line
+    toolLabel := mainGui.AddText("x14 y" (H - 62) " w60 h26 0x200 +Background" C.side " c" C.dim, "TOOL")
+    toolLabel.SetFont("s8 w600", "Segoe UI")
+    Box("", 62, H - 62, 92, 26, C.side, C.frame, 4)
+    toolOn := mainGui.AddText("x63 y" (H - 61) " w45 h24 Center 0x200 +Background" C.side, "ON")
+    toolOff := mainGui.AddText("x108 y" (H - 61) " w45 h24 Center 0x200 +Background" C.side, "OFF")
+    for t in [toolOn, toolOff]
+        t.SetFont("s8 w600", "Segoe UI"), t.OnEvent("Click", (*) => ToggleTool())
+    verText := mainGui.AddText("x14 y" (H - 28) " w" (SIDE_W - 28) " h16 +Background" C.side " c" C.dim, "TW Companion v" version)
+    verText.SetFont("s8", "Segoe UI")
+
     MkButton("✕", W - 40, 14, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
-    ; page header: Cinzel title + subtitle (divider is baked into bg.png)
-    titleText := mainGui.AddText("x" CX " y22 w560 h30 +Background" C.panel " c" C.text, "")
-    titleText.SetFont("s17 w700", "Cinzel")
-    subtitleText := mainGui.AddText("x" CX " y54 w560 h20 +Background" C.panel " c" C.muted, "")
+    ; page header, like .page-header: Cinzel title, subtitle, divider (baked)
+    titleText := mainGui.AddText("x" CX " y22 w600 h34 +Background" C.panel " c" C.text, "")
+    titleText.SetFont("s19 w700", "Cinzel")
+    subtitleText := mainGui.AddText("x" CX " y60 w600 h20 +Background" C.panel " c" C.muted, "")
     subtitleText.SetFont("s10", "Segoe UI")
 
     ; pages are laid out from (40, 160); shift them into the content area
@@ -150,8 +171,13 @@ BuildWindow() {
         }
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
-            if ctl.Type = "Edit" || ctl.Type = "ListBox"
-                FrameControl(pg, ctl)
+            StyleControl(pg, ctl)
+    ; search icon inside the loader's search box, like the site's search inputs
+    searchEdit.GetPos(&sx, &sy, , &sh)
+    searchIcon := mainGui.AddText("x" (sx + 1) " y" sy " w26 h" sh " Center 0x200 +Background" C.well " c" C.dim, Chr(0xE721))
+    searchIcon.SetFont("s9", ICON_FONT)
+    AddToPage("loader", searchIcon)
+    SendMessage(0xD3, 1, 30, searchEdit)    ; EM_SETMARGINS left: room for the icon
 
     OnMessage(0x201, WM_LBUTTONDOWN)
     UpdateToolPill()
@@ -159,58 +185,99 @@ BuildWindow() {
 
 PageInfo(name) {
     static info := Map(
-        "loader",   { nav: "Loader",   title: "Loader",   sub: "Search, pin and load your saves" },
-        "macros",   { nav: "Macros",   title: "Macros",   sub: "Hotkeys that type chat lines for you" },
-        "remap",    { nav: "Remap",    title: "Remap",    sub: "Spell, inventory and mouse keys" },
-        "host",     { nav: "Host",     title: "Host",     sub: "Host lobbies through a bot" },
-        "settings", { nav: "Settings", title: "Settings", sub: "Startup, timing and your TWRPG folder" },
-        "overlay",  { nav: "Overlay",  title: "Overlay",  sub: "The TWRPG site over the game  ·  Shift+Space" })
+        "loader",   { nav: "Loader",   icon: Chr(0xE8E5), title: "Loader",   sub: "Search, pin and load your saves" },
+        "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros",   sub: "Hotkeys that type chat lines for you" },
+        "remap",    { nav: "Remap",    icon: Chr(0xE8AB), title: "Remap",    sub: "Spell, inventory and mouse keys" },
+        "host",     { nav: "Host",     icon: Chr(0xE716), title: "Host",     sub: "Host lobbies through a bot" },
+        "settings", { nav: "Settings", icon: Chr(0xE713), title: "Settings", sub: "Startup, timing and your TWRPG folder" },
+        "overlay",  { nav: "Overlay",  icon: Chr(0xE8A7), title: "Overlay",  sub: "The TWRPG site over the game  ·  Shift+Space" })
     return info[name]
 }
 
-; Native Edit/ListBox borders are thick and white; swap them for a 1px
-; --border2 frame drawn with four Text lines (kept in step by SyncFrame).
-; Single-line edits shrink to their text height inside the frame, which keeps
-; the original rect, so the text sits vertically centred like a site input.
-FrameControl(page, ctrl) {
-    global mainGui, frames, C
-    ctrl.Opt("-E0x200 -Border")
-    DllCall("SetWindowPos", "ptr", ctrl.Hwnd, "ptr", 0, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x37)   ; FRAMECHANGED, no move/size/z/activate
-    ctrl.GetPos(&x, &y, &w, &h)
-    box := { x: x, y: y, w: w, h: h }
-    if ctrl.Type = "Edit" {
-        SendMessage(0xD3, 3, 10 | (10 << 16), ctrl)   ; EM_SETMARGINS: 10px left/right
-        if !(ControlGetStyle(ctrl) & 0x4) {            ; not ES_MULTILINE
-            th := 20
-            ctrl.Move(x + 1, y + (h - th) // 2, w - 2, th)
-        } else {
-            ctrl.Move(x + 1, y + 1, w - 2, h - 2)
-        }
-    } else {
-        ctrl.Move(x + 8, y + 6, w - 10, h - 12)      ; list: inner padding (scrollbar keeps the right edge)
+; A filled, bordered, rounded rectangle drawn *behind* other controls: two Text
+; controls slotted just after the background picture in the z-order, rounded
+; with a window region. Gives native controls the site's input/card/button look.
+class Box {
+    __New(page, x, y, w, h, fill, border, radius := 4) {
+        global mainGui, bgPic
+        this.r := radius
+        this.outer := mainGui.AddText("x0 y0 w1 h1 +Background" border)
+        this.inner := mainGui.AddText("x0 y0 w1 h1 +Background" fill)
+        ; siblings paint in z-order, so each insert after the picture goes
+        ; under what's already there: inner first, then outer below it
+        for t in [this.inner, this.outer]
+            DllCall("SetWindowPos", "ptr", t.Hwnd, "ptr", bgPic.Hwnd, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x13)
+        if page
+            AddToPage(page, this.outer, this.inner)
+        this.Move(x, y, w, h)
     }
-    lines := []
-    loop 4 {
-        l := mainGui.AddText("x0 y0 w1 h1 +Background" C.frame)
-        lines.Push(l)
-        AddToPage(page, l)
+    Move(x, y, w, h) {
+        this.x := x, this.y := y, this.w := w, this.h := h
+        this.outer.Move(x, y, w, h)
+        this.inner.Move(x + 1, y + 1, w - 2, h - 2)
+        Box.Round(this.outer, w, h, this.r)
+        Box.Round(this.inner, w - 2, h - 2, Max(0, this.r - 1))
     }
-    frames[ctrl.Hwnd] := { lines: lines, box: box }
-    SyncFrame(ctrl)
+    Visible {
+        set => (this.outer.Visible := Value, this.inner.Visible := Value)
+    }
+    Fill {
+        set => (this.inner.Opt("+Background" Value), this.inner.Redraw())
+    }
+    static Round(ctl, w, h, r) {
+        if r <= 0
+            return
+        rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", w + 1, "int", h + 1, "int", r * 2, "int", r * 2, "ptr")
+        DllCall("SetWindowRgn", "ptr", ctl.Hwnd, "ptr", rgn, "int", 1)
+    }
 }
-; redraw a control's frame; pass the new outer rect when the control moves
-SyncFrame(ctrl, x?, y?, w?, h?) {
-    global frames
-    if !frames.Has(ctrl.Hwnd)
-        return
-    f := frames[ctrl.Hwnd], b := f.box
-    if IsSet(y) {
-        b.x := x, b.y := y, b.w := w, b.h := h
-        ctrl.Move(x + 8, y + 6, w - 10, h - 12)
+
+; Restyle a page control like its site counterpart (native borders are thick
+; and white): inputs get a --bg2 box with a --border2 edge and centred text,
+; lists sit in a --card box with padding, .btn-style buttons get a bordered box,
+; primary (orange) buttons just get rounded corners.
+StyleControl(page, ctrl) {
+    global boxes, buttons, C
+    if ctrl.Type = "Edit" || ctrl.Type = "ListBox" {
+        ctrl.Opt("-E0x200 -Border")
+        DllCall("SetWindowPos", "ptr", ctrl.Hwnd, "ptr", 0, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x37)   ; FRAMECHANGED
+        ctrl.GetPos(&x, &y, &w, &h)
+        if ctrl.Type = "ListBox" {
+            ctrl.Opt("+Background" C.card)
+            boxes[ctrl.Hwnd] := Box(page, x, y, w, h, C.card, C.border, 6)
+        } else {
+            boxes[ctrl.Hwnd] := Box(page, x, y, w, h, C.well, C.frame, 4)
+            SendMessage(0xD3, 3, 10 | (10 << 16), ctrl)    ; EM_SETMARGINS: 10px left/right
+        }
+        PlaceInBox(ctrl)
+    } else if ctrl.Type = "Text" && buttons.Has(ctrl.Hwnd) {
+        ctrl.GetPos(&x, &y, &w, &h)
+        bg := buttons[ctrl.Hwnd]
+        if bg = C.chip {
+            boxes[ctrl.Hwnd] := Box(page, x, y, w, h, C.chip, C.frame, 4)
+            ctrl.Move(x + 1, y + 1, w - 2, h - 2)
+        } else if bg = C.accent {
+            Box.Round(ctrl, w, h, 4)
+        }
     }
-    l := f.lines
-    l[1].Move(b.x, b.y, b.w, 1), l[2].Move(b.x, b.y + b.h - 1, b.w, 1)
-    l[3].Move(b.x, b.y, 1, b.h), l[4].Move(b.x + b.w - 1, b.y, 1, b.h)
+}
+; fit a control inside its box (after the box moves)
+PlaceInBox(ctrl) {
+    global boxes
+    b := boxes[ctrl.Hwnd]
+    if ctrl.Type = "ListBox"
+        ctrl.Move(b.x + 8, b.y + 6, b.w - 10, b.h - 12)          ; padding; scrollbar keeps the right edge
+    else if ControlGetStyle(ctrl) & 0x4                           ; ES_MULTILINE
+        ctrl.Move(b.x + 2, b.y + 4, b.w - 4, b.h - 8)
+    else
+        ctrl.Move(b.x + 1, b.y + (b.h - 20) // 2, b.w - 2, 20)   ; text vertically centred
+}
+; show/hide a control together with its box
+SetShown(ctrl, v) {
+    global boxes
+    ctrl.Visible := v
+    if boxes.Has(ctrl.Hwnd)
+        boxes[ctrl.Hwnd].Visible := v
 }
 
 ; drag window by clicking the background
@@ -222,12 +289,13 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 
 StrTitle(s) => StrUpper(SubStr(s, 1, 1)) SubStr(s, 2)
 
-; make a Text control that behaves like a flat button
+; make a Text control that behaves like a flat button (styled by StyleControl)
 MkButton(label, x, y, w, h, bg, fg, handler) {
-    global mainGui
+    global mainGui, buttons
     b := mainGui.AddText("x" x " y" y " w" w " h" h " Center 0x200 +Background" bg " c" fg, label)
-    b.SetFont("s10", "Segoe UI Semibold")
+    b.SetFont("s9 w600", "Segoe UI")
     b.OnEvent("Click", handler)
+    buttons[b.Hwnd] := bg
     return b
 }
 
@@ -245,17 +313,21 @@ AddToPage(name, ctrls*) {
 NavClick(name, *) => ShowPage(name)
 
 ShowPage(name) {
-    global pages, navText, navBar, titleText, subtitleText, currentPage, C
+    global pages, navItems, navBar, titleText, subtitleText, currentPage, C, mainGui
     currentPage := name
     for pg, arr in pages
         for c in arr
             c.Visible := (pg = name)
     titleText.Text := PageInfo(name).title
     subtitleText.Text := PageInfo(name).sub
-    for nm, t in navText {
-        t.Opt((nm = name ? "+c" C.text " +Background" C.navOn : "+c" C.muted " +Background" C.side)), t.Redraw()
-        if nm = name {
-            t.GetPos(, &y)
+    for nm, it in navItems {
+        on := nm = name
+        bg := on ? C.navOn : C.side
+        it.box.Fill := bg
+        it.icon.Opt("+Background" bg " +c" (on ? C.accent : C.muted)), it.icon.Redraw()
+        it.label.Opt("+Background" bg " +c" (on ? C.text : C.muted)), it.label.Redraw()
+        if on {
+            it.label.GetPos(, &y)
             navBar.Move(, y), navBar.Redraw()
         }
     }
@@ -267,6 +339,8 @@ ShowPage(name) {
         case "settings": RefreshSettings()
         case "overlay":  RefreshOverlay()
     }
+    ; rounded (region) boxes on the page we left can leave corner pixels behind
+    DllCall("RedrawWindow", "ptr", mainGui.Hwnd, "ptr", 0, "ptr", 0, "uint", 0x485)   ; INVALIDATE|ERASE|ALLCHILDREN|UPDATENOW
 }
 
 ; ============================================================================
@@ -325,22 +399,18 @@ RefreshFiles() {
 }
 
 RefreshQuick() {
-    global quickBtns, quickNames, loader, searchEdit, fileListBox, frames, mainGui
+    global quickBtns, quickNames, loader, searchEdit, fileListBox, boxes, mainGui
     quickNames := loader.pinned()
     for i, b in quickBtns {
-        if i <= quickNames.Length {
+        if i <= quickNames.Length
             b.Text := StrReplace(quickNames[i], ".txt", "")
-            b.Visible := true
-        } else {
-            b.Visible := false
-        }
+        SetShown(b, i <= quickNames.Length)
     }
     ; no pinned saves: let the list take the quick-load row's space
-    s := frames[searchEdit.Hwnd].box, l := frames[fileListBox.Hwnd].box
-    quickBtns[1].GetPos(, &qy, , &qh)
-    top := quickNames.Length ? qy + qh + 12 : s.y + s.h + 12
-    SyncFrame(fileListBox, l.x, top, l.w, l.y + l.h - top)
-    WinRedraw(mainGui)
+    s := boxes[searchEdit.Hwnd], l := boxes[fileListBox.Hwnd], q := boxes[quickBtns[1].Hwnd]
+    top := quickNames.Length ? q.y + q.h + 12 : s.y + s.h + 12
+    l.Move(l.x, top, l.w, l.y + l.h - top)
+    PlaceInBox(fileListBox)
 }
 
 SelectedFileName() {
@@ -681,12 +751,15 @@ BuildOverlayPage() {
     AddToPage("overlay", openBtn, updBtn)
 }
 RefreshOverlay() {
-    global ovHkBtn, ovPinBtn, ovSideBtns, ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks, ovVersionText, webOverlay, C
+    global ovHkBtn, ovPinBtn, ovSideBtns, ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks, ovVersionText, webOverlay, C, boxes
     s := webOverlay.get()
     ovHkBtn.Text := s.hotkey ? ReadableHotkey(s.hotkey) : "none"
     ovPinBtn.Text := s.pinHotkey ? ReadableHotkey(s.pinHotkey) : "none"
-    for side, b in ovSideBtns
-        b.Opt("+c" (side = s.side ? C.accent : C.muted)), b.Redraw()
+    for side, b in ovSideBtns {          ; selected one tinted, like the site's locale switcher
+        bg := side = s.side ? C.navOn : C.chip
+        b.Opt("+Background" bg " +c" (side = s.side ? C.accent : C.muted)), b.Redraw()
+        boxes[b.Hwnd].Fill := bg
+    }
     ovOpacityEdit.Value := s.opacity
     ovPinOpacityEdit.Value := s.pinOpacity
     ovUnloadEdit.Value := s.unloadMinutes
@@ -719,11 +792,11 @@ ToggleTool() {
 }
 
 UpdateToolPill() {
-    global toolPill, C
-    if !IsSet(toolPill)
+    global toolOn, toolOff, C
+    if !IsSet(toolOn)
         return
-    toolPill.Text := toolEnabled ? "●  Tool on" : "○  Tool off"
-    toolPill.Opt("+c" (toolEnabled ? C.accent : C.muted))
+    toolOn.Opt("+Background" (toolEnabled ? C.navOn : C.side) " +c" (toolEnabled ? C.accent : C.dim)), toolOn.Redraw()
+    toolOff.Opt("+Background" (!toolEnabled ? C.navOn : C.side) " +c" (!toolEnabled ? C.accent : C.dim)), toolOff.Redraw()
 }
 
 ShowMainWindow() {
