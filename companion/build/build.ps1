@@ -5,6 +5,9 @@
 # First run downloads Ahk2Exe (the official AutoHotkey compiler) into build\.tools.
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+# GitHub API: with the build's token when there is one (shared build machines hit rate limits)
+$gh = @{}
+if ($env:GITHUB_TOKEN) { $gh = @{ Authorization = "Bearer $env:GITHUB_TOKEN" } }
 
 $build = $PSScriptRoot
 $src = Split-Path -Parent $build
@@ -20,8 +23,8 @@ if (-not $ahk) {
     # from AutoHotkey's GitHub releases (autohotkey.com sits behind a bot check
     # that blocks build machines)
     Write-Host "Downloading AutoHotkey v2..."
-    $rel = Invoke-RestMethod "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases?per_page=20" |
-        Where-Object { $_.tag_name -like "v2.*" -and -not $_.prerelease } | Select-Object -First 1
+    $rels = Invoke-RestMethod "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases?per_page=20" -Headers $gh
+    $rel = $rels | Where-Object { $_.tag_name -like "v2.*" -and -not $_.prerelease } | Select-Object -First 1
     $asset = $rel.assets | Where-Object { $_.name -like "AutoHotkey_*.zip" } | Select-Object -First 1
     $zip = Join-Path $tools "ahk-v2.zip"
     Invoke-WebRequest $asset.browser_download_url -OutFile $zip
@@ -33,7 +36,7 @@ if (-not $ahk) {
 $a2e = Join-Path $tools "Ahk2Exe\Ahk2Exe.exe"
 if (-not (Test-Path $a2e)) {
     Write-Host "Downloading Ahk2Exe..."
-    $rel = Invoke-RestMethod "https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest"
+    $rel = Invoke-RestMethod "https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest" -Headers $gh
     $asset = $rel.assets | Where-Object { $_.name -like "*.zip" } | Select-Object -First 1
     $zip = Join-Path $tools $asset.name
     Invoke-WebRequest $asset.browser_download_url -OutFile $zip

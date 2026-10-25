@@ -26,6 +26,7 @@ jobs:
         shell: pwsh
         env:
           BUILD_COMMIT: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: ./companion/build/build.ps1
 
       - name: Replace the beta-latest pre-release
