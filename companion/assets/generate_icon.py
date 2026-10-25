@@ -17,7 +17,10 @@ SIZES = [16, 20, 24, 32, 40, 48, 64, 128, 256]
 
 def cinzel(size):
     f = ImageFont.truetype("Cinzel.ttf", size)
-    f.set_variation_by_axes([700])
+    try:
+        f.set_variation_by_axes([700])            # the variable font: bold
+    except OSError:
+        pass                                      # a static Cinzel: its own weight
     return f
 
 

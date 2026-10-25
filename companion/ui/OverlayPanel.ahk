@@ -110,6 +110,7 @@ class OverlayPanel {
         a := WinExist("A")
         if !this.ensure()
             return
+        wasWin := this.shown && this.windowMode          ; already open as a window: just to the front, where it is
         win := full || this.windowMode && this.shown || !WinExist(WarcraftIII) || WinGetMinMax(WarcraftIII) = -1
         if !this.shown && a && a != this.gui.Hwnd && !WinActive(WarcraftIII)
             this.prevWin := a
@@ -118,7 +119,10 @@ class OverlayPanel {
         if win != this.windowMode && this.shown
             this.saveWindow(), this.gui.Hide()  ; the styles change while hidden (the taskbar button follows)
         this.setWindowMode(win)
-        if win {
+        if win && wasWin {
+            if WinGetMinMax(this.gui) = -1
+                WinRestore(this.gui)
+        } else if win {
             this.showWindow()
         } else {
             this.applyLayout()
@@ -181,6 +185,13 @@ class OverlayPanel {
         old := StrSplit(Ini(this.section, "window", ""), ",")
         if mm = 1 && old.Length = 5                 ; maximised: keep the size it comes back to
             return SetIni(old[1] "," old[2] "," old[3] "," old[4] ",1", this.section, "window")
+        if mm = 1 {                                 ; maximised before any save: its restored place (WINDOWPLACEMENT.rcNormalPosition)
+            wp := Buffer(44, 0), NumPut("uint", 44, wp)
+            if DllCall("GetWindowPlacement", "ptr", this.gui.Hwnd, "ptr", wp) {
+                l := NumGet(wp, 28, "int"), t := NumGet(wp, 32, "int")
+                return SetIni(l "," t "," (NumGet(wp, 36, "int") - l) "," (NumGet(wp, 40, "int") - t) ",1", this.section, "window")
+            }
+        }
         WinGetPos(&x, &y, &w, &h, this.gui)
         SetIni(x "," y "," w "," h "," (mm = 1 ? 1 : 0), this.section, "window")
     }

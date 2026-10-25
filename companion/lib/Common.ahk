@@ -127,20 +127,32 @@ wc3Chat(text) {
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
 }
 ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
-; the text into the open chat box: pasted (keeping the clipboard), or typed
+; the text into the open chat box: pasted (keeping the clipboard), or typed.
+; The clipboard is put back 500 ms after the last paste, not right away: the
+; game reads it when it gets to the Ctrl+V, which can be frames later (a busy
+; or slow game). Pastes in a row keep the clipboard from before the first.
 ChatInsert(text) {
+    static saved := 0, restoreFn := 0
     if !ChatPasteOn()
         return SendInput("{Text}" text)
-    saved := ClipboardAll()
+    if !restoreFn
+        restoreFn := ChatClipRestore.Bind(&saved)
+    SetTimer(restoreFn, 0)
+    if !saved
+        saved := ClipboardAll()
     A_Clipboard := ""
     A_Clipboard := text
     if !ClipWait(0.5) {
-        A_Clipboard := saved
+        restoreFn()
         return SendInput("{Text}" text)          ; the clipboard didn't take it: typed
     }
     SendInput("^v")
-    Sleep(60)                                    ; the game reads the clipboard on the paste
-    A_Clipboard := saved
+    Sleep(30)
+    SetTimer(restoreFn, -500)
+}
+ChatClipRestore(&saved) {
+    if saved
+        A_Clipboard := saved, saved := 0
 }
 wc3ChatReforged(text) {
     global chatBox
