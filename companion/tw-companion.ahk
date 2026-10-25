@@ -2120,8 +2120,10 @@ ChatEnter(hk) {
         if owner.isCommand(line) {
             SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
             ChatClosed("command")
-            ; then forget what the command itself typed (-load codes, -save, whispers...)
-            SetTimer(() => (owner.command(line), ChatRestart()), -80)
+            ; then forget what the command itself typed (-load codes, -save, whispers...).
+            ; Bound now: a for loop's variable is restored when the loop is left
+            run := ObjBindMethod(owner, "command", line)
+            SetTimer(() => (run(), ChatRestart()), -80)
             return
         }
     SendInput(key)
