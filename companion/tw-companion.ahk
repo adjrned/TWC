@@ -55,6 +55,7 @@ global C := {
 ; window, sidebar width, and where page content starts (see assets/generate_bg.py)
 global W := 880, H := 510, SIDE_W := 150, CX := 174, CY := 76
 global TB_Y := 20           ; toolbar row: page title + that page's main controls
+global TB_R := W - 82       ; where the toolbar row's page controls end: the window's – and ✕ come after
 ; Display scaling: GUI sizes and positions are in 96-DPI units (AHK scales
 ; them), but window regions, text measurement and screen coordinates are in
 ; real pixels. DPI_K converts (1.5 at 150%).
@@ -290,7 +291,7 @@ BuildWindow() {
 ; load-message row sits at the bottom, under the save list
 LayoutLoader() {
     global
-    local R := W - 52                      ; stop short of the close button
+    local R := TB_R                        ; stop short of the window buttons
     hiddenChip.Move(R - 140, TB_Y, 140, 28)
     helpBtn.Move(R - 178, TB_Y, 30, 28)
     searchEdit.Move(CX + 160, TB_Y, R - 186 - (CX + 160), 28)
@@ -1027,7 +1028,7 @@ BuildMacrosPage() {
 ; editor under the list (window coordinates; runs before StyleControl boxes them)
 LayoutMacros() {
     global
-    local R := W - 52, ey := CY + MACRO_ROWS * MACRO_ROW_H + 2 + 18, rx := CX + 520
+    local R := TB_R, ey := CY + MACRO_ROWS * MACRO_ROW_H + 2 + 18, rx := CX + 520
     macroNewBtn.Move(R - 140, TB_Y, 140, 28)
     macroHelpBtn.Move(R - 178, TB_Y, 30, 28)
     macroLblMsg.Move(CX, ey)
@@ -1440,7 +1441,7 @@ BuildRemapPage() {
 ; the view switch sits on the toolbar row, right of the title
 LayoutRemap() {
     global
-    local R := W - 52
+    local R := TB_R
     remapViewBtns["hud"].Move(R - 104, TB_Y + 2)
     remapQcSetupBtn.Move(R - 104 - 12 - 110, TB_Y + 2)
     remapViewBtns["list"].Move(R - 52, TB_Y + 2)
@@ -1778,7 +1779,7 @@ BuildHostPage() {
 ; window coordinates; runs before StyleControl boxes them
 LayoutHost() {
     global
-    local R := W - 52, y := CY + HOST_ROWS * HOST_ROW_H + 2 + 16
+    local R := TB_R, y := CY + HOST_ROWS * HOST_ROW_H + 2 + 16
     hostHelpBtn.Move(R - 30, TB_Y, 30, 28)
     hostLbls["trigger"].Move(CX, y), hostLbls["gameName"].Move(CX + 116, y), hostLbls["newBot"].Move(CX + 412, y)
     hostEdits["trigger"].Move(CX, y + 20, 100, 28)
@@ -2052,7 +2053,10 @@ BuildOverlayPage() {
     ovVersionText := lbl("", 40, 434, 680)
     local ovOpen := MkButton("Open full window", 40, 466, 150, 32, C.accent, C.onAccent, (*) => (HideMainWindow(), webOverlay.showFull()))
     local ovUpd := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.accent, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
-    AddToPage("overlay", ovOpen, ovUpd)
+    local ovModes := mainGui.AddText("x384 y466 w470 h32 +Background" C.panel " c" C.dim,
+        "Opens as a normal window (move, resize, maximise). With Warcraft III running, the show / hide key docks it over the game.")
+    UISetFont(ovModes, "s8")
+    AddToPage("overlay", ovOpen, ovUpd, ovModes)
 }
 RefreshOverlay() {
     global ovHkBtn, ovPinBtn, ovSideBtns, ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks, ovVersionText, webOverlay, C, boxes
