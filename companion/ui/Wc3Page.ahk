@@ -120,21 +120,21 @@ BuildWc3Page() {
     ; feature cards, all built at one spot: RefreshWc3 shows the tab's and
     ; version's own and stacks them
     for f in Wc3Features() {
-        local cy := y + 82
-        local card := Box("wc3", x, cy, cw, 70, C.card, C.border, 6)
-        local tt := mainGui.AddText("x" (x + 14) " y" (cy + 8) " w300 h20 0x200 +Background" C.card " c" C.text, f.title)
+        local top := y + 82
+        local card := Box("wc3", x, top, cw, 70, C.card, C.border, 6)
+        local tt := mainGui.AddText("x" (x + 14) " y" (top + 8) " w300 h20 0x200 +Background" C.card " c" C.text, f.title)
         UISetFont(tt, "s10 w600")
         local tw := TextWidth(tt, f.title)
         tt.Move(, , tw + 4)
-        local bd := mainGui.AddText("x" (x + 22 + tw) " y" (cy + 10) " w70 h16 0x200 +Background" C.card " c" C.accent, f.badge)
+        local bd := mainGui.AddText("x" (x + 22 + tw) " y" (top + 10) " w70 h16 0x200 +Background" C.card " c" C.accent, f.badge)
         UISetFont(bd, "s8 w600")
-        local ds := mainGui.AddText("x" (x + 14) " y" (cy + 29) " w" (cw - 200) " h16 +Background" C.card " c" C.dim, f.desc)
+        local ds := mainGui.AddText("x" (x + 14) " y" (top + 29) " w" (cw - 200) " h16 +Background" C.card " c" C.dim, f.desc)
         UISetFont(ds, "s8")
-        local st := mainGui.AddText("x" (x + 14) " y" (cy + 47) " w" (cw - 200) " h16 +Background" C.card " c" C.muted, "")
+        local st := mainGui.AddText("x" (x + 14) " y" (top + 47) " w" (cw - 200) " h16 +Background" C.card " c" C.muted, "")
         UISetFont(st, "s8")
         local sw := 0, btns := []
         if f.HasProp("on") {
-            sw := MkButton("Off", x + cw - 84, cy + 10, 70, 24, C.chip, C.muted, Wc3Switch.Bind(f))
+            sw := MkButton("Off", x + cw - 84, top + 10, 70, 24, C.chip, C.muted, Wc3Switch.Bind(f))
             AddToPage("wc3", sw)
         }
         ; buttons: under the switch (or in the middle), right to left, each as
@@ -143,7 +143,7 @@ BuildWc3Page() {
         local bx := x + cw - 14
         loop defs.Length {
             local d := defs[defs.Length - A_Index + 1], lbl := Wc3Label(d[1])
-            local b := MkButton(lbl, 0, cy + (sw ? 38 : 22), 70, 24, C.chip, C.text, d[2])
+            local b := MkButton(lbl, 0, top + (sw ? 38 : 22), 70, 24, C.chip, C.text, d[2])
             local bw := HasMethod(d[1]) ? 116 : Max(70, TextWidth(b, lbl) + 20)
             bx -= bw
             b.Move(bx, , bw)
@@ -234,8 +234,8 @@ Wc3MoveCard(card, y) {
     for b in card.btns
         ctls.Push(b.ctl)
     for c in ctls {
-        c.GetPos(, &cy)
-        c.Move(, cy + d)
+        c.GetPos(, &cTop)
+        c.Move(, cTop + d)
         if boxes.Has(c.Hwnd) {
             bx := boxes[c.Hwnd]
             bx.Move(bx.x, bx.y + d, bx.w, bx.h)
