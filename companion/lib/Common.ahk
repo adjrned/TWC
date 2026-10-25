@@ -79,34 +79,23 @@ Join(sep, params*) {
 }
 
 ; ---- warcraft chat ---------------------------------------------------------
-; 1.28: one SendInput per line (Enter, text, Enter), so nothing you press can
-; land in the middle of it. Reforged opens its chat box a frame or more after
-; Enter, and anything typed before that is lost (a -load code missing its
-; start), so there each step waits for the box: Enter, the box on screen
-; (or 250 ms), the text, Enter, the box gone (or 150 ms).
+; Each game version has its own way, since the companion can tell them apart:
+;  1.28      one SendInput per line (Enter, text, Enter), so nothing you press
+;            can land in the middle of it. Works smoothly.
+;  Reforged  LCH's loader's way (github.com/Lch3181/Warcraft-lll_TWrpg_AHKs,
+;            MIT): Enter, the text in {Text} mode, Enter, as three sends.
+;            {Text} sends the characters themselves instead of key presses, so
+;            the capitals and #$%&@? in load codes don't depend on Shift, which
+;            Reforged's chat doesn't reliably take from fast key presses.
 wc3Chat(text) {
-    global chatBox
-    text := RegExReplace(text, "[\^!+#{}]", "{$0}")
-    if !InStr(WC3WindowKey(), "reforged") {
-        SendInput("{Enter}" text "{Enter}")
-        return
-    }
-    g := IsSet(chatBox) && chatBox ? chatBox.current() : 0
+    if InStr(WC3WindowKey(), "reforged")
+        return wc3ChatReforged(text)
+    SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
+}
+wc3ChatReforged(text) {
     SendInput("{Enter}")
-    t := A_TickCount
-    while A_TickCount - t < 250 && !(g && chatBox.isOpen(g))
-        Sleep(10)
-    if !g
-        Sleep(150)                          ; no box position known: just give it time
-    opened := A_TickCount - t
-    SendInput(text)
-    Sleep(20)
+    SendInput("{Text}" text)
     SendInput("{Enter}")
-    t := A_TickCount
-    while A_TickCount - t < 150 && g && chatBox.isOpen(g)
-        Sleep(10)
-    if IsSet(DebugLog)
-        DebugLog("chat line (Reforged): box open after " opened " ms")
 }
 
 FocusWarcraft() {
