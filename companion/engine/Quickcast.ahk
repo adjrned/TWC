@@ -53,8 +53,10 @@ class QuickcastEngine {
     ; -- detection -----------------------------------------------------------
     ; true when the card's slots 1-11 look like the calibrated empty card.
     ; Move, Stop, Hold, Attack and Patrol are always there on a normal card, so
-    ; at most 6 slots can look empty then; 9 leaves room for the cursor or a
-    ; tooltip over the card. this.seen keeps the last look, for the debug log.
+    ; at most 6 slots can look empty then; 8 leaves room for the cursor, a
+    ; tooltip, or a card that looks a little different from the setup (another
+    ; race's HUD, brightness) until tuning catches up. this.seen keeps the last
+    ; look, for the debug log.
     targeting(c, fromWindow := -1) {
         g := this.grabCard(c, fromWindow)
         if !g
@@ -67,9 +69,9 @@ class QuickcastEngine {
             diffs .= (A_Index > 1 ? "," : "") d
         }
         this.seen := { same: same, diffs: diffs }
-        if same >= 10
+        if same >= 8
             this.tune(c, cols)
-        return same >= 9
+        return same >= 8
     }
     ; Reading the screen waits for Windows to compose a frame (~16 ms a read);
     ; reading the game window directly can be ~1 ms, but only some games draw
@@ -91,13 +93,14 @@ class QuickcastEngine {
         this.fromWindow[k] := live
         DebugLog("quickcast: reading the game window " (live ? "works (" Round(ms, 1) " ms a read), using it" : "doesn't work, reading the screen"))
     }
-    ; A clear hit: move the saved empty card a quarter of the way to what was
-    ; just seen, so small drifts (lighting, a slightly off setup) fix themselves.
-    ; Saved at most every 30 s.
+    ; A hit: move the saved empty card a quarter of the way to what was just
+    ; seen, so drifts (lighting, another race's HUD, a slightly off setup) fix
+    ; themselves in a few casts. A slot far off (the cursor, a tooltip) is left
+    ; alone. Saved at most every 30 s.
     tune(c, cols) {
         loop 11 {
             a := c.empty[A_Index], b := cols[A_Index]
-            if ColorDiff(a, b) > 80
+            if ColorDiff(a, b) > 160
                 continue                    ; the odd slot out (cursor, tooltip): leave it
             r := ((a >> 16 & 0xFF) * 3 + (b >> 16 & 0xFF)) // 4
             gr := ((a >> 8 & 0xFF) * 3 + (b >> 8 & 0xFF)) // 4

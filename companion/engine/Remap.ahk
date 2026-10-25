@@ -315,7 +315,7 @@ class RemapEngine {
         }
         quickcast.learnCapture(cal, false)
         missRun++
-        DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 9) in " checks
+        DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 8) in " checks
             . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs)
         return false
     }
