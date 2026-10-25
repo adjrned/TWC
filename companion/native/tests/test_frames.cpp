@@ -162,6 +162,8 @@ int main() {
     CHECK(!strcmp((char *)e0->text + 0x100, "25%") && lastRatio == 0.5f, "percent mode: %s; mana ratio %.2f", (char *)e0->text + 0x100, lastRatio);
     ((BarFn)bv[BAR_HIDE / 4])(bars[0], 0);
     CHECK(*(DWORD *)(bars[0] + BAR_SHOWN) == 0 && *(DWORD *)(m0 + BAR_SHOWN) == 0 && e0->text[0x1e0] == 0, "the game hides the bar: its mana bar and number too");
+    *(DWORD *)(bars[0] + BAR_SHOWN) = 1; update(0);
+    CHECK(*(DWORD *)(m0 + BAR_SHOWN) == 0 && e0->text[0x1e0] == 0, "hidden, its updates don't show them again (only the game's show does)");
     ((BarFn)bv[BAR_SHOW / 4])(bars[0], 0);
     CHECK(*(DWORD *)(m0 + BAR_SHOWN) == 1 && e0->text[0x1e0] == 1, "and shows them with it");
     int d0 = barDtors, f0 = frees;

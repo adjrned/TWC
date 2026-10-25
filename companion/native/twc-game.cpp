@@ -1542,7 +1542,9 @@ static void TimerFramesPass(BYTE *ui) {
 // entry wrapped above): its number just over it (a text frame placed at the
 // bar's own spot each update, tied to no frame), and its mana bar just under
 // it (WFE's 0.002 gap), filled and coloured like WFE's.
-struct BarExtra { BYTE *bar, *mana, *text; int last; bool manaShown, textShown, noMana; };
+// shown: the health bar's own visibility, from [+0x94] when the entry is made (WFE's
+// test), then from the game's hide / show calls only
+struct BarExtra { BYTE *bar, *mana, *text; int last; bool shown, manaShown, textShown; };
 static const int BX_N = 2048;
 static BarExtra g_bx[BX_N];         // open addressing on the bar's address
 static int g_bxCount;
@@ -1725,12 +1727,15 @@ static void BarExtras(BYTE *bar, BYTE *unit) {
         if (*(DWORD *)(bar + BAR_KIND) != 5)
             return;
         bool hn = g_shared->hnOn && !g_framesBad, mb = g_shared->mbOn && !g_manaBad;
+        bool fresh = g_bxCount < BX_N && !BxFind(bar, false);
         BarExtra *e = BxFind(bar, hn || mb);
         if (!e)
             return;
+        if (fresh)
+            e->shown = *(DWORD *)(bar + BAR_SHOWN) != 0;
         if (!unit)
             unit = *(BYTE **)(bar + BAR_UNIT);
-        bool shown = *(DWORD *)(bar + BAR_SHOWN) != 0;
+        bool shown = e->shown;
         float cur, max;
         if (mb && unit && UnitStat(unit, UNIT_MANA, UNIT_MAXMANA_HANDLE, &cur, &max)) {
             if (!e->mana)
@@ -1762,6 +1767,7 @@ static DWORD __fastcall BarHideHook(void *bar, int edx) {
     BarExtra *e = g_bxCount ? BxFind((BYTE *)bar, false) : nullptr;
     if (e)
         __try {
+            e->shown = false;
             if (e->mana && e->manaShown)
                 g_gameBarHide(e->mana, 0), e->manaShown = false;
             if (e->text && e->textShown)
@@ -1775,6 +1781,7 @@ static DWORD __fastcall BarShowHook(void *bar, int edx) {
     BarExtra *e = g_bxCount ? BxFind((BYTE *)bar, false) : nullptr;
     if (e)
         __try {
+            e->shown = true;
             if (e->mana && !e->manaShown)
                 g_gameBarShow(e->mana, 0), e->manaShown = true;
             if (e->text && !e->textShown)
