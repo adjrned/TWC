@@ -1,0 +1,52 @@
+#include "../twc-game.cpp"
+#include "check.h"
+static DWORD mainTid; static void *fakeUi;
+static void *__fastcall FakeGetUi(int, int) { return fakeUi; }
+static BYTE units[3][0x60], holders[3][0x10], bars[3][0x140];
+static float H(int i) { return *(float *)(bars[i] + BAR_HEIGHT); }
+static float Wd(int i) { return *(float *)(bars[i] + BAR_WIDTH); }
+static DWORD WINAPI Tester(void *) {
+    g_shared->hbOn = 1; g_shared->hbHeight = 2.0f; g_shared->hbWidth = 1.5f;
+    for (int k = 0; k < 6; k++) { QueueBars(); Sleep(300); }
+    CHECK(fabsf(H(0) - 0.008f) < 1e-6f && fabsf(Wd(0) - 0.075f) < 1e-6f && fabsf(H(1) - 0.008f) < 1e-6f && fabsf(H(2) - 0.004f) < 1e-6f
+        && g_shared->hbState == 1 && fabsf(g_shared->hbDefHeight - 0.004f) < 1e-6f && *(DWORD *)(g_base + 0x200000 - 16) == 2,
+        "on x2 / x1.5: bars %.4f x %.4f and %.4f, the mana bar left (%.4f), state %lu, refreshes %lu", H(0), Wd(0), H(1), H(2), g_shared->hbState, *(DWORD *)(g_base + 0x200000 - 16));
+    g_shared->hbOn = 0;
+    for (int k = 0; k < 4; k++) { QueueBars(); Sleep(300); }
+    CHECK(fabsf(H(0) - 0.004f) < 1e-6f && fabsf(Wd(0) - 0.05f) < 1e-6f && fabsf(H(1) - 0.004f) < 1e-6f && *(DWORD *)(g_base + 0x200000 - 16) == 4,
+        "off: put back (%.4f x %.4f), refreshes %lu", H(0), Wd(0), *(DWORD *)(g_base + 0x200000 - 16));
+    Verdict();
+    PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
+    return 0;
+}
+int main() {
+    strcpy_s(g_logPath, "bars.log"); DeleteFileA("bars.log");
+    static Shared sh; g_shared = &sh;
+    BYTE *img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    g_base = img; g_imageSize = 0x1000000;
+    // the layout refresh: inc dword [img+0x200000-16]; ret 4
+    BYTE fn[] = { 0xFF, 0x05, 0, 0, 0, 0, 0xC2, 0x04, 0x00 }; *(DWORD *)(fn + 2) = (DWORD)(img + 0x200000 - 16);
+    memcpy(img + RVA_LAYOUT_REFRESH, fn, sizeof(fn));
+    DWORD old; VirtualProtect(img + 0xaad000, 0x1000, PAGE_READWRITE, &old);
+    VirtualProtect(img + 0xd32000, 0x1000, PAGE_READWRITE, &old);
+    static BYTE ui[0x400]; *(DWORD *)ui = (DWORD)(img + RVA_UI_VTABLE); g_uiVtable = (DWORD)(img + RVA_UI_VTABLE);
+    fakeUi = ui; g_getUi = FakeGetUi;
+    static BYTE *list[3];
+    for (int i = 0; i < 3; i++) {
+        *(BYTE **)(units[i] + UNIT_BARS) = holders[i]; *(BYTE **)(holders[i] + BARS_HEALTH) = bars[i];
+        *(DWORD *)bars[i] = (DWORD)(img + RVA_STATBAR_VTABLE);
+        *(DWORD *)(bars[i] + BAR_KIND) = i == 2 ? 4 : 5;            // bar 2: not a health bar
+        *(float *)(bars[i] + BAR_HEIGHT) = 0.004f; *(float *)(bars[i] + BAR_WIDTH) = 0.05f;
+        list[i] = units[i];
+    }
+    *(DWORD *)(img + RVA_UNIT_LIST + 4) = 3; *(BYTE ***)(img + RVA_UNIT_LIST + 8) = list;
+    mainTid = GetCurrentThreadId();
+    WNDCLASSA wc = {}; wc.lpfnWndProc = DefWindowProcA; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);
+    RegisterClassA(&wc);
+    HWND w = CreateWindowA("Warcraft III", "Warcraft III", WS_OVERLAPPEDWINDOW, 0, 0, 200, 100, 0, 0, wc.hInstance, 0);
+    ShowWindow(w, SW_SHOWNOACTIVATE);
+    CreateThread(0, 0, Tester, 0, 0, 0);
+    MSG m; while (GetMessageA(&m, 0, 0, 0) > 0) { TranslateMessage(&m); DispatchMessageA(&m); }
+    Unsubclass(); DestroyWindow(w);
+    return g_fails;
+}
