@@ -181,6 +181,9 @@ int main() {
     CHECK(text2[0x1e0] == 0 && g_textPoolN == 1 && g_textHideN == 0, "the next pass hides that number and keeps it for another bar");
     *(DWORD *)(bars[2] + BAR_SHOWN) = 1; t0 = texts; update(2);
     CHECK(texts == t0 && BxFind(bars[2], false) && BxFind(bars[2], false)->text == text2, "a new bar takes the kept number frame");
+    BYTE *mGame = BxFind(bars[0], false)->mana; int mc = (int)sh.mbCount, dd = barDtors;
+    ((BarDtorFn)bv[BAR_DTOR / 4])(mGame, 0, 1);
+    CHECK(!BxFind(bars[0], false)->mana && (int)sh.mbCount == mc - 1 && barDtors == dd + 1, "the game destroys a mana bar itself: forgotten, not destroyed again");
     sh.mbOn = 0; FramesPass();
     CHECK(sh.mbCount == 0 && !e0->mana && g_extrasHooked && sh.mbState == 0, "mana bars off: all destroyed, numbers stay");
     sh.hnOn = 0; FramesPass();
@@ -188,7 +191,14 @@ int main() {
         "both off: numbers hidden, entries the game's again");
     FollowColours();
     CHECK(!g_barHooked && bv[STATBAR_UPDATE / 4] == gameUpdate, "and the worker puts the bar update back");
-    CHECK(frees == barCtors, "every mana bar made was freed (%d made, %d freed)", barCtors, frees);
+    CHECK(frees == barCtors - 1, "every mana bar made was freed but the one the game destroyed (%d made, %d freed)", barCtors, frees);
+    // a new game while bars are still listed: they're forgotten, not touched
+    sh.hnOn = 1; FramesPass(); FollowColours(); FramesPass();
+    for (int i = 0; i < 3; i++) update(i);
+    int listed = g_bxCount;
+    static BYTE ui2[0x400]; memcpy(ui2, ui, sizeof(ui2)); fakeUi = ui2; int s0 = setTexts, h0 = hides;
+    FramesPass();
+    CHECK(listed == 3 && g_bxCount == 0 && sh.hnCount == 0 && setTexts == s0 && hides == h0, "a new game UI: the last game's %d bars forgotten without a call", listed);
     Verdict();
     return g_fails;
 }

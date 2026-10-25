@@ -783,7 +783,10 @@ static void ReadTimersGuarded(BYTE *ui) {
 }
 
 // ui: the worker's last g_ui, or the game thread's own when it draws them in the game
+static SRWLOCK g_timersLock = SRWLOCK_INIT;     // the worker and the game thread may both read them (switching over)
+
 static void ReadTimers(BYTE *ui) {
+    AcquireSRWLockExclusive(&g_timersLock);
     DWORD keep = g_shared->tmFlags & 0x100;
     ZeroMemory(g_shared->cdLeft, (BYTE *)(g_shared->buffId + 16) - (BYTE *)g_shared->cdLeft);
     ZeroMemory(g_shared->itemLeft, sizeof(g_shared->itemLeft) + sizeof(g_shared->itemTotal));
@@ -791,6 +794,7 @@ static void ReadTimers(BYTE *ui) {
     if (ui)
         ReadTimersGuarded(ui);
     InterlockedIncrement(&g_shared->tmSeq);
+    ReleaseSRWLockExclusive(&g_timersLock);
 }
 
 // -- the game's thread -------------------------------------------------------------
@@ -1837,6 +1841,22 @@ static DWORD __fastcall BarDtorHook(void *bar, int edx, int flags) {
             g_shared->hnCount--;
         }
         BxRemove(e);
+    } else if (g_shared->mbCount) {
+        // one of the mana bars, destroyed by the game itself (if its constructor
+        // put it in a list of the game's): forget it, so it isn't destroyed twice
+        __try {
+            if (*(DWORD *)((BYTE *)bar + BAR_KIND) == 0)
+                for (BarExtra &x : g_bx)
+                    if (x.bar && x.mana == bar) {
+                        x.mana = nullptr;
+                        g_shared->mbCount--;
+                        static int logs;
+                        if (logs++ < 3)
+                            Log("mana bars: the game destroyed the mana bar %p itself (its health bar %p stays)", bar, x.bar);
+                        break;
+                    }
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
     }
     return g_gameBarDtor(bar, edx, flags);
 }
@@ -1910,8 +1930,10 @@ static void ExtrasPass(BYTE *ui) {
     g_shared->mbState = !mb ? 0 : hooksBad || g_manaBad ? 3 : g_extrasHooked && ui ? 1 : 2;
 }
 
-// another game UI (or none): its text frames are gone with the last one
-static void FramesForget() {
+// another game UI (or none): its text frames are gone with the last one. A
+// new game UI: any bar still listed is from the last game (its bars are gone
+// by now, even if their dtor never came through ours), so forgotten too
+static void FramesForget(BYTE *newUi) {
     ZeroMemory(g_tCd, sizeof(g_tCd));
     ZeroMemory(g_tBuff, sizeof(g_tBuff));
     ZeroMemory(g_tItem, sizeof(g_tItem));
@@ -1919,6 +1941,11 @@ static void FramesForget() {
     for (BarExtra &e : g_bx)
         if (e.bar && e.text)
             e.text = nullptr, g_shared->hnCount--;
+    if (newUi && g_bxCount) {
+        Log("frames: %d bars from the last game were still listed (%lu mana bars): forgotten, not touched", g_bxCount, g_shared->mbCount);
+        ZeroMemory(g_bx, sizeof(g_bx));
+        g_bxCount = 0, g_shared->mbCount = 0, g_shared->hnCount = 0;
+    }
     g_shared->frCount = 0;
 }
 
@@ -1929,7 +1956,7 @@ static void FramesPass() {
     if (ui != g_framesUi) {
         if (g_framesUi)
             Log("frames: the game UI changed (%p -> %p): its frames are the game's to free", g_framesUi, ui);
-        FramesForget();
+        FramesForget(ui);
         g_framesUi = ui;
     }
     TimerFramesPass(ui);
@@ -1996,9 +2023,11 @@ static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxH
     Game(RVA_FONTSTRING_SET, fs, { (DWORD)t });
 }
 
+static bool g_portraitBad;              // writing a line faulted 3 times: no more (the companion can't turn it back on)
+
 static DWORD __fastcall PortraitHook(void *portrait, int edx) {
     DWORD r = g_gamePortrait(portrait, edx);
-    if (g_shared->prOn) {
+    if (g_shared->prOn && !g_portraitBad) {
         static int faults;
         __try {
             BYTE *p = (BYTE *)portrait, *unit = *(BYTE **)(p + PORTRAIT_UNIT);
@@ -2013,7 +2042,7 @@ static DWORD __fastcall PortraitHook(void *portrait, int edx) {
             if (faults++ < 3)
                 Log("portrait: writing a line faulted");
             if (faults >= 3)
-                g_shared->prOn = 0, g_shared->prState = 3;
+                g_portraitBad = true, g_shared->prState = 3, Log("portrait: stopping");
         }
     }
     return r;
@@ -2063,7 +2092,11 @@ static void FollowPortrait() {
     }
     if (on != g_portraitHooked && g_portraitSlot && !SwapPortrait(on))
         refused = true, g_shared->prState = 3;
-    if (g_shared->prState != 3)
+    if (g_portraitBad && g_portraitHooked)
+        SwapPortrait(false);
+    if (g_portraitBad)
+        refused = true, g_shared->prState = 3;
+    else if (g_shared->prState != 3)
         g_shared->prState = !on ? 0 : g_ui ? 1 : 2;
 }
 
