@@ -33,7 +33,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 5
+    DWORD layout;           // 6
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -72,6 +72,11 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float hbDefHeight;      // module: the game's own bar height / width, as first seen
     float hbDefWidth;
     DWORD hbCount;          // module: bars resized in the last pass
+    // layout 6: health bar colours (BarUpdateHook)
+    DWORD hcOn;             // companion: 1 = colour the bars
+    DWORD hcMode;           // companion: 0 by owner, 1 by health
+    DWORD hcColours[5];     // companion: 0xAARRGGBB for yours, allies, enemies, neutral hostile, neutral passive
+    DWORD hcState;          // module: 0 off, 1 on (the bar update is ours), 2 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -868,6 +873,147 @@ static void QueueBars() {
         PostMessageA(g_gameWnd, g_barsMsg, 0, 0);
 }
 
+// -- health bar colours ---------------------------------------------------------------
+// The game repaints a bar's colour on every update of the bar, so the colour
+// is set right after the game's own update, as WFE does (study_hpcolours.md).
+// WFE gives every bar its own copy of the CStatBar vtable; here the one shared
+// entry for the update (vtable +0x74) points at BarUpdateHook while colours are
+// on, which calls the game's original first. That's a 4-byte data write in the
+// game's vtable, nothing else; it's put back when colours go off or on unload
+// (if it's still ours). The hook runs on the game's thread (the game calls it).
+static const DWORD STATBAR_UPDATE = 0x74;       // __fastcall Update(bar, 0, unit), ret 4
+static const DWORD RVA_PLAYERS = 0xd305e0;      // [[it]] = the game state: local player id word +0x28, players +0x58
+static const DWORD RVA_HANDLE_LOOKUP = 0x7e090; // __fastcall obj(id1, id2) (WFE's [0x1013ba2c])
+static const DWORD RVA_UNIT_HP = 0x81b30;       // __fastcall(unit + 0x98, 0, float *hp) (WFE's [0x1013ce3c])
+static const DWORD BAR_UNIT = 0x154, BAR_FILL = 0x134;      // the bar's unit; its fill (the coloured part)
+static const DWORD UNIT_OWNER = 0x58, UNIT_HP = 0x98, UNIT_MAXHP_HANDLE = 0xa0;
+
+typedef void(__fastcall *BarUpdateFn)(void *, int, void *);
+typedef void *(__fastcall *LookupFn)(DWORD, DWORD);
+typedef void(__fastcall *HpFn)(void *, int, float *);
+typedef void(__fastcall *ColourFn)(void *, int);
+
+static BarUpdateFn g_gameBarUpdate;     // the game's own update: set once, never cleared (a call may be in flight)
+static bool g_barHooked;
+
+// is player b allied to player a (WFE's 0x1003c2a0: a's alliance flags, bit b's slot)
+static bool Allied(BYTE *state, int a, int b) {
+    BYTE *pa = *(BYTE **)(state + 0x58 + a * 4), *pb = *(BYTE **)(state + 0x58 + b * 4);
+    if (!pa || !pb)
+        return false;
+    BYTE *h = *(BYTE **)(pa + 0x38);
+    if (!h)
+        return false;
+    DWORD *pair = (DWORD *)(h + 0x40);
+    if (pair[0] == 0xFFFFFFFF || pair[1] == 0xFFFFFFFF)
+        return false;
+    BYTE *flags = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
+    return flags && (*(DWORD *)(flags + 0x78) & (1u << *(BYTE *)(pb + 0x30)));
+}
+
+// WFE's by-health colour: green over half, then to yellow, then to red
+static DWORD HealthColour(float r) {
+    r = r < 0 ? 0 : r > 1 ? 1 : r;
+    float g = r >= 0.5f ? 1 : 2 * r, rd = r <= 0.5f ? 1 : 1 - 2 * (r - 0.5f);
+    return 0xFF000000 | ((DWORD)(rd * 255) << 16) | ((DWORD)(g * 255) << 8);
+}
+
+static DWORD BarColour(BYTE *unit) {
+    if (g_shared->hcMode == 1) {
+        float hp = 0;
+        ((HpFn)(g_base + RVA_UNIT_HP))(unit + UNIT_HP, 0, &hp);
+        DWORD *pair = (DWORD *)(unit + UNIT_MAXHP_HANDLE);
+        BYTE *mx = pair[0] != 0xFFFFFFFF ? (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]) : nullptr;
+        float max = mx ? *(float *)(mx + 0x84) : 0;
+        return max > 0 && hp == hp ? HealthColour(hp / max) : 0;
+    }
+    int owner = *(int *)(unit + UNIT_OWNER);
+    BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
+    state = state ? *(BYTE **)state : nullptr;
+    if (!state || owner < 0 || owner > 15)
+        return 0;
+    int local = *(short *)(state + 0x28);
+    if (local < 0 || local > 15)
+        return 0;
+    const DWORD *c = g_shared->hcColours;
+    return owner == local ? c[0] : owner == 12 ? c[3] : owner == 15 ? c[4] : Allied(state, local, owner) ? c[1] : c[2];
+}
+
+// after the game's update: the fill's colour bytes (A, B, G, R at +0x68), then its redraw
+static void ColourBar(BYTE *bar, BYTE *unit) {
+    static int faults;
+    __try {
+        if (*(DWORD *)(bar + BAR_KIND) != 5)
+            return;
+        if (!unit)
+            unit = *(BYTE **)(bar + BAR_UNIT);
+        BYTE *fill = *(BYTE **)(bar + BAR_FILL);
+        if (!unit || !fill)
+            return;
+        DWORD c = BarColour(unit);
+        if (!c)
+            return;
+        fill[0x68] = (BYTE)(c >> 24), fill[0x69] = (BYTE)c, fill[0x6a] = (BYTE)(c >> 8), fill[0x6b] = (BYTE)(c >> 16);
+        DWORD fvt = *(DWORD *)fill, f = *(DWORD *)(fvt + 0x24);
+        if (f >= (DWORD)g_base && f - (DWORD)g_base < g_imageSize)
+            ((ColourFn)f)(fill, 0);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        if (faults++ < 3)
+            Log("health bar colours: colouring a bar faulted");
+    }
+}
+
+static void __fastcall BarUpdateHook(void *bar, int edx, void *unit) {
+    g_gameBarUpdate(bar, edx, unit);        // the game's own update, untouched
+    if (g_shared->hcOn)
+        ColourBar((BYTE *)bar, (BYTE *)unit);
+}
+
+// point the shared vtable entry at the hook (on) or back at the game's (off)
+static bool SwapBarUpdate(bool on) {
+    DWORD *slot = (DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_UPDATE);
+    if (on == g_barHooked)
+        return true;
+    if (!PageIs(slot, READ) || PageIs(slot, EXEC))
+        return false;
+    DWORD cur = *slot;
+    if (on && !g_gameBarUpdate && !IsGameCode((BYTE *)cur)) {
+        Log("health bar colours: refused, the bar update entry (%08lX) isn't game code", cur);
+        return false;
+    }
+    if (!on && cur != (DWORD)BarUpdateHook) {
+        Log("health bar colours: the bar update entry was changed by someone else: left as it is");
+        return false;
+    }
+    if (on && !g_gameBarUpdate)
+        g_gameBarUpdate = (BarUpdateFn)cur;   // before the swap: the hook calls it
+    DWORD want = on ? (DWORD)BarUpdateHook : (DWORD)g_gameBarUpdate, old;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        return false;
+    InterlockedExchange((volatile LONG *)slot, (LONG)want);
+    VirtualProtect(slot, 4, old, &old);
+    g_barHooked = on;
+    Log(on ? "health bar colours: on (the bar update +%06lX is wrapped)" : "health bar colours: off (the bar update +%06lX is the game's again)",
+        (DWORD)g_gameBarUpdate - (DWORD)g_base);
+    return true;
+}
+
+// the worker's part: follow the companion's switch
+static void FollowColours() {
+    static bool refused;
+    if (!g_getUi || refused)
+        return;
+    bool on = g_shared->hcOn != 0;
+    if (on && !g_barHooked) {
+        if (!IsGameCode(g_base + RVA_HANDLE_LOOKUP) || !IsGameCode(g_base + RVA_UNIT_HP) || !SwapBarUpdate(true)) {
+            refused = true, g_shared->hcState = 2;
+            return;
+        }
+    } else if (!on && g_barHooked)
+        SwapBarUpdate(false);
+    g_shared->hcState = g_barHooked ? 1 : 0;
+}
+
 // a command from the companion: handed to the game thread, answered within 1 s
 static void ServeCommand(LONG seq) {
     DWORD cmd = g_shared->cmd;
@@ -971,6 +1117,7 @@ static void Run() {
             ReadTimers();
         }
         QueueBars();
+        FollowColours();
         LONG cseq = g_shared->cmdSeq;
         if (cseq != g_shared->cmdDone)
             ServeCommand(cseq);
@@ -1041,7 +1188,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 5;
+        g_shared->layout = 6;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
@@ -1051,7 +1198,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass();               // FreeLibrary, not the game exiting: give the window back
+            Unsubclass(), SwapBarUpdate(false);     // FreeLibrary, not the game exiting: give back the window and the bar update
         if (g_shared)
             g_shared->status = 3;
     }
