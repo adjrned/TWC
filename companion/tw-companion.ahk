@@ -546,8 +546,9 @@ BuildSaveList() {
         ["When", "Every load: LOAD, double-click, Enter, -l, -ll and favourites."],
         ["Random", "Separate options with  |  and one of them is picked at random each load."],
         ["Example", "gl hf | sniper time | brb    →  sends one of these three"],
+        ["Name", "% is the save's name: the default  % time!  sends  knight time!  for knight#92."],
         ["Series", "Numbered saves (knight#91, #92…) share one message for the whole series."],
-        ["Empty", "Leave it blank to send nothing."],
+        ["Empty", "Clear it to send nothing."],
         ["", "It's sent like anything you type in chat, so other players can see it."]], "above-right")
     OnMessage(0x200, PopoverHover)         ; WM_MOUSEMOVE: open a popover when its anchor is hovered
 }
@@ -649,11 +650,11 @@ RenderSaveRows() {
         row.count.Text := f.kind = "series" && f.files.Length > 1
             ? f.files.Length " saves  " (expanded.Has(f.key) ? "▾" : "▸") : ""
         row.count.Opt("+Background" bg " +c" C.muted)
-        row.msg.Text := f.msg ? Chr(0xE8BD) : ""
+        row.msg.Text := CustomMessage(f.msg) ? Chr(0xE8BD) : ""
         row.msg.Opt("+Background" bg " +c" C.muted)
         row.date.Text := f.date "  "
         row.date.Opt("+Background" bg " +c" C.muted)
-        row.msg.Text := f.msg && !child ? Chr(0xE8BD) : ""
+        row.msg.Text := CustomMessage(f.msg) && !child ? Chr(0xE8BD) : ""
         row.eye.Text := child ? "" : Chr(f.hidden ? 0xED1A : 0xE890)
         row.eye.Opt("+Background" bg " +c" (f.hidden ? C.accent : C.dim))
         if on {
@@ -762,16 +763,18 @@ SaveMessageChanged() {
     e := saveFiles[i]
     loader.setMessage(Map("name", e.key, "msg", Trim(msgEdit.Value)))
     msgSummary.Text := MessageSummary(msgEdit.Value)
-    had := e.msg != ""
+    had := CustomMessage(e.msg)
     for f in saveFiles                      ; a series shares one message
         if f.key = e.key
             f.msg := Trim(msgEdit.Value)
     for f in saveCache                      ; keep the cached read in step
         if f.key = e.key
             f.msg := Trim(msgEdit.Value)
-    if had != (e.msg != "")
+    if had != CustomMessage(e.msg)
         RenderSaves()
 }
+; the row badge marks a message you wrote (not the "% time!" default)
+CustomMessage(m) => m != "" && m != LoaderEngine.DEFAULT_MSG
 
 ; why the save list is empty -> [title, subtitle, show "Choose folder"]
 EmptyReason() {

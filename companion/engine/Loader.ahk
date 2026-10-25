@@ -7,6 +7,8 @@ class LoaderEngine {
     hiddenMap := Map()
     detected := ""          ; cached detect() result
     sessionLast := ""       ; save loaded / saved through the companion since it started (-sn follows it)
+    adopted := Map()        ; "lm.txt" -> "lm#*": unnumbered saves that head a series (see files)
+    static DEFAULT_MSG := "% time!"
 
     __New() {
         this.loadHidden()
@@ -105,6 +107,8 @@ class LoaderEngine {
     }
     ; star / hide / message key for a save: its series, or the file itself
     static KeyOf(name) => (s := LoaderEngine.Series(name)) ? s.key : name
+    ; the same, counting an unnumbered save that heads a series ("lm" with lm#2)
+    keyOf(name) => this.adopted.Get(StrLower(name), LoaderEngine.KeyOf(name))
 
     ; the file name TWRPG writes for "-save <name>": it drops spaces and saves
     ; lowercase ("-save Sorc 3" -> sorc3.txt)
@@ -144,8 +148,6 @@ class LoaderEngine {
                 continue
             key := LoaderEngine.KeyOf(A_LoopFileName)
             isHidden := this.hiddenMap.Has(key) || this.hiddenMap.Has(A_LoopFileName) ? 1 : 0
-            if isHidden && !showHidden
-                continue
             if !LoaderEngine.IsSave(FileRead(A_LoopFileFullPath, "UTF-8"))
                 continue
             s := LoaderEngine.Series(A_LoopFileName)
@@ -156,10 +158,59 @@ class LoaderEngine {
                 date: FormatTime(A_LoopFileTimeModified, "MM/dd/yy  hh:mm tt"),
                 sortKey: A_LoopFileTimeModified,
                 hidden: isHidden,
-                msg: this.messageFor(A_LoopFileName)
+                msg: ""
             })
         }
+        ; an unnumbered save is #1 of the series -sn starts from it: "lm" joins
+        ; lm#2, lm#3 (one row, one star / hide / message, moved over once)
+        keys := Map()
+        for f in out
+            if f.series
+                keys[f.series.key] := 1
+        this.adopted := Map()
+        for f in out {
+            base := RegExReplace(f.name, "i)\.txt$")
+            if !f.series && keys.Has(k := StrLower(base) "#*") {
+                this.adopt(f.name, k)
+                f.series := { stem: base, sep: "#", num: 1, width: 1, key: k }
+                f.key := k
+                f.hidden := this.hiddenMap.Has(k) ? 1 : 0
+            }
+        }
+        for f in out
+            f.msg := this.messageFor(f.name)
+        if !showHidden {
+            kept := []
+            for f in out
+                if !f.hidden
+                    kept.Push(f)
+            out := kept
+        }
         return out
+    }
+
+    ; move a save's own star / hide / message to its series key
+    adopt(name, key) {
+        this.adopted[StrLower(name)] := key
+        raw := Ini(this.section, "pinned", "")
+        if raw {
+            list := [], seen := Map()
+            for n in StrSplit(raw, "|")
+                if !seen.Has(n := (n = name ? key : n))
+                    seen[n] := 1, list.Push(n)
+            if (fixed := Join("|", list*)) != raw
+                SetIni(fixed, this.section, "pinned")
+        }
+        if this.hiddenMap.Has(name) {
+            this.hiddenMap.Delete(name), this.hiddenMap[key] := true
+            this.writeHidden()
+        }
+        own := Ini(this.section "Msg", name, Chr(1))
+        if own != Chr(1) {
+            if Ini(this.section "Msg", key, Chr(1)) = Chr(1)
+                SetIni(own, this.section "Msg", key)
+            try IniDelete(iniFile, this.section "Msg", name)
+        }
     }
 
     ; favourites, by key; entries saved per file before series existed
@@ -202,10 +253,19 @@ class LoaderEngine {
         return { ok: 1 }
     }
 
-    ; load message for a save: its series' one, else its own
+    ; load message for a save: its series' one, else its own, else "% time!"
+    ; (one cleared on purpose is kept as "" and sends nothing)
     messageFor(name) {
-        m := Ini(this.section "Msg", LoaderEngine.KeyOf(name), "")
-        return m != "" ? m : Ini(this.section "Msg", name, "")
+        m := Ini(this.section "Msg", this.keyOf(name), Chr(1))
+        if m = Chr(1)
+            m := Ini(this.section "Msg", name, Chr(1))
+        return m = Chr(1) ? LoaderEngine.DEFAULT_MSG : m
+    }
+
+    ; % in a load message is the save's name ("knight" for knight#92)
+    static FillMessage(msg, name) {
+        s := LoaderEngine.Series(name)
+        return StrReplace(msg, "%", s ? s.stem : RegExReplace(name, "i)\.txt$"))
     }
 
     ; "a | b | c" -> one of the options at random (flavour text)
@@ -386,7 +446,7 @@ class LoaderEngine {
         BlockInput("On")
         try {
             if msg := this.pickMessage(this.messageFor(name))
-                wc3Chat(msg)
+                wc3Chat(LoaderEngine.FillMessage(msg, name))
             if Integer(Ini(this.section, "convert", 1))
                 wc3Chat("-convert " userName)
             for code in codes {

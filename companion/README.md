@@ -87,7 +87,9 @@ next to the script records each change and each quickcast with the time.
   click ☆ to make a save a favourite (★ saves stay on top, the rest are newest
   first), click the eye to hide one (**Show hidden** brings them back, dimmed).
   Select a save to edit its **load message**: a chat line sent when it loads;
-  separate options with `|` and one is picked at random each time. The ⓘ next
+  separate options with `|` and one is picked at random each time, and `%` is
+  the save's name. The default is `% time!` (`knight time!` for `knight#92`);
+  clear the field to send nothing. The ⓘ next
   to the field explains it, and the text beside it shows what will be sent
   (nothing / once per load / N options picked at random). Double-click,
   Enter or **LOAD** loads the selected save (arrows / PgUp / PgDn / wheel to move).
@@ -111,7 +113,9 @@ next to the script records each change and each quickcast with the time.
   and load message for the whole series. `-l knight` loads the newest number.
   `-sn` uses the highest number on disk + 1, so loading an older save and saving
   again never overwrites a newer one; your separator and zero padding are kept
-  (`sniper_007` → `sniper_008`).
+  (`sniper_007` → `sniper_008`). A save without a number heads the series that
+  `-sn` starts from it: `lm` counts as #1 and is listed under `lm#2`, `lm#3`,
+  and its star, hide toggle and message move to the series.
 
   These never reach chat. The companion records what you type in WC3 (only while
   WC3 is focused) since the last Enter/Esc/click; if a line is exactly a loader
