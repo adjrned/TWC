@@ -248,13 +248,21 @@ class RemapEngine {
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
     ; The card changes a frame or two after the key; it's read back to back
-    ; from right after the key (no waits in between) for up to 200 ms, and a
-    ; targeted cast clicks the moment it's seen. The log line says what was seen.
+    ; from right after the key (no waits in between), and a targeted cast clicks
+    ; the moment it's seen. How long to keep looking adapts: 3x the typical
+    ; delay of the last hits (60-200 ms), so a cooldown or the T menu gives up
+    ; quickly and a held key repeats sooner. The log line says what was seen.
     quickSmart(game, q, cal) {
         global quickcast
+        static recent := []                 ; the last 10 hit delays (ms)
+        limit := 200
+        if recent.Length >= 3 {
+            sorted := recent.Clone(), SortBy(sorted, (a, b) => a - b)
+            limit := Max(60, Min(200, 3 * sorted[(sorted.Length + 1) // 2]))
+        }
         SendInput(q this.keyText(game))
         t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
-        while QpcMs() - t < 200 {
+        while QpcMs() - t < limit {
             checks++
             hit := quickcast.targeting(cal)
             if quickcast.seen.same > best.same
@@ -263,14 +271,22 @@ class RemapEngine {
                 quickcast.learnCapture(cal, true)       ; (first hit only: tests the window read, still targeting)
                 SendInput(q "{Click}")
                 ms := QpcMs() - t
+                recent.Push(ms)
+                if recent.Length > 10
+                    recent.RemoveAt(1)
                 DebugLog("quickcast " game ": clicked " Round(ms, 1) " ms after the key (" checks " reads, "
                     . (quickcast.fromWindow.Get(WC3WindowKey(), false) ? "game window" : "screen") ")")
                 return true
             }
         }
         quickcast.learnCapture(cal, false)
+        ; a miss raises the limit a little: if the game got slower (lag, low FPS),
+        ; misses in a row bring it back to 200 ms instead of giving up too early
+        recent.Push(limit / 2)
+        if recent.Length > 10
+            recent.RemoveAt(1)
         DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 9) in " checks
-            . " reads / " Round(QpcMs() - t) " ms; slot differences " best.diffs)
+            . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs)
         return false
     }
     clickMouse(side, yourKey) {
