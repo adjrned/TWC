@@ -6,8 +6,8 @@
 ;  running game's version. 1.28f features may use the game module (injected;
 ;  its row is only on the 1.28f side); Reforged ones only read the screen.
 ;  Four tabs set where every feature goes, now and later:
-;    Casting   how abilities go off: quickcast (screen or game module), later
-;              a self-cast key, an autocast toggle key
+;    Casting   how abilities go off: quickcast (screen or game module), the
+;              self-cast and autocast toggle keys
 ;    Timers    what's ready and what's running out: cooldown and buff timers,
 ;              buff alerts
 ;    Display   how the game looks: health bar size and colours, clearing
@@ -36,7 +36,7 @@ Wc3OnVersion(f, ver) => f.badge = "Both" || f.badge = Wc3VerBadge(ver)
 ; what each tab will hold later on each version (shown under its cards)
 Wc3PlannedText(tab, ver) {
     static p := Map(
-        "casting128", "Planned: a self-cast key (the next ability goes on your hero), an autocast toggle key.",
+        "casting128", "",
         "castingreforged", "Planned: a self-cast key (the next ability goes on your hero).",
         "timers128", "Planned: naming your buffs, alerts for a buff about to run out, timers drawn inside the game.",
         "timersreforged", "Planned: cooldown and buff timers read from the screen, naming your buffs.",
@@ -63,6 +63,14 @@ Wc3Features() {
         { tab: "casting", title: "Quickcast through the game", badge: "1.28f",
             desc: "The game itself says when it wants a target: no setup. Until then, the screen.",
             on: (*) => gameModule.quickcast, set: (v) => gameModule.setQuickcast(v), status: (*) => gameModule.qcStatusText() },
+        { tab: "casting", title: "Self-cast key", badge: "1.28f",
+            desc: "Hold it while you cast: the ability goes on your selected unit.",
+            on: (*) => gameCmds.selfcast, set: (v) => gameCmds.setSelfcast(v), status: (*) => gameCmds.selfStatusText(),
+            buttons: [[(*) => "Key: " gameCmds.heldText("selfcast"), (*) => Wc3Capture("selfcast")]] },
+        { tab: "casting", title: "Autocast toggle key", badge: "1.28f",
+            desc: "Hold it and press an ability's key: its autocast turns on or off.",
+            on: (*) => gameCmds.autocast, set: (v) => gameCmds.setAutocast(v), status: (*) => gameCmds.acStatusText(),
+            buttons: [[(*) => "Key: " gameCmds.heldText("autocast"), (*) => Wc3Capture("autocast")]] },
         { tab: "timers", title: "Cooldown and buff timers", badge: "1.28f",
             desc: "Seconds left on the command card and buff bar, over the game. Uses the quickcast setup.",
             on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
@@ -304,7 +312,8 @@ RefreshWc3() {
         inTab += card.f.tab = wc3Tab && Wc3OnVersion(card.f, wc3Ver)
     perPage := Max(1, (H - nextY) // 80)
     pageCount := Max(1, Ceil(inTab / perPage))
-    if inTab && Mod(inTab, perPage) = 0 && nextY + perPage * 80 + 36 > H - 6
+    planned := Wc3PlannedText(wc3Tab, wc3Ver)
+    if inTab && planned != "" && Mod(inTab, perPage) = 0 && nextY + perPage * 80 + 36 > H - 6
         pageCount++
     pk := wc3Tab wc3Ver, pageNo := wc3PageNo.Get(pk, 1)
     pageNo := pageNo < 1 ? pageCount : pageNo > pageCount ? 1 : pageNo
@@ -337,7 +346,7 @@ RefreshWc3() {
             Wc3SetSwitch(card.sw, card.f.on())
         SetIf(card.ctrls[4], card.f.status())
     }
-    wc3Planned.Text := (inTab ? "" : "Nothing here yet.  ") Wc3PlannedText(wc3Tab, wc3Ver)
+    wc3Planned.Text := (inTab ? "" : "Nothing here yet.  ") planned
     wc3Planned.Move(, lastBottom ? lastBottom + 12 : nextY)
     wc3Planned.Visible := pageNo = pageCount
     Thaw()

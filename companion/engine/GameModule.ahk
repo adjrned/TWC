@@ -164,15 +164,18 @@ class GameModuleEngine {
     }
 
     ; -- commands on the game's thread (layout 4) ---------------------------------
-    ; 1 clear messages, 2 clear chat. Answered within about a second.
+    ; 1 clear messages, 2 clear chat, 3 multiboard, 4 autocast toggle (arg: the
+    ; command card slot 0-11, layout 8). Answered within about a second.
     cmdReady() {
         s := this.state()
         return this.enabled && s.live && s.probe = 1 && s.layout >= 4
     }
-    command(cmd) {
+    command(cmd, arg := 0) {
         if !(v := this.live()) || NumGet(v, 4, "uint") < 4
             return 0
         seq := NumGet(v, 536, "int") + 1
+        if NumGet(v, 4, "uint") >= 8
+            NumPut("uint", arg, v, 648)
         NumPut("uint", cmd, v, 540)
         NumPut("int", seq, v, 536)                                 ; last: the module acts on it
         this.wake()

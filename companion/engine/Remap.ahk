@@ -190,6 +190,10 @@ class RemapEngine {
                     this.registered.Push(RegisterHotkey(key " up", this.released.Bind(this, HotkeyBase(key)), WarcraftIII, true))
             }
         }
+        ; the autocast key's card hotkeys follow your keys
+        global gameCmds
+        if IsSet(gameCmds)
+            gameCmds.bind()
     }
 
     refresh() {
@@ -198,6 +202,17 @@ class RemapEngine {
     }
 
     ; -- actions -------------------------------------------------------------
+    ; the autocast key held (Game commands): a command card key toggles that
+    ; button's autocast instead -> true if it was handed over
+    toAutocast(game) {
+        global gameCmds
+        if !gameCmds.autocastHeld()
+            return false
+        for i, c in RemapEngine.CARD
+            if c.game = game
+                return (gameCmds.autocastSlot(i), true)
+        return false
+    }
     ; "{q}", never "{Q}": an upper-case letter is sent with Shift (a queued order)
     keyText(key) {
         key := RegExReplace(key, "[$*~]")
@@ -207,6 +222,8 @@ class RemapEngine {
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
     castPlain(game, yourKey) {
+        if this.toAutocast(game)
+            return
         SendInput(this.queued(yourKey) this.keyText(game))
         DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
@@ -223,8 +240,13 @@ class RemapEngine {
     ; With the 1.28 game module's quickcast on and ready, the game itself says
     ; when it waits for a target (no setup needed); otherwise the screen does.
     castQuick(game, yourKey) {
-        global quickcast, gameModule
+        global quickcast, gameModule, gameCmds
         static hinted := false
+        if this.toAutocast(game)
+            return
+        ; self-cast held: the game module clicks your portrait as the game wants a target
+        if gameCmds.selfCastHeld()
+            return this.castPlain(game, yourKey)
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         inGameQc := gameModule.qcReady()
         cal := inGameQc ? 0 : quickcast.current()

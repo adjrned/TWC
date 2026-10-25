@@ -36,7 +36,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 7
+    DWORD layout;           // 8
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -64,7 +64,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD buffId[16];       //   its type id ('Bxxx', 0 = unknown)
     // layout 4: commands run on the game's thread (RunCommand)
     volatile LONG cmdSeq;   // companion: +1 per command (written last)
-    DWORD cmd;              // companion: 1 clear messages, 2 clear chat, 3 multiboard minimise / maximise
+    DWORD cmd;              // companion: 1 clear messages, 2 clear chat, 3 multiboard minimise / maximise,
+                            //   4 autocast toggle on the command card slot cmdArg
     volatile LONG cmdDone;  // module: the command it answered
     DWORD cmdResult;        // module: 1 done, 2 refused (see the log), 3 the game thread didn't run it in time
     // layout 5: health bar size (BarsPass)
@@ -87,6 +88,11 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD fpsLimit;         // companion: the frame rate ceiling (64 at least, as WFE)
     DWORD fpsState;         // module: 0 off, 1 unlocked, 3 refused (see the log)
     DWORD fpsGameLimit;     // module: the game's own frame limit setting, as first read (0 = not read)
+    // layout 8: self-cast (WatchSelfCast) and the autocast toggle (command 4)
+    DWORD scHeld;           // companion: 0 self-cast off, 1 on, 2 on and its key held (the companion keeps the key from the game)
+    DWORD scState;          // module: 0 off, 1 watching, 3 refused (see the log)
+    DWORD scCount;          // module: self-casts done
+    DWORD cmdArg;           // companion: command 4's command card slot (0-11, row by row)
 };
 #pragma pack(pop)
 
@@ -117,6 +123,7 @@ static const Known KNOWN[] = {
     { "game option set",                   0x06dbc0 },
     { "game option apply",                 0x06b3a0 },
     { "game option get",                   0x06c030 },
+    { "control click (self-cast)",         0x1407b0 },
     { "health bar draw",                   0x09b9d0 },
     { "bar visibility getter",             0x35fcc0 },
     { "bar update",                        0x2dd7d0 },
@@ -678,6 +685,9 @@ static UINT g_dispMsg;              // "TWC_GameThreadDisplay": run DisplayPass 
 static volatile LONG g_dispQueued;
 static volatile LONG g_resized;     // the game window changed size: widescreen is set again
 static int ToggleMultiboard(BYTE *ui);
+static int AutocastToggle(BYTE *ui, DWORD slot);
+static void SelfCast();
+static UINT g_selfMsg;              // "TWC_GameThreadSelfCast": run SelfCast on the game thread
 
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_barsMsg && g_barsMsg) {
@@ -688,6 +698,10 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_dispMsg && g_dispMsg) {
         InterlockedExchange(&g_dispQueued, 0);
         DisplayPass();
+        return 0;
+    }
+    if (m == g_selfMsg && g_selfMsg) {
+        SelfCast();
         return 0;
     }
     if (m == WM_SIZE || m == WM_DISPLAYCHANGE)
@@ -719,6 +733,7 @@ static bool Subclass() {
     g_runMsg = RegisterWindowMessageA("TWC_GameThreadCall");
     g_barsMsg = RegisterWindowMessageA("TWC_GameThreadBars");
     g_dispMsg = RegisterWindowMessageA("TWC_GameThreadDisplay");
+    g_selfMsg = RegisterWindowMessageA("TWC_GameThreadSelfCast");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -799,6 +814,8 @@ static int RunOnGameThread(DWORD cmd) {
     }
     if (cmd == 3)
         return ToggleMultiboard((BYTE *)ui);
+    if (cmd == 4)
+        return AutocastToggle((BYTE *)ui, g_shared->cmdArg);
     return 2;
 }
 
@@ -1339,6 +1356,129 @@ static int ToggleMultiboard(BYTE *ui) {
     }
 }
 
+// -- self-cast and the autocast toggle -------------------------------------------------
+// Both as WFE's key handler (0x10066a20) does them on 1.28f, without its hook
+// of the game's key input.
+// Self-cast: when the game waits for a target while the self-cast key is
+// held, WFE clicks the portrait (0x10067b00): [ui+0x3f4], through the CControl
+// function +0x1407b0 (WFE's [0x1013a2a0]), __fastcall(control, 0, 1). The
+// game takes that as the target: your selected unit. Here the worker watches
+// for it (once per aim) and hands the click to the game thread.
+static const DWORD UI_PORTRAIT = 0x3f4;
+static const DWORD RVA_CONTROL_CLICK = 0x1407b0;
+
+typedef int(__fastcall *ClickFn)(void *, int, int);
+
+static bool GameInFront();
+static bool SelfHeld() { return g_shared->scHeld == 2; }
+
+// the worker's part: t is this round's Targeting()
+static void WatchSelfCast(int t) {
+    static bool aimDone;            // this aim was handed over: once per aim (the key held as it began, or pressed during it)
+    if (t != 1) {
+        aimDone = false;
+        return;
+    }
+    if (aimDone || !SelfHeld() || !GameInFront() || g_shared->scState == 3)
+        return;
+    aimDone = true;
+    if (Subclass())
+        PostMessageA(g_gameWnd, g_selfMsg, 0, 0);
+}
+
+// on the game thread
+static void SelfCast() {
+    static int checked;             // 1 checked out, 2 refused for good
+    if (checked == 2)
+        return;
+    if (!checked && !FnStart(RVA_CONTROL_CLICK)) {
+        checked = 2, g_shared->scState = 3;
+        Log("self-cast: refused (the control click isn't a function start)");
+        return;
+    }
+    BYTE *ui = (BYTE *)GameUi();
+    BYTE *pb = ui ? UiFrame(ui, UI_PORTRAIT) : nullptr;
+    if (!pb)
+        return;
+    __try {
+        DWORD target = *(DWORD *)(ui + UI_TARGET_MODE);
+        if (!target || *(DWORD *)(ui + UI_MODE) != target)
+            return;                     // the aim ended before the game thread got here
+        if (!checked) {
+            checked = 1;
+            char rtti[64];
+            RttiName(*(DWORD *)pb, g_imageSize, rtti, sizeof(rtti));
+            Log("self-cast: portrait %p, vtable +%06lX, RTTI %s", pb, *(DWORD *)pb - (DWORD)g_base, rtti[0] ? rtti : "(none)");
+            if (rtti[0] && !strstr(rtti, "Portrait")) {
+                Log("  not the portrait: refusing (this and later self-casts)");
+                checked = 2, g_shared->scState = 3;
+                return;
+            }
+        }
+        ((ClickFn)(g_base + RVA_CONTROL_CLICK))(pb, 0, 1);
+        g_shared->scCount++;
+        static int logs;
+        if (logs < 3)
+            logs++, Log("self-cast: clicked the portrait");
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("self-cast: the game's click faulted: stopping");
+        checked = 2, g_shared->scState = 3;
+    }
+}
+
+// The autocast toggle: WFE's 0x10053c20 presses a command button through its
+// own click, vtable +0x6c __fastcall(button, 0, mouse button), with 4 (the
+// right button: autocast on / off) while the autocast key is held, and with
+// [button+0x138] bit 2 set for the call. The button: the command card
+// [ui+0x3c8] grid, slot row by row; it needs an ability ([+0x190]).
+static const DWORD BTN_CLICK = 0x6c, BTN_FLAGS = 0x138, BTN_DATA = 0x190;
+
+static int AutocastToggle(BYTE *ui, DWORD slot) {
+    static int checked;             // 1 checked out, 2 refused for good
+    if (checked == 2 || slot > 11)
+        return 2;
+    __try {
+        BYTE *card = *(BYTE **)(ui + 0x3c8);
+        if (!card)
+            return 2;
+        int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128);
+        if (rows <= 0 || cols <= 0 || rows > 3 || cols > 4 || (int)slot >= rows * 4)
+            return 2;
+        BYTE *btn = (int)(slot % 4) < cols ? GridButton(card, slot / 4, slot % 4) : nullptr;
+        if (!btn || !*(DWORD *)(btn + BTN_DATA))
+            return 2;                   // an empty slot
+        DWORD vt = *(DWORD *)btn;
+        if (!InImage(vt, g_imageSize) || PageIs((void *)vt, EXEC))
+            return 2;
+        BYTE *fn = *(BYTE **)(vt + BTN_CLICK);
+        if (!IsGameCode(fn)) {
+            Log("autocast: refused, the button's click (%p) isn't game code", fn);
+            checked = 2;
+            return 2;
+        }
+        if (!checked) {
+            checked = 1;
+            char rtti[64];
+            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+            Log("autocast: button %p, vtable +%06lX (click +%06lX), RTTI %s", btn, vt - (DWORD)g_base, (DWORD)(fn - g_base), rtti[0] ? rtti : "(none)");
+            if (rtti[0] && !strstr(rtti, "CommandButton")) {
+                Log("  not a command button: refusing (this and later toggles)");
+                checked = 2;
+                return 2;
+            }
+        }
+        DWORD flags = *(DWORD *)(btn + BTN_FLAGS);
+        *(DWORD *)(btn + BTN_FLAGS) = flags | 2;
+        ((ClickFn)fn)(btn, 0, 4);
+        *(DWORD *)(btn + BTN_FLAGS) = flags;
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("autocast: the game's click faulted: stopping");
+        checked = 2;
+        return 2;
+    }
+}
+
 // a command from the companion: handed to the game thread, answered within 1 s
 static void ServeCommand(LONG seq) {
     DWORD cmd = g_shared->cmd;
@@ -1437,6 +1577,9 @@ static void Run() {
         }
         int t = Targeting();
         g_shared->targeting = t == 1;
+        if (g_shared->scState != 3)
+            g_shared->scState = g_shared->scHeld ? 1 : 0;
+        WatchSelfCast(t);
         if (g_shared->tmWant && now - timersAt >= 100) {
             timersAt = now;                     // 10 a second is plenty for whole seconds
             ReadTimers();
@@ -1449,7 +1592,9 @@ static void Run() {
             ServeCommand(cseq);
         if (asked) {
             DWORD result = 0;
-            if (t == 1 && GameInFront()) {
+            if (t == 1 && GameInFront() && SelfHeld() && g_shared->scState == 1)
+                result = 1;                     // self-cast takes this aim: no click at the cursor
+            else if (t == 1 && GameInFront()) {
                 Click(g_shared->qcFlags);
                 result = 1;
                 if (clicks++ < 3)
@@ -1514,7 +1659,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 7;
+        g_shared->layout = 8;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
