@@ -18,6 +18,8 @@ class RemapEngine {
     static NO_QC := Map(2, 1, 3, 1)        ; Stop and Hold never take a target
     registered := []
     holding := Map()            ; quickcast key -> held (cleared by its key-up hotkey)
+    qcRecent := [], qcMissRun := 0      ; the last 10 quickcast hit delays (ms); misses in a row
+    qcLate := 0                         ; the late-reticle watch running after a miss (lateWatch)
 
     __New() {
         this.migrate()
@@ -232,7 +234,7 @@ class RemapEngine {
         loop {
             hit := false
             if cal
-                hit := this.quickSmart(game, q, cal)
+                hit := this.quickSmart(game, q, cal, A_Index > 1)
             else
                 SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
             if !s.repeat || !this.waitHeld(base, start, hit ? Max(s.interval, s.castGap) : s.interval)
@@ -272,15 +274,25 @@ class RemapEngine {
     ; key on cooldown used to push every look to 200 ms); every third miss in a
     ; row looks for 200 ms once, in case the game got slower. The log line says
     ; what was seen.
-    quickSmart(game, q, cal) {
+    ; again: a repeat while the key is held. A busy game can draw the reticle
+    ; after the look gave up; if it's up from the last press, it's clicked
+    ; instead of pressing the key over it.
+    quickSmart(game, q, cal, again := false) {
         global quickcast
-        static recent := [], missRun := 0   ; the last 10 hit delays (ms); misses in a row
+        if this.qcLate
+            SetTimer(this.qcLate.fn, 0), this.qcLate.ih.Stop(), this.qcLate := 0
+        if again && quickcast.targeting(cal) {
+            SendInput(q "{Click}")
+            this.qcMissRun := 0
+            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): clicked")
+            return true
+        }
         limit := 150
-        if recent.Length >= 3 {
-            sorted := recent.Clone(), SortBy(sorted, (a, b) => a - b)
+        if this.qcRecent.Length >= 3 {
+            sorted := this.qcRecent.Clone(), SortBy(sorted, (a, b) => a - b)
             limit := Max(60, Min(150, 3 * sorted[(sorted.Length + 1) // 2]))
         }
-        if missRun >= 3 && Mod(missRun, 3) = 0
+        if this.qcMissRun >= 3 && Mod(this.qcMissRun, 3) = 0
             limit := 200
         SendInput(q this.keyText(game))
         t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
@@ -292,32 +304,82 @@ class RemapEngine {
             if hit {
                 quickcast.learnCapture(cal, true)       ; (first hit only: tests the window read, still targeting)
                 SendInput(q "{Click}")
-                missRun := 0
+                this.qcMissRun := 0
                 ms := QpcMs() - t
-                recent.Push(ms)
-                if recent.Length > 10
-                    recent.RemoveAt(1)
+                this.noteHit(ms)
                 DebugLog("quickcast " game ": clicked " Round(ms, 1) " ms after the key (" checks " reads, "
                     . (quickcast.fromWindow.Get(WC3WindowKey(), false) ? "game window" : "screen") ")")
                 return true
             }
         }
-        ; reading the game window can go stale (its picture stops updating): one
-        ; look at the screen tells, and then the screen is used from now on,
-        ; instead of after five misses
-        k := WC3WindowKey()
-        if quickcast.fromWindow.Get(k, false) && quickcast.targeting(cal, false) {
-            quickcast.fromWindow[k] := false, quickcast.misses := 0
+        ; either way of reading (the screen, the game window) can go stale, its
+        ; picture no longer updating: one look the other way tells. If that one
+        ; shows targeting, click and read that way from now on. (A key on
+        ; cooldown looks the same both ways, so it never switches for that.)
+        k := WC3WindowKey(), win := quickcast.fromWindow.Get(k, false)
+        if quickcast.targeting(cal, !win) {
+            quickcast.fromWindow[k] := !win, quickcast.misses := 0
             SendInput(q "{Click}")
-            DebugLog("quickcast " game ": the game window's picture was stale, the screen shows targeting: clicked, reading the screen from now on")
-            missRun := 0
+            DebugLog("quickcast " game ": the " (win ? "game window's" : "screen's") " picture was stale, the "
+                . (win ? "screen" : "game window") " shows targeting: clicked, reading that way from now on")
+            this.qcMissRun := 0
             return true
         }
         quickcast.learnCapture(cal, false)
-        missRun++
+        this.qcMissRun++
+        this.lateWatch(game, q, cal, t)
+        static lastDiffs := "", frozen := 0
+        frozen := best.diffs != "" && best.diffs == lastDiffs ? frozen + 1 : 0
+        lastDiffs := best.diffs
+        if frozen = 5 {
+            ; 6 misses with the very same card (fine on a cooldown; if the reticle
+            ; was up, the picture is stuck both ways): what both ways see, and the window
+            quickcast.targeting(cal, false), viaScreen := quickcast.seen.diffs
+            quickcast.targeting(cal, true), viaWindow := quickcast.seen.diffs
+            hwnd := WinExist(WarcraftIII), WinGetClientPos(&cx, &cy, &cw, &ch, hwnd)
+            try proc := WinGetProcessName(hwnd)
+            catch
+                proc := "?"
+            DebugLog("quickcast: the same card 6 misses in a row (reading the " (win ? "game window" : "screen") "). Screen "
+                . viaScreen " / game window " viaWindow " / window " Format("0x{:X}", hwnd) " " proc ' "' WinGetTitle(hwnd) '" at ' cx "," cy " " cw "x" ch)
+        }
         DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 8) in " checks
             . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs)
         return false
+    }
+    noteHit(ms) {
+        this.qcRecent.Push(ms)
+        if this.qcRecent.Length > 10
+            this.qcRecent.RemoveAt(1)
+    }
+    ; After a miss the reticle may still come up (a busy game draws it late):
+    ; watched for 500 ms and clicked if it shows, unless you pressed a key or a
+    ; mouse button meanwhile (then what's on screen is yours). The delay counts
+    ; as a hit, so the looks grow longer while the game is slow.
+    lateWatch(game, q, cal, t) {
+        global quickcast
+        endAt := A_TickCount + 500, ih := InputHook("V")
+        ih.MinSendLevel := 1                    ; your keys, not the companion's own
+        ih.KeyOpt("{All}", "N")
+        ih.OnKeyDown := (*) => (ih.Stop())
+        ih.Start()
+        tick() {
+            global chatting, toolEnabled
+            if !ih.InProgress || A_TickCount > endAt || GetKeyState("LButton", "P") || GetKeyState("RButton", "P")
+                || !WinActive(WarcraftIII) || chatting || !toolEnabled {
+                SetTimer(tick, 0), ih.Stop(), this.qcLate := 0
+                return
+            }
+            if quickcast.targeting(cal) {
+                SetTimer(tick, 0), ih.Stop(), this.qcLate := 0
+                SendInput(q "{Click}")
+                ms := QpcMs() - t
+                this.noteHit(ms), this.qcMissRun := 0
+                DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): clicked")
+            }
+        }
+        this.qcLate := { fn: tick, ih: ih }
+        SetTimer(tick, 15)
     }
     clickMouse(side, yourKey) {
         SendInput(this.queued(yourKey) "{Click " side "}")
