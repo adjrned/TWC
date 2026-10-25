@@ -1623,7 +1623,7 @@ RemapClear() {
 ; Quickcast Setup window, in the .modal style of Dialog: the status for the
 ; running game, the three in-game steps, hold to repeat, and the buttons
 QuickcastSettings() {
-    global C, mainGui, quickcast, UI_FONT
+    global C, mainGui, quickcast, gameModule, UI_FONT
     s := quickcast.get(), w := 460, x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     g.BackColor := C.frame                           ; = the 1px border
@@ -1675,7 +1675,14 @@ QuickcastSettings() {
     gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
     g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
     gv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("castGap", Max(0, Min(3000, c.Value + 0)))))
-    y += 44
+    y += 34
+    ; 1.28f: the game module says when the game waits for a target (no setup);
+    ; off by default, and the screen is read whenever it isn't ready
+    mq := g.AddCheckbox("x" x " y" y " w" tw " h22 +Background" C.card " c" C.text (gameModule.quickcast ? " Checked" : ""), " On 1.28f, ask the game module instead (experimental)")
+    mqs := g.AddText("x" (x + 22) " y" (y + 24) " w" (tw - 22) " h18 +Background" C.card " c" C.dim, gameModule.qcStatusText())
+    UISetFont(mqs, "s8")
+    mq.OnEvent("Click", (c, *) => (gameModule.setQuickcast(c.Value), mqs.Text := gameModule.qcStatusText()))
+    y += 58
 
     label := s.calibrated ? "Set up again" : "Set up in game"
     setup := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, label)

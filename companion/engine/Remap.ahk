@@ -220,20 +220,25 @@ class RemapEngine {
     ; waits castGap (450 ms) before pressing again: the hero may still be
     ; turning or walking into range, and each press reopens the reticle (its
     ; animation and sound) and gives the order again.
+    ; With the 1.28 game module's quickcast on and ready, the game itself says
+    ; when it waits for a target (no setup needed); otherwise the screen does.
     castQuick(game, yourKey) {
-        global quickcast
+        global quickcast, gameModule
         static hinted := false
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
-        cal := quickcast.current()
+        inGameQc := gameModule.qcReady()
+        cal := inGameQc ? 0 : quickcast.current()
         ; not set up for this game window: the key alone, with a one-time hint
-        if !cal && !hinted {
+        if !inGameQc && !cal && !hinted {
             hinted := true
             Toast("Quickcast isn't set up for this game window: Remap > Quickcast Setup", "", 5000)
         }
         this.holding[base] := true, start := A_TickCount
         loop {
             hit := false
-            if cal
+            if inGameQc
+                hit := this.quickModule(game, q, A_Index > 1)
+            else if cal
                 hit := this.quickSmart(game, q, cal, A_Index > 1)
             else
                 SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
@@ -279,21 +284,14 @@ class RemapEngine {
     ; instead of pressing the key over it.
     quickSmart(game, q, cal, again := false) {
         global quickcast
-        if this.qcLate
-            SetTimer(this.qcLate.fn, 0), this.qcLate.ih.Stop(), this.qcLate := 0
+        this.stopLate()
         if again && quickcast.targeting(cal) {
             SendInput(q "{Click}")
             this.qcMissRun := 0
             DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): clicked")
             return true
         }
-        limit := 150
-        if this.qcRecent.Length >= 3 {
-            sorted := this.qcRecent.Clone(), SortBy(sorted, (a, b) => a - b)
-            limit := Max(60, Min(150, 3 * sorted[(sorted.Length + 1) // 2]))
-        }
-        if this.qcMissRun >= 3 && Mod(this.qcMissRun, 3) = 0
-            limit := 200
+        limit := this.lookLimit()
         SendInput(q this.keyText(game))
         t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
         while QpcMs() - t < limit {
@@ -347,6 +345,55 @@ class RemapEngine {
             . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs)
         return false
     }
+    ; how long to look for the reticle after the key (see quickSmart)
+    lookLimit() {
+        limit := 150
+        if this.qcRecent.Length >= 3 {
+            sorted := this.qcRecent.Clone(), SortBy(sorted, (a, b) => a - b)
+            limit := Max(60, Min(150, 3 * sorted[(sorted.Length + 1) // 2]))
+        }
+        if this.qcMissRun >= 3 && Mod(this.qcMissRun, 3) = 0
+            limit := 200
+        return limit
+    }
+    ; quickSmart through the 1.28 game module: send the key, then the module
+    ; clicks the moment the game waits for a target, or gives up at the
+    ; deadline (same adaptive look as the screen's). A repeat first asks for a
+    ; click on a reticle still up from the last press. After a miss the late
+    ; watch keeps asking for 500 ms, as with the screen.
+    quickModule(game, q, again := false) {
+        global gameModule
+        this.stopLate()
+        if again && gameModule.qcWait(seq := gameModule.qcAsk(20, q != ""), 20) = 1 {
+            this.qcMissRun := 0
+            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): the game module clicked")
+            return true
+        }
+        limit := this.lookLimit()
+        SendInput(q this.keyText(game))
+        t := QpcMs(), seq := gameModule.qcAsk(limit, q != "")
+        r := gameModule.qcWait(seq, limit)
+        if r = 1 {
+            ms := gameModule.qcMs()
+            this.qcMissRun := 0, this.noteHit(ms)
+            DebugLog("quickcast " game ": the game module clicked " ms " ms after the key")
+            return true
+        }
+        this.qcMissRun++
+        DebugLog("quickcast " game ": no click, " (r = 3 ? "the game wanted a target but wasn't in front" : "the game didn't want a target") " within " Round(limit) " ms (game module)")
+        if r = 2
+            this.lateWatch(game, q, 0, t)
+        return false
+    }
+    ; end a late watch still running (and its game module request)
+    stopLate() {
+        global gameModule
+        if !this.qcLate
+            return
+        SetTimer(this.qcLate.fn, 0), this.qcLate.ih.Stop()
+        gameModule.qcCancel(this.qcLate.seq)
+        this.qcLate := 0
+    }
     noteHit(ms) {
         this.qcRecent.Push(ms)
         if this.qcRecent.Length > 10
@@ -356,9 +403,11 @@ class RemapEngine {
     ; watched for 500 ms and clicked if it shows, unless you pressed a key or a
     ; mouse button meanwhile (then what's on screen is yours). The delay counts
     ; as a hit, so the looks grow longer while the game is slow.
+    ; cal = 0: through the game module (it clicks; this only ends the request early)
     lateWatch(game, q, cal, t) {
-        global quickcast
+        global quickcast, gameModule
         endAt := A_TickCount + 500, ih := InputHook("V")
+        seq := cal ? 0 : gameModule.qcAsk(500, q != "")
         ih.MinSendLevel := 1                    ; your keys, not the companion's own
         ih.KeyOpt("{All}", "N")
         ih.OnKeyDown := (*) => (ih.Stop())
@@ -367,7 +416,18 @@ class RemapEngine {
             global chatting, toolEnabled
             if !ih.InProgress || A_TickCount > endAt || GetKeyState("LButton", "P") || GetKeyState("RButton", "P")
                 || !WinActive(WarcraftIII) || chatting || !toolEnabled {
+                SetTimer(tick, 0), ih.Stop(), gameModule.qcCancel(seq), this.qcLate := 0
+                return
+            }
+            if !cal {
+                if !(r := gameModule.qcResult(seq))
+                    return
                 SetTimer(tick, 0), ih.Stop(), this.qcLate := 0
+                if r = 1 {
+                    ms := QpcMs() - t
+                    this.noteHit(ms), this.qcMissRun := 0
+                    DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): the game module clicked")
+                }
                 return
             }
             if quickcast.targeting(cal) {
@@ -378,7 +438,7 @@ class RemapEngine {
                 DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): clicked")
             }
         }
-        this.qcLate := { fn: tick, ih: ih }
+        this.qcLate := { fn: tick, ih: ih, seq: seq }
         SetTimer(tick, 15)
     }
     clickMouse(side, yourKey) {
