@@ -25,7 +25,7 @@ Wc3Tabs() => [["casting", "Casting"], ["timers", "Timers"], ["display", "Display
 Wc3PlannedText(tab) {
     static p := Map(
         "casting", "Planned: a self-cast key (the next ability goes on your hero), an autocast toggle key.",
-        "timers", "Planned: buff alerts (a buff you want is missing or about to run out), Reforged timers read from the screen.",
+        "timers", "Planned: Reforged timers read from the screen, naming your buffs, alerts for a buff about to run out.",
         "display", "Planned: health bar size, a hero tracker and range ring (Reforged), widescreen, FPS unlock, the multiboard, hiding parts of the UI, detailed tooltips.",
         "hosting", "Planned (1.28f): lobby latency and the game start countdown when you host.")
     return p[tab]
@@ -36,7 +36,7 @@ Wc3PlannedText(tab) {
 ; setupLabel + setup() for one button, or buttons: [[label, click], ...]
 ; (a label can be a function: it's refreshed with the status).
 Wc3Features() {
-    global gameModule, timersHud, quickcast, gameCmds
+    global gameModule, timersHud, quickcast, gameCmds, buffWatch
     static list := 0
     if list
         return list
@@ -47,10 +47,15 @@ Wc3Features() {
         { tab: "casting", title: "Quickcast through the game", badge: "1.28f",
             desc: "The game itself says when it wants a target: no setup. Until then, the screen.",
             on: (*) => gameModule.quickcast, set: (v) => gameModule.setQuickcast(v), status: (*) => gameModule.qcStatusText() },
-        { tab: "timers", title: "Cooldown and buff timers", badge: "1.28f",
+        { tab: "timers", title: "Cooldown and buff timers", badge: "1.28f", 
             desc: "Seconds left on the command card and buff bar, over the game. Uses the quickcast setup.",
             on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
             setupLabel: "Set up buff bar", setup: (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart()) },
+        { tab: "timers", title: "Buff alerts", badge: "Both",
+            desc: "A line over the game when a buff you added is missing. Uses the buff bar setup.",
+            on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
+            buttons: [["Add buff", (*) => (WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
+                ["Remove last", (*) => (buffWatch.removeLast(), RefreshWc3())]] },
         { tab: "display", title: "Clear messages and chat", badge: "1.28f",
             desc: "A key wipes the trigger messages or the chat off the screen.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
