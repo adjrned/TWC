@@ -11,10 +11,18 @@
 ;  ini keys yours, allies, enemies, hostile, passive as RRGGBB) or by health
 ;  (green, to yellow at half, to red). The module sets them right after the
 ;  game's own bar update.
+;  Health numbers and mana bars (layout 11; they need the game's Storm.dll,
+;  both off by default): a number over each health bar ([HealthBars] numbers,
+;  numberMode current / max / percent) and a mana bar under the health bar
+;  of each unit with mana ([HealthBars] mana, manaHeight: times the health
+;  bar's height). Frames the module adds to the game; turning off takes them
+;  away.
 ; ============================================================================
 class HealthBarsEngine {
     section := "HealthBars"
     static STEPS := [1, 1.25, 1.5, 2, 2.5, 3]
+    static NUMBER_MODES := [["current", "Current"], ["max", "Current / max"], ["percent", "Percent"]]
+    static MANA_STEPS := [0.5, 0.75, 1]
     static OWNERS := [["yours", "00FF00"], ["allies", "0080FF"], ["enemies", "FF0000"], ["hostile", "FF8000"], ["passive", "A0A0A0"]]
 
     __New(gameModule) {
@@ -40,6 +48,43 @@ class HealthBarsEngine {
         this.push()
     }
     colourModeLabel => this.colourMode = "owner" ? "By owner" : "By health"
+    numbers => Integer(Ini(this.section, "numbers", 0))
+    setNumbers(on) {
+        SetIni(on ? 1 : 0, this.section, "numbers")
+        this.push()
+    }
+    ; 1-3, in NUMBER_MODES order
+    numberMode {
+        get {
+            m := Ini(this.section, "numberMode", "current")
+            for i, n in HealthBarsEngine.NUMBER_MODES
+                if n[1] = m
+                    return i
+            return 1
+        }
+    }
+    cycleNumberMode() {
+        SetIni(HealthBarsEngine.NUMBER_MODES[Mod(this.numberMode, 3) + 1][1], this.section, "numberMode")
+        this.push()
+    }
+    numberModeLabel => HealthBarsEngine.NUMBER_MODES[this.numberMode][2]
+    mana => Integer(Ini(this.section, "mana", 0))
+    setMana(on) {
+        SetIni(on ? 1 : 0, this.section, "mana")
+        this.push()
+    }
+    manaHeight => Ini(this.section, "manaHeight", 0.75) + 0
+    cycleManaHeight() {
+        cur := this.manaHeight, next := HealthBarsEngine.MANA_STEPS[1]
+        for v in HealthBarsEngine.MANA_STEPS
+            if v > cur + 0.001 {
+                next := v
+                break
+            }
+        SetIni(next, this.section, "manaHeight")
+        this.push()
+    }
+    manaHeightLabel => "Height " HealthBarsEngine.Fmt(this.manaHeight)
     ; the next step up (wrapping back to 1x): "height" / "width"
     cycle(which) {
         cur := this.%which%, next := HealthBarsEngine.STEPS[1]
@@ -67,7 +112,31 @@ class HealthBarsEngine {
             NumPut("uint", 0xFF000000 | Integer("0x" Ini(this.section, o[1], o[2])), v, 588 + 4 * (i - 1))
         NumPut("uint", this.colourMode = "health" ? 1 : 0, v, 584)
         NumPut("uint", this.colours && this.gm.enabled ? 1 : 0, v, 580)   ; last
+        if NumGet(v, 4, "uint") < 11
+            return
+        NumPut("uint", this.numberMode - 1, v, 704), NumPut("float", this.manaHeight, v, 716)
+        NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, 700)
+        NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, 712)
     }
+    ; the status line of a frame feature: its state at stateOff; what(view) says what's on
+    frameStatus(on, stateOff, what) {
+        if !on
+            return "Off"
+        if !this.gm.enabled
+            return "On · needs the game module (top of this page)"
+        s := this.gm.state()
+        if !WinExist(WarcraftIII) || !s.loaded
+            return "On · starts with a 1.28f game"
+        if s.layout < 11
+            return "On · the game has an older module loaded: restart the game"
+        if !s.live || s.probe != 1
+            return "On · the module isn't ready"
+        v := this.gm.live(), st := NumGet(v, stateOff, "uint")
+        return NumGet(v, 684, "uint") = 2 ? "On · the game has no Storm.dll loaded: the module can't add frames"
+            : st = 1 ? "On · " what(v) : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
+    }
+    numberStatus() => this.frameStatus(this.numbers, 708, (v) => "numbers over the health bars (" NumGet(v, 724, "uint") " now)")
+    manaStatus() => this.frameStatus(this.mana, 720, (v) => "mana bars under the health bars (" NumGet(v, 728, "uint") " now)")
     colourStatus() {
         if !this.colours
             return "Off"

@@ -6,7 +6,11 @@
 ;  1.28f: the times come from the game module (GameModuleEngine.timers).
 ;  Where they go: the command card from the quickcast setup, the buff bar
 ;  from its own two-press setup (setupStart), both per game window size.
-;  Off by default (ini [Timers] show; Quickcast window).
+;  Or drawn in the game itself ([Timers] where = game): the module makes text
+;  frames on the buttons and buff icons (layout 11, needs the game's
+;  Storm.dll) and no setup is needed; until the module draws them, the
+;  overlay does.
+;  Off by default (ini [Timers] show; WC3 page > Timers).
 ; ============================================================================
 class TimerHud {
     section := "Timers"
@@ -35,6 +39,25 @@ class TimerHud {
         SetTimer(this.tickFn, 0)
         this.hide()
         this.gm.timersWanted(false)
+        this.pushGame()
+    }
+    ; drawn over the game (overlay) or in it (game)
+    inGame => Ini(this.section, "where", "overlay") = "game"
+    toggleWhere() {
+        SetIni(this.inGame ? "overlay" : "game", this.section, "where")
+        this.pushGame()
+    }
+    whereLabel => this.inGame ? "In the game" : "Overlay"
+    ; the switch to the module (layout 11)
+    pushGame() {
+        if (v := this.gm.live()) && NumGet(v, 4, "uint") >= 11
+            NumPut("uint", this.enabled && this.inGame && this.gm.enabled ? 1 : 0, v, 688)
+    }
+    ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
+    gameState() {
+        if !(v := this.gm.live()) || NumGet(v, 4, "uint") < 11
+            return -1
+        return NumGet(v, 692, "uint")
     }
 
     ; the buff bar for the game window as it is now: { x, y, dx } (fractions of
@@ -51,7 +74,7 @@ class TimerHud {
         if !this.enabled
             return "Off"
         if !this.gm.enabled
-            return "On · needs Settings > Game module for 1.28"
+            return "On · needs the game module (top of this page)"
         s := this.gm.state()
         if !WinExist(WarcraftIII) || !s.loaded
             return "On · starts with a 1.28f game"
@@ -59,6 +82,17 @@ class TimerHud {
             return "On · the game has an older module loaded: restart the game"
         if s.probe != 1
             return "On · the module's check failed: no timers"
+        if this.inGame {
+            st := this.gameState(), storm := s.layout >= 11 ? NumGet(this.gm.live(), 684, "uint") : 0
+            if st = 1
+                return "On · drawn in the game"
+            why := st = -1 ? "the game has an older module loaded (restart the game)"
+                : storm = 2 ? "the game has no Storm.dll loaded"
+                : st = 3 ? "refused by the module's checks (see the log)" : ""
+            if why = ""
+                return "On · in the game: waiting for a game"
+            return "On · " why ", so over the game" (this.qc.current() && this.buffBar() ? "" : " (needs the setups)")
+        }
         t := this.gm.timers(), miss := []
         if !this.qc.current()
             miss.Push("Quickcast Setup (cooldowns)")
@@ -117,8 +151,11 @@ class TimerHud {
     }
 
     tick() {
+        this.pushGame()
         if this.cal || !WinActive(WarcraftIII) || !this.gm.enabled
             return this.hide()
+        if this.inGame && this.gameState() = 1
+            return this.hide()              ; the module draws them
         s := this.gm.state()
         if !s.live || s.probe != 1 || s.layout < 3
             return this.hide()

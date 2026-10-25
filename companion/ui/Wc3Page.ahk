@@ -8,11 +8,11 @@
 ;  Four tabs set where every feature goes, now and later:
 ;    Casting   how abilities go off: quickcast (screen or game module), the
 ;              self-cast and autocast toggle keys
-;    Timers    what's ready and what's running out: cooldown and buff timers,
-;              buff alerts
-;    Display   how the game looks: health bar size and colours, clearing
-;              messages, widescreen, FPS unlock, the multiboard, hiding UI
-;              parts; later detailed tooltips
+;    Timers    what's ready and what's running out: cooldown and buff timers
+;              (over the game or in it), buff alerts
+;    Display   how the game looks: health bar size and colours, health
+;              numbers, mana bars, clearing messages, widescreen, FPS unlock,
+;              the multiboard, hiding UI parts; later detailed tooltips
 ;    Hosting   games you host: lobby latency; later the start countdown
 ;  Each feature is one entry in Wc3Features(): a card with its version
 ;  (badge), an On/Off switch (if it has one), a live status line and its
@@ -38,9 +38,9 @@ Wc3PlannedText(tab, ver) {
     static p := Map(
         "casting128", "",
         "castingreforged", "",
-        "timers128", "Planned: timers drawn inside the game (with Storm.dll).",
+        "timers128", "",
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
-        "display128", "Planned: hiding more of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
+        "display128", "Planned: hiding more of the UI, detailed tooltips.",
         "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: the game start countdown when you host.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
@@ -73,9 +73,10 @@ Wc3Features() {
             on: (*) => gameCmds.autocast, set: (v) => gameCmds.setAutocast(v), status: (*) => gameCmds.acStatusText(),
             buttons: [[(*) => "Key: " gameCmds.heldText("autocast"), (*) => Wc3Capture("autocast")]] },
         { tab: "timers", title: "Cooldown and buff timers", badge: "1.28f",
-            desc: "Seconds left on the command card and buff bar, over the game. Uses the quickcast setup.",
+            desc: "Seconds left on the command card and buff bar, over the game or in it.",
             on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
-            setupLabel: "Set up buff bar", setup: (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart()) },
+            buttons: [[(*) => timersHud.whereLabel, (*) => (timersHud.toggleWhere(), RefreshWc3())],
+                ["Set up buff bar", (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]] },
         { tab: "timers", title: "Buff alerts", badge: "Both",
             desc: "A line over the game when a buff you added is missing, or (1.28f) running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
@@ -91,6 +92,14 @@ Wc3Features() {
             desc: "Colour the bars by owner (yours, allies, enemies, neutral) or by health left.",
             on: (*) => healthBars.colours, set: (v) => healthBars.setColours(v), status: (*) => healthBars.colourStatus(),
             buttons: [[(*) => healthBars.colourModeLabel, (*) => (healthBars.toggleColourMode(), RefreshWc3())]] },
+        { tab: "display", title: "Health numbers", badge: "1.28f",
+            desc: "A number over every health bar: current, current / max or percent (Storm.dll).",
+            on: (*) => healthBars.numbers, set: (v) => healthBars.setNumbers(v), status: (*) => healthBars.numberStatus(),
+            buttons: [[(*) => healthBars.numberModeLabel, (*) => (healthBars.cycleNumberMode(), RefreshWc3())]] },
+        { tab: "display", title: "Mana bars", badge: "1.28f",
+            desc: "A mana bar under the health bar of every unit with mana (Storm.dll).",
+            on: (*) => healthBars.mana, set: (v) => healthBars.setMana(v), status: (*) => healthBars.manaStatus(),
+            buttons: [[(*) => healthBars.manaHeightLabel, (*) => (healthBars.cycleManaHeight(), RefreshWc3())]] },
         { tab: "display", title: "Clear messages and chat", badge: "1.28f",
             desc: "A key wipes the trigger messages or the chat off the screen.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
