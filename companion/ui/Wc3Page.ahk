@@ -13,7 +13,7 @@
 ;    Display   how the game looks: health bar size and colours, clearing
 ;              messages, widescreen, FPS unlock, the multiboard; later hiding
 ;              UI parts, detailed tooltips
-;    Hosting   games you host: later lobby latency, start countdown
+;    Hosting   games you host: lobby latency; later the start countdown
 ;  Each feature is one entry in Wc3Features(): a card with its version
 ;  (badge), an On/Off switch (if it has one), a live status line and its
 ;  buttons. Built in the pages' (40, 160) layout space like the other pages.
@@ -42,7 +42,7 @@ Wc3PlannedText(tab, ver) {
         "timersreforged", "Planned: cooldown and buff timers read from the screen.",
         "display128", "Planned: hiding parts of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
         "displayreforged", "Nothing planned yet.",
-        "hosting128", "Planned: lobby latency and the game start countdown when you host.",
+        "hosting128", "Planned: the game start countdown when you host.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
     return p[tab ver]
 }
@@ -95,6 +95,10 @@ Wc3Features() {
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
             buttons: [[(*) => "Messages: " gameCmds.keyText("clearMessages"), (*) => Wc3Capture("clearMessages")],
                 [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")]] },
+        { tab: "hosting", title: "Lobby latency", badge: "1.28f",
+            desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
+            on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
+            buttons: [[(*) => gameDisplay.latencyLabel, (*) => (gameDisplay.cycleLatency(), RefreshWc3())]] },
         { tab: "display", title: "Widescreen", badge: "1.28f",
             desc: "The game's own 16:9 view in games, as WFE's. Set again after a resize.",
             on: (*) => gameDisplay.widescreen, set: (v) => gameDisplay.setWidescreen(v), status: (*) => gameDisplay.wsStatus() },

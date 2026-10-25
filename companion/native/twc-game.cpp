@@ -16,8 +16,9 @@
 //  Every feature is off until the companion turns it on. Quickcast only reads
 //  the game UI (through the game's own getter) and clicks with SendInput, as
 //  WFE does; game calls that change something run on the game's thread. The
-//  only writes into the game itself: the health bar colours' vtable entry
-//  and the FPS unlock's one byte, both put back when turned off.
+//  only writes into the game itself: the health bar colours' vtable entry,
+//  the FPS unlock's one byte and the latency getters' first 6 bytes, all put
+//  back when turned off.
 //
 //  Build: native\build.bat (32-bit, MSVC).
 // ============================================================================
@@ -36,7 +37,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 8
+    DWORD layout;           // 9
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -93,6 +94,11 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD scState;          // module: 0 off, 1 watching, 3 refused (see the log)
     DWORD scCount;          // module: self-casts done
     DWORD cmdArg;           // companion: command 4's command card slot (0-11, row by row)
+    // layout 9: lobby latency (LatencyPass)
+    DWORD latOn;            // companion: 1 = games you host use latMs
+    DWORD latMs;            // companion: the latency, ms (5-1000)
+    DWORD latState;         // module: 0 the game's own, 1 set, 3 refused (see the log)
+    DWORD latGame[3];       // module: what the game's LAN / single player / Battle.net getters returned (-1 = faulted)
 };
 #pragma pack(pop)
 
@@ -124,6 +130,9 @@ static const Known KNOWN[] = {
     { "game option apply",                 0x06b3a0 },
     { "game option get",                   0x06c030 },
     { "control click (self-cast)",         0x1407b0 },
+    { "latency getter (LAN)",              0x924730 },
+    { "latency getter (single player)",    0x929670 },
+    { "latency getter (Battle.net)",       0x925f00 },
     { "health bar draw",                   0x09b9d0 },
     { "bar visibility getter",             0x35fcc0 },
     { "bar update",                        0x2dd7d0 },
@@ -1301,19 +1310,150 @@ static void FpsPass() {
     g_shared->fpsState = g_fpsPatched ? 1 : 0;
 }
 
+// Lobby latency (games you host), as WFE's [DELAY]: WFE replaces three game
+// getters with `mov eax, [value]; ret` (its 0x1001b3d0 / e0 / f0, installed
+// at 0x10073030..62): +0x924730 LAN, +0x929670 single player (LAN's value
+// too), +0x925f00 Battle.net (WFE's order; the game side isn't confirmed).
+// Here each getter's first 6 bytes become `mov eax, ms; ret`, only if the
+// decoder finds a plain getter there (no calls) that nothing jumps back
+// into within those 6 bytes; the game's own values are read and logged
+// first. Put back when turned off, and on unload, if they're still ours.
+static const DWORD RVA_LATENCY[3] = { 0x924730, 0x929670, 0x925f00 };   // WFE's [0x1013a1b8], [+4], [+8]
+static const char *const LATENCY_NAME[3] = { "LAN", "single player", "Battle.net" };
+static BYTE g_latOrig[3][6];
+static DWORD g_latSet;              // the ms patched in (0 = the game's own)
+
+typedef int(__cdecl *LatencyFn)();
+
+// can f's first 6 bytes be overwritten safely
+static bool LatencyPatchable(const BYTE *f) {
+    if (!FnStart((DWORD)(f - g_base)) || !WalkGetter(f, 1))     // depth 1: a getter that calls nothing
+        return false;
+    const BYTE *p = f, *furthest = f;
+    for (int i = 0; i < 200; i++) {
+        int kind;
+        const BYTE *t = nullptr;
+        int n = Decode(p, &kind, &t);
+        if (kind == I_BAD || n <= 0)
+            return false;
+        if (t && t > f && t < f + 6)
+            return false;                       // something jumps into the bytes we'd overwrite
+        if (t && (kind == I_JCC || kind == I_JMP) && t > furthest)
+            furthest = t;
+        p += n;
+        if ((kind == I_RET || kind == I_JMP) && p > furthest) {
+            for (const BYTE *q = p; q < f + 6; q++)
+                if (*q != 0xCC && *q != 0x90)
+                    return false;               // shorter than 6 bytes, and not padding after it
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool WriteCode(BYTE *p, const BYTE *b, int n) {
+    DWORD old;
+    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old))
+        return false;
+    memcpy(p, b, n);
+    VirtualProtect(p, n, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), p, n);
+    return true;
+}
+static void LatencyBytes(DWORD ms, BYTE *b) {
+    b[0] = 0xB8, memcpy(b + 1, &ms, 4), b[5] = 0xC3;   // mov eax, ms; ret
+}
+
+// put the game's own getters back (where they're still ours)
+static void LatencyRestore(bool quiet) {
+    if (!g_latSet)
+        return;
+    BYTE ours[6];
+    LatencyBytes(g_latSet, ours);
+    for (int i = 0; i < 3; i++) {
+        BYTE *f = g_base + RVA_LATENCY[i];
+        if (!memcmp(f, ours, 6))
+            WriteCode(f, g_latOrig[i], 6);
+        else if (!quiet)
+            Log("latency: the %s getter was changed by someone else: left as it is", LATENCY_NAME[i]);
+    }
+    if (!quiet)
+        Log("latency: the game's own again");
+    g_latSet = 0;
+}
+
+static DWORD LatencyWanted() {
+    DWORD ms = g_shared->latMs;
+    return !g_shared->latOn ? 0 : ms < 5 ? 5 : ms > 1000 ? 1000 : ms;
+}
+
+static void LatencyPass() {
+    static bool refused;
+    DWORD want = LatencyWanted();
+    if (refused || want == g_latSet)
+        return;
+    if (!want) {
+        LatencyRestore(false);
+        g_shared->latState = 0;
+        return;
+    }
+    BYTE b[6];
+    if (!g_latSet) {
+        for (int i = 0; i < 3; i++)
+            if (!LatencyPatchable(g_base + RVA_LATENCY[i])) {
+                refused = true, g_shared->latState = 3;
+                Log("latency: refused, the %s getter +%06lX isn't a plain getter that can take the patch:", LATENCY_NAME[i], RVA_LATENCY[i]);
+                LogBytes("bytes", g_base + RVA_LATENCY[i]);
+                return;
+            }
+        for (int i = 0; i < 3; i++) {
+            BYTE *f = g_base + RVA_LATENCY[i];
+            memcpy(g_latOrig[i], f, 6);
+            int own = -1;
+            __try {
+                own = ((LatencyFn)f)();
+            } __except (EXCEPTION_EXECUTE_HANDLER) {
+            }
+            g_shared->latGame[i] = (DWORD)own;
+            Log("latency: the game's %s getter +%06lX returns %d", LATENCY_NAME[i], RVA_LATENCY[i], own);
+            LogBytes("  its bytes", f);
+        }
+    } else {
+        LatencyBytes(g_latSet, b);      // already ours: just the new value, if still ours
+        for (int i = 0; i < 3; i++)
+            if (memcmp(g_base + RVA_LATENCY[i], b, 6)) {
+                Log("latency: a getter was changed by someone else: stopping");
+                refused = true, g_shared->latState = 3;
+                return;
+            }
+    }
+    LatencyBytes(want, b);
+    for (int i = 0; i < 3; i++)
+        if (!WriteCode(g_base + RVA_LATENCY[i], b, 6)) {
+            Log("latency: writing the patch failed (%lu)", GetLastError());
+            LatencyRestore(true);
+            refused = true, g_shared->latState = 3;
+            return;
+        }
+    g_latSet = want;
+    g_shared->latState = 1;
+    Log("latency: %lu ms (LAN, single player and Battle.net)", want);
+}
+
 // on the game thread
 static void DisplayPass() {
     if (!g_getUi)
         return;
     WidescreenPass();
     FpsPass();
+    LatencyPass();
 }
 
-// the worker's part: a pass 4 times a second while either is on, or has something to put back
+// the worker's part: a pass 4 times a second while any is on, or has something to put back
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork()))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -1659,7 +1799,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 8;
+        g_shared->layout = 9;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
@@ -1669,7 +1809,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), SwapBarUpdate(false), FpsPatch(false, true);  // FreeLibrary, not the game exiting: give back the window, the bar update and the limiter
+            Unsubclass(), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;
