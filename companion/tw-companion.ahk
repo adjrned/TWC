@@ -32,6 +32,7 @@
 #Include engine\GameDisplay.ahk
 #Include ui\TimerHud.ahk
 #Include ui\Wc3Page.ahk
+#Include ui\ModuleCheck.ahk
 #Include ui\OverlayPanel.ahk
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------

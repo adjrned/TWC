@@ -20,7 +20,7 @@
 //  the FPS unlock's one byte and the latency getters' first 6 bytes, all put
 //  back when turned off.
 //
-//  Build: native\build.bat (32-bit, MSVC).
+//  Build: native\build.bat (32-bit, MSVC). Tests: native\tests\run-tests.bat.
 // ============================================================================
 #include <windows.h>
 #include <stdio.h>

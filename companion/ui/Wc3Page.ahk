@@ -149,12 +149,13 @@ BuildWc3Page() {
     ; the game module (1.28f side only): its master switch and log
     local gl := mainGui.AddText("x" x " y" (y + 44) " w170 h22 0x200 +Background" C.panel " c" C.text, "Game module (1.28f)")
     UISetFont(gl, "s10 w600")
-    wc3ModuleText := mainGui.AddText("x" (x + 176) " y" (y + 44) " w" (cw - 176 - 170) " h22 0x200 +Background" C.panel " c" C.dim, "")
+    wc3ModuleText := mainGui.AddText("x" (x + 176) " y" (y + 44) " w" (cw - 176 - 246) " h22 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3ModuleText, "s8")
+    local chkBtn := MkButton("Check", x + cw - 236, y + 42, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
     wc3ModuleBtn := MkButton("Off", x + cw - 160, y + 42, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
     local logBtn := MkButton("Log", x + cw - 84, y + 42, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
-    AddToPage("wc3", gl, wc3ModuleText, wc3ModuleBtn, logBtn)
-    wc3ModuleRow := [gl, wc3ModuleText, wc3ModuleBtn, logBtn]
+    AddToPage("wc3", gl, wc3ModuleText, chkBtn, wc3ModuleBtn, logBtn)
+    wc3ModuleRow := [gl, wc3ModuleText, chkBtn, wc3ModuleBtn, logBtn]
     ; feature cards, all built at one spot: RefreshWc3 shows the tab's and
     ; version's own and stacks them
     for f in Wc3Features() {
