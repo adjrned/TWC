@@ -140,10 +140,16 @@ class GameModuleEngine {
 
     ; -- cooldown and buff timers (layout 3) ------------------------------------
     ; The module reads them only while asked (tmWant), 10 times a second.
-    ; Offsets: Shared in native\twc-game.cpp.
-    timersWanted(on) {
+    ; Several features can ask (who: the timer display, the buff alerts); it
+    ; reads while any of them wants them. Offsets: Shared in native\twc-game.cpp.
+    tmWho := Map()
+    timersWanted(on, who := "hud") {
+        if on
+            this.tmWho[who] := 1
+        else if this.tmWho.Has(who)
+            this.tmWho.Delete(who)
         if (v := this.live()) && NumGet(v, 4, "uint") >= 3
-            NumPut("uint", on ? 1 : 0, v, 168)
+            NumPut("uint", this.tmWho.Count ? 1 : 0, v, 168)
     }
     ; -> { seq, flags, cd: [{ left, total }] x12 (command card, row by row),
     ;      buffs: [{ left, total, aura, id }] (buff bar, left to right; 0 = empty) }

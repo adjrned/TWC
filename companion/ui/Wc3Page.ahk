@@ -38,8 +38,8 @@ Wc3PlannedText(tab, ver) {
     static p := Map(
         "casting128", "",
         "castingreforged", "Planned: a self-cast key (the next ability goes on your hero).",
-        "timers128", "Planned: naming your buffs, alerts for a buff about to run out, timers drawn inside the game.",
-        "timersreforged", "Planned: cooldown and buff timers read from the screen, naming your buffs.",
+        "timers128", "Planned: timers drawn inside the game (with Storm.dll).",
+        "timersreforged", "Planned: cooldown and buff timers read from the screen.",
         "display128", "Planned: hiding parts of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
         "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: lobby latency and the game start countdown when you host.",
@@ -76,11 +76,11 @@ Wc3Features() {
             on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
             setupLabel: "Set up buff bar", setup: (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart()) },
         { tab: "timers", title: "Buff alerts", badge: "Both",
-            desc: "A line over the game when a buff you added is missing.",
+            desc: "A line over the game when a buff you added is missing, or (1.28f) running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
             buttons: [["Buff bar", (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())],
                 ["Add buff", (*) => (WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
-                ["Remove last", (*) => (buffWatch.removeLast(), RefreshWc3())]] },
+                ["Buffs", (*) => BuffWatchDialog()]] },
         { tab: "display", title: "Health bar size", badge: "1.28f",
             desc: "Bigger health bars on every unit. Width is experimental.",
             on: (*) => healthBars.enabled, set: (v) => healthBars.setEnabled(v), status: (*) => healthBars.statusText(),
@@ -197,6 +197,58 @@ BuildWc3Page() {
     wc3Planned := mainGui.AddText("x" x " y" (y + 82 + 4 * 80) " w" cw " h34 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3Planned, "s8")
     AddToPage("wc3", wc3Planned)
+}
+
+; The buff alerts' Buffs window, in the Quickcast Setup window's style: a
+; name for each watched buff (shown in the alert line), Remove, and the
+; running-out warning (1.28f, game module). Names save as you type.
+BuffWatchDialog() {
+    global C, mainGui, buffWatch, UI_FONT
+    static g := 0
+    if g
+        try g.Destroy()
+    list := buffWatch.buffs(), w := 460, x := 26, tw := w - 52
+    g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    g.BackColor := C.frame                           ; = the 1px border
+    g.MarginX := 0, g.MarginY := 0
+    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Watched buffs")
+    t.SetFont("s13 w700 q4", "Cinzel")
+    intro := list.Length ? "Their names show in the alert line over the game." : "None yet: Add buff on the WC3 page, in a game with the buff on your hero."
+    it := g.AddText("x" x " y56 w" tw " h18 +Background" C.card " c" C.dim, intro)
+    UISetFont(it, "s9")
+    y := 86
+    g.SetFont("s10", UI_FONT)
+    for i, b in list {
+        n := g.AddText("x" x " y" (y + 2) " w24 h20 +Background" C.card " c" C.muted, i)
+        UISetFont(n, "s9 w600")
+        e := g.AddEdit("x" (x + 28) " y" y " w" (tw - 28 - 96) " h24 +Background" C.well " c" C.text, b.name)
+        e.OnEvent("Change", ((i, c, *) => buffWatch.rename(i, c.Value)).Bind(i))
+        r := g.AddText("x" (x + tw - 86) " y" y " w86 h24 Center 0x200 +Background" C.chip " c" C.text, "Remove")
+        UISetFont(r, "s9 w600"), Box.Round(r, 86, 24, 4)
+        r.OnEvent("Click", ((i, *) => (buffWatch.remove(i), BuffWatchDialog(), RefreshWc3())).Bind(i))
+        y += 32
+    }
+    y += 8
+    g.AddText("x" x " y" y " w" tw " h1 +Background" C.border)     ; divider
+    y += 16
+    wl := g.AddText("x" x " y" (y + 2) " w226 h20 +Background" C.card " c" C.text, "Warn when one has this left:")
+    UISetFont(wl, "s10")
+    wv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, buffWatch.warnAt)
+    g.AddText("x" (x + 284) " y" (y + 2) " w120 h20 +Background" C.card " c" C.text, "s  (0 = never)")
+    wv.OnEvent("Change", (c, *) => (c.Value != "" && buffWatch.setWarnAt(c.Value)))
+    y += 28
+    wn := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.dim, "1.28f with the game module: it reads how long each buff has left.")
+    UISetFont(wn, "s8")
+    y += 34
+    close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    UISetFont(close, "s9 w600"), Box.Round(close, 104, 34, 4)
+    close.OnEvent("Click", (*) => (g.Destroy(), RefreshWc3()))
+    h := y + 34 + 24
+    card.Move(, , , h - 2)
+    g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
+    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
 }
 
 Wc3Label(l) => HasMethod(l) ? l() : l
