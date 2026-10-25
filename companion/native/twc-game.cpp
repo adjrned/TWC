@@ -16,9 +16,11 @@
 //  Every feature is off until the companion turns it on. Quickcast only reads
 //  the game UI (through the game's own getter) and clicks with SendInput, as
 //  WFE does; game calls that change something run on the game's thread. The
-//  only writes into the game itself: the health bar colours' vtable entry,
-//  the FPS unlock's one byte and the latency getters' first 6 bytes, all put
-//  back when turned off.
+//  only writes into the game itself: four entries of the health bar's vtable
+//  (colours, health numbers, mana bars), the FPS unlock's one byte and the
+//  latency getters' first 6 bytes, all put back when turned off. Frames it
+//  adds (timers in the game, health numbers, mana bars) are made with the
+//  game's own Storm.dll and constructors.
 //
 //  Build: native\build.bat (32-bit, MSVC). Tests: native\tests\run-tests.bat.
 // ============================================================================
@@ -27,6 +29,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <initializer_list>
 
 #pragma comment(lib, "version.lib")
 #pragma comment(lib, "user32.lib")
@@ -104,6 +107,17 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD uiState;          // module: frames hidden now (same bits); 0x80000000 = one was refused (see the log)
     // layout 11: frames added to the game (Storm.dll's SMemAlloc)
     DWORD stState;          // module: 0 not checked yet, 1 the game's Storm.dll checks out, 2 none loaded in the game, 3 refused (see the log)
+    DWORD itOn;             // companion: 1 = cooldown and buff timers drawn in the game (TimerFramesPass)
+    DWORD itState;          // module: 0 off, 1 on, 2 waiting (no game yet, or no Storm.dll), 3 refused (see the log)
+    DWORD frCount;          // module: text frames made in this game
+    DWORD hnOn;             // companion: 1 = health numbers over the health bars (BarExtras)
+    DWORD hnMode;           // companion: 0 current, 1 current / max, 2 percent
+    DWORD hnState;          // module: as itState
+    DWORD mbOn;             // companion: 1 = mana bars under the health bars of units with mana
+    float mbHeight;         // companion: the mana bar's height, times the health bar's (0.25-2)
+    DWORD mbState;          // module: as itState
+    DWORD hnCount;          // module: health numbers in use
+    DWORD mbCount;          // module: mana bars in use
 };
 #pragma pack(pop)
 
@@ -739,12 +753,13 @@ static void ReadTimersGuarded(BYTE *ui) {
     }
 }
 
-static void ReadTimers() {
+// ui: the worker's last g_ui, or the game thread's own when it draws them in the game
+static void ReadTimers(BYTE *ui) {
     DWORD keep = g_shared->tmFlags & 0x100;
     ZeroMemory(g_shared->cdLeft, (BYTE *)(g_shared->buffId + 16) - (BYTE *)g_shared->cdLeft);
     g_shared->tmFlags = keep;
-    if (g_ui)
-        ReadTimersGuarded(g_ui);
+    if (ui)
+        ReadTimersGuarded(ui);
     InterlockedIncrement(&g_shared->tmSeq);
 }
 
@@ -788,6 +803,9 @@ static int ToggleMultiboard(BYTE *ui);
 static int AutocastToggle(BYTE *ui, DWORD slot);
 static void SelfCast();
 static UINT g_selfMsg;              // "TWC_GameThreadSelfCast": run SelfCast on the game thread
+static void FramesPass();
+static UINT g_framesMsg;            // "TWC_GameThreadFrames": run FramesPass on the game thread
+static volatile LONG g_framesQueued;
 
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_barsMsg && g_barsMsg) {
@@ -802,6 +820,11 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     }
     if (m == g_selfMsg && g_selfMsg) {
         SelfCast();
+        return 0;
+    }
+    if (m == g_framesMsg && g_framesMsg) {
+        InterlockedExchange(&g_framesQueued, 0);
+        FramesPass();
         return 0;
     }
     if (m == WM_SIZE || m == WM_DISPLAYCHANGE)
@@ -834,6 +857,7 @@ static bool Subclass() {
     g_barsMsg = RegisterWindowMessageA("TWC_GameThreadBars");
     g_dispMsg = RegisterWindowMessageA("TWC_GameThreadDisplay");
     g_selfMsg = RegisterWindowMessageA("TWC_GameThreadSelfCast");
+    g_framesMsg = RegisterWindowMessageA("TWC_GameThreadFrames");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -1114,10 +1138,15 @@ static void ColourBar(BYTE *bar, BYTE *unit) {
     }
 }
 
+static bool g_extrasHooked;                 // mana bars / health numbers: the bar's hide, show and dtor entries are ours too
+static void BarExtras(BYTE *bar, BYTE *unit);
+
 static void __fastcall BarUpdateHook(void *bar, int edx, void *unit) {
     g_gameBarUpdate(bar, edx, unit);        // the game's own update, untouched
     if (g_shared->hcOn)
         ColourBar((BYTE *)bar, (BYTE *)unit);
+    if (g_extrasHooked)
+        BarExtras((BYTE *)bar, (BYTE *)unit);
 }
 
 // point the shared vtable entry at the hook (on) or back at the game's (off)
@@ -1144,25 +1173,741 @@ static bool SwapBarUpdate(bool on) {
     InterlockedExchange((volatile LONG *)slot, (LONG)want);
     VirtualProtect(slot, 4, old, &old);
     g_barHooked = on;
-    Log(on ? "health bar colours: on (the bar update +%06lX is wrapped)" : "health bar colours: off (the bar update +%06lX is the game's again)",
-        (DWORD)g_gameBarUpdate - (DWORD)g_base);
+    Log(on ? "bar update: wrapped (+%06lX)" : "bar update: the game's own again (+%06lX)", (DWORD)g_gameBarUpdate - (DWORD)g_base);
     return true;
 }
 
-// the worker's part: follow the companion's switch
+static volatile LONG g_extrasWant;      // the game thread: mana bars / health numbers need the bar update wrapped
+
+// the worker's part: follow the companion's switch (and keep the update wrapped
+// while mana bars or health numbers need it)
 static void FollowColours() {
-    static bool refused;
+    static bool refused, colours;
     if (!g_getUi || refused)
         return;
-    bool on = g_shared->hcOn != 0;
-    if (on && !g_barHooked) {
+    bool want = g_shared->hcOn || g_extrasWant;
+    if (want && !g_barHooked) {
         if (!IsGameCode(g_base + RVA_HANDLE_LOOKUP) || !IsGameCode(g_base + RVA_UNIT_HP) || !SwapBarUpdate(true)) {
             refused = true, g_shared->hcState = 2;
+            Log("health bar colours: refused (the bar update can't be wrapped)");
             return;
         }
-    } else if (!on && g_barHooked)
+    } else if (!want && g_barHooked)
         SwapBarUpdate(false);
-    g_shared->hcState = g_barHooked ? 1 : 0;
+    bool c = g_shared->hcOn && g_barHooked;
+    if (c != colours)
+        colours = c, Log(c ? "health bar colours: on" : "health bar colours: off");
+    g_shared->hcState = c ? 1 : 0;
+}
+
+static bool FnStart(DWORD rva);
+
+// -- frames added to the game ---------------------------------------------------------
+// Timers drawn in the game, health numbers and mana bars (study_timerframes.md,
+// study_hpmp_bars.md, study_storm.md; every address re-checked by hand in WFE's
+// 1.28f branches). New frames are made as WFE makes them: the game's Storm
+// SMemAlloc, then the game's own constructor, on the game thread.
+// Text frames are children of the game UI: the game frees them when the game
+// ends, and the module only forgets them then (another game UI, or none).
+// A mana bar is a second CStatBar made by the game's own constructor for a
+// unit's health bar (WFE packs the two into one object of its own instead):
+// it's updated, shown and hidden with the health bar, and destroyed with it,
+// through the hide, show and dtor entries of the shared CStatBar vtable (data
+// writes, as the update's; put back when both features are off and no mana
+// bar is left).
+static const DWORD RVA_TEXT_CTOR = 0x12b3d0;        // CTextFrame __fastcall(mem, 0, parent, layer, id) -> it (WFE's [0x1013a5a0])
+static const DWORD RVA_TEXT_FLAGS = 0x12c240;       // __fastcall(text, 0, flags changed) ([0x1013a5a4])
+static const DWORD RVA_TEXT_SET = 0x12c500;         // __fastcall(text, 0, const char *): the game copies it ([0x1013a5a8])
+static const DWORD RVA_SET_FONT = 0x11f210;         // __fastcall(text, 0, path, float height, flags) ([0x1013a1e4])
+static const DWORD RVA_SET_POINT = 0x13fc20;        // __fastcall(layout, 0, point, relative, its point, float x, float y, 1) ([0x1013a220])
+static const DWORD RVA_SET_ABS_POINT = 0x13fbb0;    // __fastcall(layout, 0, point, float x, float y, 1) ([0x1013a228])
+static const DWORD RVA_SKIN_LOOKUP = 0x3761e0;      // __fastcall(key, 0) -> const char * ([0x1013c87c]: "MasterFont" -> the font file)
+static const DWORD RVA_TEXT_VTABLE = 0xa7b3d0;      // CTextFrame ([0x1013a598])
+static const DWORD RVA_TEXT_LAYOUT_VTABLE = 0xa7b4e4;   // its layout part, at +0xb4 ([0x1013a59c])
+static const DWORD RVA_COMMAND_BUTTON_VTABLE = 0xaad9b8;    // CCommandButton ([0x1013a6ec]): a simple frame, anchored to as it is
+static const DWORD RVA_BAR_CTOR = 0x3d57f0;         // CStatBar __fastcall(mem, 0, 0, [health bar+0x154], kind) -> it ([0x1013a970])
+static const DWORD RVA_BAR_LEVEL = 0x3a7ca0;        // __fastcall(bar, 0, [health bar+0x84]) ([0x1013a980])
+static const DWORD RVA_BAR_TEXT_REFRESH = 0x141ce0; // __fastcall([bar+0x140], 0) ([0x1013aa3c])
+static const DWORD TEXT_LAYOUT = 0xb4, TEXT_FLAGS = 0x1f0, TEXT_COLOURS = 0x1f4, TEXT_SIZE = 0x240, TEXT_ID = 0x1388;
+static const DWORD TEXT_HIDE = 0xd0, TEXT_SHOW = 0xd4;
+static const DWORD BAR_SIZE = 0x160;                // WFE fits two in 0x2bc (the second at +0x158)
+static const DWORD BAR_DTOR = 0x08, BAR_HIDE = 0x64, BAR_SHOW = 0x68, BAR_RATIO = 0x6c;
+static const DWORD BAR_POS = 0xc, BAR_SHOWN = 0x94, BAR_LEVEL_ARG = 0x84, BAR_TEXT = 0x140, BAR_CUR = 0x148, BAR_MAX = 0x14c;
+static const DWORD UNIT_MANA = 0xb8, UNIT_MAXMANA_HANDLE = 0xc0;
+enum { PT_TOP = 1, PT_CENTER = 4, PT_BOTTOM = 7 };
+
+// A game function with ecx, edx and n stack arguments. esp is put back after
+// the call whoever cleans the stack, so the call can't unbalance it. Floats
+// go as their bits (F).
+static DWORD __declspec(noinline) GameCall(const void *fn, DWORD rc, DWORD rd, int n, const DWORD *a) {
+    DWORD r;
+    __asm {
+        mov esi, esp
+        mov edi, a
+        mov eax, n
+    push_next:
+        test eax, eax
+        jz call_it
+        dec eax
+        push dword ptr [edi + eax * 4]
+        jmp push_next
+    call_it:
+        mov ecx, rc
+        mov edx, rd
+        mov eax, fn
+        call eax
+        mov esp, esi
+        mov r, eax
+    }
+    return r;
+}
+static DWORD Game(DWORD rva, const void *ecx, std::initializer_list<DWORD> a = {}) {
+    return GameCall(g_base + rva, (DWORD)ecx, 0, (int)a.size(), a.begin());
+}
+static DWORD Virt(const void *obj, DWORD slot, std::initializer_list<DWORD> a = {}) {
+    return GameCall(*(void **)(*(BYTE **)obj + slot), (DWORD)obj, 0, (int)a.size(), a.begin());
+}
+static DWORD F(float f) {
+    DWORD d;
+    memcpy(&d, &f, 4);
+    return d;
+}
+
+// data in the game module whose first entries (and these) are game code
+static bool GameVtable(DWORD rva, std::initializer_list<DWORD> slots) {
+    DWORD *vt = (DWORD *)(g_base + rva);
+    if (!PageIs(vt, READ) || PageIs(vt, EXEC) || !IsGameCode((BYTE *)vt[0]) || !IsGameCode((BYTE *)vt[1]))
+        return false;
+    for (DWORD s : slots)
+        if (!PageIs(vt + s / 4, READ) || !IsGameCode((BYTE *)vt[s / 4]))
+            return false;
+    return true;
+}
+
+// Once: Storm, and every game function and vtable the frames use. 1 ready,
+// 2 no Storm.dll in the game, 3 refused (logged)
+static int FramesCheck() {
+    static int r;
+    if (r)
+        return r;
+    int s = g_smemAlloc ? 1 : StormCheck();
+    if (s != 1)
+        return r = s;
+    static const struct { const char *name; DWORD rva; } FNS[] = {
+        { "text frame constructor", RVA_TEXT_CTOR }, { "text flags", RVA_TEXT_FLAGS }, { "text setter", RVA_TEXT_SET },
+        { "font setter", RVA_SET_FONT }, { "anchor", RVA_SET_POINT }, { "position", RVA_SET_ABS_POINT },
+        { "skin lookup", RVA_SKIN_LOOKUP }, { "layout refresh", RVA_LAYOUT_REFRESH }, { "bar constructor", RVA_BAR_CTOR },
+        { "bar level", RVA_BAR_LEVEL }, { "bar text refresh", RVA_BAR_TEXT_REFRESH }, { "unit state", RVA_UNIT_HP },
+        { "handle lookup", RVA_HANDLE_LOOKUP } };
+    for (const auto &f : FNS)
+        if (!FnStart(f.rva)) {
+            Log("frames: refused, the %s +%06lX isn't a function start", f.name, f.rva);
+            if (PageIs(g_base + f.rva, READ))
+                LogBytes("  its bytes", g_base + f.rva);
+            return r = 3;
+        }
+    if (!GameVtable(RVA_TEXT_VTABLE, { TEXT_HIDE, TEXT_SHOW }) || !GameVtable(RVA_TEXT_LAYOUT_VTABLE, {})
+        || !GameVtable(RVA_COMMAND_BUTTON_VTABLE, {}) || !GameVtable(RVA_STATBAR_VTABLE, { BAR_DTOR, BAR_HIDE, BAR_SHOW, BAR_RATIO, STATBAR_UPDATE })) {
+        Log("frames: refused, a vtable (text frame +%06lX / +%06lX, command button +%06lX, bar +%06lX) isn't game data with code entries",
+            RVA_TEXT_VTABLE, RVA_TEXT_LAYOUT_VTABLE, RVA_COMMAND_BUTTON_VTABLE, RVA_STATBAR_VTABLE);
+        return r = 3;
+    }
+    Log("frames: the game's frame functions check out");
+    return r = 1;
+}
+
+// the game's own font for the frames ("MasterFont" in its skin), read once
+static const char *FontPath() {
+    static char path[MAX_PATH];
+    if (!path[0]) {
+        const char *p = nullptr;
+        __try {
+            p = (const char *)Game(RVA_SKIN_LOOKUP, "MasterFont");
+            if (p && PageIs(p, READ))
+                strncpy_s(path, p, _TRUNCATE);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            path[0] = 0;
+        }
+        if (!path[0] || !strchr(path, '.'))
+            strcpy_s(path, "Fonts\\FRIZQT__.TTF");
+        Log("frames: font %s (%s)", path, p ? "the skin's MasterFont" : "the default");
+    }
+    return path;
+}
+
+static bool g_framesBad;            // a new frame didn't check out, or a frame call faulted: no more frames (logged)
+
+static void FramesStop(const char *why) {
+    if (!g_framesBad)
+        Log("frames: %s: no more frames in this session", why);
+    g_framesBad = true;
+}
+
+static void TextColour(BYTE *t, DWORD argb) {
+    DWORD *c = (DWORD *)(t + TEXT_COLOURS);
+    if (c[0] != argb || c[1] != argb || c[2] != argb)
+        c[0] = c[1] = c[2] = argb, *(DWORD *)(t + 0x22c) = 1;
+}
+
+// a new CTextFrame under the game UI (hidden), in the game's font: WFE's
+// 0x100214f0 + 0x10080f60. 0 if refused or it didn't work (then never again)
+static BYTE *NewText(BYTE *ui, DWORD layer, float height, DWORD argb) {
+    if (g_framesBad)
+        return nullptr;
+    void *mem = g_smemAlloc(TEXT_SIZE, "TWC text frame", __LINE__, 0);
+    if (!mem) {
+        FramesStop("SMemAlloc gave no memory");
+        return nullptr;
+    }
+    BYTE *t;
+    __try {
+        t = (BYTE *)Game(RVA_TEXT_CTOR, mem, { (DWORD)ui, layer, TEXT_ID });
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        FramesStop("the text frame constructor faulted");      // the memory is left: the game may hold it
+        return nullptr;
+    }
+    if (t != mem || *(DWORD *)t != (DWORD)(g_base + RVA_TEXT_VTABLE) || *(DWORD *)(t + TEXT_LAYOUT) != (DWORD)(g_base + RVA_TEXT_LAYOUT_VTABLE)) {
+        Log("frames: the new text frame %p (memory %p) has vtables %08lX / %08lX, not +%06lX / +%06lX", t, mem,
+            t == mem ? *(DWORD *)t : 0, t == mem ? *(DWORD *)(t + TEXT_LAYOUT) : 0, RVA_TEXT_VTABLE, RVA_TEXT_LAYOUT_VTABLE);
+        FramesStop("a text frame didn't check out");
+        return nullptr;
+    }
+    __try {
+        Game(RVA_SET_FONT, t, { (DWORD)FontPath(), F(height), 0 });
+        *(DWORD *)(t + 0x220) = 1, *(DWORD *)(t + 0x21c) = 1, *(DWORD *)(t + 0x224) = 1;
+        DWORD *fl = *(DWORD **)(t + TEXT_FLAGS);
+        if (fl) {
+            DWORD old = fl[0], now = old | fl[1] | 0x8c;
+            fl[0] = now;
+            if (now ^ old)
+                Game(RVA_TEXT_FLAGS, t, { now ^ old });
+            *(DWORD *)(t + 0x224) = 1, *(DWORD *)(t + 0x22c) = 1, *(DWORD *)(t + 0x230) = 1, *(DWORD *)(t + 0x23c) = 1;
+        }
+        TextColour(t, argb);
+        Virt(t, TEXT_HIDE);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        FramesStop("setting up a text frame faulted");
+        return nullptr;
+    }
+    if (!g_shared->frCount++)
+        Log("frames: the first text frame %p checks out", t);
+    return t;
+}
+
+static void TextShow(BYTE *t, bool on) { Virt(t, on ? TEXT_SHOW : TEXT_HIDE); }
+static void TextSet(BYTE *t, const char *s) { Game(RVA_TEXT_SET, t, { (DWORD)s }); }
+// anchored to another frame (WFE's refresh, then its anchor)
+static void TextAnchor(BYTE *t, BYTE *to, int pt, int toPt, float x, float y) {
+    Game(RVA_LAYOUT_REFRESH, t + TEXT_LAYOUT, { 1 });
+    Game(RVA_SET_POINT, t + TEXT_LAYOUT, { (DWORD)pt, (DWORD)to, (DWORD)toPt, F(x), F(y), 1 });
+}
+// at a spot on the screen (UI units), not tied to any frame
+static void TextAt(BYTE *t, int pt, float x, float y) {
+    Game(RVA_SET_ABS_POINT, t + TEXT_LAYOUT, { (DWORD)pt, F(x), F(y), 1 });
+}
+
+// -- timers drawn in the game ----------------------------------------------------------
+// As WFE's Cooldown UI and BUFFUI, text only (no models): seconds left in the
+// middle of each command card button that's cooling down, and under each buff
+// icon (WFE's spot: bottom to bottom, 0.0115 lower). A black copy a little
+// down and right is the shadow (WFE uses four). The times are read here on
+// the game thread, 10 times a second.
+struct TimerSlot { BYTE *btn, *text, *shadow; char shown[12]; };
+static TimerSlot g_tCd[12], g_tBuff[16];
+static BYTE *g_framesUi;            // the game UI the text frames belong to (another one: they're gone)
+static const float SHADOW = 0.0006f, CD_TEXT = 0.014f, BUFF_TEXT = 0.0105f, BUFF_TEXT_Y = -0.0115f;
+
+// whole seconds, tenths under 1 s, m:ss from a minute (TimerHud's)
+static void TimeText(float s, char *b, size_t n) {
+    if (!(s > 0) || s > 99 * 60)
+        b[0] = 0;
+    else if (s < 1)
+        sprintf_s(b, n, "%.1f", s);
+    else {
+        int c = (int)ceilf(s);
+        if (c < 60)
+            sprintf_s(b, n, "%d", c);
+        else
+            sprintf_s(b, n, "%d:%02d", c / 60, c % 60);
+    }
+}
+
+static void SlotHide(TimerSlot &s) {
+    if (s.shown[0] && s.text)
+        TextShow(s.shadow, false), TextShow(s.text, false);
+    s.shown[0] = 0;
+}
+
+static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
+    char t[12];
+    TimeText(left, t, sizeof(t));
+    if (!t[0] || !btn) {
+        SlotHide(s);
+        return;
+    }
+    if (!s.text) {
+        float h = buff ? BUFF_TEXT : CD_TEXT;
+        s.shadow = NewText(ui, buff ? 0 : 4, h, 0xFF000000);
+        s.text = s.shadow ? NewText(ui, buff ? 0 : 4, h, 0xFFFFFFFF) : nullptr;
+        if (!s.text)
+            return;
+        s.btn = nullptr;
+    }
+    if (s.btn != btn) {
+        int pt = buff ? PT_BOTTOM : PT_CENTER;
+        float y = buff ? BUFF_TEXT_Y : 0;
+        TextAnchor(s.shadow, btn, pt, pt, SHADOW, y - SHADOW);
+        TextAnchor(s.text, btn, pt, pt, 0, y);
+        s.btn = btn;
+    }
+    if (strcmp(t, s.shown)) {
+        TextSet(s.shadow, t), TextSet(s.text, t);
+        if (!s.shown[0])
+            TextShow(s.shadow, true), TextShow(s.text, true);
+        strcpy_s(s.shown, t);
+    }
+}
+
+// the command card button at a slot, if it's a command button
+static BYTE *CardButton(BYTE *card, int i) {
+    BYTE *b = GridButton(card, i / 4, i % 4);
+    if (b && *(DWORD *)b != (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE)) {
+        static int logs;
+        if (logs++ < 3)
+            Log("timers in the game: the command card button %p has vtable +%06lX, not +%06lX: no text on it", b, *(DWORD *)b - (DWORD)g_base, RVA_COMMAND_BUTTON_VTABLE);
+        return nullptr;
+    }
+    return b;
+}
+// a buff bar button, if its vtable is game data
+static BYTE *BuffButton(BYTE *bar, int cols, int i) {
+    BYTE *b = GridButton(bar, i / cols, i % cols);
+    return b && InImage(*(DWORD *)b, g_imageSize) && !PageIs((void *)*(DWORD *)b, EXEC) ? b : nullptr;
+}
+
+// the frames, from what's in shared memory
+static void TimerFramesDraw(BYTE *ui) {
+    BYTE *card = *(BYTE **)(ui + 0x3c8);
+    int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
+    bool cardOk = rows > 0 && cols > 0 && rows <= 3 && cols <= 4;
+    for (int i = 0; i < 12; i++)
+        SlotDraw(ui, g_tCd[i], cardOk && i / 4 < rows && i % 4 < cols ? CardButton(card, i) : nullptr, g_shared->cdLeft[i], false);
+    BYTE *bar = *(BYTE **)(ui + 0x3c4);
+    if (bar && (bar = *(BYTE **)(bar + 0x130)))
+        bar = *(BYTE **)(bar + 0x16c);
+    rows = bar ? *(int *)(bar + 0x124) : 0, cols = bar ? *(int *)(bar + 0x128) : 0;
+    bool barOk = rows > 0 && cols > 0 && rows * cols <= 16;
+    for (int i = 0; i < 16; i++)
+        SlotDraw(ui, g_tBuff[i], barOk && i < rows * cols && (g_shared->buffFlags[i] & 1) ? BuffButton(bar, cols, i) : nullptr, g_shared->buffLeft[i], true);
+}
+
+static bool g_itReading;            // the game thread reads the timers (the worker leaves them)
+
+// on the game thread
+static void TimerFramesPass(BYTE *ui) {
+    if (!g_shared->itOn) {
+        g_itReading = false;
+        for (TimerSlot &s : g_tCd)
+            SlotHide(s);
+        for (TimerSlot &s : g_tBuff)
+            SlotHide(s);
+        g_shared->itState = 0;
+        return;
+    }
+    int fc = FramesCheck();
+    if (fc != 1 || g_framesBad) {
+        g_itReading = false;
+        g_shared->itState = fc == 2 ? 2 : 3;
+        return;
+    }
+    if (!ui) {
+        g_shared->itState = 2;
+        return;
+    }
+    g_itReading = true;
+    ReadTimers(ui);
+    __try {
+        TimerFramesDraw(ui);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        FramesStop("timers in the game: a frame call faulted");
+    }
+    static bool logged;
+    if (!logged && g_shared->frCount)
+        logged = true, Log("timers in the game: drawing (%lu text frames)", g_shared->frCount);
+    g_shared->itState = g_framesBad ? 3 : 1;
+}
+
+// -- health numbers and mana bars ------------------------------------------------------
+// Per health bar (kind 5), from the bar update the game calls (the vtable
+// entry wrapped above): its number just over it (a text frame placed at the
+// bar's own spot each update, tied to no frame), and its mana bar just under
+// it (WFE's 0.002 gap), filled and coloured like WFE's.
+struct BarExtra { BYTE *bar, *mana, *text; int last; bool manaShown, textShown, noMana; };
+static const int BX_N = 2048;
+static BarExtra g_bx[BX_N];         // open addressing on the bar's address
+static int g_bxCount;
+static BYTE *g_textPool[512];       // hidden number frames of this game UI, free to use
+static int g_textPoolN;
+static BYTE *g_textHide[512];       // numbers of bars that went away: hidden on the next pass
+static int g_textHideN;
+static bool g_manaBad;              // a mana bar didn't check out: no more of them
+static const float NUM_TEXT = 0.0085f, NUM_Y = 0.0008f, MANA_GAP = 0.002f;
+static const DWORD MANA_COLOUR = 0xFF2060FF;
+
+typedef DWORD(__fastcall *BarFn)(void *, int);
+typedef DWORD(__fastcall *BarDtorFn)(void *, int, int);
+static BarFn g_gameBarHide, g_gameBarShow;      // the game's own: set once, never cleared
+static BarDtorFn g_gameBarDtor;
+
+static DWORD BxHome(const BYTE *bar) { return ((DWORD)bar >> 3) * 2654435761u >> 21; }   // 11 bits
+static BarExtra *BxFind(BYTE *bar, bool add) {
+    for (DWORD i = BxHome(bar), k = 0; k < (DWORD)BX_N; k++, i = (i + 1) & (BX_N - 1)) {
+        if (g_bx[i].bar == bar)
+            return &g_bx[i];
+        if (!g_bx[i].bar) {
+            if (!add || g_bxCount >= BX_N * 3 / 4)
+                return nullptr;
+            ZeroMemory(&g_bx[i], sizeof(BarExtra));
+            g_bx[i].bar = bar, g_bx[i].last = -1;
+            g_bxCount++;
+            return &g_bx[i];
+        }
+    }
+    return nullptr;
+}
+static void BxRemove(BarExtra *e) {
+    DWORD i = (DWORD)(e - g_bx), j = i;
+    ZeroMemory(e, sizeof(BarExtra));
+    g_bxCount--;
+    for (;;) {                                      // shift back what probed past the hole
+        j = (j + 1) & (BX_N - 1);
+        if (!g_bx[j].bar)
+            return;
+        DWORD k = BxHome(g_bx[j].bar);
+        if (i <= j ? (k <= i || k > j) : (k <= i && k > j)) {
+            g_bx[i] = g_bx[j];
+            ZeroMemory(&g_bx[j], sizeof(BarExtra));
+            i = j;
+        }
+    }
+}
+
+// a unit's state value now and its maximum (HP: +0x98 / +0xa0, mana: +0xb8 / +0xc0), as WFE's 0x10044440
+static bool UnitStat(BYTE *unit, DWORD state, DWORD maxHandle, float *cur, float *max) {
+    float c = 0;
+    ((HpFn)(g_base + RVA_UNIT_HP))(unit + state, 0, &c);
+    DWORD *pair = (DWORD *)(unit + maxHandle);
+    BYTE *mx = pair[0] != 0xFFFFFFFF && pair[1] != 0xFFFFFFFF ? (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]) : nullptr;
+    *cur = c, *max = mx ? *(float *)(mx + 0x84) : 0;
+    return *max > 0 && c == c;
+}
+
+static void ManaDestroy(BYTE *m) {
+    __try {
+        g_gameBarDtor(m, 0, 0);                     // destroy only (WFE calls it on its inner bar too)
+        g_smemFree(m, "TWC mana bar", __LINE__, 0);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("mana bars: destroying one faulted");
+        g_manaBad = true;
+    }
+    g_shared->mbCount--;
+}
+
+static float ManaHeight(float h) {
+    float k = g_shared->mbHeight;
+    return h * (k >= 0.25f && k <= 2 ? k : 0.75f);
+}
+
+// a mana bar for a health bar, as WFE's 0x10078400 makes its inner one (0 = refused / failed)
+static BYTE *NewManaBar(BYTE *bar) {
+    void *mem = g_smemAlloc(BAR_SIZE, "TWC mana bar", __LINE__, 0);
+    if (!mem)
+        return nullptr;
+    BYTE *m = (BYTE *)Game(RVA_BAR_CTOR, mem, { 0, *(DWORD *)(bar + BAR_UNIT), 0 });
+    if (m != mem || *(DWORD *)m != (DWORD)(g_base + RVA_STATBAR_VTABLE) || *(DWORD *)(m + BAR_KIND) != 0) {
+        Log("mana bars: the new bar %p (memory %p) has vtable %08lX, kind %lu, not +%06lX, 0: no more mana bars", m, mem,
+            m == mem ? *(DWORD *)m : 0, m == mem ? *(DWORD *)(m + BAR_KIND) : 0, RVA_STATBAR_VTABLE);
+        g_manaBad = true;                           // left as it is: it may be half made
+        return nullptr;
+    }
+    *(DWORD *)(m + BAR_UNIT) = *(DWORD *)(bar + BAR_UNIT);
+    *(float *)(m + BAR_WIDTH) = *(float *)(bar + BAR_WIDTH);
+    Game(RVA_LAYOUT_REFRESH, m, { 0 });
+    *(float *)(m + BAR_HEIGHT) = ManaHeight(*(float *)(bar + BAR_HEIGHT));
+    Game(RVA_LAYOUT_REFRESH, m, { 0 });
+    Game(RVA_BAR_LEVEL, m, { *(DWORD *)(bar + BAR_LEVEL_ARG) });
+    g_gameBarHide(m, 0);
+    if (!g_shared->mbCount++)
+        Log("mana bars: the first one %p checks out (for the bar %p)", m, bar);
+    return m;
+}
+
+// after the health bar's update: the mana bar's own update, size, place, fill and colour
+static void ManaUpdate(BarExtra *e, BYTE *unit, float cur, float max, bool shown) {
+    BYTE *bar = e->bar, *m = e->mana;
+    g_gameBarUpdate(m, 0, unit);
+    float h = *(float *)(bar + BAR_HEIGHT), w = *(float *)(bar + BAR_WIDTH), mh = ManaHeight(h);
+    if (*(float *)(m + BAR_WIDTH) != w || *(float *)(m + BAR_HEIGHT) != mh) {
+        *(float *)(m + BAR_WIDTH) = w, *(float *)(m + BAR_HEIGHT) = mh;
+        Game(RVA_LAYOUT_REFRESH, m, { 0 });
+    }
+    BYTE *pos = *(BYTE **)(bar + BAR_POS);
+    if (pos)
+        Game(RVA_SET_ABS_POINT, m, { PT_TOP, F(*(float *)(pos + 4)), F(*(float *)(pos + 8) - (h + MANA_GAP)), 1 });
+    *(int *)(m + BAR_CUR) = (int)cur, *(int *)(m + BAR_MAX) = (int)max;
+    Virt(m, BAR_RATIO, { F(cur / max) });
+    if (*(BYTE **)(m + BAR_TEXT))
+        Game(RVA_BAR_TEXT_REFRESH, *(BYTE **)(m + BAR_TEXT));
+    BYTE *fill = *(BYTE **)(m + BAR_FILL);
+    if (fill && IsGameCode(*(BYTE **)(*(BYTE **)fill + 0x24))) {
+        DWORD c = MANA_COLOUR;
+        fill[0x68] = (BYTE)(c >> 24), fill[0x69] = (BYTE)c, fill[0x6a] = (BYTE)(c >> 8), fill[0x6b] = (BYTE)(c >> 16);
+        Virt(fill, 0x24);
+    }
+    if (shown != e->manaShown)
+        (shown ? g_gameBarShow : g_gameBarHide)(m, 0), e->manaShown = shown;
+}
+
+static void NumberText(int mode, float cur, float max, char *b, size_t n) {
+    int c = (int)ceilf(cur);
+    if (mode == 2)
+        sprintf_s(b, n, "%d%%", (int)ceilf(cur * 100 / max));
+    else if (mode == 1)
+        sprintf_s(b, n, "%d / %d", c, (int)max);
+    else
+        sprintf_s(b, n, "%d", c);
+}
+
+static void NumberUpdate(BarExtra *e, BYTE *ui, float cur, float max, bool shown) {
+    if (!e->text) {
+        e->text = g_textPoolN ? g_textPool[--g_textPoolN] : NewText(ui, 0, NUM_TEXT, 0xFFFFFFFF);
+        if (!e->text)
+            return;
+        e->last = -1, e->textShown = false;
+        if (!g_shared->hnCount++) {
+            static int logs;
+            if (logs++ < 3)
+                Log("health numbers: the first one %p (for the bar %p)", e->text, e->bar);
+        }
+    }
+    int mode = g_shared->hnMode <= 2 ? (int)g_shared->hnMode : 0;
+    int key = mode == 2 ? (int)ceilf(cur * 100 / max) : (int)ceilf(cur) * 4 + mode;
+    if (mode == 1)
+        key ^= (int)max << 12;
+    if (key != e->last) {
+        char t[32];
+        NumberText(mode, cur, max, t, sizeof(t));
+        TextSet(e->text, t);
+        e->last = key;
+    }
+    BYTE *pos = *(BYTE **)(e->bar + BAR_POS);
+    if (pos)
+        TextAt(e->text, PT_BOTTOM, *(float *)(pos + 4), *(float *)(pos + 8) + NUM_Y);
+    if (shown != e->textShown)
+        TextShow(e->text, shown), e->textShown = shown;
+}
+
+static void NumberDrop(BarExtra *e) {
+    if (!e->text)
+        return;
+    if (e->textShown)
+        TextShow(e->text, false);
+    if (g_textPoolN < 512)
+        g_textPool[g_textPoolN++] = e->text;
+    e->text = nullptr;
+    g_shared->hnCount--;
+}
+
+// in the game's bar update, on the game thread
+static void BarExtras(BYTE *bar, BYTE *unit) {
+    static int faults;
+    __try {
+        if (*(DWORD *)(bar + BAR_KIND) != 5)
+            return;
+        bool hn = g_shared->hnOn && !g_framesBad, mb = g_shared->mbOn && !g_manaBad;
+        BarExtra *e = BxFind(bar, hn || mb);
+        if (!e)
+            return;
+        if (!unit)
+            unit = *(BYTE **)(bar + BAR_UNIT);
+        bool shown = *(DWORD *)(bar + BAR_SHOWN) != 0;
+        float cur, max;
+        if (mb && unit && UnitStat(unit, UNIT_MANA, UNIT_MAXMANA_HANDLE, &cur, &max)) {
+            if (!e->mana)
+                e->mana = NewManaBar(bar), e->manaShown = false;
+            if (e->mana)
+                ManaUpdate(e, unit, cur, max, shown);
+        } else if (e->mana) {
+            ManaDestroy(e->mana);
+            e->mana = nullptr;
+        }
+        BYTE *ui = hn ? (BYTE *)GameUi() : nullptr;
+        if (hn && ui && ui == g_framesUi && unit && UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &cur, &max))
+            NumberUpdate(e, ui, cur, max, shown);
+        else if (e->text && (!hn || ui == g_framesUi))
+            NumberDrop(e);
+        if (!e->mana && !e->text)
+            BxRemove(e);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        if (faults++ < 3)
+            Log("health numbers / mana bars: a bar's update faulted");
+        if (faults >= 3)
+            g_manaBad = true, FramesStop("health numbers / mana bars faulted 3 times");
+    }
+}
+
+// the hide / show / dtor entries: the game's own first (the dtor's last), then the bar's extras
+static DWORD __fastcall BarHideHook(void *bar, int edx) {
+    DWORD r = g_gameBarHide(bar, edx);
+    BarExtra *e = g_bxCount ? BxFind((BYTE *)bar, false) : nullptr;
+    if (e)
+        __try {
+            if (e->mana && e->manaShown)
+                g_gameBarHide(e->mana, 0), e->manaShown = false;
+            if (e->text && e->textShown)
+                TextShow(e->text, false), e->textShown = false;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+    return r;
+}
+static DWORD __fastcall BarShowHook(void *bar, int edx) {
+    DWORD r = g_gameBarShow(bar, edx);
+    BarExtra *e = g_bxCount ? BxFind((BYTE *)bar, false) : nullptr;
+    if (e)
+        __try {
+            if (e->mana && !e->manaShown)
+                g_gameBarShow(e->mana, 0), e->manaShown = true;
+            if (e->text && !e->textShown)
+                TextShow(e->text, true), e->textShown = true;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+    return r;
+}
+static DWORD __fastcall BarDtorHook(void *bar, int edx, int flags) {
+    BarExtra *e = g_bxCount ? BxFind((BYTE *)bar, false) : nullptr;
+    if (e) {
+        if (e->mana)
+            ManaDestroy(e->mana);
+        if (e->text) {                              // the game UI may be going too: hidden on the next pass, if it's still there
+            if (g_textHideN < 512)
+                g_textHide[g_textHideN++] = e->text;
+            g_shared->hnCount--;
+        }
+        BxRemove(e);
+    }
+    return g_gameBarDtor(bar, edx, flags);
+}
+
+// the three entries: ours (on) or the game's again (off, where they're still ours)
+static bool SwapBarExtras(bool on) {
+    if (on == g_extrasHooked)
+        return true;
+    DWORD *vt = (DWORD *)(g_base + RVA_STATBAR_VTABLE);
+    DWORD *slots[3] = { vt + BAR_HIDE / 4, vt + BAR_SHOW / 4, vt + BAR_DTOR / 4 };
+    DWORD hooks[3] = { (DWORD)BarHideHook, (DWORD)BarShowHook, (DWORD)BarDtorHook };
+    if (on && !g_gameBarDtor) {
+        for (int i = 0; i < 3; i++)
+            if (!IsGameCode((BYTE *)*slots[i])) {
+                Log("health numbers / mana bars: refused, the bar's entry +%lX (%08lX) isn't game code", (DWORD)((BYTE *)slots[i] - (BYTE *)vt), *slots[i]);
+                return false;
+            }
+        g_gameBarHide = (BarFn)*slots[0], g_gameBarShow = (BarFn)*slots[1], g_gameBarDtor = (BarDtorFn)*slots[2];
+    }
+    DWORD orig[3] = { (DWORD)g_gameBarHide, (DWORD)g_gameBarShow, (DWORD)g_gameBarDtor };
+    DWORD old;
+    if (!VirtualProtect(vt, BAR_SHOW + 4, PAGE_READWRITE, &old))
+        return false;
+    for (int i = 0; i < 3; i++)
+        if (on || *slots[i] == hooks[i])
+            InterlockedExchange((volatile LONG *)slots[i], (LONG)(on ? hooks[i] : orig[i]));
+        else
+            Log("health numbers / mana bars: the bar's entry +%lX was changed by someone else: left as it is", (DWORD)((BYTE *)slots[i] - (BYTE *)vt));
+    VirtualProtect(vt, BAR_SHOW + 4, old, &old);
+    g_extrasHooked = on;
+    Log(on ? "health numbers / mana bars: the bar's hide, show and dtor are wrapped" : "health numbers / mana bars: the bar's hide, show and dtor are the game's again");
+    return true;
+}
+
+// on the game thread: switch on and off, numbers left over from bars that went away, and the states
+static void ExtrasPass(BYTE *ui) {
+    bool hn = g_shared->hnOn != 0, mb = g_shared->mbOn != 0;
+    int fc = hn || mb ? FramesCheck() : 1;
+    if ((hn || mb) && !g_extrasHooked && fc == 1 && g_barHooked && !g_framesBad)
+        SwapBarExtras(true);
+    __try {
+        for (int i = 0; i < g_textHideN; i++)
+            if (ui && ui == g_framesUi) {
+                TextShow(g_textHide[i], false);
+                if (g_textPoolN < 512)
+                    g_textPool[g_textPoolN++] = g_textHide[i];
+            }
+        g_textHideN = 0;
+        if (!hn || !mb || g_framesBad || g_manaBad) {           // turned off: take them away (the bar update does it for bars it sees)
+            for (int i = 0; i < BX_N; i++) {
+                BarExtra *e = &g_bx[i];
+                if (!e->bar)
+                    continue;
+                if (e->mana && (!mb || g_manaBad))
+                    ManaDestroy(e->mana), e->mana = nullptr;
+                if (e->text && (!hn || g_framesBad) && ui == g_framesUi)
+                    NumberDrop(e);
+            }
+            for (int i = 0; i < BX_N; i++)                      // then the empty ones
+                while (g_bx[i].bar && !g_bx[i].mana && !g_bx[i].text)
+                    BxRemove(&g_bx[i]);
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        FramesStop("health numbers / mana bars: cleaning up faulted");
+    }
+    if (!hn && !mb && g_extrasHooked && !g_bxCount)
+        SwapBarExtras(false);
+    InterlockedExchange(&g_extrasWant, (hn || mb || g_bxCount) && fc == 1 ? 1 : 0);
+    bool hooksBad = g_shared->hcState == 2 || fc == 3;     // the bar update couldn't be wrapped, or a check failed
+    g_shared->hnState = !hn ? 0 : hooksBad || g_framesBad ? 3 : g_extrasHooked && ui ? 1 : 2;
+    g_shared->mbState = !mb ? 0 : hooksBad || g_manaBad ? 3 : g_extrasHooked && ui ? 1 : 2;
+}
+
+// another game UI (or none): its text frames are gone with the last one
+static void FramesForget() {
+    ZeroMemory(g_tCd, sizeof(g_tCd));
+    ZeroMemory(g_tBuff, sizeof(g_tBuff));
+    g_textPoolN = g_textHideN = 0;
+    for (BarExtra &e : g_bx)
+        if (e.bar && e.text)
+            e.text = nullptr, g_shared->hnCount--;
+    g_shared->frCount = 0;
+}
+
+static void FramesPass() {
+    if (!g_getUi)
+        return;
+    BYTE *ui = (BYTE *)GameUi();
+    if (ui != g_framesUi) {
+        if (g_framesUi)
+            Log("frames: the game UI changed (%p -> %p): its frames are the game's to free", g_framesUi, ui);
+        FramesForget();
+        g_framesUi = ui;
+    }
+    TimerFramesPass(ui);
+    ExtrasPass(ui);
+}
+
+// while any is on, and from then on (a pass also hides and cleans up after them)
+static bool FramesWork() {
+    static bool used;
+    used |= g_shared->itOn || g_shared->hnOn || g_shared->mbOn;
+    return used;
+}
+
+// the worker's part: a pass 10 times a second
+static void QueueFrames() {
+    static DWORD at;
+    DWORD now = GetTickCount();
+    if (!g_getUi || now - at < 100 || !FramesWork())
+        return;
+    at = now;
+    if (Subclass() && !InterlockedExchange(&g_framesQueued, 1))
+        PostMessageA(g_gameWnd, g_framesMsg, 0, 0);
 }
 
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
@@ -1899,13 +2644,14 @@ static void Run() {
         if (g_shared->scState != 3)
             g_shared->scState = g_shared->scHeld ? 1 : 0;
         WatchSelfCast(t);
-        if (g_shared->tmWant && now - timersAt >= 100) {
+        if (g_shared->tmWant && !g_itReading && now - timersAt >= 100) {
             timersAt = now;                     // 10 a second is plenty for whole seconds
-            ReadTimers();
+            ReadTimers(g_ui);                   // (drawn in the game: the game thread reads them)
         }
         QueueBars();
         FollowColours();
         QueueDisplay();
+        QueueFrames();
         LONG cseq = g_shared->cmdSeq;
         if (cseq != g_shared->cmdDone)
             ServeCommand(cseq);
@@ -1988,7 +2734,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
+            Unsubclass(), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;
