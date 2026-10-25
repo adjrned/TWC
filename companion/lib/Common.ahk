@@ -104,7 +104,9 @@ wc3ChatReforged(text) {
     Sleep(g ? 30 : 200)                     ; let its text field take focus (no box known: just wait)
     SendInput("{Text}" text)
     Sleep(30)
-    try ChatBoxSnapshot(g)                  ; what the box shows now (debug: chat-*.bmp)
+    global debugGui
+    if IsSet(debugGui) && debugGui          ; tray Debug on: keep what the box shows (chat-*.bmp)
+        try ChatBoxSnapshot(g)
     SendInput("{Enter}")
     t := A_TickCount
     while A_TickCount - t < 200 && g && chatBox.isOpen(g)
