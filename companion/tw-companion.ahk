@@ -106,7 +106,7 @@ global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list 
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
-global macroNewBtn, macroHelpBtn, macroPresetBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
+global macroNewBtn, macroHelpBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
 global macroLblMsg, macroKindLink, macroSeqText, macroItemBtns := [], macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn
 global macroKeyCtrls := [], macroKind := "chat", macroKeys := []     ; the editor: chat or keys, and the keys being edited
 global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
@@ -983,7 +983,6 @@ BuildMacrosPage() {
     global
     macroNewBtn := MkButton("+  New macro", 40, 160, 140, 28, C.accent, C.onAccent, (*) => MacroNew())
     macroHelpBtn := MkButton("?", 40, 160, 30, 28, C.chip, C.muted, (*) => ShowPopover("macros"))
-    macroPresetBtn := MkButton("Presets  ▾", 40, 160, 100, 28, C.chip, C.text, (*) => MacroPresetMenu())
     ; left: what it sends
     macroLblMsg := mainGui.AddText("x40 y160 w250 h18 +Background" C.panel " c" C.muted, "")
     macroSummary := mainGui.AddText("x40 y160 w240 h18 Right +Background" C.panel " c" C.dim, "")
@@ -1021,14 +1020,13 @@ BuildMacrosPage() {
     macroKindLink := mainGui.AddText("x40 y160 w48 h24 +Background" C.panel " c" C.panel, "keys")
     macroKindLink.OnEvent("Click", (*) => MacroKindSet(macroKind = "chat" ? "keys" : "chat"))
     AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit, macroKeyCtrls*)
-    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroKindLink, macroPresetBtn, macroPasteCb)
+    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroKindLink, macroPasteCb)
     AddPopover("macros", macroHelpBtn, [
         ["Macros", ""],
         ["What", "One key that types chat lines in Warcraft III: each row is sent as its own line, in order. Empty rows are skipped."],
         ["When", "In a game, with chat closed, while the tool is On (hold Esc 1.5 s to pause it)."],
         ["Hotkey", "Bind Key, then any key, combo or mouse button (Mouse 4/5, middle, wheel). Keys the companion already uses (remaps, the overlay, F8, Enter...) are refused. Clear turns the macro off but keeps it."],
         ["List", "Drag a row to reorder, ✕ deletes. Changes save as you go."],
-        ["Presets", "A ready-made macro for one of TWRPG's chat commands (or all six items at once); then press the key for it."],
         ["Paste", "Each chat line is pasted (Ctrl+V) instead of typed: faster for long lines, any characters. Your clipboard is put back after. Also for loading and hosting. If lines come out empty, turn it off."]])
 }
 ; editor under the list (window coordinates; runs before StyleControl boxes them)
@@ -1037,7 +1035,6 @@ LayoutMacros() {
     local R := TB_R, ey := CY + MACRO_ROWS * MACRO_ROW_H + 2 + 18, rx := CX + 520
     macroNewBtn.Move(R - 140, TB_Y, 140, 28)
     macroHelpBtn.Move(R - 178, TB_Y, 30, 28)
-    macroPresetBtn.Move(R - 186 - 100, TB_Y, 100, 28)
     macroLblMsg.Move(CX, ey)
     macroSummary.Move(CX + 260, ey)
     macroMsgEdit.Move(CX, ey + 22, 500, 132)
@@ -1336,28 +1333,6 @@ MacroRowDelete(i, *) {
         macroMsgEdit.Value := "", macroKeys := [], macroKind := "chat"
     LoadMacroEditor()
     RenderMacros()
-}
-; Presets: a menu under the button; the pick becomes a new macro, then its key is asked for
-MacroPresetMenu() {
-    global macroPresetBtn
-    m := Menu()
-    for p in MacrosEngine.PRESETS
-        m.Add(p[1], MacroFromPreset.Bind(p))
-    macroPresetBtn.GetPos(&bx, &by, , &bh)
-    m.Show(Round(bx * DPI_K), Round((by + bh + 2) * DPI_K))
-}
-MacroFromPreset(p, *) {
-    global
-    MacroNew()
-    macroKind := p[2]
-    if p[2] = "keys"
-        macroKeys := MacrosEngine.Keys(p[3])
-    else
-        macroMsgEdit.Value := p[3]
-    MacroCommit()
-    ShowMacroEditor()
-    RenderMacros()
-    MacroCapture()                       ; its key, right away (Esc: later, with Bind Key)
 }
 MacroNew() {
     global
