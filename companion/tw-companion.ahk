@@ -485,8 +485,8 @@ ShowPageInner(name, shown) {
     ; only the page we leave and the one we open change (first time: all)
     for pg, arr in pages
         if shown = "" || pg = shown || pg = name
-            for c in arr
-                c.Visible := (pg = name)
+            for pageCtl in arr                  ; not "c": that's the global C (names ignore case)
+                pageCtl.Visible := (pg = name)
     titleText.Text := PageInfo(name).title
     for nm, it in navItems {
         on := nm = name
@@ -1160,8 +1160,8 @@ ShowMacroEditor() {
     macroKeyText.Opt("+c" (hk ? C.accent : C.dim)), macroKeyText.Redraw()
     macroLblMsg.Text := keys ? "Keys  ·  pressed in order" : "Chat lines  ·  one per row"
     SetShown(macroMsgEdit, !keys)
-    for c in macroKeyCtrls
-        SetShown(c, keys)
+    for keyCtl in macroKeyCtrls
+        SetShown(keyCtl, keys)
     local labels := []
     for t in macroKeys
         labels.Push(MacrosEngine.KeyLabel(t))
@@ -1683,14 +1683,14 @@ QuickcastSettings() {
     rep := g.AddCheckbox("x" x " y" y " w226 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat, every")
     iv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
     ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
-    rep.OnEvent("Click", (c, *) => quickcast.set("repeat", c.Value))
-    iv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("interval", Max(15, Min(1000, c.Value + 0)))))
+    rep.OnEvent("Click", (src, *) => quickcast.set("repeat", src.Value))
+    iv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("interval", Max(15, Min(1000, src.Value + 0)))))
     y += 30
     ; after a cast it waits longer, so the reticle doesn't reopen while the hero gets there
     gl := g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "and after a cast, wait")
     gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
     g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
-    gv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("castGap", Max(0, Min(3000, c.Value + 0)))))
+    gv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("castGap", Max(0, Min(3000, src.Value + 0)))))
     y += 36
     ; the game module versions (1.28f) live on the WC3 page
     mp := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.dim, "On 1.28f the game module can quickcast and show timers: see the WC3 page.")
@@ -1952,7 +1952,7 @@ BuildSettingsPage() {
         y += 30
     }
     convertCb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " Send -convert before loading (Reforged name fix)")
-    convertCb.OnEvent("Click", (c, *) => loader.setConvert(Map("value", c.Value)))
+    convertCb.OnEvent("Click", (src, *) => loader.setConvert(Map("value", src.Value)))
     AddToPage("settings", convertCb)
     y += 30
     l1 := mainGui.AddText("x40 y" (y + 8) " w220 h20 +Background" C.panel " c" C.muted, "Delay between codes (ms)")
