@@ -77,6 +77,7 @@ global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
 global version := "1.2.0-beta"
+global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit it was built from)
 ; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).
@@ -1806,11 +1807,8 @@ ApplyDark(hwnd) {
 ; whose files are ahead of GitHub).
 SelfUpdateCheck(manual := false) {
     global selfUpdate
-    if A_IsCompiled {
-        if manual
-            Toast("This is the installed version: download the latest release to update")
-        return
-    }
+    if A_IsCompiled
+        return ExeUpdateCheck(manual)
     if FileExist(A_ScriptDir "\.no-self-update") || (!manual && !selfUpdate.enabled)
         return manual ? Toast("Self-update is off on this computer (.no-self-update)") : 0
     try r := selfUpdate.check()
@@ -1839,28 +1837,60 @@ RefreshUpdateLabel() {
     global updLabel, updBtn, selfUpdate, version
     if !IsSet(updLabel)
         return
+    last := Ini(selfUpdate.section, "lastCheck", ""), ago := ""
+    if last {
+        m := DateDiff(A_Now, last, "Minutes")
+        ago := m < 1 ? "just now" : m < 60 ? m " min ago" : m < 1440 ? (m // 60) " h ago" : (m // 1440) " d ago"
+    }
     if A_IsCompiled {
-        updLabel.Text := "Installed version " version "  ·  new versions come as downloads"
-        updBtn.Text := "Open downloads"
+        global buildCommit
+        updLabel.Text := "Updates: beta  ·  " version (buildCommit ? " (" SubStr(buildCommit, 1, 7) ")" : "")
+            . (ago ? "  ·  checked " ago : "") "  ·  automatic every 5 min"
         return
     }
     if FileExist(A_ScriptDir "\.no-self-update") {
         updLabel.Text := "Updates are off on this computer (.no-self-update)"
         return
     }
-    c := selfUpdate.commit, last := Ini(selfUpdate.section, "lastCheck", "")
-    ago := ""
-    if last {
-        m := DateDiff(A_Now, last, "Minutes")
-        ago := m < 1 ? "just now" : m < 60 ? m " min ago" : m < 1440 ? (m // 60) " h ago" : (m // 1440) " d ago"
-    }
+    c := selfUpdate.commit
     updLabel.Text := "Updates: " selfUpdate.branch "  ·  " (c ? SubStr(c, 1, 7) : "not checked yet")
         . (ago ? "  ·  checked " ago : "") "  ·  automatic every 5 min"
 }
-UpdateButton() {
-    if A_IsCompiled
-        return Run("https://github.com/adjrned/TWC/releases")
-    SelfUpdateCheck(true)
+UpdateButton() => SelfUpdateCheck(true)
+; The installed exe follows the beta-latest release (rebuilt by GitHub on every
+; push to beta): a build from another commit is downloaded and installed with
+; its Setup (silently: it keeps the settings and starts the new version). In the
+; middle of a game that waits until Warcraft III isn't focused.
+ExeUpdateCheck(manual) {
+    global selfUpdate, buildCommit
+    static pending := ""
+    if pending
+        return manual ? Toast("An update is ready: it installs when you leave the game") : 0
+    if !buildCommit
+        return manual ? Toast("This build doesn't know its version, so it can't update itself", "error") : 0
+    try r := selfUpdate.checkRelease()
+    catch as e
+        return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
+    SetIni(A_Now, selfUpdate.section, "lastCheck")
+    RefreshUpdateLabel()
+    if r.commit = buildCommit
+        return manual ? Toast("The companion is up to date (" SubStr(buildCommit, 1, 7) ")") : 0
+    DebugLog("update: " SubStr(buildCommit, 1, 7) " -> " SubStr(r.commit, 1, 7))
+    try path := selfUpdate.downloadSetup(r)
+    catch as e
+        return Toast("Companion update failed: " e.Message, "error")
+    if WinActive(WarcraftIII) {
+        pending := path
+        Toast("Companion update downloaded: it installs when you leave the game", "", 6000)
+        SetTimer(() => (!WinActive(WarcraftIII) && !KeyCaptureActive() && InstallUpdate(pending)), 2000)
+    } else
+        InstallUpdate(path)
+}
+InstallUpdate(path) {
+    Toast("Updating the companion…", "", 0)
+    Sleep(800)
+    Run('"' path '" /S')                ; closes this companion, installs, starts the new one
+    ExitApp
 }
 RestartWhenIdle() {
     if !WinActive(WarcraftIII) && !KeyCaptureActive()

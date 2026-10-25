@@ -64,6 +64,28 @@ class SelfUpdateEngine {
         SetIni(res.commit, this.section, "commit")
     }
 
+    ; -- the installed exe: the rolling beta-latest release ------------------
+    ; GitHub Actions rebuilds it on every push to beta (.github/workflows/
+    ; companion-beta.yml). -> { commit, url } of its build and its Setup.
+    static RELEASE := "beta-latest", SETUP := "TWC-Companion-Setup-beta.exe"
+    checkRelease() {
+        j := this.api("releases/tags/" SelfUpdateEngine.RELEASE)
+        commit := RegExMatch(j, '"target_commitish"\s*:\s*"([0-9a-f]{40})"', &m) ? m[1] : ""
+        url := RegExMatch(j, '"browser_download_url"\s*:\s*"([^"]*' SelfUpdateEngine.SETUP ')"', &u) ? u[1] : ""
+        if !commit || !url
+            throw Error("The beta release isn't ready (it's rebuilt after each change; try again in a few minutes)")
+        return { commit: commit, url: url }
+    }
+    ; -> the downloaded Setup's path
+    downloadSetup(r) {
+        path := A_Temp "\" SelfUpdateEngine.SETUP
+        try FileDelete(path)
+        Download(r.url, path)
+        if FileGetSize(path) < 1000000
+            throw Error("The download looks incomplete")
+        return path
+    }
+
     api(path) {
         req := ComObject("WinHttp.WinHttpRequest.5.1")
         req.Open("GET", "https://api.github.com/repos/" SelfUpdateEngine.REPO "/" path, false)

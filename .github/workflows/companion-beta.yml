@@ -1,0 +1,50 @@
+name: Companion beta build
+
+# Every push to beta that changes the companion builds TW Companion.exe and its
+# Setup on Windows and replaces the rolling "beta-latest" pre-release. Installed
+# companions check that release and update themselves to it.
+on:
+  push:
+    branches: ["beta"]
+    paths: ["companion/**", ".github/workflows/companion-beta.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: companion-beta
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build exe, Setup and zip
+        shell: pwsh
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: ./companion/build/build.ps1
+
+      - name: Replace the beta-latest pre-release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $dist = "companion/dist"
+          $setup = Get-ChildItem "$dist/TWC-Companion-Setup-*.exe" | Select-Object -First 1
+          $zip = Get-ChildItem "$dist/TWC-Companion-*.zip" | Select-Object -First 1
+          # fixed names too, so the download links never change
+          Copy-Item $setup.FullName "$dist/TWC-Companion-Setup-beta.exe"
+          Copy-Item $zip.FullName "$dist/TWC-Companion-beta.zip"
+          $short = "${{ github.sha }}".Substring(0, 7)
+          $notes = "Latest beta build of TW Companion, from commit $short on the beta branch. " +
+                   "Installed copies update themselves to this.`n`n" +
+                   "Install: download **TWC-Companion-Setup-beta.exe** and run it. " +
+                   "Windows SmartScreen may warn about an unknown app: *More info* > *Run anyway*."
+          gh release delete beta-latest --yes --cleanup-tag 2>$null
+          gh release create beta-latest --prerelease --target "${{ github.sha }}" `
+            --title "TW Companion beta ($short)" --notes "$notes" `
+            "$dist/TWC-Companion-Setup-beta.exe" "$dist/TWC-Companion-beta.zip" $setup.FullName

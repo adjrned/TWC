@@ -44,9 +44,20 @@ $stage = Join-Path $dist "TW Companion"
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Force $stage, "$stage\assets", "$stage\lib\WebView2\64bit" | Out-Null
 
-Write-Host "Compiling TW Companion $version..."
+# the commit it's built from goes into the exe (buildCommit), so an installed
+# copy can tell when the beta-latest release is a newer build. A copy of the
+# script next to it (so its #Includes resolve), with the commit filled in.
+$commit = $env:BUILD_COMMIT
+if (-not $commit) { $commit = (git -C $src rev-parse HEAD 2>$null) }
+if (-not $commit) { $commit = "" }
+$stamped = Join-Path $src "_build_main.ahk"
+(Get-Content $main -Raw -Encoding UTF8).Replace('global buildCommit := ""', "global buildCommit := `"$commit`"") |
+    Set-Content $stamped -Encoding UTF8 -NoNewline
+
+Write-Host "Compiling TW Companion $version ($($commit.Substring(0, [Math]::Min(7, $commit.Length))))..."
 $exe = Join-Path $stage "TW Companion.exe"
-$p = Start-Process $a2e -ArgumentList "/in `"$main`" /out `"$exe`" /base `"$ahk`" /silent verbose" -Wait -PassThru -NoNewWindow
+$p = Start-Process $a2e -ArgumentList "/in `"$stamped`" /out `"$exe`" /base `"$ahk`" /silent verbose" -Wait -PassThru -NoNewWindow
+Remove-Item $stamped
 if ($p.ExitCode -ne 0 -or -not (Test-Path $exe)) { throw "Ahk2Exe failed (exit $($p.ExitCode))" }
 
 # what the exe loads from its folder
