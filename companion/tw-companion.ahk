@@ -2241,6 +2241,8 @@ EscInGame() {
         return timersHud.setupEnd(0, "Buff bar setup cancelled")
     if buffWatch.capturing
         return buffWatch.captureEnd(0, "Adding a buff cancelled")
+    if gameCmds.settingUp
+        return gameCmds.portraitSetupEnd(false)
     if !KeyWait("Esc", "T1.5") {
         ToggleTool()
         KeyWait("Esc")

@@ -222,8 +222,11 @@ class RemapEngine {
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
     castPlain(game, yourKey) {
+        global gameCmds
         if this.toAutocast(game)
             return
+        if gameCmds.screenSelfHeld()
+            return gameCmds.screenSelfCast(game, this.queued(yourKey))
         SendInput(this.queued(yourKey) this.keyText(game))
         DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
@@ -244,9 +247,12 @@ class RemapEngine {
         static hinted := false
         if this.toAutocast(game)
             return
-        ; self-cast held: the game module clicks your portrait as the game wants a target
+        ; self-cast held: your portrait is clicked as the game wants a target
+        ; (by the game module, or from the screen)
         if gameCmds.selfCastHeld()
             return this.castPlain(game, yourKey)
+        if gameCmds.screenSelfHeld()
+            return gameCmds.screenSelfCast(game, this.queued(yourKey))
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         inGameQc := gameModule.qcReady()
         cal := inGameQc ? 0 : quickcast.current()

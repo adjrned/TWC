@@ -37,7 +37,7 @@ Wc3OnVersion(f, ver) => f.badge = "Both" || f.badge = Wc3VerBadge(ver)
 Wc3PlannedText(tab, ver) {
     static p := Map(
         "casting128", "",
-        "castingreforged", "Planned: a self-cast key (the next ability goes on your hero).",
+        "castingreforged", "",
         "timers128", "Planned: timers drawn inside the game (with Storm.dll).",
         "timersreforged", "Planned: cooldown and buff timers read from the screen.",
         "display128", "Planned: hiding more of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
@@ -63,10 +63,11 @@ Wc3Features() {
         { tab: "casting", title: "Quickcast through the game", badge: "1.28f",
             desc: "The game itself says when it wants a target: no setup. Until then, the screen.",
             on: (*) => gameModule.quickcast, set: (v) => gameModule.setQuickcast(v), status: (*) => gameModule.qcStatusText() },
-        { tab: "casting", title: "Self-cast key", badge: "1.28f",
+        { tab: "casting", title: "Self-cast key", badge: "Both",
             desc: "Hold it while you cast: the ability goes on your selected unit.",
             on: (*) => gameCmds.selfcast, set: (v) => gameCmds.setSelfcast(v), status: (*) => gameCmds.selfStatusText(),
-            buttons: [[(*) => "Key: " gameCmds.heldText("selfcast"), (*) => Wc3Capture("selfcast")]] },
+            buttons: [[(*) => "Key: " gameCmds.heldText("selfcast"), (*) => Wc3Capture("selfcast")],
+                ["Portrait", (*) => (WinExist(WarcraftIII) && HideMainWindow(), gameCmds.portraitSetupStart())]] },
         { tab: "casting", title: "Autocast toggle key", badge: "1.28f",
             desc: "Hold it and press an ability's key: its autocast turns on or off.",
             on: (*) => gameCmds.autocast, set: (v) => gameCmds.setAutocast(v), status: (*) => gameCmds.acStatusText(),

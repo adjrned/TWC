@@ -10,9 +10,13 @@
 ;  Two keys are held instead (WFE's Self Cast and AutoCast toggle keys; ini
 ;  [Game] selfcast, autocast; [GameKeys] selfcast, autocast), and kept from
 ;  the game while they act:
-;    self-cast  held while you cast: the module clicks your portrait as the
-;               game waits for a target, so it goes on your selected unit
-;               (the module is told the key is held through shared memory)
+;    self-cast  held while you cast: your portrait is clicked as the game
+;               waits for a target, so it goes on your selected unit. On 1.28f
+;               with the module, the module clicks it in the game (it's told
+;               the key is held through shared memory); otherwise (Reforged,
+;               or no module) it's from the screen: the quickcast setup sees
+;               the aim and the portrait spot (its own one-step setup, per
+;               window size: [SelfCast] portrait_<window>) is clicked
 ;    autocast   held while you press a command card key: that button gets a
 ;               right click (autocast on / off) instead of the key
 ; ============================================================================
@@ -27,6 +31,8 @@ class GameCommandsEngine {
         this.gm := gameModule
         this.hotIfFn := ObjBindMethod(this, "active")
         this.acHotIfFn := ObjBindMethod(this, "autocastHeld")
+        this.scHotIfFn := ObjBindMethod(this, "selfActive")
+        this.ssHotIfFn := ObjBindMethod(this, "screenSelfHeld")
         this.bind()
         this.pushFn := ObjBindMethod(this, "push")
         SetTimer(this.pushFn, 1000)
@@ -61,7 +67,84 @@ class GameCommandsEngine {
         return false
     }
     ; the self-cast key is held and the module can use it
-    selfCastHeld() => this.selfcast && this.selfDown && this.active() && this.gm.state().layout >= 8
+    selfCastHeld() => this.selfcast && this.selfDown && this.moduleSelf()
+    moduleSelf() => this.active() && this.gm.state().layout >= 8
+    ; the self-cast key acts (in the game, chat closed): the module's way or the screen's
+    selfActive(*) {
+        global toolEnabled, chatting
+        return this.selfcast && toolEnabled && !chatting && WinActive(WarcraftIII) && (this.moduleSelf() || this.screenSelfReady())
+    }
+    ; -- self-cast from the screen ---------------------------------------------
+    ; the portrait spot for this window size, in screen pixels, or 0
+    portraitSpot() {
+        if !(k := WC3WindowKey()) || (v := Ini("SelfCast", "portrait_" k, "")) = "" || !WinExist(WarcraftIII)
+            return 0
+        p := StrSplit(v, ",")
+        if p.Length != 2
+            return 0
+        WinGetClientPos(&wx, &wy, &cw, &ch, WarcraftIII)
+        return { x: Round(wx + p[1] * cw), y: Round(wy + p[2] * ch) }
+    }
+    screenSelfReady() {
+        global quickcast
+        return !this.moduleSelf() && quickcast.current() && this.portraitSpot()
+    }
+    screenSelfHeld(*) => this.selfcast && this.selfDown && this.selfActive() && this.screenSelfReady()
+    ; send the ability's key, and when the screen shows the game waiting for a
+    ; target (within 300 ms), click the portrait and put the cursor back
+    screenSelfCast(game, q := "") {
+        global quickcast, remap
+        cal := quickcast.current(), p := this.portraitSpot()
+        SendInput(q remap.keyText(game))
+        if !cal || !p
+            return false
+        t := A_TickCount
+        while A_TickCount - t < 300 {
+            if quickcast.targeting(cal) {
+                CoordMode("Mouse", "Screen")
+                MouseGetPos(&mx, &my)
+                SendInput(q "{Click " p.x " " p.y "}{Click " mx " " my " 0}")
+                DebugLog("self-cast " game ": clicked the portrait (screen) " (A_TickCount - t) " ms after the key")
+                return true
+            }
+        }
+        DebugLog("self-cast " game ": the game didn't want a target within 300 ms (screen)")
+        return false
+    }
+    ; the one-step setup: point at your portrait in a game and press Space
+    portraitSetupStart() {
+        global qcCalibrating
+        if !WinExist(WarcraftIII)
+            return Toast("Start Warcraft III first, in a game", "error")
+        this.settingUp := true
+        qcCalibrating := true, RefreshHotkeys()
+        HotIfWinActive(WarcraftIII)
+        Hotkey("$Space", (*) => this.portraitSetupEnd(true), "On")
+        HotIfWinActive()
+        WinActivate(WarcraftIII)
+        Toast("Self-cast  ·  Point at your hero's portrait (bottom middle) and press Space  ·  Esc cancels", "", 0)
+    }
+    settingUp := false
+    portraitSetupEnd(ok) {
+        global qcCalibrating
+        if !this.settingUp
+            return
+        HotIfWinActive(WarcraftIII)
+        try Hotkey("$Space", "Off")
+        HotIfWinActive()
+        qcCalibrating := false, RefreshHotkeys()
+        this.settingUp := false
+        if !ok
+            return Toast("Cancelled", "", 1500)
+        CoordMode("Mouse", "Screen")
+        MouseGetPos(&mx, &my)
+        WinGetClientPos(&wx, &wy, &cw, &ch, WarcraftIII)
+        if mx < wx || my < wy || mx > wx + cw || my > wy + ch
+            return Toast("That wasn't in the game window. Try again from the WC3 page.", "error")
+        SetIni(Format("{:.4f},{:.4f}", (mx - wx) / cw, (my - wy) / ch), "SelfCast", "portrait_" WC3WindowKey())
+        DebugLog("self-cast: portrait spot set for " WC3WindowKey())
+        Toast("Portrait spot set for this window size", "", 2500)
+    }
 
     bind() {
         global remap
@@ -76,27 +159,36 @@ class GameCommandsEngine {
                 this.add("$" k, this.run.Bind(this, c[1], name), this.hotIfFn)
         ; the held keys: kept from the game while they act
         if this.selfcast && (k := this.heldKey("selfcast")) != "" && !IsWheel(k) {
-            this.add("$*" k, (*) => (this.selfDown := true, this.push()), this.hotIfFn)
-            this.add("$*" k " up", (*) => (this.selfDown := false, this.push()), this.hotIfFn)
+            this.add("$*" k, (*) => (this.selfDown := true, this.push()), this.scHotIfFn)
+            this.add("$*" k " up", (*) => (this.selfDown := false, this.push()), this.scHotIfFn)
+            ; from the screen: the card keys Remap doesn't take send their key and click the portrait
+            for ck in this.cardKeys(k)
+                this.add("$*" ck.key, ((g, *) => this.screenSelfCast(g)).Bind(remap.gameKey("card", ck.i)), this.ssHotIfFn)
         }
         if this.autocast && (ak := this.heldKey("autocast")) != "" && !IsWheel(ak) {
             this.add("$*" ak, (*) => 0, this.hotIfFn)
-            ; each command card slot's key (yours, or the game's if no slot took it);
-            ; Remap's own hotkeys hand theirs over too (Remap.toAutocast)
-            HotIf(this.acHotIfFn)
-            used := Map()
-            loop 12
-                if (y := remap.yourKey("card", A_Index)) != ""
-                    used[Norm(HotkeyBase(y))] := 1
-            loop 12 {
-                y := remap.yourKey("card", A_Index), g := remap.gameKey("card", A_Index)
-                base := y != "" ? HotkeyBase(y) : used.Has(Norm(g)) ? "" : g
-                if base != "" && !IsWheel(base) && Norm(base) != Norm(ak)
-                    this.add("$*" base, this.autocastSlot.Bind(this, A_Index), this.acHotIfFn)
-            }
+            ; each command card slot's key; Remap's own hotkeys hand theirs over too (Remap.toAutocast)
+            for ck in this.cardKeys(ak)
+                this.add("$*" ck.key, this.autocastSlot.Bind(this, ck.i), this.acHotIfFn)
         }
         HotIf()
         this.push()
+    }
+    ; each command card slot's key: yours, or the game's if no slot took it
+    ; (not the held key itself) -> [{ i, key }]
+    cardKeys(held) {
+        global remap
+        used := Map(), out := []
+        loop 12
+            if (y := remap.yourKey("card", A_Index)) != ""
+                used[Norm(HotkeyBase(y))] := 1
+        loop 12 {
+            y := remap.yourKey("card", A_Index), g := remap.gameKey("card", A_Index)
+            base := y != "" ? HotkeyBase(y) : used.Has(Norm(g)) ? "" : g
+            if base != "" && !IsWheel(base) && Norm(base) != Norm(held)
+                out.Push({ i: A_Index, key: base })
+        }
+        return out
     }
     add(hk, fn, cond) {
         HotIf(cond)
@@ -146,6 +238,12 @@ class GameCommandsEngine {
     }
     mbStatusText() => this.oneKeyStatus(this.multiboard, "multiboard", this.keyText("multiboard"), 7)
     selfStatusText() {
+        global quickcast
+        if this.selfcast && this.key("selfcast") != "" && !this.moduleSelf() && (WinExist(WarcraftIII) || !this.gm.enabled)
+            return "On · key: " this.heldText("selfcast") " · from the screen: "
+                . (!WinExist(WarcraftIII) ? "start Warcraft III to check its setup"
+                : !quickcast.current() ? "needs the quickcast setup for this window"
+                : !this.portraitSpot() ? "set the portrait spot (Portrait)" : "ready")
         t := this.oneKeyStatus(this.selfcast, "selfcast", this.heldText("selfcast"), 8)
         if this.selfcast && this.gm.enabled && (v := this.gm.live()) && NumGet(v, 4, "uint") >= 8 {
             st := NumGet(v, 640, "uint"), n := NumGet(v, 644, "uint")
