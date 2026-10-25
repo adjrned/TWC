@@ -1536,7 +1536,7 @@ static void TimerFramesDraw(BYTE *ui) {
     }
 }
 
-static bool g_itReading;            // the game thread reads the timers (the worker leaves them)
+static volatile bool g_itReading;   // the game thread reads the timers (the worker leaves them)
 
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
@@ -1558,6 +1558,7 @@ static void TimerFramesPass(BYTE *ui) {
         return;
     }
     if (!ui) {
+        g_itReading = false;
         g_shared->itState = 2;
         return;
     }
@@ -1581,13 +1582,13 @@ static void TimerFramesPass(BYTE *ui) {
 // it (WFE's 0.002 gap), filled and coloured like WFE's.
 // shown: the health bar's own visibility, from [+0x94] when the entry is made (WFE's
 // test), then from the game's hide / show calls only
-struct BarExtra { BYTE *bar, *mana, *text; int last; bool shown, manaShown, textShown; };
+struct BarExtra { BYTE *bar, *mana, *text; char last[32]; bool shown, manaShown, textShown; };   // last: the number shown
 static const int BX_N = 2048;
 static BarExtra g_bx[BX_N];         // open addressing on the bar's address
 static int g_bxCount;
 static BYTE *g_textPool[512];       // hidden number frames of this game UI, free to use
 static int g_textPoolN;
-static BYTE *g_textHide[512];       // numbers of bars that went away: hidden on the next pass
+static BYTE *g_textHide[BX_N];      // numbers of bars that went away: hidden on the next pass (one per entry at most)
 static int g_textHideN;
 static bool g_manaBad;              // a mana bar didn't check out: no more of them
 static const float NUM_TEXT = 0.0085f, NUM_Y = 0.0008f, MANA_GAP = 0.002f;
@@ -1607,7 +1608,7 @@ static BarExtra *BxFind(BYTE *bar, bool add) {
             if (!add || g_bxCount >= BX_N * 3 / 4)
                 return nullptr;
             ZeroMemory(&g_bx[i], sizeof(BarExtra));
-            g_bx[i].bar = bar, g_bx[i].last = -1;
+            g_bx[i].bar = bar;
             g_bxCount++;
             return &g_bx[i];
         }
@@ -1632,12 +1633,14 @@ static void BxRemove(BarExtra *e) {
 }
 
 // a unit's state value now and its maximum (HP: +0x98 / +0xa0, mana: +0xb8 / +0xc0), as WFE's 0x10044440
-static bool UnitStat(BYTE *unit, DWORD state, DWORD maxHandle, float *cur, float *max) {
+static bool UnitStat(BYTE *unit, DWORD state, DWORD maxHandle, float *cur, float *max, BYTE **maxObj = nullptr) {
     float c = 0;
     ((HpFn)(g_base + RVA_UNIT_HP))(unit + state, 0, &c);
     DWORD *pair = (DWORD *)(unit + maxHandle);
     BYTE *mx = pair[0] != 0xFFFFFFFF && pair[1] != 0xFFFFFFFF ? (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]) : nullptr;
     *cur = c, *max = mx ? *(float *)(mx + 0x84) : 0;
+    if (maxObj)
+        *maxObj = mx;
     return *max > 0 && c == c;
 }
 
@@ -1722,22 +1725,18 @@ static void NumberUpdate(BarExtra *e, BYTE *ui, float cur, float max, bool shown
         e->text = g_textPoolN ? g_textPool[--g_textPoolN] : NewText(ui, 0, NUM_TEXT, 0xFFFFFFFF);
         if (!e->text)
             return;
-        e->last = -1, e->textShown = false;
+        e->last[0] = 0, e->textShown = false;
         if (!g_shared->hnCount++) {
             static int logs;
             if (logs++ < 3)
                 Log("health numbers: the first one %p (for the bar %p)", e->text, e->bar);
         }
     }
-    int mode = g_shared->hnMode <= 2 ? (int)g_shared->hnMode : 0;
-    int key = mode == 2 ? (int)ceilf(cur * 100 / max) : (int)ceilf(cur) * 4 + mode;
-    if (mode == 1)
-        key ^= (int)max << 12;
-    if (key != e->last) {
-        char t[32];
-        NumberText(mode, cur, max, t, sizeof(t));
+    char t[sizeof(e->last)];
+    NumberText(g_shared->hnMode <= 2 ? (int)g_shared->hnMode : 0, cur, max, t, sizeof(t));
+    if (strcmp(t, e->last)) {
         TextSet(e->text, t);
-        e->last = key;
+        strcpy_s(e->last, t);
     }
     BYTE *pos = *(BYTE **)(e->bar + BAR_POS);
     if (pos)
@@ -1764,11 +1763,11 @@ static void BarExtras(BYTE *bar, BYTE *unit) {
         if (*(DWORD *)(bar + BAR_KIND) != 5)
             return;
         bool hn = g_shared->hnOn && !g_framesBad, mb = g_shared->mbOn && !g_manaBad;
-        bool fresh = g_bxCount < BX_N && !BxFind(bar, false);
+        int before = g_bxCount;
         BarExtra *e = BxFind(bar, hn || mb);
         if (!e)
             return;
-        if (fresh)
+        if (g_bxCount != before)                    // just added
             e->shown = *(DWORD *)(bar + BAR_SHOWN) != 0;
         if (!unit)
             unit = *(BYTE **)(bar + BAR_UNIT);
@@ -1833,7 +1832,7 @@ static DWORD __fastcall BarDtorHook(void *bar, int edx, int flags) {
         if (e->mana)
             ManaDestroy(e->mana);
         if (e->text) {                              // the game UI may be going too: hidden on the next pass, if it's still there
-            if (g_textHideN < 512)
+            if (g_textHideN < BX_N)
                 g_textHide[g_textHideN++] = e->text;
             g_shared->hnCount--;
         }
@@ -1989,10 +1988,9 @@ static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxH
     if (!fs || *(DWORD *)fs != (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
         return;
     float cur, max;
-    if (!UnitStat(unit, state, maxHandle, &cur, &max))
+    BYTE *mx;
+    if (!UnitStat(unit, state, maxHandle, &cur, &max, &mx))
         return;
-    DWORD *pair = (DWORD *)(unit + maxHandle);
-    BYTE *mx = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
     char t[96];
     StatLine(cur, max, mx ? *(float *)(mx + STAT_REGEN) : 0, (g_shared->prMode & 1) != 0, t, sizeof(t));
     Game(RVA_FONTSTRING_SET, fs, { (DWORD)t });
