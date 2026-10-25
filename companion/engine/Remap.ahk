@@ -206,6 +206,7 @@ class RemapEngine {
 
     castPlain(game, yourKey) {
         SendInput(this.queued(yourKey) this.keyText(game))
+        DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
 
     ; Quickcast: the ability goes off at the cursor. Held, it repeats until the
