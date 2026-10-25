@@ -14,3 +14,4 @@ companion/test-saves/
 companion/dist/
 companion/build/.tools/
 companion/.no-self-update
+companion/companion-debug.log

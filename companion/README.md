@@ -74,6 +74,10 @@ other way.
 Holding `Esc` for 1.5 s (or the sidebar's On | Off) pauses them by hand, with a
 short toast. F10 is left to the game (its menu).
 
+Something off? Tray menu > *Debug: show status in game* puts a live line over
+the game (tool, in game, chat, quickcast set up), and `companion-debug.log`
+next to the script records each change and each quickcast with the time.
+
 ## Sections (nav in the window)
 
 - **Loader** (default) — your saves as a list like the site's item rows:

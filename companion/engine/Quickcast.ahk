@@ -59,6 +59,7 @@ class QuickcastEngine {
         }
         this.cal := { step: 1, onDone: onDone }
         qcCalibrating := true, RefreshHotkeys()
+        DebugLog("quickcast setup started (" this.windowKey() ")")
         HotIfWinActive(WarcraftIII)
         Hotkey(this.calHotkey, (*) => this.calibrateStep(), "On")
         HotIfWinActive()
@@ -117,6 +118,7 @@ class QuickcastEngine {
         try Hotkey(this.calHotkey, "Off")
         HotIfWinActive()
         qcCalibrating := false, RefreshHotkeys()
+        DebugLog("quickcast setup ended: " msg)
         done := this.cal.onDone
         this.cal := 0
         Toast(msg, ok ? "" : "error")

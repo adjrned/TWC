@@ -81,6 +81,7 @@ global version := "1.1.0-beta"
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
+global debugGui := 0, debugText := 0
 global showMain := false
 global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
@@ -148,7 +149,8 @@ else {
 A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.show())
 A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
 A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(true))
-A_TrayMenu.Insert("4&")
+A_TrayMenu.Insert("4&", "Debug: show status in game", DebugStatusToggle)
+A_TrayMenu.Insert("5&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
@@ -1487,6 +1489,7 @@ OverlayCheck(key, ctrl, *) => webOverlay.set(key, ctrl.Value)
 ; game's own keys for a moment, or if chat tracking ever gets it wrong)
 ToggleTool() {
     global toolEnabled := !toolEnabled
+    DebugLog(toolEnabled ? "tool on" : "tool paused")
     UpdateToolPill()
     macros.refresh()
     remap.refresh()
@@ -1540,16 +1543,16 @@ ChatEnter(hk) {
     ChatRestart()
     if loader.isCommand(line) {
         SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
-        ChatClosed()
+        ChatClosed("loader command")
         ; then forget what the command itself typed (-load codes, -save ...)
         SetTimer(() => (loader.command(line), ChatRestart()), -80)
         return
     }
     SendInput(key)
     if chatting
-        ChatClosed()
+        ChatClosed("Enter")
     else
-        ChatOpened()
+        ChatOpened("Enter")
 }
 ; start a fresh line (only while WC3 is the active window: never record what
 ; you type in other apps)
@@ -1569,18 +1572,21 @@ ChatWatch() {
     }
 }
 ; while chat is open, remaps and macros stand aside so typing works
-ChatOpened() {
+ChatOpened(why := "") {
     global chatting, chatBox, chatSince
+    if !chatting
+        DebugLog("chat open (" why ")")
     chatting := true, chatSince := A_TickCount
     macros.refresh(), remap.refresh()
     ; first chat in this game window: find where its chat box is drawn
     if WinActive(WarcraftIII) && !chatBox.current()
         SetTimer(() => chatBox.locate(), -150)
 }
-ChatClosed() {
+ChatClosed(why := "") {
     global chatting
     if !chatting
         return
+    DebugLog("chat closed (" why ")")
     chatting := false
     macros.refresh(), remap.refresh()
 }
@@ -1600,15 +1606,15 @@ ChatBoxPoll() {
             InGamePoll()
         }
         if !chatting
-            ChatOpened()
+            ChatOpened("chat box on screen")
     } else if seenOpen {
         seenOpen := false
         if chatting
-            ChatClosed()
+            ChatClosed("chat box gone")
     } else if chatting && inGame && inGameEng.reliable() && A_TickCount - chatSince > 800 {
         ; "chatting" but no chat box in a game: an Enter or Esc that wasn't
         ; chat (closing the game menu, a dialog). Don't leave remaps off.
-        ChatClosed()
+        ChatClosed("no chat box on screen")
     }
 }
 ; Esc in the game: the game gets one Esc (however long it's held, so nothing
@@ -1616,7 +1622,7 @@ ChatBoxPoll() {
 ; holding it 1.5 s pauses / resumes remaps and macros.
 EscInGame() {
     SendInput("{Esc}")
-    ChatClosed(), ChatRestart()
+    ChatClosed("Esc"), ChatRestart()
     if quickcast.cal
         return quickcast.calibrateEnd(0, "Quickcast setup cancelled")
     if !KeyWait("Esc", "T1.5") {
@@ -1632,6 +1638,7 @@ InGamePoll() {
     v := inGameEng.inGame()
     if v != inGame {
         inGame := v
+        DebugLog(v ? "in a game (menu bar seen)" : "not in a game (no menu bar)")
         macros.refresh(), remap.refresh()
     }
 }
@@ -1641,6 +1648,43 @@ RefreshHotkeys() {
         macros.refresh()
     if IsSet(remap) && remap
         remap.refresh()
+}
+; ---- debug log + live status (tray: Debug) ----------------------------------
+; companion-debug.log next to the script: every state change and each quickcast,
+; with the time, to send when something misbehaves. The status line is the
+; same state, live, over the top left of the game.
+DebugLog(msg) {
+    static path := A_ScriptDir "\companion-debug.log", started := false
+    if !started {
+        started := true
+        try if FileGetSize(path) > 512 * 1024
+            FileDelete(path)
+        DebugLog("---- companion " version " started")
+    }
+    try FileAppend(FormatTime(, "yyyy-MM-dd HH:mm:ss") "." Format("{:03}", A_MSec) "  " msg "`n", path, "UTF-8")
+}
+DebugStatusToggle(*) {
+    global debugGui, debugText
+    if debugGui {
+        SetTimer(DebugStatusUpdate, 0), debugGui.Destroy(), debugGui := 0
+        A_TrayMenu.Uncheck("Debug: show status in game")
+        return
+    }
+    debugGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-debug")      ; click-through
+    debugGui.BackColor := "0C0D10"
+    debugText := debugGui.AddText("x8 y4 w620 h20 c" C.accent, "")
+    UISetFont(debugText, "s9 w600")
+    WinSetTransparent(220, debugGui)
+    debugGui.Show("x0 y40 w636 h28 NoActivate")
+    A_TrayMenu.Check("Debug: show status in game")
+    SetTimer(DebugStatusUpdate, 250)
+}
+DebugStatusUpdate() {
+    global debugText, toolEnabled, chatting, inGame, qcCalibrating, quickcast
+    k := WC3WindowKey()
+    debugText.Text := (toolEnabled ? "tool on" : "PAUSED") "  ·  " (inGame ? "in game" : "NOT IN GAME")
+        . "  ·  " (chatting ? "CHATTING" : "chat closed") (qcCalibrating ? "  ·  SETUP RUNNING" : "")
+        . "  ·  quickcast " (quickcast.current() ? "set up" : "NOT SET UP") " (" (k ? k : "no game") ")"
 }
 MsgEditFocused() {
     global msgEdit
@@ -1844,6 +1888,6 @@ $~Pause:: PauseGame()
 $Enter::
 $NumpadEnter::
 $+Enter:: ChatEnter(ThisHotkey)
-$~LButton::
+$~LButton:: (ChatClosed("click"), ChatRestart())     ; a click closes chat (never sends Esc)
 $Esc:: EscInGame()
 #HotIf

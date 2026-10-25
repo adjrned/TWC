@@ -226,9 +226,9 @@ class RemapEngine {
         this.holding[base] := true, start := A_TickCount
         loop {
             if cal
-                this.quickSmart(game, q, cal)
+                DebugLog("quickcast " game ": " (this.quickSmart(game, q, cal) ? "clicked (game was targeting)" : "no click (not targeting)"))
             else
-                SendInput(q this.keyText(game))
+                SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
             if !s.repeat || !this.stillHeld(base, start)
                 break
             Sleep(s.interval)
