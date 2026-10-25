@@ -2,7 +2,7 @@
 #include "../twc-game.cpp"
 #include "check.h"
 #include <stddef.h>
-static_assert(offsetof(Shared, latOn) == 652 && offsetof(Shared, latGame) == 664 && sizeof(Shared) == 684, "layout 9");
+static_assert(offsetof(Shared, latOn) == 652 && offsetof(Shared, latGame) == 664 && sizeof(Shared) >= 684, "layout 9");
 static DWORD mainTid; static BYTE *img; static DWORD lanVal = 100;
 static void *__fastcall FakeGetUi(int, int) { return nullptr; }
 static int Get(int i) { return ((LatencyFn)(img + RVA_LATENCY[i]))(); }

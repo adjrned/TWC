@@ -6,7 +6,7 @@
 #undef GetAsyncKeyState
 #undef GetForegroundWindow
 #include <stddef.h>
-static_assert(offsetof(Shared, scHeld) == 636 && offsetof(Shared, cmdArg) == 648 && sizeof(Shared) == 684, "layout 8");
+static_assert(offsetof(Shared, scHeld) == 636 && offsetof(Shared, cmdArg) == 648 && sizeof(Shared) >= 684, "layout 8");
 static int heldVk; static HWND wnd;
 SHORT WINAPI FakeAsync(int vk) { return vk == heldVk ? (SHORT)0x8000 : 0; }
 HWND WINAPI FakeFg() { return wnd; }

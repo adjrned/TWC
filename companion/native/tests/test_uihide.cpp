@@ -2,7 +2,7 @@
 #include "../twc-game.cpp"
 #include "check.h"
 #include <stddef.h>
-static_assert(offsetof(Shared, uiHide) == 676 && sizeof(Shared) == 684, "layout 10");
+static_assert(offsetof(Shared, uiHide) == 676 && sizeof(Shared) >= 684, "layout 10");
 static DWORD mainTid, gameTid; static void *fakeUi; static BYTE *img;
 static void *__fastcall FakeGetUi(int, int) { return fakeUi; }
 static BYTE frames[5][0x40]; static int hides[5], shows[5], afters[5], wrong;

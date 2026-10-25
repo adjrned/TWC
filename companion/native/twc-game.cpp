@@ -37,7 +37,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 10
+    DWORD layout;           // 11
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -102,6 +102,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 10: hiding parts of the UI (UiHidePass)
     DWORD uiHide;           // companion: frames to hide, bits: 1 time of day, 2 minimap, 4 upper menu bar, 8 resource bar, 0x10 idle workers
     DWORD uiState;          // module: frames hidden now (same bits); 0x80000000 = one was refused (see the log)
+    // layout 11: frames added to the game (Storm.dll's SMemAlloc)
+    DWORD stState;          // module: 0 not checked yet, 1 the game's Storm.dll checks out, 2 none loaded in the game, 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -315,6 +317,72 @@ static bool Probe(char *why, size_t n) {
     }
     strcpy_s(why, n, "passed");
     return true;
+}
+
+// -- Storm.dll ---------------------------------------------------------------------
+// The features that add frames to the game (health numbers, mana bars, timers
+// drawn in the game) allocate them with Storm's SMemAlloc (ordinal 401), as WFE
+// does: the game frees its frames with its own Storm, so only the Storm.dll the
+// game has loaded will do, never a copy loaded here (study_storm.md). Checked
+// once: ordinals 401 / 403 must be SMemAlloc / SMemFree as in the 1.28f
+// Storm.dll (each pushes its own name for its error message).
+typedef void *(__stdcall *SMemAllocFn)(DWORD size, const char *name, DWORD line, DWORD flags);
+typedef BOOL(__stdcall *SMemFreeFn)(void *p, const char *name, DWORD line, DWORD flags);
+static const DWORD STORM_128F_STAMP = 0x5956EFF4, STORM_128F_SIZE = 0x62000;   // the 1.28f Storm.dll (2017-07-01)
+
+static SMemAllocFn g_smemAlloc;
+static SMemFreeFn g_smemFree;
+
+// does f start with head and push (at +at) a pointer to name inside the image
+static bool StormFn(BYTE *storm, DWORD size, const BYTE *f, const BYTE *head, int nhead, int at, const char *name) {
+    if ((DWORD)(f - storm) >= size || !PageIs(f, EXEC) || !PageIs(f + at + 4, EXEC))
+        return false;
+    if (memcmp(f, head, nhead) || f[at] != 0x68)
+        return false;
+    DWORD s = *(const DWORD *)(f + at + 1);
+    size_t n = strlen(name) + 1;
+    return s - (DWORD)storm < size && PageIs((void *)s, READ) && PageIs((void *)(s + n - 1), READ) && !memcmp((void *)s, name, n);
+}
+
+// the module and its two functions: 1 checks out, 2 none in the game, 3 not the functions expected
+static int StormCheckAt(BYTE *storm, const BYTE *alloc, const BYTE *freeFn) {
+    static const BYTE A[] = { 0x55, 0x8B, 0xEC, 0x51, 0x83, 0x3D }, F[] = { 0x55, 0x8B, 0xEC, 0x83, 0x3D };
+    if (!storm)
+        return 2;
+    DWORD size = ImageSize(storm);
+    if (!size || storm == g_base)
+        return 3;
+    IMAGE_NT_HEADERS32 *nt = (IMAGE_NT_HEADERS32 *)(storm + ((IMAGE_DOS_HEADER *)storm)->e_lfanew);
+    DWORD stamp = nt->FileHeader.TimeDateStamp;
+    bool known = stamp == STORM_128F_STAMP && size == STORM_128F_SIZE;
+    Log("Storm.dll: loaded at %p, built %08lX, image %lX (%s)", storm, stamp, size, known ? "the 1.28f Storm.dll" : "not the known 1.28f build");
+    if (!alloc || !freeFn || !StormFn(storm, size, alloc, A, sizeof(A), 0x15, "SMemAlloc()") || !StormFn(storm, size, freeFn, F, sizeof(F), 0x27, "SMemFree()")) {
+        Log("  refused: ordinals 401 / 403 aren't SMemAlloc / SMemFree as in 1.28f");
+        if (alloc && PageIs(alloc, READ) && PageIs(alloc + 31, READ)) {
+            char b[3 * 32 + 1];
+            for (int i = 0; i < 32; i++)
+                sprintf_s(b + 3 * i, sizeof(b) - 3 * i, "%02X ", alloc[i]);
+            Log("  401 at %p: %s", alloc, b);
+        }
+        return 3;
+    }
+    g_smemAlloc = (SMemAllocFn)alloc, g_smemFree = (SMemFreeFn)freeFn;
+    Log("  SMemAlloc (401) at %p, SMemFree (403) at %p: check out", alloc, freeFn);
+    return 1;
+}
+
+// once, the first time a frame feature is on (1 = SMemAlloc can be used)
+static int StormCheck() {
+    static int r;
+    if (!r) {
+        HMODULE st = GetModuleHandleA("Storm.dll");
+        if (!st)
+            Log("Storm.dll isn't loaded in the game: health numbers, mana bars and timers in the game stay off");
+        r = StormCheckAt((BYTE *)st, st ? (BYTE *)GetProcAddress(st, MAKEINTRESOURCEA(401)) : nullptr,
+                         st ? (BYTE *)GetProcAddress(st, MAKEINTRESOURCEA(403)) : nullptr);
+        g_shared->stState = r;
+    }
+    return r;
 }
 
 // -- the game UI -------------------------------------------------------------------
@@ -1910,7 +1978,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 10;
+        g_shared->layout = 11;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
