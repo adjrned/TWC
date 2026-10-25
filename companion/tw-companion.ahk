@@ -945,7 +945,7 @@ SortBy(arr, cmp) {
 ;  it does, count, ✕ to delete; drag a row to reorder), and an editor under it
 ;  for the selected one that saves as you go: the chat lines on the left, the
 ;  hotkey (Bind Key / Clear, like Remap) on the right. A macro types chat
-;  lines, or (the quiet link under the hint) presses game keys, e.g. several
+;  lines, or (an invisible spot in the bottom-right corner) presses game keys, e.g. several
 ;  items at once. New macro starts an empty one: it's added with its first
 ;  line or key. The rows are a fixed pool of controls re-filled as you scroll.
 ; ============================================================================
@@ -982,9 +982,9 @@ BuildMacrosPage() {
     macroClearBtn := MkButton("Clear", 40, 160, 77, 26, C.chip, C.text, (*) => MacroClearKey())
     macroHint := mainGui.AddText("x40 y160 w160 h34 +Background" C.panel " c" C.dim, "")
     UISetFont(macroHint, "s8")
-    ; switching to keys is a quiet link under the hint, not a tab
-    macroKindLink := mainGui.AddText("x40 y160 w160 h16 +Background" C.panel " c" C.dim, "")
-    UISetFont(macroKindLink, "s8")
+    ; chat <-> keys: an invisible spot (text in the background colour), so
+    ; only people who know it's there switch
+    macroKindLink := mainGui.AddText("x40 y160 w48 h24 +Background" C.panel " c" C.panel, "keys")
     macroKindLink.OnEvent("Click", (*) => MacroKindSet(macroKind = "chat" ? "keys" : "chat"))
     AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit, macroKeyCtrls*)
     AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroKindLink)
@@ -1016,7 +1016,7 @@ LayoutMacros() {
     macroCapBtn.Move(rx, ey + 56, 77, 26)
     macroClearBtn.Move(rx + 83, ey + 56, 77, 26)
     macroHint.Move(rx, ey + 94)
-    macroKindLink.Move(rx, ey + 138)
+    macroKindLink.Move(W - 56, H - 30)              ; invisible, in the window's bottom-right corner
 }
 BuildMacroList() {
     global
@@ -1137,7 +1137,6 @@ ShowMacroEditor() {
     macroKeyText.Text := hk ? ReadableHotkey(hk) : "None"
     macroKeyText.Opt("+c" (hk ? C.accent : C.dim)), macroKeyText.Redraw()
     macroLblMsg.Text := keys ? "Keys  ·  pressed in order" : "Chat lines  ·  one per row"
-    macroKindLink.Text := keys ? "Type chat lines instead" : "Press keys instead"
     SetShown(macroMsgEdit, !keys)
     for c in macroKeyCtrls
         SetShown(c, keys)

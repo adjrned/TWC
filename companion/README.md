@@ -157,9 +157,7 @@ next to the script records each change and each quickcast with the time.
   type), the hotkey on the right with **Bind Key** / **Clear** like Remap
   (cleared = kept but off). **+ New macro** starts an empty one, added with its
   first line. Keys the companion already uses (remaps, the overlay keys, F8,
-  Enter, other macros) are refused. *Press keys instead*
-  (under the hint) makes a macro press game keys in a row, e.g. several items
-  at once; remapped keys are stored as the game key, 15 ms apart (`keyGap`).
+  Enter, other macros) are refused.
 - **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
   incrementer. In-game: `-h`/`-host`, `-hp`/`-hostpub`.
 - **Settings** — startup behaviour, load timing, TWRPG folder, reset.
