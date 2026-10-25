@@ -39,7 +39,7 @@ Wc3PlannedText(tab, ver) {
         "casting128", "",
         "castingreforged", "",
         "timers128", "Planned: timers drawn inside the game (with Storm.dll).",
-        "timersreforged", "Planned: cooldown and buff timers read from the screen.",
+        "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
         "display128", "Planned: hiding more of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
         "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: the game start countdown when you host.",

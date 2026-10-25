@@ -30,6 +30,7 @@
 #Include engine\BuffWatch.ahk
 #Include engine\HealthBars.ahk
 #Include engine\GameDisplay.ahk
+#Include engine\HudCapture.ahk
 #Include ui\TimerHud.ahk
 #Include ui\Wc3Page.ahk
 #Include ui\ModuleCheck.ahk
@@ -92,7 +93,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, hudCapture
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -158,6 +159,7 @@ gameCmds := GameCommandsEngine(gameModule)
 buffWatch := BuffWatchEngine(timersHud)
 healthBars := HealthBarsEngine(gameModule)
 gameDisplay := GameDisplayEngine(gameModule)
+hudCapture := HudCaptureEngine(quickcast, timersHud)
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
@@ -173,7 +175,8 @@ A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.show())
 A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
 A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(true))
 A_TrayMenu.Insert("4&", "Debug: show status in game", DebugStatusToggle)
-A_TrayMenu.Insert("5&")
+A_TrayMenu.Insert("5&", "Debug: save HUD pictures (15 s)", (*) => hudCapture.start())
+A_TrayMenu.Insert("6&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen

@@ -16,4 +16,5 @@ companion/build/.tools/
 companion/.no-self-update
 companion/companion-debug.log
 companion/debug/
+companion/captures/
 companion/_build_main.ahk
