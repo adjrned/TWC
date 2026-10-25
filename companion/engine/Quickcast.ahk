@@ -12,6 +12,7 @@ class QuickcastEngine {
     section := "Quickcast"
     cache := Map()              ; calibration key -> parsed calibration (or 0)
     cal := 0                    ; calibration in progress: { step, p1, p2, normal }
+    seen := { same: 0, diffs: "" }      ; the last look at the card (debug log)
     calHotkey := "$Insert"
     static STEPS := ["Point at Move (the command card's top-left button) and press Insert",
         "Point at the command card's bottom-right button and press Insert",
@@ -36,16 +37,22 @@ class QuickcastEngine {
     }
 
     ; -- detection -----------------------------------------------------------
-    ; true when the card's slots 1-11 look like the calibrated empty card
+    ; true when the card's slots 1-11 look like the calibrated empty card.
+    ; Move, Stop, Hold, Attack and Patrol are always there on a normal card, so
+    ; at most 6 slots can look empty then; 9 leaves room for the cursor or a
+    ; tooltip over the card. this.seen keeps the last look, for the debug log.
     targeting(c) {
         g := this.grabCard(c)
         if !g
             return false
-        same := 0
-        loop 11
-            if ColorDiff(this.slotColor(c, g, A_Index), c.empty[A_Index]) <= 48
-                same++
-        return same >= 10           ; one slot may be off (cursor over the card, a tooltip)
+        same := 0, diffs := ""
+        loop 11 {
+            d := ColorDiff(this.slotColor(c, g, A_Index), c.empty[A_Index])
+            same += d <= 64
+            diffs .= (A_Index > 1 ? "," : "") d
+        }
+        this.seen := { same: same, diffs: diffs }
+        return same >= 9
     }
 
     ; -- calibration (in game, three presses of Insert) -------------------------
@@ -105,6 +112,7 @@ class QuickcastEngine {
             if changed < 4
                 return this.calibrateEnd(0, "The command card didn't change: press A first, then Insert while it shows only Cancel")
             k := this.windowKey()
+            DebugLog("quickcast setup: card changed in " changed "/11 slots between normal and targeting")
             SetIni(this.serialize(c), this.section, "cal_" k)
             this.cache.Delete(k)
             this.calibrateEnd(1, "Quickcast set up for " StrReplace(k, "_", " "))

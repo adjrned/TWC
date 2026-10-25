@@ -226,7 +226,7 @@ class RemapEngine {
         this.holding[base] := true, start := A_TickCount
         loop {
             if cal
-                DebugLog("quickcast " game ": " (this.quickSmart(game, q, cal) ? "clicked (game was targeting)" : "no click (not targeting)"))
+                this.quickSmart(game, q, cal)
             else
                 SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
             if !s.repeat || !this.stillHeld(base, start)
@@ -247,17 +247,27 @@ class RemapEngine {
     }
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
+    ; The card changes a frame or two after the key, and the screen can only be
+    ; read a frame after that, so it's watched for up to 200 ms (a targeted
+    ; cast clicks as soon as it's seen). The log line says what was seen.
     quickSmart(game, q, cal) {
         global quickcast
         SendInput(q this.keyText(game))
-        t := A_TickCount
-        while A_TickCount - t < 90 {        ; the card changes a frame or two later
+        t := A_TickCount, checks := 0, best := { same: -1, diffs: "" }
+        while A_TickCount - t < 200 {
             Sleep(10)
-            if quickcast.targeting(cal) {
+            checks++
+            hit := quickcast.targeting(cal)
+            if quickcast.seen.same > best.same
+                best := quickcast.seen
+            if hit {
                 SendInput(q "{Click}")
+                DebugLog("quickcast " game ": clicked, targeting seen after " (A_TickCount - t) " ms (" best.same "/11 slots empty)")
                 return true
             }
         }
+        DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 9) in " checks
+            . " checks / " (A_TickCount - t) " ms; slot differences " best.diffs)
         return false
     }
     clickMouse(side, yourKey) {
