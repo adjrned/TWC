@@ -96,22 +96,46 @@ class QuickcastEngine {
     ; A hit: move the saved empty card a quarter of the way to what was just
     ; seen, so drifts (lighting, another race's HUD, a slightly off setup) fix
     ; themselves in a few casts. A slot far off (the cursor, a tooltip) is left
-    ; alone. Saved at most every 30 s.
+    ; alone, and no slot moves further than DRIFT from what the setup saw
+    ; (c.orig): a run of odd reads (a dimmed or paused game, a mostly empty
+    ; card) can't walk it away for good. Saved at most every 30 s.
+    static DRIFT := 90
     tune(c, cols) {
         loop 11 {
             a := c.empty[A_Index], b := cols[A_Index]
             if ColorDiff(a, b) > 160
                 continue                    ; the odd slot out (cursor, tooltip): leave it
-            r := ((a >> 16 & 0xFF) * 3 + (b >> 16 & 0xFF)) // 4
-            gr := ((a >> 8 & 0xFF) * 3 + (b >> 8 & 0xFF)) // 4
-            bl := ((a & 0xFF) * 3 + (b & 0xFF)) // 4
-            c.empty[A_Index] := r << 16 | gr << 8 | bl
+            r := ((a >> 16 & 0xFF) * 3 + (b >> 16 & 0xFF) + 2) // 4      ; rounded: a small drift either way is followed
+            gr := ((a >> 8 & 0xFF) * 3 + (b >> 8 & 0xFF) + 2) // 4
+            bl := ((a & 0xFF) * 3 + (b & 0xFF) + 2) // 4
+            v := r << 16 | gr << 8 | bl
+            if ColorDiff(v, c.orig[A_Index]) <= QuickcastEngine.DRIFT
+                c.empty[A_Index] := v
         }
         if A_TickCount - this.tuned > 30000 && (k := this.windowKey()) {
             this.tuned := A_TickCount
             SetIni(this.serialize(c), this.section, "cal_" k)
         }
     }
+
+    ; After a miss (Remap.quickSmart): a run of near misses (5-7 slots looked
+    ; empty, 8 are needed) means the tuned colours may have drifted: back to
+    ; what the setup saw. Harmless if it was only a unit with a small card.
+    nearRun := 0
+    noteMiss(c, bestSame) {
+        this.nearRun := bestSame >= 5 && bestSame <= 7 ? this.nearRun + 1 : 0
+        if this.nearRun < 6
+            return
+        this.nearRun := 0
+        changed := false
+        loop 11
+            changed |= c.empty[A_Index] != c.orig[A_Index], c.empty[A_Index] := c.orig[A_Index]
+        if changed && (k := this.windowKey()) {
+            SetIni(this.serialize(c), this.section, "cal_" k)
+            DebugLog("quickcast: 6 near misses in a row: the empty card's colours are back to the setup's")
+        }
+    }
+    noteHit() => this.nearRun := 0
 
     ; -- calibration (in game, three presses of Space) --------------------------
     ; Remaps and macros pause meanwhile (qcCalibrating), so A is the game's Attack
@@ -157,6 +181,7 @@ class QuickcastEngine {
             c.empty := []
             loop 11
                 c.empty.Push(this.slotColor(c, g, A_Index))
+            c.orig := c.empty.Clone()
             ; it only works if the card visibly changed (and the screen isn't black)
             changed := 0, black := 0
             loop 11 {
@@ -224,30 +249,43 @@ class QuickcastEngine {
         return (r // 5) << 16 | (gr // 5) << 8 | (b // 5)
     }
 
-    ; -- storage: "x1,y1,x2,y2|c1,...,c11" -----------------------------------
+    ; -- storage: "x1,y1,x2,y2|tuned c1,...,c11|setup c1,...,c11" ---------------
+    ; (older ones have no third part: their colours count as the setup's)
     serialize(c) {
-        cols := ""
-        for v in c.empty
-            cols .= (A_Index > 1 ? "," : "") Format("{:06X}", v)
-        return Format("{:.5f},{:.5f},{:.5f},{:.5f}", c.p1[1], c.p1[2], c.p2[1], c.p2[2]) "|" cols
+        hex(list) {
+            out := ""
+            for v in list
+                out .= (A_Index > 1 ? "," : "") Format("{:06X}", v)
+            return out
+        }
+        return Format("{:.5f},{:.5f},{:.5f},{:.5f}", c.p1[1], c.p1[2], c.p2[1], c.p2[2]) "|" hex(c.empty) "|" hex(c.orig)
     }
     parse(s) {
         parts := StrSplit(s, "|")
-        if parts.Length != 2
+        if parts.Length < 2 || parts.Length > 3
             return 0
-        p := StrSplit(parts[1], ","), cols := StrSplit(parts[2], ",")
-        if p.Length != 4 || cols.Length != 11
+        p := StrSplit(parts[1], ",")
+        if p.Length != 4
             return 0
-        empty := []
-        for v in cols
-            empty.Push(Integer("0x" v))
-        return { p1: [p[1] + 0, p[2] + 0], p2: [p[3] + 0, p[4] + 0], empty: empty }
+        cols(part) {
+            out := []
+            for v in StrSplit(part, ",")
+                out.Push(Integer("0x" v))
+            return out.Length = 11 ? out : 0
+        }
+        if !(empty := cols(parts[2]))
+            return 0
+        orig := parts.Length = 3 ? cols(parts[3]) : 0
+        return { p1: [p[1] + 0, p[2] + 0], p2: [p[3] + 0, p[4] + 0], empty: empty, orig: orig ? orig : empty.Clone() }
     }
 }
 
 ; "reforged_1920x1080" / "classic_1920x1080" for the running game ("" if it
 ; isn't): screen layouts differ by version and size. Reforged runs from _retail_.
+; 1.28 with the game module's widescreen applied is "classicwide_...": the HUD
+; isn't stretched then, so it has its own setups.
 WC3WindowKey() {
+    global gameDisplay, gameModule
     static kind := Map()            ; WC3 window -> "reforged" / "classic"
     if !(hwnd := WinExist(WarcraftIII))
         return ""
@@ -258,8 +296,16 @@ WC3WindowKey() {
         kind[hwnd] := InStr(path, "_retail_") ? "reforged" : "classic"
     }
     WinGetClientPos(, , &cw, &ch, hwnd)
-    return kind[hwnd] "_" cw "x" ch
+    static wide := false, wideAt := 0               ; looked up at most twice a second (it reads the ini)
+    if kind[hwnd] = "classic" && A_TickCount - wideAt > 500 {
+        wideAt := A_TickCount
+        wide := IsSet(gameDisplay) && gameDisplay.widescreen && gameModule.enabled
+            && (v := gameModule.live()) && NumGet(v, 4, "uint") >= 7 && NumGet(v, 616, "uint") = 1
+    }
+    return kind[hwnd] (kind[hwnd] = "classic" && wide ? "wide" : "") "_" cw "x" ch
 }
+; a window key for people: "1.28 1920x1080", "1.28 widescreen 1920x1080", "Reforged 1920x1080"
+WC3WindowName(k) => StrReplace(StrReplace(StrReplace(StrReplace(k, "classicwide", "1.28 widescreen"), "classic", "1.28"), "reforged", "Reforged"), "_", " ")
 
 ; milliseconds from the performance counter (A_TickCount moves in ~16 ms steps)
 QpcMs() {

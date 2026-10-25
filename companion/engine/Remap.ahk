@@ -244,7 +244,7 @@ class RemapEngine {
     ; when it waits for a target (no setup needed); otherwise the screen does.
     castQuick(game, yourKey) {
         global quickcast, gameModule, gameCmds
-        static hinted := false
+        static hinted := Map()          ; window keys already hinted about
         if this.toAutocast(game)
             return
         ; self-cast held: your portrait is clicked as the game wants a target
@@ -256,10 +256,12 @@ class RemapEngine {
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         inGameQc := gameModule.qcReady()
         cal := inGameQc ? 0 : quickcast.current()
-        ; not set up for this game window: the key alone, with a one-time hint
-        if !inGameQc && !cal && !hinted {
-            hinted := true
-            Toast("Quickcast isn't set up for this game window: Remap > Quickcast Setup", "", 5000)
+        ; not set up for this game window: the key alone, with a hint once per
+        ; window size (a fullscreen / windowed switch or a resize changes it)
+        if !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
+            hinted[k] := true
+            DebugLog("quickcast: no setup for " k ": the key alone")
+            Toast("Quickcast isn't set up for this window size (" WC3WindowName(k) "): WC3 page > Casting > Set up", "", 6000)
         }
         this.holding[base] := true, start := A_TickCount
         loop {
@@ -330,7 +332,7 @@ class RemapEngine {
             if hit {
                 quickcast.learnCapture(cal, true)       ; (first hit only: tests the window read, still targeting)
                 SendInput(q "{Click}")
-                this.qcMissRun := 0
+                this.qcMissRun := 0, quickcast.noteHit()
                 ms := QpcMs() - t
                 this.noteHit(ms)
                 DebugLog("quickcast " game ": clicked " Round(ms, 1) " ms after the key (" checks " reads, "
@@ -352,6 +354,7 @@ class RemapEngine {
             return true
         }
         quickcast.learnCapture(cal, false)
+        quickcast.noteMiss(cal, best.same)
         this.qcMissRun++
         this.lateWatch(game, q, cal, t)
         static lastDiffs := "", frozen := 0

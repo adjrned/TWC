@@ -1651,7 +1651,7 @@ QuickcastSettings() {
     card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
     t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Quickcast")
     t.SetFont("s13 w700 q4", "Cinzel")
-    where := StrReplace(StrReplace(StrReplace(s.window, "_", " "), "classic", "1.28"), "reforged", "Reforged")
+    where := WC3WindowName(s.window)
     status := !s.window ? "Start Warcraft III to set it up"
         : s.calibrated ? "Set up for " where
         : "Not set up for " where " yet"

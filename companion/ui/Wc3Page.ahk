@@ -122,7 +122,7 @@ Wc3Features() {
 Wc3ScreenQcStatus(*) {
     global quickcast
     s := quickcast.get()
-    where := StrReplace(StrReplace(StrReplace(s.window, "_", " "), "classic", "1.28"), "reforged", "Reforged")
+    where := WC3WindowName(s.window)
     return !s.window ? "Start Warcraft III to see whether it's set up for that window"
         : s.calibrated ? "Set up for " where : "Not set up for " where " yet"
 }
