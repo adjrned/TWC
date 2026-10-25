@@ -132,9 +132,10 @@ next to the script records each change and each quickcast with the time.
   clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.
   **Quickcast** casts at the cursor; held, it repeats (every 40 ms by default).
   *Quickcast setup* on the toolbar runs a one-time setup in game, per game
-  version and window size: point at Move and press Insert, point at the
-  command card's bottom-right button and press Insert, then press A (Attack)
-  and Insert while the card shows only Cancel. After that the companion clicks
+  version and window size (kept in the ini, so updates don't lose it; it
+  also tunes itself as you play): point at Move and press Space, point at the
+  command card's bottom-right button and press Space, then press A (Attack)
+  and Space while the card shows only Cancel. After that the companion clicks
   only when the command card shows the game is waiting for a target, read from
   the screen, no injection, same on 1.28 and Reforged. Until then, quickcast
   slots just send their key.

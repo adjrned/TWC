@@ -13,10 +13,11 @@ class QuickcastEngine {
     cache := Map()              ; calibration key -> parsed calibration (or 0)
     cal := 0                    ; calibration in progress: { step, p1, p2, normal }
     seen := { same: 0, diffs: "" }      ; the last look at the card (debug log)
-    calHotkey := "$Insert"
-    static STEPS := ["Point at Move (the command card's top-left button) and press Insert",
-        "Point at the command card's bottom-right button and press Insert",
-        "Press A (Attack): the card shows only Cancel. Then press Insert"]
+    calHotkey := "$Space"         ; held back from the game during the setup
+    static STEPS := ["Point at Move (the command card's top-left button) and press Space",
+        "Point at the command card's bottom-right button and press Space",
+        "Press A (Attack): the card shows only Cancel. Then press Space"]
+    tuned := 0                  ; when the empty card was last saved after tuning
 
     ; -- settings --------------------------------------------------------------
     get() {
@@ -27,12 +28,22 @@ class QuickcastEngine {
     set(key, value) => SetIni(value, this.section, key)
 
     windowKey() => WC3WindowKey()
-    ; the calibration for the game as it is now (0 = none / not running)
+    ; The calibration for the game as it is now (0 = none / not running). Kept
+    ; in the ini, so updates never lose it. A window resized to the same shape
+    ; (same version and aspect ratio) reuses it: positions are fractions.
     current() {
         if !(k := this.windowKey())
             return 0
-        if !this.cache.Has(k)
-            this.cache[k] := this.parse(Ini(this.section, "cal_" k, ""))
+        if !this.cache.Has(k) {
+            v := Ini(this.section, "cal_" k, "")
+            if v = "" && RegExMatch(k, "^(\w+)_(\d+)x(\d+)$", &m)
+                try for key in StrSplit(IniRead(iniFile, this.section), "`n")
+                    if RegExMatch(key, "^cal_" m[1] "_(\d+)x(\d+)=(.*)$", &o) && Abs(o[1] / o[2] - m[2] / m[3]) < 0.01 {
+                        v := o[3]
+                        break
+                    }
+            this.cache[k] := this.parse(v)
+        }
         return this.cache[k]
     }
 
@@ -45,17 +56,38 @@ class QuickcastEngine {
         g := this.grabCard(c)
         if !g
             return false
-        same := 0, diffs := ""
+        same := 0, diffs := "", cols := []
         loop 11 {
-            d := ColorDiff(this.slotColor(c, g, A_Index), c.empty[A_Index])
-            same += d <= 64
+            cols.Push(col := this.slotColor(c, g, A_Index))
+            d := ColorDiff(col, c.empty[A_Index])
+            same += d <= 80
             diffs .= (A_Index > 1 ? "," : "") d
         }
         this.seen := { same: same, diffs: diffs }
+        if same >= 10
+            this.tune(c, cols)
         return same >= 9
     }
+    ; A clear hit: move the saved empty card a quarter of the way to what was
+    ; just seen, so small drifts (lighting, a slightly off setup) fix themselves.
+    ; Saved at most every 30 s.
+    tune(c, cols) {
+        loop 11 {
+            a := c.empty[A_Index], b := cols[A_Index]
+            if ColorDiff(a, b) > 80
+                continue                    ; the odd slot out (cursor, tooltip): leave it
+            r := ((a >> 16 & 0xFF) * 3 + (b >> 16 & 0xFF)) // 4
+            gr := ((a >> 8 & 0xFF) * 3 + (b >> 8 & 0xFF)) // 4
+            bl := ((a & 0xFF) * 3 + (b & 0xFF)) // 4
+            c.empty[A_Index] := r << 16 | gr << 8 | bl
+        }
+        if A_TickCount - this.tuned > 30000 && (k := this.windowKey()) {
+            this.tuned := A_TickCount
+            SetIni(this.serialize(c), this.section, "cal_" k)
+        }
+    }
 
-    ; -- calibration (in game, three presses of Insert) -------------------------
+    ; -- calibration (in game, three presses of Space) --------------------------
     ; Remaps and macros pause meanwhile (qcCalibrating), so A is the game's Attack
     ; even if it's bound. Esc cancels.
     calibrateStart(onDone) {
@@ -110,7 +142,7 @@ class QuickcastEngine {
             if black >= 10
                 return this.calibrateEnd(0, "The companion can't see the game. Use windowed or windowed fullscreen mode.")
             if changed < 4
-                return this.calibrateEnd(0, "The command card didn't change: press A first, then Insert while it shows only Cancel")
+                return this.calibrateEnd(0, "The command card didn't change: press A first, then Space while it shows only Cancel")
             k := this.windowKey()
             DebugLog("quickcast setup: card changed in " changed "/11 slots between normal and targeting")
             SetIni(this.serialize(c), this.section, "cal_" k)
