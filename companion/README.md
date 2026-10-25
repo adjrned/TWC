@@ -206,7 +206,8 @@ engine/             GUI-free logic that the window calls directly:
   Loader Remap Quickcast ChatBox InGame Macros Host Settings Updater SelfUpdate
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
-assets/bg.png       pre-rendered page + card panel + TWRPG wordmark
+assets/bg*.png      pre-rendered page + card panel + TWRPG wordmark, one per
+                    display scale (bg.png = 100%, bg@125 ... bg@200.png)
 assets/Cinzel.ttf   the site's display font (OFL, see Cinzel-OFL.txt), loaded
                     privately at startup for section titles
 ```
@@ -226,7 +227,8 @@ window calls directly — no IPC, no bridge.
 
 ### Regenerating the background
 
-`assets/bg.png` is 880×510 and matches the window layout (`W`, `H`, `SIDE_W`,
+`assets/bg.png` is 880×510 (the `bg@NNN.png` copies are the same drawn at
+125–200% so the window shows the one for your display scale unstretched) and matches the window layout (`W`, `H`, `SIDE_W`,
 `CX` in `tw-companion.ahk`). To tweak it, edit and
 run `assets/generate_bg.py` (Pillow) from the `assets/` folder. Its colours are the
 site's tokens from `src/styles/base.css`, the same ones as the `C` palette in

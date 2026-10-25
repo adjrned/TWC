@@ -69,7 +69,7 @@ Remove-Item $stamped
 if ($p.ExitCode -ne 0 -or -not (Test-Path $exe)) { throw "Ahk2Exe failed (exit $($p.ExitCode))" }
 
 # what the exe loads from its folder
-Copy-Item "$src\assets\bg.png", "$src\assets\Cinzel.ttf", "$src\assets\Cinzel-OFL.txt" "$stage\assets"
+Copy-Item "$src\assets\bg*.png", "$src\assets\Cinzel.ttf", "$src\assets\Cinzel-OFL.txt" "$stage\assets"
 Copy-Item "$src\lib\WebView2\64bit\WebView2Loader.dll" "$stage\lib\WebView2\64bit"
 Copy-Item "$src\lib\WebView2\LICENSE-Microsoft.txt", "$src\lib\WebView2\LICENSE-thqby.txt" "$stage\lib\WebView2"
 Copy-Item (Join-Path $build "README.txt") $stage

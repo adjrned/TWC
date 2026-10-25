@@ -170,7 +170,7 @@ BuildWindow() {
     mainGui.OnEvent("Close", (*) => HideMainWindow())
     mainGui.OnEvent("Escape", (*) => EscHide())
 
-    bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, A_ScriptDir "\assets\bg.png")
+    bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, BgImage())
 
     ; sidebar nav, like the site's .nav-link: icon + label, the active one tinted
     ; with an orange icon and an accent bar on the sidebar's edge
@@ -362,6 +362,20 @@ SetShown(ctrl, v) {
     ctrl.Visible := v
     if boxes.Has(ctrl.Hwnd)
         boxes[ctrl.Hwnd].Visible := v
+}
+
+; bg.png drawn for this screen's scale (bg@150.png at 150%...), so the
+; wordmark and lines aren't a stretched 100% image; else the next bigger one
+BgImage() {
+    pct := Round(DPI_K * 100), best := "", bestPct := 0
+    for s in [100, 125, 150, 175, 200] {
+        f := A_ScriptDir "\assets\" (s = 100 ? "bg.png" : "bg@" s ".png")
+        if !FileExist(f)
+            continue
+        if !best || (bestPct < pct && s > bestPct) || (s >= pct && s < bestPct)
+            best := f, bestPct := s
+    }
+    return best ? best : A_ScriptDir "\assets\bg.png"
 }
 
 ; drag window by clicking the background
