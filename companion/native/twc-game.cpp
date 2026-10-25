@@ -290,6 +290,26 @@ static bool Probe(char *why, size_t n) {
         return false;
     }
     g_uiVtable = vt;
+    // For detailed tooltips later (study_tooltips2.md): does the game reach the
+    // info panel's damage / armor icon updates through their vtables? Logged
+    // only (which entry, if any); nothing is changed.
+    static const struct { const char *name; DWORD vt, fn; } TIPS[] = {
+        { "damage icon", 0xaaf5a8, 0x4089d0 }, { "armor icon", 0xaaf61c, 0x4083a0 } };
+    for (const auto &t : TIPS) {
+        DWORD *v = (DWORD *)(g_base + t.vt);
+        char name[64];
+        RttiName((DWORD)v, size, name, sizeof(name));
+        int slot = -1;
+        for (int i = 0; i < 128 && PageIs(v + i, READ); i++)
+            if (v[i] == (DWORD)(g_base + t.fn)) {
+                slot = i;
+                break;
+            }
+        if (slot >= 0)
+            Log("  tooltips: the %s update +%06lX is vtable +%06lX entry +%X (RTTI %s)", t.name, t.fn, t.vt, slot * 4, name[0] ? name : "(none)");
+        else
+            Log("  tooltips: the %s update +%06lX isn't in the first 128 entries of vtable +%06lX (RTTI %s)", t.name, t.fn, t.vt, name[0] ? name : "(none)");
+    }
     strcpy_s(why, n, "passed");
     return true;
 }
