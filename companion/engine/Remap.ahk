@@ -247,27 +247,30 @@ class RemapEngine {
     }
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
-    ; The card changes a frame or two after the key, and the screen can only be
-    ; read a frame after that, so it's watched for up to 200 ms (a targeted
-    ; cast clicks as soon as it's seen). The log line says what was seen.
+    ; The card changes a frame or two after the key; it's read back to back
+    ; from right after the key (no waits in between) for up to 200 ms, and a
+    ; targeted cast clicks the moment it's seen. The log line says what was seen.
     quickSmart(game, q, cal) {
         global quickcast
         SendInput(q this.keyText(game))
-        t := A_TickCount, checks := 0, best := { same: -1, diffs: "" }
-        while A_TickCount - t < 200 {
-            Sleep(10)
+        t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
+        while QpcMs() - t < 200 {
             checks++
             hit := quickcast.targeting(cal)
             if quickcast.seen.same > best.same
                 best := quickcast.seen
             if hit {
+                quickcast.learnCapture(cal, true)       ; (first hit only: tests the window read, still targeting)
                 SendInput(q "{Click}")
-                DebugLog("quickcast " game ": clicked, targeting seen after " (A_TickCount - t) " ms (" best.same "/11 slots empty)")
+                ms := QpcMs() - t
+                DebugLog("quickcast " game ": clicked " Round(ms, 1) " ms after the key (" checks " reads, "
+                    . (quickcast.fromWindow.Get(WC3WindowKey(), false) ? "game window" : "screen") ")")
                 return true
             }
         }
+        quickcast.learnCapture(cal, false)
         DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 9) in " checks
-            . " checks / " (A_TickCount - t) " ms; slot differences " best.diffs)
+            . " reads / " Round(QpcMs() - t) " ms; slot differences " best.diffs)
         return false
     }
     clickMouse(side, yourKey) {

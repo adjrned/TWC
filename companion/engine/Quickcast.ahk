@@ -18,6 +18,8 @@ class QuickcastEngine {
         "Point at the command card's bottom-right button and press Space",
         "Press A (Attack): the card shows only Cancel. Then press Space"]
     tuned := 0                  ; when the empty card was last saved after tuning
+    fromWindow := Map()         ; window key -> true once reading the game window itself works
+    misses := 0                 ; quickcasts in a row with no targeting seen (window reads)
 
     ; -- settings --------------------------------------------------------------
     get() {
@@ -52,8 +54,8 @@ class QuickcastEngine {
     ; Move, Stop, Hold, Attack and Patrol are always there on a normal card, so
     ; at most 6 slots can look empty then; 9 leaves room for the cursor or a
     ; tooltip over the card. this.seen keeps the last look, for the debug log.
-    targeting(c) {
-        g := this.grabCard(c)
+    targeting(c, fromWindow := -1) {
+        g := this.grabCard(c, fromWindow)
         if !g
             return false
         same := 0, diffs := "", cols := []
@@ -67,6 +69,26 @@ class QuickcastEngine {
         if same >= 10
             this.tune(c, cols)
         return same >= 9
+    }
+    ; Reading the screen waits for Windows to compose a frame (~16 ms a read);
+    ; reading the game window directly can be ~1 ms, but only some games draw
+    ; where it can be read, and a stale picture would look "never targeting".
+    ; So it's proven live first: right after the screen showed targeting, the
+    ; window must show it too. Five misses in a row on window reads go back to
+    ; the screen (and it's proven again on the next hit).
+    learnCapture(c, hit) {
+        k := WC3WindowKey()
+        if this.fromWindow.Get(k, false) {
+            this.misses := hit ? 0 : this.misses + 1
+            if this.misses >= 5
+                this.fromWindow[k] := false, this.misses := 0, DebugLog("quickcast: back to reading the screen")
+            return
+        }
+        if !hit || this.fromWindow.Has(k)
+            return
+        t := QpcMs(), live := this.targeting(c, true), ms := QpcMs() - t
+        this.fromWindow[k] := live
+        DebugLog("quickcast: reading the game window " (live ? "works (" Round(ms, 1) " ms a read), using it" : "doesn't work, reading the screen"))
     }
     ; A clear hit: move the saved empty card a quarter of the way to what was
     ; just seen, so small drifts (lighting, a slightly off setup) fix themselves.
@@ -172,7 +194,8 @@ class QuickcastEngine {
         return [c.p1[1] + (c.p2[1] - c.p1[1]) * col / 3, c.p1[2] + (c.p2[2] - c.p1[2]) * row / 2]
     }
     ; the card's bounding box, grabbed from the screen in one go
-    grabCard(c) {
+    ; fromWindow: -1 = the best way known for this window, true / false = force it
+    grabCard(c, fromWindow := -1) {
         if !WinExist(WarcraftIII)
             return 0
         WinGetClientPos(&wx, &wy, &cw, &ch, WarcraftIII)
@@ -180,7 +203,8 @@ class QuickcastEngine {
         r := Max(4, Round(pitch * 0.25))
         x := Round(wx + c.p1[1] * cw) - r, y := Round(wy + c.p1[2] * ch) - r
         w := Round((c.p2[1] - c.p1[1]) * cw) + 2 * r + 1, h := Round((c.p2[2] - c.p1[2]) * ch) + 2 * r + 1
-        g := ScreenGrab(x, y, w, h)
+        win := fromWindow = -1 ? this.fromWindow.Get(WC3WindowKey(), false) : fromWindow
+        g := win ? ScreenGrab(x - wx, y - wy, w, h, WinExist(WarcraftIII)) : ScreenGrab(x, y, w, h)
         g.ox := x, g.oy := y, g.wx := wx, g.wy := wy, g.cw := cw, g.ch := ch, g.r := r
         return g
     }
@@ -233,15 +257,24 @@ WC3WindowKey() {
     return kind[hwnd] "_" cw "x" ch
 }
 
+; milliseconds from the performance counter (A_TickCount moves in ~16 ms steps)
+QpcMs() {
+    static f := (DllCall("QueryPerformanceFrequency", "int64*", &v := 0), v)
+    DllCall("QueryPerformanceCounter", "int64*", &t := 0)
+    return t * 1000 / f
+}
+
 ; how far apart two 0xRRGGBB colours are (sum of channel differences, 0-765)
 ColorDiff(a, b) => Abs((a >> 16 & 0xFF) - (b >> 16 & 0xFF)) + Abs((a >> 8 & 0xFF) - (b >> 8 & 0xFF)) + Abs((a & 0xFF) - (b & 0xFF))
 
 ; A screen rectangle copied into memory with one BitBlt (reading pixels one by
 ; one with PixelGetColor is far too slow for a per-cast check).
+; hwnd: copy from that window's client area (x, y relative to it) instead of
+; the screen
 class ScreenGrab {
-    __New(x, y, w, h) {
+    __New(x, y, w, h, hwnd := 0) {
         this.w := w, this.h := h, this.buf := Buffer(w * h * 4, 0)
-        sdc := DllCall("GetDC", "ptr", 0, "ptr")
+        sdc := DllCall("GetDC", "ptr", hwnd, "ptr")
         mdc := DllCall("CreateCompatibleDC", "ptr", sdc, "ptr")
         bi := Buffer(40, 0)
         NumPut("uint", 40, "int", w, "int", -h, "ushort", 1, "ushort", 32, bi)     ; top-down 32-bit
@@ -252,7 +285,7 @@ class ScreenGrab {
         DllCall("SelectObject", "ptr", mdc, "ptr", old)
         DllCall("DeleteObject", "ptr", hbm)
         DllCall("DeleteDC", "ptr", mdc)
-        DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
+        DllCall("ReleaseDC", "ptr", hwnd, "ptr", sdc)
     }
     ; 0xRRGGBB at (x, y); 0 outside the grab
     pixel(x, y) {
