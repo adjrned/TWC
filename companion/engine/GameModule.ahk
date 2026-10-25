@@ -142,6 +142,31 @@ class GameModuleEngine {
             : "On · the module isn't running, so the screen quickcast is used"
     }
 
+    ; -- cooldown and buff timers (layout 3) ------------------------------------
+    ; The module reads them only while asked (tmWant), 10 times a second.
+    ; Offsets: Shared in native\twc-game.cpp.
+    timersWanted(on) {
+        if (v := this.live()) && NumGet(v, 4, "uint") >= 3
+            NumPut("uint", on ? 1 : 0, v, 168)
+    }
+    ; -> { seq, flags, cd: [{ left, total }] x12 (command card, row by row),
+    ;      buffs: [{ left, total, aura, id }] (buff bar, left to right; 0 = empty) }
+    ;    or 0 without a module that has them. flags: 1 cooldowns read, 2 buffs
+    ;    read, 0x100 a game getter was refused (its times stay 0; see twc-game.log)
+    timers() {
+        if !(v := this.live()) || NumGet(v, 4, "uint") < 3
+            return 0
+        out := { seq: NumGet(v, 172, "int"), flags: NumGet(v, 176, "uint"), cd: [], buffs: [] }
+        loop 12
+            out.cd.Push({ left: NumGet(v, 180 + 4 * (A_Index - 1), "float"), total: NumGet(v, 228 + 4 * (A_Index - 1), "float") })
+        n := Min(16, NumGet(v, 276, "uint"))
+        loop n {
+            o := 4 * (A_Index - 1), f := NumGet(v, 408 + o, "uint")
+            out.buffs.Push(f & 1 ? { left: NumGet(v, 280 + o, "float"), total: NumGet(v, 344 + o, "float"), aura: f & 2 ? 1 : 0, id: NumGet(v, 472 + o, "uint") } : 0)
+        }
+        return out
+    }
+
     ; one line for Settings
     statusText() {
         if !this.enabled

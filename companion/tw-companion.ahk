@@ -26,6 +26,7 @@
 #Include engine\Updater.ahk
 #Include engine\SelfUpdate.ahk
 #Include engine\GameModule.ahk
+#Include ui\TimerHud.ahk
 #Include ui\OverlayPanel.ahk
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------
@@ -85,7 +86,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -146,6 +147,7 @@ settings := SettingsEngine()
 updater := UpdaterEngine()
 selfUpdate := SelfUpdateEngine()
 gameModule := GameModuleEngine()
+timersHud := TimerHud(gameModule, quickcast)
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
@@ -1623,7 +1625,7 @@ RemapClear() {
 ; Quickcast Setup window, in the .modal style of Dialog: the status for the
 ; running game, the three in-game steps, hold to repeat, and the buttons
 QuickcastSettings() {
-    global C, mainGui, quickcast, gameModule, UI_FONT
+    global C, mainGui, quickcast, gameModule, timersHud, UI_FONT
     s := quickcast.get(), w := 460, x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     g.BackColor := C.frame                           ; = the 1px border
@@ -1682,6 +1684,15 @@ QuickcastSettings() {
     mqs := g.AddText("x" (x + 22) " y" (y + 24) " w" (tw - 22) " h18 +Background" C.card " c" C.dim, gameModule.qcStatusText())
     UISetFont(mqs, "s8")
     mq.OnEvent("Click", (c, *) => (gameModule.setQuickcast(c.Value), mqs.Text := gameModule.qcStatusText()))
+    y += 50
+    ; 1.28f: cooldown and buff countdowns over the game (ui\TimerHud.ahk), off by default
+    th := g.AddCheckbox("x" x " y" y " w" (tw - 120) " h22 +Background" C.card " c" C.text (timersHud.enabled ? " Checked" : ""), " On 1.28f, show cooldown and buff timers")
+    bb := g.AddText("x" (x + tw - 110) " y" y " w110 h22 Center 0x200 +Background" C.chip " c" C.text, "Set up buff bar")
+    UISetFont(bb, "s8 w600"), Box.Round(bb, 110, 22, 4)
+    ths := g.AddText("x" (x + 22) " y" (y + 24) " w" (tw - 22) " h18 +Background" C.card " c" C.dim, timersHud.statusText())
+    UISetFont(ths, "s8")
+    th.OnEvent("Click", (c, *) => (timersHud.setEnabled(c.Value), ths.Text := timersHud.statusText()))
+    bb.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart()))
     y += 58
 
     label := s.calibrated ? "Set up again" : "Set up in game"
@@ -2228,6 +2239,8 @@ EscInGame() {
     ChatClosed("Esc"), ChatRestart()
     if quickcast.cal
         return quickcast.calibrateEnd(0, "Quickcast Setup cancelled")
+    if timersHud.cal
+        return timersHud.setupEnd(0, "Buff bar setup cancelled")
     if !KeyWait("Esc", "T1.5") {
         ToggleTool()
         KeyWait("Esc")
