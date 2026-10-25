@@ -13,8 +13,11 @@
 //  clicks the moment the game wants a target).
 //  It logs to twc-game.log next to this DLL.
 //
-//  No hooks and no writes into the game: it only reads the game UI (through
-//  the game's own getter) and clicks with SendInput, as WFE does.
+//  Every feature is off until the companion turns it on. Quickcast only reads
+//  the game UI (through the game's own getter) and clicks with SendInput, as
+//  WFE does; game calls that change something run on the game's thread. The
+//  only writes into the game itself: the health bar colours' vtable entry
+//  and the FPS unlock's one byte, both put back when turned off.
 //
 //  Build: native\build.bat (32-bit, MSVC).
 // ============================================================================
@@ -33,7 +36,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 6
+    DWORD layout;           // 7
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -61,7 +64,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD buffId[16];       //   its type id ('Bxxx', 0 = unknown)
     // layout 4: commands run on the game's thread (RunCommand)
     volatile LONG cmdSeq;   // companion: +1 per command (written last)
-    DWORD cmd;              // companion: 1 clear messages, 2 clear chat
+    DWORD cmd;              // companion: 1 clear messages, 2 clear chat, 3 multiboard minimise / maximise
     volatile LONG cmdDone;  // module: the command it answered
     DWORD cmdResult;        // module: 1 done, 2 refused (see the log), 3 the game thread didn't run it in time
     // layout 5: health bar size (BarsPass)
@@ -77,6 +80,13 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD hcMode;           // companion: 0 by owner, 1 by health
     DWORD hcColours[5];     // companion: 0xAARRGGBB for yours, allies, enemies, neutral hostile, neutral passive
     DWORD hcState;          // module: 0 off, 1 on (the bar update is ours), 2 refused (see the log)
+    // layout 7: widescreen and FPS unlock (DisplayPass)
+    DWORD wsOn;             // companion: 1 = widescreen in games
+    DWORD wsState;          // module: 0 off, 1 on in this game, 2 on, waiting for a game, 3 refused (see the log)
+    DWORD fpsOn;            // companion: 1 = FPS unlocked
+    DWORD fpsLimit;         // companion: the frame rate ceiling (64 at least, as WFE)
+    DWORD fpsState;         // module: 0 off, 1 unlocked, 3 refused (see the log)
+    DWORD fpsGameLimit;     // module: the game's own frame limit setting, as first read (0 = not read)
 };
 #pragma pack(pop)
 
@@ -98,9 +108,15 @@ static const Known KNOWN[] = {
     { "key input dispatch",                0x3a5ab0 },
     { "game start countdown",              0x324100 },
     { "message frame clear",               0x144750 },
-    { "multiboard display",                0x4127d0 },
+    { "multiboard state 0",                0x4127d0 },
+    { "multiboard state 1",                0x4128d0 },
     { "widescreen setter",                 0x16f6b0 },
-    { "FPS limiter",                       0x0a50ba },
+    { "FPS limiter function",              0x0a5090 },
+    { "FPS limiter (patched byte)",        0x0a50ba },
+    { "game options",                      0x06bf60 },
+    { "game option set",                   0x06dbc0 },
+    { "game option apply",                 0x06b3a0 },
+    { "game option get",                   0x06c030 },
     { "health bar draw",                   0x09b9d0 },
     { "bar visibility getter",             0x35fcc0 },
     { "bar update",                        0x2dd7d0 },
@@ -657,6 +673,11 @@ static int RunOnGameThread(DWORD cmd);
 static void BarsPass();
 static UINT g_barsMsg;              // "TWC_GameThreadBars": run BarsPass on the game thread
 static volatile LONG g_barsQueued;
+static void DisplayPass();
+static UINT g_dispMsg;              // "TWC_GameThreadDisplay": run DisplayPass on the game thread
+static volatile LONG g_dispQueued;
+static volatile LONG g_resized;     // the game window changed size: widescreen is set again
+static int ToggleMultiboard(BYTE *ui);
 
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_barsMsg && g_barsMsg) {
@@ -664,6 +685,13 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
         BarsPass();
         return 0;
     }
+    if (m == g_dispMsg && g_dispMsg) {
+        InterlockedExchange(&g_dispQueued, 0);
+        DisplayPass();
+        return 0;
+    }
+    if (m == WM_SIZE || m == WM_DISPLAYCHANGE)
+        InterlockedExchange(&g_resized, 1);
     if (m == g_runMsg && g_runMsg) {
         LONG cmd = InterlockedExchange(&g_running, 0);
         if (cmd) {
@@ -690,6 +718,7 @@ static bool Subclass() {
     }
     g_runMsg = RegisterWindowMessageA("TWC_GameThreadCall");
     g_barsMsg = RegisterWindowMessageA("TWC_GameThreadBars");
+    g_dispMsg = RegisterWindowMessageA("TWC_GameThreadDisplay");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -704,8 +733,8 @@ static void Unsubclass() {
         g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)g_oldProc) : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)g_oldProc);
 }
 
-// a frame the game UI holds, if it looks like a message frame
-static BYTE *MessageFrame(BYTE *ui, DWORD off) {
+// a frame the game UI holds, if it has a vtable in the game's data (message frames, the multiboard)
+static BYTE *UiFrame(BYTE *ui, DWORD off) {
     __try {
         BYTE *f = *(BYTE **)(ui + off);
         if (!f)
@@ -730,22 +759,25 @@ static int CallClear(BYTE *frame) {
     }
 }
 
+// the game UI, on the game thread (0 outside a game, or if it doesn't check out)
+static void *GameUi() {
+    __try {
+        void *ui = g_getUi(0, 0);
+        return ui && *(DWORD *)ui == g_uiVtable ? ui : nullptr;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return nullptr;
+    }
+}
+
 // on the game thread: 1 done, 2 refused
 static int RunOnGameThread(DWORD cmd) {
     if (!g_getUi || !IsGameCode(g_base + RVA_MSG_CLEAR))
         return 2;
-    void *ui = nullptr;
-    __try {
-        ui = g_getUi(0, 0);
-        if (ui && *(DWORD *)ui != g_uiVtable)
-            ui = nullptr;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        ui = nullptr;
-    }
+    void *ui = GameUi();
     if (!ui)
         return 2;                       // not in a game
     if (cmd == 1 || cmd == 2) {
-        BYTE *f = MessageFrame((BYTE *)ui, cmd == 1 ? UI_MESSAGES : UI_CHAT);
+        BYTE *f = UiFrame((BYTE *)ui, cmd == 1 ? UI_MESSAGES : UI_CHAT);
         static int logged[3];       // 1 logged, 2 refused for good
         if (!logged[cmd]) {
             logged[cmd] = true;
@@ -765,6 +797,8 @@ static int RunOnGameThread(DWORD cmd) {
             Log("clear %s: the game's clear faulted", cmd == 1 ? "messages" : "chat");
         return r == 1 ? 1 : 2;
     }
+    if (cmd == 3)
+        return ToggleMultiboard((BYTE *)ui);
     return 2;
 }
 
@@ -1014,6 +1048,297 @@ static void FollowColours() {
     g_shared->hcState = g_barHooked ? 1 : 0;
 }
 
+// -- widescreen, FPS unlock, the multiboard ----------------------------------------
+// Ported from WFE's 1.28f branches (each address re-checked against WFEDll:
+// the tables at 0x10073232, 0x10035715, 0x10070429, 0x1006ff59, 0x1001fec2
+// are the `cmp build, 0x1e00; je` ones). All three run on the game thread.
+
+// a game function the module calls: code, right after padding or a ret
+static bool FnStart(DWORD rva) {
+    BYTE *f = g_base + rva;
+    if (!IsGameCode(f) || !PageIs(f - 3, EXEC))
+        return false;
+    return f[-1] == 0xCC || f[-1] == 0x90 || f[-1] == 0xC3 || (f[-3] == 0xC2 && f[-1] == 0);
+}
+
+// Widescreen: the game's own setter, called the way WFE's SetWidescreen
+// (0x100665a0) calls it on 1.28f: __fastcall(obj + (mode == 1 ? 0x754 : 0x59c),
+// 0, on, 0), obj = [+0xd1aca8], mode = [+0xcb1d9c]. WFE passes 1 only in a game,
+// and also detours the setter so the game's own calls keep it on. Nothing is
+// patched here: it's set again when a game starts (and 1 s and 5 s later, in
+// case the game sets it itself while loading) and after the window changes size.
+static const DWORD RVA_WIDE_SET = 0x16f6b0;     // WFE's [0x1013ce08]
+static const DWORD RVA_WIDE_OBJ = 0xd1aca8;     // [it] = the object (WFE's [0x1013ba38])
+static const DWORD RVA_WIDE_MODE = 0xcb1d9c;    // [it] = 1 -> +0x754, else +0x59c (WFE's [0x1013ba34])
+
+typedef void(__fastcall *WideFn)(void *, int, int, int);
+
+static void *g_wsUi;            // the game it was last set in (0 = none)
+static DWORD g_wsAgain[2];      // GetTickCount() when to set it again (0 = no)
+static bool g_wsApplied;        // set on, not put back yet
+
+// 1 set, 0 no object to set, -1 faulted
+static int CallWide(int on) {
+    __try {
+        BYTE *obj = *(BYTE **)(g_base + RVA_WIDE_OBJ);
+        if (!obj)
+            return 0;
+        DWORD vt = *(DWORD *)obj;
+        if (!InImage(vt, g_imageSize) || PageIs((void *)vt, EXEC))
+            return 0;
+        DWORD mode = *(DWORD *)(g_base + RVA_WIDE_MODE);
+        DWORD off = mode == 1 ? 0x754 : 0x59c;
+        static bool logged;
+        if (!logged) {
+            logged = true;
+            char rtti[64];
+            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+            Log("widescreen: object %p (vtable +%06lX, RTTI %s), mode %lu, so +%lX", obj, vt - (DWORD)g_base, rtti[0] ? rtti : "(none)", mode, off);
+        }
+        ((WideFn)(g_base + RVA_WIDE_SET))(obj + off, 0, on, 0);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return -1;
+    }
+}
+
+static void WidescreenPass() {
+    static bool refused;
+    static int faults;
+    bool on = g_shared->wsOn != 0;
+    if (refused)
+        return;
+    if (!on && !g_wsApplied) {
+        g_shared->wsState = 0;
+        return;
+    }
+    if (!FnStart(RVA_WIDE_SET) || !PageIs(g_base + RVA_WIDE_OBJ, READ) || PageIs(g_base + RVA_WIDE_OBJ, EXEC)
+        || !PageIs(g_base + RVA_WIDE_MODE, READ) || PageIs(g_base + RVA_WIDE_MODE, EXEC)) {
+        refused = true, g_shared->wsState = 3;
+        Log("widescreen: refused (the setter isn't a function start, or its globals aren't data)");
+        return;
+    }
+    void *ui = GameUi();
+    DWORD now = GetTickCount();
+    int r;
+    if (!on) {
+        // turned off: back to 4:3 (WFE sets 0 outside a game as well)
+        r = CallWide(0);
+        Log(r == 1 ? "widescreen: off" : "widescreen: turning it off didn't reach the game (%d)", r);
+        g_wsApplied = false, g_wsUi = nullptr, g_shared->wsState = 0;
+        return;
+    }
+    if (!ui) {
+        g_wsUi = nullptr, g_shared->wsState = 2;    // between games
+        return;
+    }
+    bool again = InterlockedExchange(&g_resized, 0) != 0;
+    if (ui != g_wsUi) {
+        g_wsUi = ui, again = true;
+        g_wsAgain[0] = (now + 1000) | 1, g_wsAgain[1] = (now + 5000) | 1;
+    }
+    for (DWORD &t : g_wsAgain)
+        if (t && (LONG)(now - t) >= 0)
+            t = 0, again = true;
+    if (!again)
+        return;
+    r = CallWide(1);
+    if (r < 0 && ++faults >= 3) {
+        refused = true, g_shared->wsState = 3;
+        Log("widescreen: the game's setter faulted 3 times: stopping");
+        return;
+    }
+    static int logs;
+    if (r == 1 && logs < 6)
+        logs++, Log("widescreen: set in the game at %p", ui);
+    g_wsApplied |= r == 1;
+    g_shared->wsState = r == 1 ? 1 : 2;
+}
+
+// FPS unlock, as WFE's 0x1004a440 does it on 1.28f: one byte in the game's
+// frame limiter (+0xa50ba, inside +0xa5090) becomes 0xC9, and the game's frame
+// limit setting (game option 0x17) is raised to the wanted ceiling (64 at
+// least). WFE never puts either back; here the old byte and setting are kept
+// and put back when it's turned off (the byte also on unload). Left out: WFE's
+// refresh rate options (4 and 0x12) and its detour of the D3D present setup
+// (vsync and refresh rate).
+static const DWORD RVA_FPS_FN = 0xa5090, RVA_FPS_BYTE = 0xa50ba;   // WFE's [0x1013c344], [0x1013c348]
+static const DWORD RVA_OPTIONS = 0x6bf60;       // options *(void) (WFE's [0x1013c39c])
+static const DWORD RVA_OPT_SET = 0x6dbc0;       // __fastcall(options, 0, id, value) ([0x1013c3a0])
+static const DWORD RVA_OPT_APPLY = 0x6b3a0;     // __fastcall(options, 0, id) ([0x1013c3a4])
+static const DWORD RVA_OPT_GET = 0x6c030;       // __fastcall(options, 0, id, DWORD *out) ([0x1013c3a8])
+static const DWORD OPT_FPS_LIMIT = 0x17;
+
+typedef void *(__cdecl *OptionsFn)();
+typedef void(__fastcall *OptSetFn)(void *, int, DWORD, DWORD);
+typedef void(__fastcall *OptApplyFn)(void *, int, DWORD);
+typedef void(__fastcall *OptGetFn)(void *, int, DWORD, DWORD *);
+
+static bool g_fpsPatched;       // the limiter's byte is ours
+static BYTE g_fpsOrig;          //   and what it was
+static DWORD g_fpsSetTo;        // the frame limit setting we set (0 = the game's own)
+static DWORD g_fpsOld;          // the game's own setting, to put back
+static bool g_fpsOldRead;
+
+static DWORD FpsLimit() {
+    DWORD l = g_shared->fpsLimit;
+    return l < 64 ? 64 : l > 1000 ? 1000 : l;
+}
+
+static bool WriteCodeByte(BYTE *p, BYTE b) {
+    DWORD old;
+    if (!VirtualProtect(p, 1, PAGE_EXECUTE_READWRITE, &old))
+        return false;
+    *(volatile BYTE *)p = b;
+    VirtualProtect(p, 1, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), p, 1);
+    return true;
+}
+
+// on: the limiter's byte becomes 0xC9; off: its own again, if it's still ours
+static bool FpsPatch(bool on, bool quiet = false) {
+    BYTE *p = g_base + RVA_FPS_BYTE;
+    if (on == g_fpsPatched)
+        return true;
+    if (on) {
+        if (*p == 0xC9) {
+            Log("FPS: the limiter's byte is C9 already (patched by something else): left as it is");
+            return false;
+        }
+        g_fpsOrig = *p;
+        LogBytes("FPS: the limiter before the patch", g_base + RVA_FPS_FN);
+    } else if (*p != 0xC9) {
+        if (!quiet)
+            Log("FPS: the limiter's byte was changed by someone else: left as it is");
+        g_fpsPatched = false;
+        return false;
+    }
+    if (!WriteCodeByte(p, on ? 0xC9 : g_fpsOrig))
+        return false;
+    g_fpsPatched = on;
+    if (!quiet)
+        Log(on ? "FPS: limiter patched (+%06lX: %02X -> C9)" : "FPS: limiter put back (+%06lX: C9 -> %02X)", RVA_FPS_BYTE, g_fpsOrig);
+    return true;
+}
+
+// the game's frame limit setting (0 = the game's own again): 1 set, 0 no options yet, -1 faulted
+static int FpsOption(DWORD want) {
+    __try {
+        void *opts = ((OptionsFn)(g_base + RVA_OPTIONS))();
+        if (!opts || !PageIs(opts, READ) || PageIs(opts, EXEC))
+            return 0;
+        if (!g_fpsOldRead) {
+            DWORD cur = 0;
+            ((OptGetFn)(g_base + RVA_OPT_GET))(opts, 0, OPT_FPS_LIMIT, &cur);
+            g_fpsOld = cur, g_fpsOldRead = true;
+            g_shared->fpsGameLimit = cur;
+            Log("FPS: the game's own frame limit setting (option %lX) is %lu", OPT_FPS_LIMIT, cur);
+        }
+        ((OptSetFn)(g_base + RVA_OPT_SET))(opts, 0, OPT_FPS_LIMIT, want ? want : g_fpsOld);
+        ((OptApplyFn)(g_base + RVA_OPT_APPLY))(opts, 0, OPT_FPS_LIMIT);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return -1;
+    }
+}
+
+static bool FpsWork() {
+    return g_shared->fpsOn ? !g_fpsPatched || FpsLimit() != g_fpsSetTo : g_fpsPatched || g_fpsSetTo;
+}
+
+static void FpsPass() {
+    static bool refused;
+    if (refused || !FpsWork())
+        return;
+    if (!FnStart(RVA_FPS_FN) || !IsGameCode(g_base + RVA_FPS_BYTE) || !FnStart(RVA_OPTIONS) || !FnStart(RVA_OPT_SET)
+        || !FnStart(RVA_OPT_APPLY) || !FnStart(RVA_OPT_GET)) {
+        refused = true, g_shared->fpsState = 3;
+        Log("FPS: refused (the limiter or the game's option functions aren't where 1.28f has them)");
+        return;
+    }
+    int r = 1;
+    if (g_shared->fpsOn) {
+        if (!FpsPatch(true)) {
+            refused = true, g_shared->fpsState = 3;
+            return;
+        }
+        DWORD want = FpsLimit();
+        if (want != g_fpsSetTo && (r = FpsOption(want)) == 1) {
+            g_fpsSetTo = want;
+            Log("FPS: frame limit setting %lu", want);
+        }
+    } else {
+        if (g_fpsSetTo && (r = FpsOption(0)) == 1) {
+            g_fpsSetTo = 0;
+            Log("FPS: frame limit setting back to %lu", g_fpsOld);
+        }
+        FpsPatch(false);
+        g_fpsSetTo = 0;                 // put back, or no options to put it back in: either way, done
+    }
+    if (r < 0) {
+        Log("FPS: the game's option functions faulted: stopping (limiter put back)");
+        FpsPatch(false);
+        refused = true, g_fpsSetTo = 0, g_shared->fpsState = 3;
+        return;
+    }
+    g_shared->fpsState = g_fpsPatched ? 1 : 0;
+}
+
+// on the game thread
+static void DisplayPass() {
+    if (!g_getUi)
+        return;
+    WidescreenPass();
+    FpsPass();
+}
+
+// the worker's part: a pass 4 times a second while either is on, or has something to put back
+static void QueueDisplay() {
+    static DWORD at;
+    DWORD now = GetTickCount();
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork()))
+        return;
+    at = now;
+    if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
+        PostMessageA(g_gameWnd, g_dispMsg, 0, 0);
+}
+
+// The multiboard, as WFE's Toggle Multiboard State (its readme: minimise /
+// maximise; handler 0x1005c3f5): the game UI's multiboard [ui+0x3ac], and
+// [+0x1b8] 0 -> +0x4128d0, else +0x4127d0, each __fastcall(board, 0).
+static const DWORD UI_MULTIBOARD = 0x3ac, MB_STATE = 0x1b8;
+static const DWORD RVA_MB_STATE0 = 0x4127d0, RVA_MB_STATE1 = 0x4128d0;    // WFE's [0x1013a468], [0x1013a46c]
+
+static int ToggleMultiboard(BYTE *ui) {
+    static int checked;             // 1 checked out, 2 refused for good
+    if (!checked && (!FnStart(RVA_MB_STATE0) || !FnStart(RVA_MB_STATE1))) {
+        checked = 2;
+        Log("multiboard: refused (its functions aren't function starts)");
+    }
+    BYTE *mb = checked == 2 ? nullptr : UiFrame(ui, UI_MULTIBOARD);
+    if (!mb)
+        return 2;
+    __try {
+        DWORD st = *(DWORD *)(mb + MB_STATE);
+        if (!checked) {
+            checked = 1;
+            char rtti[64];
+            RttiName(*(DWORD *)mb, g_imageSize, rtti, sizeof(rtti));
+            Log("multiboard: %p, vtable +%06lX, RTTI %s, state %lu", mb, *(DWORD *)mb - (DWORD)g_base, rtti[0] ? rtti : "(none)", st);
+            if (rtti[0] && !strstr(rtti, "Multiboard")) {
+                Log("  not a multiboard: refusing (this and later toggles)");
+                checked = 2;
+                return 2;
+            }
+        }
+        ((FrameFn)(g_base + (st ? RVA_MB_STATE0 : RVA_MB_STATE1)))(mb, 0);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("multiboard: the game's call faulted");
+        return 2;
+    }
+}
+
 // a command from the companion: handed to the game thread, answered within 1 s
 static void ServeCommand(LONG seq) {
     DWORD cmd = g_shared->cmd;
@@ -1118,6 +1443,7 @@ static void Run() {
         }
         QueueBars();
         FollowColours();
+        QueueDisplay();
         LONG cseq = g_shared->cmdSeq;
         if (cseq != g_shared->cmdDone)
             ServeCommand(cseq);
@@ -1188,7 +1514,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 6;
+        g_shared->layout = 7;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
@@ -1198,7 +1524,8 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), SwapBarUpdate(false);     // FreeLibrary, not the game exiting: give back the window and the bar update
+            Unsubclass(), SwapBarUpdate(false), FpsPatch(false, true);  // FreeLibrary, not the game exiting: give back the window, the bar update and the limiter
+                                                    // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;
     }

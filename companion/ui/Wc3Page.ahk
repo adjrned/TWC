@@ -10,17 +10,19 @@
 ;              a self-cast key, an autocast toggle key
 ;    Timers    what's ready and what's running out: cooldown and buff timers,
 ;              buff alerts
-;    Display   how the game looks: clearing messages; later health bar size,
-;              hero tracker and range ring, widescreen, FPS, hiding UI parts,
-;              detailed tooltips
+;    Display   how the game looks: health bar size and colours, clearing
+;              messages, widescreen, FPS unlock, the multiboard; later hiding
+;              UI parts, detailed tooltips
 ;    Hosting   games you host: later lobby latency, start countdown
 ;  Each feature is one entry in Wc3Features(): a card with its version
 ;  (badge), an On/Off switch (if it has one), a live status line and its
 ;  buttons. Built in the pages' (40, 160) layout space like the other pages.
+;  A tab with more cards than fit shows them in pages (‹ n/m › in the tab row).
 ; ============================================================================
 
 global wc3Tab := "casting", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
 global wc3Ver := Ini("Wc3", "view", "128"), wc3VerBtns := Map(), wc3VerText, wc3ModuleRow := []
+global wc3PageNo := Map(), wc3PagerCtls := [], wc3PagerText       ; tab + version -> the page shown
 
 Wc3Tabs() => [["casting", "Casting"], ["timers", "Timers"], ["display", "Display"], ["hosting", "Hosting"]]
 ; the two versions: key, switch label
@@ -38,7 +40,7 @@ Wc3PlannedText(tab, ver) {
         "castingreforged", "Planned: a self-cast key (the next ability goes on your hero).",
         "timers128", "Planned: naming your buffs, alerts for a buff about to run out, timers drawn inside the game.",
         "timersreforged", "Planned: cooldown and buff timers read from the screen, naming your buffs.",
-        "display128", "Planned: widescreen, FPS unlock, the multiboard, hiding parts of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
+        "display128", "Planned: hiding parts of the UI, detailed tooltips; with Storm.dll: health numbers and mana bars.",
         "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: lobby latency and the game start countdown when you host.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
@@ -50,7 +52,7 @@ Wc3PlannedText(tab, ver) {
 ; setupLabel + setup() for one button, or buttons: [[label, click], ...]
 ; (a label can be a function: it's refreshed with the status).
 Wc3Features() {
-    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars
+    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars, gameDisplay
     static list := 0
     if list
         return list
@@ -85,6 +87,17 @@ Wc3Features() {
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
             buttons: [[(*) => "Messages: " gameCmds.keyText("clearMessages"), (*) => Wc3Capture("clearMessages")],
                 [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")]] },
+        { tab: "display", title: "Widescreen", badge: "1.28f",
+            desc: "The game's own 16:9 view in games, as WFE's. Set again after a resize.",
+            on: (*) => gameDisplay.widescreen, set: (v) => gameDisplay.setWidescreen(v), status: (*) => gameDisplay.wsStatus() },
+        { tab: "display", title: "FPS unlock", badge: "1.28f",
+            desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
+            on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
+            buttons: [[(*) => gameDisplay.limitLabel, (*) => (gameDisplay.cycleLimit(), RefreshWc3())]] },
+        { tab: "display", title: "Multiboard", badge: "1.28f",
+            desc: "A key minimises or maximises the map's multiboard (the scoreboard).",
+            on: (*) => gameCmds.multiboard, set: (v) => gameCmds.setMultiboard(v), status: (*) => gameCmds.mbStatusText(),
+            buttons: [[(*) => "Key: " gameCmds.keyText("multiboard"), (*) => Wc3Capture("multiboard")]] },
     ]
     return list
 }
@@ -164,8 +177,15 @@ BuildWc3Page() {
         if btns.Length > 1
             ds.Move(, , bx - x - 24), st.Move(, , bx - x - 24)
         AddToPage("wc3", tt, bd, ds, st)
-        wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, ds, st], sw: sw, btns: btns, top: 0 })
+        wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, ds, st], sw: sw, btns: btns, top: 0, shown: false })
     }
+    ; the pager, at the right end of the tab row (shown only when a tab has pages)
+    local pr := MkButton("‹", x + cw - 108, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(-1))
+    wc3PagerText := mainGui.AddText("x" (x + cw - 76) " y" (y + 2) " w44 h24 Center 0x200 +Background" C.panel " c" C.dim, "")
+    UISetFont(wc3PagerText, "s8")
+    local nx := MkButton("›", x + cw - 28, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(1))
+    AddToPage("wc3", pr, wc3PagerText, nx)
+    wc3PagerCtls := [pr, wc3PagerText, nx]
     wc3Planned := mainGui.AddText("x" x " y" (y + 82 + 4 * 80) " w" cw " h34 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3Planned, "s8")
     AddToPage("wc3", wc3Planned)
@@ -180,6 +200,13 @@ Wc3Capture(name) {
     RefreshWc3()
 }
 
+; the next / previous page of the tab's cards (wraps around)
+Wc3Turn(d, *) {
+    global wc3PageNo, wc3Tab, wc3Ver
+    k := wc3Tab wc3Ver
+    wc3PageNo[k] := wc3PageNo.Get(k, 1) + d
+    RefreshWc3()
+}
 Wc3ShowTab(tab, *) {
     global wc3Tab := tab
     RefreshWc3()
@@ -254,7 +281,7 @@ Wc3MoveCard(card, y) {
 
 RefreshWc3() {
     global wc3Tab, wc3TabBtns, wc3Cards, wc3ModuleBtn, wc3ModuleText, wc3Planned, gameModule, currentPage
-    global wc3Ver, wc3VerBtns, wc3VerText, wc3ModuleRow
+    global wc3Ver, wc3VerBtns, wc3VerText, wc3ModuleRow, wc3PageNo, wc3PagerCtls, wc3PagerText, H
     Freeze()
     for ver, b in wc3VerBtns
         Wc3SetSelected(b, ver = wc3Ver)
@@ -262,16 +289,35 @@ RefreshWc3() {
     for tab, b in wc3TabBtns
         Wc3SetSelected(b, tab = wc3Tab)
     ; the game module row: 1.28f only
-    mod := wc3Ver = "128"
+    withModule := wc3Ver = "128"
     for c in wc3ModuleRow
-        SetShown(c, mod)
+        SetShown(c, withModule)
     Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     SetIf(wc3ModuleText, gameModule.statusText())
     wc3TabBtns["casting"].GetPos(, &ty, , &th)
-    nextY := ty + th + (mod ? 56 : 14)          ; under the module row, or right under the tabs
-    shown := 0, lastBottom := 0
+    nextY := ty + th + (withModule ? 56 : 14)          ; under the module row, or right under the tabs
+    ; the tab's cards on this version, in pages of as many as fit (70 high, 80 apart);
+    ; the planned line goes under the last page's cards, or on a page of its own
+    ; when they fill it
+    inTab := 0
+    for card in wc3Cards
+        inTab += card.f.tab = wc3Tab && Wc3OnVersion(card.f, wc3Ver)
+    perPage := Max(1, (H - nextY) // 80)
+    pageCount := Max(1, Ceil(inTab / perPage))
+    if inTab && Mod(inTab, perPage) = 0 && nextY + perPage * 80 + 36 > H - 6
+        pageCount++
+    pk := wc3Tab wc3Ver, pageNo := wc3PageNo.Get(pk, 1)
+    pageNo := pageNo < 1 ? pageCount : pageNo > pageCount ? 1 : pageNo
+    wc3PageNo[pk] := pageNo
+    for c in wc3PagerCtls
+        SetShown(c, pageCount > 1)
+    wc3PagerText.Text := pageNo " / " pageCount
+    shown := 0, lastBottom := 0, idx := 0
     for card in wc3Cards {
         vis := card.f.tab = wc3Tab && Wc3OnVersion(card.f, wc3Ver)
+        idx += vis
+        vis := vis && idx > (pageNo - 1) * perPage && idx <= pageNo * perPage
+        card.shown := vis
         card.box.Visible := vis
         for c in card.ctrls
             c.Visible := vis
@@ -291,8 +337,9 @@ RefreshWc3() {
             Wc3SetSwitch(card.sw, card.f.on())
         SetIf(card.ctrls[4], card.f.status())
     }
-    wc3Planned.Text := (shown ? "" : "Nothing here yet.  ") Wc3PlannedText(wc3Tab, wc3Ver)
+    wc3Planned.Text := (inTab ? "" : "Nothing here yet.  ") Wc3PlannedText(wc3Tab, wc3Ver)
     wc3Planned.Move(, lastBottom ? lastBottom + 12 : nextY)
+    wc3Planned.Visible := pageNo = pageCount
     Thaw()
     ; live status lines while the page is open
     SetTimer(Wc3Tick, currentPage = "wc3" ? 1000 : 0)
@@ -307,7 +354,7 @@ Wc3Tick() {
     if (wc3ModuleBtn.Text = "On") != !!gameModule.enabled
         Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     for card in wc3Cards
-        if card.f.tab = wc3Tab && Wc3OnVersion(card.f, wc3Ver) {
+        if card.shown {
             SetIf(card.ctrls[4], card.f.status())
             if card.sw && (card.sw.Text = "On") != !!card.f.on()
                 Wc3SetSwitch(card.sw, card.f.on())
