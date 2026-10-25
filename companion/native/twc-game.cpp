@@ -37,7 +37,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 9
+    DWORD layout;           // 10
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -99,6 +99,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD latMs;            // companion: the latency, ms (5-1000)
     DWORD latState;         // module: 0 the game's own, 1 set, 3 refused (see the log)
     DWORD latGame[3];       // module: what the game's LAN / single player / Battle.net getters returned (-1 = faulted)
+    // layout 10: hiding parts of the UI (UiHidePass)
+    DWORD uiHide;           // companion: frames to hide, bits: 1 time of day, 2 minimap, 4 upper menu bar, 8 resource bar, 0x10 idle workers
+    DWORD uiState;          // module: frames hidden now (same bits); 0x80000000 = one was refused (see the log)
 };
 #pragma pack(pop)
 
@@ -1460,6 +1463,93 @@ static void LatencyPass() {
     Log("latency: %lu ms (LAN, single player and Battle.net)", want);
 }
 
+// Hiding parts of the UI, as WFE's INTERFACE IS* keys do it for the frames
+// it hides with their own calls (study_uihide.md): each is a CGameUI field
+// whose vtable has a hide / show pair, __fastcall(frame, 0). The CFrame ones
+// +0xd0 / +0xd4, the CSimpleFrame ones +0x64 / +0x68; the minimap gets its
+// vtable +0xe4 after either (WFE does; its role isn't known). Hidden again
+// every 1.5 s (WFE re-applies too: the game may show them itself) and at each
+// game start; shown again once when you turn one off.
+static const struct UiPart { const char *name; DWORD off, hide, show, after; const char *rtti; } UI_PARTS[5] = {
+    { "time of day",    0x3f8, 0xd0, 0xd4, 0,    "TimeOfDay" },     // WFE 0x1008b880
+    { "minimap",        0x3c0, 0xd0, 0xd4, 0xe4, "Minimap" },       // 0x1008a250
+    { "upper menu bar", 0x3d0, 0x64, 0x68, 0,    nullptr },         // 0x10087cf0
+    { "resource bar",   0x3cc, 0x64, 0x68, 0,    nullptr },         // 0x10088100
+    { "idle workers",   0x3e0, 0x64, 0x68, 0,    nullptr },         // 0x1008afa0
+};
+static DWORD g_uiHidden;            // bits hidden by us in this game
+static void *g_uiHideUi;
+
+// one frame: hide (or show). 1 done, 0 not there, -1 refused for good
+static int UiPartCall(BYTE *ui, int i, bool hide) {
+    static int checked[5];          // 1 checked out, 2 refused
+    const UiPart &p = UI_PARTS[i];
+    if (checked[i] == 2)
+        return -1;
+    BYTE *f = UiFrame(ui, p.off);
+    if (!f)
+        return 0;
+    __try {
+        DWORD vt = *(DWORD *)f;
+        BYTE *fn = *(BYTE **)(vt + (hide ? p.hide : p.show)), *after = p.after ? *(BYTE **)(vt + p.after) : nullptr;
+        if (!IsGameCode(fn) || (p.after && !IsGameCode(after))) {
+            checked[i] = 2;
+            Log("hide UI: %s refused, its vtable +%06lX entries aren't game code", p.name, vt - (DWORD)g_base);
+            return -1;
+        }
+        if (!checked[i]) {
+            checked[i] = 1;
+            char rtti[64];
+            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+            Log("hide UI: %s %p, vtable +%06lX, RTTI %s", p.name, f, vt - (DWORD)g_base, rtti[0] ? rtti : "(none)");
+            if (rtti[0] && p.rtti && !strstr(rtti, p.rtti)) {
+                Log("  not the %s: refusing it", p.name);
+                checked[i] = 2;
+                return -1;
+            }
+        }
+        ((FrameFn)fn)(f, 0);
+        if (after)
+            ((FrameFn)after)(f, 0);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        checked[i] = 2;
+        Log("hide UI: the game's call for the %s faulted: refusing it", p.name);
+        return -1;
+    }
+}
+
+static void UiHidePass() {
+    static DWORD at;
+    DWORD want = g_shared->uiHide & 0x1f, now = GetTickCount();
+    void *ui = GameUi();
+    if (!ui) {
+        g_uiHidden = 0, g_uiHideUi = nullptr;           // between games: the next one starts fresh
+        g_shared->uiState &= 0x80000000;
+        return;
+    }
+    if (ui != g_uiHideUi)
+        g_uiHideUi = ui, g_uiHidden = 0, at = 0;
+    for (int i = 0; i < 5; i++)                         // turned off: show it again, once
+        if ((g_uiHidden & (1u << i)) && !(want & (1u << i))) {
+            UiPartCall((BYTE *)ui, i, false);
+            g_uiHidden &= ~(1u << i);
+        }
+    bool fresh = (want & ~g_uiHidden) != 0;
+    if (want && (fresh || now - at >= 1500)) {
+        at = now;
+        for (int i = 0; i < 5; i++)
+            if (want & (1u << i)) {
+                int r = UiPartCall((BYTE *)ui, i, true);
+                if (r == 1)
+                    g_uiHidden |= 1u << i;
+                else if (r < 0)
+                    g_shared->uiState |= 0x80000000;
+            }
+    }
+    g_shared->uiState = (g_shared->uiState & 0x80000000) | g_uiHidden;
+}
+
 // on the game thread
 static void DisplayPass() {
     if (!g_getUi)
@@ -1467,13 +1557,14 @@ static void DisplayPass() {
     WidescreenPass();
     FpsPass();
     LatencyPass();
+    UiHidePass();
 }
 
 // the worker's part: a pass 4 times a second while any is on, or has something to put back
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -1819,7 +1910,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 9;
+        g_shared->layout = 10;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());

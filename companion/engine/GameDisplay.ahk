@@ -11,11 +11,16 @@
 ;  Hosting; WFE's [DELAY]): the game's LAN, single player and Battle.net
 ;  latency getters return the ms set here. Off by default (ini [Hosting]
 ;  latency, latencyMs).
+;  And hiding parts of the UI (layout 10, WFE's INTERFACE keys for the parts
+;  it hides with their own calls): time of day, minimap, upper menu bar,
+;  resource bar, idle workers. Off by default (ini [Display] hideUi, and
+;  hideParts: the parts as bits, in PARTS order).
 ; ============================================================================
 class GameDisplayEngine {
     section := "Display"
     static LIMITS := [120, 144, 165, 200, 240, 300]
     static LATENCIES := [25, 50, 75, 100, 150, 200]
+    static PARTS := ["Time of day", "Minimap", "Upper menu bar", "Resource bar", "Idle workers"]
 
     __New(gameModule) {
         this.gm := gameModule
@@ -62,6 +67,24 @@ class GameDisplayEngine {
         this.push()
     }
     latencyLabel => this.latencyMs " ms"
+    hideUi => Integer(Ini(this.section, "hideUi", 0))
+    setHideUi(on) {
+        SetIni(on ? 1 : 0, this.section, "hideUi")
+        this.push()
+    }
+    hideParts => Integer(Ini(this.section, "hideParts", 0)) & 0x1f
+    setPart(i, on) {
+        m := this.hideParts
+        SetIni(on ? m | (1 << (i - 1)) : m & ~(1 << (i - 1)), this.section, "hideParts")
+        this.push()
+    }
+    partsCount() {
+        n := 0
+        loop GameDisplayEngine.PARTS.Length
+            n += (this.hideParts >> (A_Index - 1)) & 1
+        return n
+    }
+    partsLabel => "Parts: " this.partsCount() " of " GameDisplayEngine.PARTS.Length
 
     ; the switches to the module in the running game (once a second, and on changes)
     push() {
@@ -74,6 +97,9 @@ class GameDisplayEngine {
             return
         NumPut("uint", this.latencyMs, v, 656)
         NumPut("uint", this.latency && this.gm.enabled ? 1 : 0, v, 652)
+        if NumGet(v, 4, "uint") < 10
+            return
+        NumPut("uint", this.hideUi && this.gm.enabled ? this.hideParts : 0, v, 676)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)
@@ -97,6 +123,20 @@ class GameDisplayEngine {
         st := NumGet(this.gm.live(), 616, "uint")
         return st = 1 ? "On · 16:9 in this game" : st = 2 ? "On · waiting for a game"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
+    hideStatus() {
+        if !this.hideUi
+            return "Off"
+        if !this.hideParts
+            return "On · pick the parts to hide"
+        if (w := this.moduleWait(10)) != ""
+            return w
+        st := NumGet(this.gm.live(), 680, "uint"), names := []
+        for i, n in GameDisplayEngine.PARTS
+            if st & (1 << (i - 1))
+                names.Push(StrLower(n))
+        return st & 0x80000000 ? "On · one part was refused by the module's checks (see the log)"
+            : names.Length ? "On · hidden: " Join(", ", names*) : "On · waiting for a game"
     }
     latencyStatus() {
         if !this.latency
