@@ -27,6 +27,7 @@
 #Include engine\SelfUpdate.ahk
 #Include engine\GameModule.ahk
 #Include ui\TimerHud.ahk
+#Include ui\Wc3Page.ahk
 #Include ui\OverlayPanel.ahk
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------
@@ -52,7 +53,7 @@ global TB_Y := 20           ; toolbar row: page title + that page's main control
 ; them), but window regions, text measurement and screen coordinates are in
 ; real pixels. DPI_K converts (1.5 at 150%).
 global DPI_K := A_ScreenDPI / 96
-global NAV_ORDER := ["loader", "remap", "macros", "host", "settings", "overlay"]
+global NAV_ORDER := ["loader", "remap", "macros", "host", "wc3", "settings", "overlay"]
 global ICON_FONT := "Segoe Fluent Icons"
 ; the site's system-ui font on Windows 11; classic Segoe UI on older systems
 global UI_FONT := FileExist(A_WinDir "\Fonts\SegUIVar.ttf") ? "Segoe UI Variable Text" : "Segoe UI"
@@ -114,7 +115,7 @@ global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card un
 global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
 global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn, gameModCb, gameModText
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -234,6 +235,7 @@ BuildWindow() {
     BuildRemapPage()
     BuildMacrosPage()
     BuildHostPage()
+    BuildWc3Page()
     BuildSettingsPage()
     BuildOverlayPage()
     for pg, arr in pages
@@ -286,6 +288,7 @@ PageInfo(name) {
         "remap",    { nav: "Remap",    icon: Chr(0xE8AB), title: "Remap" },
         "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros" },
         "host",     { nav: "Host",     icon: Chr(0xE716), title: "Host" },
+        "wc3",      { nav: "WC3",      icon: Chr(0xE7FC), title: "WC3" },
         "settings", { nav: "Settings", icon: Chr(0xE713), title: "Settings" },
         "overlay",  { nav: "Overlay",  icon: Chr(0xE8A7), title: "Overlay" })
     return info[name]
@@ -491,6 +494,7 @@ ShowPageInner(name, shown) {
         case "remap":    RefreshRemap()
         case "macros":   RefreshMacros()
         case "host":     RefreshHost()
+        case "wc3":      RefreshWc3()
         case "settings": RefreshSettings()
         case "overlay":  RefreshOverlay()
     }
@@ -1625,7 +1629,7 @@ RemapClear() {
 ; Quickcast Setup window, in the .modal style of Dialog: the status for the
 ; running game, the three in-game steps, hold to repeat, and the buttons
 QuickcastSettings() {
-    global C, mainGui, quickcast, gameModule, timersHud, UI_FONT
+    global C, mainGui, quickcast, UI_FONT
     s := quickcast.get(), w := 460, x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     g.BackColor := C.frame                           ; = the 1px border
@@ -1677,23 +1681,11 @@ QuickcastSettings() {
     gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
     g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
     gv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("castGap", Max(0, Min(3000, c.Value + 0)))))
+    y += 36
+    ; the game module versions (1.28f) live on the WC3 page
+    mp := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.dim, "On 1.28f the game module can quickcast and show timers: see the WC3 page.")
+    UISetFont(mp, "s8")
     y += 34
-    ; 1.28f: the game module says when the game waits for a target (no setup);
-    ; off by default, and the screen is read whenever it isn't ready
-    mq := g.AddCheckbox("x" x " y" y " w" tw " h22 +Background" C.card " c" C.text (gameModule.quickcast ? " Checked" : ""), " On 1.28f, ask the game module instead (experimental)")
-    mqs := g.AddText("x" (x + 22) " y" (y + 24) " w" (tw - 22) " h18 +Background" C.card " c" C.dim, gameModule.qcStatusText())
-    UISetFont(mqs, "s8")
-    mq.OnEvent("Click", (c, *) => (gameModule.setQuickcast(c.Value), mqs.Text := gameModule.qcStatusText()))
-    y += 50
-    ; 1.28f: cooldown and buff countdowns over the game (ui\TimerHud.ahk), off by default
-    th := g.AddCheckbox("x" x " y" y " w" (tw - 120) " h22 +Background" C.card " c" C.text (timersHud.enabled ? " Checked" : ""), " On 1.28f, show cooldown and buff timers")
-    bb := g.AddText("x" (x + tw - 110) " y" y " w110 h22 Center 0x200 +Background" C.chip " c" C.text, "Set up buff bar")
-    UISetFont(bb, "s8 w600"), Box.Round(bb, 110, 22, 4)
-    ths := g.AddText("x" (x + 22) " y" (y + 24) " w" (tw - 22) " h18 +Background" C.card " c" C.dim, timersHud.statusText())
-    UISetFont(ths, "s8")
-    th.OnEvent("Click", (c, *) => (timersHud.setEnabled(c.Value), ths.Text := timersHud.statusText()))
-    bb.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart()))
-    y += 58
 
     label := s.calibrated ? "Set up again" : "Set up in game"
     setup := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, label)
@@ -1970,14 +1962,9 @@ BuildSettingsPage() {
     updLabel := mainGui.AddText("x40 y" (y + 196) " w500 h20 +Background" C.panel " c" C.muted, "")
     updBtn := MkButton("Check for updates", 560, y + 192, 160, 28, C.chip, C.text, (*) => UpdateButton())
     AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn, updLabel, updBtn)
-    ; the 1.28 game module (native\): off by default
-    gameModCb := mainGui.AddCheckbox("x40 y" (y + 234) " h22 +Background" C.panel " c" C.text, " Game module for 1.28 (experimental)")
-    gameModCb.OnEvent("Click", (c, *) => (gameModule.setEnabled(c.Value), RefreshSettings()))
-    gameModText := mainGui.AddText("x330 y" (y + 236) " w390 h20 +Background" C.panel " c" C.dim, "")
-    AddToPage("settings", gameModCb, gameModText)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader, gameModule, gameModCb, gameModText
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
@@ -1988,8 +1975,6 @@ RefreshSettings() {
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
     RefreshUpdateLabel()
-    gameModCb.Value := gameModule.enabled
-    gameModText.Text := gameModule.statusText()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
 ResetAll() {
