@@ -48,6 +48,18 @@ class MacrosEngine {
         return { ok: 1 }
     }
 
+    ; drag to reorder: the macro at from ends up at to
+    move(args) {
+        from := Integer(args["from"]), to := Integer(args["to"])
+        if from < 1 || from > this.macros.Length || to < 1 || to > this.macros.Length || from = to
+            return { ok: 0 }
+        m := this.macros.RemoveAt(from)
+        this.macros.InsertAt(to, m)
+        this.persist()
+        this.reload()
+        return { ok: 1 }
+    }
+
     delete(args) {
         index := Integer(args["index"])
         if index >= 1 && index <= this.macros.Length
@@ -123,7 +135,7 @@ class MacrosEngine {
             hk := Ini(this.section, "hk" A_Index, "")
             tx := this.decode(Ini(this.section, "tx" A_Index, ""))
             kd := Ini(this.section, "kd" A_Index, "chat")
-            if hk && tx
+            if tx                       ; a macro whose key was cleared stays, off
                 this.macros.Push({ hotkey: hk, text: tx, kind: kd })
         }
         this.registerAll()
@@ -151,6 +163,8 @@ class MacrosEngine {
         }
         this.registered := Map()
         for m in this.macros {
+            if !m.hotkey
+                continue
             fn := m.kind = "keys" ? this.sendKeys.Bind(this, MacrosEngine.Keys(m.text))
                 : this.sendLines.Bind(this, StrSplit(StrReplace(m.text, "`r", ""), "`n"))
             this.registered.Set(m.hotkey, RegisterHotkey(m.hotkey, fn, WarcraftIII, true))
@@ -171,7 +185,7 @@ class MacrosEngine {
         for i, t in keys {
             if i > 1 && gap > 0
                 Sleep(gap)
-            SendGameKeys(MacrosEngine.KeyInput(t))
+            SendInput(MacrosEngine.KeyInput(t))
         }
     }
 

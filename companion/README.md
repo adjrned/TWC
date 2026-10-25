@@ -108,8 +108,9 @@ next to the script records each change and each quickcast with the time.
     way, and `-l` ignores spaces when matching (`-l sorc 3` finds `sorc3`)
 
   **Numbered saves.** Saves ending in a number (`knight#91`, `knight#92`, or
-  `sniper_007`) are one *series*: a single row showing the newest number with a
-  "N saves ▸" badge (click it to list the older ones), and one star, hide toggle
+  `sniper_007`) are one *series*: a single row named after it (`knight`, or the
+  unnumbered save that heads it, like `Sniper`) with a "N saves ▸" badge (click
+  it to list them all; loading the row loads the newest number), and one star, hide toggle
   and load message for the whole series. `-l knight` loads the newest number.
   `-sn` uses the highest number on disk + 1, so loading an older save and saving
   again never overwrites a newer one; your separator and zero padding are kept
@@ -146,13 +147,17 @@ next to the script records each change and each quickcast with the time.
   and Space while the card shows only Cancel. After that the companion clicks
   only when the command card shows the game is waiting for a target, read from
   the screen, no injection, same on 1.28 and Reforged. Until then, quickcast
-  slots just send their key.
+  slots just send their key. Held, a quickcast key repeats every 40 ms, but
+  waits 450 ms after a cast (both in the Quickcast Setup window) so the reticle
+  doesn't reopen while your hero turns or walks into range.
 - **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
   `-chest im lagging`, GET GOOD), listed like the Loader's saves: key, first
-  line and line count. Select one to edit it below the list (one chat line per
-  row; changes save as you type); **+ New macro** starts an empty one, added
-  once it has a key and a line. Keys the companion already uses (remaps, the
-  overlay keys, F8, Enter, other macros) are refused. *Press keys instead*
+  line and line count; drag a row to reorder, ✕ deletes. Select one to edit it
+  below the list: the chat lines on the left (one per row; changes save as you
+  type), the hotkey on the right with **Bind Key** / **Clear** like Remap
+  (cleared = kept but off). **+ New macro** starts an empty one, added with its
+  first line. Keys the companion already uses (remaps, the overlay keys, F8,
+  Enter, other macros) are refused. *Press keys instead*
   (under the hint) makes a macro press game keys in a row, e.g. several items
   at once; remapped keys are stored as the game key, 15 ms apart (`keyGap`).
 - **Host** — whisper a host bot for private/public lobbies with a `+1` game-name

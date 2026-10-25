@@ -96,10 +96,10 @@ global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list 
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
-global macroNewBtn, macroHelpBtn, macroLblKey, macroSummary, macroCapBtn, macroHint, macroDelBtn, macroMsgEdit
+global macroNewBtn, macroHelpBtn, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
 global macroLblMsg, macroKindLink, macroSeqText, macroItemBtns := [], macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn
 global macroKeyCtrls := [], macroKind := "chat", macroKeys := []     ; the editor: chat or keys, and the keys being edited
-global macroRows := [], macroCard, macroBar, macroThumb, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
+global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
 global macroSel := -1, macroOffset := 0, macroDraftHK := ""     ; macroSel 0 = a new macro being made
 global MACRO_ROWS := 6, MACRO_ROW_H := 36
 ; remap
@@ -392,9 +392,13 @@ BgImage() {
 ; plain labels fall through to the window itself (statics are transparent to
 ; the mouse), so both mean "empty space".
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
-    global bgPic, mainGui
+    global bgPic, mainGui, macroRowAt
     if IsSet(mainGui) && (hwnd = mainGui.Hwnd || hwnd = bgPic.Hwnd) {
         PostMessage(0xA1, 2, , , "ahk_id " mainGui.Hwnd)    ; WM_NCLBUTTONDOWN, HTCAPTION
+        return 0
+    }
+    if macroRowAt.Has(hwnd) {                               ; a macro row: click or drag
+        MacroRowDown(macroRowAt[hwnd])
         return 0
     }
 }
@@ -612,8 +616,14 @@ RefreshFiles(reload := true) {
         for f in fs
             if !newest || f.sortKey > newest
                 newest := f.sortKey
-        local top := fs[1]
-        tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: StrReplace(top.name, ".txt", ""),
+        ; the row is named after the series: its unnumbered save ("Sniper") if
+        ; there is one, else the name before the number ("knight" for knight#92);
+        ; loading it loads the newest number
+        local top := fs[1], label := top.series.stem
+        for f in fs
+            if StrReplace(f.name, ".txt", "") = f.series.stem
+                label := StrReplace(f.name, ".txt", "")
+        tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: label,
             pinned: pins.Has(key) ? pins[key] : 0, hidden: top.hidden, msg: top.msg, date: top.date, sortKey: newest, files: fs })
     }
     for e in tops
@@ -628,8 +638,8 @@ RefreshFiles(reload := true) {
             continue
         saveFiles.Push(e)
         if e.kind = "series" && expanded.Has(e.key)
-            loop e.files.Length - 1 {
-                local f := e.files[A_Index + 1]
+            loop e.files.Length {                   ; every save in it, newest first
+                local f := e.files[A_Index]
                 saveFiles.Push({ kind: "child", id: f.name, name: f.name, key: e.key, label: StrReplace(f.name, ".txt", ""),
                     pinned: 0, hidden: e.hidden, msg: e.msg, date: f.date, sortKey: f.sortKey, files: 0 })
             }
@@ -932,34 +942,27 @@ SortBy(arr, cmp) {
 
 ; ============================================================================
 ;  Macros page - the macros as a card list like the Loader's saves (key, what
-;  it does, count), and an editor under it for the selected one that saves as
-;  you go. A macro types chat lines, or (the quiet link under the hint)
-;  presses game keys, e.g. several items at once.
-;  New macro starts an empty one: it's added once it has a hotkey and a line
-;  or key. The rows are a fixed pool of controls re-filled as you scroll.
+;  it does, count, ✕ to delete; drag a row to reorder), and an editor under it
+;  for the selected one that saves as you go: the chat lines on the left, the
+;  hotkey (Bind Key / Clear, like Remap) on the right. A macro types chat
+;  lines, or (the quiet link under the hint) presses game keys, e.g. several
+;  items at once. New macro starts an empty one: it's added with its first
+;  line or key. The rows are a fixed pool of controls re-filled as you scroll.
 ; ============================================================================
 BuildMacrosPage() {
     global
     macroNewBtn := MkButton("+  New macro", 40, 160, 140, 28, C.accent, C.onAccent, (*) => MacroNew())
     macroHelpBtn := MkButton("?", 40, 160, 30, 28, C.chip, C.muted, (*) => ShowPopover("macros"))
-    macroLblKey := mainGui.AddText("x40 y160 w156 h18 +Background" C.panel " c" C.muted, "Hotkey")
+    ; left: what it sends
     macroLblMsg := mainGui.AddText("x40 y160 w250 h18 +Background" C.panel " c" C.muted, "")
-    ; switching to keys is a quiet link under the hint, not a tab
-    macroKindLink := mainGui.AddText("x40 y160 w152 h16 +Background" C.panel " c" C.dim, "")
-    UISetFont(macroKindLink, "s8")
-    macroKindLink.OnEvent("Click", (*) => MacroKindSet(macroKind = "chat" ? "keys" : "chat"))
-    macroSummary := mainGui.AddText("x40 y160 w260 h18 Right +Background" C.panel " c" C.dim, "")
+    macroSummary := mainGui.AddText("x40 y160 w240 h18 Right +Background" C.panel " c" C.dim, "")
     UISetFont(macroSummary, "s9")
-    macroCapBtn := MkButton("", 40, 160, 156, 32, C.chip, C.text, (*) => MacroCapture())
-    macroHint := mainGui.AddText("x40 y160 w156 h52 +Background" C.panel " c" C.dim, "")
-    UISetFont(macroHint, "s8")
-    macroDelBtn := MkButton("Delete macro", 40, 160, 156, 32, C.chip, C.muted, (*) => MacroDelete())
-    macroMsgEdit := mainGui.AddEdit("x40 y160 w510 h132 Multi -Wrap -VScroll +Background" C.well " c" C.text, "")
+    macroMsgEdit := mainGui.AddEdit("x40 y160 w500 h132 Multi -Wrap -VScroll +Background" C.well " c" C.text, "")
     UISetFont(macroMsgEdit, "s10")
     macroMsgEdit.OnEvent("Change", (*) => SetTimer(MacroCommit, -400))
     ApplyDark(macroMsgEdit.Hwnd)
     ; keys macros: the keys in order, quick buttons for the six items, any key
-    macroSeqText := mainGui.AddEdit("x40 y160 w510 h60 Multi ReadOnly -VScroll +Background" C.well " c" C.text, "")
+    macroSeqText := mainGui.AddEdit("x40 y160 w500 h60 Multi ReadOnly -VScroll +Background" C.well " c" C.text, "")
     UISetFont(macroSeqText, "s10")
     macroKeyCtrls := [macroSeqText]
     loop 6 {
@@ -971,53 +974,75 @@ BuildMacrosPage() {
     macroUndoKeyBtn := MkButton("Remove last", 40, 160, 104, 26, C.chip, C.muted, (*) => MacroRemoveKey(false))
     macroClearKeysBtn := MkButton("Clear", 40, 160, 64, 26, C.chip, C.muted, (*) => MacroRemoveKey(true))
     macroKeyCtrls.Push(macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn)
-    AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblKey, macroLblMsg, macroKindLink, macroSummary,
-        macroCapBtn, macroHint, macroDelBtn, macroMsgEdit, macroKeyCtrls*)
+    ; right: the hotkey, like Remap's detail
+    macroLblKey := mainGui.AddText("x40 y160 w160 h18 +Background" C.panel " c" C.muted, "Hotkey")
+    macroKeyText := mainGui.AddText("x40 y160 w160 h30 0x200 +Background" C.panel " c" C.text, "")
+    UISetFont(macroKeyText, "s13 w600")
+    macroCapBtn := MkButton("Bind Key", 40, 160, 77, 26, C.accent, C.onAccent, (*) => MacroCapture())
+    macroClearBtn := MkButton("Clear", 40, 160, 77, 26, C.chip, C.text, (*) => MacroClearKey())
+    macroHint := mainGui.AddText("x40 y160 w160 h34 +Background" C.panel " c" C.dim, "")
+    UISetFont(macroHint, "s8")
+    ; switching to keys is a quiet link under the hint, not a tab
+    macroKindLink := mainGui.AddText("x40 y160 w160 h16 +Background" C.panel " c" C.dim, "")
+    UISetFont(macroKindLink, "s8")
+    macroKindLink.OnEvent("Click", (*) => MacroKindSet(macroKind = "chat" ? "keys" : "chat"))
+    AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit, macroKeyCtrls*)
+    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroKindLink)
     AddPopover("macros", macroHelpBtn, [
         ["Macros", ""],
         ["What", "One key that types chat lines in Warcraft III: each row is sent as its own line, in order. Empty rows are skipped."],
         ["When", "In a game, with chat closed, while the tool is On (hold Esc 1.5 s to pause it)."],
-        ["Hotkey", "Any key, combo or mouse button (Mouse 4/5, middle, wheel). Keys the companion already uses (remaps, the overlay, F8, Enter...) are refused."],
-        ["", "Changes save as you go."]])
+        ["Hotkey", "Bind Key, then any key, combo or mouse button (Mouse 4/5, middle, wheel). Keys the companion already uses (remaps, the overlay, F8, Enter...) are refused. Clear turns the macro off but keeps it."],
+        ["List", "Drag a row to reorder, ✕ deletes. Changes save as you go."]])
 }
 ; editor under the list (window coordinates; runs before StyleControl boxes them)
 LayoutMacros() {
     global
-    local R := W - 52, ey := CY + MACRO_ROWS * MACRO_ROW_H + 2 + 18, ex := CX + 172
+    local R := W - 52, ey := CY + MACRO_ROWS * MACRO_ROW_H + 2 + 18, rx := CX + 520
     macroNewBtn.Move(R - 140, TB_Y, 140, 28)
     macroHelpBtn.Move(R - 178, TB_Y, 30, 28)
-    macroLblKey.Move(CX, ey)
-    macroLblMsg.Move(ex, ey)
-    macroKindLink.Move(CX + 2, ey + 102)
-    macroSummary.Move(CX + 420, ey)
-    macroCapBtn.Move(CX, ey + 22, 156, 32)
-    macroHint.Move(CX + 2, ey + 64, 152, 34)
-    macroDelBtn.Move(CX, ey + 122, 156, 32)
-    macroMsgEdit.Move(ex, ey + 22, 510, 132)
-    macroSeqText.Move(ex, ey + 22, 510, 62)
+    macroLblMsg.Move(CX, ey)
+    macroSummary.Move(CX + 260, ey)
+    macroMsgEdit.Move(CX, ey + 22, 500, 132)
+    macroSeqText.Move(CX, ey + 22, 500, 62)
     for i, b in macroItemBtns
-        b.Move(ex + (i - 1) * 66, ey + 92, 60, 26)
-    macroAllItemsBtn.Move(ex + 396, ey + 92, 64, 26)
-    macroAddKeyBtn.Move(ex, ey + 128, 110, 26)
-    macroUndoKeyBtn.Move(ex + 116, ey + 128, 104, 26)
-    macroClearKeysBtn.Move(ex + 226, ey + 128, 64, 26)
+        b.Move(CX + (i - 1) * 66, ey + 92, 60, 26)
+    macroAllItemsBtn.Move(CX + 396, ey + 92, 64, 26)
+    macroAddKeyBtn.Move(CX, ey + 128, 110, 26)
+    macroUndoKeyBtn.Move(CX + 116, ey + 128, 104, 26)
+    macroClearKeysBtn.Move(CX + 226, ey + 128, 64, 26)
+    macroLblKey.Move(rx, ey)
+    macroKeyText.Move(rx, ey + 20)
+    macroCapBtn.Move(rx, ey + 56, 77, 26)
+    macroClearBtn.Move(rx + 83, ey + 56, 77, 26)
+    macroHint.Move(rx, ey + 94)
+    macroKindLink.Move(rx, ey + 138)
 }
 BuildMacroList() {
     global
     local x := CX, y := CY, w := 680, h := MACRO_ROWS * MACRO_ROW_H + 2
     macroCard := Box("macros", x, y, w, h, C.card, C.border, 6)
+    ; made before the rows so they draw over them: the selection bar, the
+    ; scroll thumb and the drop line while dragging
     macroBar := mainGui.AddText("x" (x + 1) " y0 w3 h" (MACRO_ROW_H - 1) " +Background" C.accent)
     macroThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
-    AddToPage("macros", macroBar, macroThumb)
-    ; columns: padding | key | what it does | count
-    local cols := [["pad", 4, 12], ["key", 16, 140], ["msg", 156, 424], ["lines", 580, 88]]
+    macroDropLine := mainGui.AddText("x" (x + 1) " y" y " w" (w - 2) " h2 Hidden +Background" C.accent)
+    AddToPage("macros", macroBar, macroThumb, macroDropLine)
+    ; columns: padding | key | what it does | count | delete
+    local cols := [["pad", 4, 12], ["key", 16, 140], ["msg", 156, 404], ["lines", 560, 76], ["del", 636, 32]]
     loop MACRO_ROWS {
         local i := A_Index, ry := y + 1 + (i - 1) * MACRO_ROW_H, row := { idx: i }
         for col in cols {
+            ; 0x100 (SS_NOTIFY): the cells get the mouse, for click / drag (MacroRowDown)
             local t := mainGui.AddText("x" (x + col[2]) " y" ry " w" col[3] " h" (MACRO_ROW_H - 1)
-                " 0x200 +Background" C.card (col[1] = "lines" ? " Right" : ""), "")
-            UISetFont(t, col[1] = "key" ? "s10 w600" : col[1] = "msg" ? "s10" : "s9")
-            t.OnEvent("Click", MacroRowClick.Bind(i))
+                " 0x200 0x100 +Background" C.card (col[1] = "lines" ? " Right" : col[1] = "del" ? " Center" : ""), "")
+            if col[1] = "del" {
+                t.SetFont("s8", ICON_FONT)
+                t.OnEvent("Click", MacroRowDelete.Bind(i))
+            } else {
+                UISetFont(t, col[1] = "key" ? "s10 w600" : col[1] = "msg" ? "s10" : "s9")
+                macroRowAt[t.Hwnd] := i
+            }
             row.%col[1]% := t
             AddToPage("macros", t)
         }
@@ -1052,22 +1077,24 @@ RenderMacroRows() {
     global
     local list := macros.list()
     macroOffset := Max(0, Min(macroOffset, list.Length - MACRO_ROWS))
-    macroBar.Visible := false
+    macroBar.Visible := false, macroDropLine.Visible := false    ; (opening the page shows every control)
     for row in macroRows {
         local idx := macroOffset + row.idx, has := idx <= list.Length
-        for k in ["pad", "key", "msg", "lines", "sep"]
+        for k in ["pad", "key", "msg", "lines", "del", "sep"]
             row.%k%.Visible := has
         if !has
             continue
         local m := list[idx], bg := idx = macroSel ? C.navOn : C.card
         local n := m.kind = "keys" ? MacrosEngine.Keys(m.text).Length : MacroLines(m.text).Length
-        row.key.Text := m.label
+        row.key.Text := m.label != "" ? m.label : "no key"
         row.msg.Text := m.summary
-        row.lines.Text := m.kind = "keys" ? n (n = 1 ? " key  " : " keys  ") : n > 1 ? n " lines  " : ""
+        row.lines.Text := m.kind = "keys" ? n (n = 1 ? " key" : " keys") : n > 1 ? n " lines" : ""
+        row.del.Text := Chr(0xE711)                         ; ✕ (Segoe Fluent "Cancel")
         row.pad.Opt("+Background" bg)
-        row.key.Opt("+Background" bg " +c" C.accent)
-        row.msg.Opt("+Background" bg " +c" C.text)
+        row.key.Opt("+Background" bg " +c" (m.label != "" ? C.accent : C.dim))
+        row.msg.Opt("+Background" bg " +c" (m.label != "" ? C.text : C.muted))
         row.lines.Opt("+Background" bg " +c" C.muted)
+        row.del.Opt("+Background" bg " +c" C.dim)
         if idx = macroSel {
             row.key.GetPos(, &ry)
             macroBar.Move(, ry), macroBar.Visible := true
@@ -1102,13 +1129,13 @@ LoadMacroEditor() {
     }
     ShowMacroEditor()
 }
-; show the editor's state: hotkey, kind switch, chat box or keys, status
+; show the editor's state: chat box or keys, hotkey, status
 ShowMacroEditor() {
     global
     local m := macroSel ? macros.list()[macroSel] : 0
     local hk := m ? m.hotkey : macroDraftHK, keys := macroKind = "keys"
-    macroCapBtn.Text := hk ? ReadableHotkey(hk) : "Click to set a key"
-    macroCapBtn.Opt("+c" (hk ? C.text : C.accent)), macroCapBtn.Redraw()
+    macroKeyText.Text := hk ? ReadableHotkey(hk) : "None"
+    macroKeyText.Opt("+c" (hk ? C.accent : C.dim)), macroKeyText.Redraw()
     macroLblMsg.Text := keys ? "Keys  ·  pressed in order" : "Chat lines  ·  one per row"
     macroKindLink.Text := keys ? "Type chat lines instead" : "Press keys instead"
     SetShown(macroMsgEdit, !keys)
@@ -1119,34 +1146,33 @@ ShowMacroEditor() {
         labels.Push(MacrosEngine.KeyLabel(t))
     macroSeqText.Value := labels.Length ? Join("   ›   ", labels*) : "No keys yet. Add them in the order they're pressed."
     macroSeqText.Opt("+c" (labels.Length ? C.text : C.dim)), macroSeqText.Redraw()
-    macroHint.Text := keys ? "Pressed in a game with chat closed, while the tool is On."
-        : "Sent in a game with chat closed, while the tool is On."
-    SetShown(macroDelBtn, m != 0)
+    macroHint.Text := !hk ? "No hotkey: Bind Key to use it."
+        : (keys ? "Pressed" : "Sent") " in a game with chat closed, while the tool is On."
     macroSummary.Text := MacroStatus()
 }
 MacroStatus() {
     global
-    local m := macroSel ? macros.list()[macroSel] : 0, hk := m ? m.hotkey : macroDraftHK
+    local m := macroSel ? macros.list()[macroSel] : 0
     local n := macroKind = "chat" ? MacroLines(macroMsgEdit.Value).Length : macroKeys.Length
     local what := macroKind = "chat" ? "a line" : "a key to press"
     if !m
-        return !hk && !n ? "new macro: set a hotkey and " what : !hk ? "set a hotkey to add it" : !n ? "add " what " to add it" : ""
+        return "new macro: add " what
     if m.kind != macroKind && !n
         return "add " what " to switch it"
     if macroKind = "keys"
         return n = 1 ? "1 key" : n " keys, pressed at once"
-    return !n ? "empty: not saved, Delete removes it" : n = 1 ? "1 line" : n " lines, sent in order"
+    return !n ? "empty: not saved, ✕ deletes it" : n = 1 ? "1 line" : n " lines, sent in order"
 }
 
-; save the editor (chat is debounced while typing); a new macro is added once
-; it has a hotkey and a line or key
+; save the editor (chat is debounced while typing); a new macro is added with
+; its first line or key
 MacroCommit() {
     global
     SetTimer(MacroCommit, 0)
     local list := macros.list(), m := macroSel ? list[macroSel] : 0, hk := m ? m.hotkey : macroDraftHK
     local text := macroKind = "keys" ? Join(" ", macroKeys*) : RegExReplace(StrReplace(macroMsgEdit.Value, "`r"), "\n+$")
     local n := macroKind = "keys" ? macroKeys.Length : MacroLines(text).Length
-    if hk && n && !(m && m.text == text && m.kind = macroKind) {
+    if n && !(m && m.text == text && m.kind = macroKind) {
         local args := Map("hotkey", hk, "text", text, "kind", macroKind)
         if m
             args["index"] := macroSel
@@ -1154,7 +1180,6 @@ MacroCommit() {
         if !m {
             macroSel := macros.list().Length, macroDraftHK := ""
             macroOffset := Max(0, macroSel - MACRO_ROWS)
-            SetShown(macroDelBtn, true)
         }
         RenderMacros()
     }
@@ -1212,13 +1237,66 @@ MacroRemoveKey(all) {
         MacroCommit()
     ShowMacroEditor()
 }
-MacroRowClick(i, *) {
+MacroSelect(idx) {
     global
-    local idx := macroOffset + i
     if idx > macros.list().Length || idx = macroSel
         return
     MacroCommit()
     macroSel := idx
+    LoadMacroEditor()
+    RenderMacros()
+}
+; a press on a row: a click selects it, a drag moves it (a line shows where it
+; lands; let go to drop)
+MacroRowDown(i) {
+    global
+    local idx := macroOffset + i, n := macros.list().Length
+    if idx > n
+        return
+    CoordMode("Mouse", "Client")
+    MouseGetPos(, &y0)
+    local dragging := false, slot := 0
+    while GetKeyState("LButton", "P") {
+        MouseGetPos(, &my)
+        if !dragging && Abs(my - y0) > 5 * DPI_K
+            dragging := true
+        if dragging {
+            ; the gap between rows nearest the mouse: 0 = above the first shown
+            slot := Max(0, Min(Min(MACRO_ROWS, n - macroOffset), Round((my / DPI_K - macroCard.y - 1) / MACRO_ROW_H)))
+            macroDropLine.Move(, macroCard.y + Max(1, slot * MACRO_ROW_H - 1))
+            macroDropLine.Visible := true
+        }
+        Sleep(15)
+    }
+    macroDropLine.Visible := false
+    if !dragging
+        return MacroSelect(idx)
+    local before := macroOffset + slot + 1           ; dropped above this one (n + 1 = at the end)
+    local to := before > idx ? before - 1 : before
+    if to = idx
+        return RenderMacros()
+    MacroCommit()
+    macros.move(Map("from", idx, "to", to))
+    macroSel := to
+    LoadMacroEditor()
+    RenderMacros()
+}
+MacroRowDelete(i, *) {
+    global
+    local idx := macroOffset + i, list := macros.list()
+    if idx > list.Length
+        return
+    local m := list[idx]
+    if Dialog("Delete the " (m.label != "" ? m.label " macro" : 'macro "' m.summary '"') "?", "Delete macro", ["Delete", "Cancel"]) != "Delete"
+        return
+    SetTimer(MacroCommit, 0)
+    macros.delete(Map("index", idx))
+    if macroSel = idx
+        macroSel := Min(idx, macros.list().Length)
+    else if macroSel > idx
+        macroSel--
+    if !macroSel
+        macroMsgEdit.Value := "", macroKeys := [], macroKind := "chat"
     LoadMacroEditor()
     RenderMacros()
 }
@@ -1233,20 +1311,30 @@ MacroNew() {
 }
 MacroCapture() {
     global
-    macroCapBtn.Text := "press a key…  (Esc cancels)"
+    macroCapBtn.Text := "press a key…"
     local r := macros.capture(Map())
+    macroCapBtn.Text := "Bind Key"
     if r.hotkey {
         if why := MacroKeyConflict(r.hotkey)
             Toast(r.label " is " why ".", "error")
-        else if macroSel {
-            local m := macros.list()[macroSel]
-            macros.save(Map("index", macroSel, "hotkey", r.hotkey, "text", m.text, "kind", m.kind))
-        } else
-            macroDraftHK := r.hotkey
+        else
+            MacroSetKey(r.hotkey)
     }
-    if !macroSel
-        MacroCommit()
     ShowMacroEditor()
+}
+MacroClearKey() {
+    global
+    MacroSetKey("")
+    ShowMacroEditor()
+}
+MacroSetKey(hk) {
+    global
+    if !macroSel {
+        macroDraftHK := hk
+        return
+    }
+    local m := macros.list()[macroSel]
+    macros.save(Map("index", macroSel, "hotkey", hk, "text", m.text, "kind", m.kind))
     RenderMacros()
 }
 ; why a key can't be this macro's: the companion's own keys, the overlay keys,
@@ -1263,21 +1351,6 @@ MacroKeyConflict(hk) {
             if (o := remap.yourKey(g, A_Index)) && Norm(o) = k
                 return "your Remap key for " remap.slotName(g, A_Index)
     return ""
-}
-MacroDelete() {
-    global
-    if !macroSel
-        return
-    local m := macros.list()[macroSel]
-    if Dialog("Delete the " m.label " macro?", "Delete macro", ["Delete", "Cancel"]) != "Delete"
-        return
-    SetTimer(MacroCommit, 0)
-    macros.delete(Map("index", macroSel))
-    macroSel := Min(macroSel, macros.list().Length)
-    if !macroSel
-        macroMsgEdit.Value := "", macroKeys := [], macroKind := "chat"
-    LoadMacroEditor()
-    RenderMacros()
 }
 MacroListWheel(wParam, lParam, msg, hwnd) {
     global
@@ -1591,6 +1664,12 @@ QuickcastSettings() {
     ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
     rep.OnEvent("Click", (c, *) => quickcast.set("repeat", c.Value))
     iv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("interval", Max(15, Min(1000, c.Value + 0)))))
+    y += 30
+    ; after a cast it waits longer, so the reticle doesn't reopen while the hero gets there
+    gl := g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "and after a cast, wait")
+    gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
+    g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
+    gv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("castGap", Max(0, Min(3000, c.Value + 0)))))
     y += 44
 
     label := s.calibrated ? "Set up again" : "Set up in game"

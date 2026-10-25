@@ -25,6 +25,7 @@ class QuickcastEngine {
     get() {
         return { repeat: Integer(Ini(this.section, "repeat", 1)),
             interval: Integer(Ini(this.section, "interval", 40)),
+            castGap: Integer(Ini(this.section, "castGap", 450)),
             window: this.windowKey(), calibrated: this.current() ? 1 : 0 }
     }
     set(key, value) => SetIni(value, this.section, key)

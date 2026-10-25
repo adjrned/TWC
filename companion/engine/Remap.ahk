@@ -205,8 +205,8 @@ class RemapEngine {
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
     castPlain(game, yourKey) {
-        how := SendGameKeys(this.queued(yourKey) this.keyText(game))
-        DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ", " how ")")
+        SendInput(this.queued(yourKey) this.keyText(game))
+        DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
 
     ; Quickcast: the ability goes off at the cursor. Held, it repeats until the
@@ -214,7 +214,10 @@ class RemapEngine {
     ; It stops on the first of: the key's own key-up, the key no longer down,
     ; the game losing focus (overlay, alt-tab), the tool going Off or chat
     ; opening, or 20 s as a last resort, so a key-up that went missing (focus
-    ; moving mid-press) can never leave it casting forever.
+    ; moving mid-press) can never leave it casting forever. After a cast it
+    ; waits castGap (450 ms) before pressing again: the hero may still be
+    ; turning or walking into range, and each press reopens the reticle (its
+    ; animation and sound) and gives the order again.
     castQuick(game, yourKey) {
         global quickcast
         static hinted := false
@@ -227,17 +230,26 @@ class RemapEngine {
         }
         this.holding[base] := true, start := A_TickCount
         loop {
+            hit := false
             if cal
-                this.quickSmart(game, q, cal)
+                hit := this.quickSmart(game, q, cal)
             else
-                SendGameKeys(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
-            if !s.repeat || !this.stillHeld(base, start)
-                break
-            Sleep(s.interval)
-            if !this.stillHeld(base, start)
+                SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
+            if !s.repeat || !this.waitHeld(base, start, hit ? Max(s.interval, s.castGap) : s.interval)
                 break
         }
         this.holding[base] := false
+    }
+    ; wait ms while the key stays held (checked often, so letting go ends it at once)
+    waitHeld(base, start, ms) {
+        endAt := A_TickCount + ms
+        loop {
+            if !this.stillHeld(base, start)
+                return false
+            if A_TickCount >= endAt
+                return true
+            Sleep(Min(15, endAt - A_TickCount))
+        }
     }
     released(base) {
         this.holding[base] := false
@@ -255,17 +267,22 @@ class RemapEngine {
     ; The card changes a frame or two after the key; it's read back to back
     ; from right after the key (no waits in between), and a targeted cast clicks
     ; the moment it's seen. How long to keep looking adapts: 3x the typical
-    ; delay of the last hits (60-200 ms), so a cooldown or the T menu gives up
-    ; quickly and a held key repeats sooner. The log line says what was seen.
+    ; delay of the last hits (60-150 ms), so a cooldown or the T menu gives up
+    ; quickly and a held key repeats sooner. Misses don't stretch it (holding a
+    ; key on cooldown used to push every look to 200 ms); every third miss in a
+    ; row looks for 200 ms once, in case the game got slower. The log line says
+    ; what was seen.
     quickSmart(game, q, cal) {
         global quickcast
-        static recent := []                 ; the last 10 hit delays (ms)
-        limit := 200
+        static recent := [], missRun := 0   ; the last 10 hit delays (ms); misses in a row
+        limit := 150
         if recent.Length >= 3 {
             sorted := recent.Clone(), SortBy(sorted, (a, b) => a - b)
-            limit := Max(60, Min(200, 3 * sorted[(sorted.Length + 1) // 2]))
+            limit := Max(60, Min(150, 3 * sorted[(sorted.Length + 1) // 2]))
         }
-        SendGameKeys(q this.keyText(game))
+        if missRun >= 3 && Mod(missRun, 3) = 0
+            limit := 200
+        SendInput(q this.keyText(game))
         t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
         while QpcMs() - t < limit {
             checks++
@@ -275,6 +292,7 @@ class RemapEngine {
             if hit {
                 quickcast.learnCapture(cal, true)       ; (first hit only: tests the window read, still targeting)
                 SendInput(q "{Click}")
+                missRun := 0
                 ms := QpcMs() - t
                 recent.Push(ms)
                 if recent.Length > 10
@@ -284,12 +302,19 @@ class RemapEngine {
                 return true
             }
         }
+        ; reading the game window can go stale (its picture stops updating): one
+        ; look at the screen tells, and then the screen is used from now on,
+        ; instead of after five misses
+        k := WC3WindowKey()
+        if quickcast.fromWindow.Get(k, false) && quickcast.targeting(cal, false) {
+            quickcast.fromWindow[k] := false, quickcast.misses := 0
+            SendInput(q "{Click}")
+            DebugLog("quickcast " game ": the game window's picture was stale, the screen shows targeting: clicked, reading the screen from now on")
+            missRun := 0
+            return true
+        }
         quickcast.learnCapture(cal, false)
-        ; a miss raises the limit a little: if the game got slower (lag, low FPS),
-        ; misses in a row bring it back to 200 ms instead of giving up too early
-        recent.Push(limit / 2)
-        if recent.Length > 10
-            recent.RemoveAt(1)
+        missRun++
         DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 9) in " checks
             . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs)
         return false

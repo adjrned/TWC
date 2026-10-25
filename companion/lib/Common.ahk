@@ -85,19 +85,6 @@ ReadableHotkey(hotkey, fullName := false) {
 }
 
 ; ---- misc helpers ----------------------------------------------------------
-; Game keys from remaps, quickcast and keys macros. 1.28 can ignore a sent
-; Numpad 4 (Item 3) while it takes the other five item keys; the same key
-; posted to its window gets through, so that one goes that way there.
-; [Remap] postItem3=0 sends it like the others.
-SendGameKeys(keys) {
-    if InStr(keys, "{Numpad4}") && InStr(WC3WindowKey(), "classic") && Integer(Ini("Remap", "postItem3", 1)) {
-        ControlSend(keys, , WarcraftIII)
-        return "posted"
-    }
-    SendInput(keys)
-    return "sent"
-}
-
 SelectFolder() => DirSelect(, 0)
 
 ArrayItemExist(item, params*) {
