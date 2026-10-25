@@ -379,7 +379,7 @@ class LoaderEngine {
 
         HideMainWindow()
         delay := Integer(Ini("Settings", "loadDelay", 200))
-        try DebugLog("load " name ": " codes.Length " codes, " (InStr(WC3WindowKey(), "reforged") ? "Reforged way ({Text}, LCH's)" : "1.28 way"))
+        try DebugLog("load " name ": " codes.Length " codes, " (InStr(WC3WindowKey(), "reforged") ? "Reforged way (wait for the chat box, {Text})" : "1.28 way"))
         ; keyboard/mouse are held for the 1-2 s this takes: a key or Enter
         ; pressed mid-load would land inside the codes (needs admin, which the
         ; companion has; Ctrl+Alt+Del always releases it)

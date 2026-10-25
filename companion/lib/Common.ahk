@@ -82,20 +82,34 @@ Join(sep, params*) {
 ; Each game version has its own way, since the companion can tell them apart:
 ;  1.28      one SendInput per line (Enter, text, Enter), so nothing you press
 ;            can land in the middle of it. Works smoothly.
-;  Reforged  LCH's loader's way (github.com/Lch3181/Warcraft-lll_TWrpg_AHKs,
-;            MIT): Enter, the text in {Text} mode, Enter, as three sends.
-;            {Text} sends the characters themselves instead of key presses, so
-;            the capitals and #$%&@? in load codes don't depend on Shift, which
-;            Reforged's chat doesn't reliably take from fast key presses.
+;  Reforged  opens its chat box 15-50 ms after Enter and loses what's typed
+;            before, and fast Shift key presses don't take (capitals and #$%&@?
+;            in load codes come out wrong). So: Enter, wait for the box on
+;            screen, then the text in {Text} mode (the characters themselves,
+;            no Shift; as in LCH's loader, github.com/Lch3181/Warcraft-lll_TWrpg_AHKs,
+;            MIT), Enter, and wait for the box to close before the next line.
 wc3Chat(text) {
     if InStr(WC3WindowKey(), "reforged")
         return wc3ChatReforged(text)
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
 }
 wc3ChatReforged(text) {
+    global chatBox
+    g := IsSet(chatBox) && chatBox ? chatBox.current() : 0
     SendInput("{Enter}")
+    t := A_TickCount
+    while A_TickCount - t < 300 && !(g && chatBox.isOpen(g))
+        Sleep(10)
+    opened := A_TickCount - t
+    Sleep(g ? 30 : 200)                     ; let its text field take focus (no box known: just wait)
     SendInput("{Text}" text)
+    Sleep(30)
     SendInput("{Enter}")
+    t := A_TickCount
+    while A_TickCount - t < 200 && g && chatBox.isOpen(g)
+        Sleep(10)
+    try DebugLog("chat line (Reforged): box " (!g ? "position unknown" : opened < 300 ? "open after " opened " ms" : "NOT SEEN in 300 ms")
+        . ", closed after " (A_TickCount - t) " ms: " SubStr(text, 1, 12) "…")
 }
 
 FocusWarcraft() {
