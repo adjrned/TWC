@@ -1,12 +1,14 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
 ;  OverlayPanel - the TWRPG site (builds, items, bosses...) in a WebView2 panel
-;  docked over Warcraft III, PoE-overlay style:
+;  docked over Warcraft III, PoE-overlay style (or over the screen, as a
+;  standalone window, when the game isn't running):
 ;    Shift+Space       show + focus / hide (configurable)
 ;    Ctrl+Shift+Space  pin: stays on screen, see-through and click-through,
 ;                      so the game keeps focus (configurable)
 ;    Esc               hide (when Esc didn't close something in the page)
-;  Hides when you click back into the game or switch to another app.
+;  Hides when you click back into the game or switch to another app, and
+;  gives focus back to the game (or the app you opened it from).
 ;  Served offline from web\TWC as https://twc.local/TWC/ (see UpdaterEngine).
 ;  The WebView is created on first use and closed after sitting hidden for a
 ;  while, so it costs nothing until you open it.
@@ -25,6 +27,7 @@ class OverlayPanel {
     pending := []            ; messages to post once the page says "ready"
     updating := false
     hkShow := "", hkPin := ""
+    prevWin := 0             ; window that had focus before show, when not WC3
 
     __New(updater) {
         this.updater := updater
@@ -62,15 +65,16 @@ class OverlayPanel {
     }
 
     ; -- hotkeys -------------------------------------------------------------
-    ; Active in Warcraft III (or anywhere with outsideGame) and in the overlay
-    ; itself, but never while typing in WC3 chat so Shift+Space stays a space.
+    ; Active in Warcraft III, anywhere while the game isn't running (or with
+    ; outsideGame) and in the overlay itself, but never while typing in WC3
+    ; chat so Shift+Space stays a space.
     hotkeyActive() {
         global chatting
         if this.gui && WinActive("ahk_id " this.gui.Hwnd)
             return true
-        if chatting
-            return false
-        return WinActive(WarcraftIII) || Ini(this.section, "outsideGame", 0)
+        if WinActive(WarcraftIII)
+            return !chatting
+        return !WinExist(WarcraftIII) || Ini(this.section, "outsideGame", 0)
     }
 
     bindHotkeys() {
@@ -97,8 +101,11 @@ class OverlayPanel {
     }
 
     show() {
+        a := WinExist("A")
         if !this.ensure()
             return
+        if !this.shown && a && a != this.gui.Hwnd && !WinActive(WarcraftIII)
+            this.prevWin := a
         SetTimer(this.unloadFn, 0)
         this.setPinned(false)
         this.applyLayout()
@@ -120,7 +127,7 @@ class OverlayPanel {
         this.shown := false
         this.saveUrl()
         if refocusGame
-            FocusWarcraft()
+            this.refocus()
         mins := Ini(this.section, "unloadMinutes", 10)
         if mins > 0
             SetTimer(this.unloadFn, -mins * 60000)
@@ -135,7 +142,15 @@ class OverlayPanel {
             this.show()
         this.setPinned(true)
         SetTimer(this.watchFn, 0)
-        FocusWarcraft()
+        this.refocus()
+    }
+
+    ; back to the game, or without it to the window the overlay was opened from
+    refocus() {
+        if FocusWarcraft()
+            return
+        if this.prevWin && WinExist("ahk_id " this.prevWin)
+            try WinActivate("ahk_id " this.prevWin)
     }
 
     setPinned(on) {

@@ -64,8 +64,8 @@ usually runs elevated, and key sends need matching elevation).
 | `Pause` | pause the game | in WC3 |
 | `Esc` | hide the window | window focused |
 | `Alt+Esc` | exit | anywhere |
-| `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay |
-| `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay |
+| `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay / anywhere without WC3 |
+| `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay / anywhere without WC3 |
 
 Remaps and macros are on in a game, never in menus or lobbies (the game's menu
 bar at the top left says which, read from the screen once a second), and they
@@ -135,7 +135,7 @@ next to the script records each change and each quickcast with the time.
   uses (F8, Esc, macros, overlay) are refused. Esc or Backspace (or *Clear*)
   clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.
   **Quickcast** casts at the cursor; held, it repeats (every 40 ms by default).
-  *Quickcast setup* on the toolbar runs a one-time setup in game, per game
+  *Quickcast Setup* on the toolbar runs a one-time setup in game, per game
   version and window size (kept in the ini, so updates don't lose it; it
   also tunes itself as you play): point at Move and press Space, point at the
   command card's bottom-right button and press Space, then press A (Attack)
@@ -163,6 +163,11 @@ notes) in a panel docked over the game, like Path of Exile's Awakened Trade:
   clicks go through to the game, as a reference while you play.
   `Shift+Space` unpins it.
 - The hotkeys are off while you type in WC3 chat, so `Shift+Space` stays a space.
+- Works without the game too: while Warcraft III isn't running the hotkeys work
+  in any app and the panel docks to the screen under the mouse; hiding or
+  pinning it gives focus back to the app you opened it from. With the game
+  running they only work in WC3 unless you tick *Hotkeys also work in other
+  apps* on the Overlay page.
 - Docks right by default (left / full on the Overlay page); drag the inner
   edge to resize. Width, zoom (`Ctrl+wheel`) and the last page are remembered.
 - Works fully **offline**: the site is bundled in `web/TWC` and served locally

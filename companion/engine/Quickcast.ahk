@@ -127,7 +127,7 @@ class QuickcastEngine {
         WinActivate(WarcraftIII)
         this.stepToast(1)
     }
-    stepToast(n) => Toast("Quickcast setup " n "/3  ·  " QuickcastEngine.STEPS[n] "  ·  Esc cancels", "", 0)
+    stepToast(n) => Toast("Quickcast Setup " n "/3  ·  " QuickcastEngine.STEPS[n] "  ·  Esc cancels", "", 0)
     calibrateStep() {
         c := this.cal
         if !c

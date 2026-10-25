@@ -46,7 +46,7 @@ ShowWindow() {
     g.AddText("w440 y+2 c" accent, "Version " VERSION)
     upgrading := FileExist(DIR "\" APP ".exe")
     info := (upgrading ? "Updates the installed copy in" : "Installs to") ":`n" DIR
-        . (upgrading ? "`nYour settings, saves list and quickcast setup are kept." : "")
+        . (upgrading ? "`nYour settings, saves list and Quickcast Setup are kept." : "")
     g.SetFont("s9 w400", "Segoe UI")
     g.AddText("w440 y+14 c" muted, info)
     g.SetFont("s10 w400", "Segoe UI")

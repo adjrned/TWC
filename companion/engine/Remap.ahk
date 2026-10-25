@@ -222,7 +222,7 @@ class RemapEngine {
         ; not set up for this game window: the key alone, with a one-time hint
         if !cal && !hinted {
             hinted := true
-            Toast("Quickcast isn't set up for this game window: Remap > Quickcast setup", "", 5000)
+            Toast("Quickcast isn't set up for this game window: Remap > Quickcast Setup", "", 5000)
         }
         this.holding[base] := true, start := A_TickCount
         loop {

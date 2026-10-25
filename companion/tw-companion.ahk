@@ -990,7 +990,7 @@ BuildRemapPage() {
         remapViewBtns[v] := b
         AddToPage("remap", b)
     }
-    remapQcSetupBtn := MkButton("Quickcast setup", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
+    remapQcSetupBtn := MkButton("Quickcast Setup", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
     UISetFont(remapQcSetupBtn, "s8 w600")
     AddToPage("remap", remapQcSetupBtn)
     ; List: column header over a list
@@ -1225,7 +1225,7 @@ RemapClear() {
     remap.setKey(Map("group", remapSel.group, "index", remapSel.index, "key", "-"))
     RefreshRemap()
 }
-; Quickcast setup window, in the .modal style of Dialog: the status for the
+; Quickcast Setup window, in the .modal style of Dialog: the status for the
 ; running game, the three in-game steps, hold to repeat, and the buttons
 QuickcastSettings() {
     global C, mainGui, quickcast, UI_FONT
@@ -1437,7 +1437,7 @@ BuildOverlayPage() {
     ovUnloadEdit := num("unloadMinutes", 200, 294)
     lbl("Frees memory while hidden. 0 = keep loaded.", 270, 296, 440)
 
-    labels := [["outsideGame", "Hotkeys also work outside Warcraft III"],
+    labels := [["outsideGame", "Hotkeys also work in other apps while Warcraft III runs"],
         ["checkOnStart", "Check for TWRPG data updates on start"],
         ["autoInstall", "Install updates automatically"]]
     y := 336
@@ -1625,7 +1625,7 @@ EscInGame() {
     SendInput("{Esc}")
     ChatClosed("Esc"), ChatRestart()
     if quickcast.cal
-        return quickcast.calibrateEnd(0, "Quickcast setup cancelled")
+        return quickcast.calibrateEnd(0, "Quickcast Setup cancelled")
     if !KeyWait("Esc", "T1.5") {
         ToggleTool()
         KeyWait("Esc")
