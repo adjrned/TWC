@@ -158,8 +158,13 @@ next to the script records each change and each quickcast with the time.
   (cleared = kept but off). **+ New macro** starts an empty one, added with its
   first line. Keys the companion already uses (remaps, the overlay keys, F8,
   Enter, other macros) are refused.
-- **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
-  incrementer. In-game: `-h`/`-host`, `-hp`/`-hostpub`.
+- **Host** — whisper a host bot for private/public lobbies. The bots are a list
+  like the Loader's (TWRPG's, plus any you add; ✕ removes yours); each keeps its
+  own trigger and extra commands, edited under the list with the game name (`+1`
+  bumps it). In Warcraft III chat: `-h lee sey` hosts a private lobby "sey" on
+  leebot (the bot by name: exact, starts with, contains), `-hp` the same in
+  public; `-h sey` uses the selected bot, plain `-h` / `-hp` the selected bot and
+  the last game name. Also `-host` / `-hostpub`; like `-l`, they never reach chat.
 - **Settings** — startup behaviour, load timing, TWRPG folder, reset.
 - **Overlay** — hotkeys, dock side, opacity, unload timer, update options.
 

@@ -109,7 +109,8 @@ global remapSlots := [], remapSel := { group: "card", index: 9 }      ; Skill Q
 global remapListCache := "", remapViewShown := ""
 global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
 ; host
-global hostEdits := Map()
+global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
+global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
 global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn
 ; overlay
@@ -238,11 +239,13 @@ BuildWindow() {
     LayoutLoader()
     LayoutRemap()
     LayoutMacros()
+    LayoutHost()
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
     BuildSaveList()
     BuildMacroList()
+    BuildHostList()
     BuildRemapTiles()
     ; search icon inside the loader's search box, like the site's search inputs.
     ; The edit starts right of it: an edit repaints its whole rect, so any
@@ -1699,42 +1702,215 @@ RemapToggleQc() {
 ; ============================================================================
 ;  Host page
 ; ============================================================================
+; Host page: the bots as a card list like the Loader's saves (name, trigger,
+; extra commands; ✕ on ones you added), the selected bot's settings and the
+; game name under it, and the host buttons. The rows are a fixed pool of
+; controls re-filled as you scroll.
 BuildHostPage() {
     global
-    mk(id, label, x, y, w) {
-        lbl := mainGui.AddText("x" x " y" y " w" w " h16 +Background" C.panel " c" C.muted, label)
-        e := mainGui.AddEdit("x" x " y" (y + 20) " w" w " h26 +Background" C.well " c" C.text, "")
-        UISetFont(e, "s10")
-        hostEdits[id] := e
-        AddToPage("host", lbl, e)
+    hostHelpBtn := MkButton("?", 40, 160, 30, 28, C.chip, C.muted, (*) => ShowPopover("host"))
+    AddToPage("host", hostHelpBtn)
+    lbl(id, text) {
+        hostLbls[id] := mainGui.AddText("x40 y160 w330 h18 +Background" C.panel " c" C.muted, text)
+        AddToPage("host", hostLbls[id])
     }
-    mk("botName", "Bot name", 40, 160, 300)
-    mk("trigger", "Trigger", 360, 160, 160)
-    mk("gameName", "Game name", 40, 220, 260)
-    incBtn := MkButton("+1", 312, 240, 40, 26, C.chip, C.accent, (*) => HostInc())
-    mk("exBefore", "Extra command before host", 40, 288, 680)
-    mk("exAfter", "Extra command after host", 40, 348, 680)
-    privBtn := MkButton("HOST PRIVATE LOBBY", 40, 420, 330, 36, C.accent, C.onAccent, (*) => DoHost(1))
-    pubBtn := MkButton("HOST PUBLIC LOBBY", 390, 420, 330, 36, C.chip, C.accent, (*) => DoHost(0))
-    AddToPage("host", incBtn, privBtn, pubBtn)
+    field(id, cue := "") {
+        e := mainGui.AddEdit("x40 y160 w100 h28 +Background" C.well " c" C.text, "")
+        UISetFont(e, "s10")
+        if cue
+            SendMessage(0x1501, 1, StrPtr(cue), e)            ; EM_SETCUEBANNER
+        e.OnEvent("Change", HostFieldChanged.Bind(id))
+        hostEdits[id] := e
+        AddToPage("host", e)
+    }
+    lbl("trigger", "Trigger"), field("trigger")
+    lbl("gameName", "Game name"), field("gameName")
+    hostIncBtn := MkButton("+1", 40, 160, 40, 28, C.chip, C.accent, (*) => HostInc())
+    lbl("newBot", "Add a bot"), field("newBot", "bot name")
+    hostAddBtn := MkButton("Add", 40, 160, 54, 28, C.chip, C.accent, (*) => HostAddBot())
+    lbl("exBefore", "Extra command before host"), field("exBefore", "optional")
+    lbl("exAfter", "Extra command after host"), field("exAfter", "optional")
+    hostPrivBtn := MkButton("HOST PRIVATE LOBBY", 40, 160, 330, 36, C.accent, C.onAccent, (*) => host.doHost(1))
+    hostPubBtn := MkButton("HOST PUBLIC LOBBY", 40, 160, 330, 36, C.chip, C.accent, (*) => host.doHost(0))
+    hostNote := mainGui.AddText("x40 y160 w680 h18 +Background" C.panel " c" C.dim,
+        "In Warcraft III chat:  -h lee sey  hosts sey on leebot (private),  -hp  public.  Plain  -h  uses the selected bot.")
+    UISetFont(hostNote, "s9")
+    AddToPage("host", hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote)
+    AddPopover("host", hostHelpBtn, [
+        ["Host from Warcraft III chat", ""],
+        ["-h lee sey", "private lobby on leebot named sey (the bot by name: exact, starts with, or contains)"],
+        ["-hp lee sey", "the same, public"],
+        ["-h sey", "the selected bot, lobby sey (a word that isn't a bot is the game name)"],
+        ["-h  /  -hp", "the selected bot and the last game name"],
+        ["Sent", "/w <bot> <trigger>priv <game>, then  Game Name: <game>. Extra commands go to the bot just before / after."],
+        ["", "Also -host and -hostpub. Host commands are never sent to chat. Each bot keeps its own trigger and extras; changes save as you type."]])
 }
+; window coordinates; runs before StyleControl boxes them
+LayoutHost() {
+    global
+    local R := W - 52, y := CY + HOST_ROWS * HOST_ROW_H + 2 + 16
+    hostHelpBtn.Move(R - 30, TB_Y, 30, 28)
+    hostLbls["trigger"].Move(CX, y), hostLbls["gameName"].Move(CX + 116, y), hostLbls["newBot"].Move(CX + 412, y)
+    hostEdits["trigger"].Move(CX, y + 20, 100, 28)
+    hostEdits["gameName"].Move(CX + 116, y + 20, 230, 28)
+    hostIncBtn.Move(CX + 352, y + 20, 40, 28)
+    hostEdits["newBot"].Move(CX + 412, y + 20, 208, 28)
+    hostAddBtn.Move(CX + 626, y + 20, 54, 28)
+    y += 60
+    hostLbls["exBefore"].Move(CX, y), hostLbls["exAfter"].Move(CX + 350, y)
+    hostEdits["exBefore"].Move(CX, y + 20, 330, 28)
+    hostEdits["exAfter"].Move(CX + 350, y + 20, 330, 28)
+    y += 62
+    hostPrivBtn.Move(CX, y, 330, 36), hostPubBtn.Move(CX + 350, y, 330, 36)
+    hostNote.Move(CX, y + 44)
+}
+BuildHostList() {
+    global
+    local x := CX, y := CY, w := 680, h := HOST_ROWS * HOST_ROW_H + 2
+    hostCard := Box("host", x, y, w, h, C.card, C.border, 6)
+    ; made before the rows so they draw over them
+    hostBar := mainGui.AddText("x" (x + 1) " y" y " w3 h" (HOST_ROW_H - 1) " +Background" C.accent)
+    hostThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
+    AddToPage("host", hostBar, hostThumb)
+    ; columns: padding | bot | trigger | extra commands | remove
+    local cols := [["pad", 4, 12], ["name", 16, 200], ["trig", 216, 120], ["extra", 336, 300], ["del", 636, 32]]
+    loop HOST_ROWS {
+        local i := A_Index, ry := y + 1 + (i - 1) * HOST_ROW_H, row := { idx: i }
+        for col in cols {
+            local t := mainGui.AddText("x" (x + col[2]) " y" ry " w" col[3] " h" (HOST_ROW_H - 1)
+                " 0x200 +Background" C.card (col[1] = "del" ? " Center" : ""), "")
+            if col[1] = "del" {
+                t.SetFont("s8", ICON_FONT)
+                t.OnEvent("Click", HostRowDelete.Bind(i))
+            } else {
+                UISetFont(t, col[1] = "name" ? "s10 w600" : "s9")
+                t.OnEvent("Click", HostRowClick.Bind(i))
+            }
+            row.%col[1]% := t
+            AddToPage("host", t)
+        }
+        row.sep := mainGui.AddText("x" (x + 1) " y" (ry + HOST_ROW_H - 1) " w" (w - 2) " h1 +Background" C.border)
+        AddToPage("host", row.sep)
+        hostRows.Push(row)
+    }
+    OnMessage(0x20A, HostListWheel)
+}
+
 RefreshHost() {
     global host, hostEdits
-    d := host.get()
-    for id, e in hostEdits
-        e.Value := d.fields.HasProp(id) ? d.fields.%id% : ""
+    hostEdits["gameName"].Value := host.gameName
+    ShowHostBot()
+    RenderHost()
+}
+; the selected bot's own trigger and extra commands in the fields
+ShowHostBot() {
+    global host, hostEdits
+    bot := host.selected
+    for id in ["trigger", "exBefore", "exAfter"]
+        if hostEdits[id].Value != (v := host.field(bot, id))
+            hostEdits[id].Value := v
+}
+RenderHost() {
+    global
+    Freeze()
+    try RenderHostRows()
+    Thaw()
+}
+RenderHostRows() {
+    global
+    local bots := host.bots(), cur := host.selected
+    hostOffset := Max(0, Min(hostOffset, bots.Length - HOST_ROWS))
+    hostBar.Visible := false
+    for row in hostRows {
+        local idx := hostOffset + row.idx, has := idx <= bots.Length
+        for k in ["pad", "name", "trig", "extra", "del", "sep"]
+            row.%k%.Visible := has
+        if !has
+            continue
+        local b := bots[idx], on := b = cur, bg := on ? C.navOn : C.card
+        local ex := [], before := host.field(b, "exBefore"), after := host.field(b, "exAfter")
+        if before != ""
+            ex.Push("before: " before)
+        if after != ""
+            ex.Push("after: " after)
+        row.name.Text := b
+        row.trig.Text := "trigger  " host.field(b, "trigger")
+        row.extra.Text := Join("   ·   ", ex*)
+        row.del.Text := host.isKnown(b) ? "" : Chr(0xE711)          ; ✕ on bots you added
+        row.pad.Opt("+Background" bg)
+        row.name.Opt("+Background" bg " +c" (on ? C.accent : C.text))
+        row.trig.Opt("+Background" bg " +c" C.muted)
+        row.extra.Opt("+Background" bg " +c" C.dim)
+        row.del.Opt("+Background" bg " +c" C.dim)
+        if on {
+            row.name.GetPos(, &ry)
+            hostBar.Move(, ry), hostBar.Visible := true
+        }
+    }
+    local over := bots.Length > HOST_ROWS
+    hostThumb.Visible := over
+    if over {
+        local trackH := hostCard.h - 8, th := Max(18, trackH * HOST_ROWS // bots.Length)
+        hostThumb.Move(, hostCard.y + 4 + (trackH - th) * hostOffset // (bots.Length - HOST_ROWS), , th)
+    }
+}
+HostRowClick(i, *) {
+    global host, hostOffset
+    bots := host.bots(), idx := hostOffset + i
+    if idx > bots.Length
+        return
+    host.select(bots[idx])
+    ShowHostBot()
+    RenderHost()
+}
+HostRowDelete(i, *) {
+    global host, hostOffset
+    bots := host.bots(), idx := hostOffset + i
+    if idx > bots.Length || host.isKnown(bots[idx])
+        return
+    host.removeBot(bots[idx])
+    ShowHostBot()
+    RenderHost()
+}
+HostAddBot() {
+    global host, hostEdits, hostOffset, HOST_ROWS
+    if (b := host.addBot(hostEdits["newBot"].Value)) = ""
+        return
+    hostEdits["newBot"].Value := ""
+    host.select(b)
+    hostOffset := Max(0, host.bots().Length - HOST_ROWS)
+    ShowHostBot()
+    RenderHost()
+}
+HostFieldChanged(id, ctrl, *) {
+    global host
+    v := Trim(ctrl.Value)
+    if id = "gameName"
+        SetIni(v, host.section, "gameName")
+    else if id != "newBot" {
+        host.setField(host.selected, id, v)
+        RenderHost()
+    }
 }
 HostInc() {
     global host, hostEdits
-    r := host.increment(Map("gameName", hostEdits["gameName"].Value))
-    hostEdits["gameName"].Value := r.gameName
+    v := host.increment(hostEdits["gameName"].Value)
+    hostEdits["gameName"].Value := v
+    SetIni(v, host.section, "gameName")
 }
-DoHost(private) {
-    global host, hostEdits
-    args := Map("private", private)
-    for id, e in hostEdits
-        args[id] := e.Value
-    host.host(args)
+HostListWheel(wParam, lParam, msg, hwnd) {
+    global
+    if currentPage != "host" || !WinActive("ahk_id " mainGui.Hwnd)
+        return
+    local mx := lParam << 48 >> 48, my := lParam << 32 >> 48
+    WinGetClientPos(&wx, &wy, , , mainGui)
+    mx := (mx - wx) / DPI_K, my := (my - wy) / DPI_K
+    local c := hostCard
+    if mx < c.x || mx > c.x + c.w || my < c.y || my > c.y + c.h
+        return
+    hostOffset += (wParam << 32 >> 48) > 0 ? -1 : 1
+    RenderHost()
+    return 0
 }
 
 ; ============================================================================
@@ -1915,9 +2091,11 @@ HideMainWindow() {
     global showMain := false
     try mainGui.Hide()
 }
+; F8: open behind the game (after starting, or a click back into it) counts
+; as not shown, so one press always brings it up
 ShowHideMain() {
-    global showMain
-    if showMain
+    global showMain, mainGui
+    if showMain && WinActive("ahk_id " mainGui.Hwnd)
         HideMainWindow()
     else
         ShowMainWindow()
@@ -1928,22 +2106,24 @@ PauseGame() => SendInput("{F10}{m}{F10}")
 ; Loader commands are spotted by what was typed, not by tracking whether chat is
 ; open (that can drift: menus, alt-tab, the lobby's always-open chat box).
 ; chatHook records keys typed in WC3 since the last Enter / Esc / click. On
-; Enter, if that is exactly a loader command (-l, -ll, -sn...), the chat box is
+; Enter, if that is exactly a loader or host command (-l, -sn, -h...), the chat box is
 ; emptied and closed with an empty Enter (no message, nothing in the lobby)
 ; and the command runs; otherwise Enter goes through untouched.
 ; `chatting` is only kept for the tool's auto-disable while typing.
 ChatEnter(hk) {
-    global chatting, chatHook, loader
+    global chatting, chatHook, loader, host
     key := InStr(hk, "+") ? "+{Enter}" : InStr(hk, "Numpad") ? "{NumpadEnter}" : "{Enter}"
     line := chatHook.Input
     ChatRestart()
-    if loader.isCommand(line) {
-        SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
-        ChatClosed("loader command")
-        ; then forget what the command itself typed (-load codes, -save ...)
-        SetTimer(() => (loader.command(line), ChatRestart()), -80)
-        return
-    }
+    ; loader (-l, -sn...) and host (-h, -hp...) commands: erased, never sent
+    for owner in [loader, host]
+        if owner.isCommand(line) {
+            SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
+            ChatClosed("command")
+            ; then forget what the command itself typed (-load codes, -save, whispers...)
+            SetTimer(() => (owner.command(line), ChatRestart()), -80)
+            return
+        }
     SendInput(key)
     if chatting
         ChatClosed("Enter")
