@@ -85,6 +85,16 @@ ReadableHotkey(hotkey, fullName := false) {
 }
 
 ; ---- misc helpers ----------------------------------------------------------
+; The item keys are numpad keys. With Num Lock off (laptops without a numpad
+; usually have it off), 1.28 reads Numpad 8/4/2 as the arrow keys they share
+; with (Items 2, 3 and 6 scroll the camera instead), so Num Lock goes on just
+; for the key and back off in the same send.
+NumLockSafe(keys) {
+    if !RegExMatch(keys, "i)\{Numpad\d\}") || GetKeyState("NumLock", "T")
+        return keys
+    return "{NumLock}" keys "{NumLock}"
+}
+
 SelectFolder() => DirSelect(, 0)
 
 ArrayItemExist(item, params*) {

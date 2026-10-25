@@ -205,7 +205,7 @@ class RemapEngine {
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
     castPlain(game, yourKey) {
-        SendInput(this.queued(yourKey) this.keyText(game))
+        SendInput(NumLockSafe(this.queued(yourKey) this.keyText(game)))
         DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
 
@@ -230,7 +230,7 @@ class RemapEngine {
             if cal
                 this.quickSmart(game, q, cal)
             else
-                SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
+                SendInput(NumLockSafe(q this.keyText(game))), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
             if !s.repeat || !this.stillHeld(base, start)
                 break
             Sleep(s.interval)
@@ -265,7 +265,7 @@ class RemapEngine {
             sorted := recent.Clone(), SortBy(sorted, (a, b) => a - b)
             limit := Max(60, Min(200, 3 * sorted[(sorted.Length + 1) // 2]))
         }
-        SendInput(q this.keyText(game))
+        SendInput(NumLockSafe(q this.keyText(game)))
         t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
         while QpcMs() - t < limit {
             checks++

@@ -171,7 +171,7 @@ class MacrosEngine {
         for i, t in keys {
             if i > 1 && gap > 0
                 Sleep(gap)
-            SendInput(MacrosEngine.KeyInput(t))
+            SendInput(NumLockSafe(MacrosEngine.KeyInput(t)))
         }
     }
 
