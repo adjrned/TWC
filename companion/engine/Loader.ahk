@@ -336,7 +336,8 @@ class LoaderEngine {
             ; counts up from it even before TWRPG has written the file
             SetIni(name ".txt", this.section, "selectedFile")
             this.sessionLast := name ".txt"
-            return Push("toast", { msg: "Saved as " name })
+            SetClipboardAfterChat(name)         ; the save's name, to paste where you keep track of them
+            return Push("toast", { msg: "Saved as " name " · copied to the clipboard" })
         }
         if arg = "" {
             last := Ini(this.section, "selectedFile", "")

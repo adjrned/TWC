@@ -131,28 +131,37 @@ ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
 ; The clipboard is put back 500 ms after the last paste, not right away: the
 ; game reads it when it gets to the Ctrl+V, which can be frames later (a busy
 ; or slow game). Pastes in a row keep the clipboard from before the first.
+global gChatClip := 0                           ; the clipboard to put back after pasting (0 = none pending)
 ChatInsert(text) {
-    static saved := 0, restoreFn := 0
+    global gChatClip
     if !ChatPasteOn()
         return SendInput("{Text}" text)
-    if !restoreFn
-        restoreFn := ChatClipRestore.Bind(&saved)
-    SetTimer(restoreFn, 0)
-    if !saved
-        saved := ClipboardAll()
+    SetTimer(ChatClipRestore, 0)
+    if !gChatClip
+        gChatClip := ClipboardAll()
     A_Clipboard := ""
     A_Clipboard := text
     if !ClipWait(0.5) {
-        restoreFn()
+        ChatClipRestore()
         return SendInput("{Text}" text)          ; the clipboard didn't take it: typed
     }
     SendInput("^v")
     Sleep(30)
-    SetTimer(restoreFn, -500)
+    SetTimer(ChatClipRestore, -500)
 }
-ChatClipRestore(&saved) {
-    if saved
-        A_Clipboard := saved, saved := 0
+ChatClipRestore() {
+    global gChatClip
+    if gChatClip
+        A_Clipboard := gChatClip, gChatClip := 0
+}
+; put text on the clipboard, after any chat line still pasting (it then goes
+; back to this, not to what was there before)
+SetClipboardAfterChat(text) {
+    global gChatClip
+    if gChatClip
+        gChatClip := text
+    else
+        A_Clipboard := text
 }
 wc3ChatReforged(text) {
     global chatBox

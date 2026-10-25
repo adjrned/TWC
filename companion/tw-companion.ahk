@@ -601,7 +601,7 @@ BuildSaveList() {
         ["-l sniper", "loads the closest match: exact name, then starts with, then contains"],
         ["-l 2", "loads your 2nd ★ favourite (other numbers match names: -l 92 finds knight#92)"],
         ["-l  /  -ll", "reloads the save you loaded last"],
-        ["-sn", "saves the next number of the save you loaded with the companion: after knight#92 it types -save knight#93 (lowercase, no spaces, like TWRPG names its files)"],
+        ["-sn", "saves the next number of the save you loaded with the companion: after knight#92 it types -save knight#93 (lowercase, no spaces, like TWRPG names its files) and copies knight#93 to the clipboard"],
         ["", "Also -load and -loadlast. Loader commands are never sent to chat. Keyboard and mouse are held for the second or two a load takes."]])
     AddPopover("message", msgInfo, [
         ["Load message", ""],
