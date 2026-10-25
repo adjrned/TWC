@@ -7,7 +7,7 @@
 ;  Where they go: the command card from the quickcast setup, the buff bar
 ;  from its own two-press setup (setupStart), both per game window size.
 ;  Or drawn in the game itself ([Timers] where = game): the module makes text
-;  frames on the buttons and buff icons (layout 11, needs the game's
+;  frames on the command card, inventory and buff icons (layout 11, needs the game's
 ;  Storm.dll) and no setup is needed; until the module draws them, the
 ;  overlay does.
 ;  Off by default (ini [Timers] show; WC3 page > Timers).

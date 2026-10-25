@@ -6,7 +6,7 @@
 // health bar, destroyed with it, and everything put back when turned off.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, itOn) == 688 && offsetof(Shared, mbCount) == 728 && sizeof(Shared) == 732, "layout 11");
+static_assert(offsetof(Shared, itOn) == 688 && offsetof(Shared, mbCount) == 728 && offsetof(Shared, itemLeft) == 732 && sizeof(Shared) == 780, "layout 11");
 
 static BYTE *img;
 static void Stub(DWORD rva, const void *fn) {
@@ -101,6 +101,9 @@ int main() {
     *(int *)(buffBar + 0x124) = 1; *(int *)(buffBar + 0x128) = 8; *(BYTE **)(buffBar + 0x154) = buffRow;
     *(DWORD *)(buffRow + 4) = 8; *(BYTE ***)(buffRow + 8) = buffBtns;
     for (int i = 0; i < 8; i++) { buffBtns[i] = bbtns[i]; *(DWORD *)bbtns[i] = (DWORD)fv; }
+    static BYTE inv[0x200], ibtns[6][0x200]; static DWORD invArr[12];
+    *(BYTE **)(console + 0x148) = inv; *(int *)(inv + 0x12c) = 6; *(DWORD **)(inv + 0x130) = invArr;
+    for (int i = 0; i < 6; i++) { invArr[i * 2 + 1] = (DWORD)ibtns[i]; *(DWORD *)ibtns[i] = (DWORD)cv; }
 
     // -- timers drawn in the game ------------------------------------------------
     CHECK(FramesCheck() == 1, "the frame functions and vtables check out");
@@ -108,18 +111,22 @@ int main() {
     sh.itOn = 1;
     sh.cdLeft[0] = 5.3f; sh.cdLeft[5] = 3; sh.cdLeft[11] = 75; sh.buffLeft[2] = 0.46f; sh.buffFlags[2] = 1;
     TimerFramesDraw(ui);
-    CHECK(texts == 6 && g_tCd[0].text && g_tCd[11].text && !g_tCd[5].text && g_tBuff[2].text, "frames for the 2 command buttons and 1 buff (text + shadow each): %d", texts);
+    CHECK(texts == 6 && !g_tItem[0].text && g_tCd[0].text && g_tCd[11].text && !g_tCd[5].text && g_tBuff[2].text, "frames for the 2 command buttons and 1 buff (text + shadow each): %d", texts);
     CHECK(!strcmp(g_tCd[0].shown, "6") && !strcmp(g_tCd[11].shown, "1:15") && !strcmp(g_tBuff[2].shown, "0.5"), "texts: %s, %s, %s", g_tCd[0].shown, g_tCd[11].shown, g_tBuff[2].shown);
     CHECK(!strcmp(lastFont, "Fonts\\Test.ttf") && fonts == 6 && flagCalls == 6, "the skin's MasterFont, flags set (%s, %d fonts)", lastFont, fonts);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tCd[0].shadow[0x1e0] == 1 && *(DWORD *)(g_tCd[0].shadow + TEXT_COLOURS) == 0xFF000000 && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == 0xFFFFFFFF,
         "shown; white text, black shadow");
     CHECK(anchors == 6 && lastRel == bbtns[2] && fabsf(lastY - BUFF_TEXT_Y) < 1e-6f, "anchored to their buttons (the buff text under its icon)");
+    sh.itemLeft[3] = 12.2f; int a0 = anchors; TimerFramesDraw(ui);
+    CHECK(texts == 8 && g_tItem[3].text && !strcmp(g_tItem[3].shown, "13") && anchors == a0 + 2 && lastRel == ibtns[3], "an item cooling down: its text on its inventory button");
+    sh.itemLeft[3] = 0; TimerFramesDraw(ui);
+    CHECK(g_tItem[3].text[0x1e0] == 0, "and hidden when it's ready");
     int setBefore = setTexts; TimerFramesDraw(ui);
-    CHECK(setTexts == setBefore && anchors == 6, "nothing changed: no text set, no anchoring again");
+    CHECK(setTexts == setBefore && anchors == a0 + 2, "nothing changed: no text set, no anchoring again");
     sh.cdLeft[0] = 0; TimerFramesDraw(ui);
-    CHECK(g_tCd[0].text[0x1e0] == 0 && g_tCd[0].shadow[0x1e0] == 0 && texts == 6, "ready: hidden, the frames kept");
+    CHECK(g_tCd[0].text[0x1e0] == 0 && g_tCd[0].shadow[0x1e0] == 0 && texts == 8, "ready: hidden, the frames kept");
     sh.cdLeft[0] = 2; TimerFramesDraw(ui);
-    CHECK(g_tCd[0].text[0x1e0] == 1 && texts == 6 && !strcmp(g_tCd[0].shown, "2"), "cooling down again: the same frames shown");
+    CHECK(g_tCd[0].text[0x1e0] == 1 && texts == 8 && !strcmp(g_tCd[0].shown, "2"), "cooling down again: the same frames shown");
     sh.itOn = 0; TimerFramesPass(ui);
     CHECK(g_tCd[11].text[0x1e0] == 0 && g_tBuff[2].text[0x1e0] == 0 && sh.itState == 0, "turned off: all hidden, state 0");
     fakeUi = nullptr; FramesPass();

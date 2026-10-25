@@ -73,7 +73,7 @@ Wc3Features() {
             on: (*) => gameCmds.autocast, set: (v) => gameCmds.setAutocast(v), status: (*) => gameCmds.acStatusText(),
             buttons: [[(*) => "Key: " gameCmds.heldText("autocast"), (*) => Wc3Capture("autocast")]] },
         { tab: "timers", title: "Cooldown and buff timers", badge: "1.28f",
-            desc: "Seconds left on the command card and buff bar, over the game or in it.",
+            desc: "Seconds left on abilities and buffs, over the game, or in it (items too).",
             on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
             buttons: [[(*) => timersHud.whereLabel, (*) => (timersHud.toggleWhere(), RefreshWc3())],
                 ["Set up buff bar", (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]] },

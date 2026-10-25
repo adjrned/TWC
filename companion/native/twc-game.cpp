@@ -58,7 +58,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 3: cooldown and buff timers of the selected unit (ReadTimers)
     DWORD tmWant;           // companion: 1 = keep them up to date (its timer display is on)
     volatile LONG tmSeq;    // module: +1 after each update
-    DWORD tmFlags;          // module: 1 cooldowns read, 2 buffs read, 0x100 a game getter was refused (see the log)
+    DWORD tmFlags;          // module: 1 cooldowns read, 2 buffs read, 4 items read (layout 11), 0x100 a game getter was refused (see the log)
     float cdLeft[12];       // command card, row by row (4 a row): seconds of cooldown left, 0 = ready / none
     float cdTotal[12];      //   and the full cooldown (0 = unknown)
     DWORD buffCount;        // buff bar slots read (<= 16)
@@ -118,6 +118,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD mbState;          // module: as itState
     DWORD hnCount;          // module: health numbers in use
     DWORD mbCount;          // module: mana bars in use
+    float itemLeft[6];      // module: inventory slots (in the game's order): seconds of cooldown left (read with the others)
+    float itemTotal[6];     //   and the full cooldown
 };
 #pragma pack(pop)
 
@@ -681,6 +683,20 @@ static BYTE *GridButton(BYTE *bar, int row, int col) {
     return (*(BYTE ***)(r + 8))[col];
 }
 
+// a command or inventory button's cooldown (WFE's 0x10023850 without its shop path)
+static void ButtonCooldown(BYTE *btn, float *left, float *total) {
+    BYTE *data, *ab;
+    if (!btn || !*(DWORD *)(btn + 0x19c) || !(data = *(BYTE **)(btn + 0x190)) || !(ab = *(BYTE **)(data + 0x6d4)))
+        return;
+    DWORD id = *(DWORD *)(ab + 0x34), fl = *(DWORD *)(ab + 0x20);
+    if (id == ID_AHER || id == ID_ASID || id == ID_ASUD || id == ID_ASEI || id == ID_AMAI || id == ID_ASEL)
+        return;                                 // hero skill menu, shops: no cooldown to show
+    if (!(fl & 0x200) || (fl & 0x400))
+        return;                                 // not cooling down
+    *left = TimerValue(ab + 0xd0, 0x18);
+    *total = TimerValue(ab + 0xd0, 0x10);
+}
+
 static void ReadCooldowns(BYTE *ui) {
     BYTE *card = *(BYTE **)(ui + 0x3c8);
     if (!card)
@@ -689,20 +705,25 @@ static void ReadCooldowns(BYTE *ui) {
     if (rows <= 0 || cols <= 0 || rows > 3 || cols > 4)
         return;
     for (int r = 0; r < rows; r++)
-        for (int c = 0; c < cols; c++) {
-            int i = r * 4 + c;
-            BYTE *btn = GridButton(card, r, c), *data, *ab;
-            if (!btn || !*(DWORD *)(btn + 0x19c) || !(data = *(BYTE **)(btn + 0x190)) || !(ab = *(BYTE **)(data + 0x6d4)))
-                continue;
-            DWORD id = *(DWORD *)(ab + 0x34), fl = *(DWORD *)(ab + 0x20);
-            if (id == ID_AHER || id == ID_ASID || id == ID_ASUD || id == ID_ASEI || id == ID_AMAI || id == ID_ASEL)
-                continue;                       // hero skill menu, shops: no cooldown to show
-            if (!(fl & 0x200) || (fl & 0x400))
-                continue;                       // not cooling down
-            g_shared->cdLeft[i] = TimerValue(ab + 0xd0, 0x18);
-            g_shared->cdTotal[i] = TimerValue(ab + 0xd0, 0x10);
-        }
+        for (int c = 0; c < cols; c++)
+            ButtonCooldown(GridButton(card, r, c), &g_shared->cdLeft[r * 4 + c], &g_shared->cdTotal[r * 4 + c]);
     g_shared->tmFlags |= 1;
+}
+
+// The inventory, as WFE's Cooldown UI finds it (0x1008255e..0x10082892):
+// [[ui+0x3c4]+0x148], count +0x12c, 8-byte entries at [+0x130], the button at +4
+static BYTE *ItemButton(BYTE *ui, int i) {
+    BYTE *p = *(BYTE **)(ui + 0x3c4);
+    if (!p || !(p = *(BYTE **)(p + 0x148)))
+        return nullptr;
+    int n = *(int *)(p + 0x12c);
+    BYTE *a = *(BYTE **)(p + 0x130);
+    return a && i < n && n <= 6 ? *(BYTE **)(a + i * 8 + 4) : nullptr;
+}
+static void ReadItems(BYTE *ui) {
+    for (int i = 0; i < 6; i++)
+        ButtonCooldown(ItemButton(ui, i), &g_shared->itemLeft[i], &g_shared->itemTotal[i]);
+    g_shared->tmFlags |= 4;
 }
 
 static void ReadBuffs(BYTE *ui) {
@@ -751,12 +772,17 @@ static void ReadTimersGuarded(BYTE *ui) {
         ReadBuffs(ui);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
+    __try {
+        ReadItems(ui);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
 }
 
 // ui: the worker's last g_ui, or the game thread's own when it draws them in the game
 static void ReadTimers(BYTE *ui) {
     DWORD keep = g_shared->tmFlags & 0x100;
     ZeroMemory(g_shared->cdLeft, (BYTE *)(g_shared->buffId + 16) - (BYTE *)g_shared->cdLeft);
+    ZeroMemory(g_shared->itemLeft, sizeof(g_shared->itemLeft) + sizeof(g_shared->itemTotal));
     g_shared->tmFlags = keep;
     if (ui)
         ReadTimersGuarded(ui);
@@ -1408,12 +1434,13 @@ static void TextAt(BYTE *t, int pt, float x, float y) {
 
 // -- timers drawn in the game ----------------------------------------------------------
 // As WFE's Cooldown UI and BUFFUI, text only (no models): seconds left in the
-// middle of each command card button that's cooling down, and under each buff
+// middle of each command card and inventory button that's cooling down (both
+// CCommandButtons: WFE's class 0x2d is only that vtable), and under each buff
 // icon (WFE's spot: bottom to bottom, 0.0115 lower). A black copy a little
 // down and right is the shadow (WFE uses four). The times are read here on
 // the game thread, 10 times a second.
 struct TimerSlot { BYTE *btn, *text, *shadow; char shown[12]; };
-static TimerSlot g_tCd[12], g_tBuff[16];
+static TimerSlot g_tCd[12], g_tBuff[16], g_tItem[6];
 static BYTE *g_framesUi;            // the game UI the text frames belong to (another one: they're gone)
 static const float SHADOW = 0.0006f, CD_TEXT = 0.014f, BUFF_TEXT = 0.0105f, BUFF_TEXT_Y = -0.0115f;
 
@@ -1499,6 +1526,10 @@ static void TimerFramesDraw(BYTE *ui) {
     bool barOk = rows > 0 && cols > 0 && rows * cols <= 16;
     for (int i = 0; i < 16; i++)
         SlotDraw(ui, g_tBuff[i], barOk && i < rows * cols && (g_shared->buffFlags[i] & 1) ? BuffButton(bar, cols, i) : nullptr, g_shared->buffLeft[i], true);
+    for (int i = 0; i < 6; i++) {
+        BYTE *b = ItemButton(ui, i);
+        SlotDraw(ui, g_tItem[i], b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE) ? b : nullptr, g_shared->itemLeft[i], false);
+    }
 }
 
 static bool g_itReading;            // the game thread reads the timers (the worker leaves them)
@@ -1510,6 +1541,8 @@ static void TimerFramesPass(BYTE *ui) {
         for (TimerSlot &s : g_tCd)
             SlotHide(s);
         for (TimerSlot &s : g_tBuff)
+            SlotHide(s);
+        for (TimerSlot &s : g_tItem)
             SlotHide(s);
         g_shared->itState = 0;
         return;
@@ -1878,6 +1911,7 @@ static void ExtrasPass(BYTE *ui) {
 static void FramesForget() {
     ZeroMemory(g_tCd, sizeof(g_tCd));
     ZeroMemory(g_tBuff, sizeof(g_tBuff));
+    ZeroMemory(g_tItem, sizeof(g_tItem));
     g_textPoolN = g_textHideN = 0;
     for (BarExtra &e : g_bx)
         if (e.bar && e.text)
