@@ -141,6 +141,26 @@ class MacrosEngine {
         this.registerAll()
     }
 
+    ; ready-made macros (Macros page > Presets): TWRPG's chat commands, from
+    ; its patch notes, and a keys one. [label, kind, text]
+    static PRESETS := [
+        ["-save   save your hero", "chat", "-save"],
+        ["-asave   save account-wide items", "chat", "-asave"],
+        ["-recall", "chat", "-recall"],
+        ["-rf   refresh", "chat", "-rf"],
+        ["-r   damage record of the boss fight", "chat", "-r"],
+        ["-rs / -re   start / end a damage record", "chat", "-rs"],
+        ["-a   the selected unit's information", "chat", "-a"],
+        ["-t   show / hide your teammates' icons", "chat", "-t"],
+        ["-recipe", "chat", "-recipe"],
+        ["-skip   skip cinematics on / off", "chat", "-skip"],
+        ["-fog   special fog off", "chat", "-fog"],
+        ["-flash   screen flashing off", "chat", "-flash"],
+        ["-sound   resummon sounds off", "chat", "-sound"],
+        ["-colorblind   colour-blind mode", "chat", "-colorblind"],
+        ["Use all 6 items   (keys)", "keys", "Numpad7 Numpad8 Numpad4 Numpad5 Numpad1 Numpad2"],
+    ]
+
     seedDefaults() {
         defaults := [
             { hotkey: "$F5", text: "-recall" },

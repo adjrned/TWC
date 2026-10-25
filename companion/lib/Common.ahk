@@ -113,10 +113,34 @@ Join(sep, params*) {
 ;            screen, then the text in {Text} mode (the characters themselves,
 ;            no Shift; as in LCH's loader, github.com/Lch3181/Warcraft-lll_TWrpg_AHKs,
 ;            MIT), Enter, and wait for the box to close before the next line.
+; A chat line in Warcraft III: open chat, the text, Enter. With [Chat] paste
+; on (Macros page), the text is pasted (Ctrl+V) instead of typed: faster for
+; long lines, any characters; the clipboard is put back after.
 wc3Chat(text) {
     if InStr(WC3WindowKey(), "reforged")
         return wc3ChatReforged(text)
+    if ChatPasteOn() {
+        SendInput("{Enter}"), Sleep(40)
+        ChatInsert(text)
+        return SendInput("{Enter}")
+    }
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
+}
+ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
+; the text into the open chat box: pasted (keeping the clipboard), or typed
+ChatInsert(text) {
+    if !ChatPasteOn()
+        return SendInput("{Text}" text)
+    saved := ClipboardAll()
+    A_Clipboard := ""
+    A_Clipboard := text
+    if !ClipWait(0.5) {
+        A_Clipboard := saved
+        return SendInput("{Text}" text)          ; the clipboard didn't take it: typed
+    }
+    SendInput("^v")
+    Sleep(60)                                    ; the game reads the clipboard on the paste
+    A_Clipboard := saved
 }
 wc3ChatReforged(text) {
     global chatBox
@@ -127,7 +151,7 @@ wc3ChatReforged(text) {
         Sleep(10)
     opened := A_TickCount - t
     Sleep(g ? 30 : 200)                     ; let its text field take focus (no box known: just wait)
-    SendInput("{Text}" text)
+    ChatInsert(text)
     Sleep(30)
     global debugGui
     if IsSet(debugGui) && debugGui          ; tray Debug on: keep what the box shows (chat-*.bmp)
