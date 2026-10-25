@@ -17,6 +17,10 @@
 ;  of each unit with mana ([HealthBars] mana, manaHeight: times the health
 ;  bar's height). Frames the module adds to the game; turning off takes them
 ;  away.
+;  Portrait regen (layout 11, off by default, no Storm.dll needed): the
+;  portrait's own HP / mana lines become "cur / max +regen" (and the percent,
+;  [HealthBars] portraitPercent) right after the game writes them
+;  ([HealthBars] portrait).
 ; ============================================================================
 class HealthBarsEngine {
     section := "HealthBars"
@@ -85,6 +89,17 @@ class HealthBarsEngine {
         this.push()
     }
     manaHeightLabel => "Height " HealthBarsEngine.Fmt(this.manaHeight)
+    portrait => Integer(Ini(this.section, "portrait", 0))
+    setPortrait(on) {
+        SetIni(on ? 1 : 0, this.section, "portrait")
+        this.push()
+    }
+    portraitPercent => Integer(Ini(this.section, "portraitPercent", 0))
+    togglePortraitPercent() {
+        SetIni(this.portraitPercent ? 0 : 1, this.section, "portraitPercent")
+        this.push()
+    }
+    portraitPercentLabel => this.portraitPercent ? "Percent: on" : "Percent: off"
     ; the next step up (wrapping back to 1x): "height" / "width"
     cycle(which) {
         cur := this.%which%, next := HealthBarsEngine.STEPS[1]
@@ -117,6 +132,8 @@ class HealthBarsEngine {
         NumPut("uint", this.numberMode - 1, v, 704), NumPut("float", this.manaHeight, v, 716)
         NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, 700)
         NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, 712)
+        NumPut("uint", this.portraitPercent, v, 784)
+        NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, 780)
     }
     ; the status line of a frame feature: its state at stateOff; what(view) says what's on
     frameStatus(on, stateOff, what) {
@@ -134,6 +151,19 @@ class HealthBarsEngine {
         v := this.gm.live(), st := NumGet(v, stateOff, "uint")
         return NumGet(v, 684, "uint") = 2 ? "On · the game has no Storm.dll loaded: the module can't add frames"
             : st = 1 ? "On · " what(v) : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
+    }
+    portraitStatus() {
+        if !this.portrait
+            return "Off"
+        if !this.gm.enabled
+            return "On · needs the game module (top of this page)"
+        s := this.gm.state()
+        if !WinExist(WarcraftIII) || !s.loaded
+            return "On · starts with a 1.28f game"
+        if s.layout < 11
+            return "On · the game has an older module loaded: restart the game"
+        st := NumGet(this.gm.live(), 788, "uint")
+        return st = 1 ? "On · regen next to the portrait's HP and mana" : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
     }
     numberStatus() => this.frameStatus(this.numbers, 708, (v) => "numbers over the health bars (" NumGet(v, 724, "uint") " now)")
     manaStatus() => this.frameStatus(this.mana, 720, (v) => "mana bars under the health bars (" NumGet(v, 728, "uint") " now)")

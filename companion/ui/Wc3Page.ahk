@@ -11,7 +11,7 @@
 ;    Timers    what's ready and what's running out: cooldown and buff timers
 ;              (over the game or in it), buff alerts
 ;    Display   how the game looks: health bar size and colours, health
-;              numbers, mana bars, clearing messages, widescreen, FPS unlock,
+;              numbers, mana bars, portrait regen, clearing messages, widescreen, FPS unlock,
 ;              the multiboard, hiding UI parts; later detailed tooltips
 ;    Hosting   games you host: lobby latency; later the start countdown
 ;  Each feature is one entry in Wc3Features(): a card with its version
@@ -100,6 +100,10 @@ Wc3Features() {
             desc: "A mana bar under the health bar of every unit with mana (Storm.dll).",
             on: (*) => healthBars.mana, set: (v) => healthBars.setMana(v), status: (*) => healthBars.manaStatus(),
             buttons: [[(*) => healthBars.manaHeightLabel, (*) => (healthBars.cycleManaHeight(), RefreshWc3())]] },
+        { tab: "display", title: "Portrait regen", badge: "1.28f",
+            desc: "The portrait's HP and mana lines with regen per second (and the percent).",
+            on: (*) => healthBars.portrait, set: (v) => healthBars.setPortrait(v), status: (*) => healthBars.portraitStatus(),
+            buttons: [[(*) => healthBars.portraitPercentLabel, (*) => (healthBars.togglePortraitPercent(), RefreshWc3())]] },
         { tab: "display", title: "Clear messages and chat", badge: "1.28f",
             desc: "A key wipes the trigger messages or the chat off the screen.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),

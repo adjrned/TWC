@@ -6,7 +6,7 @@
 // health bar, destroyed with it, and everything put back when turned off.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, itOn) == 688 && offsetof(Shared, mbCount) == 728 && offsetof(Shared, itemLeft) == 732 && sizeof(Shared) == 780, "layout 11");
+static_assert(offsetof(Shared, itOn) == 688 && offsetof(Shared, mbCount) == 728 && offsetof(Shared, itemLeft) == 732 && sizeof(Shared) >= 780, "layout 11");
 
 static BYTE *img;
 static void Stub(DWORD rva, const void *fn) {

@@ -17,7 +17,8 @@
 //  the game UI (through the game's own getter) and clicks with SendInput, as
 //  WFE does; game calls that change something run on the game's thread. The
 //  only writes into the game itself: four entries of the health bar's vtable
-//  (colours, health numbers, mana bars), the FPS unlock's one byte and the
+//  (colours, health numbers, mana bars), one of the portrait's (its HP / mana
+//  lines), the text of those two lines, the FPS unlock's one byte and the
 //  latency getters' first 6 bytes, all put back when turned off. Frames it
 //  adds (timers in the game, health numbers, mana bars) are made with the
 //  game's own Storm.dll and constructors.
@@ -120,6 +121,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD mbCount;          // module: mana bars in use
     float itemLeft[6];      // module: inventory slots (in the game's order): seconds of cooldown left (read with the others)
     float itemTotal[6];     //   and the full cooldown
+    DWORD prOn;             // companion: 1 = the portrait's HP / mana lines with regen (PortraitHook)
+    DWORD prMode;           // companion: 1 = and the percent
+    DWORD prState;          // module: 0 off, 1 on, 2 waiting for a game, 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -1951,6 +1955,120 @@ static void QueueFrames() {
         PostMessageA(g_gameWnd, g_framesMsg, 0, 0);
 }
 
+// -- the portrait's HP / mana lines with regen ------------------------------------------
+// WFE (study_portrait.md) detours the portrait update +0x40d0e0 and draws
+// frames of its own over the game's lines. Here the update is wrapped through
+// its CPortraitButton vtable entry (found at run time), and right after the
+// game's own update its two lines (CSimpleFontStrings) get the full text:
+// "cur / max", the regen in green (red when losing), and the percent if asked.
+// Off: the entry is the game's again, and the game's next update writes its
+// own text back. Nothing new is made, so no Storm.dll is needed.
+static const DWORD RVA_PORTRAIT_VTABLE = 0xab05b4;     // CPortraitButton (WFE's [0x1013a48c])
+static const DWORD RVA_PORTRAIT_UPDATE = 0x40d0e0;     // its update, __fastcall(portrait, 0) ([0x1013a4a4])
+static const DWORD RVA_FONTSTRING_VTABLE = 0xa7d178;   // CSimpleFontString ([0x1013aa0c])
+static const DWORD RVA_FONTSTRING_SET = 0x143430;      // __fastcall(string, 0, const char *) ([0x1013aa28])
+static const DWORD PORTRAIT_UNIT = 0x238, PORTRAIT_HP = 0x240, PORTRAIT_MP = 0x244, STAT_REGEN = 0x7c;
+
+typedef DWORD(__fastcall *PortraitFn)(void *, int);
+static PortraitFn g_gamePortrait;       // the game's own update: set once, never cleared
+static DWORD *g_portraitSlot;           // its vtable entry (0 = not found yet)
+static bool g_portraitHooked;
+static volatile LONG g_portraitCalls;
+
+// one line: "250 / 500 +1.3" (+ " (50%)"), regen and percent as asked
+static void StatLine(float cur, float max, float regen, bool pct, char *b, size_t n) {
+    int o = sprintf_s(b, n, "%d / %d", (int)ceilf(cur), (int)max);
+    if (regen == regen && fabsf(regen) >= 0.05f && regen < 1e5f && regen > -1e5f)
+        o += sprintf_s(b + o, n - o, " |cFF%s%+.1f|r", regen > 0 ? "40E040" : "E04040", regen);
+    if (pct)
+        sprintf_s(b + o, n - o, " (%d%%)", (int)ceilf(cur * 100 / max));
+}
+
+static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxHandle) {
+    BYTE *fs = *(BYTE **)(p + off);
+    if (!fs || *(DWORD *)fs != (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
+        return;
+    float cur, max;
+    if (!UnitStat(unit, state, maxHandle, &cur, &max))
+        return;
+    DWORD *pair = (DWORD *)(unit + maxHandle);
+    BYTE *mx = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
+    char t[96];
+    StatLine(cur, max, mx ? *(float *)(mx + STAT_REGEN) : 0, (g_shared->prMode & 1) != 0, t, sizeof(t));
+    Game(RVA_FONTSTRING_SET, fs, { (DWORD)t });
+}
+
+static DWORD __fastcall PortraitHook(void *portrait, int edx) {
+    DWORD r = g_gamePortrait(portrait, edx);
+    if (g_shared->prOn) {
+        static int faults;
+        __try {
+            BYTE *p = (BYTE *)portrait, *unit = *(BYTE **)(p + PORTRAIT_UNIT);
+            if (unit) {
+                PortraitLine(p, PORTRAIT_HP, unit, UNIT_HP, UNIT_MAXHP_HANDLE);
+                PortraitLine(p, PORTRAIT_MP, unit, UNIT_MANA, UNIT_MAXMANA_HANDLE);
+            }
+            if (InterlockedIncrement(&g_portraitCalls) == 1)
+                Log("portrait: the first update wrapped (portrait %p, unit %p, lines +%lX %08lX / +%lX %08lX)", p, unit,
+                    PORTRAIT_HP, *(DWORD *)(p + PORTRAIT_HP), PORTRAIT_MP, *(DWORD *)(p + PORTRAIT_MP));
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            if (faults++ < 3)
+                Log("portrait: writing a line faulted");
+            if (faults >= 3)
+                g_shared->prOn = 0, g_shared->prState = 3;
+        }
+    }
+    return r;
+}
+
+static bool SwapPortrait(bool on) {
+    if (on == g_portraitHooked)
+        return true;
+    DWORD want = on ? (DWORD)PortraitHook : (DWORD)g_gamePortrait, old;
+    if (!on && *g_portraitSlot != (DWORD)PortraitHook) {
+        Log("portrait: the update entry was changed by someone else: left as it is");
+        g_portraitHooked = false;
+        return false;
+    }
+    if (!VirtualProtect(g_portraitSlot, 4, PAGE_READWRITE, &old))
+        return false;
+    InterlockedExchange((volatile LONG *)g_portraitSlot, (LONG)want);
+    VirtualProtect(g_portraitSlot, 4, old, &old);
+    g_portraitHooked = on;
+    Log(on ? "portrait: on (its update +%06lX is wrapped)" : "portrait: off (the update is the game's again)", RVA_PORTRAIT_UPDATE);
+    return true;
+}
+
+// the worker's part: find the entry once, then follow the switch
+static void FollowPortrait() {
+    static bool refused;
+    if (!g_getUi || refused)
+        return;
+    bool on = g_shared->prOn != 0;
+    if (on && !g_portraitSlot) {
+        DWORD *vt = (DWORD *)(g_base + RVA_PORTRAIT_VTABLE), fn = (DWORD)(g_base + RVA_PORTRAIT_UPDATE);
+        bool ok = PageIs(vt, READ) && !PageIs(vt, EXEC) && FnStart(RVA_PORTRAIT_UPDATE) && FnStart(RVA_FONTSTRING_SET)
+            && FnStart(RVA_UNIT_HP) && FnStart(RVA_HANDLE_LOOKUP) && PageIs(g_base + RVA_FONTSTRING_VTABLE, READ) && !PageIs(g_base + RVA_FONTSTRING_VTABLE, EXEC);
+        for (int i = 0; ok && i < 128 && PageIs(vt + i, READ); i++)
+            if (vt[i] == fn) {
+                g_portraitSlot = vt + i;
+                break;
+            }
+        if (!g_portraitSlot) {
+            refused = true, g_shared->prState = 3;
+            Log(ok ? "portrait: refused, the update +%06lX isn't in the first 128 entries of vtable +%06lX" : "portrait: refused (its functions or vtables aren't where 1.28f has them)",
+                RVA_PORTRAIT_UPDATE, RVA_PORTRAIT_VTABLE);
+            return;
+        }
+        g_gamePortrait = (PortraitFn)fn;
+        Log("portrait: the update +%06lX is vtable +%06lX entry +%X", RVA_PORTRAIT_UPDATE, RVA_PORTRAIT_VTABLE, (DWORD)((BYTE *)g_portraitSlot - (BYTE *)vt));
+    }
+    if (on != g_portraitHooked && g_portraitSlot && !SwapPortrait(on))
+        refused = true, g_shared->prState = 3;
+    if (g_shared->prState != 3)
+        g_shared->prState = !on ? 0 : g_ui ? 1 : 2;
+}
+
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
 // Ported from WFE's 1.28f branches (each address re-checked against WFEDll:
 // the tables at 0x10073232, 0x10035715, 0x10070429, 0x1006ff59, 0x1001fec2
@@ -2691,6 +2809,7 @@ static void Run() {
         }
         QueueBars();
         FollowColours();
+        FollowPortrait();
         QueueDisplay();
         QueueFrames();
         LONG cseq = g_shared->cmdSeq;
@@ -2775,7 +2894,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;
