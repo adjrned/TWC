@@ -50,7 +50,7 @@ if (-not $version) { throw "No 'global version := ...' in tw-companion.ahk" }
 # stage: dist\TW Companion\...
 $stage = Join-Path $dist "TW Companion"
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
-New-Item -ItemType Directory -Force $stage, "$stage\assets", "$stage\lib\WebView2\64bit" | Out-Null
+New-Item -ItemType Directory -Force $stage, "$stage\assets", "$stage\lib\WebView2\64bit", "$stage\native" | Out-Null
 
 # the commit it's built from goes into the exe (buildCommit), so an installed
 # copy can tell when the beta-latest release is a newer build. A copy of the
@@ -73,6 +73,8 @@ Copy-Item "$src\assets\bg*.png", "$src\assets\Cinzel.ttf", "$src\assets\Cinzel-O
 Copy-Item "$src\lib\WebView2\64bit\WebView2Loader.dll" "$stage\lib\WebView2\64bit"
 Copy-Item "$src\lib\WebView2\LICENSE-Microsoft.txt", "$src\lib\WebView2\LICENSE-thqby.txt" "$stage\lib\WebView2"
 Copy-Item (Join-Path $build "README.txt") $stage
+# the 1.28 game module (built with native\build.bat; off unless Settings turns it on)
+Copy-Item "$src\native\twc-game.dll", "$src\native\twc-inject.exe" "$stage\native"
 (Get-Content "$stage\README.txt" -Raw).Replace("{VERSION}", $version) | Set-Content "$stage\README.txt" -NoNewline
 
 # the installer: build\installer.ahk next to the staged folder (its FileInstall

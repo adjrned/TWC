@@ -25,6 +25,7 @@
 #Include engine\Settings.ahk
 #Include engine\Updater.ahk
 #Include engine\SelfUpdate.ahk
+#Include engine\GameModule.ahk
 #Include ui\OverlayPanel.ahk
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------
@@ -84,7 +85,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -112,7 +113,7 @@ global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card un
 global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
 global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn, gameModCb, gameModText
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -144,6 +145,7 @@ host := HostEngine()
 settings := SettingsEngine()
 updater := UpdaterEngine()
 selfUpdate := SelfUpdateEngine()
+gameModule := GameModuleEngine()
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
@@ -164,6 +166,7 @@ SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
+SetTimer(() => gameModule.check(), 3000)    ; the 1.28 game module, when it's on
 SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
 SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 
@@ -1949,9 +1952,14 @@ BuildSettingsPage() {
     updLabel := mainGui.AddText("x40 y" (y + 196) " w500 h20 +Background" C.panel " c" C.muted, "")
     updBtn := MkButton("Check for updates", 560, y + 192, 160, 28, C.chip, C.text, (*) => UpdateButton())
     AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn, updLabel, updBtn)
+    ; the 1.28 game module (native\): off by default
+    gameModCb := mainGui.AddCheckbox("x40 y" (y + 234) " h22 +Background" C.panel " c" C.text, " Game module for 1.28 (experimental)")
+    gameModCb.OnEvent("Click", (c, *) => (gameModule.setEnabled(c.Value), RefreshSettings()))
+    gameModText := mainGui.AddText("x330 y" (y + 236) " w390 h20 +Background" C.panel " c" C.dim, "")
+    AddToPage("settings", gameModCb, gameModText)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader, gameModule, gameModCb, gameModText
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
@@ -1962,6 +1970,8 @@ RefreshSettings() {
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
     RefreshUpdateLabel()
+    gameModCb.Value := gameModule.enabled
+    gameModText.Text := gameModule.statusText()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
 ResetAll() {

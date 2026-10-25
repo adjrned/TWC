@@ -71,6 +71,7 @@ Install(desktop, start) {
     try {
         DirCreate(DIR "\assets")
         DirCreate(DIR "\lib\WebView2\64bit")
+        DirCreate(DIR "\native")
         FileInstall("TW Companion\TW Companion.exe", DIR "\TW Companion.exe", 1)
         FileInstall("TW Companion\README.txt", DIR "\README.txt", 1)
         FileInstall("TW Companion\assets\bg.png", DIR "\assets\bg.png", 1)
@@ -81,6 +82,8 @@ Install(desktop, start) {
         FileInstall("TW Companion\assets\Cinzel.ttf", DIR "\assets\Cinzel.ttf", 1)
         FileInstall("TW Companion\assets\Cinzel-OFL.txt", DIR "\assets\Cinzel-OFL.txt", 1)
         FileInstall("TW Companion\lib\WebView2\64bit\WebView2Loader.dll", DIR "\lib\WebView2\64bit\WebView2Loader.dll", 1)
+        FileInstall("TW Companion\native\twc-game.dll", DIR "\native\twc-game.dll", 1)
+        FileInstall("TW Companion\native\twc-inject.exe", DIR "\native\twc-inject.exe", 1)
         FileInstall("TW Companion\lib\WebView2\LICENSE-Microsoft.txt", DIR "\lib\WebView2\LICENSE-Microsoft.txt", 1)
         FileInstall("TW Companion\lib\WebView2\LICENSE-thqby.txt", DIR "\lib\WebView2\LICENSE-thqby.txt", 1)
         ; the uninstaller is this program, run with /uninstall
