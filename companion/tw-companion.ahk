@@ -182,7 +182,7 @@ SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 ; ============================================================================
 BuildWindow() {
     global
-    mainGui := Gui("-Caption", "TW Companion")
+    mainGui := Gui("-Caption +MinimizeBox", "TW Companion")     ; the box: the taskbar button minimizes / restores it too
     mainGui.BackColor := C.win
     mainGui.SetFont("s10", UI_FONT)
     mainGui.OnEvent("Close", (*) => HideMainWindow())
@@ -227,6 +227,8 @@ BuildWindow() {
     byText := mainGui.AddText("x" (SIDE_W - 14 - nw - 22) " y" (fy + 38) " w18 h16 Right +Background" C.side " c" C.dim, "By")
     UISetFont(byText, "s8")
 
+    ; – minimizes to the taskbar; ✕ hides to the tray (F8 or the tray icon brings it back)
+    MkButton("–", W - 70, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => mainGui.Minimize())
     MkButton("✕", W - 40, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
     ; toolbar: compact Cinzel page title (the divider under it is baked into
@@ -498,7 +500,7 @@ ShowPageInner(name, shown) {
         case "remap":    RefreshRemap()
         case "macros":   RefreshMacros()
         case "host":     RefreshHost()
-        case "wc3":      RefreshWc3()
+        case "wc3":      Wc3PageOpened()
         case "settings": RefreshSettings()
         case "overlay":  RefreshOverlay()
     }
@@ -2096,6 +2098,8 @@ UpdateToolPill() {
 ShowMainWindow() {
     global showMain := true
     ShowPage(currentPage)               ; before Show, so other pages' controls never flash
+    if WinExist("ahk_id " mainGui.Hwnd) && WinGetMinMax(mainGui) = -1
+        mainGui.Restore()               ; minimized: F8 / the tray brings it back up
     mainGui.Show("w" W " h" H)
     try WinSetRegion("0-0 w" Round(W * DPI_K) " h" Round(H * DPI_K) " R" Round(14 * DPI_K) "-" Round(14 * DPI_K), mainGui.Hwnd)
 }
