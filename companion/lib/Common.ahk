@@ -104,12 +104,39 @@ wc3ChatReforged(text) {
     Sleep(g ? 30 : 200)                     ; let its text field take focus (no box known: just wait)
     SendInput("{Text}" text)
     Sleep(30)
+    try ChatBoxSnapshot(g)                  ; what the box shows now (debug: chat-*.bmp)
     SendInput("{Enter}")
     t := A_TickCount
     while A_TickCount - t < 200 && g && chatBox.isOpen(g)
         Sleep(10)
     try DebugLog("chat line (Reforged): box " (!g ? "position unknown" : opened < 300 ? "open after " opened " ms" : "NOT SEEN in 300 ms")
         . ", closed after " (A_TickCount - t) " ms: " SubStr(text, 1, 12) "…")
+}
+
+; Save the chat box as it looks now to chat-<time>.bmp next to the debug log,
+; to see what Reforged actually received. Kept to the last 20.
+ChatBoxSnapshot(g) {
+    if !g || !WinExist(WarcraftIII)
+        return
+    WinGetClientPos(&wx, &wy, &cw, &ch, WarcraftIII)
+    x := Round(wx + g.l * cw) - 4, y := Round(wy + g.t * ch) - 4
+    w := Round((g.r - g.l) * cw) + 9, h := Round((g.b - g.t) * ch) + 9
+    s := ScreenGrab(x, y, w, h)
+    dir := A_ScriptDir "\debug"
+    DirCreate(dir)
+    files := []
+    loop files dir "\chat-*.bmp"
+        files.Push(A_LoopFileFullPath)
+    while files.Length >= 20
+        FileDelete(files.RemoveAt(1))
+    ; a bottom-up 32-bit BMP: 14-byte file header, 40-byte info header, pixels
+    size := w * h * 4, bmp := Buffer(54 + size, 0)
+    NumPut("ushort", 0x4D42, "uint", 54 + size, "uint", 0, "uint", 54, bmp)
+    NumPut("uint", 40, "int", w, "int", h, "ushort", 1, "ushort", 32, bmp, 14)
+    loop h
+        DllCall("RtlMoveMemory", "ptr", bmp.Ptr + 54 + (A_Index - 1) * w * 4, "ptr", s.buf.Ptr + (h - A_Index) * w * 4, "uptr", w * 4)
+    f := FileOpen(dir "\chat-" FormatTime(, "HHmmss") "-" A_MSec ".bmp", "w")
+    f.RawWrite(bmp), f.Close()
 }
 
 FocusWarcraft() {
