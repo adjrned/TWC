@@ -161,6 +161,8 @@ A_TrayMenu.Insert("4&", "Debug: show status in game", DebugStatusToggle)
 A_TrayMenu.Insert("5&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
+SetTimer(NumLockWatch, 250)    ; Num Lock on while 1.28 is focused (item keys)
+OnExit((*) => NumLockWatch(true))
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
 SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
@@ -1887,6 +1889,26 @@ ChatWatch() {
             chatHook.Stop()
     } else if !chatHook.InProgress {
         chatHook.Start()
+    }
+}
+; The item keys are numpad keys, and 1.28 reads them by Num Lock as it is when
+; the game gets to the key, not when it was sent: with Num Lock off, Numpad
+; 8/4/2 are the arrow keys and Items 2, 3 and 6 do nothing (laptops without a
+; numpad usually have it off). So while 1.28 is the active window Num Lock is
+; kept on, and put back as it was when you leave it or the companion exits.
+; Reforged doesn't need it. [Remap] forceNumLock=0 turns it off.
+NumLockWatch(restore := false) {
+    static saved := -1
+    on := !restore && WinActive(WarcraftIII) && InStr(WC3WindowKey(), "classic")
+        && Integer(Ini("Remap", "forceNumLock", 1))
+    if on {
+        if saved = -1
+            saved := GetKeyState("NumLock", "T")
+        if !GetKeyState("NumLock", "T")
+            SetNumLockState("On")
+    } else if saved != -1 {
+        SetNumLockState(saved ? "On" : "Off")
+        saved := -1
     }
 }
 ; while chat is open, remaps and macros stand aside so typing works
