@@ -38,8 +38,8 @@ Wc3PlannedText(tab, ver) {
         "castingreforged", "Planned: a self-cast key (the next ability goes on your hero).",
         "timers128", "Planned: naming your buffs, alerts for a buff about to run out, timers drawn inside the game.",
         "timersreforged", "Planned: cooldown and buff timers read from the screen, naming your buffs.",
-        "display128", "Planned: widescreen, FPS unlock, the multiboard, hiding parts of the UI, health bar colours and mana bars, detailed tooltips.",
-        "displayreforged", "Planned: health bar size, a hero tracker and range ring.",
+        "display128", "Planned: health bar colours and mana bars, widescreen, FPS unlock, the multiboard, hiding parts of the UI, detailed tooltips.",
+        "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: lobby latency and the game start countdown when you host.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
     return p[tab ver]
@@ -50,7 +50,7 @@ Wc3PlannedText(tab, ver) {
 ; setupLabel + setup() for one button, or buttons: [[label, click], ...]
 ; (a label can be a function: it's refreshed with the status).
 Wc3Features() {
-    global gameModule, timersHud, quickcast, gameCmds, buffWatch
+    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars
     static list := 0
     if list
         return list
@@ -71,6 +71,11 @@ Wc3Features() {
             buttons: [["Buff bar", (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())],
                 ["Add buff", (*) => (WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
                 ["Remove last", (*) => (buffWatch.removeLast(), RefreshWc3())]] },
+        { tab: "display", title: "Health bar size", badge: "1.28f",
+            desc: "Bigger health bars on every unit. Width is experimental.",
+            on: (*) => healthBars.enabled, set: (v) => healthBars.setEnabled(v), status: (*) => healthBars.statusText(),
+            buttons: [[(*) => healthBars.label("height"), (*) => (healthBars.cycle("height"), RefreshWc3())],
+                [(*) => healthBars.label("width"), (*) => (healthBars.cycle("width"), RefreshWc3())]] },
         { tab: "display", title: "Clear messages and chat", badge: "1.28f",
             desc: "A key wipes the trigger messages or the chat off the screen.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),

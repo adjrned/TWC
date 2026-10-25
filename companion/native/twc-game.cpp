@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 
 #pragma comment(lib, "version.lib")
 #pragma comment(lib, "user32.lib")
@@ -32,7 +33,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 4
+    DWORD layout;           // 5
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -63,6 +64,14 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD cmd;              // companion: 1 clear messages, 2 clear chat
     volatile LONG cmdDone;  // module: the command it answered
     DWORD cmdResult;        // module: 1 done, 2 refused (see the log), 3 the game thread didn't run it in time
+    // layout 5: health bar size (BarsPass)
+    DWORD hbOn;             // companion: 1 = keep the bars at the sizes below (0 = put them back once)
+    float hbHeight;         // companion: height, times the game's own (1 = unchanged)
+    float hbWidth;          // companion: width, times the game's own (experimental)
+    DWORD hbState;          // module: 0 not yet, 1 applied, 2 no health bars seen, 3 refused (see the log)
+    float hbDefHeight;      // module: the game's own bar height / width, as first seen
+    float hbDefWidth;
+    DWORD hbCount;          // module: bars resized in the last pass
 };
 #pragma pack(pop)
 
@@ -640,8 +649,16 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 }
 
 static int RunOnGameThread(DWORD cmd);
+static void BarsPass();
+static UINT g_barsMsg;              // "TWC_GameThreadBars": run BarsPass on the game thread
+static volatile LONG g_barsQueued;
 
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
+    if (m == g_barsMsg && g_barsMsg) {
+        InterlockedExchange(&g_barsQueued, 0);
+        BarsPass();
+        return 0;
+    }
     if (m == g_runMsg && g_runMsg) {
         LONG cmd = InterlockedExchange(&g_running, 0);
         if (cmd) {
@@ -667,6 +684,7 @@ static bool Subclass() {
         return false;
     }
     g_runMsg = RegisterWindowMessageA("TWC_GameThreadCall");
+    g_barsMsg = RegisterWindowMessageA("TWC_GameThreadBars");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -743,6 +761,111 @@ static int RunOnGameThread(DWORD cmd) {
         return r == 1 ? 1 : 2;
     }
     return 2;
+}
+
+// -- health bar size ----------------------------------------------------------------
+// Like WFE's HEALTHBAR HEIGHT (study_healthbar.md), without its hooks or vtable
+// swaps: a few times a second, on the game thread, every unit in the game's
+// list gets its health bar ([[unit+0x50]+0xc], a CStatBar: vtable +0xaad83c,
+// kind [+0x138] = 5) set to the wanted height (+0x5c) and width (+0x58,
+// experimental: WFE never writes it), then the game's layout refresh. The
+// game's own size is taken from the first bar seen and logged, and put back
+// when the feature is turned off.
+static const DWORD RVA_UNIT_LIST = 0xd328f0;    // { ?, count +4, units +8 } (WFE's [0x1013a990])
+static const DWORD RVA_UNIT_EXTRA = 0xd32900;   // one more unit, [it] (WFE's [0x1013cfac])
+static const DWORD RVA_STATBAR_VTABLE = 0xaad83c;
+static const DWORD RVA_LAYOUT_REFRESH = 0x13f9b0;   // __fastcall(frame, 0, int 0) (WFE's [0x1013a21c])
+static const DWORD UNIT_BARS = 0x50, BARS_HEALTH = 0xc, BAR_KIND = 0x138, BAR_WIDTH = 0x58, BAR_HEIGHT = 0x5c;
+
+typedef void(__fastcall *RefreshFn)(void *, int, int);
+static float g_defH, g_defW;            // the game's own bar size (0 = not seen yet)
+static bool g_barsApplied;              // something was resized and not put back yet
+
+static bool SaneSize(float f) { return f == f && f > 0.0001f && f < 0.5f; }
+
+// one unit's health bar: 1 resized, 0 nothing to do or not a health bar
+static int SizeBar(BYTE *unit, float h, float w) {
+    __try {
+        BYTE *bars = *(BYTE **)(unit + UNIT_BARS), *bar;
+        if (!bars || !(bar = *(BYTE **)(bars + BARS_HEALTH)))
+            return 0;
+        if (*(DWORD *)bar != (DWORD)(g_base + RVA_STATBAR_VTABLE) || *(DWORD *)(bar + BAR_KIND) != 5)
+            return 0;
+        float *ph = (float *)(bar + BAR_HEIGHT), *pw = (float *)(bar + BAR_WIDTH);
+        if (!g_defH) {
+            if (!SaneSize(*ph) || !SaneSize(*pw))
+                return 0;
+            g_defH = *ph, g_defW = *pw;
+            g_shared->hbDefHeight = g_defH, g_shared->hbDefWidth = g_defW;
+            Log("health bars: the game's own size is %.5f high, %.5f wide (UI units)", g_defH, g_defW);
+        }
+        float th = g_defH * h, tw = g_defW * w;
+        if (fabsf(*ph - th) < 1e-6f && fabsf(*pw - tw) < 1e-6f)
+            return 0;
+        *ph = th, *pw = tw;
+        ((RefreshFn)(g_base + RVA_LAYOUT_REFRESH))(bar, 0, 0);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return -1;
+    }
+}
+
+// on the game thread
+static void BarsPass() {
+    static bool refused;
+    if (refused || !g_getUi)
+        return;
+    if (!IsGameCode(g_base + RVA_LAYOUT_REFRESH) || PageIs(g_base + RVA_STATBAR_VTABLE, EXEC)) {
+        refused = true, g_shared->hbState = 3;
+        Log("health bars: refused (the layout refresh isn't code, or the bar vtable isn't data)");
+        return;
+    }
+    bool on = g_shared->hbOn != 0;
+    float h = on ? g_shared->hbHeight : 1, w = on ? g_shared->hbWidth : 1;
+    h = h >= 0.25f && h <= 4 ? h : 1, w = w >= 0.25f && w <= 4 ? w : 1;
+    int n = 0, faults = 0;
+    __try {
+        BYTE *list = g_base + RVA_UNIT_LIST;
+        DWORD count = *(DWORD *)(list + 4);
+        BYTE **units = *(BYTE ***)(list + 8);
+        for (DWORD i = 0; units && i < count && i < 4096; i++)
+            if (units[i]) {
+                int r = SizeBar(units[i], h, w);
+                n += r > 0, faults += r < 0;
+            }
+        BYTE *extra = *(BYTE **)(g_base + RVA_UNIT_EXTRA);
+        if (extra && *(BYTE **)extra) {
+            int r = SizeBar(*(BYTE **)extra, h, w);
+            n += r > 0, faults += r < 0;
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        faults++;
+    }
+    static int faultLogs;
+    if (faults && faultLogs++ < 3)
+        Log("health bars: %d reads faulted in a pass", faults);
+    if (n)
+        g_barsApplied = on;
+    // the first passes are logged: if the count stays high, the game resets the size every frame
+    static int passLogs;
+    if (n && passLogs < 6)
+        passLogs++, Log("health bars: pass resized %d bars (height x%.2f, width x%.2f)", n, h, w);
+    g_shared->hbCount = n;
+    g_shared->hbState = g_defH ? 1 : 2;
+}
+
+// the worker's part: hand a pass to the game thread 4 times a second while on,
+// and once more after turning off (to put the bars back)
+static void QueueBars() {
+    static DWORD at;
+    DWORD now = GetTickCount();
+    if (!g_getUi || now - at < 250 || (!g_shared->hbOn && !g_barsApplied))
+        return;
+    at = now;
+    if (!g_shared->hbOn)
+        g_barsApplied = false;          // this pass puts them back
+    if (Subclass() && !InterlockedExchange(&g_barsQueued, 1))
+        PostMessageA(g_gameWnd, g_barsMsg, 0, 0);
 }
 
 // a command from the companion: handed to the game thread, answered within 1 s
@@ -847,6 +970,7 @@ static void Run() {
             timersAt = now;                     // 10 a second is plenty for whole seconds
             ReadTimers();
         }
+        QueueBars();
         LONG cseq = g_shared->cmdSeq;
         if (cseq != g_shared->cmdDone)
             ServeCommand(cseq);
@@ -917,7 +1041,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 4;
+        g_shared->layout = 5;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());

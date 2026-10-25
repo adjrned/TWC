@@ -28,6 +28,7 @@
 #Include engine\GameModule.ahk
 #Include engine\GameCommands.ahk
 #Include engine\BuffWatch.ahk
+#Include engine\HealthBars.ahk
 #Include ui\TimerHud.ahk
 #Include ui\Wc3Page.ahk
 #Include ui\OverlayPanel.ahk
@@ -89,7 +90,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -153,6 +154,7 @@ gameModule := GameModuleEngine()
 timersHud := TimerHud(gameModule, quickcast)
 gameCmds := GameCommandsEngine(gameModule)
 buffWatch := BuffWatchEngine(timersHud)
+healthBars := HealthBarsEngine(gameModule)
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
