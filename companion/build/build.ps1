@@ -17,9 +17,14 @@ $ahk = @("$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe",
          "$env:ProgramFiles\AutoHotkey\v2\AutoHotkey64.exe",
          (Join-Path $tools "ahk\AutoHotkey64.exe")) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $ahk) {
+    # from AutoHotkey's GitHub releases (autohotkey.com sits behind a bot check
+    # that blocks build machines)
     Write-Host "Downloading AutoHotkey v2..."
+    $rel = Invoke-RestMethod "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases?per_page=20" |
+        Where-Object { $_.tag_name -like "v2.*" -and -not $_.prerelease } | Select-Object -First 1
+    $asset = $rel.assets | Where-Object { $_.name -like "AutoHotkey_*.zip" } | Select-Object -First 1
     $zip = Join-Path $tools "ahk-v2.zip"
-    Invoke-WebRequest "https://www.autohotkey.com/download/ahk-v2.zip" -OutFile $zip
+    Invoke-WebRequest $asset.browser_download_url -OutFile $zip
     Expand-Archive $zip (Join-Path $tools "ahk") -Force
     $ahk = Join-Path $tools "ahk\AutoHotkey64.exe"
 }
