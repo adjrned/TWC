@@ -27,16 +27,37 @@ KeyWaitAny() {
     return ihGlobal.EndKey
 }
 
+; A key or combo, or one of the extra mouse buttons (an InputHook only sees the
+; keyboard, so those are caught by hotkeys while it waits). Left and right
+; click are never taken: they're how you click.
 KeyWaitCombo() {
-    global keyCapturing := true, keyCaptureEnd
+    global keyCapturing := true, keyCaptureEnd, capturedMouse := ""
     ihGlobal.VisibleNonText := false
     ihGlobal.KeyOpt("{All}", "E")
     ihGlobal.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-E")
+    CaptureMouse(true)
     ihGlobal.Start()
     try ihGlobal.Wait()
-    finally keyCapturing := false, keyCaptureEnd := A_TickCount
+    finally {
+        CaptureMouse(false)
+        keyCapturing := false, keyCaptureEnd := A_TickCount
+    }
+    if capturedMouse
+        return (GetKeyState("Ctrl") ? "^" : "") (GetKeyState("Alt") ? "!" : "") (GetKeyState("Shift") ? "+" : "") capturedMouse
     return ihGlobal.EndMods . ihGlobal.EndKey
 }
+global capturedMouse := ""
+CaptureMouse(on) {
+    HotIf()                                     ; anywhere (capture happens in the companion window)
+    for k in MouseKeys()
+        try Hotkey("*" k, CaptureMouseHit.Bind(k), on ? "On" : "Off")
+}
+CaptureMouseHit(k, *) {
+    global capturedMouse := k
+    ihGlobal.Stop()
+}
+MouseKeys() => ["XButton1", "XButton2", "MButton", "WheelUp", "WheelDown", "WheelLeft", "WheelRight"]
+IsWheel(key) => RegExMatch(key, "i)Wheel(Up|Down|Left|Right)$")
 
 ; ---- hotkey display --------------------------------------------------------
 ReadableHotkey(hotkey, fullName := false) {
@@ -55,6 +76,10 @@ ReadableHotkey(hotkey, fullName := false) {
         i++
     }
     key := SubStr(hotkey, i)
+    static names := Map("xbutton1", "Mouse 4", "xbutton2", "Mouse 5", "mbutton", "Middle click",
+        "wheelup", "Wheel up", "wheeldown", "Wheel down", "wheelleft", "Wheel left", "wheelright", "Wheel right")
+    if names.Has(StrLower(key))
+        return mods names[StrLower(key)]
     key := StrLen(key) = 1 || RegExMatch(key, "i)^F\d+$") ? StrUpper(key) : StrUpper(SubStr(key, 1, 1)) StrLower(SubStr(key, 2))
     return mods key
 }

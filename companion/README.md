@@ -126,7 +126,8 @@ next to the script records each change and each quickcast with the time.
   Move Stop Hold Attack / Patrol D T F / Q W E R), inventory slots 1–6
   (Numpad 7 8 4 5 1 2) and both mouse buttons. *HUD* shows them laid out
   like the game (click a slot, press a key); *List* is the same as a table.
-  Unset slots keep the game's key; Shift + your key still queues; a key can
+  Your key can be any key or combo, or Mouse 4 / Mouse 5 / middle click / the
+  wheel (with Ctrl, Alt or Shift too; a wheel notch casts once). Unset slots keep the game's key; Shift + your key still queues; a key can
   only be on one slot (setting it again moves it), and keys the companion
   uses (F8, Esc, macros, overlay) are refused. Esc or Backspace (or *Clear*)
   clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.

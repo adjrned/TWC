@@ -1155,9 +1155,9 @@ RefreshRemap(capturing := false) {
     }
     SetText(remapQcBtn, "Quickcast: " (sel.qc ? "On" : "Off"))
     info := sel.note ? sel.note
-        : capturing ? "Any key or combo.  Esc or Backspace clears the slot."
-        : hud ? "Click a slot, then press a key. QC (or right-click) toggles quickcast. Shift + your key queues, like in WC3."
-        : "Double-click a row (or Bind Key), then press a key. Shift + your key queues, like in WC3."
+        : capturing ? "Any key, combo or mouse button (Mouse 4/5, middle, wheel).  Esc or Backspace clears the slot."
+        : hud ? "Click a slot, then press a key or mouse button (Mouse 4/5, middle, wheel). QC or right-click toggles quickcast."
+        : "Double-click a row (or Bind Key), then press a key or mouse button (Mouse 4/5, middle, wheel)."
     if remapInfo.Text != info
         remapInfo.Opt("+c" (sel.note ? C.accent : C.dim)), remapInfo.Text := info
 }

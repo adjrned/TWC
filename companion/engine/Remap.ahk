@@ -182,8 +182,9 @@ class RemapEngine {
                     : qc ? this.castQuick.Bind(this, game, key)
                     : this.castPlain.Bind(this, game, key)
                 this.registered.Push(RegisterHotkey(key, fn, WarcraftIII, true))
-                ; quickcast repeats while held: its key-up ends the repeat
-                if qc && group != "mouse"
+                ; quickcast repeats while held: its key-up ends the repeat (a wheel
+                ; notch has no "up" and can't be held)
+                if qc && group != "mouse" && !IsWheel(key)
                     this.registered.Push(RegisterHotkey(key " up", this.released.Bind(this, HotkeyBase(key)), WarcraftIII, true))
             }
         }
@@ -242,7 +243,10 @@ class RemapEngine {
     }
     stillHeld(base, start) {
         global toolEnabled, chatting, inGame
-        return this.holding.Get(base, false) && GetKeyState(base, "P") && WinActive(WarcraftIII)
+        try down := !IsWheel(base) && GetKeyState(base, "P")
+        catch
+            down := false
+        return this.holding.Get(base, false) && down && WinActive(WarcraftIII)
             && toolEnabled && !chatting && inGame && A_TickCount - start < 20000
     }
     ; send the key, then click only once the game waits for a target: an
