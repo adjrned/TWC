@@ -64,7 +64,8 @@ $stamped = Join-Path $src "_build_main.ahk"
 
 Write-Host "Compiling TW Companion $version ($($commit.Substring(0, [Math]::Min(7, $commit.Length))))..."
 $exe = Join-Path $stage "TW Companion.exe"
-$p = Start-Process $a2e -ArgumentList "/in `"$stamped`" /out `"$exe`" /base `"$ahk`" /silent verbose" -Wait -PassThru -NoNewWindow
+$icon = Join-Path $src "assets\twc.ico"       # the companion's icon (assets\generate_icon.py)
+$p = Start-Process $a2e -ArgumentList "/in `"$stamped`" /out `"$exe`" /base `"$ahk`" /icon `"$icon`" /silent verbose" -Wait -PassThru -NoNewWindow
 Remove-Item $stamped
 if ($p.ExitCode -ne 0 -or -not (Test-Path $exe)) { throw "Ahk2Exe failed (exit $($p.ExitCode))" }
 
@@ -83,7 +84,7 @@ $inst = Join-Path $dist "installer.ahk"
 (Get-Content (Join-Path $build "installer.ahk") -Raw).Replace("{VERSION}", $version) | Set-Content $inst -Encoding UTF8 -NoNewline
 $setup = Join-Path $dist "TWC-Companion-Setup-$version.exe"
 Write-Host "Compiling the installer..."
-$p = Start-Process $a2e -ArgumentList "/in `"$inst`" /out `"$setup`" /base `"$ahk`" /silent verbose" -Wait -PassThru -NoNewWindow
+$p = Start-Process $a2e -ArgumentList "/in `"$inst`" /out `"$setup`" /base `"$ahk`" /icon `"$icon`" /silent verbose" -Wait -PassThru -NoNewWindow
 Remove-Item $inst
 if ($p.ExitCode -ne 0 -or -not (Test-Path $setup)) { throw "Ahk2Exe failed on the installer (exit $($p.ExitCode))" }
 Write-Host "Built $setup"

@@ -1,14 +1,16 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
 ;  OverlayPanel - the TWRPG site (builds, items, bosses...) in a WebView2 panel
-;  docked over Warcraft III, PoE-overlay style (or over the screen, as a
-;  standalone window, when the game isn't running):
+;  docked over Warcraft III, PoE-overlay style. Without the game running (or
+;  with "Open full window"), it's a normal window instead: title bar, move,
+;  resize, maximise, a taskbar button, and it stays open when you click
+;  elsewhere; its size and place are kept (ini [Overlay] window). Keys:
 ;    Shift+Space       show + focus / hide (configurable)
 ;    Ctrl+Shift+Space  pin: stays on screen, see-through and click-through,
 ;                      so the game keeps focus (configurable)
 ;    Esc               hide (when Esc didn't close something in the page)
-;  Hides when you click back into the game or switch to another app, and
-;  gives focus back to the game (or the app you opened it from).
+;  The docked panel hides when you click back into the game or switch to
+;  another app, and gives focus back to the game (or the app you opened it from).
 ;  Served offline from web\TWC as https://twc.local/TWC/ (see UpdaterEngine).
 ;  The WebView is created on first use and closed after sitting hidden for a
 ;  while, so it costs nothing until you open it.
@@ -28,6 +30,7 @@ class OverlayPanel {
     updating := false
     hkShow := "", hkPin := ""
     prevWin := 0             ; window that had focus before show, when not WC3
+    windowMode := false      ; a normal window (no game, or "Open full window") rather than the docked panel
 
     __New(updater) {
         this.updater := updater
@@ -94,27 +97,96 @@ class OverlayPanel {
 
     ; -- show / hide / pin ---------------------------------------------------
     toggle() {
+        if this.shown && this.windowMode && !WinActive("ahk_id " this.gui.Hwnd)
+            return this.show(true)              ; a window behind others: to the front
         if this.shown && !this.pinned
             this.hide()
         else
             this.show()
     }
 
-    show() {
+    ; full: a normal window even with the game running (else: only without it)
+    show(full := false) {
         a := WinExist("A")
         if !this.ensure()
             return
+        win := full || this.windowMode && this.shown || !WinExist(WarcraftIII) || WinGetMinMax(WarcraftIII) = -1
         if !this.shown && a && a != this.gui.Hwnd && !WinActive(WarcraftIII)
             this.prevWin := a
         SetTimer(this.unloadFn, 0)
         this.setPinned(false)
-        this.applyLayout()
-        this.gui.Show("NA")
+        if win != this.windowMode && this.shown
+            this.saveWindow(), this.gui.Hide()  ; the styles change while hidden (the taskbar button follows)
+        this.setWindowMode(win)
+        if win {
+            this.showWindow()
+        } else {
+            this.applyLayout()
+            this.gui.Show("NA")
+        }
         this.wvc.IsVisible := true
         this.shown := true
         WinActivate("ahk_id " this.gui.Hwnd)
         try this.wvc.MoveFocus(0)
-        SetTimer(this.watchFn, 200)
+        SetTimer(this.watchFn, win ? 0 : 200)
+    }
+    showFull() => this.show(true)
+
+    ; -- the normal window ------------------------------------------------------
+    setWindowMode(on) {
+        if this.windowMode = on
+            return
+        this.windowMode := on
+        if on {
+            this.gui.Opt("-AlwaysOnTop -ToolWindow +Caption +Border +Resize +MinimizeBox +MaximizeBox +SysMenu")
+            ; a dark title bar, like the site under it (Windows 10 2004+ / 11; older ones ignore it)
+            DllCall("dwmapi\DwmSetWindowAttribute", "ptr", this.gui.Hwnd, "int", 20, "int*", 1, "int", 4)
+        } else
+            this.gui.Opt("+AlwaysOnTop +ToolWindow -Caption -Border -Resize -MinimizeBox -MaximizeBox -SysMenu")
+        WinSetTransparent("Off", this.gui)
+    }
+    ; where it was last ("x,y,w,h,maximised", outer pixels), or 80% of the work
+    ; area under the mouse, in the middle
+    showWindow() {
+        r := StrSplit(Ini(this.section, "window", ""), ",")
+        if r.Length = 5 && this.onScreen(r[1] + 0, r[2] + 0, r[3] + 0, r[4] + 0) {
+            this.gui.Show("NA x" r[1] " y" r[2] " w" r[3] " h" r[4])
+            WinMove(r[1], r[2], r[3], r[4], this.gui)          ; outer size (Show sizes the client)
+            if r[5] = 1
+                WinMaximize(this.gui)
+        } else {
+            t := this.target(true), w := Round(t.w * 0.8), h := Round(t.h * 0.85)
+            this.gui.Show("NA")
+            WinMove(t.x + (t.w - w) // 2, t.y + (t.h - h) // 2, w, h, this.gui)
+        }
+        WinGetClientPos(, , &cw, &ch, this.gui)
+        this.layoutChildren(cw, ch)
+    }
+    onScreen(x, y, w, h) {
+        if w < 300 || h < 200
+            return false
+        loop MonitorGetCount() {
+            MonitorGetWorkArea(A_Index, &l, &t, &r, &b)
+            if x + 100 < r && x + w - 100 > l && y >= t - 20 && y + 50 < b
+                return true
+        }
+        return false
+    }
+    saveWindow() {
+        if !this.gui || !this.windowMode || !this.shown
+            return
+        mm := WinGetMinMax(this.gui)
+        if mm = -1
+            return
+        old := StrSplit(Ini(this.section, "window", ""), ",")
+        if mm = 1 && old.Length = 5                 ; maximised: keep the size it comes back to
+            return SetIni(old[1] "," old[2] "," old[3] "," old[4] ",1", this.section, "window")
+        WinGetPos(&x, &y, &w, &h, this.gui)
+        SetIni(x "," y "," w "," h "," (mm = 1 ? 1 : 0), this.section, "window")
+    }
+    onSize(g, minMax, w, h) {
+        if this.windowMode && minMax != -1
+            this.layoutChildren(w, h)
     }
 
     hide(refocusGame := true) {
@@ -122,6 +194,9 @@ class OverlayPanel {
             return
         SetTimer(this.watchFn, 0)
         this.setPinned(false)
+        this.saveWindow()
+        if this.windowMode
+            refocusGame := false                ; a normal window: nothing to hand focus back to
         this.gui.Hide()
         try this.wvc.IsVisible := false    ; lets WebView2 throttle while hidden
         this.shown := false
@@ -134,6 +209,8 @@ class OverlayPanel {
     }
 
     togglePin() {
+        if this.windowMode && this.shown
+            return                              ; pinning is for the panel over the game
         if this.pinned {
             this.show()          ; unpin -> back to interactive
             return
@@ -189,8 +266,8 @@ class OverlayPanel {
     ; -- layout --------------------------------------------------------------
     ; Docks to the WC3 client area (or the work area of the screen under the
     ; mouse when the game isn't running).
-    target() {
-        if WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1 {
+    target(screenOnly := false) {
+        if !screenOnly && WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1 {
             WinGetClientPos(&x, &y, &w, &h, WarcraftIII)
             if w > 200
                 return { x: x, y: y, w: w, h: h }
@@ -222,7 +299,7 @@ class OverlayPanel {
 
     layoutChildren(w, h) {
         g := OverlayPanel.GRIP, side := Ini(this.section, "side", "right")
-        full := side = "full"
+        full := side = "full" || this.windowMode
         gx := side = "left" ? w - g : 0
         this.grip.Move(gx, 0, g, h)
         this.grip.Visible := !full
@@ -282,9 +359,11 @@ class OverlayPanel {
     }
 
     build() {
-        g := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale", "TW Overlay")
+        g := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale", "TWRPG - TW Companion")
         g.BackColor := "0C0D10"
         g.OnEvent("Close", (*) => this.hide())
+        g.OnEvent("Size", ObjBindMethod(this, "onSize"))
+        this.windowMode := false
         this.grip := g.AddText("x0 y0 w" OverlayPanel.GRIP " h100 Background30343E")
         this.gui := g
         g.Show("Hide w800 h600")
@@ -357,7 +436,8 @@ class OverlayPanel {
                 this.post(m)
             this.pending := []
         } else if msg = "hide" {
-            this.hide()
+            if !this.windowMode                 ; Esc in the page: closes the panel, not the window
+                this.hide()
         } else if msg = "update" {
             SetTimer(() => this.runUpdate(true), -10)
         } else if InStr(msg, "open|") = 1 {

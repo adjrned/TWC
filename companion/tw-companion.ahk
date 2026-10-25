@@ -142,6 +142,9 @@ ProcessSetPriority("High")
 ; its thin serifs on the dark background
 DllCall("gdi32\AddFontResourceEx", "str", A_ScriptDir "\assets\Cinzel.ttf", "uint", 0x10, "ptr", 0)
 SetKeyDelay(Integer(Ini("Settings", "keyDelay", 10)))
+; the companion's icon (tray, windows); a built exe has it inside (build.ps1)
+if !A_IsCompiled && FileExist(A_ScriptDir "\assets\twc.ico")
+    TraySetIcon(A_ScriptDir "\assets\twc.ico")
 
 loader := LoaderEngine()
 macros := MacrosEngine()
@@ -171,7 +174,7 @@ else {
     ShowMainWindow()
 }
 
-A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.show())
+A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.showFull())
 A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
 A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(true))
 A_TrayMenu.Insert("4&", "Debug: show status in game", DebugStatusToggle)
@@ -2047,9 +2050,9 @@ BuildOverlayPage() {
         y += 30
     }
     ovVersionText := lbl("", 40, 434, 680)
-    openBtn := MkButton("Open overlay", 40, 466, 150, 32, C.accent, C.onAccent, (*) => (HideMainWindow(), webOverlay.show()))
-    updBtn := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.accent, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
-    AddToPage("overlay", openBtn, updBtn)
+    local ovOpen := MkButton("Open full window", 40, 466, 150, 32, C.accent, C.onAccent, (*) => (HideMainWindow(), webOverlay.showFull()))
+    local ovUpd := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.accent, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
+    AddToPage("overlay", ovOpen, ovUpd)
 }
 RefreshOverlay() {
     global ovHkBtn, ovPinBtn, ovSideBtns, ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks, ovVersionText, webOverlay, C, boxes
