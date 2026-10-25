@@ -101,11 +101,7 @@ class GameModuleEngine {
         seq := NumGet(v, 32, "int") + 1
         NumPut("uint", A_TickCount + ms, v, 36), NumPut("uint", keepShift ? 1 : 0, v, 40)
         NumPut("int", seq, v, 32)                                  ; last: the module acts on it
-        pid := WinGetPID(WarcraftIII)
-        if !this.wakes.Has(pid)
-            this.wakes[pid] := DllCall("OpenEvent", "uint", 0x2, "int", 0, "str", "Local\TWC_GameQc_" pid, "ptr")  ; EVENT_MODIFY_STATE
-        if this.wakes[pid]
-            DllCall("SetEvent", "ptr", this.wakes[pid])            ; wakes the module now, not on its next look
+        this.wake()
         return seq
     }
     ; 0 = still open, 1 = clicked, 2 = the game didn't want a target in time,
@@ -165,6 +161,42 @@ class GameModuleEngine {
             out.buffs.Push(f & 1 ? { left: NumGet(v, 280 + o, "float"), total: NumGet(v, 344 + o, "float"), aura: f & 2 ? 1 : 0, id: NumGet(v, 472 + o, "uint") } : 0)
         }
         return out
+    }
+
+    ; -- commands on the game's thread (layout 4) ---------------------------------
+    ; 1 clear messages, 2 clear chat. Answered within about a second.
+    cmdReady() {
+        s := this.state()
+        return this.enabled && s.live && s.probe = 1 && s.layout >= 4
+    }
+    command(cmd) {
+        if !(v := this.live()) || NumGet(v, 4, "uint") < 4
+            return 0
+        seq := NumGet(v, 536, "int") + 1
+        NumPut("uint", cmd, v, 540)
+        NumPut("int", seq, v, 536)                                 ; last: the module acts on it
+        this.wake()
+        return seq
+    }
+    ; 1 done, 2 refused, 3 the game thread didn't run it in time (0 seq: 2)
+    commandWait(seq, ms) {
+        if !seq
+            return 2
+        endAt := A_TickCount + ms
+        while A_TickCount < endAt {
+            if (v := this.live()) && NumGet(v, 544, "int") = seq
+                return NumGet(v, 548, "uint")
+            Sleep(10)
+        }
+        return 3
+    }
+    ; the module's wake event: it looks at once, not on its next round
+    wake() {
+        pid := WinGetPID(WarcraftIII)
+        if !this.wakes.Has(pid)
+            this.wakes[pid] := DllCall("OpenEvent", "uint", 0x2, "int", 0, "str", "Local\TWC_GameQc_" pid, "ptr")  ; EVENT_MODIFY_STATE
+        if this.wakes[pid]
+            DllCall("SetEvent", "ptr", this.wakes[pid])
     }
 
     ; one line for Settings

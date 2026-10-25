@@ -26,16 +26,17 @@ Wc3PlannedText(tab) {
     static p := Map(
         "casting", "Planned: a self-cast key (the next ability goes on your hero), an autocast toggle key.",
         "timers", "Planned: buff alerts (a buff you want is missing or about to run out), Reforged timers read from the screen.",
-        "display", "Planned: health bar size, a hero tracker and range ring (Reforged), widescreen, FPS unlock, clearing messages and chat, the multiboard, hiding parts of the UI, detailed tooltips.",
+        "display", "Planned: health bar size, a hero tracker and range ring (Reforged), widescreen, FPS unlock, the multiboard, hiding parts of the UI, detailed tooltips.",
         "hosting", "Planned (1.28f): lobby latency and the game start countdown when you host.")
     return p[tab]
 }
 
 ; Every feature on the page. Keys: tab, title, badge ("1.28f" / "Reforged" /
 ; "Both"), desc, status() -> text; optional on() / set(v) for the switch,
-; setupLabel + setup() for the button.
+; setupLabel + setup() for one button, or buttons: [[label, click], ...]
+; (a label can be a function: it's refreshed with the status).
 Wc3Features() {
-    global gameModule, timersHud, quickcast
+    global gameModule, timersHud, quickcast, gameCmds
     static list := 0
     if list
         return list
@@ -50,6 +51,11 @@ Wc3Features() {
             desc: "Seconds left on the command card and buff bar, over the game. Uses the quickcast setup.",
             on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
             setupLabel: "Set up buff bar", setup: (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart()) },
+        { tab: "display", title: "Clear messages and chat", badge: "1.28f",
+            desc: "A key wipes the trigger messages or the chat off the screen.",
+            on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
+            buttons: [[(*) => "Messages: " gameCmds.keyText("clearMessages"), (*) => Wc3Capture("clearMessages")],
+                [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")]] },
     ]
     return list
 }
@@ -95,25 +101,45 @@ BuildWc3Page() {
         UISetFont(ds, "s8")
         local st := mainGui.AddText("x" (x + 14) " y" (cy + 47) " w" (cw - 200) " h16 +Background" C.card " c" C.muted, "")
         UISetFont(st, "s8")
-        local sw := 0, sb := 0
+        local sw := 0, btns := []
         if f.HasProp("on") {
             sw := MkButton("Off", x + cw - 84, cy + 10, 70, 24, C.chip, C.muted, Wc3Switch.Bind(f))
             AddToPage("wc3", sw)
         }
-        if f.HasProp("setup") {
-            ; under the switch, or alone in the middle; as wide as its label, right-aligned
-            sb := MkButton(f.setupLabel, x + cw - 84, cy + (f.HasProp("on") ? 38 : 22), 70, 24, C.chip, C.text, f.setup)
-            local need := Max(70, TextWidth(sb, f.setupLabel) + 20)
-            sb.Move(x + cw - 14 - need, , need)
-            AddToPage("wc3", sb)
+        ; buttons: under the switch (or in the middle), right to left, each as
+        ; wide as its label (a live label gets room to change)
+        local defs := f.HasProp("buttons") ? f.buttons : f.HasProp("setup") ? [[f.setupLabel, f.setup]] : []
+        local bx := x + cw - 14
+        loop defs.Length {
+            local d := defs[defs.Length - A_Index + 1], lbl := Wc3Label(d[1])
+            local b := MkButton(lbl, 0, cy + (sw ? 38 : 22), 70, 24, C.chip, C.text, d[2])
+            local bw := HasMethod(d[1]) ? 116 : Max(70, TextWidth(b, lbl) + 20)
+            bx -= bw
+            b.Move(bx, , bw)
+            bx -= 6
+            AddToPage("wc3", b)
+            btns.Push({ ctl: b, label: d[1] })
+        }
+        ; the text lines end where the buttons begin
+        if btns.Length > 1 {
+            ds.Move(, , bx - x - 24), st.Move(, , bx - x - 24)
         }
         AddToPage("wc3", tt, bd, ds, st)
-        wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, ds, st], sw: sw, sb: sb })
+        wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, ds, st], sw: sw, btns: btns })
     }
     wc3Planned := mainGui.AddText("x" x " y" (y + 82 + 4 * 80) " w" cw " h34 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3Planned, "s8")
     AddToPage("wc3", wc3Planned)
     ; the planned line sits under the last card of the tab (moved in RefreshWc3)
+}
+
+Wc3Label(l) => HasMethod(l) ? l() : l
+Wc3Capture(name) {
+    global gameCmds
+    Toast("Press the key for it (Esc = none)", "", 0)
+    gameCmds.capture(name)
+    Toast("Key set: " gameCmds.keyText(name), "", 1500)
+    RefreshWc3()
 }
 
 Wc3ShowTab(tab, *) {
@@ -160,8 +186,11 @@ RefreshWc3() {
             c.Visible := vis
         if card.sw
             SetShown(card.sw, vis)
-        if card.sb
-            SetShown(card.sb, vis)
+        for b in card.btns {
+            SetShown(b.ctl, vis)
+            if vis
+                SetIf(b.ctl, Wc3Label(b.label))
+        }
         if !vis
             continue
         shownOnTab++

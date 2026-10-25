@@ -32,7 +32,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 3
+    DWORD layout;           // 4
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -58,6 +58,11 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float buffTotal[16];    //   and its full duration (0 = unknown)
     DWORD buffFlags[16];    //   1 a buff is shown, 2 it's an aura
     DWORD buffId[16];       //   its type id ('Bxxx', 0 = unknown)
+    // layout 4: commands run on the game's thread (RunCommand)
+    volatile LONG cmdSeq;   // companion: +1 per command (written last)
+    DWORD cmd;              // companion: 1 clear messages, 2 clear chat
+    volatile LONG cmdDone;  // module: the command it answered
+    DWORD cmdResult;        // module: 1 done, 2 refused (see the log), 3 the game thread didn't run it in time
 };
 #pragma pack(pop)
 
@@ -606,6 +611,160 @@ static void ReadTimers() {
     InterlockedIncrement(&g_shared->tmSeq);
 }
 
+// -- the game's thread -------------------------------------------------------------
+// Game functions that change something (clearing messages, later the
+// multiboard, widescreen...) must run on the game's own thread. The module
+// subclasses the game window: its window procedure runs on that thread
+// (WFE's timer callbacks run there and call the game the same way). No game
+// code is patched. It's installed only when a command first needs it, and
+// taken out on unload if it's still ours.
+static const DWORD RVA_MSG_CLEAR = 0x144750;    // __fastcall ClearMessages(frame, 0) (WFE's [0x1013a954])
+static const DWORD UI_MESSAGES = 0x3e8, UI_CHAT = 0x3ec;   // CGameUI: trigger messages / chat frame
+
+static HWND g_gameWnd;
+static WNDPROC g_oldProc;
+static bool g_wide;
+static UINT g_runMsg;
+static volatile LONG g_running;     // the command handed to the game thread (0 = none)
+static DWORD g_gameTid;
+
+static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
+    DWORD pid = 0;
+    char cls[64];
+    GetWindowThreadProcessId(w, &pid);
+    if (pid == GetCurrentProcessId() && IsWindowVisible(w) && GetClassNameA(w, cls, sizeof(cls)) && !strcmp(cls, "Warcraft III")) {
+        g_gameWnd = w;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static int RunOnGameThread(DWORD cmd);
+
+static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
+    if (m == g_runMsg && g_runMsg) {
+        LONG cmd = InterlockedExchange(&g_running, 0);
+        if (cmd) {
+            if (!g_gameTid) {
+                g_gameTid = GetCurrentThreadId();
+                Log("game thread: %lu (the game window's)", g_gameTid);
+            }
+            g_shared->cmdResult = RunOnGameThread((DWORD)cmd);
+            InterlockedExchange(&g_shared->cmdDone, (LONG)wp);
+        }
+        return 0;
+    }
+    return g_wide ? CallWindowProcW(g_oldProc, w, m, wp, lp) : CallWindowProcA(g_oldProc, w, m, wp, lp);
+}
+
+static bool Subclass() {
+    if (g_oldProc)
+        return true;
+    if (!g_gameWnd)
+        EnumWindows(FindGameWnd, 0);
+    if (!g_gameWnd) {
+        Log("game thread: no game window found");
+        return false;
+    }
+    g_runMsg = RegisterWindowMessageA("TWC_GameThreadCall");
+    g_wide = IsWindowUnicode(g_gameWnd) != 0;
+    g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
+                                 : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
+    Log(g_oldProc ? "game thread: window %p subclassed (%s)" : "game thread: subclassing window %p failed", g_gameWnd, g_wide ? "W" : "A");
+    return g_oldProc != nullptr;
+}
+static void Unsubclass() {
+    if (!g_oldProc)
+        return;
+    LONG_PTR now = g_wide ? GetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC) : GetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC);
+    if (now == (LONG_PTR)GameWndProc)   // someone subclassed after us: leave theirs (and ours) in place
+        g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)g_oldProc) : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)g_oldProc);
+}
+
+// a frame the game UI holds, if it looks like a message frame
+static BYTE *MessageFrame(BYTE *ui, DWORD off) {
+    __try {
+        BYTE *f = *(BYTE **)(ui + off);
+        if (!f)
+            return nullptr;
+        DWORD vt = *(DWORD *)f;
+        if (vt < (DWORD)g_base || vt - (DWORD)g_base >= g_imageSize || PageIs((void *)vt, EXEC))
+            return nullptr;
+        return f;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return nullptr;
+    }
+}
+
+typedef void(__fastcall *FrameFn)(void *, int);
+
+static int CallClear(BYTE *frame) {
+    __try {
+        ((FrameFn)(g_base + RVA_MSG_CLEAR))(frame, 0);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return 3;
+    }
+}
+
+// on the game thread: 1 done, 2 refused
+static int RunOnGameThread(DWORD cmd) {
+    if (!g_getUi || !IsGameCode(g_base + RVA_MSG_CLEAR))
+        return 2;
+    void *ui = nullptr;
+    __try {
+        ui = g_getUi(0, 0);
+        if (ui && *(DWORD *)ui != g_uiVtable)
+            ui = nullptr;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        ui = nullptr;
+    }
+    if (!ui)
+        return 2;                       // not in a game
+    if (cmd == 1 || cmd == 2) {
+        BYTE *f = MessageFrame((BYTE *)ui, cmd == 1 ? UI_MESSAGES : UI_CHAT);
+        static int logged[3];       // 1 logged, 2 refused for good
+        if (!logged[cmd]) {
+            logged[cmd] = true;
+            char rtti[64] = "";
+            if (f)
+                RttiName(*(DWORD *)f, g_imageSize, rtti, sizeof(rtti));
+            Log("clear %s: frame %p, vtable +%06lX, RTTI %s", cmd == 1 ? "messages" : "chat", f, f ? *(DWORD *)f - (DWORD)g_base : 0, rtti[0] ? rtti : "(none)");
+            if (rtti[0] && !strstr(rtti, "MessageFrame")) {
+                Log("  not a message frame: refusing (this and later clears of it)");
+                logged[cmd] = 2;
+            }
+        }
+        if (!f || logged[cmd] == 2)
+            return 2;
+        int r = CallClear(f);
+        if (r == 3)
+            Log("clear %s: the game's clear faulted", cmd == 1 ? "messages" : "chat");
+        return r == 1 ? 1 : 2;
+    }
+    return 2;
+}
+
+// a command from the companion: handed to the game thread, answered within 1 s
+static void ServeCommand(LONG seq) {
+    DWORD cmd = g_shared->cmd;
+    int result = 2;
+    if (g_getUi && Subclass()) {
+        InterlockedExchange(&g_running, (LONG)cmd);
+        g_shared->cmdResult = 0;
+        if (!PostMessageA(g_gameWnd, g_runMsg, (WPARAM)seq, 0))
+            Log("game thread: posting to the game window failed (%lu)", GetLastError());
+        for (int i = 0; i < 100 && g_shared->cmdDone != seq; i++)
+            Sleep(10);
+        if (g_shared->cmdDone == seq)
+            return;                     // answered by the game thread
+        InterlockedExchange(&g_running, 0);
+        result = 3;
+    }
+    g_shared->cmdResult = result;
+    InterlockedExchange(&g_shared->cmdDone, seq);
+}
+
 // -- the click -------------------------------------------------------------------
 static bool GameInFront() {
     DWORD pid = 0;
@@ -688,6 +847,9 @@ static void Run() {
             timersAt = now;                     // 10 a second is plenty for whole seconds
             ReadTimers();
         }
+        LONG cseq = g_shared->cmdSeq;
+        if (cseq != g_shared->cmdDone)
+            ServeCommand(cseq);
         if (asked) {
             DWORD result = 0;
             if (t == 1 && GameInFront()) {
@@ -738,7 +900,7 @@ static DWORD WINAPI Worker(void *) {
     return 0;
 }
 
-BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
+BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         g_self = inst;
         DisableThreadLibraryCalls(inst);
@@ -755,7 +917,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 3;
+        g_shared->layout = 4;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
@@ -764,6 +926,8 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
             CloseHandle(t);
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
+        if (!reserved)
+            Unsubclass();               // FreeLibrary, not the game exiting: give the window back
         if (g_shared)
             g_shared->status = 3;
     }
