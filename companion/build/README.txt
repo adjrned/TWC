@@ -2,25 +2,30 @@ TW Companion {VERSION}
 ======================
 
 Install
-  1. Unzip this folder anywhere you like (e.g. Documents\TW Companion).
-     Keep the files together: the exe loads assets\ and lib\ from its folder.
-  2. Double-click "TW Companion.exe". Windows asks for admin rights once per
-     start: Warcraft III usually runs as admin, and the companion has to match
-     to send keys to it.
-  3. Windows SmartScreen or your antivirus may warn about an unknown app. That
-     is normal for small unsigned tools built with AutoHotkey.
-     SmartScreen: "More info" > "Run anyway".
+  Run TWC-Companion-Setup-{VERSION}.exe and press Install. No admin rights
+  needed: it installs for you only, into %LOCALAPPDATA%\Programs\TW Companion,
+  with a Start Menu shortcut (and a desktop one if you tick it).
+
+  Windows SmartScreen or your antivirus may warn about an unknown app. That
+  is normal for small unsigned tools built with AutoHotkey.
+  SmartScreen: "More info" > "Run anyway".
+
+  When TW Companion starts, Windows asks for admin rights: Warcraft III
+  usually runs as admin, and the companion has to match to send keys to it.
 
   Run Warcraft III in Windowed Fullscreen (or windowed) so the companion can
   draw over it and read the screen for quickcast.
 
+  (Or, without installing: unzip TWC-Companion-{VERSION}.zip anywhere and run
+  TW Companion.exe. Keep the files together.)
+
 Update
-  Download the new zip and unzip it over this folder. Your settings
-  (tw-companion.ini) and hidden saves (HiddenFiles.txt) are kept.
+  Run the new Setup and press Update. Your settings (tw-companion.ini), hidden
+  saves and quickcast setup are kept.
 
 Uninstall
-  Delete the folder. The TWRPG overlay also keeps a browser cache in
-  %AppData%\tw-companion, which you can delete too.
+  Windows Settings > Apps > TW Companion > Uninstall. Your Warcraft III save
+  files are not touched.
 
 Keys
   F8           show / hide the window
@@ -28,4 +33,6 @@ Keys
   Shift+Space  TWRPG overlay (in Warcraft III)
   Alt+Esc      quit
 
-This is a beta: please report bugs to Ruzai.
+This is a beta: please report bugs to Ruzai. If something misbehaves: tray
+icon > "Debug: show status in game", and send companion-debug.log from the
+install folder.

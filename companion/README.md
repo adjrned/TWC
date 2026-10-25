@@ -18,10 +18,12 @@ it from Microsoft if the overlay won't start). Warcraft III must run in
 
 ## Install (players)
 
-Download `TWC-Companion-<version>.zip`, unzip it anywhere and run
-**`TW Companion.exe`**: no AutoHotkey install needed. The zip's `README.txt`
-covers SmartScreen, updating (unzip over the old folder; settings are kept) and
-uninstalling.
+Run **`TWC-Companion-Setup-<version>.exe`**: no AutoHotkey or admin rights
+needed. It installs for the current user into
+`%LOCALAPPDATA%\Programs\TW Companion`, adds a Start Menu (and optional
+desktop) shortcut and an Apps & features entry with an uninstaller. Running a
+newer Setup updates it in place and keeps the settings. `/S` installs silently.
+(`TWC-Companion-<version>.zip` is the same without installing.)
 
 ## Build the zip
 
@@ -30,7 +32,8 @@ powershell -ExecutionPolicy Bypass -File companion\build\build.ps1
 ```
 
 Compiles `tw-companion.ahk` with Ahk2Exe (downloaded into `build\.tools` on
-the first run) and zips it with `assets\`, the WebView2 loader DLL and
+the first run), compiles `build\installer.ahk` around it into the Setup exe,
+and zips it with `assets\`, the WebView2 loader DLL and
 `build\README.txt` into `companion\dist\`. The version comes from
 `global version` in `tw-companion.ahk`.
 

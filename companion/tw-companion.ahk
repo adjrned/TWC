@@ -76,7 +76,7 @@ global toastGui := 0, toastText := 0   ; the themed toast (Toast)
 global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
-global version := "1.1.0-beta"
+global version := "1.2.0-beta"
 ; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).

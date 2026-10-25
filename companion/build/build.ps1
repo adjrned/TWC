@@ -56,6 +56,17 @@ Copy-Item "$src\lib\WebView2\LICENSE-Microsoft.txt", "$src\lib\WebView2\LICENSE-
 Copy-Item (Join-Path $build "README.txt") $stage
 (Get-Content "$stage\README.txt" -Raw).Replace("{VERSION}", $version) | Set-Content "$stage\README.txt" -NoNewline
 
+# the installer: build\installer.ahk next to the staged folder (its FileInstall
+# paths are relative to dist\), with the version filled in
+$inst = Join-Path $dist "installer.ahk"
+(Get-Content (Join-Path $build "installer.ahk") -Raw).Replace("{VERSION}", $version) | Set-Content $inst -Encoding UTF8 -NoNewline
+$setup = Join-Path $dist "TWC-Companion-Setup-$version.exe"
+Write-Host "Compiling the installer..."
+$p = Start-Process $a2e -ArgumentList "/in `"$inst`" /out `"$setup`" /base `"$ahk`" /silent verbose" -Wait -PassThru -NoNewWindow
+Remove-Item $inst
+if ($p.ExitCode -ne 0 -or -not (Test-Path $setup)) { throw "Ahk2Exe failed on the installer (exit $($p.ExitCode))" }
+Write-Host "Built $setup"
+
 $zipOut = Join-Path $dist "TWC-Companion-$version.zip"
 if (Test-Path $zipOut) { Remove-Item $zipOut -Force }
 Compress-Archive -Path $stage -DestinationPath $zipOut
