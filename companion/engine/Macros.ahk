@@ -1,10 +1,13 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
-;  MacrosEngine - configurable hotkey -> chat-line macros.
+;  MacrosEngine - configurable hotkey macros, of two kinds:
+;    chat  types chat lines in Warcraft III (one per row of its text)
+;    keys  presses game keys in a row, e.g. items 1-5 at once (its text is the
+;          keys, space separated: "Numpad7 Numpad8 q ^1")
 ; ============================================================================
 class MacrosEngine {
     section := "Macros"
-    macros := []             ; [{hotkey, text}]
+    macros := []             ; [{hotkey, text, kind}]
     registered := Map()
 
     __New() {
@@ -18,7 +21,9 @@ class MacrosEngine {
             out.Push({
                 hotkey: m.hotkey,
                 label: ReadableHotkey(m.hotkey),
-                text: m.text
+                text: m.text,
+                kind: m.kind,
+                summary: MacrosEngine.Summary(m)
             })
         return out
     }
@@ -33,7 +38,7 @@ class MacrosEngine {
 
     save(args) {
         index := args.Has("index") ? Integer(args["index"]) : -1
-        entry := { hotkey: args["hotkey"], text: args["text"] }
+        entry := { hotkey: args["hotkey"], text: args["text"], kind: args.Has("kind") ? args["kind"] : "chat" }
         if index >= 1 && index <= this.macros.Length
             this.macros[index] := entry
         else
@@ -52,16 +57,58 @@ class MacrosEngine {
         return { ok: 1 }
     }
 
+    ; -- keys macros -----------------------------------------------------------
+    static Keys(text) {
+        out := []
+        for t in StrSplit(Trim(text), " ")
+            if t != ""
+                out.Push(t)
+        return out
+    }
+    ; "Numpad7" -> "Item 1", "q" -> "Skill Q", "^1" -> "Ctrl+1"
+    static KeyLabel(t) {
+        for i, k in RemapEngine.INV_TARGETS
+            if t = k
+                return "Item " i
+        for c in RemapEngine.CARD
+            if t = c.game
+                return c.name
+        return ReadableHotkey(t)
+    }
+    ; one line for lists and messages: the first chat line, or the keys
+    static Summary(m) {
+        if m.kind = "keys" {
+            labels := []
+            for t in MacrosEngine.Keys(m.text)
+                labels.Push(MacrosEngine.KeyLabel(t))
+            return Join(" " Chr(0xB7) " ", labels*)
+        }
+        for l in StrSplit(StrReplace(m.text, "`r"), "`n")
+            if Trim(l) != ""
+                return l
+        return ""
+    }
+    ; a key as SendInput text: modifiers, then "{q}" (never "{Q}", which is Shift+q)
+    static KeyInput(t) {
+        RegExMatch(t, "^([\^!+#]*)(.+)$", &m)
+        return m[1] "{" (StrLen(m[2]) = 1 ? StrLower(m[2]) : m[2]) "}"
+    }
+
     ; -- persistence ---------------------------------------------------------
     encode(text) => StrReplace(StrReplace(text, "`r`n", "`n"), "`n", "\n")
     decode(text) => StrReplace(text, "\n", "`n")
 
     persist() {
+        gap := Ini(this.section, "keyGap", "")
         IniDelete(iniFile, this.section)
+        if gap != ""
+            SetIni(gap, this.section, "keyGap")
         SetIni(this.macros.Length, this.section, "count")
         for i, m in this.macros {
             SetIni(m.hotkey, this.section, "hk" i)
             SetIni(this.encode(m.text), this.section, "tx" i)
+            if m.kind != "chat"
+                SetIni(m.kind, this.section, "kd" i)
         }
     }
 
@@ -75,8 +122,9 @@ class MacrosEngine {
         loop count {
             hk := Ini(this.section, "hk" A_Index, "")
             tx := this.decode(Ini(this.section, "tx" A_Index, ""))
+            kd := Ini(this.section, "kd" A_Index, "chat")
             if hk && tx
-                this.macros.Push({ hotkey: hk, text: tx })
+                this.macros.Push({ hotkey: hk, text: tx, kind: kd })
         }
         this.registerAll()
     }
@@ -103,9 +151,9 @@ class MacrosEngine {
         }
         this.registered := Map()
         for m in this.macros {
-            lines := StrSplit(StrReplace(m.text, "`r", ""), "`n")
-            this.registered.Set(m.hotkey,
-                RegisterHotkey(m.hotkey, this.sendLines.Bind(this, lines), WarcraftIII, true))
+            fn := m.kind = "keys" ? this.sendKeys.Bind(this, MacrosEngine.Keys(m.text))
+                : this.sendLines.Bind(this, StrSplit(StrReplace(m.text, "`r", ""), "`n"))
+            this.registered.Set(m.hotkey, RegisterHotkey(m.hotkey, fn, WarcraftIII, true))
         }
     }
 
@@ -113,6 +161,18 @@ class MacrosEngine {
         for line in lines
             if line != ""
                 wc3Chat(line)
+    }
+
+    ; the keys one after another, a few ms apart so the game sees each one
+    ; (keyGap in [Macros], default 15). Sent keys never trigger the companion's
+    ; own hotkeys, so these are game keys.
+    sendKeys(keys) {
+        gap := Integer(Ini(this.section, "keyGap", 15))
+        for i, t in keys {
+            if i > 1 && gap > 0
+                Sleep(gap)
+            SendInput(MacrosEngine.KeyInput(t))
+        }
     }
 
     refresh() {

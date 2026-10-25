@@ -148,7 +148,13 @@ next to the script records each change and each quickcast with the time.
   the screen, no injection, same on 1.28 and Reforged. Until then, quickcast
   slots just send their key.
 - **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
-  `-chest im lagging`, GET GOOD). Message is multi-line: one chat line per row.
+  `-chest im lagging`, GET GOOD), listed like the Loader's saves: key, first
+  line and line count. Select one to edit it below the list (one chat line per
+  row; changes save as you type); **+ New macro** starts an empty one, added
+  once it has a key and a line. Keys the companion already uses (remaps, the
+  overlay keys, F8, Enter, other macros) are refused. *Press keys instead*
+  (under the hint) makes a macro press game keys in a row, e.g. several items
+  at once; remapped keys are stored as the game key, 15 ms apart (`keyGap`).
 - **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
   incrementer. In-game: `-h`/`-host`, `-hp`/`-hostpub`.
 - **Settings** — startup behaviour, load timing, TWRPG folder, reset.

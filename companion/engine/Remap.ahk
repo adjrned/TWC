@@ -114,7 +114,7 @@ class RemapEngine {
         if IsSet(macros) && macros
             for m in macros.list()
                 if Norm(m.hotkey) = k
-                    return "a macro (" StrSplit(m.text, "`n")[1] ")"
+                    return "a macro (" m.summary ")"
         if IsSet(webOverlay) && webOverlay {
             s := webOverlay.get()
             if s.hotkey && Norm(s.hotkey) = k
