@@ -2745,6 +2745,26 @@ static int UiPartCall(BYTE *ui, int i, bool hide) {
 }
 
 // the console's background textures: hide (or show). 1 done, 0 none there, -1 refused for good
+// the console's background textures (up to 9), as WFE's ISCONSOLE walks its region list (it takes
+// the ones its vtable map calls type 5; here CSimpleTexture by RTTI). Hide the UI and the layout use it
+static int ConsoleTextures(BYTE *con, BYTE **tex, int *links) {
+    int n = 0, k = 0;
+    char rtti[64];
+    for (BYTE *l = *(BYTE **)(con + CONSOLE_REGIONS); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && k < 64 && n < 9; l = *(BYTE **)(l + 4), k++) {
+        BYTE *r = *(BYTE **)(l + 8);
+        if (!r || (DWORD)(r - (BYTE *)0x10000) > 0x7ffeffff)
+            continue;
+        DWORD vt = *(DWORD *)r;
+        if (vt < (DWORD)g_base || vt - (DWORD)g_base >= g_imageSize)
+            continue;
+        RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+        if (strstr(rtti, "CSimpleTexture"))
+            tex[n++] = r;
+    }
+    if (links)
+        *links = k;
+    return n;
+}
 static int ConsoleCall(BYTE *ui, bool hide) {
     static int checked;             // 1 checked out, 2 refused
     if (checked == 2)
@@ -2761,17 +2781,7 @@ static int ConsoleCall(BYTE *ui, bool hide) {
     int n = 0, links = 0;
     char rtti[64];
     __try {
-        for (BYTE *l = *(BYTE **)(con + CONSOLE_REGIONS); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && links < 64 && n < 9; l = *(BYTE **)(l + 4), links++) {
-            BYTE *r = *(BYTE **)(l + 8);
-            if (!r || (DWORD)(r - (BYTE *)0x10000) > 0x7ffeffff)
-                continue;
-            DWORD vt = *(DWORD *)r;
-            if (vt < (DWORD)g_base || vt - (DWORD)g_base >= g_imageSize)
-                continue;
-            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
-            if (strstr(rtti, "CSimpleTexture"))
-                tex[n++] = r;
-        }
+        n = ConsoleTextures(con, tex, &links);
         if (!checked) {
             checked = 1;
             RttiName(*(DWORD *)con, g_imageSize, rtti, sizeof(rtti));
@@ -3013,8 +3023,8 @@ static void UlWidth(BYTE *f, float w, bool raw = false) {
     if (s && *(float *)(s->lay + 0x58) != w)
         *(float *)(s->lay + 0x58) = w, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
 }
-static void UlHeight(BYTE *f, float h) {
-    LaySave *s = UlSave(f);
+static void UlHeight(BYTE *f, float h, bool raw = false) {
+    LaySave *s = UlSave(f, raw);
     if (s && *(float *)(s->lay + 0x5c) != h)
         *(float *)(s->lay + 0x5c) = h, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
 }
@@ -3035,8 +3045,8 @@ static void UlAbs(BYTE *f, DWORD pt, float x, float y) {
     if (s)
         Game(RVA_SET_ABS_POINT, s->lay, { pt, F(x), F(y), 1 });
 }
-static void UlClear(BYTE *f) {
-    LaySave *s = UlSave(f);
+static void UlClear(BYTE *f, bool raw = false) {
+    LaySave *s = UlSave(f, raw);
     if (s)
         Game(RVA_CLEAR_POINTS, s->lay, { 1 });
 }
@@ -3265,6 +3275,61 @@ static void UlChat(BYTE *ui, BYTE *) {
         UlPoint(chat, 3, full + FRAME_LAYOUT, 6, 0.25f, 0.2f), UlPoint(chat, 5, full + FRAME_LAYOUT, 8, -0.25f, 0.2f);
 }
 
+// ISCONSOLE 0x100890c0 (read by hand 0x10089113..0x1008a213, its apply 0x100873d0):
+// the console's 9 background textures (ConsoleTextures, WFE's states 0x1013fb30
+// + i * 0x180), each cleared, sized and put on the console [ui+0x428]'s same
+// point (raw) at x, 0: the 4:3 art squeezed into the middle of the screen,
+// every width x 0.75 (aspect index 1 of the tables below; the case's point at
+// 0x10089367 .. 0x1008a08d). Hiding them stays with Hide the UI.
+static const struct { float w, h, x; DWORD pt; } UL_CONSOLE[9] = {
+    { 0.192f, 0.032f, 0.0993f, 0 },         // 0x100891bd: width 0x100face0, x 0x100facf0, height 0.032
+    { 0.065f, 0.032f, 0.2915f, 0 },         // 0x10089370: 0x100fabe0, 0x100fadb0
+    { 0.040185f, 0.032f, -0.31525f, 2 },    // 0x10089520: 0x100faba0, 0x100fafd0
+    { 0.192f, 0.032f, -0.123f, 2 },         // 0x100896d3: 0x100facc0, 0x100faf70
+    { 0.0228f, 0.032f, -0.10085f, 2 },      // 0x10089860: 0x100faaa0, 0x100faf30
+    { 0.192f, 0.176f, 0.1f, 6 },            // 0x100899d2: 0x100facd0, 0x100fad00
+    { 0.192f, 0.15f, 0.292f, 6 },           // 0x10089b70: 0x100facd0, 0x100fada0
+    { 0.192f, 0.176f, -0.125f, 8 },         // 0x10089d26: 0x100facd0, 0x100faf80
+    { 0.025f, 0.176f, -0.1f, 8 },           // 0x10089edc: 0x100faae0, 0x100faf40
+};
+static void UlConsole(BYTE *ui, BYTE *) {
+    BYTE *con = P(ui, UI_CONSOLE), *tex[9];
+    int n = con ? ConsoleTextures(con, tex, nullptr) : 0;
+    for (int i = 0; i < n; i++) {
+        const auto &c = UL_CONSOLE[i];
+        UlClear(tex[i]), UlWidth(tex[i], c.w), UlHeight(tex[i], c.h);
+        UlPoint(tex[i], c.pt, con, c.pt, c.x, 0);
+    }
+}
+
+// ISBUFFBAR 0x100902e0 (read by hand 0x1009033f..0x100908f0), with WFE's own
+// [BUFFUI] defaults (ISUPGRADEDBUFFBAR and ISDRAWBUFFDURATION off): the buff
+// bar B = [[[ui+0x3c4]+0x130]+0x16c] (CBuffBar), all raw (no 0x10087510 here):
+// cleared, 1.05 x cols x 0.0182725 wide (0x100fa898, 0x100faa70[0]) and rows x
+// 0.0165 high (0x100fab50[0]), its bottom right on the game UI's at cols x
+// 0.0182725 - 0.435 (0x100fa860), 0; its label [B+0x15c] right to B's left at
+// -0.0025 (0x100fa948); each indicator 0.0182725 x 0.0165. WFE's show / hide
+// of the bar with its UI (cl) is left to the game.
+static const float BUFF_W = 0.0182725f, BUFF_H = 0.0165f;
+static void UlBuffs(BYTE *ui, BYTE *root) {
+    BYTE *bar = P(P(P(ui, 0x3c4), 0x130), 0x16c);
+    if (!bar)
+        return;
+    int rows = *(int *)(bar + 0x124), cols = *(int *)(bar + 0x128);
+    if (rows < 1 || rows > 4 || cols < 1 || cols > 16)
+        return;
+    UlClear(bar, true);
+    UlWidth(bar, 1.05f * (float)cols * BUFF_W, true), UlHeight(bar, (float)rows * BUFF_H, true);
+    UlPointRaw(bar, 8, root, 8, (float)cols * BUFF_W - 0.435f, 0);
+    BYTE *label = P(bar, 0x15c);
+    if (label && *(DWORD *)label == (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
+        UlPointRaw(label, 5, bar, 3, -0.0025f, 0);
+    for (int r = 0; r < rows; r++)
+        for (int c = 0; c < cols; c++)
+            if (BYTE *b = GridButton(bar, r, c))
+                UlWidth(b, BUFF_W, true), UlHeight(b, BUFF_H, true);
+}
+
 // -- the portrait's HP / mana text, as WFE's Upgraded UI draws it
 // WFE (read by hand: 0x10086cd0, its object 0x1013e008) doesn't move the
 // portrait's own two lines: after each portrait update it empties them
@@ -3427,7 +3492,7 @@ static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUP
     { "inventory", UlItems, 0x3c4 }, { "info panel", UlInfo, 0x3c4 }, { "portrait text", UlPortraitText, UI_PORTRAIT },
     { "upper menu bar", UlMenuBar, 0x3d0 }, { "resource bar", UlResources, 0x3cc }, { "idle workers", UlIdle, 0x3e0 },
     { "time of day", UlTimeOfDay, 0x3f8 }, { "tooltip", UlTooltip, 0x1cc }, { "messages", UlMessages, 0x3e4 },
-    { "chat box", UlChat, 0x3fc },
+    { "chat box", UlChat, 0x3fc }, { "console art", UlConsole, UI_CONSOLE }, { "buff bar", UlBuffs, 0x3c4 },
 };
 static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
 static int g_ulStage;               // groups taken so far in this game (one more each pass at first)

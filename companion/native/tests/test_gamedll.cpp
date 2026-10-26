@@ -128,8 +128,9 @@ int main() {
 
     // the widescreen UI's second batch: the frames' classes, and where the game UI stores them
     bool vt2 = Rtti(0xaad28c, "CUpperButtonBar") & Rtti(0xab20d4, "CResourceBar") & Rtti(0xab0f08, "CPeonBar") & Rtti(0xab2890, "CTimeOfDayIndicator")
-        & Rtti(0xaad684, "CUberToolTipWar3") & Rtti(0xa7d2a8, "CSimpleMessageFrame") & Rtti(0xaadfc4, "CChatEditBar") & Rtti(0xab1008, "CSimpleConsole");
-    CHECK(vt2, "menu bar, resource bar, idle workers, time of day, tooltip, messages, chat box, console: the classes WFE's handlers expect");
+        & Rtti(0xaad684, "CUberToolTipWar3") & Rtti(0xa7d2a8, "CSimpleMessageFrame") & Rtti(0xaadfc4, "CChatEditBar") & Rtti(0xab1008, "CSimpleConsole")
+        & Rtti(0xaad510, "CBuffBar") & Rtti(0xaad470, "CBuffIndicator");
+    CHECK(vt2, "menu bar, resource bar, idle workers, time of day, tooltip, messages, chat box, console, buff bar: the classes WFE's handlers expect");
     static const struct { DWORD at, field; } STORES[] = { { 0x39c53d, 0x3e0 }, { 0x39c189, 0x3f8 }, { 0x3a10f9, 0x1cc }, { 0x39c471, 0x3d0 }, { 0x39c439, 0x3cc } };
     bad = 0;
     for (const auto &s : STORES)
