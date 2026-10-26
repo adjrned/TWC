@@ -155,6 +155,11 @@ TwcModuleRun() {
     r := row(ModuleCheckRows(["2026-10-26 10:00:00.000  portrait text: no frames (no Storm.dll in the game): the portrait's own lines stay"]), "Portrait text")
     r2 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  UI layout: 102 frames laid out for a 1920x1080 window", "2026-10-26 10:00:01.000  UI layout: the chat box faulted: left out"]), "Widescreen UI")
     TwcCheck(r.mark = "✗" && r2.mark = "✗", "portrait text refused: " r.mark ", a layout group faulted: " r2.mark)
+    r1 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  hero buffs: your hero is 'Hpal' (unit 0A0B0C0D)"]), "Your hero's buffs (alerts)")
+    r2 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  buff ring: the first one on the buff icon 0A0B0C0D (vtable +AAD470), 4.0 s of 12.0"]), "Buff ring")
+    r3 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  buff bar size: x1.50 (9 frames resized; bar 0A0B0C0D 1x8)"]), "Bigger buff bar")
+    r4 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  buff bar size: resizing faulted: left to the game"]), "Bigger buff bar")
+    TwcCheck(r1.mark = "✓" && r2.mark = "✓" && r3.mark = "✓" && r4.mark = "✗", "hero buffs, buff ring, buff bar size rows: " r1.mark r2.mark r3.mark r4.mark)
     r := row(ModuleCheckRows(["2026-10-26 10:00:00.000    not the buff bar (+AAD510): refusing it"]), "Hide the UI")
     TwcCheck(r.mark = "✗", "Hide the UI's buff bar refused: " r.mark " " r.detail)
     ; Widescreen next to another widescreen mod (state 4): its own status line
