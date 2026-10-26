@@ -5,9 +5,8 @@
 ;  works on that version (and "Both" features); opening the page picks the
 ;  running game's version. 1.28f features use the game module (injected;
 ;  its row is only on the 1.28f side); Reforged ones only read the screen.
-;  Four tabs set where every feature goes, now and later:
-;    Casting   how abilities go off: quickcast (the game module's on 1.28f,
-;              the screen's on Reforged)
+;  Three tabs set where every feature goes, now and later (quickcast is on
+;  the Remap page, with its keys: a switch and Options per version):
 ;    Timers    what's ready and what's running out: cooldowns, buff timers,
 ;              buff alerts
 ;    Display   how the game looks: health bars (size, colours, numbers, mana
@@ -22,13 +21,13 @@
 ;  with more cards than fit shows them in pages (‹ n/m › in the tab row).
 ; ============================================================================
 
-global wc3Tab := "casting", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
+global wc3Tab := "timers", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
 global wc3Ver := Ini("Wc3", "view", "128"), wc3VerBtns := Map(), wc3VerText, wc3ModuleRow := []
 global wc3PageNo := Map(), wc3PagerCtls := [], wc3PagerText       ; tab + version -> the page shown
 global wc3HoverCard := 0                                           ; the card under the cursor
 global WC3_COL_W := 335, WC3_CARD_H := 48, WC3_ROW := 54
 
-Wc3Tabs() => [["casting", "Casting"], ["timers", "Timers"], ["display", "Display"], ["hosting", "Hosting"]]
+Wc3Tabs() => [["timers", "Timers"], ["display", "Display"], ["hosting", "Hosting"]]
 ; the two versions: key, switch label
 Wc3Versions() => [["128", "1.28f"], ["reforged", "Reforged"]]
 Wc3VerBadge(ver) => ver = "128" ? "1.28f" : "Reforged"
@@ -40,8 +39,6 @@ Wc3OnVersion(f, ver) => f.badge = "Both" || f.badge = Wc3VerBadge(ver)
 ; what each tab will hold later on each version (on the line at the bottom)
 Wc3PlannedText(tab, ver) {
     static p := Map(
-        "casting128", "Which keys quickcast: the Remap page.",
-        "castingreforged", "Which keys quickcast: the Remap page.",
         "timers128", "",
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
         "display128", "",
@@ -62,13 +59,6 @@ Wc3Features() {
     if list
         return list
     list := [
-        { tab: "casting", title: "Quickcast", badge: "1.28f",
-            desc: "Casts at the cursor: the game itself says when it wants a target, no setup.",
-            on: (*) => gameModule.quickcast, set: (v) => gameModule.setQuickcast(v), status: (*) => gameModule.qcStatusText(),
-            window: (*) => QuickcastSettings("128") },
-        { tab: "casting", title: "Quickcast", badge: "Reforged",
-            desc: "Casts at the cursor: reads the command card to see when the game wants a target.",
-            status: Wc3ScreenQcStatus, window: (*) => QuickcastSettings("reforged") },
         { tab: "timers", title: "Cooldowns", badge: "1.28f",
             desc: "Seconds left on abilities and items, drawn on their buttons in the game.",
             on: (*) => timersHud.cooldowns, set: (v) => timersHud.setCooldowns(v), status: (*) => timersHud.cooldownStatus(),
@@ -601,7 +591,7 @@ RefreshWc3() {
         SetShown(c, withModule)
     Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     SetIf(wc3ModuleText, gameModule.statusText())
-    wc3TabBtns["casting"].GetPos(&tx, &ty, , &th)
+    wc3TabBtns["timers"].GetPos(&tx, &ty, , &th)
     topY := ty + th + (withModule ? 44 : 12)        ; under the module row, or right under the tabs
     hintY := H - 40                                 ; the bottom line
     ; the tab's cards on this version, two a row, in pages of as many rows as fit

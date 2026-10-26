@@ -229,13 +229,14 @@ class RemapEngine {
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         reforged := InStr(WC3WindowKey(), "reforged") = 1
         inGameQc := !reforged && gameModule.qcReady()
-        cal := reforged ? quickcast.current() : 0
+        on := reforged ? QuickcastReforgedOn() : gameModule.quickcast
+        cal := reforged && on ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /
-        ; windowed switch or a resize changes it)
-        if !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
+        ; windowed switch or a resize changes it; none when that version's switch is off)
+        if on && !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
             hinted[k] := true
             DebugLog("quickcast: " (reforged ? "no setup for " k : "the game module isn't ready") ": the key alone")
-            Toast(reforged ? "Quickcast isn't set up for this window size (" WC3WindowName(k) "): WC3 page > Casting > Quickcast > Options"
+            Toast(reforged ? "Quickcast isn't set up for this window size (" WC3WindowName(k) "): Remap page > Quickcast Reforged > Options"
                 : "Quickcast needs the game module: WC3 page, top row (" gameModule.qcStatusText() ")", "", 6000)
         }
         this.holding[base] := true, start := A_TickCount

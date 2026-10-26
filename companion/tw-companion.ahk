@@ -118,7 +118,7 @@ global remapListBox, remapListHdr, remapDetail, remapStatus, remapInfo, remapSet
 global remapViewBtns := Map(), remapTiles := [], remapTileAt := Map(), remapListCtrls := [], remapHudCtrls := []
 global remapSlots := [], remapSel := { group: "card", index: 9 }      ; Skill Q
 global remapListCache := "", remapViewShown := ""
-global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
+global remapQcCtrls := Map(), remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
 ; host
 global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
 global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
@@ -1415,9 +1415,21 @@ BuildRemapPage() {
         remapViewBtns[v] := b
         AddToPage("remap", b)
     }
-    remapQcSetupBtn := MkButton("Quickcast", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
-    UISetFont(remapQcSetupBtn, "s8 w600")
-    AddToPage("remap", remapQcSetupBtn)
+    ; quickcast, per version, on the toolbar row: a switch and its Options (its window)
+    local ql := mainGui.AddText("x40 y160 w66 h24 0x200 +Background" C.panel " c" C.muted, "Quickcast")
+    UISetFont(ql, "s8 w600")
+    AddToPage("remap", ql)
+    remapQcCtrls["label"] := ql
+    for v in [["128", "1.28f"], ["reforged", "Reforged"]] {
+        local vl := mainGui.AddText("x40 y160 w56 h24 0x200 +Background" C.panel " c" C.text, v[2])
+        UISetFont(vl, "s8 w600")
+        local sw := MkButton("Off", 40, 160, 40, 24, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
+        local ob := MkButton("Options", 40, 160, 58, 24, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
+        for b in [sw, ob]
+            UISetFont(b, "s8 w600")
+        AddToPage("remap", vl, sw, ob)
+        remapQcCtrls[v[1]] := { label: vl, sw: sw, ob: ob }
+    }
     ; List: column header over a list
     remapListHdr := mainGui.AddText("x49 y160 w660 h18 +Background" C.panel " c" C.dim,
         Fmt("Slot", 12) Fmt("Game key", 11) Fmt("Your key", 18) "Quickcast")
@@ -1449,7 +1461,14 @@ LayoutRemap() {
     global
     local R := TB_R
     remapViewBtns["hud"].Move(R - 104, TB_Y + 2)
-    remapQcSetupBtn.Move(R - 104 - 12 - 110, TB_Y + 2)
+    local qx := R - 104 - 16 - 2 * (56 + 40 + 4 + 58 + 14) - 66
+    remapQcCtrls["label"].Move(qx, TB_Y + 2)
+    qx += 70
+    for v in ["128", "reforged"] {
+        local q := remapQcCtrls[v]
+        q.label.Move(qx, TB_Y + 2), RemapMoveBtn(q.sw, qx + 56, TB_Y + 2), RemapMoveBtn(q.ob, qx + 56 + 44, TB_Y + 2)
+        qx += 56 + 40 + 4 + 58 + 14
+    }
     remapViewBtns["list"].Move(R - 52, TB_Y + 2)
     ; detail card along the bottom (its box: BuildRemapTiles)
     local y := REMAP_CARD_Y, bx := CX + 680 - 18 - 102
@@ -1500,9 +1519,35 @@ BuildRemapTiles() {
 }
 ; Only what changed is touched, each control repainting itself: repainting the
 ; whole window on every click (Freeze/Thaw) made the page flicker.
+; a button and its box to x, y (window units)
+RemapMoveBtn(b, x, y) {
+    global boxes
+    if boxes.Has(b.Hwnd) {
+        bx := boxes[b.Hwnd], bx.Move(x, y, bx.w, bx.h), b.Move(x + 1, y + 1)
+    } else
+        b.Move(x, y)
+}
+; the quickcast switches: 1.28f is the game module's ([Game] quickcast), Reforged the screen's ([Quickcast] reforged)
+RemapQcSwitch(ver, *) {
+    global gameModule
+    if ver = "128"
+        gameModule.setQuickcast(!gameModule.quickcast)
+    else
+        SetIni(QuickcastReforgedOn() ? 0 : 1, "Quickcast", "reforged")
+    RemapQcRefresh()
+}
+QuickcastReforgedOn() => Integer(Ini("Quickcast", "reforged", 1))
+RemapQcRefresh() {
+    global remapQcCtrls, gameModule
+    if !remapQcCtrls.Has("128")
+        return
+    Wc3SetSwitch(remapQcCtrls["128"].sw, gameModule.quickcast)
+    Wc3SetSwitch(remapQcCtrls["reforged"].sw, QuickcastReforgedOn())
+}
 RefreshRemap(capturing := false) {
     global remap, remapSel, remapSlots, remapViewBtns, remapListCtrls, remapHudCtrls, remapTiles, remapListBox,
         remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C
+    RemapQcRefresh()
     d := remap.get(), view := Ini("Remap", "view", "hud") = "list" ? "list" : "hud", hud := view = "hud", sel := 0
     remapSlots := d.slots
     for s in d.slots
