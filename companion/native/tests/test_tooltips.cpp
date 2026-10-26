@@ -5,7 +5,7 @@
 // and off gives the entries back.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, ttOn) == 816 && offsetof(Shared, ttState) == 820 && sizeof(Shared) == 824, "layout 15");
+static_assert(offsetof(Shared, ttOn) == 816 && offsetof(Shared, ttState) == 820 && sizeof(Shared) >= 824, "layout 15");
 
 static BYTE *img;
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC; img[rva] = 0xE9; *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }

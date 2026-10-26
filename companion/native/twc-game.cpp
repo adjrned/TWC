@@ -41,7 +41,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 15
+    DWORD layout;           // 16
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -136,6 +136,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 15: detailed tooltips (TooltipHook)
     DWORD ttOn;             // companion: 1 = the info panel's damage / armor tooltips get WFE-style extra lines
     DWORD ttState;          // module: 0 off, 1 on, 3 refused (see the log)
+    // layout 16: fast menus (FastMenuPass)
+    DWORD fmOn;             // companion: 1 = the menus' transitions near instant, as WFE's Fast Menu
+    DWORD fmState;          // module: 0 off, 1 on, 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -3827,10 +3830,133 @@ static void UiLayoutPass() {
     g_shared->ulState = g_ulBad ? 3 : 1;
 }
 
+// -- fast menus ----------------------------------------------------------------------
+// WFE's Fast Menu ([FUNCTIONS] FASTMENU, read by hand: 0x1006f5b7..0x1006f7a8,
+// its hook 0x10053a60): the menus' (glue screens') transitions go through
+// the game's +0x33a790 (__fastcall(model, anim, a, b, c, d) -> float in st0,
+// ret 0x10; about 95 callers): it plays the backdrop model's animation, has
+// the game call back when it ends, and returns how long it takes. WFE calls
+// it, then sets the animation speed of the glue's two backdrop models (the
+// first sprite +0x190 of [glue+0x194] / [glue+0x198], glue = the game's
+// +0x3112a0()) to 100 (.rdata 0x100fa910) and returns 0.01. With so many
+// callers the function's own start is detoured here (its first 6 bytes,
+// 55 8B EC 83 EC 18, go to a copy that jumps back; nothing in it jumps into
+// them), on the game thread; off and unload put the bytes back and the
+// models' speed to 1, as WFE's off branch writes.
+static const DWORD RVA_MENU_ANIM = 0x33a790, RVA_GLUE = 0x3112a0, DATA_GLUE = 0xd31824, GLUE_MODELS = 0x194, SPRITE_SPEED = 0x190;
+static const BYTE MENU_ANIM_START[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x18 };
+static const float FAST_MENU_SPEED = 100, FAST_MENU_TIME = 0.01f;
+typedef float(__fastcall *MenuAnimFn)(DWORD, DWORD, DWORD, DWORD, DWORD, DWORD);
+static BYTE *g_fmTramp;             // the 6 bytes and a jmp back (stays allocated: a retired module may still be on the stack)
+static bool g_fmHooked, g_fmBad;
+static volatile LONG g_fmCalls;
+
+// the glue's singleton as +0x3112a0 keeps it ([+0xd31824]; that getter makes one when there's none, so it isn't called here)
+static void GlueSpeed(float speed) {
+    BYTE *glue = *(BYTE **)(g_base + DATA_GLUE);
+    if (!glue || (DWORD)(glue - (BYTE *)0x10000) > 0x7ffeffff)
+        return;
+    for (int i = 0; i < 2; i++) {
+        BYTE *f = V(*(BYTE **)(glue + GLUE_MODELS + i * 4));
+        BYTE **list = f && *(int *)(f + 0x174) > 0 ? *(BYTE ***)(f + 0x178) : nullptr;
+        BYTE *sp = list ? V(list[0]) : nullptr;
+        if (sp)
+            *(float *)(sp + SPRITE_SPEED) = speed;
+    }
+}
+static float __fastcall MenuAnimHook(DWORD model, DWORD anim, DWORD a, DWORD b, DWORD c, DWORD d) {
+    float t = ((MenuAnimFn)g_fmTramp)(model, anim, a, b, c, d);
+    if (!g_shared->fmOn || g_fmBad)
+        return t;
+    __try {
+        GlueSpeed(FAST_MENU_SPEED);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_fmBad = true, g_shared->fmState = 3;
+        Log("fast menu: setting the models' speed faulted: stopping");
+        return t;
+    }
+    if (InterlockedIncrement(&g_fmCalls) == 1)
+        Log("fast menu: the first transition sped up (the game's %.2f s -> %.2f s)", t, FAST_MENU_TIME);
+    return FAST_MENU_TIME;
+}
+
+// nothing branches into the first 6 bytes (the function's own jumps, up to its last ret)
+static bool MenuAnimPatchable(const BYTE *f) {
+    if (!FnStart((DWORD)(f - g_base)) || memcmp(f, MENU_ANIM_START, 6))
+        return false;
+    const BYTE *p = f, *furthest = f;
+    for (int i = 0; i < 400; i++) {
+        int kind;
+        const BYTE *t = nullptr;
+        int n = Decode(p, &kind, &t);
+        if (kind == I_BAD || n <= 0)
+            return false;
+        if (t && t > f && t < f + 6)
+            return false;
+        if (t && (kind == I_JCC || kind == I_JMP) && t > furthest)
+            furthest = t;
+        p += n;
+        if ((kind == I_RET || kind == I_JMP) && p > furthest)
+            return true;
+    }
+    return false;
+}
+
+// on the game thread (and on unload): the detour in or out. false = refused (logged)
+static bool FastMenuHook(bool on) {
+    if (on == g_fmHooked)
+        return true;
+    BYTE *f = g_base + RVA_MENU_ANIM;
+    if (on) {
+        if (!MenuAnimPatchable(f)) {
+            Log("fast menu: refused, +%06lX isn't the game's menu animation as 1.28f has it", RVA_MENU_ANIM);
+            LogBytes("  its bytes", f);
+            return false;
+        }
+        if (!g_fmTramp && (g_fmTramp = (BYTE *)VirtualAlloc(nullptr, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)) != nullptr) {
+            memcpy(g_fmTramp, MENU_ANIM_START, 6);
+            g_fmTramp[6] = 0xE9, *(LONG *)(g_fmTramp + 7) = (LONG)((f + 6) - (g_fmTramp + 11));
+            FlushInstructionCache(GetCurrentProcess(), g_fmTramp, 16);
+        }
+        BYTE jmp[6] = { 0xE9, 0, 0, 0, 0, 0x90 };
+        *(LONG *)(jmp + 1) = (LONG)((BYTE *)MenuAnimHook - (f + 5));
+        if (!g_fmTramp || !WriteCode(f, jmp, 6)) {
+            Log("fast menu: writing the detour failed");
+            return false;
+        }
+        g_fmHooked = true;
+        Log("fast menu: on (+%06lX detoured)", RVA_MENU_ANIM);
+        return true;
+    }
+    if (f[0] != 0xE9 || f + 5 + *(LONG *)(f + 1) != (BYTE *)MenuAnimHook) {
+        Log("fast menu: +%06lX was changed by someone else: left as it is", RVA_MENU_ANIM);
+        g_fmHooked = false;
+        return false;
+    }
+    WriteCode(f, MENU_ANIM_START, 6);
+    g_fmHooked = false;
+    __try {
+        GlueSpeed(1);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+    Log("fast menu: off (the game's menu animation again)");
+    return true;
+}
+
+// on the game thread
+static void FastMenuPass() {
+    bool on = g_shared->fmOn && !g_fmBad;
+    if (on != g_fmHooked && !(on && g_shared->fmState == 3) && !FastMenuHook(on))
+        g_shared->fmState = 3;
+    if (g_shared->fmState != 3)
+        g_shared->fmState = g_fmHooked ? 1 : 0;
+}
+
 // on the game thread
 static void DisplayPass() {
     if (!g_getUi)
         return;
+    FastMenuPass();
     WidescreenPass();
     FpsPass();
     LatencyPass();
@@ -3842,7 +3968,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -4099,13 +4225,14 @@ static Shared g_retired;            // what g_shared points at once retired (not
 
 static void SwitchesOff() {
     Shared *s = g_shared;
-    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = 0;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
     if (g_portraitSlot)
         SwapPortrait(false);
     SwapTooltips(false);
+    FastMenuHook(false);
     if (g_prSites && g_portraitHooked)
         PointSites(false);
     if (g_wsApplied)
@@ -4282,7 +4409,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 15;
+        g_shared->layout = 16;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

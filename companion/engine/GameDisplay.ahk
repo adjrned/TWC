@@ -100,6 +100,21 @@ class GameDisplayEngine {
             : st = 2 ? "On · waits for a game in a wide window (4:3 is left as it is)"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
+    ; fast menus (WFE's Fast Menu): layout 16, ini [Display] fastMenu
+    fastMenu => Integer(Ini(this.section, "fastMenu", 0))
+    setFastMenu(on) {
+        SetIni(on ? 1 : 0, this.section, "fastMenu")
+        this.push()
+    }
+    fastMenuStatus() {
+        if !this.fastMenu
+            return "Off"
+        if (w := this.moduleWait(16)) != ""
+            return w
+        st := NumGet(this.gm.live(), Shm.fmState, "uint")
+        return st = 1 ? "On · the menus switch at once"
+            : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
     ; detailed tooltips (the info panel's damage / armor icons): layout 15, ini [Display] tooltips
     tooltips => Integer(Ini(this.section, "tooltips", 0))
     setTooltips(on) {
@@ -138,6 +153,8 @@ class GameDisplayEngine {
             NumPut("uint", this.wideUi && this.gm.enabled ? 1 : 0, v, Shm.ulOn)
         if NumGet(v, Shm.layout, "uint") >= 15
             NumPut("uint", this.tooltips && this.gm.enabled ? 1 : 0, v, Shm.ttOn)
+        if NumGet(v, Shm.layout, "uint") >= 16
+            NumPut("uint", this.fastMenu && this.gm.enabled ? 1 : 0, v, Shm.fmOn)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)

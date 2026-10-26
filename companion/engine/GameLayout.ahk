@@ -87,5 +87,7 @@ class Shm {
     static ulCount := 812
     static ttOn := 816
     static ttState := 820
-    static size := 824
+    static fmOn := 824
+    static fmState := 828
+    static size := 832
 }

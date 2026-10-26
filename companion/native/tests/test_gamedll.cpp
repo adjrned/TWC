@@ -169,6 +169,12 @@ int main() {
     CHECK(!bad && SiteTarget(g_base + 0x408ad3) == g_base + RVA_ATTACK_COOLDOWN && SiteTarget(g_base + 0x40884d) == g_base + RVA_MOVE_SPEED
           && SiteTarget(g_base + 0x409041) == g_base + RVA_TOOLTIP_SET && SiteTarget(g_base + 0x4089b5) == g_base + RVA_TOOLTIP_SET,
           "the fields and calls the lines rely on are where the game's own updates have them");
+
+    // fast menus: the menu animation's start as the detour expects, and the glue singleton / models it reads
+    CHECK(MenuAnimPatchable(g_base + RVA_MENU_ANIM), "the menu animation +%06lX starts 55 8B EC 83 EC 18 and nothing jumps into it", RVA_MENU_ANIM);
+    CHECK(SiteTarget(g_base + 0x33a79e) == g_base + RVA_GLUE && g_base[0x3112c5] == 0xA1 && *(DWORD *)(g_base + 0x3112c6) == (DWORD)(g_base + DATA_GLUE)
+          && g_base[0x33a7c5] == 0x81 && g_base[0x33a7c6] == 0xC3 && *(DWORD *)(g_base + 0x33a7c7) == GLUE_MODELS,
+          "it takes the glue from +%06lX (kept at +%06lX) and walks its models from +0x194", RVA_GLUE, DATA_GLUE);
     Verdict();
     return g_fails;
 }
