@@ -898,6 +898,19 @@ static BYTE *BuffTimes(BYTE *buff) {
     BYTE *b2 = o ? V(*(BYTE **)(o + 0x54)) : nullptr;
     return b2 && ((DWORD)VirtualInt(b2, 0x1c) >> 24) == 'B' ? b2 : buff;
 }
+// Settled in the 1.28f Game.dll (test_gamedll): +0xc0 / +0xc8 are FloatMini values (objects at
+// +0xbc / +0xc4, CBuff's ctor +0x41e632) the game packs (+0x41f509) where it puts an ability's
+// level data Dur / HeroDur (+0x4490d0 / +0x449650: level record +8 / +0xc, loaded under "Dur" /
+// "HeroDur" at +0x6db8b4 / +0x6db8e9): the normal and the hero duration. [+0xa4] (FloatMini at
+// +0xa0) is the time already run when the buff was paused (+0x565540 saves the timer's elapsed
+// there and its time left at +0xac; a fresh start +0x566c70 zeroes it); the game's own full time
+// (+0x563650) is the timer's total + [+0xa4], or [+0xac] + [+0xa4] while paused ([+0x48] > 0).
+static const DWORD BUFF_RAN = 0xa4, BUFF_PAUSED_LEFT = 0xac, BUFF_PAUSED = 0x48, BUFF_DUR = 0xc0, BUFF_HERO_DUR = 0xc8, BUFF_TIMER = 0x84;
+static float BuffGameTotal(BYTE *b) {
+    float ran = *(float *)(b + BUFF_RAN), t = *(int *)(b + BUFF_PAUSED) > 0 ? *(float *)(b + BUFF_PAUSED_LEFT) : TimerValue(b + BUFF_TIMER, 0x10);
+    ran = Finite(ran) ? ran : 0;
+    return Finite(t) ? t + ran : 0;
+}
 static void ReadBuffs(BYTE *ui) {
     BYTE *p = *(BYTE **)(ui + 0x3c4);
     if (!p || !(p = *(BYTE **)(p + 0x130)) || !(p = *(BYTE **)(p + 0x16c)))
@@ -920,9 +933,9 @@ static void ReadBuffs(BYTE *ui) {
             bool hero = IsHero(AgentOwner(buff));
             float left = *(int *)(t + 0x48) > 0 ? *(float *)(t + 0xac) : TimerValue(t + 0x84, 0x18);
             left = Finite(left) ? left : 0;
-            float total = aura ? TimerValue(t + 0x84, 0x10) : AgentOwner(t) ? *(float *)(t + (hero ? 0xc8 : 0xc0)) : 0;
+            float total = aura ? TimerValue(t + 0x84, 0x10) : AgentOwner(t) ? *(float *)(t + (hero ? BUFF_HERO_DUR : BUFF_DUR)) : 0;
             if (!Finite(total) || total <= 0 || total < left)
-                total = TimerValue(t + 0x84, 0x10);
+                total = BuffGameTotal(t);
             g_shared->buffLeft[i] = left;
             g_shared->buffTotal[i] = Finite(total) ? total : 0;
             static int logs;

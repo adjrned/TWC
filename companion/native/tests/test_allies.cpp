@@ -201,6 +201,17 @@ int main() {
     *(DWORD *)(linked + 0x84) = (DWORD)evt, *(float *)(linked + 0xc0) = 25, *(float *)(linked + 0xc8) = 25;
     ReadBuffs(ui);
     CHECK(sh.buffTotal[1] == 25, "a linked buff ('Bpsd'): the times of the buff it points at (%.0f)", sh.buffTotal[1]);
+    // no unit: the game's own full time (+0x563650): the timer's total + the time run before a pause [+0xa4];
+    // paused ([+0x48] > 0): the time left [+0xac] + [+0xa4]
+    *(DWORD *)buff[1] = (DWORD)bvt, *(BYTE **)(buff[1] + BUFF_UNIT) = nullptr, *(DWORD *)(buff[1] + AGENT_HANDLE) = 0xFFFFFFFF;
+    *(float *)(buff[1] + BUFF_RAN) = 3;
+    ReadBuffs(ui);
+    float gt1 = sh.buffTotal[1];
+    *(int *)(buff[1] + BUFF_PAUSED) = 1, *(float *)(buff[1] + BUFF_PAUSED_LEFT) = 6;
+    ReadBuffs(ui);
+    float gt2 = sh.buffTotal[1], gl2 = sh.buffLeft[1];
+    *(int *)(buff[1] + BUFF_PAUSED) = 0, *(float *)(buff[1] + BUFF_RAN) = 0, *(BYTE **)(buff[1] + BUFF_UNIT) = unit[1];
+    CHECK(gt1 == 33 && gt2 == 9 && gl2 == 6, "no unit: the game's total, the timer's + [+0xa4] (%.0f); paused: [+0xac] %.0f left of %.0f", gt1, gl2, gt2);
     Verdict();
     return g_fails;
 }

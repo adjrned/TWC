@@ -294,6 +294,36 @@ int main() {
     // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
     CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
           && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");
+    // the buff questions of study_buffs2.md, settled: (1) the rawcode is [buff+0x34]: the game's own buff bar fill +3DE270
+    // takes it (+3DE290 mov ebx, [eax+0x34]) to find the buff's UI record in the table [+D33150] / mask [+D33158] (key [rec]),
+    // whose name it shows (rec+0x11C, +3DE350); CBuff's vt+0x1BC writes [+0x34] out as text (+46E149, +95F30)
+    CHECK(!memcmp(g_base + 0x3de290, "\x8B\x58\x34", 3) && g_base[0x3de2dc] == 0xA1 && *(DWORD *)(g_base + 0x3de2dd) == (DWORD)(g_base + 0xd33158)
+          && g_base[0x3de2f0] == 0xA1 && *(DWORD *)(g_base + 0x3de2f1) == (DWORD)(g_base + 0xd33150) && !memcmp(g_base + 0x3de304, "\x39\x1E", 2)
+          && !memcmp(g_base + 0x3de350, "\x8D\x86\x1C\x01\x00\x00", 6) && *(DWORD *)(g_base + 0xab55c8 + 0x1bc) == (DWORD)(g_base + 0x46e140)
+          && !memcmp(g_base + 0x46e149, "\x8B\x49\x34", 3) && SiteTarget(g_base + 0x46e14c) == g_base + 0x95f30 && Rtti(0xab55c8, "CBuff"),
+          "a buff's rawcode is [+0x34]: the buff bar finds the buff's icon and name by it (+3DE290), CBuff vt+0x1BC prints it");
+    // (2) +0xC0 / +0xC8 are the normal / hero durations: FloatMinis (vtable +A8DC08 at +0xBC / +0xC4 in CBuff's ctor), packed by
+    // +41F420 where it packs an ability's level data Dur (+4490D0: record +8) / HeroDur (+449650: +0xC), loaded under those names
+    const char *const *names = (const char *const *)(g_base + 0xcb4214);
+    CHECK(!memcmp(g_base + 0x41f509, "\x8B\x86\xC0\x00\x00\x00", 6) && !memcmp(g_base + 0x41f512, "\x8B\x86\xC8\x00\x00\x00", 6)
+          && !memcmp(g_base + 0x41f50f, "\x89\x47\x18", 3) && !memcmp(g_base + 0x41f51d, "\x89\x47\x1C", 3)
+          && SiteTarget(g_base + 0x41f4ac) == g_base + 0x4490d0 && !memcmp(g_base + 0x41f4b8, "\x89\x47\x18", 3)
+          && SiteTarget(g_base + 0x41f4bf) == g_base + 0x449650 && !memcmp(g_base + 0x41f4c6, "\x89\x47\x1C", 3)
+          && !memcmp(g_base + 0x44910b, "\x8B\x4C\x08\x08", 4) && !memcmp(g_base + 0x44968b, "\x8B\x4C\x08\x0C", 4)
+          && !strcmp(names[0], "Dur") && !strcmp(names[1], "HeroDur")
+          && *(DWORD *)(g_base + 0x6db8b6) == (DWORD)(g_base + 0xcb4214) && !memcmp(g_base + 0x6db8e3, "\x89\x46\x08", 3)
+          && *(DWORD *)(g_base + 0x6db8eb) == (DWORD)(g_base + 0xcb4218) && !memcmp(g_base + 0x6db918, "\x89\x46\x0C", 3)
+          && !memcmp(g_base + 0x41e632, "\xC7\x86\xBC\x00\x00\x00", 6) && *(DWORD *)(g_base + 0x41e638) == (DWORD)(g_base + 0xa8dc08)
+          && !memcmp(g_base + 0x41e647, "\xC7\x86\xC4\x00\x00\x00", 6) && Rtti(0xa8dc08, "FloatMini") && BUFF_DUR == 0xc0 && BUFF_HERO_DUR == 0xc8,
+          "a buff's +0xC0 / +0xC8 are its Dur / HeroDur (packed as an ability's level data, +41F509 vs +4490D0 / +449650)");
+    // (3) [+0xA4]: the pause +565540 saves the timer's time left at +0xAC (FloatMini +0xA8) and its elapsed (vt+0x1C) at +0xA4
+    // (FloatMini +0xA0); a fresh start +566C70 zeroes it; the game's total +563650 (ret 4) is the timer's total + [+0xA4]
+    CHECK(!memcmp(g_base + 0x565558, "\xFF\x50\x18", 3) && !memcmp(g_base + 0x56555b, "\x8B\x96\xA8\x00\x00\x00", 6)
+          && !memcmp(g_base + 0x56557c, "\xFF\x50\x1C", 3) && !memcmp(g_base + 0x56557f, "\x8B\x96\xA0\x00\x00\x00", 6)
+          && !memcmp(g_base + 0x566c82, "\x8B\x87\xA0\x00\x00\x00", 6) && *(DWORD *)(g_base + 0x566c91) == (DWORD)(g_base + 0xd04350) && *(float *)(g_base + 0xd04350) == 0
+          && !memcmp(g_base + 0x56365a, "\x83\x7F\x48\x00", 4) && !memcmp(g_base + 0x56367e, "\x8B\x87\xA4\x00\x00\x00", 6) && !memcmp(g_base + 0x5636ba, "\x8B\x87\xAC\x00\x00\x00", 6)
+          && g_base[0x5636b7] == 0xC2 && *(WORD *)(g_base + 0x5636b8) == 4 && BUFF_RAN == 0xa4 && BUFF_PAUSED_LEFT == 0xac && BUFF_PAUSED == 0x48,
+          "a buff's [+0xA4] is the time it ran before a pause (+565540; 0 on a fresh start, +566C70): the game's total adds it (+563650)");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)
