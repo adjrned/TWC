@@ -229,14 +229,47 @@ int main() {
     CHECK(AlliesPatchable() && nsees == 24 && g_base[0x39ea4e] == 0x8B && g_base[0x39ea4f] == 0xCE && g_base[0x3a0554] == 0x8B && g_base[0x3a0555] == 0xCE,
           "+6BFFD0 starts push esi; mov esi, [state] (24 callers, each with the unit in ecx, e.g. +39EA4E / +3A0554); the callback +3E4060 is pushed at +3FAE1A only");
     CHECK(g_base[0x6c0010] == 0xC3 && g_base[0x6c0017] == 0xC3 && g_base[0x3e406a] == 0xC3 && g_base[0x6b276a] == 0xC2 && *(WORD *)(g_base + 0x6b276b) == 4
-          && g_base[0x3e4081] == 0xE8 && SiteTarget(g_base + 0x3e4081) == g_base + RVA_IS_OBSERVER && SiteTarget(g_base + 0x3e408d) == g_base + RVA_ABILITY_DISPLAY
+          && g_base[0x3e4081] == 0xE8 && SiteTarget(g_base + 0x3e4081) == g_base + RVA_CONTROLS && SiteTarget(g_base + 0x3e408d) == g_base + RVA_ABILITY_DISPLAY
           && *(DWORD *)(g_base + 0x3e407d) == (DWORD)(g_base + DATA_ABILITY_DEFAULT),
-          "both return with no stack arguments, the display update pops 4; the callback updates only after the observer test, else [+B68800]");
+          "both return with no stack arguments, the display update pops 4; the callback updates only after the control test, else [+B68800]");
+    // +6A2D90 is "the local player controls the unit in ecx" (+6A2DA0(ecx, local), the owner [+0x58] first), and the
+    // callback passes it the unit (+3E4061 mov edi, ecx .. +3E4081); a command button's click (vt+0x6C, from its mouse
+    // handlers +13D9AA) ends in +3C6B60, which does nothing unless the player controls the selection's active unit
+    static const BYTE CT_MOV[] = { 0x8B, 0xF1 }, CT_OWNER[] = { 0x3B, 0x7E, 0x58 }, GATE[] = { 0x8B, 0x48, 0x34 }, GATE2[] = { 0x8B, 0xC8 };
+    CHECK(SiteTarget(g_base + 0x6a2d9a) == g_base + 0x6a2da0 && g_base[0x6a2d9f] == 0xC3 && !memcmp(g_base + 0x6a2db7, CT_MOV, 2) && !memcmp(g_base + 0x6a2de4, CT_OWNER, 3)
+          && !memcmp(g_base + 0x3e4061, "\x8B\xF9", 2) && g_base[0x3e408b] == 0x8B && g_base[0x3e408c] == 0xCF
+          && *(DWORD *)(g_base + RVA_COMMAND_BUTTON_VTABLE + 0x50) == (DWORD)(g_base + 0x13d950) && !memcmp(g_base + 0x13d9aa, "\xFF\x50\x6C", 3)
+          && SiteTarget(g_base + 0x3c6b72) == g_base + 0x213720 && !memcmp(g_base + 0x3c6b77, GATE, 3) && SiteTarget(g_base + 0x3c6b7a) == g_base + 0x2c24a0
+          && !memcmp(g_base + 0x2c24a0, "\x8B\x81\xE0\x01\x00\x00\xC3", 7) && !memcmp(g_base + 0x3c6b8c, GATE2, 2) && SiteTarget(g_base + 0x3c6b8e) == g_base + RVA_CONTROLS
+          && g_base[0x3c6b95] == 0x74 && PLAYER_SELECTION == 0x34 && SELECTION_ACTIVE == 0x1e0 && RVA_BUTTON_CLICK == 0x13d7f0,
+          "+6A2D90 tests control of the unit in ecx; a card click is dropped by the game unless you control the active unit [[player+0x34]+0x1E0]");
     CHECK(Rtti(RVA_UNIT_VT, "CUnit") && *(DWORD *)(g_base + RVA_UNIT_VT + 0xec) == (DWORD)(g_base + 0x6b9f30) && !memcmp(g_base + 0x6b9f30, "\x8B\x41\x58\xC3", 4),
           "CUnit's vtable +B68914: its owner (vt+0xEC) is [unit+0x58]");
     // the ping: CSimpleTop [+D0F948] (its getter +13B920) keeps the frame under the cursor at +0x16C (+13A320)
     CHECK(g_base[0x13b920] == 0xA1 && *(DWORD *)(g_base + 0x13b921) == (DWORD)(g_base + RVA_SIMPLE_TOP) && !memcmp(g_base + 0x13a320, "\x89\x9F\x6C\x01\x00\x00", 6)
           && Rtti(RVA_SIMPLE_TOP_VT, "CSimpleTop"), "the frame under the cursor: [[+D0F948]+0x16C] (set by the mouse-move pass +13A320)");
+    // the ping's "Not enough mana!": the button data's [+0x594] is the tooltip's first cost (+3FE008 -> +4002B0), which sets
+    // the flag +0x164 (+40031B) that +40DC7A draws with icon 0 of +AAC684: 'ToolTipManaIcon'
+    static const BYTE MC_PUSH[] = { 0xFF, 0xB1, 0x94, 0x05, 0, 0 }, MC_FLAG[] = { 0xC7, 0x87, 0x64, 0x01, 0, 0, 1, 0, 0, 0 }, MC_LEA[] = { 0x8D, 0x83, 0x64, 0x01, 0, 0 };
+    CHECK(DATA_MANA_COST == 0x594 && !memcmp(g_base + 0x3fe008, MC_PUSH, 6) && SiteTarget(g_base + 0x3fe011) == g_base + 0x4002b0 && !memcmp(g_base + 0x4002ed, "\x8B\x45\x0C", 3)
+          && !memcmp(g_base + 0x40031b, MC_FLAG, 10) && !memcmp(g_base + 0x40dc49, MC_LEA, 6) && *(DWORD *)(g_base + 0x40dc7d) == (DWORD)(g_base + 0xaac684)
+          && *(DWORD *)(g_base + 0xaac684) == (DWORD)(g_base + 0xaacce8) && !strcmp((const char *)g_base + 0xaacce8, "ToolTipManaIcon"),
+          "the button data's +0x594 is the mana cost the tooltip shows (its first cost: the flag +0x164, icon ToolTipManaIcon)");
+    // an agent's unit: the game's ability code reads [+0x30], else +7F820 (the handle +0xC / +0x10, '+agl', [+0x30], alive [+0x20] == 0, [+0x54]); mana = +81B30 on unit+0xB8
+    static const BYTE OW_FN[] = { 0x8B, 0x51, 0x10, 0x8B, 0x49, 0x0C }, OW_TAG[] = { 0x81, 0x79, 0x0C, 0x6C, 0x67, 0x61, 0x2B }, OW_MANA[] = { 0x8D, 0x88, 0xB8, 0, 0, 0 };
+    CHECK(!memcmp(g_base + 0x460914, "\x8B\x46\x30", 3) && SiteTarget(g_base + 0x46091d) == g_base + 0x7f820 && !memcmp(g_base + 0x460926, OW_MANA, 6) && SiteTarget(g_base + 0x46092c) == g_base + RVA_UNIT_HP
+          && !memcmp(g_base + 0x7f820, OW_FN, 6) && SiteTarget(g_base + 0x7f826) == g_base + RVA_HANDLE_LOOKUP && !memcmp(g_base + 0x7f833, OW_TAG, 7)
+          && !memcmp(g_base + 0x7f83d, "\x8B\x40\x30", 3) && !memcmp(g_base + 0x7f844, "\x83\x78\x20\x00", 4) && !memcmp(g_base + 0x7f84a, "\x8B\x40\x54", 3)
+          && AGENT_OWNER == 0x30 && AGENT_HANDLE == 0xc && UNIT_MANA == 0xb8, "an ability's unit is [+0x30], else from its handle (+7F820, done by hand); its mana +81B30(unit+0xB8)");
+    // where Enter opens the chat: [ui+0x23C] is the CChatMode (+3A4250), its [+0xC] the CChatDialog (+3D10C8), whose [+0x1A0] starts as all (3),
+    // observers (2) or allies (1) (+3D0B7B..), read by +3EA100; the bar's show +3E3890 takes Ctrl (key 1) as allies first
+    static const BYTE CM_STORE[] = { 0x89, 0xBE, 0x3C, 0x02, 0, 0 }, CD_ALL[] = { 0xC7, 0x87, 0xA0, 0x01, 0, 0, 3, 0, 0, 0 }, CD_ALLY[] = { 0xC7, 0x87, 0xA0, 0x01, 0, 0, 1, 0, 0, 0 };
+    CHECK(!memcmp(g_base + 0x3a4250, CM_STORE, 6) && SiteTarget(g_base + 0x3a4224) == g_base + 0x3d1060 && *(DWORD *)(g_base + 0x3d1098) == (DWORD)(g_base + RVA_CHAT_MODE_VT)
+          && *(DWORD *)(g_base + 0x3d10bf) == (DWORD)(g_base + 0xaa9948) && !strcmp((const char *)g_base + 0xaa9948, "ChatDialog") && !memcmp(g_base + 0x3d10c8, "\x89\x46\x0C", 3)
+          && *(DWORD *)(g_base + 0x3d0b59) == (DWORD)(g_base + RVA_CHAT_DIALOG_VT) && !memcmp(g_base + 0x3d0b7b, CD_ALL, 10) && !memcmp(g_base + 0x3d0bf7, CD_ALLY, 10)
+          && !memcmp(g_base + 0x3ea100, "\x8B\x91\xA0\x01\x00\x00", 6) && Rtti(RVA_CHAT_MODE_VT, "CChatMode") && Rtti(RVA_CHAT_DIALOG_VT, "CChatDialog")
+          && !memcmp(g_base + 0x3e38f9, "\xB9\x01\x00\x00\x00", 5) && SiteTarget(g_base + 0x3e38fe) == g_base + 0x9cdd0 && SiteTarget(g_base + 0x3e3924) == g_base + 0x404600,
+          "the chat opens to the Chat dialog's recipient ([[ui+0x23C]+0xC]+0x1A0, allies when you have one), Ctrl: allies");
     // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
     CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
           && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");

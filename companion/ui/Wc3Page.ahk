@@ -62,13 +62,18 @@ Wc3Features() {
         { tab: "timers", title: "Cooldowns", badge: "1.28f",
             desc: "Seconds left on abilities and items, drawn on their buttons in the game.",
             on: (*) => timersHud.cooldowns, set: (v) => timersHud.setCooldowns(v), status: (*) => timersHud.cooldownStatus(),
-            opts: (d) => (OptCheck(d, "Allied units' abilities and cooldowns too", timersHud.allies, (v) => timersHud.setAllies(v)),
-                OptNote(d, "As WFE's ally ability bar: select an ally's unit to see its command card."),
+            opts: (d) => (OptCheck(d, "Minutes as m:ss", timersHud.cdMinutes, (v) => timersHud.setMinutes("cdMinutes", v)),
+                OptNote(d, "1:35 rather than 95 from a minute up. Off by default, as in WFE."),
+                OptDivider(d),
+                OptCheck(d, "Allied units' abilities and cooldowns too", timersHud.allies, (v) => timersHud.setAllies(v)),
+                OptNote(d, "As WFE's ally ability bar: select an ally's unit to see its command card. Clicking its buttons does nothing."),
                 OptCheck(d, "Alt + click an ability or item: tell your allies its cooldown", timersHud.pings, (v) => timersHud.setPings(v)),
-                OptNote(d, "As WFE's ping: 'Paladin >> Holy Light | Cooldown: 7' or '| Ready!' in the allies' chat. Yours and allies'.")) },
+                OptNote(d, "As WFE's ping: 'Paladin >> Holy Light | Cooldown: 7', '| Ready!' or '| Not enough mana!' to your allies (who gets it: the game's Chat dialog).")) },
         { tab: "timers", title: "Buff timers", badge: "1.28f",
             desc: "Seconds left on buffs, drawn under their icons in the game's buff bar.",
-            on: (*) => timersHud.buffs, set: (v) => timersHud.setBuffs(v), status: (*) => timersHud.buffStatus() },
+            on: (*) => timersHud.buffs, set: (v) => timersHud.setBuffs(v), status: (*) => timersHud.buffStatus(),
+            opts: (d) => (OptCheck(d, "Minutes as m:ss", timersHud.buffMinutes, (v) => timersHud.setMinutes("buffMinutes", v)),
+                OptNote(d, "1:35 rather than 95 from a minute up. Off by default, as in WFE. Auras show no seconds.")) },
         { tab: "timers", title: "Buff alerts", badge: "Both",
             desc: "A line over the game when a buff you added is missing, or (1.28f) running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
@@ -124,7 +129,7 @@ Wc3Features() {
             desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
             opts: (d) => (OptSlider(d, "Latency", (*) => gameDisplay.latencyMs, (v) => gameDisplay.setLatencyMs(v), 5, 1000, 1),
-                OptNote(d, "Milliseconds, 5 to 1000; the game's own is 100 (WFE's default).")) },
+                OptNote(d, "Milliseconds, 5 to 1000. The game's own is 100, as is WFE's default.")) },
         { tab: "hosting", title: "Start countdown", badge: "1.28f",
             desc: "As WFE's: games you host start this long after Start Game, not 6 s.",
             on: (*) => gameDisplay.countdown, set: (v) => gameDisplay.setCountdown(v), status: (*) => gameDisplay.countdownStatus(),
@@ -274,19 +279,22 @@ BuffWatchDialog() {
         ["Set up the buff bar", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]])
     OptNote(d, timersHud.buffBar() ? "The buff bar is set up for this window size." : "The buff bar isn't set up for this window size yet (in a game, your hero selected).")
     OptDivider(d)
-    hd := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.muted, list.Length ? "WATCHED BUFFS" : "NO BUFFS YET: add one in a game, with the buff on your hero")
-    UISetFont(hd, "s8 w600")
-    d.y += 26
+    OptHeader(d, "WATCHED BUFFS")
+    if !list.Length
+        OptNote(d, "None yet: Add a buff, in a game with the buff on your hero.")
+    ; a row each, as the game keys' (its name to type, Remove at the right)
     for i, b in list {
-        n := g.AddText("x" d.x " y" (d.y + 2) " w24 h20 +Background" C.card " c" C.muted, i)
+        n := g.AddText("x" d.x " y" (d.y + 3) " w24 h22 0x200 +Background" C.card " c" C.muted, i)
         UISetFont(n, "s9 w600")
-        e := g.AddEdit("x" (d.x + 28) " y" d.y " w" (d.tw - 28 - 96) " h24 +Background" C.well " c" C.text, b.name)
+        e := g.AddEdit("x" (d.x + 28) " y" (d.y + 2) " w" (d.tw - 28 - 100) " h24 +Background" C.well " c" C.text, b.name)
         e.OnEvent("Change", ((i, src, *) => buffWatch.rename(i, src.Value)).Bind(i))
-        r := g.AddText("x" (d.x + d.tw - 86) " y" d.y " w86 h24 Center 0x200 +Background" C.chip " c" C.text, "Remove")
-        UISetFont(r, "s9 w600"), Box.Round(r, 86, 24, 4)
+        r := g.AddText("x" (d.x + d.tw - 90) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Remove")
+        UISetFont(r, "s9 w600"), Box.Round(r, 90, 28, 4)
         r.OnEvent("Click", ((i, *) => (buffWatch.remove(i), BuffWatchDialog(), RefreshWc3())).Bind(i))
-        d.y += 32
+        d.y += 34
     }
+    if list.Length
+        OptNote(d, "The name is what the alert line says.")
     OptDivider(d)
     OptSlider(d, "Warn at", (*) => buffWatch.warnAt, (v) => (IsNumber(v) && (buffWatch.setWarnAt(Round(Min(Max(v + 0, 0), 60))), true)), 0, 60, 1)
     OptNote(d, "Seconds left when a buff counts as running out (0 = never); 1.28f, with the game module.")
@@ -320,6 +328,9 @@ Wc3DialogShow(d) {
     g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    SendMessage(0x127, 0x10001, 0, g)       ; WM_CHANGEUISTATE: UIS_SET UISF_HIDEFOCUS (no dotted box on the first control)
+    try if InStr(ControlGetClassNN(ControlGetFocus(g)), "Edit")
+        SendMessage(0xB1, -1, 0, ControlGetFocus(g))   ; EM_SETSEL: a name box that has the focus isn't all selected
     DialogRepaint(g)
 }
 
@@ -392,6 +403,26 @@ OptKey(d, label, name) {
     b.OnEvent("Click", (*) => (Wc3Capture(name), kt.Text := gameCmds.keyText(name)))
     d.y += 34
 }
+; a section's title, as the size window's HEALTH BARS
+OptHeader(d, text) {
+    global C
+    hd := d.g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.muted, text)
+    UISetFont(hd, "s8 w600")
+    d.y += 24
+}
+; a colour: its label, a swatch to click (Windows' colour dialog) and a check box after it.
+; get() -> RRGGBB or "player"; pick() -> the new RRGGBB or ""; check(on) for the box
+OptColour(d, label, get, pick, boxText, check) {
+    global C
+    g := d.g, col := get()
+    lb := g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
+    sw := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w60 h22 +Border +Background" (col = "player" ? C.card : col), "")
+    cb := g.AddCheckbox("x" (d.x + 146 + 60 + 14) " y" (d.y + 1) " w" (d.tw - 146 - 60 - 14) " h26 +Background" C.card " c" C.text (col = "player" ? " Checked" : ""), " " boxText)
+    paint() => (cur := get(), sw.Opt("+Background" (cur = "player" ? C.card : cur)), sw.Redraw(), cb.Value := cur = "player")
+    sw.OnEvent("Click", (*) => (pick() != "" && paint()))
+    cb.OnEvent("Click", (src, *) => (check(src.Value), paint()))
+    d.y += 34
+}
 OptNote(d, text) {
     global C
     nt := d.g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, text)
@@ -416,9 +447,9 @@ BarSizeDialog(*) {
     d := Wc3Dialog("Health and mana bar size", "Health bars: times the game's own size (Health bar size switch). Mana bars: times their health bar's.", 460)
     g := d.g
     for sec in [["HEALTH BARS", [["height", "Height"], ["width", "Width"]]], ["MANA BARS", [["manaHeight", "Height"], ["manaWidth", "Width"]]]] {
-        hd := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.muted, sec[1])
-        UISetFont(hd, "s8 w600")
-        d.y += 24
+        if sec[1] = "MANA BARS"
+            OptDivider(d)
+        OptHeader(d, sec[1])
         for r in sec[2] {
             lim := HealthBarsEngine.SIZES[r[1]]
             OptSlider(d, r[2], ((k, *) => healthBars.size(k)).Bind(r[1]), ((k, v) => healthBars.setSize(k, v)).Bind(r[1]), lim[2], lim[3], 0.01, BarSizeText)
@@ -434,44 +465,37 @@ SecsText(v) => RTrim(RTrim(Format("{:.1f}", v), "0"), ".")
 
 ; Health bar colours by owner: each a colour of your own, or the owner's player colour
 BarColoursDialog() {
-    global C, healthBars
+    global healthBars
     static g := 0
     if g
         try g.Destroy()
     d := Wc3Dialog("Health bar colours", "By owner (your own colour, or each owner's player colour), or by health left.", 440)
     g := d.g
     OptChoice(d, "Colour", [["owner", "By owner"], ["health", "By health"]], (*) => healthBars.colourMode, (v) => healthBars.setColourMode(v))
+    OptNote(d, "By health: green, to yellow at half, to red.")
     OptDivider(d)
-    for o in HealthBarsEngine.OWNERS {
-        col := healthBars.colour(o[1])
-        lb := g.AddText("x" d.x " y" (d.y + 2) " w130 h22 0x200 +Background" C.card " c" C.text, o[3])
-        sw := g.AddText("x" (d.x + 136) " y" (d.y + 2) " w60 h22 +Border +Background" (col = "player" ? C.card : col), "")
-        cb := g.AddCheckbox("x" (d.x + 210) " y" d.y " w" (d.tw - 210) " h26 +Background" C.card " c" C.text (col = "player" ? " Checked" : ""), " Player colour")
-        sw.OnEvent("Click", ((key, sw, cb, *) => BarPickColour(key, sw, cb)).Bind(o[1], sw, cb))
-        cb.OnEvent("Click", ((key, def, sw, src, *) => BarPlayerColour(key, def, sw, src.Value)).Bind(o[1], o[2], sw))
-        d.y += 32
-    }
-    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "By owner: click a colour to change it. By health: green, to yellow at half, to red.")
-    UISetFont(nt, "s8")
-    d.y += 22
+    OptHeader(d, "BY OWNER")
+    for o in HealthBarsEngine.OWNERS
+        OptColour(d, o[3], ((key, *) => healthBars.colour(key)).Bind(o[1]), BarPickColour.Bind(o[1], g), "Player colour",
+            ((key, def, on) => BarPlayerColour(key, def, on)).Bind(o[1], o[2]))
+    OptNote(d, "Click a colour to change it. Player colour: each owner's own (the game's 12).")
     Wc3DialogShow(d)
     return g
 }
-BarPlayerColour(key, def, sw, on) {
-    global healthBars, C
+BarPlayerColour(key, def, on) {
+    global healthBars
     last := Ini(healthBars.section, key "Own", def = "player" ? "FFFFFF" : def)
     healthBars.setColour(key, on ? "player" : last)
-    sw.Opt("+Background" (on ? C.card : last)), sw.Redraw()
 }
-BarPickColour(key, sw, cb) {
+; -> the new colour, or "" (cancelled)
+BarPickColour(key, g, *) {
     global healthBars
     col := healthBars.colour(key)
-    if (rgb := ChooseColour(sw.Gui.Hwnd, col = "player" ? Ini(healthBars.section, key "Own", "FFFFFF") : col)) = ""
-        return
+    if (rgb := ChooseColour(g.Hwnd, col = "player" ? Ini(healthBars.section, key "Own", "FFFFFF") : col)) = ""
+        return ""
     SetIni(rgb, healthBars.section, key "Own")
     healthBars.setColour(key, rgb)
-    cb.Value := 0
-    sw.Opt("+Background" rgb), sw.Redraw()
+    return rgb
 }
 ; Windows' colour dialog: RRGGBB in, RRGGBB out ("" = cancelled)
 ChooseColour(owner, rgb) {

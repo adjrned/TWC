@@ -98,5 +98,7 @@ class Shm {
     static pingOn := 856
     static hover := 860
     static pingText := 864
-    static size := 992
+    static tmMinutes := 992
+    static pingChat := 996
+    static size := 1000
 }

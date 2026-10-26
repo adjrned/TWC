@@ -6,13 +6,17 @@
 #include "../twc-game.cpp"
 #include "check.h"
 #include <stddef.h>
-static_assert(offsetof(Shared, alOn) == 848 && offsetof(Shared, pingText) == 864 && sizeof(Shared) >= 992, "layout 18");
+static_assert(offsetof(Shared, alOn) == 848 && offsetof(Shared, pingText) == 864 && offsetof(Shared, tmMinutes) == 992 && sizeof(Shared) == 1000, "layout 19");
 
 static BYTE *img;
-static int displays, observer;
-static int __fastcall FakeObserver(int, int) { return observer; }
+static int displays, clicks;
+static BYTE *controlled;                // the unit the local player controls (+0x6a2d90 tests ecx)
+static int __fastcall FakeControls(BYTE *unit, int) { return unit && unit == controlled; }
+static void __fastcall FakeClick(BYTE *, int, DWORD) { clicks++; }
 static void __fastcall FakeDisplay(BYTE *, int, DWORD) { displays++; }
 static int __fastcall FakeCallback(BYTE *, BYTE *) { return 7; }
+// a unit state (+0x81b30): the fake keeps the value itself at the state's place
+static void __fastcall FakeStat(BYTE *at, int, float *out) { *out = *(float *)at; }
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC, img[rva] = 0xE9, *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }
 // a getter in the image: mov eax, v; ret (passes the decoder)
 static DWORD IntGetter(DWORD rva, DWORD v) { BYTE *p = img + rva; p[-1] = 0xCC, p[0] = 0xB8, *(DWORD *)(p + 1) = v, p[5] = 0xC3; return (DWORD)p; }
@@ -39,7 +43,8 @@ int main() {
     f[-1] = 0xCC, memcpy(f, sees, sizeof(sees));
     BYTE *callee = img + 0x500000; callee[-1] = 0xCC, callee[0] = 0x33, callee[1] = 0xC0, callee[2] = 0xC3;   // xor eax, eax; ret
     *(LONG *)(f + 8) = (LONG)(callee - (f + 12));
-    Stub(RVA_ABILITY_CB, FakeCallback), Stub(RVA_IS_OBSERVER, FakeObserver), Stub(RVA_ABILITY_DISPLAY, FakeDisplay);
+    Stub(RVA_ABILITY_CB, FakeCallback), Stub(RVA_CONTROLS, FakeControls), Stub(RVA_ABILITY_DISPLAY, FakeDisplay), Stub(RVA_BUTTON_CLICK, FakeClick);
+    *(DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE + 0x6c) = (DWORD)(img + RVA_BUTTON_CLICK);
     BYTE *push = img + RVA_ABILITY_CB_PUSH; push[0] = 0x68, *(DWORD *)(push + 1) = (DWORD)(img + RVA_ABILITY_CB);
     // players: local 1, allied with 2 (the colours' Allied: [p+0x38]+0x40 pair -> flags +0x78)
     static BYTE state[0x200], players[16][0x300], allyH[0x60], flagsObj[0x100];
@@ -62,15 +67,29 @@ int main() {
     SeesFn sees2 = (SeesFn)f;
     CHECK(sees2(mine, 0) == 1 && sees2(ally, 0) == 1 && sees2(enemy, 0) == 0 && sees2(nullptr, 0) == 0,
           "sees the commands of: yours yes, an ally's yes, an enemy's no, no unit no (the game's own answer 0 through the copy)");
-    AbilityCbFn cb = (AbilityCbFn)(img + RVA_ABILITY_CB);
+    controlled = mine;
     int r1 = AllyAbilityHook(ally, ability), d1 = displays;
     int r2 = AllyAbilityHook(enemy, ability), d2 = displays;
-    observer = 1; AllyAbilityHook(ally, ability); int d3 = displays; observer = 0;
-    CHECK(r1 == 7 && d1 == 1 && r2 == 7 && d2 == 1 && d3 == 1, "the callback: the game's runs (returns 7), then an ally's ability display is updated, an enemy's not; observers: left to the game");
+    AllyAbilityHook(mine, ability); int d3 = displays;
+    CHECK(r1 == 7 && d1 == 1 && r2 == 7 && d2 == 1 && d3 == 1,
+          "the callback: the game's runs (returns 7), then an ally's ability display is updated, an enemy's not; yours: left to the game (it controls them)");
+    // a click on the command card: dropped while the selection's active unit is an ally's you don't control
+    DWORD *cvt = (DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE);
+    *(int *)(state + 0x54) = 16;
+    static BYTE sel[0x200];
+    *(BYTE **)(players[1] + PLAYER_SELECTION) = sel;
+    ButtonClickFn click = (ButtonClickFn)cvt[0x6c / 4];
+    *(BYTE **)(sel + SELECTION_ACTIVE) = ally; click(nullptr, 0, 1); int c1 = clicks;
+    *(BYTE **)(sel + SELECTION_ACTIVE) = mine; click(nullptr, 0, 1); int c2 = clicks;
+    *(BYTE **)(sel + SELECTION_ACTIVE) = enemy; click(nullptr, 0, 1); int c3 = clicks;
+    *(BYTE **)(sel + SELECTION_ACTIVE) = nullptr; click(nullptr, 0, 1); int c4 = clicks;
+    CHECK(cvt[0x6c / 4] == (DWORD)AllyClickHook && c1 == 0 && c2 == 1 && c3 == 2 && c4 == 3,
+          "clicks: an ally's card dropped; yours, an enemy's, none: the game's click (%d %d %d %d)", c1, c2, c3, c4);
     sh.alOn = 0; AlliesPass();
-    CHECK(!g_alHooked && !memcmp(f, sees, 7) && *(DWORD *)(push + 1) == (DWORD)(img + RVA_ABILITY_CB), "off: the start's 7 bytes and the push are the game's again");
+    CHECK(!g_alHooked && !memcmp(f, sees, 7) && *(DWORD *)(push + 1) == (DWORD)(img + RVA_ABILITY_CB) && cvt[0x6c / 4] == (DWORD)(img + RVA_BUTTON_CLICK),
+          "off: the start's 7 bytes, the push and the button's click entry are the game's again");
     sh.alOn = 1; AlliesPass(); RestoreAll();
-    CHECK(!g_alHooked && !memcmp(f, sees, 7), "RestoreAll (unload) puts them back too");
+    CHECK(!g_alHooked && !memcmp(f, sees, 7) && cvt[0x6c / 4] == (DWORD)(img + RVA_BUTTON_CLICK), "RestoreAll (unload) puts them back too");
 
     // the ping: the hovered button (CSimpleTop's +0x16c) is a command card button
     static BYTE top[0x200], ui[0x500], card[0x200], rowT[16], btn[0x300], data[0x800], info[0x200], panel[0x200], nameFs[0x100];
@@ -94,7 +113,33 @@ int main() {
     *(DWORD *)(ab + 0xd0) = (DWORD)tvt;
     *(BYTE **)(btn + 0x19c) = model, *(BYTE **)(data + 0x6d4) = ab, *(DWORD *)(ab + 0x34) = 'AHhb', *(DWORD *)(ab + 0x20) = 0x200;
     PingCommand(ui);
-    CHECK(!strcmp(sh.pingText, "Paladin >> Holy Light | Cooldown: 8"), "cooling down: \"%s\"", sh.pingText);
+    CHECK(!strcmp(sh.pingText, "Paladin >> Holy Light | Cooldown: 8") && sh.pingChat == 0, "cooling down: \"%s\" (no Chat dialog: where the chat goes is unknown)", sh.pingText);
+    // WFE's "Not enough mana!": the data's cost [+0x594] over the ability's unit's mana (+0xb8, the state getter +0x81b30)
+    Stub(RVA_UNIT_HP, FakeStat);
+    *(BYTE **)(ab + AGENT_OWNER) = mine, *(float *)(mine + UNIT_MANA) = 40, *(int *)(data + DATA_MANA_COST) = 75;
+    *(float *)(flagsObj + 0x84) = 200;                                      // the max mana's object (the fake lookup's)
+    PingCommand(ui);
+    bool nm1 = !strcmp(sh.pingText, "Paladin >> Holy Light | Not enough mana! 8");
+    *(DWORD *)(ab + 0x20) = 0;
+    PingCommand(ui);
+    bool nm2 = !strcmp(sh.pingText, "Paladin >> Holy Light | Not enough mana!");
+    *(float *)(mine + UNIT_MANA) = 75;
+    PingCommand(ui);
+    CHECK(nm1 && nm2 && !strcmp(sh.pingText, "Paladin >> Holy Light | Ready!"), "mana cost 75 over 40 mana: not enough (with the seconds while cooling), 75 of 75: ready");
+    *(DWORD *)(ab + 0x20) = 0x200, *(int *)(data + DATA_MANA_COST) = 0;
+    // where Enter opens the chat: the Chat dialog's recipient ([[ui+0x23c]+0xc]+0x1a0)
+    static BYTE chatMode[0x40], chatDlg[0x200];
+    *(BYTE **)(ui + UI_CHAT_MODE) = chatMode, *(DWORD *)chatMode = (DWORD)(img + RVA_CHAT_MODE_VT);
+    *(BYTE **)(chatMode + CHAT_DIALOG) = chatDlg, *(DWORD *)chatDlg = (DWORD)(img + RVA_CHAT_DIALOG_VT);
+    DWORD to[4];
+    for (DWORD k = 0; k < 4; k++)
+        *(DWORD *)(chatDlg + DIALOG_TO) = k, *(int *)(chatDlg + DIALOG_PLAYER) = -1, PingCommand(ui), to[k] = sh.pingChat;
+    *(DWORD *)(chatDlg + DIALOG_TO) = 0, *(int *)(chatDlg + DIALOG_PLAYER) = 3, PingCommand(ui);
+    CHECK(to[0] == 1 && to[1] == 2 && to[2] == 3 && to[3] == 1 && sh.pingChat == 4, "the chat opens to: all (0, no player), allies (1), observers (2), all (3), one player");
+    // DISPLAYMINUTES: whole seconds by default (WFE's), m:ss with it on
+    char t1[12], t2[12], t3[12];
+    TimeText(95, t1, sizeof(t1), false), TimeText(95, t2, sizeof(t2), true), TimeText(0.46f, t3, sizeof(t3), false);
+    CHECK(!strcmp(t1, "95") && !strcmp(t2, "1:35") && !strcmp(t3, "0.5"), "95 s: \"%s\", with minutes \"%s\"; under a second \"%s\"", t1, t2, t3);
     *(const char **)(nameFs + FS_TEXT) = "";
     PingCommand(ui);
     CHECK(!strcmp(sh.pingText, "Holy Light | Cooldown: 8"), "no unit name: \"%s\"", sh.pingText);
@@ -115,10 +160,25 @@ int main() {
         *(BYTE **)(buff[i] + BUFF_UNIT) = unit[i], *(DWORD *)unit[i] = (DWORD)(img + RVA_UNIT_VT);
     }
     *(DWORD *)(unit[0] + 0x30) = 'Hpal', *(DWORD *)(unit[1] + 0x30) = 'hfoo';
+    *(DWORD *)(flagsObj + HANDLE_TAG) = '+agl';                            // the units' own handles (the fake lookup's object) are alive
     memset(sh.buffLeft, 0, sizeof(sh.buffLeft));
     ReadBuffs(ui);
     CHECK(sh.buffCount == 2 && sh.buffLeft[0] == 4.5f && sh.buffTotal[0] == 12 && sh.buffTotal[1] == 20 && sh.buffId[0] == 'Binf',
           "a hero's buff: %.1f of %.0f (+0xc8), a footman's: of %.0f (+0xc0), the rawcode [buff+0x34]", sh.buffLeft[0], sh.buffTotal[0], sh.buffTotal[1]);
+    // WFE's owner fallback: no [buff+0x30] yet -> the buff's handle +0xc: '+agl', its [+0x30], alive [+0x20] == 0, the unit [+0x54]
+    static BYTE handleObj[0x100];
+    *(BYTE **)(buff[0] + BUFF_UNIT) = nullptr, *(BYTE **)(flagsObj + HANDLE_OWNER) = handleObj, *(BYTE **)(handleObj + HANDLE_OBJ) = unit[0];
+    ReadBuffs(ui);
+    float fb1 = sh.buffTotal[0];
+    *(DWORD *)(handleObj + HANDLE_DEAD) = 1;
+    ReadBuffs(ui);
+    float fb2 = sh.buffTotal[0];
+    *(DWORD *)(handleObj + HANDLE_DEAD) = 0, *(DWORD *)(flagsObj + HANDLE_TAG) = 0;
+    ReadBuffs(ui);
+    float fb3 = sh.buffTotal[0];
+    *(DWORD *)(flagsObj + HANDLE_TAG) = '+agl', *(BYTE **)(buff[0] + BUFF_UNIT) = unit[0];
+    CHECK(fb1 == 12 && fb2 == 30 && fb3 == 30 && sh.buffLeft[0] == 4.5f,
+          "no unit cached: the hero found through the buff's handle (%.0f, +0xc8); a dead or untagged handle: no unit, the timer's full time (%.0f, %.0f), still drawn", fb1, fb2, fb3);
     // a linked kind ('Bpsd'): its times come from the buff its +0x114 handle points at
     DWORD *lvt = (DWORD *)(img + 0xa70800);
     lvt[0x1e8 / 4] = bvt[0x1e8 / 4], lvt[0x1c / 4] = IntGetter(0x601020, 'Bpsd');

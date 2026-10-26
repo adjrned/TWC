@@ -117,7 +117,12 @@ int main() {
     CHECK(texts == 5 && !g_tItem[0].text && g_tCd[0].text && g_tCd[11].text && !g_tCd[5].text && g_tBuff[2].text && !g_tBuff[2].shadow,
         "frames for the 2 command buttons (text + shadow) and 1 buff (text only, as WFE's BUFFUI): %d", texts);
     CHECK(fabsf(lastFontH - 0.013f) < 1e-6f, "the buff's text at WFE's TEXTSIZE 0.013 (%.4f)", lastFontH);
-    CHECK(!strcmp(g_tCd[0].shown, "6") && !strcmp(g_tCd[11].shown, "1:15") && !strcmp(g_tBuff[2].shown, "0.5"), "texts: %s, %s, %s", g_tCd[0].shown, g_tCd[11].shown, g_tBuff[2].shown);
+    CHECK(!strcmp(g_tCd[0].shown, "6") && !strcmp(g_tCd[11].shown, "75") && !strcmp(g_tBuff[2].shown, "0.5"), "texts: %s, %s, %s (whole seconds: WFE's DISPLAYMINUTES off)", g_tCd[0].shown, g_tCd[11].shown, g_tBuff[2].shown);
+    sh.tmMinutes = MIN_COOLDOWNS;
+    TimerFramesDraw(ui);
+    CHECK(!strcmp(g_tCd[11].shown, "1:15") && texts == 5, "minutes on for cooldowns: %s, the same frame", g_tCd[11].shown);
+    sh.tmMinutes = 0;
+    TimerFramesDraw(ui);
     CHECK(!strcmp(lastFont, "Fonts\\Test.ttf") && fonts == 5 && flagCalls == 5, "the skin's MasterFont, flags set (%s, %d fonts)", lastFont, fonts);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tCd[0].shadow[0x1e0] == 1 && *(DWORD *)(g_tCd[0].shadow + TEXT_COLOURS) == 0xFF000000 && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == 0xFFFFFFFF,
         "shown; white text, black shadow");

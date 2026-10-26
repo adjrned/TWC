@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 18
+    DWORD layout;           // 19
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -156,6 +156,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD pingOn;           // companion: 1 = keep `hover` up to date (the ping key is on)
     DWORD hover;            // module: 1 the cursor is on a command card or inventory button
     char pingText[128];     // module: command 5's message ("" = nothing to ping)
+    // layout 19: WFE's DISPLAYMINUTES, and where the chat opens for a ping
+    DWORD tmMinutes;        // companion: m:ss from a minute up, bits: 1 cooldowns ([COOLDOWNUI] DISPLAYMINUTES), 2 buffs ([BUFFUI]); off (WFE's default): whole seconds
+    DWORD pingChat;         // module, with command 5: where Enter opens the chat (the Chat dialog's recipient): 0 unknown, 1 all, 2 allies, 3 observers, 4 one player
 };
 #pragma pack(pop)
 
@@ -787,7 +790,7 @@ static void ReadItems(BYTE *ui) {
 // (the game's show / hide set them), its buff [+0x978]; aura: vt+0x1e8 (CBuff 0, CBuffAura 1);
 // the rawcode [buff+0x34] (the game looks its data up with it, +0x45b9e8); time left from the
 // timer at +0x84 (CAgentTimerExtended, vt+0x18), or +0xac while [+0x48] > 0 (paused); the full
-// time [+0xc8] when the buff's unit [buff+0x30] is a hero, else [+0xc0] (WFE's 0x10038600,
+// time [+0xc8] when the buff's unit (AgentOwner) is a hero, else [+0xc0] (WFE's 0x10038600,
 // its hero test 0x100417b0: a CUnit whose type id starts with a capital, or [unit+0x1f0]).
 // Four kinds ('Bpsd', 'BIpd', 'Bcsd', 'Bssd' by their vt+0x1c tag) keep their time on a
 // linked buff: the handle pair at +0x114 -> [obj+0x54], tagged 'B...' (WFE's 0x10038550).
@@ -796,10 +799,35 @@ static const DWORD RVA_HANDLE_LOOKUP = 0x7e090; // __fastcall obj(id1, id2) (WFE
 typedef void *(__fastcall *LookupFn)(DWORD, DWORD);
 static const DWORD RVA_UNIT_VT = 0xb68914;       // CUnit (its vt+0xec is the owner [+0x58], +0x6b9f30)
 static const DWORD BUFF_UNIT = 0x30, BUFF_ID = 0x34, BUFF_LINK = 0x114;
-static bool BuffOnHero(BYTE *buff) {
-    BYTE *u = *(BYTE **)(buff + BUFF_UNIT);
-    if (!u || (DWORD)(u - (BYTE *)0x10000) > 0x7ffeffff || *(DWORD *)u != (DWORD)(g_base + RVA_UNIT_VT))
-        return false;                           // (WFE's fallback through the buff's handle at +0xc isn't ported)
+// A buff's or ability's unit (both are agents): [+0x30] once the game has cached it, else
+// through the agent's own handle pair +0xc / +0x10, as the game's +0x7f820 does (lookup
+// +0x7e090, tagged '+agl' at [+0xc], its [+0x30] u, alive when [u+0x20] == 0, the unit
+// [u+0x54]; e.g. its ability code +0x460914: [+0x30], else +0x7f820). Done by hand as WFE's
+// 0x1007f649 (the game's dereferences a refused lookup), with the game's tag check added.
+static const DWORD AGENT_HANDLE = 0xc, AGENT_OWNER = 0x30, HANDLE_TAG = 0xc, HANDLE_OWNER = 0x30, HANDLE_DEAD = 0x20, HANDLE_OBJ = 0x54;
+static BYTE *AgentObject(DWORD *pair) {
+    if (pair[0] == 0xFFFFFFFF || pair[1] == 0xFFFFFFFF)
+        return nullptr;
+    BYTE *x = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
+    return x && *(DWORD *)(x + HANDLE_TAG) == '+agl' ? x : nullptr;
+}
+static BYTE *AgentOwner(BYTE *a) {
+    BYTE *u = *(BYTE **)(a + AGENT_OWNER), *x;
+    if (u)
+        return u;
+    if (!(x = AgentObject((DWORD *)(a + AGENT_HANDLE))) || !(u = *(BYTE **)(x + HANDLE_OWNER)))
+        return nullptr;
+    return !*(DWORD *)(u + HANDLE_DEAD) ? *(BYTE **)(u + HANDLE_OBJ) : nullptr;
+}
+static bool IsUnit(BYTE *u) {
+    return u && (DWORD)(u - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)u == (DWORD)(g_base + RVA_UNIT_VT);
+}
+// WFE's hero test 0x100417b0: a CUnit whose own handle is alive, with a type id starting with
+// a capital, or [unit+0x1f0]
+static bool IsHero(BYTE *u) {
+    BYTE *x;
+    if (!IsUnit(u) || !(x = AgentObject((DWORD *)(u + AGENT_HANDLE))) || *(DWORD *)(x + HANDLE_DEAD))
+        return false;
     DWORD id = *(DWORD *)(u + 0x30);
     return (id >> 24) >= 'A' && (id >> 24) <= 'Z' || *(DWORD *)(u + 0x1f0) != 0;
 }
@@ -831,11 +859,14 @@ static void ReadBuffs(BYTE *ui) {
             bool aura = VirtualInt(buff, 0x1e8) != 0;
             g_shared->buffFlags[i] = aura ? 3 : 1;
             g_shared->buffId[i] = *(DWORD *)(buff + BUFF_ID);
+            // as WFE's 0x1007f530: the hero test on the buff's own unit, the times on its source,
+            // whose full time needs a unit of its own (0x10038679, else none: then the timer's)
             BYTE *t = BuffTimes(buff);
+            bool hero = IsHero(AgentOwner(buff));
             float left = *(int *)(t + 0x48) > 0 ? *(float *)(t + 0xac) : TimerValue(t + 0x84, 0x18);
             left = Finite(left) ? left : 0;
-            float total = aura ? TimerValue(t + 0x84, 0x10) : *(float *)(t + (BuffOnHero(t) ? 0xc8 : 0xc0));
-            if (!Finite(total) || total < left)
+            float total = aura ? TimerValue(t + 0x84, 0x10) : AgentOwner(t) ? *(float *)(t + (hero ? 0xc8 : 0xc0)) : 0;
+            if (!Finite(total) || total <= 0 || total < left)
                 total = TimerValue(t + 0x84, 0x10);
             g_shared->buffLeft[i] = left;
             g_shared->buffTotal[i] = Finite(total) ? total : 0;
@@ -1676,15 +1707,17 @@ static const float SHADOW = 0.0006f, CD_TEXT = 0.014f, BUFF_TEXT_Y = -0.0115f;
 // WFE's [BUFFUI] TEXTSIZE 0.013, 0.0105 with its Upgraded UI on and the buff bar not raised
 static float BuffTextHeight() { return g_shared->ulOn && !(g_shared->ulOn & 2) ? 0.0105f : 0.013f; }
 
-// whole seconds, tenths under 1 s, m:ss from a minute (TimerHud's)
-static void TimeText(float s, char *b, size_t n) {
+// as WFE's 0x10033b60: tenths under 1 s, else whole seconds rounded up; m:ss from a minute
+// only with DISPLAYMINUTES (tmMinutes; WFE's default is off: 0x1006c70e reads it with 0)
+static const DWORD MIN_COOLDOWNS = 1, MIN_BUFFS = 2;
+static void TimeText(float s, char *b, size_t n, bool minutes) {
     if (!(s > 0) || s > 99 * 60)
         b[0] = 0;
     else if (s < 1)
         sprintf_s(b, n, "%.1f", s);
     else {
         int c = (int)ceilf(s);
-        if (c < 60)
+        if (c < 60 || !minutes)
             sprintf_s(b, n, "%d", c);
         else
             sprintf_s(b, n, "%d:%02d", c / 60, c % 60);
@@ -1704,7 +1737,7 @@ static void SlotHide(TimerSlot &s) {
 // bottom to the icon's bottom 0.0115 lower; the cooldowns' in the middle with a shadow
 static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
     char t[12];
-    TimeText(left, t, sizeof(t));
+    TimeText(left, t, sizeof(t), (g_shared->tmMinutes & (buff ? MIN_BUFFS : MIN_COOLDOWNS)) != 0);
     if (!t[0] || !btn) {
         SlotHide(s);
         return;
@@ -2504,15 +2537,27 @@ static void FollowPortrait() {
 //  start to AllySeesHook: the game's answer, or true for your and allies' units;
 //  +0x3e4060 the per-ability display callback (fastcall(unit, ability), ret 0; its only
 //  reference is the push at +0x3fae1a, given to the enumerator +0x2c2250): it updates an
-//  ability's display (+0x6b2700, ret 4) only for observers (+0x6a2d90); the push is
-//  pointed at AllyAbilityHook, which also does it for your and allies' units (as WFE's).
-// Both on the game thread, put back when off and on unload.
+//  ability's display (+0x6b2700, ret 4) only for units the local player controls
+//  (+0x6a2d90 with ecx = the unit, +0x3e4081: +0x6a2da0(unit, local player), the owner
+//  [+0x58] or shared control); the push is pointed at AllyAbilityHook, which also does it
+//  for allies' units it doesn't (as WFE's 0x100960a0, which calls it with the unit too).
+// Clicking an ally's ability: the button's click (vt+0x6c +0x13d7f0) posts event 0x30064
+// to the game UI, whose normal mode's handler +0x3c6da0 calls +0x3c6b60: it returns at once
+// unless the local player controls the selection's active unit [[player+0x34]+0x1e0]
+// (+0x3c6b67..+0x3c6b95, the same +0x6a2d90), so no order is issued and no targeting starts.
+// Before that gate it sends the skill / build menu's "show" net command (+0x3c6e22..: the
+// orders [+0xb68840..+0xb68858]), so the click is dropped here too (AllyClickHook, a swap of
+// CCommandButton's vtable entry +0x6c, as the bar and tooltip hooks) while the card shows a
+// unit only this feature shows: an ally's you don't control, when you aren't an observer.
+// All on the game thread, put back when off and on unload.
 static const DWORD RVA_SEES_ALL = 0x6bffd0, RVA_ABILITY_CB = 0x3e4060, RVA_ABILITY_CB_PUSH = 0x3fae1a,
-    RVA_IS_OBSERVER = 0x6a2d90, RVA_ABILITY_DISPLAY = 0x6b2700, DATA_ABILITY_DEFAULT = 0xb68800;
+    RVA_CONTROLS = 0x6a2d90, RVA_ABILITY_DISPLAY = 0x6b2700, DATA_ABILITY_DEFAULT = 0xb68800,
+    RVA_BUTTON_CLICK = 0x13d7f0, PLAYER_SELECTION = 0x34, SELECTION_ACTIVE = 0x1e0;
 typedef int(__fastcall *SeesFn)(void *, int);
 typedef int(__fastcall *AbilityCbFn)(void *, void *);
+typedef void(__fastcall *ButtonClickFn)(void *, int, DWORD);
 static BYTE *g_alTramp;             // the 7 bytes and a jmp back (stays allocated, as Fast menu's)
-static bool g_alHooked, g_alBad;
+static bool g_alHooked, g_alBad, g_alClickHooked;
 
 // a unit of yours or an ally's (a CUnit: owner [+0x58], the alliance test of the colours)
 static bool MineOrAllied(BYTE *unit) {
@@ -2526,6 +2571,8 @@ static bool MineOrAllied(BYTE *unit) {
         return false;
     return owner == local || Allied(state, local, owner);
 }
+// the game's own: does the local player control this unit
+static bool Controls(BYTE *unit) { return GameCall(g_base + RVA_CONTROLS, (DWORD)unit, 0, 0, nullptr) != 0; }
 static int __fastcall AllySeesHook(void *unit, int edx) {
     int r = ((SeesFn)g_alTramp)(unit, edx);
     if (r || !g_shared->alOn || g_alBad)
@@ -2539,10 +2586,10 @@ static int __fastcall AllySeesHook(void *unit, int edx) {
 }
 static int __fastcall AllyAbilityHook(void *unit, void *ability) {
     int r = ((AbilityCbFn)(g_base + RVA_ABILITY_CB))(unit, ability);
-    if (!g_shared->alOn || g_alBad || !ability)
+    if (!g_shared->alOn || g_alBad || !ability || !unit)
         return r;
     __try {
-        if (!GameCall(g_base + RVA_IS_OBSERVER, 0, 0, 0, nullptr) && MineOrAllied((BYTE *)unit)) {
+        if (MineOrAllied((BYTE *)unit) && !Controls((BYTE *)unit)) {    // the game's own did the ones you control
             BYTE *a = (BYTE *)ability, *e = *(BYTE **)(a + 0x1bc);     // as the game's: [+0x1bc] > 0 ? [[+0x1bc]+8] : [+0xb68800]
             DWORD arg = (LONG)(DWORD)e > 0 ? *(DWORD *)(e + 8) : *(DWORD *)(g_base + DATA_ABILITY_DEFAULT);
             GameCall(g_base + RVA_ABILITY_DISPLAY, (DWORD)unit, 0, 1, &arg);
@@ -2556,11 +2603,57 @@ static int __fastcall AllyAbilityHook(void *unit, void *ability) {
     }
     return r;
 }
+// the selection's active unit is one only this feature shows (see above)
+static bool ClickOnAlly() {
+    BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
+    int local = state ? *(short *)(state + 0x28) : -1;
+    if (local < 0 || local >= *(int *)(state + 0x54) || local > 15)
+        return false;
+    BYTE *player = *(BYTE **)(state + 0x58 + 4 * local), *sel = player ? *(BYTE **)(player + PLAYER_SELECTION) : nullptr;
+    BYTE *unit = sel ? *(BYTE **)(sel + SELECTION_ACTIVE) : nullptr;
+    return MineOrAllied(unit) && !Controls(unit) && !((SeesFn)g_alTramp)(unit, 0);
+}
+static void __fastcall AllyClickHook(void *btn, int edx, DWORD mouse) {
+    if (g_alHooked && !g_alBad && g_alTramp) {
+        bool drop = false;
+        __try {
+            drop = ClickOnAlly();
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            drop = false;
+        }
+        if (drop) {
+            static int logs;
+            if (logs++ < 3)
+                Log("allies' abilities: a click on an ally's command card dropped (button %p)", btn);
+            return;
+        }
+    }
+    ((ButtonClickFn)(g_base + RVA_BUTTON_CLICK))(btn, edx, mouse);
+}
+// CCommandButton's click entry: ours or the game's again. false: it wasn't the expected one (logged)
+static bool SwapAllyClick(bool on) {
+    if (on == g_alClickHooked)
+        return true;
+    DWORD *slot = (DWORD *)(g_base + RVA_COMMAND_BUTTON_VTABLE + 0x6c), want = on ? (DWORD)(g_base + RVA_BUTTON_CLICK) : (DWORD)AllyClickHook;
+    if (*slot != want) {
+        Log("allies' abilities: the command button's click entry is %08lX, not the %s: left as it is", *slot, on ? "game's" : "hook");
+        if (!on)
+            g_alClickHooked = false;
+        return false;
+    }
+    DWORD to = on ? (DWORD)AllyClickHook : (DWORD)(g_base + RVA_BUTTON_CLICK), old;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        return false;
+    *slot = to;
+    VirtualProtect(slot, 4, old, &old);
+    g_alClickHooked = on;
+    return true;
+}
 // the two places as 1.28f has them (the start's abs32 is the game state's address)
 static bool AlliesPatchable() {
     BYTE *f = g_base + RVA_SEES_ALL, *push = g_base + RVA_ABILITY_CB_PUSH;
     return FnStart(RVA_SEES_ALL) && f[0] == 0x56 && f[1] == 0x8B && f[2] == 0x35 && *(DWORD *)(f + 3) == (DWORD)(g_base + RVA_PLAYERS)
-        && f[7] == 0xE8 && FnStart(RVA_ABILITY_CB) && FnStart(RVA_IS_OBSERVER) && FnStart(RVA_ABILITY_DISPLAY)
+        && f[7] == 0xE8 && FnStart(RVA_ABILITY_CB) && FnStart(RVA_CONTROLS) && FnStart(RVA_ABILITY_DISPLAY) && FnStart(RVA_BUTTON_CLICK)
         && PageIs(push, EXEC) && push[0] == 0x68 && *(DWORD *)(push + 1) == (DWORD)(g_base + RVA_ABILITY_CB);
 }
 // on the game thread (and on unload): both in or out. false = refused (logged)
@@ -2587,9 +2680,12 @@ static bool AlliesHook(bool on) {
             return false;
         }
         g_alHooked = true;
-        Log("allies' abilities: on (+%06lX detoured, the callback at +%06lX is ours)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH);
+        bool clicks = SwapAllyClick(true);
+        Log("allies' abilities: on (+%06lX detoured, the callback at +%06lX is ours; clicks on allies' cards %s)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH,
+            clicks ? "dropped" : "left to the game's own control test");
         return true;
     }
+    SwapAllyClick(false);
     if (f[0] == 0xE9 && f + 5 + *(LONG *)(f + 1) == (BYTE *)AllySeesHook && g_alTramp)
         WriteCode(f, g_alTramp, 7);
     else
@@ -2618,11 +2714,38 @@ static void AlliesPass() {
 // `hover` up to date for the companion's Alt + click key, and command 5 writes the line
 // (pingText): the ability's name (the string at [button+0x190]+0x2c, as WFE reads it), the
 // unit's name from the info panel ([[[ui+0x3c4]+0x130]+0x128]'s text), the cooldown as the
-// timers read it. The companion sends it (its chat line). WFE's "Not enough mana!" isn't
-// ported (its mana cost field wasn't found).
+// timers read it. The companion sends it (its chat line).
+// WFE's "Not enough mana!" (0x10053fcf): the button data's int [+0x594] over the unit's mana.
+// In the 1.28f Game.dll [+0x594] is the mana cost the tooltip shows: the button's tooltip
+// (+0x3fdfb0, ability kind) passes it first to +0x4002b0, whose first cost sets the flag
+// +0x164 that +0x40dc7a draws with icon 0 of the table +0xaac684, 'ToolTipManaIcon'. The unit
+// is the ability's ([data+0x6d4], AgentOwner, as the game's own ability code reads it), its
+// mana the state at +0xb8 (WFE's unit state 2: +0x81b30, as the mana bars).
+// Where Enter opens the chat (the companion's way of sending): the chat bar's show
+// (+0x3e3890, from the game's Enter) picks allies with Ctrl held, all with Shift held, else
+// the Chat dialog's recipient: [ui+0x23c] CChatMode (stored at +0x3a4250), its [+0xc]
+// CChatDialog (multiplayer only, +0x3d10c8), [+0x1a0] through +0x3ea100: 0 a player
+// ([+0x1a4], -1 = all), 1 allies, 2 observers, 3 all; the dialog starts as allies when the
+// local player has an ally (+0x3d0b7b..+0x3d0bf7). pingChat says which, for the companion.
 static const DWORD RVA_SIMPLE_TOP = 0xd0f948, RVA_SIMPLE_TOP_VT = 0xa7cae4, TOP_HOVER = 0x16c, DATA_NAME = 0x2c;
+static const DWORD DATA_ABILITY = 0x6d4, DATA_MANA_COST = 0x594;
+static const DWORD UI_CHAT_MODE = 0x23c, RVA_CHAT_MODE_VT = 0xaade54, CHAT_DIALOG = 0xc, RVA_CHAT_DIALOG_VT = 0xaadb6c, DIALOG_TO = 0x1a0, DIALOG_PLAYER = 0x1a4;
+static const char *const CHAT_TO[5] = { "? (no Chat dialog: single player?)", "all", "allies", "observers", "one player" };
 static const DWORD FS_TEXT = 0x9c;                  // a CSimpleFontString's text (its setter +0x143430 writes it there)
 static BYTE *P(BYTE *f, DWORD off);
+// pingChat's value: 0 unknown, 1 all, 2 allies, 3 observers, 4 one player
+static DWORD ChatRecipient(BYTE *ui) {
+    BYTE *m = P(ui, UI_CHAT_MODE), *d = m && *(DWORD *)m == (DWORD)(g_base + RVA_CHAT_MODE_VT) ? P(m, CHAT_DIALOG) : nullptr;
+    if (!d || *(DWORD *)d != (DWORD)(g_base + RVA_CHAT_DIALOG_VT))
+        return 0;
+    switch (*(DWORD *)(d + DIALOG_TO)) {
+    case 0: return *(int *)(d + DIALOG_PLAYER) == -1 ? 1 : 4;
+    case 1: return 2;
+    case 2: return 3;
+    case 3: return 1;
+    }
+    return 0;
+}
 // the command card or inventory button under the cursor (nullptr: none)
 static BYTE *HoveredButton(BYTE *ui) {
     BYTE *top = *(BYTE **)(g_base + RVA_SIMPLE_TOP);
@@ -2664,7 +2787,7 @@ static void HoverPass(BYTE *ui) {
 }
 // command 5, on the game thread: 1 pingText written, 2 nothing to ping
 static int PingCommand(BYTE *ui) {
-    g_shared->pingText[0] = 0;
+    g_shared->pingText[0] = 0, g_shared->pingChat = 0;
     __try {
         BYTE *btn = HoveredButton(ui), *data = btn ? *(BYTE **)(btn + 0x190) : nullptr;
         if (!data || !PageIs(data + DATA_NAME, READ))
@@ -2678,13 +2801,23 @@ static int PingCommand(BYTE *ui) {
             PlainText(*(const char **)(name + FS_TEXT), who, sizeof(who));
         float left = 0, total = 0;
         ButtonCooldown(btn, &left, &total);
-        TimeText(left, t, sizeof(t));
-        char state[32];
-        sprintf_s(state, t[0] ? "Cooldown: %s" : "Ready!", t);
+        TimeText(left, t, sizeof(t), (g_shared->tmMinutes & MIN_COOLDOWNS) != 0);
+        // WFE's order (0x10053fcf..0x1005401c): the mana cost over the unit's mana, else the
+        // cooldown, else ready; the seconds after either of the first two
+        float mana = -1, maxMana = 0;
+        BYTE *ab = *(BYTE **)(data + DATA_ABILITY), *owner = ab ? AgentOwner(ab) : nullptr;
+        int cost = ab ? *(int *)(data + DATA_MANA_COST) : 0;
+        if (cost > 0 && IsUnit(owner))
+            UnitStat(owner, UNIT_MANA, UNIT_MAXMANA_HANDLE, &mana, &maxMana);
+        bool noMana = cost > 0 && mana >= 0 && (float)cost > mana;
+        char state[40];
+        sprintf_s(state, "%s%s%s", noMana ? "Not enough mana!" : t[0] ? "Cooldown:" : "Ready!", t[0] ? " " : "", t);
         sprintf_s(g_shared->pingText, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, ability, state);
+        g_shared->pingChat = ChatRecipient(ui);
         static int logs;
         if (logs++ < 3)
-            Log("ping: \"%s\" (button %p)", g_shared->pingText, btn);
+            Log("ping: \"%s\" (button %p, mana cost %d, the unit's mana %.0f; Enter opens the chat to %s)", g_shared->pingText, btn, cost, mana,
+                CHAT_TO[g_shared->pingChat < 5 ? g_shared->pingChat : 0]);
         return 1;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         Log("ping: reading the button faulted");
@@ -4974,7 +5107,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 18;
+        g_shared->layout = 19;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -4985,7 +5118,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters, the allies hooks
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;

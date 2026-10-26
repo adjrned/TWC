@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 18, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 19, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -30,7 +30,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 18 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 18, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 19 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 19, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     TwcCheck(t.cd[1].left = 4.5 && t.buffs.Length = 1 && t.buffs[1].left = 9, "timers: the first cooldown and buff")
@@ -71,6 +71,12 @@ TwcModuleRun() {
     TwcCheck(NumGet(v, Shm.ulOn, "uint") = 3 && gameDisplay.buffBarLabel = "Buff bar: raised", "the buff bar raised: ulOn bit 2 (" NumGet(v, Shm.ulOn, "uint") ")")
     gameDisplay.toggleBuffBarUp()
     TwcCheck(NumGet(v, Shm.ulOn, "uint") = 1, "and back in place")
+    ; WFE's DISPLAYMINUTES: off by default, a bit each
+    TwcCheck(NumGet(v, Shm.tmMinutes, "uint") = 0, "minutes off by default: whole seconds (WFE's)")
+    timersHud.setMinutes("cdMinutes", 1), m1 := NumGet(v, Shm.tmMinutes, "uint")
+    timersHud.setMinutes("buffMinutes", 1), m2 := NumGet(v, Shm.tmMinutes, "uint")
+    timersHud.setMinutes("cdMinutes", 0), timersHud.setMinutes("buffMinutes", 0)
+    TwcCheck(m1 = 1 && m2 = 3 && NumGet(v, Shm.tmMinutes, "uint") = 0, "minutes pushed: cooldowns 1, buffs 2 (" m1 ", " m2 ")")
     ; the ping key: only on a button the module says is under the cursor
     TwcCheck(!timersHud.pingActive(), "ping key: not in the game window, so the click is the game's")
     rows := ModuleCheckRows(ModuleCheckLog())

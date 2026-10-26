@@ -8,9 +8,12 @@
 ;  Cooldowns' options (layout 18): allied units' abilities and cooldowns on
 ;  the command card too, as WFE's ISALLYABILITYBAR ([Timers] allies), and
 ;  WFE's cooldown ping: Alt + click an ability or item and your allies read
-;  "<unit> >> <ability> | Cooldown: 7" / "| Ready!" in chat ([Timers] ping,
-;  on by default; the module says which button is under the cursor and
-;  writes the line, the companion types it with Enter, the allies' chat).
+;  "<unit> >> <ability> | Cooldown: 7" / "| Ready!" / "| Not enough mana!" in
+;  chat ([Timers] ping, on by default; the module says which button is under
+;  the cursor and writes the line, the companion types it with Enter: the
+;  game opens the chat to the Chat dialog's recipient, allies unless changed).
+;  WFE's DISPLAYMINUTES per switch (layout 19, [Timers] cdMinutes /
+;  buffMinutes, off as WFE's: 95 rather than 1:35).
 ;  No screen reading on 1.28f: that's for Reforged (planned, see the WC3
 ;  page's Timers tab). The buff bar setup here (two presses in game, per
 ;  window size: [Timers] buff_<window>) is the buff alerts' (BuffWatch).
@@ -67,8 +70,20 @@ class TimerHud {
         DebugLog("cooldown ping: " (text != "" ? text : "nothing to ping (" r ")"))
         if text = ""
             return
-        KeyWait("LAlt", "T1")               ; Alt + Enter would switch the game's window mode
+        ; Alt + Enter would switch the game's window mode; with Shift the chat opens to all, with Ctrl to allies
+        for held in ["LAlt", "Shift", "Ctrl"]
+            KeyWait(held, "T1")
+        names := ["", "all", "allies", "observers", "one player"]
+        dest := (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 19 ? NumGet(v, Shm.pingChat, "uint") : 0
+        if dest && dest != 2
+            DebugLog("cooldown ping: the game's Chat dialog sends to " names[dest + 1] ", not allies: the line goes there")
         wc3Chat(text)
+    }
+    cdMinutes => Integer(Ini(this.section, "cdMinutes", 0))
+    buffMinutes => Integer(Ini(this.section, "buffMinutes", 0))
+    setMinutes(key, on) {
+        SetIni(on ? 1 : 0, this.section, key)
+        this.pushGame()
     }
     cooldowns => Integer(Ini(this.section, "cooldowns", 0))
     buffs => Integer(Ini(this.section, "buffs", 0))
@@ -88,6 +103,8 @@ class TimerHud {
             NumPut("uint", this.gm.enabled && this.cooldowns && this.allies ? 1 : 0, v, Shm.alOn)
             NumPut("uint", this.gm.enabled && this.cooldowns && this.pings ? 1 : 0, v, Shm.pingOn)
         }
+        if v && NumGet(v, Shm.layout, "uint") >= 19
+            NumPut("uint", (this.cdMinutes ? 1 : 0) | (this.buffMinutes ? 2 : 0), v, Shm.tmMinutes)
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {
