@@ -6,7 +6,8 @@
 #include "check.h"
 static BYTE *img;
 static BYTE ui[0x500], card[0x200], rows[3][16], btn[0x300], frame[4][0x200], spr[4][0x200], tod[0x200], tspr[0x200], other[0x200];
-static BYTE *cardBtns[4], *lists[5][1];
+static BYTE *cardBtns[4], *lists[6][1];
+static BYTE menu[0x200], quest[0x200], qspr[0x200];
 static float *M(BYTE *s, DWORD off) { return (float *)(s + off); }
 static void Frame(BYTE *f, BYTE *s, DWORD svt, int k) {
     *(DWORD *)f = (DWORD)(img + 0xa7ac24); *(int *)(f + 0x174) = 1; lists[k][0] = s; *(BYTE ***)(f + 0x178) = lists[k];

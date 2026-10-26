@@ -3707,7 +3707,7 @@ static void UlBuffs(BYTE *ui, BYTE *root) {
 // while its frame still holds the same sprite. The models: a command button's
 // cooldown sweep [+0x19c] (WFE's Cooldown UI does it) and autocast [+0x1a8], an
 // inventory button's sweep [+0x19c], a hero button's point model [+0x1d8], the
-// time of day [ui+0x3f8] itself. The game makes the sweep and autocast ones
+// time of day [ui+0x3f8] itself, the upper menu bar's quest sprite [+0x13c]. The game makes the sweep and autocast ones
 // the first time they're needed (+0x3e1a60 / +0x3e1930; WFE detours the
 // autocast maker): the 2 s pass picks them up.
 static const DWORD RVA_SPRITE_MINI_VT[2] = { 0xa825a4, 0xa82784 }, RVA_SPRITE_UBER_VT[2] = { 0xa8266c, 0xa8270c };
@@ -3788,6 +3788,12 @@ static void UlModels(BYTE *ui, BYTE *) {
         if (BYTE *b = ItemButton(ui, i))
             UlModel(P(b, 0x19c), UL_MODEL_X);
     UlModel(P(ui, 0x3f8), UL_CLOCK_X);
+    // the quest sprite (WFE's 0x10087750, after ISUPPERMENUBAR and in its hook of the game's
+    // +0x3e4d80): the menu bar's [+0x13c], a CSpriteFrame the game makes the first time a quest
+    // flashes (+0x3e4df8) and fits onto the Quests button itself (SetAllPoints +0x13fad0 on
+    // [bar+0x138], +0x3e4e36), so with the button narrowed only its model needs the squeeze
+    // (0x100fae00[0] = 0.725, as the buttons'); the 2 s pass picks it up once it's made
+    UlModel(P(P(ui, 0x3d0), 0x13c), UL_MODEL_X);
 }
 
 // -- the portrait's HP / mana text, as WFE's Upgraded UI draws it

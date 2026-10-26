@@ -219,6 +219,11 @@ int main() {
           "the bar's update / hide / show / dtor, a texture's +0x24 and a command button's +0x6C are those functions");
     CHECK(*(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x64) == (DWORD)(g_base + 0x13b940) && *(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x68) == (DWORD)(g_base + 0x13c390),
           "Hide the UI's buff bar: CBuffBar's +0x64 / +0x68 are the simple frame's hide / show (no stack arguments)");
+    // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
+    static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
+    CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)
+          && !memcmp(g_base + 0x3e4e2a, QS_PUSH, 6) && SiteTarget(g_base + 0x3e4e36) == g_base + 0x13fad0 && *(DWORD *)(g_base + 0x125029) == (DWORD)(g_base + 0xa7ac24),
+          "the quest sprite [bar+0x13C] is a CSpriteFrame the game makes once and sets onto the Quests button [bar+0x138] (+3E4D80)");
     // health bars: the set-unit entry +0x78 repaints the bar itself or through the update +0x74
     DWORD su = *(DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_SET_UNIT);
     CHECK(su == (DWORD)(g_base + 0x4101c0) && FnStart(0x4101c0) && g_base[0x410254] == 0xFF && g_base[0x410255] == 0x52 && g_base[0x410256] == STATBAR_UPDATE,
