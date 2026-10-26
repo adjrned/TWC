@@ -38,6 +38,8 @@ static void __fastcall FakeSetPoint(BYTE *, int, int, void *rel, int, float x, f
 static void __fastcall FakeSetAbs(BYTE *lay, int, int, float x, float y, int) { absPoints++; lastX = x; lastY = y; *(float *)(lay + 0x10) = y; }
 static const char *__fastcall FakeSkin(const char *key, int) { return !strcmp(key, "MasterFont") ? "Fonts\\Test.ttf" : nullptr; }
 static void __fastcall FakeTextHide(BYTE *t, int) { hides++; t[0x1e0] = 0; }
+static BYTE barTexts[3][0x20]; static int barTextHides;
+static void __fastcall FakeRegionHide(BYTE *r, int) { if (r >= barTexts[0] && r < barTexts[3]) barTextHides++, r[0x10] = 0; }
 static void __fastcall FakeTextShow(BYTE *t, int) { shows++; t[0x1e0] = 1; }
 static void __fastcall FakeNop(void *, int) {}
 
@@ -72,7 +74,7 @@ int main() {
     Stub(RVA_TEXT_CTOR, FakeTextCtor); Stub(RVA_TEXT_FLAGS, FakeFlags); Stub(RVA_TEXT_SET, FakeSetText);
     Stub(RVA_SET_FONT, FakeSetFont); Stub(RVA_SET_POINT, FakeSetPoint); Stub(RVA_SET_ABS_POINT, FakeSetAbs);
     Stub(RVA_SKIN_LOOKUP, FakeSkin); Stub(RVA_LAYOUT_REFRESH, FakeRefresh); Stub(RVA_BAR_CTOR, FakeBarCtor);
-    Stub(RVA_BAR_LEVEL, FakeBarLevel); Stub(RVA_BAR_TEXT_REFRESH, FakeNop); Stub(RVA_UNIT_HP, FakeState);
+    Stub(RVA_BAR_LEVEL, FakeBarLevel); Stub(RVA_REGION_HIDE, FakeRegionHide); Stub(RVA_UNIT_HP, FakeState);
     Stub(RVA_HANDLE_LOOKUP, FakeLookup);
     // vtables: data pages (the code they point to is in the stub area at 0x200000)
     DWORD *tv = (DWORD *)(img + RVA_TEXT_VTABLE), *lv = (DWORD *)(img + RVA_TEXT_LAYOUT_VTABLE), *cv = (DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE);
@@ -147,6 +149,7 @@ int main() {
         *(float *)(b + BAR_WIDTH) = 0.05f; *(float *)(b + BAR_HEIGHT) = 0.004f;
         *(BYTE **)(b + BAR_POS) = pos[i]; *(float *)(pos[i] + 4) = 0.3f + i * 0.1f; *(float *)(pos[i] + 8) = 0.4f;
         *(BYTE **)(b + BAR_FILL) = fills[i]; *(DWORD **)fills[i] = fillVt;
+        *(BYTE **)(b + BAR_TEXT) = barTexts[i]; barTexts[i][0x10] = 1;
     }
     auto update = [&](int i) { ((BarUpdateFn)bv[STATBAR_UPDATE / 4])(bars[i], 0, units[i]); };
     sh.hnOn = 1; sh.hnMode = 1; sh.mbOn = 1; sh.mbHeight = 0.75f;
@@ -161,6 +164,7 @@ int main() {
     CHECK(e0 && e0->mana && e0->text && e1 && !e1->mana && e1->text && e2 && e2->mana && sh.mbCount == 2 && sh.hnCount == 3 && texts == t0 + 3,
         "3 numbers, 2 mana bars (the unit without mana has none)");
     CHECK(!strcmp((char *)e0->text + 0x100, "250 / 500") && !strcmp((char *)e1->text + 0x100, "40 / 500"), "numbers: %s, %s", (char *)e0->text + 0x100, (char *)e1->text + 0x100);
+    CHECK(barTextHides >= 3 && !barTexts[0][0x10] && !barTexts[1][0x10], "each health bar's own text hidden (the dark copy beside the number)");
     BYTE *m0 = e0->mana;
     CHECK(*(DWORD *)(m0 + BAR_KIND) == 0 && fabsf(*(float *)(m0 + BAR_HEIGHT) - 0.003f) < 1e-6f && *(float *)(m0 + BAR_WIDTH) == 0.05f && *(int *)(m0 + BAR_CUR) == 30 && *(int *)(m0 + BAR_MAX) == 60,
         "the mana bar: kind 0, 3/4 the height, the same width, 30 of 60");

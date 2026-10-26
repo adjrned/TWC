@@ -1315,7 +1315,8 @@ static const DWORD RVA_TEXT_LAYOUT_VTABLE = 0xa7b4e4;   // its layout part, at +
 static const DWORD RVA_COMMAND_BUTTON_VTABLE = 0xaad9b8;    // CCommandButton ([0x1013a6ec]): a simple frame, anchored to as it is
 static const DWORD RVA_BAR_CTOR = 0x3d57f0;         // CStatBar __fastcall(mem, 0, 0, [health bar+0x154], kind) -> it ([0x1013a970])
 static const DWORD RVA_BAR_LEVEL = 0x3a7ca0;        // __fastcall(bar, 0, [health bar+0x84]) ([0x1013a980])
-static const DWORD RVA_BAR_TEXT_REFRESH = 0x141ce0; // __fastcall([bar+0x140], 0) ([0x1013aa3c])
+static const DWORD RVA_REGION_HIDE = 0x141ce0;      // a region's (texture, font string) hide, __fastcall(region, 0) ([0x1013aa3c]): WFE hides a bar's own text [bar+0x140] with it
+static const DWORD RVA_REGION_SHOW = 0x141e80;      // and its show ([0x1013aa40])
 static const DWORD TEXT_LAYOUT = 0xb4, TEXT_FLAGS = 0x1f0, TEXT_COLOURS = 0x1f4, TEXT_SIZE = 0x240, TEXT_ID = 0x1388;
 static const DWORD TEXT_HIDE = 0xd0, TEXT_SHOW = 0xd4;
 static const DWORD BAR_SIZE = 0x160;                // WFE fits two in 0x2bc (the second at +0x158)
@@ -1385,7 +1386,7 @@ static int FramesCheck() {
         { "text frame constructor", RVA_TEXT_CTOR }, { "text flags", RVA_TEXT_FLAGS }, { "text setter", RVA_TEXT_SET },
         { "font setter", RVA_SET_FONT }, { "anchor", RVA_SET_POINT }, { "position", RVA_SET_ABS_POINT },
         { "skin lookup", RVA_SKIN_LOOKUP }, { "layout refresh", RVA_LAYOUT_REFRESH }, { "bar constructor", RVA_BAR_CTOR },
-        { "bar level", RVA_BAR_LEVEL }, { "bar text refresh", RVA_BAR_TEXT_REFRESH }, { "unit state", RVA_UNIT_HP },
+        { "bar level", RVA_BAR_LEVEL }, { "region hide", RVA_REGION_HIDE }, { "unit state", RVA_UNIT_HP },
         { "handle lookup", RVA_HANDLE_LOOKUP } };
     for (const auto &f : FNS)
         if (!FnStart(f.rva)) {
@@ -1761,7 +1762,7 @@ static void ManaUpdate(BarExtra *e, BYTE *unit, float cur, float max, bool shown
     *(int *)(m + BAR_CUR) = (int)cur, *(int *)(m + BAR_MAX) = (int)max;
     Virt(m, BAR_RATIO, { F(cur / max) });
     if (*(BYTE **)(m + BAR_TEXT))
-        Game(RVA_BAR_TEXT_REFRESH, *(BYTE **)(m + BAR_TEXT));
+        Game(RVA_REGION_HIDE, *(BYTE **)(m + BAR_TEXT));
     BYTE *fill = *(BYTE **)(m + BAR_FILL);
     if (fill && IsGameCode(*(BYTE **)(*(BYTE **)fill + 0x24))) {
         DWORD c = MANA_COLOUR;
@@ -1845,8 +1846,11 @@ static void BarExtras(BYTE *bar, BYTE *unit) {
             e->mana = nullptr;
         }
         BYTE *ui = hn ? (BYTE *)GameUi() : nullptr;
-        if (hn && ui && ui == g_framesUi && unit && UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &cur, &max))
+        if (hn && ui && ui == g_framesUi && unit && UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &cur, &max)) {
             NumberUpdate(e, ui, cur, max, shown);
+            if (*(BYTE **)(bar + BAR_TEXT))             // the bar's own text, a dark copy beside ours: hidden as WFE does (0x100796a1)
+                Game(RVA_REGION_HIDE, *(BYTE **)(bar + BAR_TEXT));
+        }
         else if (e->text && (!hn || ui == g_framesUi))
             NumberDrop(e);
         if (!e->mana && !e->text)
@@ -2655,7 +2659,7 @@ static const struct UiPart { const char *name; DWORD off, hide, show, after; con
     { "resource bar",   0x3cc, 0x64, 0x68, 0,    nullptr },         // 0x10088100
     { "idle workers",   0x3e0, 0x64, 0x68, 0,    nullptr },         // 0x1008afa0
 };
-static const DWORD UI_CONSOLE = 0x428, CONSOLE_REGIONS = 0xd8, RVA_REGION_HIDE = 0x141ce0, RVA_REGION_SHOW = 0x141e80;
+static const DWORD UI_CONSOLE = 0x428, CONSOLE_REGIONS = 0xd8;
 static const int UI_PART_COUNT = 6;     // the 5 above and the console's background (bit 0x20)
 static DWORD g_uiHidden;            // bits hidden by us in this game
 static void *g_uiHideUi;
