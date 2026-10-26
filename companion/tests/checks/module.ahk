@@ -46,6 +46,7 @@ TwcModuleRun() {
         "latency", [(*) => gameDisplay.latencyStatus(), "LAN 100, Battle.net 250"],
         "timers", [(*) => timersHud.statusText(), "drawn in the game"],
         "wideUi", [(*) => gameDisplay.wideUiStatus(), "laid out for the wide window"],
+        "widescreen", [(*) => gameDisplay.wsStatus(), "the world fits the window"],
         "tooltips", [(*) => gameDisplay.tooltipsStatus(), "hover the damage or armor icon"],
         "fastMenu", [(*) => gameDisplay.fastMenuStatus(), "the menus switch at once"])
     for name, w in want {
@@ -54,9 +55,8 @@ TwcModuleRun() {
     }
     healthBars.push(), gameDisplay.push(), timersHud.pushGame()
     v := twcShmBuf.Ptr
-    for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn"]
+    for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
-    TwcCheck(NumGet(v, Shm.wsOn, "uint") = 0, "Widescreen (removed) is never pushed on, even with its old ini key set")
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     gameDisplay.toggleHideMenu()

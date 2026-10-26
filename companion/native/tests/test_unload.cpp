@@ -46,7 +46,7 @@ int main() {
     static Shared sh; g_shared = &sh; sh.status = 1;
     img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     g_base = img; g_imageSize = 0x1000000;
-    BYTE *p = img + RVA_PROJECTION; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)FakeProj - (p + 5));
+    BYTE *p = img + RVA_PROJECTION; p[-1] = 0xCC; p[0] = 0x68; *(void **)(p + 1) = (void *)FakeProj; p[5] = 0xC3;   // push / ret, not a jmp out (that's another mod's hook)
     img[RVA_PROJECTION_CALL] = 0xE8; *(LONG *)(img + RVA_PROJECTION_CALL + 1) = (LONG)(RVA_PROJECTION - (RVA_PROJECTION_CALL + 5));
     g_getUi = FakeGetUi;
     mainTid = GetCurrentThreadId();

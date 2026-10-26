@@ -1066,6 +1066,22 @@ static int SizeBar(BYTE *unit, float h, float w) {
         return -1;
     }
 }
+// RenderEdge_Widescreen (the user's mix file) hooks the game's per-unit bar work +0x3c6700
+// (called once, from +0x688f65) and divides each unit's health bar width by 0.75 * W/H after
+// it: two features writing the width fought (the bars resized all the time). With such a
+// hook there, the width is left to it and only the height is ours.
+static bool ForeignDetour(DWORD rva, char *who, size_t n);
+static const DWORD RVA_UNIT_BAR_WORK = 0x3c6700;
+static bool OtherBarWidth() {
+    static int r;                   // 1 ours, 2 another mod's
+    if (!r) {
+        char who[64];
+        r = ForeignDetour(RVA_UNIT_BAR_WORK, who, sizeof(who)) ? 2 : 1;
+        if (r == 2)
+            Log("health bars: +%06lX is hooked by %s (it sets the bars' width for the window): only their height is ours", RVA_UNIT_BAR_WORK, who);
+    }
+    return r == 2;
+}
 // a health bar: 1 resized, 0 nothing to do or not a health bar
 static int SizeThisBar(BYTE *bar, float h, float w) {
     __try {
@@ -1079,7 +1095,7 @@ static int SizeThisBar(BYTE *bar, float h, float w) {
             g_shared->hbDefHeight = g_defH, g_shared->hbDefWidth = g_defW;
             Log("health bars: the game's own size is %.5f high, %.5f wide (UI units)", g_defH, g_defW);
         }
-        float th = g_defH * h, tw = g_defW * w;
+        float th = g_defH * h, tw = OtherBarWidth() ? *pw : g_defW * w;   // the width is another mod's then
         if (fabsf(*ph - th) < 1e-6f && fabsf(*pw - tw) < 1e-6f)
             return 0;
         *ph = th, *pw = tw;
@@ -1163,7 +1179,8 @@ static void QueueTimers() {
 // game's vtable, nothing else; it's put back when colours go off or on unload
 // (if it's still ours). The hook runs on the game's thread (the game calls it).
 static const DWORD STATBAR_UPDATE = 0x74;       // __fastcall Update(bar, 0, unit), ret 4
-static const DWORD RVA_PLAYERS = 0xd305e0;      // [[it]] = the game state: local player id word +0x28, players +0x58
+static const DWORD RVA_PLAYERS = 0xd305e0;      // [it] = the game state: local player id word +0x28, player count +0x54, players +0x58
+                                                // (one deref: the game's own +0x22b560 / +0x213720; WFE's slot holds this address, so its [[slot]] is ours [it])
 static const DWORD RVA_HANDLE_LOOKUP = 0x7e090; // __fastcall obj(id1, id2) (WFE's [0x1013ba2c])
 static const DWORD RVA_UNIT_HP = 0x81b30;       // __fastcall(unit + 0x98, 0, float *hp) (WFE's [0x1013ce3c])
 static const DWORD BAR_UNIT = 0x154, BAR_FILL = 0x134;      // the bar's unit; its fill (the coloured part)
@@ -1228,11 +1245,13 @@ static DWORD BarColour(BYTE *unit) {
     }
     int owner = *(int *)(unit + UNIT_OWNER);
     BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
-    state = state ? *(BYTE **)state : nullptr;
-    if (!state || owner < 0 || owner > 15)
-        return 0;
-    int local = *(short *)(state + 0x28);
-    if (local < 0 || local > 15)
+    int players = state ? *(int *)(state + 0x54) : 0, local = state ? *(short *)(state + 0x28) : -1;
+    static bool logged;
+    if (!logged) {
+        logged = true;
+        Log("health bar colours: game state %p, local player %d, %d players; the first bar's owner %d", state, local, players, owner);
+    }
+    if (!state || owner < 0 || owner > 15 || local < 0 || local > 15)
         return 0;
     const DWORD *c = g_shared->hcColours;
     DWORD r = owner == local ? c[0] : owner == 12 ? c[3] : owner == 15 ? c[4] : Allied(state, local, owner) ? c[1] : c[2];
@@ -2547,20 +2566,16 @@ static volatile float g_wsK;    // the horizontal squeeze while it's on (0 = off
 static bool g_wsApplied;        // the call points at ProjHook
 static bool g_wsBad;            // refused for good
 
-// The aspect the game passes is its viewport's height / width (the caller
-// +0x1e07e3..+0x1e0812: (rect[3] - rect[1]) / (rect[2] - rect[0])). WFE takes it
-// as 0.75 (4:3) and divides m[0] by 0.75 * W/H. When the viewport already has
-// the window's own shape (the user's 1.28f looked right with this off and was
-// squeezed to 4:3 with it on), that's wrong: here m[0] is divided by
-// W/H * the game's aspect, 0.75 * W/H for a 4:3 viewport and 1 (nothing) when
-// the game already matches the window.
+// As WFE's 0x1001b430 and RenderEdge_Widescreen (the user's mix file, the same
+// matrix): the world's horizontal scale m[0] divided by k = 0.75 * W/H of the
+// window, whatever aspect the game passes (it's built for 4:3).
 static volatile LONG g_wsLogged;
 static void __fastcall ProjHook(float *m, int edx, float fov, float aspect, float zn, float zf) {
     ((ProjFn)(g_base + RVA_PROJECTION))(m, edx, fov, aspect, zn, zf);
-    float wh = g_wsK / 0.75f, k = aspect > 0.1f && aspect < 10 ? wh * aspect : g_wsK;
+    float k = g_wsK;
     if (!InterlockedExchange(&g_wsLogged, 1))
-        Log("widescreen: the game's viewport height / width %.4f, the window's width / height %.4f: m[0] / %.4f", aspect, wh, k);
-    if (k > 0.25f && k < 4 && fabsf(k - 1) > 0.01f)
+        Log("widescreen: the first projection: the game's aspect argument %.4f, m[0] / %.4f", aspect, k);
+    if (k > 0.25f && k < 4)
         m[0] /= k;
 }
 
@@ -2591,10 +2606,43 @@ static float WideK() {
 }
 
 // on the game thread
+// Another module's hook at a game function's start (a Detours jmp out of the game,
+// e.g. RenderEdge_Widescreen's mix file): its file name into who. false: the game's own bytes
+static bool ForeignDetour(DWORD rva, char *who, size_t n) {
+    BYTE *f = g_base + rva;
+    if (!PageIs(f, EXEC) || f[0] != 0xE9)
+        return false;
+    BYTE *t = f + 5 + *(LONG *)(f + 1);
+    if (t >= g_base && (DWORD)(t - g_base) < g_imageSize)
+        return false;
+    HMODULE m = nullptr;
+    char path[MAX_PATH] = "";
+    if (PageIs(t, EXEC) && GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)t, &m))
+        GetModuleFileNameA(m, path, MAX_PATH);
+    const char *name = strrchr(path, '\\');
+    strncpy_s(who, n, path[0] ? (name ? name + 1 : path) : "unknown code", _TRUNCATE);
+    return true;
+}
+
 static void WidescreenPass() {
     bool on = g_shared->wsOn != 0;
     if (g_wsBad)
         return;
+    // another widescreen mod (RenderEdge_Widescreen) already builds the projection for the
+    // window: ours would squeeze it a second time, so it's left to that one (state 4)
+    static char other[64];
+    static int otherChecked;
+    if (on && !g_wsApplied && !otherChecked) {
+        otherChecked = 1;
+        if (ForeignDetour(RVA_PROJECTION, other, sizeof(other))) {
+            otherChecked = 2;
+            Log("widescreen: the projection +%06lX is already hooked by %s (another widescreen mod): left to it", RVA_PROJECTION, other);
+        }
+    }
+    if (otherChecked == 2) {
+        g_shared->wsState = on ? 4 : 0;
+        return;
+    }
     if (!on) {
         if (g_wsApplied) {
             g_wsK = 0;

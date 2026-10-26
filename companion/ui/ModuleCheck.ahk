@@ -26,6 +26,7 @@ ModuleCheckFeatures() => [
     ["Portrait regen", "portrait: the first update wrapped", "portrait: refused|portrait: writing a line faulted|portrait: the update entry was changed|portrait: the call at .* was changed|portrait: writing the call at"],
     ["Storm.dll (for new frames)", "SMemAlloc \(401\) at .* check out", "Storm.dll isn't loaded in the game|ordinals 401 / 403 aren't"],
     ["Fast menu", "fast menu: the first transition sped up", "fast menu: refused|fast menu: writing the detour failed|fast menu: .* faulted|fast menu: .* changed by someone else"],
+    ["Widescreen", "widescreen: on, the window is|widescreen: .* already hooked by", "widescreen: refused|isn't the game's call to its projection|widescreen: writing the call"],
     ["Detailed tooltips", "tooltips: the first .* tooltip got its lines", "tooltips: refused|tooltips: adding the lines faulted|tooltips: vtable .* left as it is"],
     ["Widescreen UI", "UI layout: \d+ frames laid out", "UI layout: .*stopping|UI layout: putting a frame back faulted"],
     ["Hide the UI", "hide UI: console .* textures|hide UI: .* RTTI", "hide UI: .* refused|hide UI: .* faulted|  not the (time of day|minimap|upper menu bar|resource bar|idle workers)"],

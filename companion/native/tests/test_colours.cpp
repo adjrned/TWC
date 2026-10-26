@@ -22,7 +22,7 @@ int main() {
     { DWORD o2; VirtualProtect(vt, 0x100, PAGE_READWRITE, &o2); vt[STATBAR_UPDATE / 4] = (DWORD)(img + 0x100000); vt[STATBAR_SET_UNIT / 4] = (DWORD)(img + 0x100000); VirtualProtect(vt, 0x100, PAGE_READONLY, &o2); }
     VirtualProtect(img + 0xd30000, 0x3000, PAGE_READWRITE, &old);
     static BYTE state[0x200], players[16][0x300], allyH[0x60], fillVt[0x40];
-    *(BYTE **)(img + RVA_PLAYERS) = (BYTE *)&state; static BYTE *stateP = state; *(BYTE ***)(img + RVA_PLAYERS) = &stateP;
+    *(BYTE **)(img + RVA_PLAYERS) = state; *(int *)(state + 0x54) = 16;   // [+0xd305e0] is the game state itself (one deref, as the game reads it)
     *(short *)(state + 0x28) = 1;                    // local player 1
     for (int i = 0; i < 16; i++) { *(BYTE **)(state + 0x58 + i * 4) = players[i]; players[i][0x30] = (BYTE)i; }
     *(BYTE **)(players[1] + 0x38) = allyH; ((DWORD *)(allyH + 0x40))[0] = 5, ((DWORD *)(allyH + 0x40))[1] = 6;

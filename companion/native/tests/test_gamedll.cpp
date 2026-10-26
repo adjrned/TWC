@@ -172,6 +172,15 @@ int main() {
           && SiteTarget(g_base + 0x409041) == g_base + RVA_TOOLTIP_SET && SiteTarget(g_base + 0x4089b5) == g_base + RVA_TOOLTIP_SET,
           "the fields and calls the lines rely on are where the game's own updates have them");
 
+    // health bar colours: the game state is [+0xd305e0] itself (the game: mov ecx, [it]; movzx eax, word [ecx+0x28]), players at +0x58
+    CHECK(g_base[0x22b560] == 0x8B && g_base[0x22b561] == 0x0D && *(DWORD *)(g_base + 0x22b562) == (DWORD)(g_base + RVA_PLAYERS)
+          && g_base[0x22b567] == 0x0F && g_base[0x22b568] == 0xB7 && g_base[0x22b569] == 0x41 && g_base[0x22b56a] == 0x28
+          && g_base[0x21372f] == 0x8B && g_base[0x213730] == 0x44 && g_base[0x213731] == 0x81 && g_base[0x213732] == 0x58,
+          "the local player is word [[+0xD305E0]+0x28] (one deref, +22B560), players [state+0x58+4i] (+21372F)");
+    // RenderEdge_Widescreen's two hooks are where the module looks for them (the game's own bytes here: no other mod)
+    char who[64];
+    CHECK(FnStart(RVA_UNIT_BAR_WORK) && SiteTarget(g_base + 0x688f65) == g_base + RVA_UNIT_BAR_WORK && !ForeignDetour(RVA_UNIT_BAR_WORK, who, sizeof(who))
+          && !ForeignDetour(RVA_PROJECTION, who, sizeof(who)), "the unit bar work +3C6700 (called from +688F65) and the projection: the game's own bytes");
     // health bars: the set-unit entry +0x78 repaints the bar itself or through the update +0x74
     DWORD su = *(DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_SET_UNIT);
     CHECK(su == (DWORD)(g_base + 0x4101c0) && FnStart(0x4101c0) && g_base[0x410254] == 0xFF && g_base[0x410255] == 0x52 && g_base[0x410256] == STATBAR_UPDATE,

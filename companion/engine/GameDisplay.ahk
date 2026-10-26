@@ -141,7 +141,7 @@ class GameDisplayEngine {
             return
         NumPut("uint", this.fpsLimit, v, Shm.fpsLimit)
         NumPut("uint", this.fps && this.gm.enabled ? 1 : 0, v, Shm.fpsOn)
-        NumPut("uint", 0, v, Shm.wsOn)          ; Widescreen is gone: 1.28f already draws the world for the window (the user's game looked right without it, squeezed with it)
+        NumPut("uint", this.widescreen && this.gm.enabled ? 1 : 0, v, Shm.wsOn)   ; the module leaves it to another widescreen mod that's there (state 4)
         if NumGet(v, Shm.layout, "uint") < 9
             return
         NumPut("uint", this.latencyMs, v, Shm.latMs)
@@ -177,6 +177,7 @@ class GameDisplayEngine {
             return w
         st := NumGet(this.gm.live(), Shm.wsState, "uint")
         return st = 1 ? "On · the world fits the window" : st = 2 ? "On · waiting for the game window"
+            : st = 4 ? "On · another widescreen mod (e.g. RenderEdge's mix file) already does it: left to it"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
     hideStatus() {
