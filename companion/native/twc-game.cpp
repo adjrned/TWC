@@ -1046,12 +1046,29 @@ static bool g_barsApplied;              // something was resized and not put bac
 
 static bool SaneSize(float f) { return f == f && f > 0.0001f && f < 0.5f; }
 
+// the size wanted now (false: none, the bars are the game's)
+static bool BarSizeWanted(float *h, float *w) {
+    if (!g_shared->hbOn)
+        return false;
+    *h = g_shared->hbHeight, *w = g_shared->hbWidth;
+    *h = *h >= 0.25f && *h <= 4 ? *h : 1, *w = *w >= 0.25f && *w <= 4 ? *w : 1;
+    return true;
+}
+static int SizeThisBar(BYTE *bar, float h, float w);
 // one unit's health bar: 1 resized, 0 nothing to do or not a health bar
 static int SizeBar(BYTE *unit, float h, float w) {
     __try {
         BYTE *bars = *(BYTE **)(unit + UNIT_BARS), *bar;
         if (!bars || !(bar = *(BYTE **)(bars + BARS_HEALTH)))
             return 0;
+        return SizeThisBar(bar, h, w);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return -1;
+    }
+}
+// a health bar: 1 resized, 0 nothing to do or not a health bar
+static int SizeThisBar(BYTE *bar, float h, float w) {
+    __try {
         if (*(DWORD *)bar != (DWORD)(g_base + RVA_STATBAR_VTABLE) || *(DWORD *)(bar + BAR_KIND) != 5)
             return 0;
         float *ph = (float *)(bar + BAR_HEIGHT), *pw = (float *)(bar + BAR_WIDTH);
@@ -1249,39 +1266,64 @@ static void ColourBar(BYTE *bar, BYTE *unit) {
 static bool g_extrasHooked;                 // mana bars / health numbers: the bar's hide, show and dtor entries are ours too
 static void BarExtras(BYTE *bar, BYTE *unit);
 
+static int SizeBar(BYTE *unit, float h, float w);
+static int SizeThisBar(BYTE *bar, float h, float w);
+static bool BarSizeWanted(float *h, float *w);
+
+// after the game repainted a bar (its update +0x74, or its set-unit +0x78, which repaints
+// without the update): the colour, the size (WFE writes the height here too, every update,
+// so the game's own size never shows in between), the extras
+static void BarAfter(BYTE *bar, BYTE *unit) {
+    if (g_shared->hcOn)
+        ColourBar(bar, unit);
+    float h, w;
+    if (BarSizeWanted(&h, &w))
+        SizeThisBar(bar, h, w);
+    if (g_extrasHooked)
+        BarExtras(bar, unit);
+}
 static void __fastcall BarUpdateHook(void *bar, int edx, void *unit) {
     g_gameBarUpdate(bar, edx, unit);        // the game's own update, untouched
-    if (g_shared->hcOn)
-        ColourBar((BYTE *)bar, (BYTE *)unit);
-    if (g_extrasHooked)
-        BarExtras((BYTE *)bar, (BYTE *)unit);
+    BarAfter((BYTE *)bar, (BYTE *)unit);
+}
+// vt+0x78 (+0x4101c0): sets the bar's unit and repaints it, through the update or on its own
+// (WFE replaces it, 0x100793e0; here the game's runs first)
+static BarUpdateFn g_gameBarSetUnit;
+static void __fastcall BarSetUnitHook(void *bar, int edx, void *unit) {
+    g_gameBarSetUnit(bar, edx, unit);
+    BarAfter((BYTE *)bar, (BYTE *)unit);
 }
 
-// point the shared vtable entry at the hook (on) or back at the game's (off)
+// point the shared vtable entries (update +0x74, set-unit +0x78) at the hooks (on) or back at the game's (off)
+static const DWORD STATBAR_SET_UNIT = 0x78;
 static bool SwapBarUpdate(bool on) {
-    DWORD *slot = (DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_UPDATE);
+    DWORD *slot = (DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_UPDATE), *slot2 = slot + (STATBAR_SET_UNIT - STATBAR_UPDATE) / 4;
     if (on == g_barHooked)
         return true;
     if (!PageIs(slot, READ) || PageIs(slot, EXEC))
         return false;
-    DWORD cur = *slot;
-    if (on && !g_gameBarUpdate && !IsGameCode((BYTE *)cur)) {
-        Log("health bar colours: refused, the bar update entry (%08lX) isn't game code", cur);
+    DWORD cur = *slot, cur2 = *slot2;
+    if (on && ((!g_gameBarUpdate && !IsGameCode((BYTE *)cur)) || (!g_gameBarSetUnit && !IsGameCode((BYTE *)cur2)))) {
+        Log("health bar colours: refused, the bar update / set-unit entries (%08lX / %08lX) aren't game code", cur, cur2);
         return false;
     }
-    if (!on && cur != (DWORD)BarUpdateHook) {
-        Log("health bar colours: the bar update entry was changed by someone else: left as it is");
+    if (!on && (cur != (DWORD)BarUpdateHook || cur2 != (DWORD)BarSetUnitHook)) {
+        Log("health bar colours: the bar update entries were changed by someone else: left as they are");
         return false;
     }
     if (on && !g_gameBarUpdate)
-        g_gameBarUpdate = (BarUpdateFn)cur;   // before the swap: the hook calls it
-    DWORD want = on ? (DWORD)BarUpdateHook : (DWORD)g_gameBarUpdate, old;
-    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        g_gameBarUpdate = (BarUpdateFn)cur;   // before the swap: the hooks call them
+    if (on && !g_gameBarSetUnit)
+        g_gameBarSetUnit = (BarUpdateFn)cur2;
+    DWORD want = on ? (DWORD)BarUpdateHook : (DWORD)g_gameBarUpdate, want2 = on ? (DWORD)BarSetUnitHook : (DWORD)g_gameBarSetUnit, old;
+    if (!VirtualProtect(slot, 8, PAGE_READWRITE, &old))
         return false;
     InterlockedExchange((volatile LONG *)slot, (LONG)want);
-    VirtualProtect(slot, 4, old, &old);
+    InterlockedExchange((volatile LONG *)slot2, (LONG)want2);
+    VirtualProtect(slot, 8, old, &old);
     g_barHooked = on;
-    Log(on ? "bar update: wrapped (+%06lX)" : "bar update: the game's own again (+%06lX)", (DWORD)g_gameBarUpdate - (DWORD)g_base);
+    Log(on ? "bar update: wrapped (+%06lX, set-unit +%06lX)" : "bar update: the game's own again (+%06lX, set-unit +%06lX)",
+        (DWORD)g_gameBarUpdate - (DWORD)g_base, (DWORD)g_gameBarSetUnit - (DWORD)g_base);
     return true;
 }
 
@@ -1293,7 +1335,7 @@ static void FollowColours() {
     static bool refused, colours;
     if (!g_getUi || refused)
         return;
-    bool want = g_shared->hcOn || g_extrasWant;
+    bool want = g_shared->hcOn || g_extrasWant || g_shared->hbOn;
     if (want && !g_barHooked) {
         if (!IsGameCode(g_base + RVA_HANDLE_LOOKUP) || !IsGameCode(g_base + RVA_UNIT_HP) || !SwapBarUpdate(true)) {
             refused = true, g_shared->hcState = 2;
@@ -2498,10 +2540,20 @@ static volatile float g_wsK;    // the horizontal squeeze while it's on (0 = off
 static bool g_wsApplied;        // the call points at ProjHook
 static bool g_wsBad;            // refused for good
 
+// The aspect the game passes is its viewport's height / width (the caller
+// +0x1e07e3..+0x1e0812: (rect[3] - rect[1]) / (rect[2] - rect[0])). WFE takes it
+// as 0.75 (4:3) and divides m[0] by 0.75 * W/H. When the viewport already has
+// the window's own shape (the user's 1.28f looked right with this off and was
+// squeezed to 4:3 with it on), that's wrong: here m[0] is divided by
+// W/H * the game's aspect, 0.75 * W/H for a 4:3 viewport and 1 (nothing) when
+// the game already matches the window.
+static volatile LONG g_wsLogged;
 static void __fastcall ProjHook(float *m, int edx, float fov, float aspect, float zn, float zf) {
     ((ProjFn)(g_base + RVA_PROJECTION))(m, edx, fov, aspect, zn, zf);
-    float k = g_wsK;
-    if (k > 0.25f && k < 4)
+    float wh = g_wsK / 0.75f, k = aspect > 0.1f && aspect < 10 ? wh * aspect : g_wsK;
+    if (!InterlockedExchange(&g_wsLogged, 1))
+        Log("widescreen: the game's viewport height / width %.4f, the window's width / height %.4f: m[0] / %.4f", aspect, wh, k);
+    if (k > 0.25f && k < 4 && fabsf(k - 1) > 0.01f)
         m[0] /= k;
 }
 
@@ -3087,7 +3139,7 @@ static void UiHidePass() {
 // Every op below was checked by hand in WFEDll (2026-10-26) after the first
 // version crashed: the studies had the upper menu bar's anchor on the wrong
 // child and relative to the bar's +0xb4, which a simple frame doesn't have.
-struct LaySave { BYTE *frame, *lay; SavedPoint pts[9]; float w, h; bool raw; };
+struct LaySave { BYTE *frame, *lay; SavedPoint pts[9]; float w, h; bool raw, cleared; };
 static const DWORD RVA_REGION_VT = 0xa7d100, RVA_TEXTURE_VT = 0xa7d13c, RVA_SIMPLE_TOP_VT = 0xa7cae4;   // WFE's [0x1013aa34], -, [0x1013a4f8]
 static LaySave g_ul[160];
 static int g_ulN;
@@ -3127,7 +3179,7 @@ static LaySave *UlSave(BYTE *f, bool raw = false) {
         return nullptr;
     }
     LaySave &s = g_ul[g_ulN];
-    s.frame = f, s.lay = lay, s.raw = raw;
+    s.frame = f, s.lay = lay, s.raw = raw, s.cleared = false;
     for (int i = 0; i < 9; i++) {
         BYTE *pt = *(BYTE **)(s.lay + LAYOUT_POINTS + i * 4);
         s.pts[i] = {};
@@ -3183,27 +3235,45 @@ static void UlHeight(BYTE *f, float h, bool raw = false) {
     if (s && *(float *)(s->lay + 0x5c) != h)
         *(float *)(s->lay + 0x5c) = h, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
 }
-// a raw SetPoint: the object itself is the layout, as WFE passes it in places
-static void UlPointRaw(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
-    LaySave *s = UlSave(f, true);
-    if (s && rel)
-        Game(RVA_SET_POINT, s->lay, { pt, (DWORD)rel, relPt, F(x), F(y), 1 });
+// Every op checks the frame first and only calls the game when it isn't so
+// already: the layout is applied again every 2 s, and setting a point the
+// frame already has still makes the game lay it out again (the minimap
+// flickered with it, the user's report).
+static bool HasPoint(BYTE *lay, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
+    BYTE *p = pt < 9 ? *(BYTE **)(lay + LAYOUT_POINTS + pt * 4) : nullptr;
+    if (!p)
+        return false;
+    if (rel)
+        return *(DWORD *)p == (DWORD)(g_base + RVA_REL_POINT_VT) && *(BYTE **)(p + 4) == rel && p[8] == relPt
+            && *(float *)(p + 0xc) == x && *(float *)(p + 0x10) == y;
+    return *(DWORD *)p == (DWORD)(g_base + RVA_ABS_POINT_VT) && *(float *)(p + 4) == x && *(float *)(p + 8) == y;
 }
-// rel: the layout part anchored to (as WFE passes it)
-static void UlPoint(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
+// a raw SetPoint: the object itself is the layout, as WFE passes it in places. true: it changed
+static bool UlPointRaw(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
+    LaySave *s = UlSave(f, true);
+    if (!s || !rel || HasPoint(s->lay, pt, rel, relPt, x, y))
+        return false;
+    Game(RVA_SET_POINT, s->lay, { pt, (DWORD)rel, relPt, F(x), F(y), 1 });
+    return true;
+}
+// rel: the layout part anchored to (as WFE passes it). true: it changed
+static bool UlPoint(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
     LaySave *s = UlSave(f);
-    if (s && rel)
-        Game(RVA_SET_POINT, s->lay, { pt, (DWORD)rel, relPt, F(x), F(y), 1 });
+    if (!s || !rel || HasPoint(s->lay, pt, rel, relPt, x, y))
+        return false;
+    Game(RVA_SET_POINT, s->lay, { pt, (DWORD)rel, relPt, F(x), F(y), 1 });
+    return true;
 }
 static void UlAbs(BYTE *f, DWORD pt, float x, float y) {
     LaySave *s = UlSave(f);
-    if (s)
+    if (s && !HasPoint(s->lay, pt, nullptr, 0, x, y))
         Game(RVA_SET_ABS_POINT, s->lay, { pt, F(x), F(y), 1 });
 }
+// cleared once a game (the points set after it stay ours; one the game changes is set again by its op)
 static void UlClear(BYTE *f, bool raw = false) {
     LaySave *s = UlSave(f, raw);
-    if (s)
-        Game(RVA_CLEAR_POINTS, s->lay, { 1 });
+    if (s && !s->cleared)
+        Game(RVA_CLEAR_POINTS, s->lay, { 1 }), s->cleared = true;
 }
 // a game object: its vtable is in the game's data (else nullptr: nothing is written to it)
 static BYTE *V(BYTE *f) {
@@ -3222,10 +3292,10 @@ static void UlMinimap(BYTE *ui, BYTE *root) {
     // ISMINIMAP 0x1008a250: two corners, then CMinimap +0xe4 as WFE does
     BYTE *mm = P(ui, 0x3c0);
     if (mm) {
-        UlPoint(mm, 6, root, 6, 0.1075f, 0.007f);
-        UlPoint(mm, 2, root, 6, 0.210f, 0.145f);
+        bool moved = UlPoint(mm, 6, root, 6, 0.1075f, 0.007f);
+        moved |= UlPoint(mm, 2, root, 6, 0.210f, 0.145f);
         DWORD f = *(DWORD *)(*(DWORD *)mm + 0xe4);
-        if (IsGameCode((BYTE *)f))
+        if (moved && IsGameCode((BYTE *)f))             // its refresh only when it moved (every 2 s it flickered)
             ((FrameFn)f)(mm, 0);
     }
 }
@@ -3725,9 +3795,8 @@ static void UlPortraitText(BYTE *ui, BYTE *root) {
         Log("portrait text: frames %p / %p (game UI mode [ui+%lX] = %lu)", g_pt[0], g_pt[1], UI_STATE180, *(DWORD *)(ui + UI_STATE180));
     }
     float h = PortraitFontHeight() * ((g_uiHidden & 0x20) ? 1.3635f : 0.8f);
-    for (int i = 0; i < 2; i++) {
-        if (h != g_ptHeight)
-            Game(RVA_SET_FONT, g_pt[i], { (DWORD)FontPath(), F(h), 0 });
+    for (int i = 0; h != g_ptHeight && i < 2; i++) {        // once, and when the font changes (not every pass: no flicker)
+        Game(RVA_SET_FONT, g_pt[i], { (DWORD)FontPath(), F(h), 0 });
         TextAnchor(g_pt[i], root, PT_CENTER, PT_CENTER, PT_X, PT_Y[i]);
     }
     g_ptHeight = h;

@@ -32,6 +32,8 @@ static DWORD WINAPI Tester(void *) {
     CHECK(SiteTarget(site) == (BYTE *)ProjHook && g_shared->wsState == 1 && fabsf(g_wsK - k) < 1e-5f, "on: the call points at the hook, k %.3f (window %ldx%ld)", g_wsK, r.right, r.bottom);
     float m[16] = {}; ProjHook(m, 0, 1.0f, 0.75f, 1, 100);
     CHECK(projCalls == 1 && projAspect == 0.75f && fabsf(m[0] - 2 / k) < 1e-5f && m[5] == 3, "the game's projection runs, then m[0] / k (%.3f), m[5] left (%.1f)", m[0], m[5]);
+    float m2[16] = {}; ProjHook(m2, 0, 1.0f, (float)r.bottom / r.right, 1, 100);
+    CHECK(m2[0] == 2, "a viewport already the window's shape (the game's own widescreen): m[0] left (%.3f)", m2[0]);
     SetWindowPos(wnd, 0, 0, 0, 800, 300, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Pump(2);
     GetClientRect(wnd, &r);
     CHECK(fabsf(g_wsK - 0.75f * r.right / r.bottom) < 1e-5f, "the window resized: k follows (%.3f)", g_wsK);

@@ -19,7 +19,7 @@ int main() {
     *(DWORD *)(flagsObj + 0x78) = 1u << 2;           // the local player is allied with slot 2
     DWORD old; VirtualProtect(img + 0xaad000, 0x1000, PAGE_READONLY, &old);   // the vtable: read-only data
     DWORD *vt = (DWORD *)(img + RVA_STATBAR_VTABLE);
-    { DWORD o2; VirtualProtect(vt, 0x100, PAGE_READWRITE, &o2); vt[STATBAR_UPDATE / 4] = (DWORD)(img + 0x100000); VirtualProtect(vt, 0x100, PAGE_READONLY, &o2); }
+    { DWORD o2; VirtualProtect(vt, 0x100, PAGE_READWRITE, &o2); vt[STATBAR_UPDATE / 4] = (DWORD)(img + 0x100000); vt[STATBAR_SET_UNIT / 4] = (DWORD)(img + 0x100000); VirtualProtect(vt, 0x100, PAGE_READONLY, &o2); }
     VirtualProtect(img + 0xd30000, 0x3000, PAGE_READWRITE, &old);
     static BYTE state[0x200], players[16][0x300], allyH[0x60], fillVt[0x40];
     *(BYTE **)(img + RVA_PLAYERS) = (BYTE *)&state; static BYTE *stateP = state; *(BYTE ***)(img + RVA_PLAYERS) = &stateP;
@@ -50,12 +50,20 @@ int main() {
     CHECK(argb(1) == 0xFF20C000 && argb(2) == 0xFF0042FF && argb(0) == NO_PLAYER_COLOUR, "player colours: ally green %08lX, enemy blue %08lX, a bad index grey %08lX", argb(1), argb(2), argb(0));
     g_shared->hcColours[0] = 0xFFFFFFFF; update(0);
     CHECK(argb(0) == 0xFFFFFFFF, "your own colour with the others by player: %08lX", argb(0));
+    fills[0][0x68] = 0x11; ((BarUpdateFn)vt[STATBAR_SET_UNIT / 4])(bars[0], 0, units[0]);
+    CHECK(vt[STATBAR_SET_UNIT / 4] == (DWORD)BarSetUnitHook && argb(0) == 0xFFFFFFFF, "the set-unit entry +0x78 (repaints without the update) is wrapped too: colour after it %08lX", argb(0));
+    *(float *)(bars[0] + BAR_HEIGHT) = 0.004f, *(float *)(bars[0] + BAR_WIDTH) = 0.03f;
+    g_shared->hbOn = 1, g_shared->hbHeight = 2, g_shared->hbWidth = 1; update(0);
+    float sh0 = *(float *)(bars[0] + BAR_HEIGHT);
+    *(float *)(bars[0] + BAR_HEIGHT) = 0.004f; update(0);        // the game's own size again: set back in the same update
+    CHECK(sh0 == 0.008f && *(float *)(bars[0] + BAR_HEIGHT) == 0.008f, "bar size in the update itself: x2 height (%.4f), and again after the game resets it", *(float *)(bars[0] + BAR_HEIGHT));
+    g_shared->hbOn = 0;
     g_shared->hcMode = 1; update(2);
     CHECK(argb(2) == 0xFFFF7F00, "by health 25%%: %08lX", argb(2));
     g_shared->hcOn = 0; FollowColours();
     CHECK(vt[STATBAR_UPDATE / 4] == (DWORD)(img + 0x100000) && g_shared->hcState == 0, "off: the entry is the game's again, state %lu", g_shared->hcState);
     DWORD before = cnt[1]; update(0);
-    CHECK(cnt[0] == 11 && cnt[1] == before, "after off: the game's update runs (%lu), no colour redraw", cnt[0]);
+    CHECK(cnt[0] == 14 && cnt[1] == before, "after off: the game's update runs (%lu), no colour redraw", cnt[0]);
     Verdict();
     return g_fails;
 }

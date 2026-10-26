@@ -170,6 +170,14 @@ int main() {
           && SiteTarget(g_base + 0x409041) == g_base + RVA_TOOLTIP_SET && SiteTarget(g_base + 0x4089b5) == g_base + RVA_TOOLTIP_SET,
           "the fields and calls the lines rely on are where the game's own updates have them");
 
+    // health bars: the set-unit entry +0x78 repaints the bar itself or through the update +0x74
+    DWORD su = *(DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_SET_UNIT);
+    CHECK(su == (DWORD)(g_base + 0x4101c0) && FnStart(0x4101c0) && g_base[0x410254] == 0xFF && g_base[0x410255] == 0x52 && g_base[0x410256] == STATBAR_UPDATE,
+          "the bar's set-unit +0x78 is +4101C0, which calls the update +0x74 (+410254) or repaints on its own");
+    // widescreen: the aspect the camera passes is its viewport's height / width
+    static const BYTE VIEW[] = { 0xF3, 0x0F, 0x5C, 0x48, 0x04 }, VIEW2[] = { 0xF3, 0x0F, 0x5C, 0x00, 0xF3, 0x0F, 0x5E, 0xC8 };
+    CHECK(!memcmp(g_base + 0x1e07f0, VIEW, 5) && !memcmp(g_base + 0x1e080e, VIEW2, 8), "the projection's aspect is (rect[3] - rect[1]) / (rect[2] - rect[0]) (+1E07F0 .. +1E0812)");
+
     // fast menus: the menu animation's start as the detour expects, and the glue singleton / models it reads
     CHECK(MenuAnimPatchable(g_base + RVA_MENU_ANIM), "the menu animation +%06lX starts 55 8B EC 83 EC 18 and nothing jumps into it", RVA_MENU_ANIM);
     CHECK(SiteTarget(g_base + 0x33a79e) == g_base + RVA_GLUE && g_base[0x3112c5] == 0xA1 && *(DWORD *)(g_base + 0x3112c6) == (DWORD)(g_base + DATA_GLUE)
