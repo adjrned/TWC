@@ -2926,6 +2926,7 @@ static void *g_ulUi;                // the game UI the saves belong to
 static bool g_ulBad;                // a frame's point couldn't be read: no more layout this session
 static DWORD g_ulAt;
 
+static int g_ulLogSaves;             // log this many more saves (a handler's first frames)
 static BYTE *V(BYTE *f);
 static BYTE *LayOf(BYTE *f) {
     if (!f)
@@ -2973,6 +2974,15 @@ static LaySave *UlSave(BYTE *f, bool raw = false) {
     }
     s.w = *(float *)(s.lay + 0x58), s.h = *(float *)(s.lay + 0x5c);
     g_ulN++;
+    if (g_ulLogSaves > 0) {             // the first frames of a handler, the first time: their own anchors
+        g_ulLogSaves--;
+        char b[240];
+        int o = 0;
+        for (int i = 0; i < 9; i++)
+            if (s.pts[i].kind)
+                o += sprintf_s(b + o, sizeof(b) - o, " %d:%s %.4f,%.4f", i, s.pts[i].kind == 2 ? "rel" : "abs", s.pts[i].x, s.pts[i].y);
+        Log("  frame %p (layout +%lX): %.4f x %.4f, points%s", f, (DWORD)(s.lay - f), s.w, s.h, o ? b : " none");
+    }
     return &s;
 }
 static void UlRestore(LaySave &s) {
@@ -3169,6 +3179,7 @@ static void UlApply(BYTE *ui, int upTo, bool logNewest) {
             if (f)
                 RttiName(*(DWORD *)f, g_imageSize, rtti, sizeof(rtti));
             Log("UI layout: %s ([ui+%lX] %p, %s)", g.name, g.frame, f, f ? (rtti[0] ? rtti : "no RTTI") : "not there");
+            g_ulLogSaves = 3;
         }
         __try {
             g.fn(ui, root);
