@@ -1415,21 +1415,7 @@ BuildRemapPage() {
         remapViewBtns[v] := b
         AddToPage("remap", b)
     }
-    ; quickcast, per version, on the toolbar row: a switch and its Options (its window)
-    local ql := mainGui.AddText("x40 y160 w66 h24 0x200 +Background" C.panel " c" C.muted, "Quickcast")
-    UISetFont(ql, "s8 w600")
-    AddToPage("remap", ql)
-    remapQcCtrls["label"] := ql
-    for v in [["128", "1.28f"], ["reforged", "Reforged"]] {
-        local vl := mainGui.AddText("x40 y160 w56 h24 0x200 +Background" C.panel " c" C.text, v[2])
-        UISetFont(vl, "s8 w600")
-        local sw := MkButton("Off", 40, 160, 40, 24, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
-        local ob := MkButton("Options", 40, 160, 58, 24, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
-        for b in [sw, ob]
-            UISetFont(b, "s8 w600")
-        AddToPage("remap", vl, sw, ob)
-        remapQcCtrls[v[1]] := { label: vl, sw: sw, ob: ob }
-    }
+
     ; List: column header over a list
     remapListHdr := mainGui.AddText("x49 y160 w660 h18 +Background" C.panel " c" C.dim,
         Fmt("Slot", 12) Fmt("Game key", 11) Fmt("Your key", 18) "Quickcast")
@@ -1461,14 +1447,6 @@ LayoutRemap() {
     global
     local R := TB_R
     remapViewBtns["hud"].Move(R - 104, TB_Y + 2)
-    local qx := R - 104 - 16 - 2 * (56 + 40 + 4 + 58 + 14) - 66
-    remapQcCtrls["label"].Move(qx, TB_Y + 2)
-    qx += 70
-    for v in ["128", "reforged"] {
-        local q := remapQcCtrls[v]
-        q.label.Move(qx, TB_Y + 2), RemapMoveBtn(q.sw, qx + 56, TB_Y + 2), RemapMoveBtn(q.ob, qx + 56 + 44, TB_Y + 2)
-        qx += 56 + 40 + 4 + 58 + 14
-    }
     remapViewBtns["list"].Move(R - 52, TB_Y + 2)
     ; detail card along the bottom (its box: BuildRemapTiles)
     local y := REMAP_CARD_Y, bx := CX + 680 - 18 - 102
@@ -1478,12 +1456,12 @@ LayoutRemap() {
     remapSetBtn.Move(bx, y + 26), remapClearBtn.Move(bx, y + 56), remapQcBtn.Move(bx, y + 86)   ; one column, centred
 }
 ; HUD: tiles laid out like the game (window coordinates, built after the
-; page shift): inventory 2x3 | command card 4x3 | mouse
+; page shift): inventory 2x3 | command card 4x3 | the quickcast panel
 BuildRemapTiles() {
     global
     local tw := 76, th := 72, gap := 8, y0 := CY + 22
     remapCard := Box("remap", CX, REMAP_CARD_Y, 680, H - 28 - REMAP_CARD_Y, C.card, C.border, 6)
-    local groups := [["inv", "Inventory", CX, 2], ["card", "Command Card", CX + 176, 4], ["mouse", "Mouse", CX + 520, 2]]
+    local groups := [["inv", "Inventory", CX, 2], ["card", "Command Card", CX + 176, 4]]
     local gr, hdr, ctl
     for gr in groups {
         hdr := mainGui.AddText("x" gr[3] " y" CY " w200 h18 +Background" C.panel " c" C.muted, gr[2])
@@ -1516,6 +1494,31 @@ BuildRemapTiles() {
         }
     }
     mainGui.OnEvent("ContextMenu", RemapContext)     ; right-click a slot: toggle its quickcast
+    ; quickcast, right of the command card: a switch and Options per game version
+    local qx := CX + 530, qw := 150
+    local qh := mainGui.AddText("x" qx " y" CY " w" qw " h18 +Background" C.panel " c" C.muted, "Quickcast")
+    UISetFont(qh, "s9 w600")
+    local qb := Box("remap", qx, y0, qw, 3 * (th + gap) - gap, C.card, C.frame, 5)
+    AddToPage("remap", qh), remapHudCtrls.Push(qh)
+    local qy := y0 + 10
+    for v in [["128", "1.28f", "the game says when"], ["reforged", "Reforged", "read from the screen"]] {
+        local vl := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20) " h18 +Background" C.card " c" C.text, v[2])
+        UISetFont(vl, "s9 w600")
+        local vd := mainGui.AddText("x" (qx + 10) " y" (qy + 18) " w" (qw - 20) " h16 +Background" C.card " c" C.dim, v[3])
+        UISetFont(vd, "s8")
+        local sw := MkButton("Off", qx + 10, qy + 38, 44, 24, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
+        local ob := MkButton("Options", qx + 60, qy + 38, qw - 70, 24, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
+        for b in [sw, ob]
+            UISetFont(b, "s8 w600")
+        AddToPage("remap", vl, vd, sw, ob)
+        remapHudCtrls.Push(vl, vd, sw, ob)
+        remapQcCtrls[v[1]] := { label: vl, sw: sw, ob: ob }
+        qy += 76
+    }
+    local qn := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20) " h60 +Background" C.card " c" C.dim, "QC on a slot: it casts at the cursor. Right-click a slot to switch it.")
+    UISetFont(qn, "s8")
+    AddToPage("remap", qn), remapHudCtrls.Push(qn)
+    remapQcCtrls["box"] := qb
 }
 ; Only what changed is touched, each control repainting itself: repainting the
 ; whole window on every click (Freeze/Thaw) made the page flicker.
@@ -1546,7 +1549,7 @@ RemapQcRefresh() {
 }
 RefreshRemap(capturing := false) {
     global remap, remapSel, remapSlots, remapViewBtns, remapListCtrls, remapHudCtrls, remapTiles, remapListBox,
-        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C
+        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C, remapQcCtrls
     RemapQcRefresh()
     d := remap.get(), view := Ini("Remap", "view", "hud") = "list" ? "list" : "hud", hud := view = "hud", sel := 0
     remapSlots := d.slots
@@ -1566,9 +1569,11 @@ RefreshRemap(capturing := false) {
         for ctl in remapListCtrls
             SetShown(ctl, !hud)
         for ctl in remapHudCtrls
-            ctl.Visible := hud
+            SetShown(ctl, hud)
         for t in remapTiles
             t.box.Visible := hud
+        if remapQcCtrls.Has("box")
+            remapQcCtrls["box"].Visible := hud
     }
     ; List
     items := []
@@ -1618,16 +1623,16 @@ RefreshRemap(capturing := false) {
     status := capturing ? "Press a key…"
         : sel.key ? "Your key  " sel.keyLabel "   →   " (sel.group = "mouse" ? "clicks " StrLower(sel.game) : "sends " does) (sel.qc ? "   ·   quickcast" : "")
         : sel.qc ? "No key of its own   ·   " does " quickcasts"
-        : "No key set" (sel.group = "mouse" ? "" : "   ·   the game's " does " works as usual")
+        : "No key set   ·   the game's " does " works as usual"
     if remapStatus.Text != status
         remapStatus.Opt("+c" (capturing || sel.key ? C.text : C.muted)), remapStatus.Text := status
     if currentPage = "remap" {
         SetShown(remapQcBtn, sel.qcAllowed)
     }
-    SetText(remapQcBtn, "Quickcast: " (sel.qc ? "On" : "Off"))
+    SetText(remapQcBtn, "Slot QC: " (sel.qc ? "On" : "Off"))
     info := sel.note ? sel.note
         : capturing ? "Any key, combo or mouse button (Mouse 4/5, middle, wheel).  Esc or Backspace clears the slot."
-        : hud ? "Click a slot, then press a key or mouse button (Mouse 4/5, middle, wheel). QC or right-click toggles quickcast."
+        : hud ? "Click a slot, then press a key or mouse button (Mouse 4/5, middle, wheel). QC or right-click switches quickcast on that slot."
         : "Double-click a row (or Bind Key), then press a key or mouse button (Mouse 4/5, middle, wheel)."
     if remapInfo.Text != info
         remapInfo.Opt("+c" (sel.note ? C.accent : C.dim)), remapInfo.Text := info

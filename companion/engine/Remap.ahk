@@ -1,9 +1,11 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
-;  RemapEngine - your keys for the WC3 command card, inventory and mouse.
-;  Slots follow the HUD: the 4x3 command card (TWRPG's layout), the 2x3
-;  inventory and the two mouse buttons. A slot you give a key to sends that
-;  slot's game key; a slot without one is left alone (the game's key works).
+;  RemapEngine - your keys for the WC3 command card and inventory.
+;  Slots follow the HUD: the 4x3 command card (TWRPG's layout) and the 2x3
+;  inventory. A slot you give a key to sends that slot's game key; a slot
+;  without one is left alone (the game's key works). (The two mouse-button
+;  slots were dropped on 2026-10-26, the user's call: count("mouse") is 0, so
+;  they're neither shown nor bound; old [Remap] mouse keys are ignored.)
 ; ============================================================================
 class RemapEngine {
     section := "Remap"
@@ -31,7 +33,7 @@ class RemapEngine {
         return group = "card" ? RemapEngine.CARD[i].game : group = "inv" ? RemapEngine.INV_TARGETS[i] : RemapEngine.MOUSE[i]
     }
     yourKey(group, i) => Ini(this.section, group i, "")
-    count(group) => group = "card" ? 12 : group = "inv" ? 6 : 2
+    count(group) => group = "card" ? 12 : group = "inv" ? 6 : 0
     slotName(group, i) => group = "card" ? RemapEngine.CARD[i].name : group = "inv" ? "Item " i : RemapEngine.MOUSE[i] " click"
     qcAllowed(group, i) => group = "inv" || (group = "card" && !RemapEngine.NO_QC.Has(i))
 
