@@ -6,7 +6,7 @@
 #include "../twc-game.cpp"
 #include "check.h"
 #include <stddef.h>
-static_assert(offsetof(Shared, alOn) == 848 && offsetof(Shared, pingText) == 864 && offsetof(Shared, tmMinutes) == 992 && offsetof(Shared, cdSize) == 1000 && offsetof(Shared, hrWant) == 1016 && offsetof(Shared, hrName) == 1416 && sizeof(Shared) == 2580, "layout 22");
+static_assert(offsetof(Shared, alOn) == 848 && offsetof(Shared, pingText) == 864 && offsetof(Shared, tmMinutes) == 992 && offsetof(Shared, cdSize) == 1000 && offsetof(Shared, hrWant) == 1016 && offsetof(Shared, hrName) == 1416 && offsetof(Shared, bbScale) == 2580 && sizeof(Shared) == 2588, "layout 23");
 
 static BYTE *img;
 static int displays, clicks;

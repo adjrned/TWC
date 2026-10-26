@@ -200,6 +200,23 @@ class GameDisplayEngine {
         SetIni(on ? 1 : 0, this.section, "hideUi")
         this.push()
     }
+    ; a bigger buff bar: the bar and its icons times the game's size (layout 23, ini [Display] buffBar, buffBarScale 1-2)
+    buffBar => Integer(Ini(this.section, "buffBar", 0))
+    buffBarScale => Min(Max(Float(Ini(this.section, "buffBarScale", 1.5)), 1), 2)
+    setBuffBar(on) {
+        SetIni(on ? 1 : 0, this.section, "buffBar")
+        this.push()
+    }
+    setBuffBarScale(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 1), 2), 2), this.section, "buffBarScale"), this.push(), true)
+    buffBarStatus() {
+        if !this.buffBar
+            return "Off"
+        if (w := this.moduleWait(23)) != ""
+            return w
+        st := NumGet(this.gm.live(), Shm.bbState, "uint"), k := RTrim(RTrim(Format("{:.2f}", this.buffBarScale), "0"), ".")
+        return st = 1 ? "On · x" k (this.wideUi ? " (in the widescreen UI's layout)" : "")
+            : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
 
     ; the switches to the module in the running game (once a second, and on changes)
     push() {
@@ -225,6 +242,8 @@ class GameDisplayEngine {
             NumPut("float", this.countdownSecs, v, Shm.csSecs)
             NumPut("uint", this.countdown && this.gm.enabled ? 1 : 0, v, Shm.csOn)
         }
+        if NumGet(v, Shm.layout, "uint") >= 23
+            NumPut("float", this.buffBar && this.gm.enabled ? this.buffBarScale : 0, v, Shm.bbScale)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)

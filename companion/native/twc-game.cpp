@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 22
+    DWORD layout;           // 23
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -178,6 +178,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float bfSize;           // companion: the buff seconds' size, times WFE's 0.013 (0.75-1.5; 0 = 1)
     float bfGold;           // companion: gold from this many seconds left down (0 = always white)
     DWORD bfOpts;           // companion, bits: 1 seconds on auras too (WFE's ISDRAWAURADURATION), 2 our countdown ring around the buffs
+    // layout 23: a bigger buff bar (BuffBarSizePass; with the widescreen UI on, its UlBuffs)
+    float bbScale;          // companion: the buff bar and its icons, times the game's size (1-2; 0 or 1 = the game's own)
+    DWORD bbState;          // module: 0 the game's own, 1 bigger now, 2 waiting (no buff bar yet), 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -4714,6 +4717,10 @@ static void UlConsole(BYTE *ui, BYTE *) {
 // at x -1 (0x100fa9c0, 0x100907fa). WFE's show / hide of the bar with its UI
 // is Hide the UI's (BuffBarCall).
 static const float BUFF_W = 0.0182725f, BUFF_H = 0.0165f;
+static float BuffBarScale() {
+    float k = g_shared->bbScale;
+    return k > 1 && k <= 2 ? k : 1;
+}
 static void UlBuffs(BYTE *ui, BYTE *root) {
     BYTE *bar = P(P(P(ui, 0x3c4), 0x130), 0x16c);
     if (!bar)
@@ -4721,20 +4728,79 @@ static void UlBuffs(BYTE *ui, BYTE *root) {
     int rows = *(int *)(bar + 0x124), cols = *(int *)(bar + 0x128);
     if (rows < 1 || rows > 4 || cols < 1 || cols > 16)
         return;
+    // bbScale: the bar and its icons k times bigger, WFE's left edge kept (its right edge moves out)
     bool dur = g_shared->itOn != 0, up = (g_shared->ulOn & 2) != 0;
+    float k = BuffBarScale(), bw = (dur ? 1.1f : 1.05f) * (float)cols * BUFF_W;
     float h = (float)rows * BUFF_H, y = dur ? 0.00375f : 0;
     if (up)
-        y += h + 0.13f;
+        y += h * k + 0.13f;
     UlClear(bar, true);
-    UlWidth(bar, (dur ? 1.1f : 1.05f) * (float)cols * BUFF_W, true), UlHeight(bar, dur ? h * 1.25f : h, true);
-    UlPointRaw(bar, 8, root, 8, (float)cols * BUFF_W - 0.435f, y);
+    UlWidth(bar, bw * k, true), UlHeight(bar, (dur ? h * 1.25f : h) * k, true);
+    UlPointRaw(bar, 8, root, 8, (float)cols * BUFF_W - 0.435f + bw * (k - 1), y);
     BYTE *label = P(bar, 0x15c);
     if (label && *(DWORD *)label == (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
         UlPointRaw(label, 5, bar, 3, up ? -1.0f : -0.0025f, 0);
     for (int r = 0; r < rows; r++)
         for (int c = 0; c < cols; c++)
             if (BYTE *b = GridButton(bar, r, c))
-                UlWidth(b, BUFF_W, true), UlHeight(b, BUFF_H, true);
+                UlWidth(b, BUFF_W * k, true), UlHeight(b, BUFF_H * k, true);
+}
+
+// A bigger buff bar without the widescreen UI (bbScale). The bar is a grid (CBuffBar: 1 row of 8
+// CBuffIndicators, its ctor +0x3d0100: 0.12 x 0.015, each icon 0.015 x 0.015, +0x13d380(1, 8));
+// a grid lays its cells out again whenever its rect changes (CBuffBar vt+0 = +0x13cc90: cell =
+// the rect / rows or columns, each item pointed to its cell), and the info panel pins the bar by
+// its bottom right (+0x3e8126: SetPoint 8 -> 8, -0.003, 0.0057). So the bar and each icon get
+// k times the game's size here, and the bar grows left and up with its icons spread over it. The
+// width / height written as the layout ops do (+0x58 / +0x5c, the layout refresh), only when not
+// so already; back to the game's sizes when off. With the widescreen UI on, its UlBuffs does it.
+static const float GAME_BUFF_BAR_W = 0.12f, GAME_BUFF_BAR_H = 0.015f, GAME_BUFF_ICON = 0.015f;
+static const DWORD RVA_BUFF_INDICATOR_VT = 0xaad470;
+static float g_bbApplied;          // the scale this pass left the bar at (0: the game's own)
+static bool SizeRaw(BYTE *f, float w, float h) {
+    bool changed = false;
+    if (fabsf(*(float *)(f + LAYOUT_WIDTH) - w) > 1e-6f)
+        *(float *)(f + LAYOUT_WIDTH) = w, Game(RVA_LAYOUT_REFRESH, f, { 0 }), changed = true;
+    if (fabsf(*(float *)(f + LAYOUT_HEIGHT) - h) > 1e-6f)
+        *(float *)(f + LAYOUT_HEIGHT) = h, Game(RVA_LAYOUT_REFRESH, f, { 0 }), changed = true;
+    return changed;
+}
+static void BuffBarSizePass() {
+    static bool bad;
+    float k = BuffBarScale();
+    if (bad || g_shared->ulOn || k == 1 && !g_bbApplied) {
+        if (!bad)
+            g_shared->bbState = g_shared->ulOn && k > 1 ? 1 : 0;
+        if (g_shared->ulOn)
+            g_bbApplied = 0;                    // the widescreen UI's layout has it (and puts back what it found)
+        return;
+    }
+    BYTE *ui = (BYTE *)GameUi();
+    int rows, cols;
+    BYTE *bar = BuffBarOf(ui, &rows, &cols);
+    if (!bar) {
+        g_shared->bbState = k > 1 ? 2 : 0;
+        return;
+    }
+    __try {
+        if (*(DWORD *)bar != (DWORD)(g_base + RVA_BUFF_BAR_VT)) {
+            bad = true, g_shared->bbState = 3;
+            Log("buff bar size: the bar %p has vtable +%06lX, not CBuffBar's +%06lX: refused", bar, *(DWORD *)bar - (DWORD)g_base, RVA_BUFF_BAR_VT);
+            return;
+        }
+        int n = SizeRaw(bar, GAME_BUFF_BAR_W * (float)cols / 8 * k, GAME_BUFF_BAR_H * (float)rows * k);
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                if (BYTE *b = GridButton(bar, r, c))
+                    n += *(DWORD *)b == (DWORD)(g_base + RVA_BUFF_INDICATOR_VT) && SizeRaw(b, GAME_BUFF_ICON * k, GAME_BUFF_ICON * k);
+        if (n && g_bbApplied != k)
+            Log("buff bar size: x%.2f (%d frames resized; bar %p %dx%d)", k, n, bar, rows, cols);
+        g_bbApplied = k > 1 ? k : 0;
+        g_shared->bbState = k > 1 ? 1 : 0;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        bad = true, g_shared->bbState = 3;
+        Log("buff bar size: resizing faulted: left to the game");
+    }
 }
 
 // -- the buttons' models, squeezed sideways (the cooldown sweep, autocast, hero point, the clock)
@@ -5228,13 +5294,14 @@ static void DisplayPass() {
     AlliesPass();
     UiHidePass();
     UiLayoutPass();
+    BuffBarSizePass();
 }
 
 // the worker's part: a pass 4 times a second while any is on, or has something to put back
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -5492,6 +5559,7 @@ static Shared g_retired;            // what g_shared points at once retired (not
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
+    s->bbScale = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
@@ -5675,7 +5743,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 22;
+        g_shared->layout = 23;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

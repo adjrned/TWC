@@ -116,5 +116,7 @@ class Shm {
     static bfSize := 2568
     static bfGold := 2572
     static bfOpts := 2576
-    static size := 2580
+    static bbScale := 2580
+    static bbState := 2584
+    static size := 2588
 }

@@ -358,6 +358,20 @@ int main() {
     // the buff ring: a buff indicator is a simple frame / layout frame at +0 as a command button is (the ring's frame, SetAllPoints, +0x58 / +0x5C)
     CHECK(BaseAt0(0xaad470, "CSimpleFrame@") && BaseAt0(0xaad470, "CLayoutFrame@") && BaseAt0(RVA_COMMAND_BUTTON_VTABLE, "CSimpleFrame@") && BaseAt0(RVA_COMMAND_BUTTON_VTABLE, "CLayoutFrame@"),
           "CBuffIndicator and CCommandButton both start with CSimpleFrame / CLayoutFrame (RTTI): the ring fits a buff's icon as a button's");
+    // the buff bar size: CBuffBar's ctor +3D0100 makes a 1 x 8 grid (+13D380(1, 8)) 0.12 x 0.015 and 8 indicators of 0.015 x 0.015;
+    // the grid lays its items out again on a rect change (its vt+0 +13CC90, pointing each item, +13CE4E); the info panel pins the bar's
+    // bottom right (+3E8126: SetPoint 8 -> 8, -0.003); the module's sizes are those
+    const float f012 = 0.12f, f015 = 0.015f, fm003 = -0.003f;
+    CHECK(!memcmp(g_base + 0x3d013f, "\x6A\x08\x6A\x01", 4) && SiteTarget(g_base + 0x3d0152) == g_base + 0x13d380 && !memcmp(g_base + 0x3d014e, "\x10\xD5\xAA", 3)
+          && *(float *)(g_base + 0x3d015d) == f012 && SiteTarget(g_base + 0x3d0161) == g_base + RVA_SET_WIDTH
+          && *(float *)(g_base + 0x3d016c) == f015 && SiteTarget(g_base + 0x3d0170) == g_base + RVA_SET_HEIGHT
+          && *(float *)(g_base + 0x3d01f9) == f015 && SiteTarget(g_base + 0x3d01fd) == g_base + RVA_SET_WIDTH
+          && *(float *)(g_base + 0x3d0208) == f015 && SiteTarget(g_base + 0x3d020c) == g_base + RVA_SET_HEIGHT
+          && !memcmp(g_base + 0x3d027b, "\x83\xFF\x08", 3) && SiteTarget(g_base + 0x3d019c) == g_base + 0x3d0390 && *(DWORD *)(g_base + 0x3d03d9) == (DWORD)(g_base + RVA_BUFF_INDICATOR_VT)
+          && *(DWORD *)(g_base + RVA_BUFF_BAR_VT) == (DWORD)(g_base + 0x13cc90) && SiteTarget(g_base + 0x13ce4e) == g_base + RVA_SET_POINT
+          && !memcmp(g_base + 0x3e8126, "\x8B\x8F\x6C\x01\x00\x00", 6) && *(float *)(g_base + 0x3e813c) == fm003 && !memcmp(g_base + 0x3e8140, "\x6A\x08\x57\x6A\x08", 5)
+          && SiteTarget(g_base + 0x3e8145) == g_base + RVA_SET_POINT && GAME_BUFF_BAR_W == f012 && GAME_BUFF_BAR_H == f015 && GAME_BUFF_ICON == f015 && Rtti(RVA_BUFF_INDICATOR_VT, "CBuffIndicator"),
+          "the buff bar: a 1 x 8 grid 0.12 x 0.015 of 0.015 icons (+3D0100), laid out again on a rect change (vt+0 +13CC90), pinned by its bottom right (+3E8126)");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)

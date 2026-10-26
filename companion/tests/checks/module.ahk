@@ -4,7 +4,7 @@
 ; activated, no keys sent; the injector is never run). Every status line must
 ; read its own field, and every push must land where the module reads it.
 TwcModuleIni() {
-    for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi", "wideUi", "tooltips", "fastMenu"], "Hosting", ["latency", "countdown"], "Timers", ["cooldowns", "buffs", "allies"])
+    for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi", "wideUi", "tooltips", "fastMenu", "buffBar"], "Hosting", ["latency", "countdown"], "Timers", ["cooldowns", "buffs", "allies"])
         for key in keys
             IniWrite(1, iniFile, sect, key)
 }
@@ -13,9 +13,9 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 22, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 23, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
-    for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState"]
+    for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState"]
         NumPut("uint", 1, v, Shm.%f%)
     NumPut("uint", 3, v, Shm.uiState), NumPut("float", 0.004, v, Shm.hbDefHeight), NumPut("uint", 60, v, Shm.fpsGameLimit)
     NumPut("int", 100, v, Shm.latGame), NumPut("int", 250, v, Shm.latGame + 8)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 22 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 22, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 23 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 23, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -79,7 +79,8 @@ TwcModuleRun() {
         "widescreen", [(*) => gameDisplay.wsStatus(), "the world fits the window"],
         "tooltips", [(*) => gameDisplay.tooltipsStatus(), "hover the damage or armor icon"],
         "fastMenu", [(*) => gameDisplay.fastMenuStatus(), "the menus switch at once"],
-        "countdown", [(*) => gameDisplay.countdownStatus(), "start 0 s after Start Game (the game's own: 6 s)"])
+        "countdown", [(*) => gameDisplay.countdownStatus(), "start 0 s after Start Game (the game's own: 6 s)"],
+        "buffBar", [(*) => gameDisplay.buffBarStatus(), "On · x1.5 (in the widescreen UI's layout)"])
     for name, w in want {
         st := w[1]()
         TwcCheck(InStr(st, w[2]), name ": " st)
@@ -119,6 +120,11 @@ TwcModuleRun() {
     TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 3 && NumGet(v, Shm.cdSize, "float") = 1,
         "buffs x0.8, gold from 2 s, auras (1) and ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
     timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0), timersHud.setBfRing(0)
+    ; the bigger buff bar (layout 23): x1.5 by default, typed values clamped to 1-2, 0 when off
+    k1 := NumGet(v, Shm.bbScale, "float"), ok := gameDisplay.setBuffBarScale("2.5") && !gameDisplay.setBuffBarScale("big")
+    k2 := NumGet(v, Shm.bbScale, "float"), gameDisplay.setBuffBar(0), k3 := NumGet(v, Shm.bbScale, "float")
+    gameDisplay.setBuffBar(1), gameDisplay.setBuffBarScale(1.5)
+    TwcCheck(k1 = 1.5 && ok && k2 = 2 && k3 = 0 && NumGet(v, Shm.bbScale, "float") = 1.5, "buff bar: pushed x1.5, 2.5 -> 2, off 0 (" k1 " " k2 " " k3 ")")
     ; the ping key: only on a button the module says is under the cursor
     TwcCheck(!timersHud.pingActive(), "ping key: not in the game window, so the click is the game's")
     rows := ModuleCheckRows(ModuleCheckLog())

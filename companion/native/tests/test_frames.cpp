@@ -35,7 +35,8 @@ static void *__fastcall FakeTextCtor(BYTE *mem, int, void *parent, DWORD layer, 
 static void __fastcall FakeFlags(BYTE *, int, DWORD) { flagCalls++; }
 static void __fastcall FakeSetText(BYTE *t, int, const char *s) { setTexts++; strcpy_s(lastText, s); strcpy_s((char *)t + 0x100, 32, s); }
 static int __fastcall FakeSetFont(BYTE *, int, const char *path, float h, DWORD) { fonts++; strcpy_s(lastFont, path); lastFontH = h; return 1; }
-static void __fastcall FakeRefresh(BYTE *, int, int) {}
+static int refreshes;
+static void __fastcall FakeRefresh(BYTE *, int, int) { refreshes++; }
 static void __fastcall FakeSetPoint(BYTE *, int, int, void *rel, int, float x, float y, int) { anchors++; lastRel = rel; lastX = x; lastY = y; }
 static void __fastcall FakeSetAbs(BYTE *lay, int, int, float x, float y, int) { absPoints++; lastX = x; lastY = y; *(float *)(lay + 0x10) = y; }
 static const char *__fastcall FakeSkin(const char *key, int) { return !strcmp(key, "MasterFont") ? "Fonts\\Test.ttf" : nullptr; }
@@ -326,6 +327,29 @@ int main() {
     FollowColours();
     CHECK(!g_barHooked && bv[STATBAR_UPDATE / 4] == gameUpdate, "and the worker puts the bar update back");
     CHECK(frees == barCtors - 1, "every mana bar made was freed but the one the game destroyed (%d made, %d freed)", barCtors, frees);
+    // a bigger buff bar (layout 23, no widescreen UI): the bar and its 8 icons k x the game's size; back when off
+    {
+        *(DWORD *)buffBar = (DWORD)(img + RVA_BUFF_BAR_VT);
+        for (int i = 0; i < 8; i++)
+            *(DWORD *)bbtns[i] = (DWORD)(img + RVA_BUFF_INDICATOR_VT), *(float *)(bbtns[i] + LAYOUT_WIDTH) = *(float *)(bbtns[i] + LAYOUT_HEIGHT) = 0.015f;
+        *(float *)(buffBar + LAYOUT_WIDTH) = 0.12f, *(float *)(buffBar + LAYOUT_HEIGHT) = 0.015f;
+        int r0 = refreshes;
+        sh.ulOn = 0, sh.bbScale = 1; BuffBarSizePass();
+        bool none = refreshes == r0 && sh.bbState == 0;
+        sh.bbScale = 1.5f; BuffBarSizePass();
+        bool big = fabsf(*(float *)(buffBar + LAYOUT_WIDTH) - 0.18f) < 1e-6f && fabsf(*(float *)(buffBar + LAYOUT_HEIGHT) - 0.0225f) < 1e-6f
+            && fabsf(*(float *)(bbtns[7] + LAYOUT_WIDTH) - 0.0225f) < 1e-6f && fabsf(*(float *)(bbtns[0] + LAYOUT_HEIGHT) - 0.0225f) < 1e-6f && sh.bbState == 1;
+        int r1 = refreshes; BuffBarSizePass();
+        bool still = refreshes == r1;
+        sh.bbScale = 0; BuffBarSizePass();
+        bool back = fabsf(*(float *)(buffBar + LAYOUT_WIDTH) - 0.12f) < 1e-6f && fabsf(*(float *)(bbtns[3] + LAYOUT_WIDTH) - 0.015f) < 1e-6f && sh.bbState == 0 && !g_bbApplied;
+        int r2 = refreshes; BuffBarSizePass();
+        CHECK(none && big && still && back && refreshes == r2, "buff bar x1.5: 0.18 x 0.0225, icons 0.0225 (refreshed once, not again); off: the game's 0.12 x 0.015 and 0.015, then left alone");
+        sh.bbScale = 2, sh.ulOn = 1; BuffBarSizePass();
+        CHECK(fabsf(*(float *)(buffBar + LAYOUT_WIDTH) - 0.12f) < 1e-6f && sh.bbState == 1, "with the widescreen UI on: left to its layout (UlBuffs)");
+        sh.bbScale = 0, sh.ulOn = 0; BuffBarSizePass();
+        *(DWORD *)buffBar = 0; BuffBarSizePass();
+    }
     // a new game while bars are still listed: they're forgotten, not touched
     sh.hnOn = 1; FramesPass(); FollowColours(); FramesPass();
     for (int i = 0; i < 3; i++) update(i);
