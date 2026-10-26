@@ -43,6 +43,26 @@ TwcModuleRun() {
         && hb.buffs[1].positive && !hb.buffs[1].aura && hb.buffs[2].id = "BHad" && hb.buffs[2].aura && hb.buffs[2].name = "", "hero buffs: 'Hpal', Inner Fire 4 s, an aura")
     gameModule.heroWanted(true), hw1 := NumGet(twcShmBuf, Shm.hrWant, "uint"), gameModule.heroWanted(false)
     TwcCheck(hw1 = 1 && NumGet(twcShmBuf, Shm.hrWant, "uint") = 0, "heroWanted pushes hrWant")
+    ; buff alerts by rawcode: watched from the hero's list, the label / the game's name, missing / running out
+    TwcCheck(buffWatch.moduleReady() && buffWatch.addId("Binf", "Inner Fire") && buffWatch.addId("Bslo") && !buffWatch.addId("Binf") && !buffWatch.addId("Bi|f") && !buffWatch.addId("abc"),
+        "addId: two rawcodes watched; again, a '|' or not 4 letters: refused")
+    bl := buffWatch.buffs()
+    TwcCheck(bl.Length = 2 && bl[1].id = "Binf" && bl[1].name = "" && bl[1].gname = "Inner Fire" && bl[2].gname = "", "saved as label|id|Binf|Inner Fire")
+    hbw := buffWatch.heroBuffs(true), hw2 := NumGet(twcShmBuf, Shm.hrWant, "uint")
+    missing := [], ending := []
+    BuffWatchEngine.IdAlerts(bl, hbw, 5, missing, ending)
+    TwcCheck(hw2 = 1 && missing.Length = 1 && missing[1] = "Bslo" && ending.Length = 1 && ending[1] = "Inner Fire 4 s", "alerts: 'Bslo missing', 'Inner Fire 4 s' (" Join(", ", missing*) " / " Join(", ", ending*) ")")
+    buffWatch.rename(1, "IF"), buffWatch.rename(2, "Slow")
+    missing := [], ending := [], BuffWatchEngine.IdAlerts(buffWatch.buffs(), hbw, 5, missing, ending)
+    m2 := missing.Length ? missing[1] : "", e2 := ending.Length ? ending[1] : ""
+    NumPut("uint", 0, twcShmBuf, Shm.hrAlive)
+    missing := [], ending := [], BuffWatchEngine.IdAlerts(buffWatch.buffs(), gameModule.heroBuffs(), 5, missing, ending)
+    TwcCheck(m2 = "Slow" && e2 = "IF 4 s" && !missing.Length && !ending.Length, "your labels win; the hero dead: no alerts")
+    NumPut("uint", 1, twcShmBuf, Shm.hrAlive)
+    TwcCheck(InStr(buffWatch.statusText(), "watching IF, Slow"), "buff alerts: " buffWatch.statusText())
+    buffWatch.rename(1, ""), TwcCheck(buffWatch.buffs()[1].name = "" && InStr(buffWatch.statusText(), "watching Inner Fire"), "an empty label: the game's name again")
+    buffWatch.heroBuffs(false)
+    TwcCheck(NumGet(twcShmBuf, Shm.hrWant, "uint") = 0, "heroBuffs(false) stops the module's read")
     TwcCheck(t.cd[1].left = 4.5 && t.buffs.Length = 1 && t.buffs[1].left = 9, "timers: the first cooldown and buff")
     want := Map(
         "bars", [(*) => healthBars.statusText(), "0.0040 high"],

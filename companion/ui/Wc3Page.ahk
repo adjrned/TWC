@@ -84,7 +84,7 @@ Wc3Features() {
             opts: (d) => (OptCheck(d, "Minutes as m:ss", timersHud.buffMinutes, (v) => timersHud.setMinutes("buffMinutes", v)),
                 OptNote(d, "1:35 rather than 95 from a minute up. Off by default, as in WFE. Auras show no seconds.")) },
         { tab: "timers", title: "Buff alerts", badge: "Both",
-            desc: "A line over the game when a buff you added is missing, or (1.28f) running out.",
+            desc: "A line over the game when a buff on your hero is missing or running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
             window: (*) => BuffWatchDialog() },
         { tab: "display", title: "Health bar size", badge: "1.28f",
@@ -273,37 +273,86 @@ Wc3HintLine() {
     }
 }
 
-; Buff alerts' Options: the watched buffs (a name each, shown in the alert
-; line; Remove), adding one and the buff bar setup (both in game), and the
-; running-out warning (1.28f, game module). Names save as you type.
+; Buff alerts' Options. On 1.28f (the game module): your hero's buffs now, each
+; with Watch (by rawcode: no capture, no setup), and a box to type a rawcode.
+; On Reforged: adding one from the screen and the buff bar setup (in game).
+; Then the watched buffs (a label each, shown in the alert line; Remove) and
+; the running-out warning. Labels save as you type.
 BuffWatchDialog() {
-    global C, buffWatch, timersHud
+    global C, buffWatch, timersHud, wc3Ver
     static g := 0
     if g
         try g.Destroy()
     list := buffWatch.buffs()
-    d := Wc3Dialog("Buff alerts", "A line over the game when a buff you added is missing, or (1.28f) running out.", 460)
+    d := Wc3Dialog("Buff alerts", "A line over the game when a buff you watch is missing on your hero, or running out.", 480)
     g := d.g
-    OptButtons(d, [["Add a buff", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
-        ["Set up the buff bar", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]])
-    OptNote(d, timersHud.buffBar() ? "The buff bar is set up for this window size." : "The buff bar isn't set up for this window size yet (in a game, your hero selected).")
+    if wc3Ver = "128" {
+        OptHeader(d, "ON YOUR HERO NOW")
+        hb := 0
+        if buffWatch.moduleReady() {
+            if !(hb := buffWatch.heroBuffs(true)) || hb.hero = ""
+                Sleep(250), hb := buffWatch.heroBuffs(true)          ; the module reads them from now on (10 a second)
+            SetTimer(() => buffWatch.enabled || buffWatch.heroBuffs(false), -60000)
+        }
+        watched := Map()
+        for b in list
+            if b.HasProp("id")
+                watched[b.id] := 1
+        if !hb
+            OptNote(d, "In a 1.28f game with the game module on, your hero's buffs show here: Watch one, no capture needed.")
+        else if hb.hero = ""
+            OptNote(d, "No hero of yours found in this game yet.")
+        else if !hb.buffs.Length
+            OptNote(d, "Your hero has no buffs right now. Cast one, then Refresh.")
+        for hx in hb ? hb.buffs : [] {
+            nm := g.AddText("x" d.x " y" (d.y + 3) " w" (d.tw - 100 - 64) " h22 0x200 +Background" C.card " c" (hx.positive ? C.text : C.muted),
+                (hx.name != "" ? hx.name : "(no name)") (hx.aura ? "  · aura" : hx.total > 0 ? "  · " Round(hx.total) " s" : ""))
+            idt := g.AddText("x" (d.x + d.tw - 100 - 60) " y" (d.y + 3) " w54 h22 0x200 +Background" C.card " c" C.dim, hx.id)
+            UISetFont(idt, "s9")
+            on := watched.Has(hx.id)
+            wb := g.AddText("x" (d.x + d.tw - 90) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" (on ? C.dim : C.text), on ? "Watching" : "Watch")
+            UISetFont(wb, "s9 w600"), Box.Round(wb, 90, 28, 4)
+            if !on
+                wb.OnEvent("Click", ((bx, *) => (buffWatch.addId(bx.id, bx.name), BuffWatchDialog(), RefreshWc3())).Bind(hx))
+            d.y += 32
+        }
+        ; a rawcode typed (a buff that isn't on the hero now)
+        e := g.AddEdit("x" d.x " y" (d.y + 2) " w90 h24 Limit4 +Background" C.well " c" C.text, "")
+        SendMessage(0x1501, 1, StrPtr("Binf"), e)                   ; EM_SETCUEBANNER
+        add := g.AddText("x" (d.x + 98) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Watch")
+        UISetFont(add, "s9 w600"), Box.Round(add, 90, 28, 4)
+        add.OnEvent("Click", (*) => (buffWatch.addId(e.Value) ? (BuffWatchDialog(), RefreshWc3()) : Toast("A rawcode is 4 letters, as Binf (or it's watched already)", "error")))
+        rf := g.AddText("x" (d.x + d.tw - 90) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Refresh")
+        UISetFont(rf, "s9 w600"), Box.Round(rf, 90, 28, 4)
+        rf.OnEvent("Click", (*) => BuffWatchDialog())
+        d.y += 36
+        OptNote(d, "Or type a buff's rawcode. Watched by rawcode on your hero whatever is selected, any window size.")
+    } else {
+        OptButtons(d, [["Add a buff", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
+            ["Set up the buff bar", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]])
+        OptNote(d, timersHud.buffBar() ? "The buff bar is set up for this window size." : "The buff bar isn't set up for this window size yet (in a game, your hero selected).")
+    }
     OptDivider(d)
     OptHeader(d, "WATCHED BUFFS")
     if !list.Length
-        OptNote(d, "None yet: Add a buff, in a game with the buff on your hero.")
-    ; a row each, as the game keys' (its name to type, Remove at the right)
+        OptNote(d, wc3Ver = "128" ? "None yet: Watch one above." : "None yet: Add a buff, in a game with the buff on your hero.")
+    ; a row each, as the game keys' (its label to type, what it is, Remove at the right)
     for i, b in list {
         n := g.AddText("x" d.x " y" (d.y + 3) " w24 h22 0x200 +Background" C.card " c" C.muted, i)
         UISetFont(n, "s9 w600")
-        e := g.AddEdit("x" (d.x + 28) " y" (d.y + 2) " w" (d.tw - 28 - 100) " h24 +Background" C.well " c" C.text, b.name)
+        e := g.AddEdit("x" (d.x + 28) " y" (d.y + 2) " w" (d.tw - 28 - 100 - 64) " h24 +Background" C.well " c" C.text, b.name)
+        if b.HasProp("id")
+            SendMessage(0x1501, 1, StrPtr(b.gname != "" ? b.gname : b.id), e)     ; EM_SETCUEBANNER: the game's name until you type one
         e.OnEvent("Change", ((i, src, *) => buffWatch.rename(i, src.Value)).Bind(i))
+        k := g.AddText("x" (d.x + d.tw - 100 - 58) " y" (d.y + 3) " w56 h22 0x200 +Background" C.card " c" C.dim, b.HasProp("id") ? b.id : "screen")
+        UISetFont(k, "s9")
         r := g.AddText("x" (d.x + d.tw - 90) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Remove")
         UISetFont(r, "s9 w600"), Box.Round(r, 90, 28, 4)
         r.OnEvent("Click", ((i, *) => (buffWatch.remove(i), BuffWatchDialog(), RefreshWc3())).Bind(i))
         d.y += 34
     }
     if list.Length
-        OptNote(d, "The name is what the alert line says.")
+        OptNote(d, "The label is what the alert line says (empty: the game's name). 'screen': captured from the buff bar; the rest by rawcode (1.28f).")
     OptDivider(d)
     OptSlider(d, "Warn at", (*) => buffWatch.warnAt, (v) => (IsNumber(v) && (buffWatch.setWarnAt(Round(Min(Max(v + 0, 0), 60))), true)), 0, 60, 1)
     OptNote(d, "Seconds left when a buff counts as running out (0 = never); 1.28f, with the game module.")

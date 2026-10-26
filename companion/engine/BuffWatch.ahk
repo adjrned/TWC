@@ -1,18 +1,22 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
-;  BuffWatchEngine - buff alerts from the screen (Reforged and 1.28 alike;
-;  the idea is Crinix's buff alert). You capture a buff once: point at it on
-;  the buff bar in game and press Space. While a game runs, the buff bar is
-;  looked at 4 times a second and a line over the game says when a watched
-;  buff is missing ("Frost Armor missing"). On 1.28f with the game module, it
-;  also says when one is about to run out ("Frost Armor 4 s"): the module's
-;  buff timer for the slot the buff was seen in. Names and the warning time
-;  are set in the Buffs dialog (WC3 page > Timers).
-;  Where the buff bar is: TimerHud's buff bar setup (per window size).
-;  A buff is 25 colour samples over the middle of its icon; a slot holds it
-;  when the typical (median) difference is small, so the cursor or a number
-;  drawn over part of the icon doesn't hide it.
-;  Off by default (ini [BuffWatch] show; warn = seconds left to warn at, 0 = never).
+;  BuffWatchEngine - buff alerts: a line over the game says when a watched
+;  buff is missing on your hero ("Frost Armor missing"), or about to run out
+;  ("Frost Armor 4 s"). The idea is Crinix's buff alert. Two kinds of buffs:
+;  - 1.28f, with the game module: by rawcode ("Binf"), from your hero's own
+;    buffs (the module reads the hero unit, whatever is selected): picked in
+;    the Buffs dialog from the ones on your hero now, or typed. No capture,
+;    no buff bar setup, any window size. The name is your label, else the
+;    game's own (its Bufftip), else the rawcode. Nothing shows while your
+;    hero is dead or there is none.
+;  - Both versions: from the screen. You capture a buff once (point at it on
+;    the buff bar in game, Space); the buff bar is looked at 4 times a
+;    second (TimerHud's buff bar setup, per window size). A buff is 25 colour
+;    samples over the middle of its icon; a slot holds it when the typical
+;    (median) difference is small. On 1.28f the running-out warning takes
+;    the module's buff timer for the slot (index = slot, one row of 8).
+;  Off by default (ini [BuffWatch] show; warn = seconds left to warn at, 0 = never;
+;  buffN = label|samples, or label|id|Binf|the game's name when added).
 ; ============================================================================
 class BuffWatchEngine {
     section := "BuffWatch"
@@ -33,15 +37,18 @@ class BuffWatchEngine {
         SetIni(on ? 1 : 0, this.section, "show")
         SetTimer(this.tickFn, on ? 250 : 0)
         if !on
-            this.hide(), this.hud.gm.timersWanted(false, "buffs")
+            this.hide(), this.hud.gm.timersWanted(false, "buffs"), this.heroBuffs(false)
     }
 
-    ; the watched buffs: [{ name, samples: [25 colours] }]
+    ; the watched buffs: [{ name, samples: [25 colours] }] (from the screen) or
+    ; [{ name, id: "Binf", gname }] (by rawcode; name: your label, "" = the game's)
     buffs() {
         out := []
         loop Integer(Ini(this.section, "count", 0)) {
-            p := StrSplit(Ini(this.section, "buff" A_Index, ""), "|")
-            if p.Length = 2 {
+            p := StrSplit(Ini(this.section, "buff" A_Index, ""), "|", , 4)
+            if p.Length >= 3 && p[2] = "id" && BuffWatchEngine.IsId(p[3])
+                out.Push({ name: p[1], id: p[3], gname: p.Length = 4 ? p[4] : "" })
+            else if p.Length = 2 {
                 s := []
                 for v in StrSplit(p[2], ",")
                     s.Push(Integer("0x" v))
@@ -51,8 +58,13 @@ class BuffWatchEngine {
         }
         return out
     }
+    static IsId(id) => RegExMatch(id, "^[\x21-\x7E]{4}$") && !InStr(id, "|")
     save(list) {
         for i, b in list {
+            if b.HasProp("id") {
+                SetIni(b.name "|id|" b.id "|" b.gname, this.section, "buff" i)
+                continue
+            }
             hex := ""
             for v in b.samples
                 hex .= (A_Index > 1 ? "," : "") Format("{:06X}", v)
@@ -66,13 +78,30 @@ class BuffWatchEngine {
         if i >= 1 && i <= list.Length
             list.RemoveAt(i), this.save(list)
     }
-    ; a name for the alert line ("|" is the ini's separator; empty -> "Buff i")
+    ; a name for the alert line ("|" is the ini's separator; empty -> "Buff i", or the game's name for a rawcode)
     rename(i, name) {
         list := this.buffs()
         name := Trim(StrReplace(name, "|"))
         if i >= 1 && i <= list.Length
-            list[i].name := name != "" ? name : "Buff " i, this.save(list)
+            list[i].name := name != "" || list[i].HasProp("id") ? name : "Buff " i, this.save(list)
     }
+    ; watch a buff by its rawcode (1.28f); gname: the game's name for it, if known.
+    ; -> false if it isn't a rawcode or it's watched already
+    addId(id, gname := "") {
+        id := Trim(id)
+        if !BuffWatchEngine.IsId(id)
+            return false
+        list := this.buffs()
+        for b in list
+            if b.HasProp("id") && b.id == id
+                return false
+        list.Push({ name: "", id: id, gname: Trim(StrReplace(gname, "|")) })
+        this.save(list)
+        DebugLog("buff watch: watching '" id "' (" (gname != "" ? gname : "no name") ")")
+        return true
+    }
+    ; what the alert line calls it: your label, else the game's name (now, or when added), else the rawcode
+    static Label(b, gameName := "") => b.name != "" ? b.name : gameName != "" ? gameName : b.HasProp("gname") && b.gname != "" ? b.gname : b.HasProp("id") ? b.id : "Buff"
     warnAt => Integer(Ini(this.section, "warn", 5))
     setWarnAt(s) => SetIni(Max(0, Min(120, Integer(s))), this.section, "warn")
     ; the game module's buff timers, if it's there to read them (1.28f)
@@ -85,6 +114,22 @@ class BuffWatchEngine {
         }
         gm.timersWanted(true, "buffs")
         return gm.timers()
+    }
+    ; can rawcode buffs be watched now: 1.28f, the module running and new enough
+    moduleReady() {
+        gm := this.hud.gm
+        s := gm.state()
+        return gm.enabled && s.live && s.probe = 1 && s.layout >= 22
+    }
+    ; your hero's buffs from the module (1.28f, layout 22), asked for only while it's wanted
+    heroBuffs(want) {
+        gm := this.hud.gm
+        if !want || !this.moduleReady() {
+            gm.heroWanted(false), gm.timersWanted(false, "hero")
+            return 0
+        }
+        gm.timersWanted(true, "hero"), gm.heroWanted(true)
+        return gm.heroBuffs()
     }
 
     ; 25 points over the middle 60% of a slot's icon (centre cx, cy, icon pitch p)
@@ -126,25 +171,33 @@ class BuffWatchEngine {
     }
 
     tick() {
-        global inGame, chatting
+        global inGame
         if this.capturing || !WinActive(WarcraftIII) || !inGame
             return this.hide()
         list := this.buffs()
-        if !list.Length || !(l := this.look())
-            return this.hide()
-        t := this.moduleTimers(), warn := this.warnAt
-        missing := [], ending := []
-        for b in list {
-            slot := 0
-            loop BuffWatchEngine.SLOTS
-                if BuffWatchEngine.Distance(BuffWatchEngine.Sample(l.grab, l.x + (A_Index - 1) * l.p, l.y, l.p), b.samples) <= BuffWatchEngine.MATCH {
-                    slot := A_Index
-                    break
-                }
-            if !slot
-                missing.Push(b.name)
-            else if t && slot <= t.buffs.Length && t.buffs[slot] && (left := t.buffs[slot].left) > 0 && left <= warn
-                ending.Push(b.name " " Ceil(left) " s")
+        ids := [], screen := []
+        for b in list
+            (b.HasProp("id") ? ids : screen).Push(b)
+        hb := this.heroBuffs(ids.Length > 0)
+        missing := [], ending := [], warn := this.warnAt
+        BuffWatchEngine.IdAlerts(ids, hb, warn, missing, ending)
+        ; from the screen
+        if !screen.Length
+            this.hud.gm.timersWanted(false, "buffs")
+        else if (l := this.look()) {
+            t := this.moduleTimers()
+            for b in screen {
+                slot := 0
+                loop BuffWatchEngine.SLOTS
+                    if BuffWatchEngine.Distance(BuffWatchEngine.Sample(l.grab, l.x + (A_Index - 1) * l.p, l.y, l.p), b.samples) <= BuffWatchEngine.MATCH {
+                        slot := A_Index
+                        break
+                    }
+                if !slot
+                    missing.Push(b.name)
+                else if t && slot <= t.buffs.Length && t.buffs[slot] && (left := t.buffs[slot].left) > 0 && left <= warn
+                    ending.Push(b.name " " Ceil(left) " s")
+            }
         }
         parts := []
         if missing.Length
@@ -155,6 +208,25 @@ class BuffWatchEngine {
             this.show(Join("  ·  ", parts*))
         else
             this.hide()
+    }
+
+    ; by rawcode: what's missing / running out on your hero (hb: GameModule.heroBuffs();
+    ; nothing while the hero is dead or there's none)
+    static IdAlerts(ids, hb, warn, missing, ending) {
+        if !hb || hb.hero = "" || !hb.alive
+            return
+        for b in ids {
+            have := 0
+            for hx in hb.buffs
+                if hx.id == b.id {
+                    have := hx
+                    break
+                }
+            if !have
+                missing.Push(BuffWatchEngine.Label(b))
+            else if warn && have.left > 0 && have.left <= warn
+                ending.Push(BuffWatchEngine.Label(b, have.name) " " Ceil(have.left) " s")
+        }
     }
 
     ; the alert line: click-through, never takes focus, over the middle of the game
@@ -226,11 +298,12 @@ class BuffWatchEngine {
 
     statusText() {
         list := this.buffs()
-        names := []
+        names := [], ids := 0
         for b in list
-            names.Push(b.name)
-        return (this.enabled ? "On" : "Off") " · " (list.Length ? "watching " Join(", ", names*) : "no buffs yet: Add buff")
-            . (this.hud.buffBar() || !WinExist(WarcraftIII) ? "" : " · needs the buff bar setup (Timers)")
+            names.Push(BuffWatchEngine.Label(b)), ids += b.HasProp("id")
+        return (this.enabled ? "On" : "Off") " · " (list.Length ? "watching " Join(", ", names*) : "no buffs yet: Options")
+            . (list.Length > ids && !this.hud.buffBar() && WinExist(WarcraftIII) ? " · screen buffs need the buff bar setup" : "")
+            . (ids && !this.hud.gm.enabled ? " · rawcode buffs need the game module" : "")
             . (list.Length && this.warnAt && this.hud.gm.enabled ? " · warns at " this.warnAt " s on 1.28f" : "")
     }
 }
