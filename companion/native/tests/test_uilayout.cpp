@@ -14,15 +14,16 @@ static void __fastcall FRefresh(BYTE *, int, DWORD) { refreshes++; }
 static int mmCalls; static void __fastcall FMinimap(BYTE *, int) { mmCalls++; }
 static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)to - (p + 5)); }
 static const Call *Find(BYTE *lay, DWORD pt) { for (int i = nCalls - 1; i >= 0; i--) if (calls[i].lay == lay && calls[i].pt == pt) return &calls[i]; return nullptr; }
-static BYTE ui[0x500], minimap[0x200], peon[0x200], relPt[0x20], anchorFrame[0x20];
+static BYTE ui[0x500], minimap[0x200], peon[0x200], relPt[0x20], anchorFrame[0x20], top[0x20], junk[0x200];
 static void Pump(int n) { for (int k = 0; k < n; k++) { QueueDisplay(); Sleep(300); } }
 static DWORD WINAPI Tester(void *) {
     g_shared->ulOn = 1; Pump(16);                      // one handler a pass at first
     CHECK(g_shared->ulState == 1 && g_ulN >= 2, "on, a wide window: laid out (state %lu, %d frames saved)", g_shared->ulState, g_ulN);
-    const Call *c = Find(minimap + 0xb4, 6), *c2 = Find(minimap + 0xb4, 2), *pc = Find(peon, 6);
+    const Call *c = Find(minimap + 0xb4, 6), *c2 = Find(minimap + 0xb4, 2), *pc = Find(peon, 0);
     CHECK(c && c2 && c->rel == (DWORD)(ui + 0xb4) && c->x == 0.1075f && c->y == 0.007f && c2->relPt == 6 && c2->x == 0.210f && c2->y == 0.145f,
           "the minimap (a CFrame: its layout +0xb4) gets WFE's two corners on the game UI's layout");
-    CHECK(pc && *(float *)(peon + 0x58) == 0.0275f && pc->x == 0.100f && pc->y == 0.173f, "the idle workers (a simple frame: itself) narrowed and moved");
+    CHECK(pc && *(float *)(peon + 0x58) == 0.016f && pc->x == 0.2165f && pc->y == -0.456f, "a minimap button (a simple frame: itself) narrowed and moved");
+    CHECK(*(float *)(junk + 0x58) == 0.5f && *(float *)(junk + 0xb4 + 0x58) == 0.5f, "a field that isn't a frame of a known kind: not written");
     int saved = g_ulN; nCalls = 0; Pump(8);
     CHECK(g_ulN == saved && Find(minimap + 0xb4, 6), "laid out again every 2 s, nothing saved twice");
     // a 4:3 window: put back
@@ -31,7 +32,7 @@ static DWORD WINAPI Tester(void *) {
     CHECK(g_ulN == 0 && g_shared->ulState == 2 && back && back->rel == (DWORD)anchorFrame && back->y == -0.02f && clears >= 2 && *(float *)(peon + 0x58) == 0.05f,
           "a 4:3 window: every frame put back (anchors, width), state 2");
     SetWindowPos(wnd, 0, 0, 0, 800, 330, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Pump(16);
-    CHECK(g_shared->ulState == 1 && *(float *)(peon + 0x58) == 0.0275f, "wide again: laid out again");
+    CHECK(g_shared->ulState == 1 && *(float *)(peon + 0x58) == 0.016f, "wide again: laid out again");
     g_shared->ulOn = 0; Pump(2);
     CHECK(g_shared->ulState == 0 && g_ulN == 0 && *(float *)(peon + 0x58) == 0.05f, "off: put back");
     Verdict();
@@ -44,14 +45,16 @@ int main() {
     img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     g_base = img; g_imageSize = 0x1000000;
     Stub(RVA_SET_POINT, FSetPoint); Stub(RVA_SET_ABS_POINT, FSetAbs); Stub(RVA_CLEAR_POINTS, FClear); Stub(RVA_LAYOUT_REFRESH, FRefresh);
-    DWORD old; VirtualProtect(img + 0xa7d000, 0x1000, PAGE_READWRITE, &old); VirtualProtect(img + 0xaa0000, 0x20000, PAGE_READWRITE, &old);
+    DWORD old; VirtualProtect(img + 0xa7c000, 0x2000, PAGE_READWRITE, &old); VirtualProtect(img + 0xaa0000, 0x20000, PAGE_READWRITE, &old);
     g_uiVtable = (DWORD)(img + RVA_UI_VTABLE); *(DWORD *)ui = g_uiVtable;
     DWORD *mmVt = (DWORD *)(img + 0xab0704); Stub(0x300000, FMinimap); mmVt[0xe4 / 4] = (DWORD)(img + 0x300000);
     *(DWORD *)minimap = (DWORD)mmVt; *(BYTE **)(minimap + 0x44) = minimap;               // a CFrame
     *(DWORD *)relPt = (DWORD)(img + RVA_REL_POINT_VT); *(BYTE **)(relPt + 4) = anchorFrame; *(float *)(relPt + 0x10) = -0.02f;
     *(BYTE **)(minimap + 0xb4 + 8) = relPt;                                              // its own point 0, relative
-    *(DWORD *)peon = (DWORD)(img + 0xab0f08); *(float *)(peon + 0x58) = 0.05f;           // a simple frame
-    *(BYTE **)(ui + 0x3c0) = minimap; *(BYTE **)(ui + 0x3e0) = peon;
+    *(DWORD *)top = (DWORD)(img + RVA_SIMPLE_TOP_VT);
+    *(DWORD *)peon = (DWORD)(img + 0xab0f08); *(float *)(peon + 0x58) = 0.05f; *(BYTE **)(peon + 0x68) = top;   // a simple frame
+    *(DWORD *)junk = (DWORD)(img + 0xab0f10); *(float *)(junk + 0x58) = 0.5f; *(float *)(junk + 0xb4 + 0x58) = 0.5f;   // no known kind
+    *(BYTE **)(ui + 0x3c0) = minimap; *(BYTE **)(ui + 0x408) = peon; *(BYTE **)(ui + 0x40c) = junk;
     fakeUi = ui; g_getUi = FakeGetUi;
     mainTid = GetCurrentThreadId();
     WNDCLASSA wc = {}; wc.lpfnWndProc = DefWindowProcA; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);

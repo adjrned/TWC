@@ -79,6 +79,11 @@ class GameModuleEngine {
         if this.tried.Has(pid)
             return
         this.tried[pid] := true
+        try exeName := WinGetProcessName(hwnd)
+        catch
+            exeName := ""
+        if exeName != "Warcraft III.exe" && exeName != "war3.exe"
+            return DebugLog("game module: the window is " exeName "'s, not the game's: not loading")   ; e.g. the crash reporter
         exe := this.dir "\twc-inject.exe"
         if !(dll := this.loadCopy()) || !FileExist(exe)
             return DebugLog("game module: native\ files missing")

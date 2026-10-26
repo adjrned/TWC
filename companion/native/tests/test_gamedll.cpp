@@ -92,7 +92,8 @@ int main() {
     // the vtables it checks objects against
     bool vt = Rtti(RVA_UI_VTABLE, "CGameUI") & Rtti(RVA_STATBAR_VTABLE, "CStatBar") & Rtti(RVA_TEXT_VTABLE, "CTextFrame")
         & Rtti(RVA_PORTRAIT_VTABLE, "CPortraitButton") & Rtti(RVA_FONTSTRING_VTABLE, "CSimpleFontString")
-        & Rtti(RVA_COMMAND_BUTTON_VTABLE, "CCommandButton");
+        & Rtti(RVA_COMMAND_BUTTON_VTABLE, "CCommandButton") & Rtti(RVA_REGION_VT, "CSimpleRegion") & Rtti(RVA_TEXTURE_VT, "CSimpleTexture")
+        & Rtti(RVA_SIMPLE_TOP_VT, "CSimpleTop") & Rtti(RVA_REL_POINT_VT, "") & Rtti(RVA_ABS_POINT_VT, "");
     CHECK(vt, "the vtables are data with the expected RTTI names");
 
     // the timer getters the first report refused, now 3 calls deep (and the ones that passed)

@@ -152,6 +152,13 @@ int main() {
         *(BYTE **)(b + BAR_TEXT) = barTexts[i]; barTexts[i][0x10] = 1;
     }
     auto update = [&](int i) { ((BarUpdateFn)bv[STATBAR_UPDATE / 4])(bars[i], 0, units[i]); };
+    {   // health bar colours went on first: the bar update entry is our hook, the frames still check out
+        DWORD keep = bv[STATBAR_UPDATE / 4], o2; VirtualProtect(bv, 0x100, PAGE_READWRITE, &o2);
+        bv[STATBAR_UPDATE / 4] = (DWORD)BarUpdateHook;
+        bool ok = GameVtable(RVA_STATBAR_VTABLE, { STATBAR_UPDATE });
+        bv[STATBAR_UPDATE / 4] = keep; VirtualProtect(bv, 0x100, o2, &o2);
+        CHECK(ok, "a vtable entry that's one of our hooks still checks out (colours on before the frames)");
+    }
     sh.hnOn = 1; sh.hnMode = 1; sh.mbOn = 1; sh.mbHeight = 0.75f;
     FramesPass();                        // wants the bar update
     CHECK(g_extrasWant == 1 && !g_extrasHooked, "on: asks the worker for the bar update first");

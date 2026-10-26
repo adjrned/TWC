@@ -1377,12 +1377,20 @@ static DWORD F(float f) {
 }
 
 // data in the game module whose first entries (and these) are game code
+// an entry that's ours: one of the module's own hooks swapped in (the bar update when colours went on first)
+static bool OurCode(const void *p) {
+    HMODULE m = nullptr;            // this module (g_self; or, in a test, whatever holds this code)
+    if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)&OurCode, &m))
+        m = g_self;
+    BYTE *b = (BYTE *)m;
+    return b && (BYTE *)p >= b && (DWORD)((BYTE *)p - b) < ImageSize(b);
+}
 static bool GameVtable(DWORD rva, std::initializer_list<DWORD> slots) {
     DWORD *vt = (DWORD *)(g_base + rva);
     if (!PageIs(vt, READ) || PageIs(vt, EXEC) || !IsGameCode((BYTE *)vt[0]) || !IsGameCode((BYTE *)vt[1]))
         return false;
     for (DWORD s : slots)
-        if (!PageIs(vt + s / 4, READ) || !IsGameCode((BYTE *)vt[s / 4]))
+        if (!PageIs(vt + s / 4, READ) || (!IsGameCode((BYTE *)vt[s / 4]) && !OurCode((BYTE *)vt[s / 4])))
             return false;
     return true;
 }
@@ -2898,31 +2906,53 @@ static void UiHidePass() {
 // the 9 point slots at layout+8, width +0x58, height +0x5c), the layout is
 // applied at game start and again every 2 s (the game may move frames
 // itself), and turning it off puts every saved frame back (WFE's 0x100872d0).
-// A frame's layout part: frame+0xb4 for a CFrame ([frame+0x44] == frame),
-// else the frame itself (WFE's kinds 1 / 2 / 3). Only on a window at least
-// 1.5 wide for 1 tall: WFE's 4:3 values are a different layout, not the game's.
-struct LaySave { BYTE *frame, *lay; SavedPoint pts[9]; float w, h; };
+// A frame's layout part, as WFE's 0x10087510 finds it: the object itself for
+// a region (CSimpleRegion / CSimpleFontString / CSimpleTexture vtable) or a
+// simple frame ([+0x68] a CSimpleTop), frame+0xb4 for a CFrame ([+0x44] is
+// itself), else none (WFE leaves it alone too). Some of WFE's writes skip
+// that and go to [frame+0x58] directly (hero buttons, a button's [+0x194]):
+// "raw" here. Only on a window at least 1.5 wide for 1 tall: WFE's 4:3
+// values are a different layout, not the game's.
+// Every op below was checked by hand in WFEDll (2026-10-26) after the first
+// version crashed: the studies had the upper menu bar's anchor on the wrong
+// child and relative to the bar's +0xb4, which a simple frame doesn't have.
+struct LaySave { BYTE *frame, *lay; SavedPoint pts[9]; float w, h; bool raw; };
+static const DWORD RVA_REGION_VT = 0xa7d100, RVA_TEXTURE_VT = 0xa7d13c, RVA_SIMPLE_TOP_VT = 0xa7cae4;   // WFE's [0x1013aa34], -, [0x1013a4f8]
 static LaySave g_ul[160];
 static int g_ulN;
 static void *g_ulUi;                // the game UI the saves belong to
 static bool g_ulBad;                // a frame's point couldn't be read: no more layout this session
 static DWORD g_ulAt;
 
-static BYTE *LayOf(BYTE *f) { return f && *(BYTE **)(f + 0x44) == f ? f + FRAME_LAYOUT : f; }
-
 static BYTE *V(BYTE *f);
+static BYTE *LayOf(BYTE *f) {
+    if (!f)
+        return nullptr;
+    DWORD vt = *(DWORD *)f;
+    if (vt == (DWORD)(g_base + RVA_REGION_VT) || vt == (DWORD)(g_base + RVA_FONTSTRING_VTABLE) || vt == (DWORD)(g_base + RVA_TEXTURE_VT))
+        return f;                                   // kind 1: a region
+    BYTE *top = V(*(BYTE **)(f + 0x68));
+    if (top && *(DWORD *)top == (DWORD)(g_base + RVA_SIMPLE_TOP_VT))
+        return f;                                   // kind 2: a simple frame
+    if (*(BYTE **)(f + 0x44) == f)
+        return f + FRAME_LAYOUT;                    // kind 3: a CFrame
+    return nullptr;
+}
 
-// a frame's own anchors and size, once per game (nullptr: refused)
-static LaySave *UlSave(BYTE *f) {
+// a frame's own anchors and size, once per game (nullptr: refused, or no layout part)
+static LaySave *UlSave(BYTE *f, bool raw = false) {
     if (!V(f))
         return nullptr;
     for (int i = 0; i < g_ulN; i++)
-        if (g_ul[i].frame == f)
+        if (g_ul[i].frame == f && g_ul[i].raw == raw)
             return &g_ul[i];
     if (g_ulN >= (int)(sizeof(g_ul) / sizeof(g_ul[0])))
         return nullptr;
+    BYTE *lay = raw ? f : LayOf(f);
+    if (!lay)
+        return nullptr;
     LaySave &s = g_ul[g_ulN];
-    s.frame = f, s.lay = LayOf(f);
+    s.frame = f, s.lay = lay, s.raw = raw;
     for (int i = 0; i < 9; i++) {
         BYTE *pt = *(BYTE **)(s.lay + LAYOUT_POINTS + i * 4);
         s.pts[i] = {};
@@ -2959,8 +2989,8 @@ static void UlRestore(LaySave &s) {
 }
 
 // the ops (each saves the frame first; a frame that can't be saved is left alone)
-static void UlWidth(BYTE *f, float w) {
-    LaySave *s = UlSave(f);
+static void UlWidth(BYTE *f, float w, bool raw = false) {
+    LaySave *s = UlSave(f, raw);
     if (s && *(float *)(s->lay + 0x58) != w)
         *(float *)(s->lay + 0x58) = w, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
 }
@@ -2998,22 +3028,6 @@ static BYTE *P(BYTE *f, DWORD off) { return f ? V(*(BYTE **)(f + off)) : nullptr
 // One function per handler: they're taken one at a time the first time in a
 // game (each logged first, with its frame's class), so a log shows how far
 // it got; each is guarded on its own.
-static void UlMenu(BYTE *ui, BYTE *root) {
-    // ISUPPERMENUBAR 0x10087cf0: the 4 children's widths, the bar's anchor
-    BYTE *menu = P(ui, 0x3d0);
-    UlWidth(P(menu, 0x138), 0.064f);
-    UlWidth(P(menu, 0x130), 0.064f);
-    if (menu)
-        UlPoint(P(menu, 0x130), 0, menu + FRAME_LAYOUT, 0, 0.100f, 0);
-    UlWidth(P(menu, 0x134), 0.064f);
-    UlWidth(P(menu, 0x160), 0.064f);
-}
-static void UlResources(BYTE *ui, BYTE *root) {
-    // ISRESOURCEBAR 0x10088100: the two fixed anchors (the per-child passes aren't fully read yet)
-    BYTE *res = P(ui, 0x3cc);
-    UlPoint(P(res, 0x148), 1, root, 1, -0.045f, -0.100f);
-    UlPoint(P(res, 0x14c), 1, root, 1, 0.0375f, -0.045f);
-}
 static void UlMinimap(BYTE *ui, BYTE *root) {
     // ISMINIMAP 0x1008a250: two corners, then CMinimap +0xe4 as WFE does
     BYTE *mm = P(ui, 0x3c0);
@@ -3032,11 +3046,6 @@ static void UlMinimapButtons(BYTE *ui, BYTE *root) {
         UlPoint(P(ui, o), 0, root, 0, 0.2165f, -0.456f);
     }
 }
-static void UlPeons(BYTE *ui, BYTE *root) {
-    // ISPEONBAR 0x1008afa0
-    UlWidth(P(ui, 0x3e0), 0.0275f);
-    UlPoint(P(ui, 0x3e0), 6, root, 6, 0.100f, 0.173f);
-}
 static void UlHeroes(BYTE *ui, BYTE *) {
     // ISHEROBAR 0x1008b2b0: every hero button and its parts
     BYTE *hb = P(ui, 0x3dc);
@@ -3047,10 +3056,10 @@ static void UlHeroes(BYTE *ui, BYTE *) {
                 BYTE *b = GridButton(hb, r, c);
                 if (!b)
                     continue;
-                UlWidth(b, 0.0275f);
-                UlWidth(P(b, 0x1cc), 0.0275f);
-                UlWidth(P(b, 0x1d0), 0.0275f);
-                UlWidth(P(b, 0x194), 0.0125f);
+                UlWidth(b, 0.0275f, true);          // all four straight to +0x58
+                UlWidth(P(b, 0x1cc), 0.0275f, true);
+                UlWidth(P(b, 0x1d0), 0.0275f, true);
+                UlWidth(P(b, 0x194), 0.0125f, true);
             }
     }
 }
@@ -3063,7 +3072,7 @@ static void UlCard(BYTE *ui, BYTE *root) {
         for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
             for (int c = 0; c < cols; c++)
                 if (BYTE *b = GridButton(card, r, c))
-                    UlWidth(b, 0.0275f), UlWidth(P(b, 0x194), 0.0125f);
+                    UlWidth(b, 0.0275f), UlWidth(P(b, 0x194), 0.0125f, true);
         UlPoint(card, 8, root, 8, -0.107f, 0.003f);
     }
 }
@@ -3091,33 +3100,18 @@ static void UlItems(BYTE *ui, BYTE *root) {
             if (BYTE *slot = ItemButton(ui, i)) {
                 UlClear(slot), UlWidth(slot, 0.021f);
                 UlPoint(slot, 4, root, 4, (float)(i & 1) * 0.030f + 0.0975f, y0 - (float)(i >> 1) * 0.039f);
-                UlWidth(P(slot, 0x194), 0.013f);
+                UlWidth(P(slot, 0x194), 0.013f, true);
             }
     }
-}
-static void UlTimeOfDay(BYTE *ui, BYTE *) {
-    // ISTIMEOFDAYINDICATOR 0x1008b880
-    if (BYTE *tod = P(ui, 0x3f8))
-        UlClear(tod), UlAbs(tod, 4, 0.1635f, 0);
-}
-static void UlInfo(BYTE *ui, BYTE *) {
-    // ISINFOBAR 0x10090940: the panel's two anchors
-    BYTE *info = P(ui, 0x3c4);
-    if (BYTE *ip = P(info, 0x130))
-        UlClear(ip), UlPoint(ip, 6, LayOf(P(ui, 0x428)), 6, 0.33f, 0);
-    UlPoint(P(info, 0x128), 1, LayOf(P(info, 0x130)), 1, 0, -0.0225f);
-}
-static void UlTooltip(BYTE *ui, BYTE *root) {
-    // ISTOOLTIP 0x10091730
-    UlPoint(P(ui, 0x1cc), 8, root, 0, 0.6875f, -0.435f);
 }
 
 typedef void (*UlFn)(BYTE *, BYTE *);
 static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUPS[] = {
-    { "upper menu bar", UlMenu, 0x3d0 }, { "resource bar", UlResources, 0x3cc }, { "minimap", UlMinimap, 0x3c0 },
-    { "minimap buttons", UlMinimapButtons, 0x408 }, { "idle workers", UlPeons, 0x3e0 }, { "hero buttons", UlHeroes, 0x3dc },
+    // checked by hand; left out until they are: the upper menu bar, the resource bar, idle workers,
+    // time of day (Hide the UI hides them), the info panel, the tooltip
+    { "minimap", UlMinimap, 0x3c0 }, { "minimap buttons", UlMinimapButtons, 0x408 }, { "hero buttons", UlHeroes, 0x3dc },
     { "command card", UlCard, 0x3c8 }, { "portrait", UlPortrait, UI_PORTRAIT }, { "inventory cover", UlCover, 0x3c4 },
-    { "inventory", UlItems, 0x3c4 }, { "time of day", UlTimeOfDay, 0x3f8 }, { "info panel", UlInfo, 0x3c4 }, { "tooltip", UlTooltip, 0x1cc },
+    { "inventory", UlItems, 0x3c4 },
 };
 static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
 static int g_ulStage;               // groups taken so far in this game (one more each pass at first)
