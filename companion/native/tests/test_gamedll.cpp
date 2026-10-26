@@ -219,6 +219,10 @@ int main() {
           "the bar's update / hide / show / dtor, a texture's +0x24 and a command button's +0x6C are those functions");
     CHECK(*(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x64) == (DWORD)(g_base + 0x13b940) && *(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x68) == (DWORD)(g_base + 0x13c390),
           "Hide the UI's buff bar: CBuffBar's +0x64 / +0x68 are the simple frame's hide / show (no stack arguments)");
+    // the start countdown: the lobby's start handler +0x324100 (its one caller +0x322458) starts timer 3 with 6.0 s at +0x324146
+    float *cs = CountdownFloat();
+    CHECK(cs == (float *)(g_base + RVA_COUNTDOWN_SECS) && *cs == 6.0f && SiteTarget(g_base + 0x322458) == g_base + RVA_COUNTDOWN && FnStart(RVA_TIMER_START),
+          "the start countdown's 6.0 s at +%06lX, in the handler +%06lX the lobby calls (+322458)", RVA_COUNTDOWN_SECS, RVA_COUNTDOWN);
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)

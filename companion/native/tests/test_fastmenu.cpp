@@ -5,7 +5,7 @@
 // off puts the bytes back and the speed to 1; changed bytes are refused.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, fmOn) == 824 && offsetof(Shared, fmState) == 828 && sizeof(Shared) == 832, "layout 16");
+static_assert(offsetof(Shared, fmOn) == 824 && offsetof(Shared, fmState) == 828 && sizeof(Shared) >= 832, "layout 16");
 
 static BYTE *img;
 static float gameTime = 1.5f;

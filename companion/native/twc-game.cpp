@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 16
+    DWORD layout;           // 17
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -144,6 +144,11 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 16: fast menus (FastMenuPass)
     DWORD fmOn;             // companion: 1 = the menus' transitions near instant, as WFE's Fast Menu
     DWORD fmState;          // module: 0 off, 1 on, 3 refused (see the log)
+    // layout 17: the game start countdown of games you host (CountdownPass)
+    DWORD csOn;             // companion: 1 = games you host start csSecs after Start Game
+    float csSecs;           // companion: the seconds (0-6; WFE's [DELAY] GAMESTART, default 0)
+    DWORD csState;          // module: 0 the game's own, 1 set, 3 refused (see the log)
+    float csGame;           // module: the game's own countdown, as read (0 = not read)
 };
 #pragma pack(pop)
 
@@ -2967,6 +2972,76 @@ static void LatencyPass() {
     Log("latency: %lu ms (LAN, single player and Battle.net)", want);
 }
 
+// The game start countdown (games you host), as WFE's [DELAY] GAMESTART: WFE
+// replaces the lobby's start handler +0x324100 (called from +0x322458) with its
+// own copy 0x10057c10, which starts the same two timers but the countdown's
+// (id 3, on [this+0x1dc], +0x86a3e0) with GAMESTART + 0.1 s (0x100fa7c8)
+// instead of the game's 6.0 (+0x324143: mov dword [esp], 0x40C00000). Its copy
+// isn't the 1.28f function (it passes this+0x1f8 to +0x2dd7d0 where the game
+// passes [this+0x1f8]), so here only that float is changed: the 4 bytes at
+// +0x324146, checked in their instruction first (the lea of the timer, the
+// mov, the call), on the game thread, put back when off and on unload.
+static const DWORD RVA_COUNTDOWN = 0x324100, RVA_COUNTDOWN_SECS = 0x324146, RVA_TIMER_START = 0x86a3e0;
+static const BYTE COUNTDOWN_HEAD[] = { 0x6A, 0x00, 0x56, 0x6A, 0x03, 0x51, 0x8D, 0x8E, 0xDC, 0x01, 0x00, 0x00, 0xC7, 0x04, 0x24 };   // +0x324137
+static float g_csOrig;              // the game's own countdown (read once)
+static float g_csSet;               // the seconds patched in (0 = the game's own)
+
+static float CountdownWanted() {
+    float s = g_shared->csSecs;
+    return !g_shared->csOn ? 0 : (s == s && s > 0 ? (s < 6 ? s : 6) : 0) + 0.1f;
+}
+// the countdown's float, if its instruction is where 1.28f has it (else nullptr)
+static float *CountdownFloat() {
+    BYTE *at = g_base + RVA_COUNTDOWN_SECS;
+    if (!FnStart(RVA_COUNTDOWN) || !PageIs(at + 8, EXEC) || memcmp(at - sizeof(COUNTDOWN_HEAD), COUNTDOWN_HEAD, sizeof(COUNTDOWN_HEAD))
+        || at[4] != 0xE8 || SiteTarget(at + 4) != g_base + RVA_TIMER_START)
+        return nullptr;
+    return (float *)at;
+}
+static void CountdownRestore(bool quiet) {
+    if (!g_csSet)
+        return;
+    float *f = CountdownFloat();
+    if (f && *f == g_csSet)
+        WriteCode((BYTE *)f, (const BYTE *)&g_csOrig, 4);
+    else if (!quiet)
+        Log("start countdown: +%06lX was changed by someone else: left as it is", RVA_COUNTDOWN_SECS);
+    if (!quiet)
+        Log("start countdown: the game's own again (%.1f s)", g_csOrig);
+    g_csSet = 0;
+}
+// on the game thread
+static void CountdownPass() {
+    static bool refused;
+    float want = CountdownWanted();
+    if (refused || want == g_csSet)
+        return;
+    if (!want) {
+        CountdownRestore(false);
+        g_shared->csState = 0;
+        return;
+    }
+    float *f = CountdownFloat();
+    if (!f || (g_csSet ? *f != g_csSet : !(*f >= 1 && *f <= 60))) {
+        refused = true, g_shared->csState = 3;
+        Log("start countdown: refused, +%06lX isn't the game's countdown as 1.28f has it (or it was changed)", RVA_COUNTDOWN_SECS);
+        LogBytes("  its bytes", g_base + RVA_COUNTDOWN_SECS - sizeof(COUNTDOWN_HEAD));
+        return;
+    }
+    if (!g_csSet) {
+        g_csOrig = *f, g_shared->csGame = g_csOrig;
+        Log("start countdown: the game's own is %.1f s (+%06lX)", g_csOrig, RVA_COUNTDOWN_SECS);
+    }
+    if (!WriteCode((BYTE *)f, (const BYTE *)&want, 4)) {
+        Log("start countdown: writing it failed (%lu)", GetLastError());
+        refused = true, g_shared->csState = 3;
+        return;
+    }
+    g_csSet = want;
+    g_shared->csState = 1;
+    Log("start countdown: %.1f s in games you host", want);
+}
+
 // Hiding parts of the UI, as WFE's INTERFACE IS* keys do it for the frames
 // it hides with their own calls (study_uihide.md): each is a CGameUI field
 // whose vtable has a hide / show pair, __fastcall(frame, 0). The CFrame ones
@@ -4181,6 +4256,7 @@ static void DisplayPass() {
     WidescreenPass();
     FpsPass();
     LatencyPass();
+    CountdownPass();
     UiHidePass();
     UiLayoutPass();
 }
@@ -4189,7 +4265,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -4446,7 +4522,7 @@ static Shared g_retired;            // what g_shared points at once retired (not
 
 static void SwitchesOff() {
     Shared *s = g_shared;
-    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = 0;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
@@ -4458,7 +4534,7 @@ static void RestoreAll() {
         PointSites(false);
     if (g_wsApplied)
         PointProjection(false), g_wsApplied = false;
-    SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);
+    SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true);
 }
 // on the game thread: the last of it, and the window back
 static void FinalPass() {
@@ -4630,7 +4706,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 16;
+        g_shared->layout = 17;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -4641,7 +4717,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;

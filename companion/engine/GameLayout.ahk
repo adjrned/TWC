@@ -89,5 +89,9 @@ class Shm {
     static ttState := 820
     static fmOn := 824
     static fmState := 828
-    static size := 832
+    static csOn := 832
+    static csSecs := 836
+    static csState := 840
+    static csGame := 844
+    static size := 848
 }

@@ -42,7 +42,7 @@ Wc3PlannedText(tab, ver) {
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
         "display128", "Nothing more planned yet.",
         "displayreforged", "Nothing planned yet.",
-        "hosting128", "Planned: the game start countdown when you host.",
+        "hosting128", "Nothing more planned yet.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
     return p[tab ver]
 }
@@ -118,6 +118,10 @@ Wc3Features() {
             desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
             buttons: [[(*) => gameDisplay.latencyLabel, (*) => (gameDisplay.cycleLatency(), RefreshWc3())]] },
+        { tab: "hosting", title: "Start countdown", badge: "1.28f",
+            desc: "As WFE's: games you host start this long after Start Game, not 6 s.",
+            on: (*) => gameDisplay.countdown, set: (v) => gameDisplay.setCountdown(v), status: (*) => gameDisplay.countdownStatus(),
+            buttons: [[(*) => gameDisplay.countdownLabel, (*) => CountdownDialog()]] },
         { tab: "display", title: "Widescreen", badge: "1.28f",
             desc: "As WFE's: the world isn't stretched. Steps aside for a widescreen mix file.",
             on: (*) => gameDisplay.widescreen, set: (v) => gameDisplay.setWidescreen(v), status: (*) => gameDisplay.wsStatus() },
@@ -341,6 +345,29 @@ BarSizeDialog(kind) {
     return g
 }
 BarSizeText(v) => RTrim(RTrim(Format("{:.2f}", v), "0"), ".")
+SecsText(v) => RTrim(RTrim(Format("{:.1f}", v), "0"), ".")
+
+; the start countdown of games you host: a slider and a box, in tenths of a second
+CountdownDialog() {
+    global C, gameDisplay
+    static g := 0
+    if g
+        try g.Destroy()
+    d := Wc3Dialog("Start countdown", "Seconds from Start Game to the game, in games you host.")
+    g := d.g
+    lb := g.AddText("x" d.x " y" (d.y + 2) " w60 h22 0x200 +Background" C.card " c" C.text, "Seconds")
+    sl := g.AddSlider("x" (d.x + 64) " y" d.y " w" (d.tw - 64 - 70) " h26 NoTicks Range0-60 +Background" C.card, Round(gameDisplay.countdownSecs * 10))
+    ed := g.AddEdit("x" (d.x + d.tw - 60) " y" (d.y + 1) " w60 h24 Center +Background" C.well " c" C.text, SecsText(gameDisplay.countdownSecs))
+    busy := { on: false }
+    sl.OnEvent("Change", (src, *) => (gameDisplay.setCountdownSecs(src.Value / 10), busy.on := true, ed.Value := SecsText(gameDisplay.countdownSecs), busy.on := false))
+    ed.OnEvent("Change", (src, *) => (!busy.on && gameDisplay.setCountdownSecs(StrReplace(Trim(src.Value), ",", ".")) && (sl.Value := Round(gameDisplay.countdownSecs * 10))))
+    d.y += 36
+    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "From 0 to 6 s; the game's own is 6. WFE adds 0.1 s, so does this.")
+    UISetFont(nt, "s8")
+    d.y += 22
+    Wc3DialogShow(d)
+    return g
+}
 
 ; Health bar colours by owner: each a colour of your own, or the owner's player colour
 BarColoursDialog() {
