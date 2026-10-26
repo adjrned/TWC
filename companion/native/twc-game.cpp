@@ -2999,6 +2999,12 @@ static void UlHeight(BYTE *f, float h) {
     if (s && *(float *)(s->lay + 0x5c) != h)
         *(float *)(s->lay + 0x5c) = h, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
 }
+// a raw SetPoint: the object itself is the layout, as WFE passes it in places
+static void UlPointRaw(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
+    LaySave *s = UlSave(f, true);
+    if (s && rel)
+        Game(RVA_SET_POINT, s->lay, { pt, (DWORD)rel, relPt, F(x), F(y), 1 });
+}
 // rel: the layout part anchored to (as WFE passes it)
 static void UlPoint(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
     LaySave *s = UlSave(f);
@@ -3105,13 +3111,44 @@ static void UlItems(BYTE *ui, BYTE *root) {
     }
 }
 
+// ISINFOBAR 0x10090940 (read by hand: 0x100909d3..0x100916cf): the info panel
+// [ui+0x3c4] to the console's bottom left at 0.33, its unit panel P = [+0x130]:
+// P's [+0x128] (the name) on P's top, the two bars [+0x144] / [+0x148] (XP,
+// ...) 0.135 wide, and each stat block Q = [P+0x14c..0x168]: its icon
+// [Q+0x124] 0.02 wide, some anchored to Q's corner, and its text [Q+0x134]
+// beside the icon. Raw pointers where WFE passes them raw.
+static void UlInfo(BYTE *ui, BYTE *) {
+    BYTE *info = P(ui, 0x3c4), *con = P(ui, 0x428), *pp = P(info, 0x130);
+    if (!info || !con || !pp)
+        return;
+    UlClear(info), UlPoint(info, 6, con, 6, 0.33f, 0);
+    UlPoint(P(pp, 0x128), 1, pp, 1, -0.0225f, 0);
+    UlWidth(P(pp, 0x144), 0.135f), UlWidth(P(pp, 0x148), 0.135f);
+    static const struct { DWORD off; int anchor; bool text; } Q[] = {
+        { 0x14c, -1, true }, { 0x150, 0, true }, { 0x154, -1, true }, { 0x158, 0, true },
+        { 0x15c, 0, false }, { 0x160, -1, false }, { 0x164, 3, false }, { 0x168, 3, false } };
+    for (const auto &q : Q) {
+        BYTE *blk = P(pp, q.off), *icon = P(blk, 0x124);
+        if (!blk || !icon)
+            continue;
+        UlWidth(icon, 0.02f);
+        if (q.off == 0x164)
+            UlHeight(icon, 0.034f);
+        if (q.anchor >= 0)
+            UlPoint(icon, (DWORD)q.anchor, blk, (DWORD)q.anchor, -0.01f, 0);
+        if (q.text)
+            if (BYTE *t = P(blk, 0x134))
+                UlPointRaw(t, 4, icon, 8, -0.004f, 0.00687f);
+    }
+}
+
 typedef void (*UlFn)(BYTE *, BYTE *);
 static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUPS[] = {
     // checked by hand; left out until they are: the upper menu bar, the resource bar, idle workers,
-    // time of day (Hide the UI hides them), the info panel, the tooltip
+    // time of day (Hide the UI hides them), the tooltip
     { "minimap", UlMinimap, 0x3c0 }, { "minimap buttons", UlMinimapButtons, 0x408 }, { "hero buttons", UlHeroes, 0x3dc },
     { "command card", UlCard, 0x3c8 }, { "portrait", UlPortrait, UI_PORTRAIT }, { "inventory cover", UlCover, 0x3c4 },
-    { "inventory", UlItems, 0x3c4 },
+    { "inventory", UlItems, 0x3c4 }, { "info panel", UlInfo, 0x3c4 },
 };
 static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
 static int g_ulStage;               // groups taken so far in this game (one more each pass at first)
