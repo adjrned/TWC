@@ -41,7 +41,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 11
+    DWORD layout;           // 12
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -84,7 +84,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 6: health bar colours (BarUpdateHook)
     DWORD hcOn;             // companion: 1 = colour the bars
     DWORD hcMode;           // companion: 0 by owner, 1 by health
-    DWORD hcColours[5];     // companion: 0xAARRGGBB for yours, allies, enemies, neutral hostile, neutral passive
+    DWORD hcColours[5];     // companion: 0xAARRGGBB for yours, allies, enemies, neutral hostile, neutral passive (alpha 0: the owner's player colour, layout 12)
     DWORD hcState;          // module: 0 off, 1 on (the bar update is ours), 2 refused (see the log)
     // layout 7: widescreen and FPS unlock (DisplayPass)
     DWORD wsOn;             // companion: 1 = widescreen in games
@@ -124,6 +124,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD prOn;             // companion: 1 = the portrait's HP / mana lines with regen (PortraitHook)
     DWORD prMode;           // companion: 1 = and the percent
     DWORD prState;          // module: 0 off, 1 on, 2 waiting for a game, 3 refused (see the log)
+    // layout 12
+    float mbWidth;          // companion: the mana bar's width, times the health bar's (0.25-2; 0 = 1)
 };
 #pragma pack(pop)
 
@@ -1137,6 +1139,7 @@ typedef void(__fastcall *ColourFn)(void *, int);
 
 static BarUpdateFn g_gameBarUpdate;     // the game's own update: set once, never cleared (a call may be in flight)
 static bool g_barHooked;
+static DWORD g_colourLogged;            // the players whose colour index was logged
 
 // is player b allied to player a (WFE's 0x1003c2a0: a's alliance flags, bit b's slot)
 static bool Allied(BYTE *state, int a, int b) {
@@ -1151,6 +1154,23 @@ static bool Allied(BYTE *state, int a, int b) {
         return false;
     BYTE *flags = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
     return flags && (*(DWORD *)(flags + 0x78) & (1u << *(BYTE *)(pb + 0x30)));
+}
+
+// The owner's player colour, as WFE's player-colour mode (0x100778da): the
+// colour index [player+0x264] of players[owner] into the game's 12 colours
+// (WFE's own table holds them too, WFEGameColours.ini; these are the game's).
+// Neutrals and anything past 11: dark grey.
+static const DWORD PLAYER_COLOURS[12] = { 0xFFFF0303, 0xFF0042FF, 0xFF1CE6B9, 0xFF540081, 0xFFFFFC01, 0xFFFE8A0E,
+                                          0xFF20C000, 0xFFE55BB0, 0xFF959697, 0xFF7EBFF1, 0xFF106246, 0xFF4E2A04 };
+static const DWORD PLAYER_COLOUR = 0x264, NO_PLAYER_COLOUR = 0xFF2E2D2E;
+static DWORD PlayerColour(BYTE *state, int owner) {
+    BYTE *pl = *(BYTE **)(state + 0x58 + owner * 4);
+    DWORD i = pl ? *(DWORD *)(pl + PLAYER_COLOUR) : 0xFFFFFFFF;
+    if (!(g_colourLogged >> owner & 1)) {
+        g_colourLogged |= 1u << owner;
+        Log("health bar colours: player %d's colour index is %ld", owner, (LONG)i);
+    }
+    return i < 12 ? PLAYER_COLOURS[i] : NO_PLAYER_COLOUR;
 }
 
 // WFE's by-health colour: green over half, then to yellow, then to red
@@ -1178,7 +1198,8 @@ static DWORD BarColour(BYTE *unit) {
     if (local < 0 || local > 15)
         return 0;
     const DWORD *c = g_shared->hcColours;
-    return owner == local ? c[0] : owner == 12 ? c[3] : owner == 15 ? c[4] : Allied(state, local, owner) ? c[1] : c[2];
+    DWORD r = owner == local ? c[0] : owner == 12 ? c[3] : owner == 15 ? c[4] : Allied(state, local, owner) ? c[1] : c[2];
+    return r >> 24 ? r : PlayerColour(state, owner);
 }
 
 // after the game's update: the fill's colour bytes (A, B, G, R at +0x68), then its redraw
@@ -1696,6 +1717,10 @@ static float ManaHeight(float h) {
     float k = g_shared->mbHeight;
     return h * (k >= 0.25f && k <= 2 ? k : 0.75f);
 }
+static float ManaWidth(float w) {
+    float k = g_shared->mbWidth;
+    return w * (k >= 0.25f && k <= 2 ? k : 1);
+}
 
 // a mana bar for a health bar, as WFE's 0x10078400 makes its inner one (0 = refused / failed)
 static BYTE *NewManaBar(BYTE *bar) {
@@ -1710,7 +1735,7 @@ static BYTE *NewManaBar(BYTE *bar) {
         return nullptr;
     }
     *(DWORD *)(m + BAR_UNIT) = *(DWORD *)(bar + BAR_UNIT);
-    *(float *)(m + BAR_WIDTH) = *(float *)(bar + BAR_WIDTH);
+    *(float *)(m + BAR_WIDTH) = ManaWidth(*(float *)(bar + BAR_WIDTH));
     Game(RVA_LAYOUT_REFRESH, m, { 0 });
     *(float *)(m + BAR_HEIGHT) = ManaHeight(*(float *)(bar + BAR_HEIGHT));
     Game(RVA_LAYOUT_REFRESH, m, { 0 });
@@ -1725,7 +1750,7 @@ static BYTE *NewManaBar(BYTE *bar) {
 static void ManaUpdate(BarExtra *e, BYTE *unit, float cur, float max, bool shown) {
     BYTE *bar = e->bar, *m = e->mana;
     g_gameBarUpdate(m, 0, unit);
-    float h = *(float *)(bar + BAR_HEIGHT), w = *(float *)(bar + BAR_WIDTH), mh = ManaHeight(h);
+    float h = *(float *)(bar + BAR_HEIGHT), w = ManaWidth(*(float *)(bar + BAR_WIDTH)), mh = ManaHeight(h);
     if (*(float *)(m + BAR_WIDTH) != w || *(float *)(m + BAR_HEIGHT) != mh) {
         *(float *)(m + BAR_WIDTH) = w, *(float *)(m + BAR_HEIGHT) = mh;
         Game(RVA_LAYOUT_REFRESH, m, { 0 });
@@ -3058,7 +3083,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 11;
+        g_shared->layout = 12;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());

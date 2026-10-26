@@ -3,8 +3,8 @@
 ;  GameCommandsEngine - hotkeys that ask the 1.28f game module to do something
 ;  on the game's own thread: clear the trigger messages, clear the chat (as
 ;  WFE's Clear Messages / Clear Chat), minimise / maximise the multiboard (its
-;  Toggle Multiboard State). Off by default (ini [Game] clear, multiboard);
-;  the keys are in [GameKeys] and are bound only while their switch is on.
+;  Toggle Multiboard State). One switch for the three, off by default (ini
+;  [Game] clear); the keys are in [GameKeys] and are bound only while it's on.
 ;  They only act in Warcraft III with the module ready and chat closed;
 ;  otherwise the key goes to the game as usual.
 ;  Two keys are held instead (WFE's Self Cast and AutoCast toggle keys; ini
@@ -23,7 +23,7 @@
 class GameCommandsEngine {
     section := "GameKeys"
     ; ini key -> [command, the [Game] switch it belongs to]
-    static CMDS := Map("clearMessages", [1, "clear"], "clearChat", [2, "clear"], "multiboard", [3, "multiboard"])
+    static CMDS := Map("clearMessages", [1, "clear"], "clearChat", [2, "clear"], "multiboard", [3, "clear"])
     bound := []                     ; { hk, cond } bound now
     selfDown := false               ; the self-cast key is held (its own hotkeys say)
 
@@ -44,8 +44,6 @@ class GameCommandsEngine {
     }
     enabled => this.switchOn("clear")
     setEnabled(on) => this.setSwitch("clear", on)
-    multiboard => this.switchOn("multiboard")
-    setMultiboard(on) => this.setSwitch("multiboard", on)
     selfcast => this.switchOn("selfcast")
     setSelfcast(on) => this.setSwitch("selfcast", on)
     autocast => this.switchOn("autocast")
@@ -231,12 +229,11 @@ class GameCommandsEngine {
         if !this.gm.enabled
             return "On · needs the game module (top of this page)"
         keys := []
-        for name in ["clearMessages", "clearChat"]
-            if this.key(name) != ""
-                keys.Push(name = "clearMessages" ? "messages " this.keyText(name) : "chat " this.keyText(name))
-        return "On · " (keys.Length ? "keys: " Join(", ", keys*) : "set a key for each") this.readyText(4)
+        for k in [["clearMessages", "messages"], ["clearChat", "chat"], ["multiboard", "multiboard"]]
+            if this.key(k[1]) != ""
+                keys.Push(k[2] " " this.keyText(k[1]))
+        return "On · " (keys.Length ? "keys: " Join(", ", keys*) : "set a key for each") this.readyText(this.key("multiboard") != "" ? 7 : 4)
     }
-    mbStatusText() => this.oneKeyStatus(this.multiboard, "multiboard", this.keyText("multiboard"), 7)
     selfStatusText() {
         global quickcast
         if this.selfcast && this.key("selfcast") != "" && !this.moduleSelf() && (WinExist(WarcraftIII) || !this.gm.enabled)

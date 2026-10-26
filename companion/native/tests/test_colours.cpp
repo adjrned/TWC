@@ -21,7 +21,7 @@ int main() {
     DWORD *vt = (DWORD *)(img + RVA_STATBAR_VTABLE);
     { DWORD o2; VirtualProtect(vt, 0x100, PAGE_READWRITE, &o2); vt[STATBAR_UPDATE / 4] = (DWORD)(img + 0x100000); VirtualProtect(vt, 0x100, PAGE_READONLY, &o2); }
     VirtualProtect(img + 0xd30000, 0x3000, PAGE_READWRITE, &old);
-    static BYTE state[0x200], players[16][0x40], allyH[0x60], fillVt[0x40];
+    static BYTE state[0x200], players[16][0x300], allyH[0x60], fillVt[0x40];
     *(BYTE **)(img + RVA_PLAYERS) = (BYTE *)&state; static BYTE *stateP = state; *(BYTE ***)(img + RVA_PLAYERS) = &stateP;
     *(short *)(state + 0x28) = 1;                    // local player 1
     for (int i = 0; i < 16; i++) { *(BYTE **)(state + 0x58 + i * 4) = players[i]; players[i][0x30] = (BYTE)i; }
@@ -44,12 +44,18 @@ int main() {
     for (int i = 0; i < 5; i++) update(i);
     CHECK(argb(0) == 0xFF00FF00 && argb(1) == 0xFF0080FF && argb(2) == 0xFFFF0000 && argb(3) == 0xFFFF8000 && argb(4) == 0xFF808080 && cnt[0] == 5 && cnt[1] == 5,
         "by owner: %08lX %08lX %08lX %08lX %08lX; game updates %lu, redraws %lu", argb(0), argb(1), argb(2), argb(3), argb(4), cnt[0], cnt[1]);
+    *(DWORD *)(players[2] + PLAYER_COLOUR) = 6; *(DWORD *)(players[3] + PLAYER_COLOUR) = 1; *(DWORD *)(players[1] + PLAYER_COLOUR) = 99;
+    g_shared->hcColours[0] = 0; g_shared->hcColours[1] = 0; g_shared->hcColours[2] = 0;
+    update(0); update(1); update(2);
+    CHECK(argb(1) == 0xFF20C000 && argb(2) == 0xFF0042FF && argb(0) == NO_PLAYER_COLOUR, "player colours: ally green %08lX, enemy blue %08lX, a bad index grey %08lX", argb(1), argb(2), argb(0));
+    g_shared->hcColours[0] = 0xFFFFFFFF; update(0);
+    CHECK(argb(0) == 0xFFFFFFFF, "your own colour with the others by player: %08lX", argb(0));
     g_shared->hcMode = 1; update(2);
     CHECK(argb(2) == 0xFFFF7F00, "by health 25%%: %08lX", argb(2));
     g_shared->hcOn = 0; FollowColours();
     CHECK(vt[STATBAR_UPDATE / 4] == (DWORD)(img + 0x100000) && g_shared->hcState == 0, "off: the entry is the game's again, state %lu", g_shared->hcState);
     DWORD before = cnt[1]; update(0);
-    CHECK(cnt[0] == 7 && cnt[1] == before, "after off: the game's update runs (%lu), no colour redraw", cnt[0]);
+    CHECK(cnt[0] == 11 && cnt[1] == before, "after off: the game's update runs (%lu), no colour redraw", cnt[0]);
     Verdict();
     return g_fails;
 }

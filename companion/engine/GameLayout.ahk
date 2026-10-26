@@ -79,5 +79,6 @@ class Shm {
     static prOn := 780
     static prMode := 784
     static prState := 788
-    static size := 792
+    static mbWidth := 792
+    static size := 796
 }

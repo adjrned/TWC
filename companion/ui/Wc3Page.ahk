@@ -11,8 +11,8 @@
 ;    Timers    what's ready and what's running out: cooldown and buff timers
 ;              (over the game or in it), buff alerts
 ;    Display   how the game looks: health bar size and colours, health
-;              numbers, mana bars, portrait regen, clearing messages, widescreen, FPS unlock,
-;              the multiboard, hiding UI parts; later detailed tooltips
+;              numbers, mana bars, portrait regen, game keys (messages, chat,
+;              the multiboard), widescreen, FPS unlock, hiding the UI; later detailed tooltips
 ;    Hosting   games you host: lobby latency; later the start countdown
 ;  Each feature is one entry in Wc3Features(): a card with its version
 ;  (badge), an On/Off switch (if it has one), a live status line and its
@@ -86,12 +86,12 @@ Wc3Features() {
         { tab: "display", title: "Health bar size", badge: "1.28f",
             desc: "Bigger health bars on every unit. Width is experimental.",
             on: (*) => healthBars.enabled, set: (v) => healthBars.setEnabled(v), status: (*) => healthBars.statusText(),
-            buttons: [[(*) => healthBars.label("height"), (*) => (healthBars.cycle("height"), RefreshWc3())],
-                [(*) => healthBars.label("width"), (*) => (healthBars.cycle("width"), RefreshWc3())]] },
+            buttons: [[(*) => healthBars.sizeLabel, (*) => BarSizeDialog("health")]] },
         { tab: "display", title: "Health bar colours", badge: "1.28f",
-            desc: "Colour the bars by owner (yours, allies, enemies, neutral) or by health left.",
+            desc: "By owner (your colour or each player's own) or by health left.",
             on: (*) => healthBars.colours, set: (v) => healthBars.setColours(v), status: (*) => healthBars.colourStatus(),
-            buttons: [[(*) => healthBars.colourModeLabel, (*) => (healthBars.toggleColourMode(), RefreshWc3())]] },
+            buttons: [[(*) => healthBars.colourModeLabel, (*) => (healthBars.toggleColourMode(), RefreshWc3())],
+                ["Colours", (*) => BarColoursDialog()]] },
         { tab: "display", title: "Health numbers", badge: "1.28f",
             desc: "A number over every health bar: current, current / max or percent (Storm.dll).",
             on: (*) => healthBars.numbers, set: (v) => healthBars.setNumbers(v), status: (*) => healthBars.numberStatus(),
@@ -99,16 +99,17 @@ Wc3Features() {
         { tab: "display", title: "Mana bars", badge: "1.28f",
             desc: "A mana bar under the health bar of every unit with mana (Storm.dll).",
             on: (*) => healthBars.mana, set: (v) => healthBars.setMana(v), status: (*) => healthBars.manaStatus(),
-            buttons: [[(*) => healthBars.manaHeightLabel, (*) => (healthBars.cycleManaHeight(), RefreshWc3())]] },
+            buttons: [[(*) => healthBars.manaSizeLabel, (*) => BarSizeDialog("mana")]] },
         { tab: "display", title: "Portrait regen", badge: "1.28f",
             desc: "The portrait's HP and mana lines with regen per second (and the percent).",
             on: (*) => healthBars.portrait, set: (v) => healthBars.setPortrait(v), status: (*) => healthBars.portraitStatus(),
             buttons: [[(*) => healthBars.portraitPercentLabel, (*) => (healthBars.togglePortraitPercent(), RefreshWc3())]] },
-        { tab: "display", title: "Clear messages and chat", badge: "1.28f",
-            desc: "A key wipes the trigger messages or the chat off the screen.",
+        { tab: "display", title: "Game keys", badge: "1.28f",
+            desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
             buttons: [[(*) => "Messages: " gameCmds.keyText("clearMessages"), (*) => Wc3Capture("clearMessages")],
-                [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")]] },
+                [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")],
+                [(*) => "Multiboard: " gameCmds.keyText("multiboard"), (*) => Wc3Capture("multiboard")]] },
         { tab: "display", title: "Hide UI parts", badge: "1.28f",
             desc: "Hides the parts you pick: time of day, minimap, menu bar, resources...",
             on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
@@ -124,10 +125,6 @@ Wc3Features() {
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
             buttons: [[(*) => gameDisplay.limitLabel, (*) => (gameDisplay.cycleLimit(), RefreshWc3())]] },
-        { tab: "display", title: "Multiboard", badge: "1.28f",
-            desc: "A key minimises or maximises the map's multiboard (the scoreboard).",
-            on: (*) => gameCmds.multiboard, set: (v) => gameCmds.setMultiboard(v), status: (*) => gameCmds.mbStatusText(),
-            buttons: [[(*) => "Key: " gameCmds.keyText("multiboard"), (*) => Wc3Capture("multiboard")]] },
     ]
     return list
 }
@@ -305,6 +302,119 @@ HidePartsDialog() {
     g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+}
+
+; a dialog in the Buffs window's style: -> { g, card, x, tw, y } to add to, then Wc3DialogShow
+Wc3Dialog(title, intro, w := 380) {
+    global C, mainGui, UI_FONT
+    x := 26, tw := w - 52
+    g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    g.BackColor := C.frame                           ; = the 1px border
+    g.MarginX := 0, g.MarginY := 0
+    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, title)
+    t.SetFont("s13 w700 q4", "Cinzel")
+    it := g.AddText("x" x " y56 w" tw " h18 +Background" C.card " c" C.dim, intro)
+    UISetFont(it, "s9")
+    g.SetFont("s10", UI_FONT)
+    return { g: g, card: card, x: x, tw: tw, w: w, y: 86 }
+}
+Wc3DialogShow(d) {
+    global C, mainGui, DPI_K
+    g := d.g, w := d.w, y := d.y + 14
+    close := g.AddText("x" (w - d.x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    UISetFont(close, "s9 w600"), Box.Round(close, 104, 34, 4)
+    close.OnEvent("Click", (*) => (g.Destroy(), RefreshWc3()))
+    h := y + 34 + 24
+    d.card.Move(, , , h - 2)
+    g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
+    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+}
+
+; Health bar / mana bar size: a slider and a box to type in, per side; it
+; changes in the game as you go
+BarSizeDialog(kind) {
+    global C, healthBars
+    static g := 0
+    if g
+        try g.Destroy()
+    rows := kind = "mana" ? [["manaHeight", "Height"], ["manaWidth", "Width"]] : [["height", "Height"], ["width", "Width"]]
+    d := Wc3Dialog(kind = "mana" ? "Mana bar size" : "Health bar size",
+        kind = "mana" ? "Times the health bar's height and width." : "Times the game's own size. Width is experimental.")
+    g := d.g
+    for r in rows {
+        lim := HealthBarsEngine.SIZES[r[1]]
+        lb := g.AddText("x" d.x " y" (d.y + 2) " w60 h22 0x200 +Background" C.card " c" C.text, r[2])
+        sl := g.AddSlider("x" (d.x + 64) " y" d.y " w" (d.tw - 64 - 70) " h26 NoTicks Range" Round(lim[2] * 100) "-" Round(lim[3] * 100)
+            " +Background" C.card, Round(healthBars.size(r[1]) * 100))
+        ed := g.AddEdit("x" (d.x + d.tw - 60) " y" (d.y + 1) " w60 h24 Center +Background" C.well " c" C.text, BarSizeText(healthBars.size(r[1])))
+        busy := { on: false }
+        sl.OnEvent("Change", ((key, ed, busy, src, *) => (healthBars.setSize(key, src.Value / 100), busy.on := true,
+            ed.Value := BarSizeText(healthBars.size(key)), busy.on := false)).Bind(r[1], ed, busy))
+        ed.OnEvent("Change", ((key, sl, busy, src, *) => (!busy.on && healthBars.setSize(key, StrReplace(Trim(src.Value), ",", "."))
+            && (sl.Value := Round(healthBars.size(key) * 100)))).Bind(r[1], sl, busy))
+        d.y += 36
+    }
+    lim := HealthBarsEngine.SIZES[rows[1][1]]
+    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "From ×" lim[2] " to ×" lim[3] "; ×1 is the game's own" (kind = "mana" ? " health bar's." : "."))
+    UISetFont(nt, "s8")
+    d.y += 22
+    Wc3DialogShow(d)
+    return g
+}
+BarSizeText(v) => RTrim(RTrim(Format("{:.2f}", v), "0"), ".")
+
+; Health bar colours by owner: each a colour of your own, or the owner's player colour
+BarColoursDialog() {
+    global C, healthBars
+    static g := 0
+    if g
+        try g.Destroy()
+    d := Wc3Dialog("Health bar colours", "By owner. Player colour: the owner's own colour in the game.", 420)
+    g := d.g
+    for o in HealthBarsEngine.OWNERS {
+        col := healthBars.colour(o[1])
+        lb := g.AddText("x" d.x " y" (d.y + 2) " w130 h22 0x200 +Background" C.card " c" C.text, o[3])
+        sw := g.AddText("x" (d.x + 136) " y" (d.y + 2) " w60 h22 +Border +Background" (col = "player" ? C.card : col), "")
+        cb := g.AddCheckbox("x" (d.x + 210) " y" d.y " w" (d.tw - 210) " h26 +Background" C.card " c" C.text (col = "player" ? " Checked" : ""), " Player colour")
+        sw.OnEvent("Click", ((key, sw, cb, *) => BarPickColour(key, sw, cb)).Bind(o[1], sw, cb))
+        cb.OnEvent("Click", ((key, def, sw, src, *) => BarPlayerColour(key, def, sw, src.Value)).Bind(o[1], o[2], sw))
+        d.y += 32
+    }
+    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "Click a colour to change it.")
+    UISetFont(nt, "s8")
+    d.y += 22
+    Wc3DialogShow(d)
+    return g
+}
+BarPlayerColour(key, def, sw, on) {
+    global healthBars, C
+    last := Ini(healthBars.section, key "Own", def = "player" ? "FFFFFF" : def)
+    healthBars.setColour(key, on ? "player" : last)
+    sw.Opt("+Background" (on ? C.card : last)), sw.Redraw()
+}
+BarPickColour(key, sw, cb) {
+    global healthBars
+    col := healthBars.colour(key)
+    if (rgb := ChooseColour(sw.Gui.Hwnd, col = "player" ? Ini(healthBars.section, key "Own", "FFFFFF") : col)) = ""
+        return
+    SetIni(rgb, healthBars.section, key "Own")
+    healthBars.setColour(key, rgb)
+    cb.Value := 0
+    sw.Opt("+Background" rgb), sw.Redraw()
+}
+; Windows' colour dialog: RRGGBB in, RRGGBB out ("" = cancelled)
+ChooseColour(owner, rgb) {
+    static custom := Buffer(64, 0xFF)
+    n := Integer("0x" rgb), ref := ((n & 0xFF) << 16) | (n & 0xFF00) | (n >> 16)      ; COLORREF is BGR
+    cc := Buffer(A_PtrSize = 8 ? 72 : 36, 0), p := A_PtrSize
+    NumPut("uint", cc.Size, cc, 0), NumPut("ptr", owner, cc, p), NumPut("uint", ref, cc, 3 * p)
+    NumPut("ptr", custom.Ptr, cc, 4 * p), NumPut("uint", 0x3, cc, 5 * p)                 ; CC_RGBINIT | CC_FULLOPEN
+    if !DllCall("comdlg32\ChooseColor", "ptr", cc)
+        return ""
+    ref := NumGet(cc, 3 * p, "uint")
+    return Format("{:06X}", ((ref & 0xFF) << 16) | (ref & 0xFF00) | (ref >> 16))
 }
 
 Wc3Label(l) => HasMethod(l) ? l() : l

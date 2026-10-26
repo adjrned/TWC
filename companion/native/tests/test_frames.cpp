@@ -165,6 +165,11 @@ int main() {
     CHECK(*(DWORD *)(m0 + BAR_KIND) == 0 && fabsf(*(float *)(m0 + BAR_HEIGHT) - 0.003f) < 1e-6f && *(float *)(m0 + BAR_WIDTH) == 0.05f && *(int *)(m0 + BAR_CUR) == 30 && *(int *)(m0 + BAR_MAX) == 60,
         "the mana bar: kind 0, 3/4 the height, the same width, 30 of 60");
     CHECK(fabsf(*(float *)(m0 + 0x10) - (0.4f - 0.004f - MANA_GAP)) < 1e-6f && *(DWORD *)(m0 + BAR_SHOWN) == 1 && e0->textShown, "placed under the bar and shown with it");
+    sh.mbWidth = 0.5f; sh.mbHeight = 1.25f; update(0);
+    CHECK(*(float *)(m0 + BAR_WIDTH) == 0.025f && fabsf(*(float *)(m0 + BAR_HEIGHT) - 0.005f) < 1e-6f, "a typed mana size: half the width, x1.25 the height (%.4f x %.4f)",
+        *(float *)(m0 + BAR_WIDTH), *(float *)(m0 + BAR_HEIGHT));
+    sh.mbWidth = 0; sh.mbHeight = 0.75f; update(0);
+    CHECK(*(float *)(m0 + BAR_WIDTH) == 0.05f, "width 0 (an older companion): the health bar's");
     sh.hnMode = 2; *(float *)(units[0] + UNIT_HP) = 125; update(0);
     CHECK(!strcmp((char *)e0->text + 0x100, "25%") && lastRatio == 0.5f, "percent mode: %s; mana ratio %.2f", (char *)e0->text + 0x100, lastRatio);
     ((BarFn)bv[BAR_HIDE / 4])(bars[0], 0);

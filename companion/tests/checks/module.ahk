@@ -38,7 +38,7 @@ TwcModuleRun() {
     TwcCheck(t.cd[1].left = 4.5 && t.buffs.Length = 1 && t.buffs[1].left = 9, "timers: the first cooldown and buff")
     want := Map(
         "bars", [(*) => healthBars.statusText(), "0.0040 high"],
-        "colours", [(*) => healthBars.colourStatus(), "yours green"],
+        "colours", [(*) => healthBars.colourStatus(), "by owner"],
         "numbers", [(*) => healthBars.numberStatus(), "(12 now)"],
         "mana", [(*) => healthBars.manaStatus(), "(5 now)"],
         "portrait", [(*) => healthBars.portraitStatus(), "regen next to"],
