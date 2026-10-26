@@ -9,6 +9,8 @@
 ;    Ctrl+Shift+Space  pin: stays on screen, see-through and click-through,
 ;                      so the game keeps focus (configurable)
 ;    Esc               hide (when Esc didn't close something in the page)
+;  The docked panel's inner edge sets its width and its bottom edge its height
+;  (drag them; both kept: ini [Overlay] width / height, 0 = the default).
 ;  The docked panel hides when you click back into the game or switch to
 ;  another app, and gives focus back to the game (or the app you opened it from).
 ;  Served offline from web\TWC as https://twc.local/TWC/ (see UpdaterEngine).
@@ -21,10 +23,10 @@ class OverlayPanel {
     section := "Overlay"
     static HOST := "twc.local"
     static HOME := "https://twc.local/TWC/index.html"
-    static GRIP := 6         ; resize strip on the panel's inner edge, px
-    static MIN_W := 380
+    static GRIP := 6         ; resize strips on the panel's inner and bottom edges, px
+    static MIN_W := 380, MIN_H := 300
 
-    gui := 0, wvc := 0, wv := 0, grip := 0
+    gui := 0, wvc := 0, wv := 0, grip := 0, gripH := 0
     shown := false, pinned := false, ready := false
     pending := []            ; messages to post once the page says "ready"
     updating := false
@@ -49,6 +51,7 @@ class OverlayPanel {
             pinHotkey: Ini(this.section, "pinHotkey", "^+Space"),
             side: Ini(this.section, "side", "right"),
             width: Integer(Ini(this.section, "width", 0)),
+            height: Integer(Ini(this.section, "height", 0)),
             opacity: Integer(Ini(this.section, "opacity", 100)),
             pinOpacity: Integer(Ini(this.section, "pinOpacity", 70)),
             unloadMinutes: Integer(Ini(this.section, "unloadMinutes", 10)),
@@ -303,8 +306,9 @@ class OverlayPanel {
             w := Max(Min(w, t.w), Min(OverlayPanel.MIN_W, t.w))
             x := s.side = "left" ? t.x : t.x + t.w - w
         }
-        this.gui.Move(x, t.y, w, t.h)
-        this.layoutChildren(w, t.h)
+        h := s.height ? Max(Min(s.height, t.h), Min(OverlayPanel.MIN_H, t.h)) : t.h     ; from the top down
+        this.gui.Move(x, t.y, w, h)
+        this.layoutChildren(w, h)
         this.applyOpacity(this.pinned ? s.pinOpacity : s.opacity)
     }
 
@@ -312,17 +316,22 @@ class OverlayPanel {
         g := OverlayPanel.GRIP, side := Ini(this.section, "side", "right")
         full := side = "full" || this.windowMode
         gx := side = "left" ? w - g : 0
+        docked := !this.windowMode
         this.grip.Move(gx, 0, g, h)
         this.grip.Visible := !full
+        this.gripH.Move(0, h - g, w, g)         ; the bottom edge: the panel's height (also when it's full width)
+        this.gripH.Visible := docked
         left := full || side = "left" ? 0 : g
         right := full || side != "left" ? w : w - g
         rc := Buffer(16)
-        NumPut("int", left, "int", 0, "int", right, "int", h, rc)
+        NumPut("int", left, "int", 0, "int", right, "int", docked ? h - g : h, rc)
         try this.wvc.Bounds := rc
     }
 
-    ; drag the grip to resize; width is saved when you let go
+    ; drag a grip to resize: the inner edge's width or the bottom edge's height, saved when you let go
     onLButtonDown(wParam, lParam, msg, hwnd) {
+        if this.gripH && hwnd = this.gripH.Hwnd
+            return this.dragHeight()
         if !this.grip || hwnd != this.grip.Hwnd
             return
         CoordMode("Mouse", "Screen")
@@ -342,7 +351,27 @@ class OverlayPanel {
         return 0
     }
 
+    dragHeight() {
+        CoordMode("Mouse", "Screen")
+        this.gui.GetPos(&x, &y, &w, &h)
+        t := this.target()
+        while GetKeyState("LButton", "P") {
+            MouseGetPos(, &my)
+            nh := Max(Min(OverlayPanel.MIN_H, t.h), Min(t.y + t.h - y, my - y))
+            this.gui.Move(, , , nh)
+            this.layoutChildren(w, nh)
+            Sleep(15)
+        }
+        this.gui.GetPos(, , , &h)
+        SetIni(h >= t.h ? 0 : h, this.section, "height")          ; dragged back down to the bottom: full height again
+        return 0
+    }
+
     onSetCursor(wParam, lParam, msg, hwnd) {
+        if this.gripH && wParam = this.gripH.Hwnd {
+            DllCall("SetCursor", "ptr", DllCall("LoadCursor", "ptr", 0, "ptr", 32645, "ptr"))   ; IDC_SIZENS
+            return true
+        }
         if this.grip && wParam = this.grip.Hwnd {
             DllCall("SetCursor", "ptr", DllCall("LoadCursor", "ptr", 0, "ptr", 32644, "ptr"))   ; IDC_SIZEWE
             return true
@@ -376,6 +405,7 @@ class OverlayPanel {
         g.OnEvent("Size", ObjBindMethod(this, "onSize"))
         this.windowMode := false
         this.grip := g.AddText("x0 y0 w" OverlayPanel.GRIP " h100 Background30343E")
+        this.gripH := g.AddText("x0 y94 w100 h" OverlayPanel.GRIP " Background30343E")
         this.gui := g
         g.Show("Hide w800 h600")
 
@@ -408,7 +438,7 @@ class OverlayPanel {
         this.saveUrl()
         try this.wvc.Close()
         try this.gui.Destroy()
-        this.gui := 0, this.wvc := 0, this.wv := 0, this.grip := 0
+        this.gui := 0, this.wvc := 0, this.wv := 0, this.grip := 0, this.gripH := 0
         this.ready := false, this.pinned := false
     }
 
