@@ -14,6 +14,12 @@ static void __fastcall FAfter(void *f, int) { afters[Idx(f)]++; }
 static BYTE con[0x100], links[4][0x10], regs[4][0x20]; static int texHides, texShows, otherCalls;
 static void __fastcall RHide(BYTE *r, int) { r == regs[2] ? otherCalls++ : texHides++; r[0x10] = 0; }
 static void __fastcall RShow(BYTE *r, int) { r == regs[2] ? otherCalls++ : texShows++; r[0x10] = 1; }
+// the world frame: its layout at +0xb4, a relative point at slot 0 and an absolute one at 8
+static BYTE world[0x200], relPt[0x20], absPt[0x20], anchorFrame[0x10];
+struct PtCall { int kind; BYTE *lay; DWORD pt, rel, relPt; float x, y; } ptCalls[16]; static int nPt, clears;
+static void __fastcall FSetPoint(BYTE *lay, int, DWORD pt, DWORD rel, DWORD rp, float x, float y, DWORD) { if (nPt < 16) ptCalls[nPt++] = { 2, lay, pt, rel, rp, x, y }; }
+static void __fastcall FSetAbs(BYTE *lay, int, DWORD pt, float x, float y, DWORD) { if (nPt < 16) ptCalls[nPt++] = { 1, lay, pt, 0, 0, x, y }; }
+static void __fastcall FClear(BYTE *, int, DWORD) { clears++; }
 static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)to - (p + 5)); }
 static BYTE ui[0x400], ui2[0x400];
 static void Pump(int n) { for (int k = 0; k < n; k++) { QueueDisplay(); Sleep(260); } }
@@ -34,9 +40,15 @@ static DWORD WINAPI Tester(void *) {
     CHECK(shows[1] == 1 && afters[1] >= 3 && hides[2] == 1 && hides[3] == 1 && hides[4] == 1 && g_shared->uiState == 0x1c, "minimap shown (+0xe4 after), the three simple frames hidden (state %lX)", g_shared->uiState);
     fakeUi = nullptr; Pump(1);
     CHECK((g_shared->uiState & 0x1f) == 0, "between games: state 0");
-    fakeUi = ui; g_shared->uiHide = 0x20; Pump(1);
+    fakeUi = ui; nPt = 0; g_shared->uiHide = 0x20; Pump(1);
+    CHECK(nPt >= 2 && ptCalls[0].kind == 2 && ptCalls[0].lay == world + 0xb4 && ptCalls[0].pt == 2 && ptCalls[0].rel == (DWORD)(ui + 0xb4) && ptCalls[0].relPt == 2
+          && ptCalls[1].pt == 6 && ptCalls[1].relPt == 6 && ptCalls[1].x == 0 && ptCalls[1].y == 0 && clears >= 1,
+          "the world frame over the whole screen: its points cleared, top right and bottom left to the game UI's (%d calls)", nPt);
     CHECK(texHides == 3 && !otherCalls && (g_shared->uiState & 0x20) && !regs[0][0x10] && !regs[3][0x10] && regs[2][0x10], "the console's background: its 3 textures hidden, the font string left (state %lX)", g_shared->uiState);
-    g_shared->uiHide = 0x1c; Pump(1);
+    nPt = 0; clears = 0; g_shared->uiHide = 0x1c; Pump(1);
+    CHECK(clears == 1 && nPt == 2 && ptCalls[0].kind == 2 && ptCalls[0].pt == 0 && ptCalls[0].rel == (DWORD)anchorFrame && ptCalls[0].relPt == 0 && ptCalls[0].y == -0.02f
+          && ptCalls[1].kind == 1 && ptCalls[1].pt == 8 && ptCalls[1].x == 0.8f && ptCalls[1].y == 0.13f,
+          "off: its own points back (cleared, then the relative one and the absolute one)");
     CHECK(texShows == 3 && !(g_shared->uiState & 0x20) && regs[0][0x10] == 1, "off: the 3 shown again");
     CHECK(wrong == 0, "all on the game thread");
     Verdict();
@@ -74,6 +86,12 @@ int main() {
         *(DWORD *)regs[i] = i == 2 ? strVt : texVt; regs[i][0x10] = 1;
     }
     *(BYTE **)(ui + UI_CONSOLE) = con;
+    Stub(RVA_SET_POINT, FSetPoint); Stub(RVA_SET_ABS_POINT, FSetAbs); Stub(RVA_CLEAR_POINTS, FClear);
+    *(DWORD *)world = rtti(0xab8300, 0xab9300, ".?AVCWorldFrameWar3@@"); *(BYTE **)(ui + UI_WORLD) = world;
+    VirtualProtect(img + 0xa7d000, 0x1000, PAGE_READWRITE, &old);
+    *(DWORD *)relPt = (DWORD)(img + RVA_REL_POINT_VT); *(BYTE **)(relPt + 4) = anchorFrame; relPt[8] = 0; *(float *)(relPt + 0xc) = 0; *(float *)(relPt + 0x10) = -0.02f;
+    *(DWORD *)absPt = (DWORD)(img + RVA_ABS_POINT_VT); *(float *)(absPt + 4) = 0.8f; *(float *)(absPt + 8) = 0.13f;
+    *(BYTE **)(world + 0xb4 + 8) = relPt; *(BYTE **)(world + 0xb4 + 8 + 8 * 4) = absPt;
     fakeUi = ui; g_getUi = FakeGetUi;
     mainTid = gameTid = GetCurrentThreadId();
     WNDCLASSA wc = {}; wc.lpfnWndProc = DefWindowProcA; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);

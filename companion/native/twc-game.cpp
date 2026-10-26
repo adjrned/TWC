@@ -2651,7 +2651,15 @@ static void LatencyPass() {
 // pieces are the CSimpleTextures in the console frame's region list
 // ([ui+0x428], first link [+0xd8], next [link+4], the region [link+8]; WFE
 // takes 9), each hidden with the region hide +0x141ce0 and shown with
-// +0x141e80 (WFE's [0x1013aa3c] / [0x1013aa40]). The world shows through.
+// +0x141e80 (WFE's [0x1013aa3c] / [0x1013aa40]). That alone leaves black:
+// the game draws the world only inside the world frame ([ui+0x3bc], a
+// CWorldFrameWar3), which sits between the top bar and the console. So with
+// the background, the world frame is stretched over the whole screen as
+// WFE's 0x100221c0 does it: SetPoint(world+0xb4, top right / bottom left,
+// ui+0xb4, the same point, 0, 0) (study_uihide3.md), after clearing its own
+// anchors. Those are saved first (the 9 point slots at layout+8: relative points vtable
+// +0xa7d7e0, absolute ones +0xa7d7cc, as WFE's 0x10087510 reads them) and
+// put back when it's turned off.
 static const struct UiPart { const char *name; DWORD off, hide, show, after; const char *rtti; } UI_PARTS[5] = {
     { "time of day",    0x3f8, 0xd0, 0xd4, 0,    "TimeOfDay" },     // WFE 0x1008b880
     { "minimap",        0x3c0, 0xd0, 0xd4, 0xe4, "Minimap" },       // 0x1008a250
@@ -2660,6 +2668,12 @@ static const struct UiPart { const char *name; DWORD off, hide, show, after; con
     { "idle workers",   0x3e0, 0x64, 0x68, 0,    nullptr },         // 0x1008afa0
 };
 static const DWORD UI_CONSOLE = 0x428, CONSOLE_REGIONS = 0xd8;
+static const DWORD UI_WORLD = 0x3bc, FRAME_LAYOUT = 0xb4, LAYOUT_POINTS = 8, RVA_CLEAR_POINTS = 0x13ee90;   // ClearAllPoints __fastcall(layout, 0, 1) ([0x1013a224])
+static const DWORD RVA_REL_POINT_VT = 0xa7d7e0, RVA_ABS_POINT_VT = 0xa7d7cc;      // relFrame +4, its point byte +8, x +0xc, y +0x10 / x +4, y +8
+enum { PT_TOPRIGHT = 2, PT_BOTTOMLEFT = 6 };
+struct SavedPoint { int kind; DWORD rel, relPt; float x, y; };     // kind 0 none, 1 absolute, 2 relative
+static SavedPoint g_worldPts[9];
+static void *g_worldUi;             // the game UI whose world frame we stretched (its anchors are saved)
 static const int UI_PART_COUNT = 6;     // the 5 above and the console's background (bit 0x20)
 static DWORD g_uiHidden;            // bits hidden by us in this game
 static void *g_uiHideUi;
@@ -2745,7 +2759,89 @@ static int ConsoleCall(BYTE *ui, bool hide) {
     }
     return n ? 1 : 0;
 }
-static int UiHideCall(BYTE *ui, int i, bool hide) { return i == 5 ? ConsoleCall(ui, hide) : UiPartCall(ui, i, hide); }
+// the world frame: over the whole screen (or back where the game had it). 1 done, 0 not there, -1 refused for good
+static int WorldCall(BYTE *ui, bool full) {
+    static int checked;             // 1 checked out, 2 refused
+    if (checked == 2)
+        return -1;
+    BYTE *w = UiFrame(ui, UI_WORLD);
+    if (!w)
+        return 0;
+    if (!FnStart(RVA_SET_POINT) || !FnStart(RVA_SET_ABS_POINT) || !FnStart(RVA_CLEAR_POINTS)) {
+        checked = 2;
+        Log("hide UI: the world frame refused (the point functions aren't functions)");
+        return -1;
+    }
+    BYTE *lay = w + FRAME_LAYOUT, *root = ui + FRAME_LAYOUT;
+    __try {
+        if (!checked) {
+            char rtti[64];
+            RttiName(*(DWORD *)w, g_imageSize, rtti, sizeof(rtti));
+            Log("hide UI: world frame %p, vtable +%06lX, RTTI %s", w, *(DWORD *)w - (DWORD)g_base, rtti[0] ? rtti : "(none)");
+            if (rtti[0] && !strstr(rtti, "WorldFrame")) {
+                Log("  not the world frame: refusing it");
+                checked = 2;
+                return -1;
+            }
+            checked = 1;
+        }
+        if (full) {
+            if (g_worldUi != ui) {          // its own anchors, before the first change in this game
+                SavedPoint pts[9] = {};
+                char b[200];
+                int o = 0;
+                for (int i = 0; i < 9; i++) {
+                    BYTE *pt = *(BYTE **)(lay + LAYOUT_POINTS + i * 4);
+                    if (!pt)
+                        continue;
+                    DWORD vt = *(DWORD *)pt;
+                    if (vt == (DWORD)(g_base + RVA_REL_POINT_VT))
+                        pts[i] = { 2, *(DWORD *)(pt + 4), pt[8], *(float *)(pt + 0xc), *(float *)(pt + 0x10) };
+                    else if (vt == (DWORD)(g_base + RVA_ABS_POINT_VT))
+                        pts[i] = { 1, 0, 0, *(float *)(pt + 4), *(float *)(pt + 8) };
+                    else {
+                        Log("hide UI: the world frame's point %d has vtable %08lX, neither kind: refusing it (it couldn't be put back)", i, vt);
+                        checked = 2;
+                        return -1;
+                    }
+                    o += sprintf_s(b + o, sizeof(b) - o, " %d:%s %.3f,%.3f", i, pts[i].kind == 2 ? "rel" : "abs", pts[i].x, pts[i].y);
+                }
+                memcpy(g_worldPts, pts, sizeof(pts));
+                g_worldUi = ui;
+                static int logs;
+                if (logs++ < 2)
+                    Log("hide UI: the world frame's own points:%s", o ? b : " none");
+            }
+            Game(RVA_CLEAR_POINTS, lay, { 1 });  // the game's own anchors would fight the two (they're saved)
+            Game(RVA_SET_POINT, lay, { PT_TOPRIGHT, (DWORD)root, PT_TOPRIGHT, F(0), F(0), 1 });
+            Game(RVA_SET_POINT, lay, { PT_BOTTOMLEFT, (DWORD)root, PT_BOTTOMLEFT, F(0), F(0), 1 });
+        } else if (g_worldUi == ui) {
+            Game(RVA_CLEAR_POINTS, lay, { 1 });
+            for (int i = 0; i < 9; i++) {
+                const SavedPoint &p = g_worldPts[i];
+                if (p.kind == 2)
+                    Game(RVA_SET_POINT, lay, { (DWORD)i, p.rel, p.relPt, F(p.x), F(p.y), 1 });
+                else if (p.kind == 1)
+                    Game(RVA_SET_ABS_POINT, lay, { (DWORD)i, F(p.x), F(p.y), 1 });
+            }
+            g_worldUi = nullptr;
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        checked = 2;
+        Log("hide UI: the world frame's calls faulted: refusing it");
+        return -1;
+    }
+    return 1;
+}
+
+// the console's background goes with the world frame over the whole screen
+static int UiHideCall(BYTE *ui, int i, bool hide) {
+    if (i != 5)
+        return UiPartCall(ui, i, hide);
+    int r = ConsoleCall(ui, hide);
+    WorldCall(ui, hide);
+    return r;
+}
 
 static void UiHidePass() {
     static DWORD at;
