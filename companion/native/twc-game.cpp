@@ -164,7 +164,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float cdGold;           // companion: gold from this many seconds left down (0 = always white)
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
     // layout 21
-    DWORD cdNoBadge;        // companion: 1 = hide the game's number badge on command card buttons (maps' counters) while cooldowns are drawn
+    DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons
 };
 #pragma pack(pop)
 
@@ -1962,9 +1962,81 @@ static void BadgesPass(BYTE *ui, bool on) {
     }
 }
 
+// The game's cooldown sweep (the clock over a button cooling down; cdNoBadge bit 2): the
+// button's [+0x19c] (CommandButtonCooldown, +0x3e1a60), a sprite frame whose model is squeezed
+// flat (x 0) the way WFE hides it with its indicator off (study_ul2_cooldown: S.x 0 "which
+// hides it"): its matrix written as the Widescreen UI's squeeze does (ModelMatrix, saved
+// first), 10 times a second so a reset by the game is undone at once. Command card and
+// inventory buttons. Put back (the matrix as found, or as the Widescreen UI found it) when off;
+// forgotten with the game UI. The Widescreen UI leaves these models alone meanwhile.
+static float *ModelMatrix(BYTE *frame, BYTE **sprite);
+static BYTE *P(BYTE *f, DWORD off);
+struct SweepSave { BYTE *frame, *sprite; float orig[9]; };
+static SweepSave g_sweeps[24];
+static int g_sweepN;
+static bool g_sweepBad, g_sweepOn;
+static float *UlOriginal(BYTE *sprite);
+static void SweepHide(BYTE *b) {
+    BYTE *s, *f = b ? P(b, 0x19c) : nullptr;
+    float *m = f ? ModelMatrix(f, &s) : nullptr;
+    if (!m)
+        return;
+    SweepSave *sv = nullptr;
+    for (int i = 0; i < g_sweepN && !sv; i++)
+        if (g_sweeps[i].sprite == s)
+            sv = &g_sweeps[i];
+    if (!sv) {
+        static const int OFF[] = { 1, 2, 3, 5, 6, 7 };
+        for (int i : OFF)
+            if (fabsf(m[i]) > 1e-4f)
+                return;                     // turned: left alone (as the Widescreen UI's squeeze)
+        if (m[0] <= 0 || m[4] <= 0 || m[8] <= 0 || g_sweepN >= 24)
+            return;
+        sv = &g_sweeps[g_sweepN++];
+        sv->frame = f, sv->sprite = s;
+        float *ul = UlOriginal(s);
+        memcpy(sv->orig, ul ? ul : m, sizeof(sv->orig));
+        static bool logged;
+        if (!logged)
+            logged = true, Log("sweeps: the game's cooldown clock hidden (model %p, x %.3f -> 0)", s, m[0]);
+    }
+    m[0] = 0;
+}
+static void SweepsPass(BYTE *ui, bool on) {
+    if (g_sweepBad)
+        return;
+    __try {
+        g_sweepOn = on && ui;
+        if (!g_sweepOn) {
+            for (int i = 0; i < g_sweepN && ui; i++) {
+                BYTE *s2 = nullptr;
+                float *m2 = ModelMatrix(g_sweeps[i].frame, &s2);
+                if (m2 && s2 == g_sweeps[i].sprite)     // still the same model on that button
+                    memcpy(m2, g_sweeps[i].orig, sizeof(g_sweeps[i].orig));
+            }
+            if (g_sweepN && ui)
+                Log("sweeps: the game's cooldown clocks shown again (%d)", g_sweepN);
+            g_sweepN = 0;
+            return;
+        }
+        if (BYTE *card = P(ui, 0x3c8)) {
+            int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128);
+            for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                    SweepHide(GridButton(card, r, c));
+        }
+        for (int i = 0; i < 6; i++)
+            SweepHide(ItemButton(ui, i));
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_sweepBad = true, g_sweepOn = false;
+        Log("sweeps: hiding the game's cooldown clock faulted: left to the game");
+    }
+}
+
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
-    BadgesPass(ui, (g_shared->itOn & 1) && g_shared->cdNoBadge);
+    BadgesPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 1));
+    SweepsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 2));
     if (!g_shared->itOn) {
         g_itReading = false;
         __try {
@@ -2373,7 +2445,7 @@ static void FramesForget(BYTE *newUi) {
     ZeroMemory(g_tCd, sizeof(g_tCd));
     ZeroMemory(g_tBuff, sizeof(g_tBuff));
     ZeroMemory(g_tItem, sizeof(g_tItem));
-    g_badgeN = 0;                   // the badges' regions went with the game UI
+    g_badgeN = 0, g_sweepN = 0;     // the badges' regions and the sweeps went with the game UI
     g_textPoolN = g_textHideN = 0;
     for (BarExtra &e : g_bx)
         if (e.bar && e.text)
@@ -4391,6 +4463,13 @@ static void UlModel(BYTE *frame, float sx) {
         Log("UI layout: the game put model %p's matrix back (m[0] %.3f): squeezed again every 2 s", s, m[0]);
     m[0] = sx, m[4] = 1, m[8] = 1;
 }
+// the matrix the Widescreen UI's squeeze found on a sprite (0: it hasn't touched it)
+static float *UlOriginal(BYTE *sprite) {
+    for (int i = 0; i < g_ulModelN; i++)
+        if (g_ulModels[i].sprite == sprite)
+            return g_ulModels[i].orig;
+    return nullptr;
+}
 // put back while the frame still holds the same sprite (else it's gone, or a new one)
 static void UlModelsRestore() {
     for (int i = g_ulModelN - 1; i >= 0; i--) {
@@ -4410,7 +4489,7 @@ static void UlModels(BYTE *ui, BYTE *) {
         for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
             for (int c = 0; c < cols; c++)
                 if (BYTE *b = GridButton(card, r, c))
-                    UlModel(P(b, 0x19c), UL_MODEL_X), UlModel(P(b, 0x1a8), UL_MODEL_X);
+                    (g_sweepOn ? (void)0 : UlModel(P(b, 0x19c), UL_MODEL_X)), UlModel(P(b, 0x1a8), UL_MODEL_X);
     }
     if (BYTE *hb = P(ui, 0x3dc)) {
         int rows = *(int *)(hb + 0x124), cols = *(int *)(hb + 0x128);
@@ -4420,7 +4499,7 @@ static void UlModels(BYTE *ui, BYTE *) {
                     UlModel(P(b, 0x1d8), UL_MODEL_X);
     }
     for (int i = 0; i < 6; i++)
-        if (BYTE *b = ItemButton(ui, i))
+        if (BYTE *b = g_sweepOn ? nullptr : ItemButton(ui, i))
             UlModel(P(b, 0x19c), UL_MODEL_X);
     UlModel(P(ui, 0x3f8), UL_CLOCK_X);
     // the quest sprite (WFE's 0x10087750, after ISUPPERMENUBAR and in its hook of the game's

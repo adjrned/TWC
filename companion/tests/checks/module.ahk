@@ -78,7 +78,7 @@ TwcModuleRun() {
     timersHud.setMinutes("cdMinutes", 0), timersHud.setMinutes("buffMinutes", 0)
     TwcCheck(m1 = 1 && m2 = 3 && NumGet(v, Shm.tmMinutes, "uint") = 0, "minutes pushed: cooldowns 1, buffs 2 (" m1 ", " m2 ")")
     ; the cooldowns' look (layout 20): defaults x1, gold from 5 s, Ready on; typed values clamped
-    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 1, "pushed the cooldowns' look: x1, gold from 5 s, Ready, the game's badge hidden")
+    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 3, "pushed the cooldowns' look: x1, gold from 5 s, Ready, the game's badge and clock hidden")
     ok := timersHud.setCdSize("1.25") && timersHud.setCdGold(99) && !timersHud.setCdSize("abc")
     TwcCheck(ok && NumGet(v, Shm.cdSize, "float") = 1.25 && NumGet(v, Shm.cdGold, "float") = 30, "size typed 1.25, gold 99 -> 30, not a number refused")
     timersHud.setCdSize(1), timersHud.setCdGold(5)

@@ -46,6 +46,19 @@ int main() {
     lists[1][0] = other; *(DWORD *)other = (DWORD)(img + RVA_SPRITE_UBER_VT[0]); Identity(M(other, 0x108), 2);
     UlModelsRestore();
     CHECK(g_ulModelN == 0 && a[0] == 1 && t[0] == 1 && b[0] == 0.725f && M(other, 0x108)[0] == 2, "put back: the sweep and clock; a frame holding another sprite now isn't written");
+    // the cooldown clock hidden (cdNoBadge bit 2): the sweep flattened, kept so, the Widescreen UI's squeeze leaves it, put back
+    *(BYTE **)(btn + 0x1a8) = nullptr;
+    SweepsPass(ui, true);
+    bool flat = a[0] == 0 && a[4] == 1 && g_sweepN == 1;
+    a[0] = 1; SweepsPass(ui, true);
+    bool again = a[0] == 0 && g_sweepN == 1;
+    UlModels(ui, ui + 0xb4);
+    bool leftAlone = a[0] == 0;
+    SweepsPass(ui, false);
+    CHECK(flat && again && leftAlone && a[0] == 1 && g_sweepN == 0, "the clock: flattened (x 0), again after the game resets it, not squeezed by the Widescreen UI meanwhile, put back to 1");
+    // hidden over a Widescreen UI squeeze: put back to the matrix the squeeze found, which it then squeezes again
+    UlModels(ui, ui + 0xb4); SweepsPass(ui, true); SweepsPass(ui, false);
+    CHECK(a[0] == 1, "over the Widescreen UI's squeeze: put back to its original (%.3f)", a[0]);
     Verdict();
     return g_fails;
 }
