@@ -68,6 +68,7 @@ Wc3Features() {
                 OptCheck(d, "'Ready' in green for a moment when a cooldown is over", timersHud.cdReady, (v) => timersHud.setCdReady(v)),
                 OptCheck(d, "Hide the game's number badge on the command card", timersHud.cdNoBadge, (v) => timersHud.setCdNoBadge(v)),
                 OptNote(d, "The map's own counters on abilities (and shop stock) go, so ours stand out. Item charges stay."),
+                OptCheck(d, "Hide the game's cooldown clock (the dark sweep) on the buttons", timersHud.cdNoSweep, (v) => timersHud.setCdNoSweep(v)),
                 OptCheck(d, "Minutes as m:ss", timersHud.cdMinutes, (v) => timersHud.setMinutes("cdMinutes", v)),
                 OptNote(d, "1:35 rather than 95 from a minute up. Off by default, as in WFE."),
                 OptDivider(d),
@@ -609,6 +610,10 @@ Wc3Short(s) => (p := InStr(s, " (")) ? SubStr(s, 1, p - 1) : s
 RefreshWc3() {
     global wc3Tab, wc3TabBtns, wc3Cards, wc3ModuleBtn, wc3ModuleText, wc3Planned, gameModule, currentPage
     global wc3Ver, wc3VerBtns, wc3VerText, wc3ModuleRow, wc3PageNo, wc3PagerCtls, wc3PagerText, H, wc3HoverCard
+    ; only on its own page: it shows its cards, and called from elsewhere (a window that
+    ; closed over another page) it drew them over that page
+    if currentPage != "wc3"
+        return SetTimer(Wc3Tick, 0)
     Freeze()
     for ver, b in wc3VerBtns
         Wc3SetSelected(b, ver = wc3Ver)

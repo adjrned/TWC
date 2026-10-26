@@ -62,7 +62,9 @@ global TB_R := W - 82       ; where the toolbar row's page controls end: the win
 ; real pixels. DPI_K converts (1.5 at 150%).
 global DPI_K := A_ScreenDPI / 96
 global NAV_ORDER := ["loader", "remap", "macros", "host", "wc3", "settings", "overlay"]
-global ICON_FONT := "Segoe Fluent Icons"
+; Windows 11 has Segoe Fluent Icons; Windows 10 only Segoe MDL2 Assets (the same code points for
+; the icons used here): without it the sidebar showed dots instead of icons
+global ICON_FONT := FileExist(A_WinDir "\Fonts\SegoeIcons.ttf") ? "Segoe Fluent Icons" : "Segoe MDL2 Assets"
 ; the site's system-ui font on Windows 11; classic Segoe UI on older systems
 global UI_FONT := FileExist(A_WinDir "\Fonts\SegUIVar.ttf") ? "Segoe UI Variable Text" : "Segoe UI"
 
@@ -1780,7 +1782,7 @@ QuickcastSettings(ver := "") {
     }
     for b in btns
         UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
-    close.OnEvent("Click", (*) => (g.Destroy(), RefreshWc3()))
+    close.OnEvent("Click", (*) => (g.Destroy(), RefreshRemap()))      ; opened from the Remap page (RefreshWc3 here drew the WC3 cards over it)
     h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())

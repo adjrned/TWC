@@ -86,6 +86,12 @@ TwcPagesRun() {
     SetIni("list", "Remap", "view"), ShowPage("remap"), RefreshRemap()
     TwcCheck(remapQcCtrls["hook"].sw.Visible && remapQcCtrls["screen"].ob.Visible, "Remap List view: the quickcast switches are there")
     SetIni("hud", "Remap", "view"), RefreshRemap()
+    ; a window closed over another page (the Quickcast window on Remap) doesn't draw the WC3 cards there
+    RefreshWc3()
+    stray := 0
+    for card in wc3Cards
+        stray += card.ctrls[1].Visible
+    TwcCheck(!stray, "RefreshWc3 from the Remap page draws no WC3 cards over it (" stray ")")
     TwcCheckDone()
 }
 ; as typing does it: the edit's own change notice (setting .Value raises no event)
