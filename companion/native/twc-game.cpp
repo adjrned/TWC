@@ -2956,8 +2956,11 @@ static LaySave *UlSave(BYTE *f, bool raw = false) {
     if (g_ulN >= (int)(sizeof(g_ul) / sizeof(g_ul[0])))
         return nullptr;
     BYTE *lay = raw ? f : LayOf(f);
-    if (!lay)
+    if (!lay) {
+        if (g_ulLogSaves > 0)           // WFE leaves these alone too (0x10087510 kind 0)
+            g_ulLogSaves--, Log("  frame %p (vtable +%06lX): no layout part of a known kind, left alone", f, *(DWORD *)f - (DWORD)g_base);
         return nullptr;
+    }
     LaySave &s = g_ul[g_ulN];
     s.frame = f, s.lay = lay, s.raw = raw;
     for (int i = 0; i < 9; i++) {
@@ -3158,6 +3161,110 @@ static void UlInfo(BYTE *ui, BYTE *) {
     }
 }
 
+// ISUPPERMENUBAR 0x10087cf0 (read by hand): the bar [ui+0x3d0] (CUpperButtonBar)
+// isn't moved; its Quests button [bar+0x138] (the leftmost) 0.064 wide (.rdata
+// 0x100fabd0[0]) and its top left on the game UI's at 0.1, 0 (0x100fad10[0];
+// pushes 1, 0, x, 0, ui+0xb4, 0 at 0x10087f4c), the Menu [+0x130], Allies
+// [+0x134] and Chat [+0x160] buttons 0.064 wide too. Each through its layout
+// part (0x10087510 states 0x1013e7b0 / e930 / eab0 / ec30). WFE's bar show
+// (vtable +0x68) and its quest sprite squeeze (0x10087750) are left out.
+static void UlMenuBar(BYTE *ui, BYTE *root) {
+    BYTE *bar = P(ui, 0x3d0), *quests = P(bar, 0x138);
+    if (!quests)
+        return;
+    UlWidth(quests, 0.064f);
+    UlPoint(quests, 0, root, 0, 0.1f, 0);
+    UlWidth(P(bar, 0x130), 0.064f), UlWidth(P(bar, 0x134), 0.064f), UlWidth(P(bar, 0x160), 0.064f);
+}
+
+// ISRESOURCEBAR 0x10088100 (read by hand): the bar [ui+0x3cc] (CResourceBar) stays;
+// its two font strings [+0x148] / [+0x14c] raw, top to the game UI's top at
+// -0.045 / 0.0375, -0.1 (0x100881fd / 0x10088237); its first 7 regions (the
+// list [bar+0xd8], next [link+4], region [link+8], as the console's; states
+// 0x1013edb0 + i * 0x180), each anchored to the bar raw at y -0.003125:
+// 0..2 0.0125 wide (0x100faa10[0]), top left at -0.015 / 0.05 / 0.115
+// (0x100fae90 / fab40 / fac20), 3..6 top right at -0.2975 / -0.2325 /
+// -0.1675 / -0.0925 (0x100fafc0 / fafa0 / faf90 / faf10), in WFE's order.
+static void UlResources(BYTE *ui, BYTE *root) {
+    BYTE *bar = P(ui, 0x3cc);
+    if (!bar)
+        return;
+    UlPointRaw(P(bar, 0x148), PT_TOP, root, PT_TOP, -0.045f, -0.1f);
+    UlPointRaw(P(bar, 0x14c), PT_TOP, root, PT_TOP, 0.0375f, -0.1f);
+    BYTE *r[7] = {};
+    int n = 0;
+    for (BYTE *l = *(BYTE **)(bar + 0xd8); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && n < 7; l = *(BYTE **)(l + 4))
+        r[n++] = V(*(BYTE **)(l + 8));
+    static void *logged;
+    if (logged != ui) {
+        logged = ui;
+        for (int i = 0; i < n; i++) {
+            char rtti[64] = "";
+            if (r[i])
+                RttiName(*(DWORD *)r[i], g_imageSize, rtti, sizeof(rtti));
+            Log("  resource bar region %d: %p %s", i, r[i], r[i] ? (rtti[0] ? rtti : "no RTTI") : "not an object");
+        }
+    }
+    const float Y = -0.003125f;
+    UlWidth(r[0], 0.0125f), UlPoint(r[0], 0, bar, 0, -0.015f, Y);
+    UlPoint(r[3], 2, bar, 2, -0.2975f, Y);
+    UlWidth(r[1], 0.0125f), UlPoint(r[1], 0, bar, 0, 0.05f, Y);
+    UlPoint(r[4], 2, bar, 2, -0.2325f, Y);
+    UlWidth(r[2], 0.0125f), UlPoint(r[2], 0, bar, 0, 0.115f, Y);
+    UlPoint(r[5], 2, bar, 2, -0.1675f, Y);
+    UlPoint(r[6], 2, bar, 2, -0.0925f, Y);
+}
+
+// ISIDLEWORKERS 0x1008afa0 (read by hand): [ui+0x3e0] (CPeonBar, a simple frame)
+// 0.0275 wide (0x100fab00[0]), its bottom left on the game UI's at 0.1, 0.1725
+// (0x100fad20[0]; pushes 1, y, x, 6, ui+0xb4, 6 at 0x1008b227); no clear.
+static void UlIdle(BYTE *ui, BYTE *root) {
+    if (BYTE *pb = P(ui, 0x3e0))
+        UlWidth(pb, 0.0275f), UlPoint(pb, 6, root, 6, 0.1f, 0.1725f);
+}
+
+// ISTIMEOFDAYINDICATOR 0x1008b880 (read by hand): [ui+0x3f8] (CTimeOfDayIndicator,
+// a CFrame: its layout +0xb4) cleared and its centre at 0.1635, 0 on the screen
+// (0x100fad40[0]; SetAbsPoint pushes 1, 0, x, 4 at 0x1008bbad). The clock
+// model's x squeeze (0.75, 0x100fae10) goes with the other models.
+static void UlTimeOfDay(BYTE *ui, BYTE *) {
+    if (BYTE *tod = P(ui, 0x3f8))
+        UlClear(tod), UlAbs(tod, PT_CENTER, 0.1635f, 0);
+}
+
+// ISTOOLTIP 0x10091730 (read by hand): the tooltip [ui+0x1cc] (CUberToolTipWar3,
+// made by the game the first time one shows) raw, its bottom right to the game
+// UI's top left at 0.6875 (0x100fa874 with Upgraded UI), -0.435 (pushes 1, y,
+// x, 0, ui+0xb4, 8 at 0x100918fe). WFE's [INTERFACE] ISCUSTOMUIDRAW
+// ([0x1013d0f8]) only skips it when its tooltip follows the cursor.
+static void UlTooltip(BYTE *ui, BYTE *root) {
+    if (BYTE *tt = P(ui, 0x1cc))
+        UlPointRaw(tt, 8, root, 0, 0.6875f, -0.435f);
+}
+
+// 0x10088b90 (read by hand; the studies called it black bars): the message frames
+// (CSimpleMessageFrame): the world messages [ui+0x3e4] bottom to the console
+// [ui+0x428]'s bottom (raw) at -0.025 (0x100fab90[0]), 0.18; the unit messages
+// [ui+0x3e8] bottom to their top (raw) at -0.098125 + 0.025 (0x100fa98c),
+// 0.0005, so they stay where they were. All three or nothing.
+static void UlMessages(BYTE *ui, BYTE *) {
+    BYTE *con = P(ui, 0x428), *msg = P(ui, 0x3e4), *unit = P(ui, 0x3e8);
+    if (!con || !msg || !unit)
+        return;
+    UlPoint(msg, PT_BOTTOM, con, PT_BOTTOM, -0.025f, 0.18f);
+    UlPoint(unit, PT_BOTTOM, msg, PT_TOP, -0.098125f + 0.025f, 0.0005f);
+}
+
+// 0x10088dd0 (read by hand): the chat box [ui+0x3fc] (CChatEditBar, a CFrame)
+// left / right to the full-screen frame [ui+0x41c]'s bottom corners (its +0xb4)
+// at +-0.25 (0x100fad80 / 0x100fafb0[0]), 0.2: clear of the minimap. The
+// two slots replaced, no clear (pushes 1, y, x, 6, rel, 3 / 1, y, x, 8, rel, 5).
+static void UlChat(BYTE *ui, BYTE *) {
+    BYTE *chat = P(ui, 0x3fc), *full = P(ui, 0x41c);
+    if (chat && full)
+        UlPoint(chat, 3, full + FRAME_LAYOUT, 6, 0.25f, 0.2f), UlPoint(chat, 5, full + FRAME_LAYOUT, 8, -0.25f, 0.2f);
+}
+
 // -- the portrait's HP / mana text, as WFE's Upgraded UI draws it
 // WFE (read by hand: 0x10086cd0, its object 0x1013e008) doesn't move the
 // portrait's own two lines: after each portrait update it empties them
@@ -3314,11 +3421,13 @@ static void UlPortraitText(BYTE *ui, BYTE *root) {
 
 typedef void (*UlFn)(BYTE *, BYTE *);
 static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUPS[] = {
-    // checked by hand; left out until they are: the upper menu bar, the resource bar, idle workers,
-    // time of day (Hide the UI hides them), the tooltip
+    // each read by hand in WFEDll (2026-10-26); the newer ones last, so a log that stops names them
     { "minimap", UlMinimap, 0x3c0 }, { "minimap buttons", UlMinimapButtons, 0x408 }, { "hero buttons", UlHeroes, 0x3dc },
     { "command card", UlCard, 0x3c8 }, { "portrait", UlPortrait, UI_PORTRAIT }, { "inventory cover", UlCover, 0x3c4 },
     { "inventory", UlItems, 0x3c4 }, { "info panel", UlInfo, 0x3c4 }, { "portrait text", UlPortraitText, UI_PORTRAIT },
+    { "upper menu bar", UlMenuBar, 0x3d0 }, { "resource bar", UlResources, 0x3cc }, { "idle workers", UlIdle, 0x3e0 },
+    { "time of day", UlTimeOfDay, 0x3f8 }, { "tooltip", UlTooltip, 0x1cc }, { "messages", UlMessages, 0x3e4 },
+    { "chat box", UlChat, 0x3fc },
 };
 static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
 static int g_ulStage;               // groups taken so far in this game (one more each pass at first)

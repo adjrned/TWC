@@ -125,6 +125,17 @@ int main() {
           "the portrait's own lines take FontHeights / PortraitStats from it (+40D2F7)");
     CHECK(!memcmp(g_base + RVA_FONTSTRING_SET + 6, FS_TEXT_READ, 6) && !memcmp(g_base + 0x141e4a, FS_A, 3) && !memcmp(g_base + 0x141e51, FS_R, 3),
           "a font string's text is at +0x9C (its setter), its colour at +0x68 A .. +0x6B R (+141E40)");
+
+    // the widescreen UI's second batch: the frames' classes, and where the game UI stores them
+    bool vt2 = Rtti(0xaad28c, "CUpperButtonBar") & Rtti(0xab20d4, "CResourceBar") & Rtti(0xab0f08, "CPeonBar") & Rtti(0xab2890, "CTimeOfDayIndicator")
+        & Rtti(0xaad684, "CUberToolTipWar3") & Rtti(0xa7d2a8, "CSimpleMessageFrame") & Rtti(0xaadfc4, "CChatEditBar") & Rtti(0xab1008, "CSimpleConsole");
+    CHECK(vt2, "menu bar, resource bar, idle workers, time of day, tooltip, messages, chat box, console: the classes WFE's handlers expect");
+    static const struct { DWORD at, field; } STORES[] = { { 0x39c53d, 0x3e0 }, { 0x39c189, 0x3f8 }, { 0x3a10f9, 0x1cc }, { 0x39c471, 0x3d0 }, { 0x39c439, 0x3cc } };
+    bad = 0;
+    for (const auto &s : STORES)
+        if (g_base[s.at] != 0x89 || *(DWORD *)(g_base + s.at + 2) != s.field)
+            bad++, printf("      +%06lX: %02X %02X %08lX, want a mov to +%lX\n", s.at, g_base[s.at], g_base[s.at + 1], *(DWORD *)(g_base + s.at + 2), s.field);
+    CHECK(!bad, "the game UI stores them at +0x3e0 / +0x3f8 / +0x1cc / +0x3d0 / +0x3cc");
     Verdict();
     return g_fails;
 }
