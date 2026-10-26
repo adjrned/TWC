@@ -41,7 +41,7 @@ TwcModuleRun() {
         "numbers", [(*) => healthBars.numberStatus(), "(12 now)"],
         "mana", [(*) => healthBars.manaStatus(), "(5 now)"],
         "portrait", [(*) => healthBars.portraitStatus(), "regen next to"],
-        "widescreen", [(*) => gameDisplay.wsStatus(), "16:9 in this game"],
+        "widescreen", [(*) => gameDisplay.wsStatus(), "the world fits the window"],
         "fps", [(*) => gameDisplay.fpsStatus(), "the game's own setting: 60"],
         "hide", [(*) => gameDisplay.hideStatus(), "time of day, minimap"],
         "latency", [(*) => gameDisplay.latencyStatus(), "LAN 100, Battle.net 250"],

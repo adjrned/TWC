@@ -15,7 +15,7 @@ ModuleCheckFeatures() => [
     ["Clear messages / chat", "clear (messages|chat): frame", "not a message frame|clear .* faulted"],
     ["Health bar size", "health bars: pass resized", "health bars: refused|reads faulted"],
     ["Health bar colours", "health bar colours: on", "health bar colours: refused|colouring a bar faulted"],
-    ["Widescreen", "widescreen: set in the game", "widescreen: refused|widescreen: the game's setter faulted"],
+    ["Widescreen", "widescreen: on, the window is", "widescreen: refused|isn't the game's call to its projection|widescreen: writing the call"],
     ["FPS unlock", "FPS: limiter patched", "FPS: refused|FPS: the game's option functions faulted|C9 already"],
     ["Multiboard", "multiboard: [0-9A-F]{8}, vtable", "multiboard: refused|not a multiboard|multiboard: the game's call faulted"],
     ["Self-cast", "self-cast: clicked the portrait", "self-cast: refused|not the portrait|self-cast: the game's click faulted"],

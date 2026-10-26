@@ -118,7 +118,7 @@ Wc3Features() {
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
             buttons: [[(*) => gameDisplay.latencyLabel, (*) => (gameDisplay.cycleLatency(), RefreshWc3())]] },
         { tab: "display", title: "Widescreen", badge: "1.28f",
-            desc: "The game's own 16:9 view in games, as WFE's. Set again after a resize.",
+            desc: "As WFE's: the world isn't stretched on a wide screen. The UI stays 4:3.",
             on: (*) => gameDisplay.widescreen, set: (v) => gameDisplay.setWidescreen(v), status: (*) => gameDisplay.wsStatus() },
         { tab: "display", title: "FPS unlock", badge: "1.28f",
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",

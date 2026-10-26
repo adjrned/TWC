@@ -149,7 +149,8 @@ static const Known KNOWN[] = {
     { "message frame clear",               0x144750 },
     { "multiboard state 0",                0x4127d0 },
     { "multiboard state 1",                0x4128d0 },
-    { "widescreen setter",                 0x16f6b0 },
+    { "camera projection (widescreen)",    0x1554f0 },
+    { "its call (widescreen)",             0x1e0829 },
     { "FPS limiter function",              0x0a5090 },
     { "FPS limiter (patched byte)",        0x0a50ba },
     { "game options",                      0x06bf60 },
@@ -847,7 +848,6 @@ static volatile LONG g_barsQueued;
 static void DisplayPass();
 static UINT g_dispMsg;              // "TWC_GameThreadDisplay": run DisplayPass on the game thread
 static volatile LONG g_dispQueued;
-static volatile LONG g_resized;     // the game window changed size: widescreen is set again
 static int ToggleMultiboard(BYTE *ui);
 static int AutocastToggle(BYTE *ui, DWORD slot);
 static void SelfCast();
@@ -888,8 +888,6 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
         ReadTimers((BYTE *)GameUi());
         return 0;
     }
-    if (m == WM_SIZE || m == WM_DISPLAYCHANGE)
-        InterlockedExchange(&g_resized, 1);
     if (m == g_runMsg && g_runMsg) {
         LONG cmd = InterlockedExchange(&g_running, 0);
         if (cmd) {
@@ -2295,138 +2293,97 @@ static bool FnStart(DWORD rva) {
     return f[-1] == 0xCC || f[-1] == 0x90 || f[-1] == 0xC3 || (f[-3] == 0xC2 && f[-1] == 0);
 }
 
-// Widescreen: the game's own setter, called the way WFE's SetWidescreen
-// (0x100665a0) calls it on 1.28f: __fastcall(obj + (mode == 1 ? 0x754 : 0x59c),
-// 0, on, 0), obj = [+0xd1aca8], mode = [+0xcb1d9c]. WFE passes 1 only in a game,
-// and also detours the setter so the game's own calls keep it on. Nothing is
-// patched here: it's set again when a game starts (and 1 s and 5 s later, in
-// case the game sets it itself while loading) and after the window changes size.
-static const DWORD RVA_WIDE_SET = 0x16f6b0;     // WFE's [0x1013ce08]
-static const DWORD RVA_WIDE_OBJ = 0xd1aca8;     // [it] = the object (WFE's [0x1013ba38])
-static const DWORD RVA_WIDE_MODE = 0xcb1d9c;    // [it] = 1 -> +0x754, else +0x59c (WFE's [0x1013ba34])
+// Widescreen, as WFE's WIDESCREEN does it on 1.28f (read in the game's
+// Game.dll, 2026-10-26): WFE detours the game's perspective projection
+// +0x1554f0 (__fastcall(matrix, 0, float fov, float aspect, near, far), ret
+// 0x10; WFE's [0x1013a1c8], its 0x1001b8fe for build 0x1E00) with 0x1001b430,
+// which builds the same matrix but with the horizontal scale m[0] divided by
+// k = 0.75 * width / height of the game window's client area (1 at 4:3): the
+// world isn't stretched sideways on a wide screen, you see more of it. Here
+// the game's only call to it (+0x1e0829, the camera's update) is pointed at
+// ProjHook instead, on the game thread, and back when it's turned off or on
+// unload: the game's own function runs, then m[0] /= k. k follows the window
+// size. The 2D UI stays the game's 4:3 one stretched to the window, as with
+// WFE's WIDESCREEN alone.
+// (The setter +0x16f6b0 this used before, WFE's [0x1013ce08] / 0x100665a0, is
+// WFE's MOUSELOCK: in Game.dll it's ClipCursor on the game window.)
+static const DWORD RVA_PROJECTION = 0x1554f0, RVA_PROJECTION_CALL = 0x1e0829;
 
-typedef void(__fastcall *WideFn)(void *, int, int, int);
+typedef void(__fastcall *ProjFn)(float *, int, float, float, float, float);
 
-static void *g_wsUi;            // the game it was last set in (0 = none)
-static DWORD g_wsAgain[2];      // GetTickCount() when to set it again (0 = no)
-static bool g_wsApplied;        // set on, not put back yet
+static volatile float g_wsK;    // the horizontal squeeze while it's on (0 = off)
+static bool g_wsApplied;        // the call points at ProjHook
+static bool g_wsBad;            // refused for good
 
-// 1 set, 0 no object to set, -1 faulted
-static void HexDump(const BYTE *p, int n, char *out, size_t size) {
-    int o = 0;
-    for (int i = 0; i < n && o + 4 < (int)size; i++)
-        o += sprintf_s(out + o, size - o, "%02X ", p[i]);
-    out[o] = 0;
+static void __fastcall ProjHook(float *m, int edx, float fov, float aspect, float zn, float zf) {
+    ((ProjFn)(g_base + RVA_PROJECTION))(m, edx, fov, aspect, zn, zf);
+    float k = g_wsK;
+    if (k > 0.25f && k < 4)
+        m[0] /= k;
 }
 
-// The UI's sizes once a game is in widescreen (the root frame, the portrait,
-// the command card, the world frame: width +0x58, height +0x5c of their layout)
-static void LogUiSizes(BYTE *ui, const char *when) {
-    static const struct { const char *name; DWORD off; } F[] = { { "game UI", 0 }, { "portrait", 0x3f4 }, { "command card", 0x3c8 }, { "world", 0x3bc }, { "console", 0x428 } };
-    char b[400];
-    int o = 0;
-    __try {
-        for (auto &f : F) {
-            BYTE *fr = f.off ? *(BYTE **)(ui + f.off) : ui;
-            if (!fr)
-                continue;
-            BYTE *l = fr + 0xb4;
-            o += sprintf_s(b + o, sizeof(b) - o, " %s %.4f x %.4f (own %.4f x %.4f);", f.name, *(float *)(l + 0x58), *(float *)(l + 0x5c), *(float *)(fr + 0x58), *(float *)(fr + 0x5c));
-        }
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
+// the call to the projection: to ProjHook, or back to the game's. false: it isn't what it should be
+static bool PointProjection(bool hook) {
+    BYTE *site = g_base + RVA_PROJECTION_CALL;
+    const BYTE *game = g_base + RVA_PROJECTION, *to = hook ? (const BYTE *)ProjHook : game;
+    if (site[0] != 0xE8 || (SiteTarget(site) != game && SiteTarget(site) != (const BYTE *)ProjHook)) {
+        Log("widescreen: the call at +%06lX isn't the game's call to its projection +%06lX: left alone", RVA_PROJECTION_CALL, RVA_PROJECTION);
+        return false;
     }
-    b[o] = 0;
-    Log("widescreen: UI sizes %s:%s", when, b);
-}
-
-static int CallWide(int on) {
-    __try {
-        BYTE *obj = *(BYTE **)(g_base + RVA_WIDE_OBJ);
-        if (!obj)
-            return 0;
-        DWORD vt = *(DWORD *)obj;
-        if (!InImage(vt, g_imageSize) || PageIs((void *)vt, EXEC))
-            return 0;
-        DWORD mode = *(DWORD *)(g_base + RVA_WIDE_MODE);
-        DWORD off = mode == 1 ? 0x754 : 0x59c;
-        static bool logged;
-        if (!logged) {
-            logged = true;
-            char rtti[64];
-            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
-            Log("widescreen: object %p (vtable +%06lX, RTTI %s), mode %lu, so +%lX", obj, vt - (DWORD)g_base, rtti[0] ? rtti : "(none)", mode, off);
-        }
-        // what the setter changes, for the UI stretch question (the first 3 calls)
-        static int dumps;
-        char before[3 * 48 + 1];
-        bool dump = dumps < 3 && PageIs(obj + off + 47, READ);
-        if (dump)
-            HexDump(obj + off, 48, before, sizeof(before));
-        ((WideFn)(g_base + RVA_WIDE_SET))(obj + off, 0, on, 0);
-        if (dump) {
-            char after[3 * 48 + 1];
-            HexDump(obj + off, 48, after, sizeof(after));
-            dumps++;
-            Log("widescreen: set(%d): +%lX before %s", on, off, before);
-            Log("                     after  %s", after);
-        }
-        return 1;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        return -1;
+    if (SiteTarget(site) == to)
+        return true;
+    LONG rel = (LONG)(to - (site + 5));
+    if (!WriteCode(site + 1, (const BYTE *)&rel, 4)) {
+        Log("widescreen: writing the call at +%06lX failed (%lu)", RVA_PROJECTION_CALL, GetLastError());
+        return false;
     }
+    return true;
 }
 
+// k for the game window as it is now (0 if it has no size)
+static float WideK() {
+    RECT r;
+    if (!g_gameWnd || !GetClientRect(g_gameWnd, &r) || r.right <= 0 || r.bottom <= 0)
+        return 0;
+    return 0.75f * (float)r.right / (float)r.bottom;
+}
+
+// on the game thread
 static void WidescreenPass() {
-    static bool refused;
-    static int faults;
     bool on = g_shared->wsOn != 0;
-    if (refused)
+    if (g_wsBad)
         return;
-    if (!on && !g_wsApplied) {
+    if (!on) {
+        if (g_wsApplied) {
+            g_wsK = 0;
+            if (PointProjection(false))
+                Log("widescreen: off (the camera calls the game's projection again)");
+            g_wsApplied = false;
+        }
         g_shared->wsState = 0;
         return;
     }
-    if (!FnStart(RVA_WIDE_SET) || !PageIs(g_base + RVA_WIDE_OBJ, READ) || PageIs(g_base + RVA_WIDE_OBJ, EXEC)
-        || !PageIs(g_base + RVA_WIDE_MODE, READ) || PageIs(g_base + RVA_WIDE_MODE, EXEC)) {
-        refused = true, g_shared->wsState = 3;
-        Log("widescreen: refused (the setter isn't a function start, or its globals aren't data)");
-        return;
+    if (!g_wsApplied) {
+        if (!FnStart(RVA_PROJECTION) || !IsGameCode(g_base + RVA_PROJECTION_CALL)) {
+            g_wsBad = true, g_shared->wsState = 3;
+            Log("widescreen: refused (the projection +%06lX isn't a function start)", RVA_PROJECTION);
+            return;
+        }
+        if (!PointProjection(true)) {
+            g_wsBad = true, g_shared->wsState = 3;
+            return;
+        }
+        g_wsApplied = true;
     }
-    void *ui = GameUi();
-    DWORD now = GetTickCount();
-    int r;
-    if (!on) {
-        // turned off: back to 4:3 (WFE sets 0 outside a game as well)
-        r = CallWide(0);
-        Log(r == 1 ? "widescreen: off" : "widescreen: turning it off didn't reach the game (%d)", r);
-        g_wsApplied = false, g_wsUi = nullptr, g_shared->wsState = 0;
-        return;
+    float k = WideK();
+    if (k != g_wsK) {
+        g_wsK = k;
+        static int logs;
+        RECT r = {};
+        if (logs++ < 4 && g_gameWnd && GetClientRect(g_gameWnd, &r))
+            Log("widescreen: on, the window is %ldx%ld, so the world's width is divided by %.3f", r.right, r.bottom, k);
     }
-    if (!ui) {
-        g_wsUi = nullptr, g_shared->wsState = 2;    // between games
-        return;
-    }
-    bool again = InterlockedExchange(&g_resized, 0) != 0;
-    if (ui != g_wsUi) {
-        g_wsUi = ui, again = true;
-        g_wsAgain[0] = (now + 1000) | 1, g_wsAgain[1] = (now + 5000) | 1;
-    }
-    for (DWORD &t : g_wsAgain)
-        if (t && (LONG)(now - t) >= 0)
-            t = 0, again = true;
-    if (!again)
-        return;
-    r = CallWide(1);
-    if (r < 0 && ++faults >= 3) {
-        refused = true, g_shared->wsState = 3;
-        Log("widescreen: the game's setter faulted 3 times: stopping");
-        return;
-    }
-    static int logs;
-    if (r == 1 && logs < 6)
-        logs++, Log("widescreen: set in the game at %p", ui), LogUiSizes((BYTE *)ui, "after setting it");
-    g_wsApplied |= r == 1;
-    g_shared->wsState = r == 1 ? 1 : 2;
+    g_shared->wsState = k > 0 ? 1 : 2;
 }
 
 // FPS unlock, as WFE's 0x1004a440 does it on 1.28f: one byte in the game's
@@ -3285,7 +3242,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;

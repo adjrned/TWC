@@ -2,8 +2,9 @@
 ; ============================================================================
 ;  GameDisplayEngine - widescreen and FPS unlock on 1.28f, through the game
 ;  module (shared memory layout 7; both run on the game's thread, as WFE's).
-;  Widescreen: the game's own 16:9 setting, set again at each game start and
-;  after the window changes size. FPS unlock: the game's frame limiter is
+;  Widescreen (WFE's WIDESCREEN): the world isn't stretched sideways on a
+;  wide window, you see more of it (the camera's projection is narrowed by
+;  the window's shape; the 2D UI stays the game's 4:3 one). FPS unlock: the game's frame limiter is
 ;  switched off and its frame limit setting raised to the limit here (64 at
 ;  least); turning it off puts both back.
 ;  Both off by default (ini [Display] widescreen, fps, fpsLimit).
@@ -112,7 +113,7 @@ class GameDisplayEngine {
         if (w := this.moduleWait()) != ""
             return w
         st := NumGet(this.gm.live(), Shm.wsState, "uint")
-        return st = 1 ? "On · 16:9 in this game" : st = 2 ? "On · waiting for a game"
+        return st = 1 ? "On · the world fits the window" : st = 2 ? "On · waiting for the game window"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
     hideStatus() {

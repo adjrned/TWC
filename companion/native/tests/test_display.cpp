@@ -5,8 +5,8 @@
 static_assert(offsetof(Shared, wsOn) == 612 && offsetof(Shared, fpsGameLimit) == 632 && sizeof(Shared) >= 684, "layout 7");
 static DWORD mainTid, gameTid; static void *fakeUi; static BYTE *img;
 static void *__fastcall FakeGetUi(int, int) { return fakeUi; }
-static int wideCalls, wideLast = -1, wideWrongThread; static void *wideThis; static int wideArg2 = -1;
-static void __fastcall FakeWide(void *t, int, int on, int z) { wideCalls++, wideLast = on, wideThis = t, wideArg2 = z; if (GetCurrentThreadId() != gameTid) wideWrongThread++; }
+static int projCalls; static float projAspect;
+static void __fastcall FakeProj(float *m, int, float, float a, float, float) { projCalls++, projAspect = a; m[0] = 2, m[5] = 3; }
 static DWORD opt17 = 64; static int optSets, optApplies; static BYTE optObj[64];
 static void *__cdecl FakeOpts() { return optObj; }
 static void __fastcall FakeSet(void *o, int, DWORD id, DWORD v) { if (o == optObj && id == 0x17) opt17 = v, optSets++; }
@@ -24,27 +24,23 @@ static int Cmd(LONG seq) { g_shared->cmd = 3; g_shared->cmdSeq = seq; ServeComma
 static DWORD WINAPI Tester(void *) {
     // nothing on: no passes, nothing called
     Pump(3);
-    CHECK(wideCalls == 0 && *(img + RVA_FPS_BYTE) == 0x74 && !g_oldProc, "all off: nothing called, nothing patched, no subclass");
-    // widescreen on, no game yet
-    g_shared->wsOn = 1; Pump(3);
-    CHECK(wideCalls == 0 && g_shared->wsState == 2, "widescreen on, no game: waits (state %lu)", g_shared->wsState);
-    // a game starts: set at once, then again at 1 s and 5 s
-    static BYTE ui[0x400]; *(DWORD *)ui = g_uiVtable; *(BYTE **)(ui + UI_MULTIBOARD) = mb; fakeUi = ui;
-    Pump(2);
-    CHECK(wideCalls == 1 && wideLast == 1 && wideArg2 == 0 && wideThis == *(BYTE **)(img + RVA_WIDE_OBJ) + 0x754 && g_shared->wsState == 1,
-        "game start: set on once, this = obj+0x754 (mode 1) (calls %d)", wideCalls);
-    Pump(22);
-    CHECK(wideCalls == 3, "set again at 1 s and 5 s, then left alone (calls %d)", wideCalls);
-    // the window changes size: set again
-    SendMessageA(wnd, WM_SIZE, 0, MAKELPARAM(300, 200)); Pump(2);
-    CHECK(wideCalls == 4, "after WM_SIZE: set again (calls %d)", wideCalls);
-    // mode 2 (not 1): +0x59c
-    *(DWORD *)(img + RVA_WIDE_MODE) = 2; SendMessageA(wnd, WM_SIZE, 0, 0); Pump(2);
-    CHECK(wideThis == *(BYTE **)(img + RVA_WIDE_OBJ) + 0x59c, "mode 2: this = obj+0x59c");
-    // off: once with 0, then nothing
-    g_shared->wsOn = 0; Pump(4);
-    CHECK(wideCalls == 6 && wideLast == 0 && g_shared->wsState == 0, "off: set to 0 once (calls %d, last %d)", wideCalls, wideLast);
-    CHECK(wideWrongThread == 0, "the setter always ran on the game thread");
+    CHECK(projCalls == 0 && *(img + RVA_FPS_BYTE) == 0x74 && !g_oldProc, "all off: nothing called, nothing patched, no subclass");
+    // widescreen on: the camera's call to the projection goes to ProjHook, which squeezes m[0] by 0.75 * w / h
+    BYTE *site = img + RVA_PROJECTION_CALL;
+    g_shared->wsOn = 1; Pump(2);
+    RECT r; GetClientRect(wnd, &r); float k = 0.75f * r.right / r.bottom;
+    CHECK(SiteTarget(site) == (BYTE *)ProjHook && g_shared->wsState == 1 && fabsf(g_wsK - k) < 1e-5f, "on: the call points at the hook, k %.3f (window %ldx%ld)", g_wsK, r.right, r.bottom);
+    float m[16] = {}; ProjHook(m, 0, 1.0f, 0.75f, 1, 100);
+    CHECK(projCalls == 1 && projAspect == 0.75f && fabsf(m[0] - 2 / k) < 1e-5f && m[5] == 3, "the game's projection runs, then m[0] / k (%.3f), m[5] left (%.1f)", m[0], m[5]);
+    SetWindowPos(wnd, 0, 0, 0, 800, 300, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Pump(2);
+    GetClientRect(wnd, &r);
+    CHECK(fabsf(g_wsK - 0.75f * r.right / r.bottom) < 1e-5f, "the window resized: k follows (%.3f)", g_wsK);
+    g_shared->wsOn = 0; Pump(2);
+    CHECK(SiteTarget(site) == img + RVA_PROJECTION && g_wsK == 0 && g_shared->wsState == 0, "off: the call is the game's again");
+    *(site + 1) ^= 0x55; g_shared->wsOn = 1; Pump(2);
+    CHECK(g_shared->wsState == 3 && site[0] == 0xE8, "a call that isn't the game's: refused, left alone");
+    *(site + 1) ^= 0x55; g_shared->wsOn = 0;
+    static BYTE ui[0x400]; *(DWORD *)ui = g_uiVtable; *(BYTE **)(ui + UI_MULTIBOARD) = mb; fakeUi = ui;      // a game, for the multiboard
     // FPS on at 240
     g_shared->fpsOn = 1; g_shared->fpsLimit = 240; Pump(2);
     CHECK(*(img + RVA_FPS_BYTE) == 0xC9 && opt17 == 240 && optApplies == 1 && g_shared->fpsState == 1 && g_shared->fpsGameLimit == 64,
@@ -81,7 +77,8 @@ int main() {
     static Shared sh; g_shared = &sh;
     img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     g_base = img; g_imageSize = 0x1000000;
-    Stub(RVA_WIDE_SET, FakeWide);
+    Stub(RVA_PROJECTION, FakeProj);
+    img[RVA_PROJECTION_CALL] = 0xE8; *(LONG *)(img + RVA_PROJECTION_CALL + 1) = (LONG)(RVA_PROJECTION - (RVA_PROJECTION_CALL + 5));
     Stub(RVA_OPTIONS, FakeOpts); Stub(RVA_OPT_SET, FakeSet); Stub(RVA_OPT_APPLY, FakeApply); Stub(RVA_OPT_GET, FakeGet);
     Stub(RVA_MB_STATE0, FakeMb0); Stub(RVA_MB_STATE1, FakeMb1);
     img[RVA_FPS_FN - 1] = 0xCC; img[RVA_FPS_FN] = 0x55; img[RVA_FPS_BYTE] = 0x74;
@@ -90,8 +87,6 @@ int main() {
     VirtualProtect(img + 0xaaa000, 0x4000, PAGE_READWRITE, &old);       // vtables: data
     VirtualProtect(img + 0xcb1000, 0x1000, PAGE_READWRITE, &old);
     VirtualProtect(img + 0xd1a000, 0x1000, PAGE_READWRITE, &old);
-    static BYTE wideObj[0x800]; *(DWORD *)wideObj = (DWORD)(img + 0xaab000);
-    *(BYTE **)(img + RVA_WIDE_OBJ) = wideObj; *(DWORD *)(img + RVA_WIDE_MODE) = 1;
     static BYTE board[0x200]; *(DWORD *)board = (DWORD)(img + 0xaac000); mb = board;
     g_uiVtable = (DWORD)(img + RVA_UI_VTABLE); g_getUi = FakeGetUi;
     mainTid = gameTid = GetCurrentThreadId();
