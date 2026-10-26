@@ -14,7 +14,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 11, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 13, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -31,7 +31,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 11 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 11, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 13 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 13, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     TwcCheck(t.cd[1].left = 4.5 && t.buffs.Length = 1 && t.buffs[1].left = 9, "timers: the first cooldown and buff")
@@ -56,6 +56,9 @@ TwcModuleRun() {
         TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
+    gameDisplay.toggleHideMenu()
+    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x39, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")
+    gameDisplay.toggleHideMenu()
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
     ; the lines 1.28f's portrait fallback logs (call sites instead of the vtable): not a refusal, then working
@@ -93,7 +96,38 @@ TwcModuleRun() {
     }
     gameModule.setEnabled(false), RefreshWc3(), gameModule.setEnabled(true), RefreshWc3()
     TwcCheck(true, "the game module's own switch")
+    TwcModuleSwap()
     fake.Destroy()
     TwcCheckDone()
+}
+; swapping the module live: the copy the game loads, and the hand-over (no game, no injector)
+TwcModuleSwap() {
+    tmp := A_Temp "\twc-swapcheck"
+    try DirDelete(tmp, 1)
+    DirCreate(tmp)
+    FileCopy(A_ScriptDir "\native\twc-game.dll", tmp "\twc-game.dll")
+    FileAppend("old", tmp "\twc-game.deadbeef.dll")
+    gm2 := GameModuleEngine()
+    gm2.DefineProp("dir", { get: (*) => tmp })
+    st := GameModuleEngine.FileStamp(tmp "\twc-game.dll")
+    copy := gm2.loadCopy()
+    TwcCheck(st && copy = tmp "\twc-game." Format("{:08x}", st) ".dll" && FileExist(copy) && !FileExist(tmp "\twc-game.deadbeef.dll"),
+        "the game loads a stamped copy (" SubStr(copy, StrLen(tmp) + 2) "), an old copy not in use goes")
+    ; the old module unloads (status 3): its view goes, then it's loaded again
+    pid := DllCall("GetCurrentProcessId")
+    h := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 4, "uint", 0, "uint", Shm.size, "str", "Local\TWC_Game_" pid, "ptr")
+    v := gm2.view(pid)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 13, v, Shm.layout), NumPut("uint", 4, v, Shm.status)
+    calls := { n: 0 }
+    gm2.DefineProp("check", { call: (*) => calls.n++ })
+    gm2.swapping := pid, gm2.swapAt := A_TickCount
+    TwcCheck(!gm2.live(), "while swapping nothing is pushed (live() is 0)")
+    gm2.swapStep(pid)
+    TwcCheck(gm2.swapping = pid && gm2.views.Has(pid) && !calls.n, "still unloading (status 4): waits")
+    NumPut("uint", 3, v, Shm.status)
+    gm2.swapStep(pid)
+    TwcCheck(!gm2.swapping && !gm2.views.Has(pid) && calls.n = 1, "unloaded (status 3): the view is let go and the new one is loaded")
+    DllCall("CloseHandle", "ptr", h)
+    try DirDelete(tmp, 1)
 }
 SetTimer(TwcModuleRun, -7000)

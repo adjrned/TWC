@@ -19,3 +19,6 @@ companion/debug/
 companion/captures/
 companion/_build_main.ahk
 companion/_preview.ahk
+
+# the stamped copies the game loads (GameModule.loadCopy)
+companion/native/twc-game.*.dll

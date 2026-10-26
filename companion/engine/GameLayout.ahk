@@ -80,5 +80,7 @@ class Shm {
     static prMode := 784
     static prState := 788
     static mbWidth := 792
-    static size := 796
+    static unload := 796
+    static stamp := 800
+    static size := 804
 }

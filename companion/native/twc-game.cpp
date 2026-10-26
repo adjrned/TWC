@@ -41,9 +41,9 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 12
+    DWORD layout;           // 13
     DWORD build;            // the game's build number (7680 = 1.28f)
-    DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping
+    DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
     DWORD targeting;        // 1 while the game waits for a target
     // layout 2
@@ -126,6 +126,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD prState;          // module: 0 off, 1 on, 2 waiting for a game, 3 refused (see the log)
     // layout 12
     float mbWidth;          // companion: the mana bar's width, times the health bar's (0.25-2; 0 = 1)
+    // layout 13: a newer module replaces this one while the game runs
+    DWORD unload;           // companion: 1 = turn everything off, give it all back and unload (status 4, then 3)
+    DWORD stamp;            // module: its own build stamp (the PE header's TimeDateStamp)
 };
 #pragma pack(pop)
 
@@ -840,6 +843,8 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 static int RunOnGameThread(DWORD cmd);
 static void *GameUi();
 static void PortraitSitesPass();
+static void FinalPass();
+static UINT g_finalMsg;
 static UINT g_prMsg;                // "TWC_GameThreadPortrait": PortraitSitesPass on the game thread
 static volatile LONG g_prQueued;
 static void BarsPass();
@@ -877,6 +882,10 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
         InterlockedExchange(&g_framesQueued, 0);
         FramesPass();
         return 0;
+    }
+    if (m == g_finalMsg && g_finalMsg) {
+        FinalPass();
+        return 0;                   // not to the game: it's ours
     }
     if (m == g_prMsg && g_prMsg) {
         InterlockedExchange(&g_prQueued, 0);
@@ -919,6 +928,7 @@ static bool Subclass() {
     g_framesMsg = RegisterWindowMessageA("TWC_GameThreadFrames");
     g_timersMsg = RegisterWindowMessageA("TWC_GameThreadTimers");
     g_prMsg = RegisterWindowMessageA("TWC_GameThreadPortrait");
+    g_finalMsg = RegisterWindowMessageA("TWC_GameThreadFinal");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -929,8 +939,10 @@ static void Unsubclass() {
     if (!g_oldProc)
         return;
     LONG_PTR now = g_wide ? GetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC) : GetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC);
-    if (now == (LONG_PTR)GameWndProc)   // someone subclassed after us: leave theirs (and ours) in place
+    if (now == (LONG_PTR)GameWndProc) {     // else someone subclassed after us: leave theirs (and ours) in place
         g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)g_oldProc) : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)g_oldProc);
+        g_oldProc = nullptr;
+    }
 }
 
 // a frame the game UI holds, if it has a vtable in the game's data (message frames, the multiboard)
@@ -3125,6 +3137,76 @@ static void Click(DWORD flags) {
 // A quickcast request is answered once: clicked when the game waits for a
 // target (and is in front), or given up at its deadline. Between requests the
 // targeting flag is refreshed now and then for the companion's status.
+// -- unloading (a newer module replaces this one) ---------------------------------------
+// The companion asks (unload = 1) and stops writing. Every switch goes off here,
+// so the passes take their frames and changes away (2 s), then the game thread
+// gives back what's left (vtable entries, rewritten calls, code bytes, the
+// window) and the worker waits a second more, so no game call can still be in
+// our code, before FreeLibraryAndExitThread. If someone subclassed the window
+// after us, ours can't be taken out: the module stays (status 5).
+static volatile LONG g_finalDone;   // 1 given back, 2 can't unload
+static bool g_unloadNow;            // Worker frees the module when Run returns
+
+static void SwitchesOff() {
+    Shared *s = g_shared;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = 0;
+    s->qcUntil = 0;
+}
+static void RestoreAll() {
+    if (g_portraitSlot)
+        SwapPortrait(false);
+    if (g_prSites && g_portraitHooked)
+        PointSites(false);
+    if (g_wsApplied)
+        PointProjection(false), g_wsApplied = false;
+    SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);
+}
+// on the game thread: the last of it, and the window back
+static void FinalPass() {
+    RestoreAll();
+    Unsubclass();
+    InterlockedExchange(&g_finalDone, g_oldProc ? 2 : 1);  // still in the window's chain: can't go
+}
+
+// true when Run should end (unloading)
+static bool UnloadStep(DWORD now) {
+    static DWORD askedAt, finalAt;
+    static bool asked, posted;
+    if (g_shared->unload != 1 && !asked)
+        return false;
+    if (!asked) {
+        asked = true, askedAt = now;
+        g_shared->status = 4;
+        Log("unloading: a newer module replaces this one; turning everything off");
+    }
+    SwitchesOff();
+    if (now - askedAt < 2000)
+        return false;
+    if (!posted) {
+        posted = true, finalAt = now;
+        if (g_oldProc && g_gameWnd)
+            PostMessageA(g_gameWnd, g_finalMsg, 0, 0);
+        else
+            RestoreAll(), InterlockedExchange(&g_finalDone, 1);     // never subclassed: nothing runs on the game thread
+    }
+    LONG done = g_finalDone;
+    if (!done && now - finalAt < 5000)
+        return false;
+    if (done != 1) {
+        g_shared->status = 5;
+        g_shared->unload = 2;
+        Log(done == 2 ? "unloading: the game window was subclassed after us: the module stays (restart the game for the new one)"
+                      : "unloading: the game thread didn't answer: the module stays");
+        asked = posted = false;
+        return false;
+    }
+    Sleep(1000);                    // any game call still in our code returns
+    Log("unloading: everything given back; unloading the module");
+    asked = posted = false;
+    g_unloadNow = true;
+    return true;
+}
+
 static void Run() {
     LONG handled = g_shared->qcSeq;
     DWORD askedAt = 0;
@@ -3134,6 +3216,8 @@ static void Run() {
     while (!g_stop) {
         DWORD now = GetTickCount();
         g_shared->heartbeat = now;
+        if (UnloadStep(now))
+            break;
         if (!g_getUi) {
             if (fast)
                 timeEndPeriod(1), fast = false;
@@ -3212,6 +3296,8 @@ static DWORD WINAPI Worker(void *) {
     if (ok)
         g_getUi = (GetUiFn)(g_base + RVA_GET_UI);
     Run();
+    if (g_unloadNow)
+        FreeLibraryAndExitThread(g_self, 0);
     return 0;
 }
 
@@ -3232,7 +3318,8 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 12;
+        g_shared->layout = 13;
+        g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
         Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
@@ -3246,6 +3333,14 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;
+        if (!reserved) {            // unloaded: free the names for the next module (the companion's view keeps it until it lets go)
+            if (g_shared)
+                UnmapViewOfFile(g_shared), g_shared = nullptr;
+            if (g_map)
+                CloseHandle(g_map), g_map = nullptr;
+            if (g_wake)
+                CloseHandle(g_wake), g_wake = nullptr;
+        }
     }
     return TRUE;
 }

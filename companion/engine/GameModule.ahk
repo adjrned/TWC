@@ -9,12 +9,20 @@
 ;  default, Quickcast window) clicks when the game itself says it waits for
 ;  a target; until it's on and the module's check passed, the screen is read.
 ;  Reforged and other patches are left alone.
+;  The game loads a copy, native\twc-game.<stamp>.dll (stamp: the build's PE
+;  time stamp), so an update can replace twc-game.dll while the game runs. A
+;  module from layout 13 on is swapped live for a newer one: asked to unload
+;  (it turns everything off and gives it all back), then the new copy goes in
+;  and the switches are pushed to it as usual; nothing is pushed meanwhile.
+;  An older module needs the game restarted.
 ; ============================================================================
 class GameModuleEngine {
     section := "Game"
     tried := Map()              ; game pid -> true once loading was tried (once per game)
     views := Map()              ; game pid -> { map, view } of its shared memory
     wakes := Map()              ; game pid -> its quickcast event (0 if it has none)
+    swapping := 0               ; the game pid whose module is being replaced (0 = none)
+    swapAt := 0
 
     enabled => Integer(Ini(this.section, "module", 0))
     dir => A_ScriptDir "\native"
@@ -25,21 +33,89 @@ class GameModuleEngine {
             this.check()
     }
 
-    ; 1.28 game running and not loaded yet -> load it (the timer calls this)
+    ; a dll's build stamp: its PE header's TimeDateStamp (0 if it can't be read)
+    static FileStamp(path) {
+        try {
+            f := FileOpen(path, "r")
+            f.Pos := 0x3C, pe := f.ReadUInt(), f.Pos := pe + 8, t := f.ReadUInt()
+            f.Close()
+            return t
+        }
+        return 0
+    }
+    ; the copy of twc-game.dll the game loads (made if missing; other copies not in use go)
+    loadCopy() {
+        dll := this.dir "\twc-game.dll"
+        if !(st := GameModuleEngine.FileStamp(dll))
+            return ""
+        copy := this.dir "\twc-game." Format("{:08x}", st) ".dll"
+        loop files this.dir "\twc-game.*.dll"
+            if A_LoopFileFullPath != copy
+                try FileDelete(A_LoopFileFullPath)              ; a game that has it loaded keeps it
+        if !FileExist(copy)
+            try FileCopy(dll, copy)
+            catch
+                return ""
+        return copy
+    }
+
+    ; 1.28 game running and not loaded yet -> load it; a module that's older
+    ; than native\twc-game.dll (layout 13 on) -> swap it (the timer calls this)
     check() {
         if !this.enabled || !(hwnd := WinExist(WarcraftIII)) || !InStr(WC3WindowKey(), "classic")
             return
         pid := WinGetPID(hwnd)
-        if this.tried.Has(pid) || this.view(pid)
+        if this.swapping
+            return this.swapStep(this.swapping)
+        if (v := this.view(pid)) {
+            if NumGet(v, Shm.magic, "uint") = 0x54574331 && NumGet(v, Shm.layout, "uint") >= 13 && NumGet(v, Shm.status, "uint") = 1
+                && !NumGet(v, Shm.unload, "uint") && (st := GameModuleEngine.FileStamp(this.dir "\twc-game.dll")) && NumGet(v, Shm.stamp, "uint") != st {
+                this.swapping := pid, this.swapAt := A_TickCount
+                NumPut("uint", 1, v, Shm.unload)
+                DebugLog("game module: a newer one is here: asking the game's to unload (pid " pid ")")
+            }
+            return
+        }
+        if this.tried.Has(pid)
             return
         this.tried[pid] := true
-        dll := this.dir "\twc-game.dll", exe := this.dir "\twc-inject.exe"
-        if !FileExist(dll) || !FileExist(exe)
+        exe := this.dir "\twc-inject.exe"
+        if !(dll := this.loadCopy()) || !FileExist(exe)
             return DebugLog("game module: native\ files missing")
         try code := RunWait('"' exe '" ' pid ' "' dll '"', this.dir, "Hide")
         catch as e
             return DebugLog("game module: couldn't start twc-inject: " e.Message)
         DebugLog("game module: " (code = 0 ? "loaded into" : code = 2 ? "already in" : "couldn't load into") " the game (pid " pid ", code " code ")")
+    }
+
+    ; while swapping: the old module unloaded (status 3) -> load the new one; it stays (5) or takes too long -> give up
+    swapStep(pid) {
+        v := this.views.Has(pid) ? this.views[pid].view : 0
+        st := v ? NumGet(v, Shm.status, "uint") : 3
+        if st = 3 {
+            this.drop(pid), this.swapping := 0
+            if this.tried.Has(pid)
+                this.tried.Delete(pid)
+            DebugLog("game module: the old one unloaded: loading the new one")
+            return this.check()
+        }
+        if st = 5 || A_TickCount - this.swapAt > 20000 || !WinExist("ahk_pid " pid) {
+            this.swapping := 0
+            DebugLog("game module: the old one stays (status " st "): restart the game for the new one")
+        }
+    }
+    ; let go of a game's shared memory and event (the module's name is free again)
+    drop(pid) {
+        if this.views.Has(pid) {
+            DllCall("UnmapViewOfFile", "ptr", this.views[pid].view)
+            DllCall("CloseHandle", "ptr", this.views[pid].map)
+            this.views.Delete(pid)
+        }
+        if this.wakes.Has(pid) {
+            if this.wakes[pid]
+                DllCall("CloseHandle", "ptr", this.wakes[pid])
+            this.wakes.Delete(pid)
+        }
     }
 
     ; the module's shared memory for a game, mapped once (0 = not loaded).
@@ -60,7 +136,7 @@ class GameModuleEngine {
     }
     ; the running game's view, if the module in it is ours (0 if not)
     live() {
-        if !(hwnd := WinExist(WarcraftIII)) || !(v := this.view(WinGetPID(hwnd)))
+        if this.swapping || !(hwnd := WinExist(WarcraftIII)) || !(v := this.view(WinGetPID(hwnd)))
             return 0
         return NumGet(v, Shm.magic, "uint") = 0x54574331 ? v : 0          ; 'TWC1'
     }

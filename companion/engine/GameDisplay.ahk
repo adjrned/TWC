@@ -16,7 +16,8 @@
 ;  with their own calls): one switch, as WFE looks with its UI hidden: the
 ;  console's black background goes (the world shows through), and the time
 ;  of day, upper menu bar, resource bar and idle workers with it; the
-;  minimap, portrait, command card and inventory stay. Off by default (ini
+;  minimap, portrait, command card and inventory stay; the upper menu bar's
+;  buttons can stay too ([Display] hideMenu 0). Off by default (ini
 ;  [Display] hideUi).
 ; ============================================================================
 class GameDisplayEngine {
@@ -73,6 +74,13 @@ class GameDisplayEngine {
     }
     latencyLabel => this.latencyMs " ms"
     hideUi => Integer(Ini(this.section, "hideUi", 0))
+    hideMenu => Integer(Ini(this.section, "hideMenu", 1))
+    toggleHideMenu() {
+        SetIni(this.hideMenu ? 0 : 1, this.section, "hideMenu")
+        this.push()
+    }
+    menuLabel => this.hideMenu ? "Menu buttons: hidden" : "Menu buttons: shown"
+    hideMask => this.hideMenu ? GameDisplayEngine.HIDE : GameDisplayEngine.HIDE & ~4
     setHideUi(on) {
         SetIni(on ? 1 : 0, this.section, "hideUi")
         this.push()
@@ -91,7 +99,7 @@ class GameDisplayEngine {
         NumPut("uint", this.latency && this.gm.enabled ? 1 : 0, v, Shm.latOn)
         if NumGet(v, Shm.layout, "uint") < 10
             return
-        NumPut("uint", this.hideUi && this.gm.enabled ? GameDisplayEngine.HIDE : 0, v, Shm.uiHide)
+        NumPut("uint", this.hideUi && this.gm.enabled ? this.hideMask : 0, v, Shm.uiHide)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)
