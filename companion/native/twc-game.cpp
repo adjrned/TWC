@@ -2910,9 +2910,11 @@ static DWORD g_ulAt;
 
 static BYTE *LayOf(BYTE *f) { return f && *(BYTE **)(f + 0x44) == f ? f + FRAME_LAYOUT : f; }
 
+static BYTE *V(BYTE *f);
+
 // a frame's own anchors and size, once per game (nullptr: refused)
 static LaySave *UlSave(BYTE *f) {
-    if (!f)
+    if (!V(f))
         return nullptr;
     for (int i = 0; i < g_ulN; i++)
         if (g_ul[i].frame == f)
@@ -2983,11 +2985,20 @@ static void UlClear(BYTE *f) {
     if (s)
         Game(RVA_CLEAR_POINTS, s->lay, { 1 });
 }
-static BYTE *P(BYTE *f, DWORD off) { return f ? *(BYTE **)(f + off) : nullptr; }
+// a game object: its vtable is in the game's data (else nullptr: nothing is written to it)
+static BYTE *V(BYTE *f) {
+    if (!f || (DWORD)(f - (BYTE *)0x10000) > 0x7ffeffff)
+        return nullptr;
+    DWORD vt = *(DWORD *)f;
+    return vt >= (DWORD)g_base && vt - (DWORD)g_base < g_imageSize && !PageIs((void *)vt, EXEC) ? f : nullptr;
+}
+static BYTE *P(BYTE *f, DWORD off) { return f ? V(*(BYTE **)(f + off)) : nullptr; }
 
 // WFE's handlers' widescreen path (aspect index 1), in its order (0x100919a0)
-static void UlApply(BYTE *ui) {
-    BYTE *root = ui + FRAME_LAYOUT;     // the game UI's own layout: the whole screen
+// One function per handler: they're taken one at a time the first time in a
+// game (each logged first, with its frame's class), so a log shows how far
+// it got; each is guarded on its own.
+static void UlMenu(BYTE *ui, BYTE *root) {
     // ISUPPERMENUBAR 0x10087cf0: the 4 children's widths, the bar's anchor
     BYTE *menu = P(ui, 0x3d0);
     UlWidth(P(menu, 0x138), 0.064f);
@@ -2996,10 +3007,14 @@ static void UlApply(BYTE *ui) {
         UlPoint(P(menu, 0x130), 0, menu + FRAME_LAYOUT, 0, 0.100f, 0);
     UlWidth(P(menu, 0x134), 0.064f);
     UlWidth(P(menu, 0x160), 0.064f);
+}
+static void UlResources(BYTE *ui, BYTE *root) {
     // ISRESOURCEBAR 0x10088100: the two fixed anchors (the per-child passes aren't fully read yet)
     BYTE *res = P(ui, 0x3cc);
     UlPoint(P(res, 0x148), 1, root, 1, -0.045f, -0.100f);
     UlPoint(P(res, 0x14c), 1, root, 1, 0.0375f, -0.045f);
+}
+static void UlMinimap(BYTE *ui, BYTE *root) {
     // ISMINIMAP 0x1008a250: two corners, then CMinimap +0xe4 as WFE does
     BYTE *mm = P(ui, 0x3c0);
     if (mm) {
@@ -3009,14 +3024,20 @@ static void UlApply(BYTE *ui) {
         if (IsGameCode((BYTE *)f))
             ((FrameFn)f)(mm, 0);
     }
+}
+static void UlMinimapButtons(BYTE *ui, BYTE *root) {
     // ISMINIMAPBUTTONS 0x1008a580: 5 buttons
     for (DWORD o = 0x408; o <= 0x418; o += 4) {
         UlWidth(P(ui, o), 0.016f);
         UlPoint(P(ui, o), 0, root, 0, 0.2165f, -0.456f);
     }
+}
+static void UlPeons(BYTE *ui, BYTE *root) {
     // ISPEONBAR 0x1008afa0
     UlWidth(P(ui, 0x3e0), 0.0275f);
     UlPoint(P(ui, 0x3e0), 6, root, 6, 0.100f, 0.173f);
+}
+static void UlHeroes(BYTE *ui, BYTE *) {
     // ISHEROBAR 0x1008b2b0: every hero button and its parts
     BYTE *hb = P(ui, 0x3dc);
     if (hb) {
@@ -3032,6 +3053,8 @@ static void UlApply(BYTE *ui) {
                 UlWidth(P(b, 0x194), 0.0125f);
             }
     }
+}
+static void UlCard(BYTE *ui, BYTE *root) {
     // ISABILITYBAR 0x1008c0a0: the command card narrower, its buttons and their small part too, to the top right
     BYTE *card = P(ui, 0x3c8);
     if (card) {
@@ -3043,14 +3066,21 @@ static void UlApply(BYTE *ui) {
                     UlWidth(b, 0.0275f), UlWidth(P(b, 0x194), 0.0125f);
         UlPoint(card, 8, root, 8, -0.107f, 0.003f);
     }
+}
+static void UlPortrait(BYTE *ui, BYTE *) {
     // ISPORTRAIT 0x1008ac30: narrower, anchored to [ui+0x424]'s layout
     if (BYTE *pf = P(ui, UI_PORTRAIT))
         if (BYTE *pa = P(ui, 0x424))
             UlWidth(pf, 0.060f), UlPoint(pf, 6, pa + FRAME_LAYOUT, 6, 0.260f, 0.031f);
+}
+static void UlCover(BYTE *ui, BYTE *) {
     // ISINVENTORYCOVER 0x1008bc80
     BYTE *info0 = P(ui, 0x3c4);
     if (BYTE *cover = P(info0, 0x14c))
         UlWidth(cover, 0.095f), UlClear(cover), UlAbs(cover, 8, 0.550f, 0);
+}
+static void UlItems(BYTE *ui, BYTE *root) {
+    BYTE *info0 = P(ui, 0x3c4);
     // ISITEMBAR 0x1008d790: the inventory around the screen's centre, its slots 2 a row
     if (BYTE *inv = P(info0, 0x150)) {
         UlClear(inv), UlPoint(inv, 4, root, 4, 0.110f, -0.175f);
@@ -3064,16 +3094,56 @@ static void UlApply(BYTE *ui) {
                 UlWidth(P(slot, 0x194), 0.013f);
             }
     }
+}
+static void UlTimeOfDay(BYTE *ui, BYTE *) {
     // ISTIMEOFDAYINDICATOR 0x1008b880
     if (BYTE *tod = P(ui, 0x3f8))
         UlClear(tod), UlAbs(tod, 4, 0.1635f, 0);
+}
+static void UlInfo(BYTE *ui, BYTE *) {
     // ISINFOBAR 0x10090940: the panel's two anchors
     BYTE *info = P(ui, 0x3c4);
     if (BYTE *ip = P(info, 0x130))
         UlClear(ip), UlPoint(ip, 6, LayOf(P(ui, 0x428)), 6, 0.33f, 0);
     UlPoint(P(info, 0x128), 1, LayOf(P(info, 0x130)), 1, 0, -0.0225f);
+}
+static void UlTooltip(BYTE *ui, BYTE *root) {
     // ISTOOLTIP 0x10091730
     UlPoint(P(ui, 0x1cc), 8, root, 0, 0.6875f, -0.435f);
+}
+
+typedef void (*UlFn)(BYTE *, BYTE *);
+static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUPS[] = {
+    { "upper menu bar", UlMenu, 0x3d0 }, { "resource bar", UlResources, 0x3cc }, { "minimap", UlMinimap, 0x3c0 },
+    { "minimap buttons", UlMinimapButtons, 0x408 }, { "idle workers", UlPeons, 0x3e0 }, { "hero buttons", UlHeroes, 0x3dc },
+    { "command card", UlCard, 0x3c8 }, { "portrait", UlPortrait, UI_PORTRAIT }, { "inventory cover", UlCover, 0x3c4 },
+    { "inventory", UlItems, 0x3c4 }, { "time of day", UlTimeOfDay, 0x3f8 }, { "info panel", UlInfo, 0x3c4 }, { "tooltip", UlTooltip, 0x1cc },
+};
+static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
+static int g_ulStage;               // groups taken so far in this game (one more each pass at first)
+static DWORD g_ulGroupBad;          // groups that faulted: left out
+
+// the groups up to `upTo`, each guarded; the newest is logged first
+static void UlApply(BYTE *ui, int upTo, bool logNewest) {
+    BYTE *root = ui + FRAME_LAYOUT;     // the game UI's own layout: the whole screen
+    for (int i = 0; i < upTo && i < UL_GROUP_COUNT; i++) {
+        if (g_ulGroupBad >> i & 1)
+            continue;
+        const UlGroup &g = UL_GROUPS[i];
+        if (logNewest && i == upTo - 1) {
+            char rtti[64] = "";
+            BYTE *f = P(ui, g.frame);
+            if (f)
+                RttiName(*(DWORD *)f, g_imageSize, rtti, sizeof(rtti));
+            Log("UI layout: %s ([ui+%lX] %p, %s)", g.name, g.frame, f, f ? (rtti[0] ? rtti : "no RTTI") : "not there");
+        }
+        __try {
+            g.fn(ui, root);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            g_ulGroupBad |= 1u << i;
+            Log("UI layout: the %s faulted: left out", g.name);
+        }
+    }
 }
 
 // on the game thread
@@ -3081,7 +3151,7 @@ static void UiLayoutPass() {
     bool on = g_shared->ulOn != 0 && !g_ulBad;
     BYTE *ui = (BYTE *)GameUi();
     if (ui != g_ulUi) {
-        g_ulN = 0, g_ulUi = ui, g_ulAt = 0, g_shared->ulCount = 0;    // a new game: its own frames
+        g_ulN = 0, g_ulUi = ui, g_ulAt = 0, g_shared->ulCount = 0, g_ulStage = 0;    // a new game: its own frames
     }
     RECT r = {};
     bool wide = g_gameWnd && GetClientRect(g_gameWnd, &r) && r.bottom > 0 && r.right * 2 >= r.bottom * 3;
@@ -3096,22 +3166,23 @@ static void UiLayoutPass() {
             Log("UI layout: %d frames put back", g_ulN);
             g_ulN = 0, g_shared->ulCount = 0;
         }
+        g_ulStage = 0;
         g_ulAt = 0;                 // laid out at once when it's wanted again
         g_shared->ulState = g_ulBad ? 3 : !g_shared->ulOn ? 0 : 2;
         return;
     }
     DWORD now = GetTickCount();
-    if (g_ulAt && now - g_ulAt < 2000)
+    bool rampUp = g_ulStage < UL_GROUP_COUNT;   // at first one more handler a pass (4 a second)
+    if (!rampUp && g_ulAt && now - g_ulAt < 2000)
         return;
     g_ulAt = now;
+    if (rampUp)
+        g_ulStage++;
     int before = g_ulN;
-    __try {
-        UlApply(ui);
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        g_ulBad = true;
-        Log("UI layout: a frame call faulted: stopping (the frames moved so far are put back next)");
-    }
-    if (g_ulN != before)
+    UlApply(ui, g_ulStage, rampUp);
+    if (g_ulN != before && !rampUp)
+        Log("UI layout: %d more frames laid out", g_ulN - before);
+    if (g_ulStage == UL_GROUP_COUNT && rampUp)
         Log("UI layout: %d frames laid out for a %ldx%ld window", g_ulN, r.right, r.bottom);
     g_shared->ulCount = g_ulN;
     g_shared->ulState = g_ulBad ? 3 : 1;
