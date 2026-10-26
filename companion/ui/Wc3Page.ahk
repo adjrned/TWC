@@ -66,6 +66,8 @@ Wc3Features() {
                 OptSlider(d, "Gold from", (*) => timersHud.cdGold, (v) => timersHud.setCdGold(v), 0, 30, 1),
                 OptNote(d, "Seconds left when the number turns gold (0 = always white). Every number has a black outline."),
                 OptCheck(d, "'Ready' in green for a moment when a cooldown is over", timersHud.cdReady, (v) => timersHud.setCdReady(v)),
+                OptCheck(d, "Hide the game's number badge on the command card", timersHud.cdNoBadge, (v) => timersHud.setCdNoBadge(v)),
+                OptNote(d, "The map's own counters on abilities (and shop stock) go, so ours stand out. Item charges stay."),
                 OptCheck(d, "Minutes as m:ss", timersHud.cdMinutes, (v) => timersHud.setMinutes("cdMinutes", v)),
                 OptNote(d, "1:35 rather than 95 from a minute up. Off by default, as in WFE."),
                 OptDivider(d),

@@ -270,6 +270,13 @@ int main() {
           && !memcmp(g_base + 0x3ea100, "\x8B\x91\xA0\x01\x00\x00", 6) && Rtti(RVA_CHAT_MODE_VT, "CChatMode") && Rtti(RVA_CHAT_DIALOG_VT, "CChatDialog")
           && !memcmp(g_base + 0x3e38f9, "\xB9\x01\x00\x00\x00", 5) && SiteTarget(g_base + 0x3e38fe) == g_base + 0x9cdd0 && SiteTarget(g_base + 0x3e3924) == g_base + 0x404600,
           "the chat opens to the Chat dialog's recipient ([[ui+0x23C]+0xC]+0x1A0, allies when you have one), Ctrl: allies");
+    // the number badge: SetNumber +4034B0 makes it (+3E1CB0: the frame [btn+0x194] at +3E1D1A, the number [btn+0x198] at +3E1E69)
+    // and shows the frame; the region hide takes a shown region ([r+0x7C] bit 1) out of its frame [r+0x74]
+    static const BYTE BG_FRAME[] = { 0x89, 0x86, 0x94, 0x01, 0, 0 }, BG_NUM[] = { 0x89, 0xBE, 0x98, 0x01, 0, 0 }, RH[] = { 0xF6, 0x46, 0x7C, 0x01 };
+    CHECK(SiteTarget(g_base + 0x4034e1) == g_base + 0x3e1cb0 && !memcmp(g_base + 0x3e1d1a, BG_FRAME, 6) && !memcmp(g_base + 0x3e1e69, BG_NUM, 6)
+          && *(DWORD *)(g_base + 0x4034f1) == (DWORD)(g_base + 0xa702a0) && !strcmp((const char *)g_base + 0xa702a0, "%d") && !memcmp(g_base + 0x141ce3, RH, 4)
+          && !memcmp(g_base + 0x141cec, "\x8B\x4E\x74", 3) && BTN_BADGE == 0x194 && REGION_FRAME == 0x74 && REGION_SHOWN == 0x7c,
+          "the command button's number badge [+0x194] ('%%d' into [+0x198]); the region hide works on [r+0x7C] / [r+0x74]");
     // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
     CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
           && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");

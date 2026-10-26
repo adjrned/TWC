@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 20
+    DWORD layout;           // 21
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -163,6 +163,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float cdSize;           // companion: their size, times 0.014 (0.75-1.5; 0 = 1)
     float cdGold;           // companion: gold from this many seconds left down (0 = always white)
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
+    // layout 21
+    DWORD cdNoBadge;        // companion: 1 = hide the game's number badge on command card buttons (maps' counters) while cooldowns are drawn
 };
 #pragma pack(pop)
 
@@ -1902,8 +1904,67 @@ static void TimerFramesDraw(BYTE *ui) {
 
 static volatile bool g_itReading;   // the game thread reads the timers (the worker leaves them)
 
+// The game's number badge on command card buttons (cdNoBadge): maps use it for counters of
+// their own (TWRPG: a number counting down on abilities), which sits over our cooldowns. The
+// button keeps it at [btn+0x194], a simple frame made the first time a number is set
+// (+0x3e1cb0, from +0x4034b0 SetNumber: '%d' into the font string [btn+0x198] and the frame
+// shown; +0x403540 shows / hides it). Its regions (the badge texture and the number) are
+// hidden here with the region hide +0x141ce0, which takes a region out of its frame's drawing
+// ([r+0x7c] bit 1, frame [r+0x74]); showing the frame again (SetNumber) doesn't put them back,
+// nothing in the button code shows them, so a pass only finds new ones. Inventory buttons are
+// left (item charges). Shown again with +0x141e80 when turned off; forgotten with the game UI.
+static const DWORD BTN_BADGE = 0x194, FRAME_REGIONS = 0xd8, REGION_FRAME = 0x74, REGION_SHOWN = 0x7c;
+static BYTE *g_badgeRegions[48];
+static int g_badgeN;
+static bool g_badgeBad;
+static void BadgesPass(BYTE *ui, bool on) {
+    if (g_badgeBad)
+        return;
+    __try {
+        if (!on || !ui) {
+            for (int i = 0; i < g_badgeN; i++)
+                ((FrameFn)(g_base + RVA_REGION_SHOW))(g_badgeRegions[i], 0);
+            if (g_badgeN)
+                Log("badges: the game's number badges shown again (%d regions)", g_badgeN);
+            g_badgeN = 0;
+            return;
+        }
+        BYTE *card = *(BYTE **)(ui + 0x3c8);
+        int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
+        if (rows <= 0 || cols <= 0 || rows > 3 || cols > 4)
+            return;
+        int before = g_badgeN;
+        for (int i = 0; i < rows * 4; i++) {
+            if (i % 4 >= cols)
+                continue;
+            BYTE *b = GridButton(card, i / 4, i % 4), *ov;
+            if (!b || *(DWORD *)b != (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE) || !(ov = V(*(BYTE **)(b + BTN_BADGE))))
+                continue;
+            int k = 0;
+            for (BYTE *l = *(BYTE **)(ov + FRAME_REGIONS); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && k < 8; l = *(BYTE **)(l + 4), k++) {
+                BYTE *r = V(*(BYTE **)(l + 8));
+                if (!r || *(BYTE **)(r + REGION_FRAME) != ov || !(*(DWORD *)(r + REGION_SHOWN) & 1))
+                    continue;
+                ((FrameFn)(g_base + RVA_REGION_HIDE))(r, 0);
+                bool known = false;
+                for (int j = 0; j < g_badgeN && !known; j++)
+                    known = g_badgeRegions[j] == r;
+                if (!known && g_badgeN < 48)
+                    g_badgeRegions[g_badgeN++] = r;
+            }
+        }
+        static bool logged;
+        if (!logged && g_badgeN > before)
+            logged = true, Log("badges: the game's number badge hidden on the command card (%d regions, the first %p of its frame %p)", g_badgeN, g_badgeRegions[0], *(BYTE **)(g_badgeRegions[0] + REGION_FRAME));
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_badgeBad = true;
+        Log("badges: hiding the game's number badge faulted: left to the game");
+    }
+}
+
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
+    BadgesPass(ui, (g_shared->itOn & 1) && g_shared->cdNoBadge);
     if (!g_shared->itOn) {
         g_itReading = false;
         __try {
@@ -2312,6 +2373,7 @@ static void FramesForget(BYTE *newUi) {
     ZeroMemory(g_tCd, sizeof(g_tCd));
     ZeroMemory(g_tBuff, sizeof(g_tBuff));
     ZeroMemory(g_tItem, sizeof(g_tItem));
+    g_badgeN = 0;                   // the badges' regions went with the game UI
     g_textPoolN = g_textHideN = 0;
     for (BarExtra &e : g_bx)
         if (e.bar && e.text)
@@ -5194,7 +5256,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 20;
+        g_shared->layout = 21;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

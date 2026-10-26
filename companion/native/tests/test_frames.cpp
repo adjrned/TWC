@@ -40,7 +40,12 @@ static void __fastcall FakeSetAbs(BYTE *lay, int, int, float x, float y, int) { 
 static const char *__fastcall FakeSkin(const char *key, int) { return !strcmp(key, "MasterFont") ? "Fonts\\Test.ttf" : nullptr; }
 static void __fastcall FakeTextHide(BYTE *t, int) { hides++; t[0x1e0] = 0; }
 static BYTE barTexts[3][0x20]; static int barTextHides;
-static void __fastcall FakeRegionHide(BYTE *r, int) { if (r >= barTexts[0] && r < barTexts[3]) barTextHides++, r[0x10] = 0; }
+static BYTE badgeRegs[2][0x100]; static int badgeHides, badgeShows;
+static void __fastcall FakeRegionHide(BYTE *r, int) {
+    if (r >= barTexts[0] && r < barTexts[3]) barTextHides++, r[0x10] = 0;
+    if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeHides++, *(DWORD *)(r + 0x7c) &= ~1u;
+}
+static void __fastcall FakeRegionShow(BYTE *r, int) { if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeShows++, *(DWORD *)(r + 0x7c) |= 1; }
 static void __fastcall FakeTextShow(BYTE *t, int) { shows++; t[0x1e0] = 1; }
 static void __fastcall FakeNop(void *, int) {}
 
@@ -75,7 +80,7 @@ int main() {
     Stub(RVA_TEXT_CTOR, FakeTextCtor); Stub(RVA_TEXT_FLAGS, FakeFlags); Stub(RVA_TEXT_SET, FakeSetText);
     Stub(RVA_SET_FONT, FakeSetFont); Stub(RVA_SET_POINT, FakeSetPoint); Stub(RVA_SET_ABS_POINT, FakeSetAbs);
     Stub(RVA_SKIN_LOOKUP, FakeSkin); Stub(RVA_LAYOUT_REFRESH, FakeRefresh); Stub(RVA_BAR_CTOR, FakeBarCtor);
-    Stub(RVA_BAR_LEVEL, FakeBarLevel); Stub(RVA_REGION_HIDE, FakeRegionHide); Stub(RVA_UNIT_HP, FakeState);
+    Stub(RVA_BAR_LEVEL, FakeBarLevel); Stub(RVA_REGION_HIDE, FakeRegionHide); Stub(RVA_REGION_SHOW, FakeRegionShow); Stub(RVA_UNIT_HP, FakeState);
     Stub(RVA_HANDLE_LOOKUP, FakeLookup);
     // vtables: data pages (the code they point to is in the stub area at 0x200000)
     DWORD *tv = (DWORD *)(img + RVA_TEXT_VTABLE), *lv = (DWORD *)(img + RVA_TEXT_LAYOUT_VTABLE), *cv = (DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE);
@@ -155,6 +160,17 @@ int main() {
     sh.cdLeft[5] = 0; sh.cdLeft[11] = 30; TimerFramesDraw(ui); sh.cdLeft[11] = 0; TimerFramesDraw(ui);
     CHECK(g_tCd[11].text[0x1e0] == 0, "no 'Ready' when the seconds vanish from 30 (another unit selected), only when they run out");
     sh.cdGold = 0, sh.cdReady = 0, sh.cdLeft[0] = 2, sh.cdLeft[11] = 75; TimerFramesDraw(ui);
+    // the game's number badge on the command card (a map's counter): its regions hidden while cooldowns are drawn, shown again off
+    static BYTE badge[0x200], links[2][0x10];
+    *(DWORD *)badge = (DWORD)fv, *(BYTE **)(btns[0] + BTN_BADGE) = badge, *(BYTE **)(badge + FRAME_REGIONS) = links[0];
+    *(BYTE **)(links[0] + 4) = links[1], *(BYTE **)(links[0] + 8) = badgeRegs[0], *(BYTE **)(links[1] + 8) = badgeRegs[1];
+    for (BYTE *r : badgeRegs)
+        *(DWORD *)r = (DWORD)fv, *(BYTE **)(r + REGION_FRAME) = badge, *(DWORD *)(r + REGION_SHOWN) = 1;
+    BadgesPass(ui, true); BadgesPass(ui, true);
+    bool hidden = badgeHides == 2 && !(*(DWORD *)(badgeRegs[0] + REGION_SHOWN) & 1) && !(*(DWORD *)(badgeRegs[1] + REGION_SHOWN) & 1);
+    BadgesPass(ui, false);
+    CHECK(hidden && badgeShows == 2 && (*(DWORD *)(badgeRegs[1] + REGION_SHOWN) & 1), "the number badge's two regions hidden once (not again on the next pass), shown again when off");
+    *(BYTE **)(btns[0] + BTN_BADGE) = nullptr;
     sh.itOn = 1; TimerFramesDraw(ui);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tBuff[2].text[0x1e0] == 0, "cooldowns only (bit 1): the buff's seconds hidden");
     sh.itOn = 2; TimerFramesDraw(ui);
