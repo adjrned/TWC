@@ -104,5 +104,17 @@ class Shm {
     static cdGold := 1004
     static cdReady := 1008
     static cdNoBadge := 1012
-    static size := 1016
+    static hrWant := 1016
+    static hrHero := 1020
+    static hrAlive := 1024
+    static hrCount := 1028
+    static hrId := 1032
+    static hrLeft := 1128
+    static hrTotal := 1224
+    static hrFlags := 1320
+    static hrName := 1416
+    static bfSize := 2568
+    static bfGold := 2572
+    static bfOpts := 2576
+    static size := 2580
 }

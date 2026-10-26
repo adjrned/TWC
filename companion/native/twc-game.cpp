@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 21
+    DWORD layout;           // 22
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -165,6 +165,19 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
     // layout 21
     DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons, 4 our cooldown ring around them
+    // layout 22: your hero's buffs, read from the unit itself, whatever is selected (ReadHeroBuffs), and how the buff seconds look
+    DWORD hrWant;           // companion: 1 = read them too (with the other timers: tmWant on as well)
+    DWORD hrHero;           // module: the hero's type id ('Hpal'; 0 = no hero of yours found)
+    DWORD hrAlive;          // module: 1 the hero is alive (its health > 0), 0 dead or none (no alerts then)
+    DWORD hrCount;          // module: buffs below (<= 24), in the unit's own order
+    DWORD hrId[24];         //   the rawcode ([buff+0x34])
+    float hrLeft[24];       //   seconds left (0 = no timer)
+    float hrTotal[24];      //   the full time (0 = unknown)
+    DWORD hrFlags[24];      //   1 a buff, 2 an aura, 4 positive (the game shows its name green), 8 hrName is the game's
+    char hrName[24][48];    //   the game's name for it (its Bufftip, colour codes taken out; UTF-8), "" = none found
+    float bfSize;           // companion: the buff seconds' size, times WFE's 0.013 (0.75-1.5; 0 = 1)
+    float bfGold;           // companion: gold from this many seconds left down (0 = always white)
+    DWORD bfOpts;           // companion, bits: 1 seconds on auras too (WFE's ISDRAWAURADURATION), 2 our countdown ring around the buffs
 };
 #pragma pack(pop)
 
@@ -911,6 +924,20 @@ static float BuffGameTotal(BYTE *b) {
     ran = Finite(ran) ? ran : 0;
     return Finite(t) ? t + ran : 0;
 }
+// a buff's seconds left and full time, as WFE's 0x1007f530: the hero test on the buff's own
+// unit, the times on its source (BuffTimes), whose full time needs a unit of its own
+// (0x10038679, else none: then the game's own total). -> the source
+static BYTE *BuffTimeOf(BYTE *buff, bool aura, float *left, float *total) {
+    BYTE *t = BuffTimes(buff);
+    bool hero = IsHero(AgentOwner(buff));
+    float l = *(int *)(t + BUFF_PAUSED) > 0 ? *(float *)(t + BUFF_PAUSED_LEFT) : TimerValue(t + BUFF_TIMER, 0x18);
+    l = Finite(l) ? l : 0;
+    float f = aura ? TimerValue(t + BUFF_TIMER, 0x10) : AgentOwner(t) ? *(float *)(t + (hero ? BUFF_HERO_DUR : BUFF_DUR)) : 0;
+    if (!Finite(f) || f <= 0 || f < l)
+        f = BuffGameTotal(t);
+    *left = l, *total = Finite(f) ? f : 0;
+    return t;
+}
 static void ReadBuffs(BYTE *ui) {
     BYTE *p = *(BYTE **)(ui + 0x3c4);
     if (!p || !(p = *(BYTE **)(p + 0x130)) || !(p = *(BYTE **)(p + 0x16c)))
@@ -927,17 +954,10 @@ static void ReadBuffs(BYTE *ui) {
             bool aura = VirtualInt(buff, 0x1e8) != 0;
             g_shared->buffFlags[i] = aura ? 3 : 1;
             g_shared->buffId[i] = *(DWORD *)(buff + BUFF_ID);
-            // as WFE's 0x1007f530: the hero test on the buff's own unit, the times on its source,
-            // whose full time needs a unit of its own (0x10038679, else none: then the timer's)
-            BYTE *t = BuffTimes(buff);
-            bool hero = IsHero(AgentOwner(buff));
-            float left = *(int *)(t + 0x48) > 0 ? *(float *)(t + 0xac) : TimerValue(t + 0x84, 0x18);
-            left = Finite(left) ? left : 0;
-            float total = aura ? TimerValue(t + 0x84, 0x10) : AgentOwner(t) ? *(float *)(t + (hero ? BUFF_HERO_DUR : BUFF_DUR)) : 0;
-            if (!Finite(total) || total <= 0 || total < left)
-                total = BuffGameTotal(t);
+            float left, total;
+            BYTE *t = BuffTimeOf(buff, aura, &left, &total);
             g_shared->buffLeft[i] = left;
-            g_shared->buffTotal[i] = Finite(total) ? total : 0;
+            g_shared->buffTotal[i] = total;
             static int logs;
             if (left > 0 && logs < 3)
                 logs++, Log("buffs: '%s' %s, %.1f s of %.1f left%s", IdText(g_shared->buffId[i]).s, aura ? "aura" : "buff", left, g_shared->buffTotal[i], t != buff ? " (its linked buff's)" : "");
@@ -946,7 +966,8 @@ static void ReadBuffs(BYTE *ui) {
     g_shared->tmFlags |= 2;
 }
 
-// both, guarded: a fault keeps what was read before it
+static void ReadHeroBuffs();
+// all of them, guarded: a fault keeps what was read before it
 static void ReadTimersGuarded(BYTE *ui) {
     __try {
         ReadCooldowns(ui);
@@ -960,6 +981,11 @@ static void ReadTimersGuarded(BYTE *ui) {
         ReadItems(ui);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
+    if (g_shared->hrWant)
+        __try {
+            ReadHeroBuffs();
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
 }
 
 // ui: the worker's last g_ui, or the game thread's own when it draws them in the game
@@ -1393,6 +1419,153 @@ static DWORD PlayerColour(BYTE *state, int owner) {
         Log("health bar colours: player %d's colour index is %ld", owner, (LONG)i);
     }
     return i < 12 ? PLAYER_COLOURS[i] : NO_PLAYER_COLOUR;
+}
+
+// -- your hero's buffs, from the unit (buff alerts on 1.28f) -----------------------------
+// Not the buff bar: the unit's own list, as the game's bar fill lists it (+0x6b2460, read by
+// hand; study_buffs2.md "Settled"): the ability chain from the handle pair [unit+0x1dc], each
+// next at [ability+0x24], resolved as +0x8ae90 does (the lookup, alive [x+0x20] == 0, [x+0x54]);
+// a buff when vt+0x1e0 (negative) or vt+0x1e4 (positive) says so (CBuff's own both say 0) and its
+// class tag is 'buff' or 'B...' (the game asks +0x76930, which allocates: all 224 buff classes'
+// tags are those, one 'AItb' item ability aside). Its name: the buff UI table the bar fill uses
+// (+0x3de2dc: [+0xd33150] buckets of 12 bytes, mask [+0xd33158], bucket id & mask, chain from
+// [bucket+8] through [rec + [bucket] + 4] while > 0, key [rec], name rec+0x11c (64 bytes),
+// filled by the game when a buff is first applied, RegisterBuffOnce +0x3fe210), read here.
+// The hero: the selection's active unit [[player+0x34]+0x1e0] when it's a hero of yours
+// (remembered by its handle), else the one remembered, else the first hero of yours in the
+// unit list. All reads; on the game thread with the other timers.
+static const DWORD UNIT_ABILITIES = 0x1dc, ABILITY_NEXT = 0x24, BUFF_UI_BUCKETS = 0xd33150, BUFF_UI_MASK = 0xd33158, BUFF_UI_NAME = 0x11c;
+static const DWORD SEL_PLAYER_SELECTION = 0x34, SEL_ACTIVE = 0x1e0;
+static DWORD g_heroPair[2] = { 0xFFFFFFFF, 0xFFFFFFFF };
+// an agent from its handle pair, as the game's +0x8ae90 (none: both -1, as the game's test)
+static BYTE *PairObject(const DWORD *pair) {
+    if ((pair[0] & pair[1]) == 0xFFFFFFFF)
+        return nullptr;
+    BYTE *x = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
+    return x && !*(DWORD *)(x + HANDLE_DEAD) ? *(BYTE **)(x + HANDLE_OBJ) : nullptr;
+}
+static int LocalPlayer(BYTE **state) {
+    *state = *(BYTE **)(g_base + RVA_PLAYERS);
+    int local = *state ? *(short *)(*state + 0x28) : -1;
+    return local >= 0 && local <= 15 && local < *(int *)(*state + 0x54) ? local : -1;
+}
+static bool MyHero(BYTE *u, int local) { return IsUnit(u) && *(int *)(u + UNIT_OWNER) == local && IsHero(u); }
+static BYTE *FindMyHero() {
+    BYTE *state;
+    int local = LocalPlayer(&state);
+    if (local < 0)
+        return nullptr;
+    BYTE *player = *(BYTE **)(state + 0x58 + 4 * local), *sel = player ? *(BYTE **)(player + SEL_PLAYER_SELECTION) : nullptr;
+    BYTE *u = sel ? *(BYTE **)(sel + SEL_ACTIVE) : nullptr;
+    if (!MyHero(u, local)) {
+        u = PairObject(g_heroPair);
+        if (!MyHero(u, local)) {
+            u = nullptr;
+            BYTE *list = g_base + RVA_UNIT_LIST;
+            DWORD count = *(DWORD *)(list + 4);
+            BYTE **units = *(BYTE ***)(list + 8);
+            for (DWORD i = 0; units && i < count && i < 4096 && !u; i++)
+                if (MyHero(units[i], local))
+                    u = units[i];
+        }
+    }
+    if (u)
+        g_heroPair[0] = *(DWORD *)(u + AGENT_HANDLE), g_heroPair[1] = *(DWORD *)(u + AGENT_HANDLE + 4);
+    return u;
+}
+// a getter that's just "mov eax, imm32; ret" or "xor eax, eax; ret": its value without a call
+static bool ConstGetter(const BYTE *f, DWORD *v) {
+    if (!IsGameCode(f))
+        return false;
+    if (f[0] == 0xB8 && f[5] == 0xC3)
+        return *v = *(const DWORD *)(f + 1), true;
+    if (f[0] == 0x33 && f[1] == 0xC0 && f[2] == 0xC3)
+        return *v = 0, true;
+    return false;
+}
+static DWORD VirtualConst(BYTE *obj, DWORD slot) {
+    DWORD vt = *(DWORD *)obj, v;
+    if (vt < (DWORD)g_base || vt - (DWORD)g_base >= g_imageSize)
+        return 0;
+    return ConstGetter(*(const BYTE **)(vt + slot), &v) ? v : (DWORD)VirtualInt(obj, slot);
+}
+// the game's name for a buff (Bufftip), "|cAARRGGBB" / "|r" taken out, "|n" a space; false: none
+static bool BuffName(DWORD id, char *out, int n) {
+    out[0] = 0;
+    BYTE *buckets = *(BYTE **)(g_base + BUFF_UI_BUCKETS);
+    DWORD mask = *(DWORD *)(g_base + BUFF_UI_MASK);
+    if (!buckets || mask == 0xFFFFFFFF)
+        return false;
+    BYTE *b = buckets + (id & mask) * 12, *rec = *(BYTE **)(b + 8);
+    for (int k = 0; (LONG)(DWORD)rec > 0 && k < 256; k++) {
+        if (*(DWORD *)rec == id) {
+            const char *s = (const char *)(rec + BUFF_UI_NAME);
+            int o = 0;
+            for (int i = 0; i < 64 && s[i] && o < n - 1; i++) {
+                if (s[i] == '|' && (s[i + 1] == 'c' || s[i + 1] == 'C') && i + 9 < 64) {
+                    i += 9;
+                    continue;
+                }
+                if (s[i] == '|' && (s[i + 1] == 'r' || s[i + 1] == 'R' || s[i + 1] == 'n' || s[i + 1] == 'N')) {
+                    if (s[i + 1] == 'n' || s[i + 1] == 'N')
+                        out[o++] = ' ';
+                    i++;
+                    continue;
+                }
+                out[o++] = s[i];
+            }
+            while (o && out[o - 1] == ' ')
+                o--;
+            out[o] = 0;
+            return o > 0;
+        }
+        rec = *(BYTE **)(rec + *(DWORD *)b + 4);
+    }
+    return false;
+}
+static void ReadHeroBuffs() {
+    Shared *s = g_shared;
+    BYTE *u = FindMyHero();
+    DWORD count = 0;
+    s->hrHero = u ? *(DWORD *)(u + 0x30) : 0;
+    float hp = 0;
+    if (u)
+        ((HpFn)(g_base + RVA_UNIT_HP))(u + UNIT_HP, 0, &hp);
+    s->hrAlive = u && hp == hp && hp > 0;     // the unit state +0x81b30 on +0x98, as the health bar colours read it
+    static BYTE *logged;                    // the hero last logged; the first rawcodes seen, logged once each
+    static DWORD seen[8];
+    static int nSeen;
+    if (u && u != logged)
+        logged = u, Log("hero buffs: your hero is '%s' (unit %p)", IdText(s->hrHero).s, u);
+    const DWORD *pair = u ? (DWORD *)(u + UNIT_ABILITIES) : nullptr;
+    for (int k = 0; pair && k < 64 && count < 24; k++) {
+        BYTE *a = PairObject(pair);
+        if (!a || *(DWORD *)a < (DWORD)g_base || *(DWORD *)a - (DWORD)g_base >= g_imageSize)
+            break;
+        pair = (DWORD *)(a + ABILITY_NEXT);
+        DWORD neg = VirtualConst(a, 0x1e0), pos = neg ? 0 : VirtualConst(a, 0x1e4), tag = VirtualConst(a, 0x1c);
+        if (!neg && !pos || tag != 'buff' && (tag >> 24) != 'B')
+            continue;
+        bool aura = VirtualConst(a, 0x1e8) != 0;
+        int i = (int)count++;
+        float left, total;
+        BuffTimeOf(a, aura, &left, &total);
+        s->hrId[i] = *(DWORD *)(a + BUFF_ID), s->hrLeft[i] = left, s->hrTotal[i] = total;
+        bool named = BuffName(s->hrId[i], s->hrName[i], sizeof(s->hrName[i]));
+        s->hrFlags[i] = 1 | (aura ? 2 : 0) | (pos ? 4 : 0) | (named ? 8 : 0);
+        bool known = false;
+        for (int j = 0; j < nSeen; j++)
+            known |= seen[j] == s->hrId[i];
+        if (!known && nSeen < 8)
+            seen[nSeen++] = s->hrId[i], Log("hero buffs: '%s' %s%s, named '%s'%s, %.1f s of %.1f left", IdText(s->hrId[i]).s, pos ? "positive" : "negative",
+                                           aura ? " aura" : "", s->hrName[i], named ? "" : " (not in the game's buff names)", left, total);
+    }
+    for (DWORD i = count; i < 24; i++)
+        s->hrId[i] = s->hrFlags[i] = 0, s->hrLeft[i] = s->hrTotal[i] = 0, s->hrName[i][0] = 0;
+    s->hrCount = count;
+    static bool none;
+    if (!u && !none)
+        none = true, Log("hero buffs: no hero of yours found (selection, unit list)");
 }
 
 // WFE's by-health colour: green over half, then to yellow, then to red
@@ -5283,7 +5456,7 @@ static Shared g_retired;            // what g_shared points at once retired (not
 
 static void SwitchesOff() {
     Shared *s = g_shared;
-    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = 0;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
@@ -5467,7 +5640,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 21;
+        g_shared->layout = 22;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

@@ -284,6 +284,37 @@ class GameModuleEngine {
         return out
     }
 
+    ; -- your hero's buffs (layout 22) --------------------------------------------
+    ; Read from the hero unit itself, whatever is selected, with the other timers
+    ; (so timersWanted must be on too): rawcode, the game's name, times.
+    heroWanted(on) {
+        if (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 22
+            NumPut("uint", on ? 1 : 0, v, Shm.hrWant)
+    }
+    ; -> { hero: its type id ("Hpal", "" = none), alive, buffs: [{ id: "Binf", name, left, total, aura, positive }] }
+    ;    or 0 without a module that reads them (name: the game's, "" if it has none)
+    heroBuffs() {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 22
+            return 0
+        h := NumGet(v, Shm.hrHero, "uint")
+        out := { hero: h ? GameModuleEngine.IdText(h) : "", alive: NumGet(v, Shm.hrAlive, "uint"), buffs: [] }
+        loop Min(24, NumGet(v, Shm.hrCount, "uint")) {
+            o := 4 * (A_Index - 1), f := NumGet(v, Shm.hrFlags + o, "uint")
+            if f & 1
+                out.buffs.Push({ id: GameModuleEngine.IdText(NumGet(v, Shm.hrId + o, "uint")), name: StrGet(v + Shm.hrName + 48 * (A_Index - 1), 47, "UTF-8"),
+                    left: NumGet(v, Shm.hrLeft + o, "float"), total: NumGet(v, Shm.hrTotal + o, "float"), aura: f & 2 ? 1 : 0, positive: f & 4 ? 1 : 0 })
+        }
+        return out
+    }
+    ; a rawcode as it's written ('Binf'; its bytes are the other way round in memory)
+    static IdText(id) {
+        s := ""
+        loop 4
+            if (c := (id >> (8 * (4 - A_Index))) & 0xFF)
+                s .= Chr(c)
+        return s
+    }
+
     ; -- commands on the game's thread (layout 4) ---------------------------------
     ; 1 clear messages, 2 clear chat, 3 multiboard, 4 autocast toggle (arg: the
     ; command card slot 0-11, layout 8). Answered within about a second.

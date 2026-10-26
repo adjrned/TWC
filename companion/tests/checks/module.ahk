@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 21, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 22, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -21,6 +21,11 @@ TwcModuleFill() {
     NumPut("int", 100, v, Shm.latGame), NumPut("int", 250, v, Shm.latGame + 8)
     NumPut("uint", 12, v, Shm.hnCount), NumPut("uint", 5, v, Shm.mbCount), NumPut("float", 6, v, Shm.csGame)
     NumPut("float", 4.5, v, Shm.cdLeft), NumPut("uint", 1, v, Shm.buffCount), NumPut("uint", 1, v, Shm.buffFlags), NumPut("float", 9, v, Shm.buffLeft)
+    ; your hero's buffs (layout 22): Inner Fire 4 s of 12 (positive, the game's name), an aura without a name
+    NumPut("uint", 0x4870616C, v, Shm.hrHero), NumPut("uint", 1, v, Shm.hrAlive), NumPut("uint", 2, v, Shm.hrCount)
+    NumPut("uint", 0x42696E66, v, Shm.hrId), NumPut("float", 4, v, Shm.hrLeft), NumPut("float", 12, v, Shm.hrTotal), NumPut("uint", 1 | 4 | 8, v, Shm.hrFlags)
+    StrPut("Inner Fire", v + Shm.hrName, 48, "UTF-8")
+    NumPut("uint", 0x42484164, v, Shm.hrId + 4), NumPut("uint", 1 | 2 | 4, v, Shm.hrFlags + 4)
 }
 
 TwcModuleRun() {
@@ -30,9 +35,14 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 21 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 21, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 22 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 22, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
+    hb := gameModule.heroBuffs()
+    TwcCheck(hb && hb.hero = "Hpal" && hb.alive && hb.buffs.Length = 2 && hb.buffs[1].id = "Binf" && hb.buffs[1].name = "Inner Fire" && hb.buffs[1].left = 4
+        && hb.buffs[1].positive && !hb.buffs[1].aura && hb.buffs[2].id = "BHad" && hb.buffs[2].aura && hb.buffs[2].name = "", "hero buffs: 'Hpal', Inner Fire 4 s, an aura")
+    gameModule.heroWanted(true), hw1 := NumGet(twcShmBuf, Shm.hrWant, "uint"), gameModule.heroWanted(false)
+    TwcCheck(hw1 = 1 && NumGet(twcShmBuf, Shm.hrWant, "uint") = 0, "heroWanted pushes hrWant")
     TwcCheck(t.cd[1].left = 4.5 && t.buffs.Length = 1 && t.buffs[1].left = 9, "timers: the first cooldown and buff")
     want := Map(
         "bars", [(*) => healthBars.statusText(), "0.0040 high"],

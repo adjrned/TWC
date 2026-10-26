@@ -324,6 +324,26 @@ int main() {
           && !memcmp(g_base + 0x56365a, "\x83\x7F\x48\x00", 4) && !memcmp(g_base + 0x56367e, "\x8B\x87\xA4\x00\x00\x00", 6) && !memcmp(g_base + 0x5636ba, "\x8B\x87\xAC\x00\x00\x00", 6)
           && g_base[0x5636b7] == 0xC2 && *(WORD *)(g_base + 0x5636b8) == 4 && BUFF_RAN == 0xa4 && BUFF_PAUSED_LEFT == 0xac && BUFF_PAUSED == 0x48,
           "a buff's [+0xA4] is the time it ran before a pause (+565540; 0 on a fresh start, +566C70): the game's total adds it (+563650)");
+    // your hero's buffs (ReadHeroBuffs), as the bar fill lists a unit's (+6B2460, called from +3FAA22): the chain from [unit+0x1DC]
+    // (+6B24AE), resolved by +8AE90 (the lookup, alive [x+0x20], [x+0x54]), kept on vt+0x1E0 / +0x1E4, next [+0x24] / [+0x28] (+6B2589);
+    // CBuff's own 0x1E0 / 0x1E4 say 0, its tag 'buff'; the buff UI table read as +3DE2DC .. +3DE310 does (bucket id & mask, 12 bytes,
+    // first [b+8], next [rec + [b] + 4] while > 0), its name 64 bytes at +0x11C (RegisterBuffOnce +3FE27B)
+    DWORD v0 = 1, v1 = 1, v2 = 0;
+    BYTE fakeBuff[4] = {}; *(DWORD *)fakeBuff = (DWORD)(g_base + 0xab55c8);
+    CHECK(SiteTarget(g_base + 0x3faa22) == g_base + 0x6b2460 && !memcmp(g_base + 0x6b24ae, "\x81\xC1\xDC\x01\x00\x00", 6) && SiteTarget(g_base + 0x6b24c5) == g_base + 0x8ae90
+          && !memcmp(g_base + 0x6b24d8, "\xFF\x90\xE0\x01\x00\x00", 6) && !memcmp(g_base + 0x6b24e6, "\xFF\x90\xE4\x01\x00\x00", 6)
+          && !memcmp(g_base + 0x6b2589, "\x8B\x47\x28\x8D\x4F\x24", 6) && SiteTarget(g_base + 0x6b2596) == g_base + 0x8ae90
+          && !memcmp(g_base + 0x8ae90, "\x8B\x51\x04\x8B\x09", 5) && SiteTarget(g_base + 0x8ae95) == g_base + RVA_HANDLE_LOOKUP
+          && !memcmp(g_base + 0x8ae9e, "\x83\x78\x20\x00", 4) && !memcmp(g_base + 0x8aea4, "\x8B\x40\x54", 3)
+          && UNIT_ABILITIES == 0x1dc && ABILITY_NEXT == 0x24 && HANDLE_DEAD == 0x20 && HANDLE_OBJ == 0x54
+          && ConstGetter(*(BYTE **)(g_base + 0xab55c8 + 0x1e0), &v0) && ConstGetter(*(BYTE **)(g_base + 0xab55c8 + 0x1e4), &v1) && !v0 && !v1
+          && VirtualConst(fakeBuff, 0x1c) == 'buff' && ConstGetter(g_base + 0x451060, &v2) && v2 == 1,
+          "a unit's buffs: the chain [unit+0x1DC] / next [+0x24] as +6B2460 walks it; CBuff's +0x1E0 / +0x1E4 0, its tag 'buff', CBuffAura's aura test 1");
+    CHECK(!memcmp(g_base + 0x3de2ea, "\x23\xC3", 2) && !memcmp(g_base + 0x3de2ed, "\x8D\x0C\x40", 3) && !memcmp(g_base + 0x3de2f5, "\x8B\x74\x88\x08", 4)
+          && !memcmp(g_base + 0x3de308, "\x8B\x01\x8B\x74\x30\x04", 6) && !memcmp(g_base + 0x3de30e, "\x85\xF6\x7F\xF2", 4)
+          && *(DWORD *)(g_base + 0x3fe214) == (DWORD)(g_base + BUFF_UI_MASK) && *(DWORD *)(g_base + 0x3fe22a) == (DWORD)(g_base + BUFF_UI_BUCKETS)
+          && !memcmp(g_base + 0x3fe27b, "\x6A\x40", 2) && !memcmp(g_base + 0x3fe27e, "\x8D\x86\x1C\x01\x00\x00", 6) && BUFF_UI_NAME == 0x11c,
+          "the buff UI table: bucket id & mask (12 bytes), the chain [rec + [bucket] + 4] while > 0, the name 64 bytes at +0x11C");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)
