@@ -15,6 +15,7 @@ int main() {
     static BYTE flagsObj[0x100]; BYTE lk[] = { 0xB8, 0,0,0,0, 0xC3 }; *(DWORD *)(lk + 1) = (DWORD)flagsObj; memcpy(img + RVA_HANDLE_LOOKUP, lk, sizeof(lk));
     // hp getter at +0x81b30: mov eax,[esp+4]; mov dword [eax], 25.0f; ret 4
     BYTE hp[] = { 0x8B, 0x44, 0x24, 0x04, 0xC7, 0x00, 0,0,0,0, 0xC2, 0x04, 0x00 }; float h25 = 25; memcpy(hp + 6, &h25, 4); memcpy(img + RVA_UNIT_HP, hp, sizeof(hp));
+    img[RVA_LAYOUT_REFRESH] = 0xC2, img[RVA_LAYOUT_REFRESH + 1] = 4;     // the layout refresh: ret 4
     *(float *)(flagsObj + 0x84) = 100;               // max hp
     *(DWORD *)(flagsObj + 0x78) = 1u << 2;           // the local player is allied with slot 2
     DWORD old; VirtualProtect(img + 0xaad000, 0x1000, PAGE_READONLY, &old);   // the vtable: read-only data
@@ -57,13 +58,32 @@ int main() {
     float sh0 = *(float *)(bars[0] + BAR_HEIGHT);
     *(float *)(bars[0] + BAR_HEIGHT) = 0.004f; update(0);        // the game's own size again: set back in the same update
     CHECK(sh0 == 0.008f && *(float *)(bars[0] + BAR_HEIGHT) == 0.008f, "bar size in the update itself: x2 height (%.4f), and again after the game resets it", *(float *)(bars[0] + BAR_HEIGHT));
+    // the width: only multiplied when the game's bar work +0x3c6700 has just set it, i.e. the
+    // hook returns to +0x3c68ae (after its set-unit call) or +0x3c6915 (after its update call).
+    // Stubs there: push edx; mov eax, [ecx]; call [eax+0x78 / 0x74]; ret
+    static const BYTE SU[] = { 0x52, 0x8B, 0x01, 0xFF, 0x50, 0x78, 0xC3 }, UP[] = { 0x52, 0x8B, 0x01, 0xFF, 0x50, 0x74, 0xC3 };
+    memcpy(img + RVA_BAR_WIDTH_SET_UNIT_RET - 6, SU, sizeof(SU)), memcpy(img + RVA_BAR_WIDTH_UPDATE_RET - 6, UP, sizeof(UP));
+    typedef void(__fastcall *WorkFn)(void *, void *);
+    g_shared->hbWidth = 1.5f;
+    update(0);
+    float w0 = *(float *)(bars[0] + BAR_WIDTH);
+    ((WorkFn)(img + RVA_BAR_WIDTH_UPDATE_RET - 6))(bars[0], units[0]);
+    float w1 = *(float *)(bars[0] + BAR_WIDTH);
+    update(0);
+    float w2 = *(float *)(bars[0] + BAR_WIDTH);
+    *(float *)(bars[0] + BAR_WIDTH) = 0.02f;                       // the game's bar work: this unit's own width
+    ((WorkFn)(img + RVA_BAR_WIDTH_SET_UNIT_RET - 6))(bars[0], units[0]);
+    float w3 = *(float *)(bars[0] + BAR_WIDTH);
+    CHECK(w0 == 0.03f && fabsf(w1 - 0.045f) < 1e-6f && w2 == w1 && fabsf(w3 - 0.03f) < 1e-6f,
+          "width x1.5 only after the game's bar work set it: other update %.4f, from +3C6912 %.4f, other again %.4f (no compounding), from +3C68AB with the unit's 0.02 %.4f", w0, w1, w2, w3);
+    g_shared->hbWidth = 1;
     g_shared->hbOn = 0;
     g_shared->hcMode = 1; update(2);
     CHECK(argb(2) == 0xFFFF7F00, "by health 25%%: %08lX", argb(2));
     g_shared->hcOn = 0; FollowColours();
     CHECK(vt[STATBAR_UPDATE / 4] == (DWORD)(img + 0x100000) && g_shared->hcState == 0, "off: the entry is the game's again, state %lu", g_shared->hcState);
     DWORD before = cnt[1]; update(0);
-    CHECK(cnt[0] == 14 && cnt[1] == before, "after off: the game's update runs (%lu), no colour redraw", cnt[0]);
+    CHECK(cnt[0] == 18 && cnt[1] == before, "after off: the game's update runs (%lu), no colour redraw", cnt[0]);
     Verdict();
     return g_fails;
 }

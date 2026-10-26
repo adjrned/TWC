@@ -181,6 +181,42 @@ int main() {
     char who[64];
     CHECK(FnStart(RVA_UNIT_BAR_WORK) && SiteTarget(g_base + 0x688f65) == g_base + RVA_UNIT_BAR_WORK && !ForeignDetour(RVA_UNIT_BAR_WORK, who, sizeof(who))
           && !ForeignDetour(RVA_PROJECTION, who, sizeof(who)), "the unit bar work +3C6700 (called from +688F65) and the projection: the game's own bytes");
+    // health bars: the unit list and the extra unit as the game reads them (count [+0xd328f4], units [+0xd328f8];
+    // [+0xd32900] is the unit itself: mov eax, [it]; ... call [vt+0x1c] on it; inc [eax+4])
+    CHECK(g_base[0x3c6542] == 0xA1 && *(DWORD *)(g_base + 0x3c6543) == (DWORD)(g_base + RVA_UNIT_LIST + 4)
+          && g_base[0x3c6558] == 0x8B && g_base[0x3c6559] == 0x0D && *(DWORD *)(g_base + 0x3c655a) == (DWORD)(g_base + RVA_UNIT_LIST + 8)
+          && g_base[0x3c64ff] == 0xA1 && *(DWORD *)(g_base + 0x3c6500) == (DWORD)(g_base + RVA_UNIT_EXTRA)
+          && !memcmp(g_base + 0x3c6520, "\x8B\x4D\xEC\x8B\xD8\x8B\x11\xFF\x52\x1C", 10) && !memcmp(g_base + 0x3c653f, "\xFF\x40\x04", 3),
+          "the unit list (count +4, units +8) and the extra unit [+D32900] read as the game does (+3C64FF..+3C655A: one deref)");
+    // the bar work +0x3c6700 sets each health bar's width for its unit (+0x13fce0 writes +0x58) right before the
+    // bar's set-unit (+0x3c68ab) or update (+0x3c6912): the two return addresses the width multiplier waits for
+    static const BYTE SETW[] = { 0xF3, 0x0F, 0x11, 0x41, 0x58 };
+    CHECK(!memcmp(g_base + 0x13fce8, SETW, 5) && SiteTarget(g_base + 0x3c689e) == g_base + 0x13fce0 && SiteTarget(g_base + 0x3c6905) == g_base + 0x13fce0
+          && !memcmp(g_base + RVA_BAR_WIDTH_SET_UNIT_RET - 3, "\xFF\x50\x78", 3) && !memcmp(g_base + RVA_BAR_WIDTH_UPDATE_RET - 3, "\xFF\x50\x74", 3)
+          && *(DWORD *)(g_base + 0x3c67f5) == 0x3b83126f && SiteTarget(g_base + 0x3c67f9) == g_base + 0x13fb40,
+          "the bar work sets the width (+3C689E / +3C6905) before calling +0x78 / +0x74 (returns +%06lX / +%06lX); the height 0.004 only once (+3C67F9)",
+          RVA_BAR_WIDTH_SET_UNIT_RET, RVA_BAR_WIDTH_UPDATE_RET);
+    // the stack sizes of every game function the module calls or wraps directly (not through GameCall): each pops what the module's type says
+    // (the last ret of each, found with capstone: every ret in each function pops the same; rets.py in %TEMP%\twc-re)
+    static const struct { DWORD rva, ret; WORD pops; } RETS[] = {
+        { RVA_GET_UI, 0x3a0bf5, 0 }, { RVA_MSG_CLEAR, 0x14480a, 0 }, { RVA_LAYOUT_REFRESH, 0x13fa22, 4 }, { RVA_UNIT_HP, 0x81b97, 4 },
+        { RVA_HANDLE_LOOKUP, 0x7e0fd, 0 }, { RVA_OPTIONS, 0x6bf93, 0 }, { RVA_OPT_SET, 0x6dc1b, 8 }, { RVA_OPT_APPLY, 0x6b459, 4 },
+        { RVA_OPT_GET, 0x6c0b1, 8 }, { RVA_REGION_HIDE, 0x141cfa, 0 }, { RVA_REGION_SHOW, 0x141e9a, 0 }, { RVA_CONTROL_CLICK, 0x1407ea, 4 },
+        { RVA_PROJECTION, 0x1555f1, 16 }, { RVA_MENU_ANIM, 0x33a8ae, 16 }, { RVA_PORTRAIT_UPDATE, 0x40d834, 0 }, { RVA_DAMAGE_UPDATE, 0x409056, 16 },
+        { RVA_ARMOR_UPDATE, 0x4089ca, 12 }, { 0x4101c0, 0x41038f, 4 }, { 0x40ecb0, 0x40eeb1, 4 }, { 0x13b940, 0x13b9b1, 0 }, { 0x13c390, 0x13c429, 0 },
+        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 } };
+    bad = 0;
+    for (const auto &q : RETS) {
+        const BYTE *r = g_base + q.ret;
+        bool ok = FnStart(q.rva) && (q.pops ? r[0] == 0xC2 && *(const WORD *)(r + 1) == q.pops : r[0] == 0xC3);
+        if (!ok)
+            bad++, printf("      +%06lX: its ret at +%06lX isn't one that pops %u\n", q.rva, q.ret, q.pops);
+    }
+    CHECK(!bad, "every directly called / wrapped game function pops what the module's signature says (%d)", (int)(sizeof(RETS) / sizeof(RETS[0])));
+    CHECK(*(DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_UPDATE) == (DWORD)(g_base + 0x40ecb0) && *(DWORD *)(g_base + RVA_STATBAR_VTABLE + BAR_HIDE) == (DWORD)(g_base + 0x13b940)
+          && *(DWORD *)(g_base + RVA_STATBAR_VTABLE + BAR_SHOW) == (DWORD)(g_base + 0x13c390) && *(DWORD *)(g_base + RVA_STATBAR_VTABLE + BAR_DTOR) == (DWORD)(g_base + 0x3dcb80)
+          && *(DWORD *)(g_base + RVA_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && *(DWORD *)(g_base + RVA_COMMAND_BUTTON_VTABLE + BTN_CLICK) == (DWORD)(g_base + 0x13d7f0),
+          "the bar's update / hide / show / dtor, a texture's +0x24 and a command button's +0x6C are those functions");
     // health bars: the set-unit entry +0x78 repaints the bar itself or through the update +0x74
     DWORD su = *(DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_SET_UNIT);
     CHECK(su == (DWORD)(g_base + 0x4101c0) && FnStart(0x4101c0) && g_base[0x410254] == 0xFF && g_base[0x410255] == 0x52 && g_base[0x410256] == STATBAR_UPDATE,

@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <intrin.h>
 #include <initializer_list>
 
 #pragma comment(lib, "version.lib")
@@ -666,19 +667,20 @@ static const BYTE *Virtual(const void *obj, DWORD slot) {
     return SafeGetter((const BYTE *)fn) ? (const BYTE *)fn : nullptr;
 }
 
-typedef void(__fastcall *TimeFn)(const void *, int, float *);
-typedef int(__fastcall *IntFn)(const void *, int);
-
+static DWORD GameCall(const void *fn, DWORD rc, DWORD rd, int n, const DWORD *a);
 static bool Finite(float f) { return f == f && f >= 0 && f < 1e6f; }
 
-// timer->getter(&out): vtable +0x18 the time left, +0x10 the full time (WFE's use)
+// timer->getter(&out): vtable +0x18 the time left, +0x10 the full time (WFE's use). Through
+// GameCall: whichever class the object is, esp is right after it (the 1.28f ones pop 4,
+// the buff's int getters none; the decoder doesn't look at a ret's size)
 static float TimerValue(const void *timer, DWORD slot) {
     const BYTE *f = Virtual(timer, slot);
     if (!f)
         return 0;
     float out = 0;
     __try {
-        ((TimeFn)f)(timer, 0, &out);
+        DWORD a = (DWORD)&out;
+        GameCall(f, (DWORD)timer, 0, 1, &a);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return 0;
     }
@@ -689,7 +691,7 @@ static int VirtualInt(const void *obj, DWORD slot) {
     if (!f)
         return 0;
     __try {
-        return ((IntFn)f)(obj, 0);
+        return (int)GameCall(f, (DWORD)obj, 0, 0, nullptr);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return 0;
     }
@@ -1027,15 +1029,23 @@ static int RunOnGameThread(DWORD cmd) {
 }
 
 // -- health bar size ----------------------------------------------------------------
-// Like WFE's HEALTHBAR HEIGHT (study_healthbar.md), without its hooks or vtable
-// swaps: a few times a second, on the game thread, every unit in the game's
-// list gets its health bar ([[unit+0x50]+0xc], a CStatBar: vtable +0xaad83c,
-// kind [+0x138] = 5) set to the wanted height (+0x5c) and width (+0x58,
-// experimental: WFE never writes it), then the game's layout refresh. The
-// game's own size is taken from the first bar seen and logged, and put back
-// when the feature is turned off.
+// Like WFE's HEALTHBAR HEIGHT (study_healthbar.md): every unit's health bar
+// ([[unit+0x50]+0xc], a CStatBar: vtable +0xaad83c, kind [+0x138] = 5) gets the
+// wanted height (+0x5c), in the bar's own update (BarAfter) and a few times a
+// second on the game thread (BarsPass), then the game's layout refresh. The
+// game makes every health bar 0.004 high (+0x3c67f9) and never changes it, so
+// the height is absolute: the game's own, from the first bar seen (logged),
+// times the setting, put back when turned off. The width isn't: the game's
+// per-unit bar work +0x3c6700 sets each bar's width for its unit type on every
+// pass ([type+0x54] x SelectionCircle / ScaleFactor x 0.0005, +0x3c68ce..
+// +0x3c6905, through +0x13fce0) right before it calls the bar's set-unit +0x78
+// (+0x3c68ab) or update +0x74 (+0x3c6912). So the width is multiplied only in
+// those two calls (their return address), and the game's next pass puts its
+// own back by itself (WFE never writes the width: experimental here).
 static const DWORD RVA_UNIT_LIST = 0xd328f0;    // { ?, count +4, units +8 } (WFE's [0x1013a990])
-static const DWORD RVA_UNIT_EXTRA = 0xd32900;   // one more unit, [it] (WFE's [0x1013cfac])
+static const DWORD RVA_UNIT_EXTRA = 0xd32900;   // one more unit: [it] is the unit itself (the game: mov eax, [it]; inc [eax+4], +0x3c64ff;
+                                                // WFE's slot holds this address, so its [[slot]] is our [it], 0x100414a1)
+static const DWORD RVA_BAR_WIDTH_SET_UNIT_RET = 0x3c68ae, RVA_BAR_WIDTH_UPDATE_RET = 0x3c6915;   // right after +0x3c6700's two calls
 static const DWORD RVA_STATBAR_VTABLE = 0xaad83c;
 static const DWORD RVA_LAYOUT_REFRESH = 0x13f9b0;   // __fastcall(frame, 0, int 0) (WFE's [0x1013a21c])
 static const DWORD UNIT_BARS = 0x50, BARS_HEALTH = 0xc, BAR_KIND = 0x138, BAR_WIDTH = 0x58, BAR_HEIGHT = 0x5c;
@@ -1054,23 +1064,24 @@ static bool BarSizeWanted(float *h, float *w) {
     *h = *h >= 0.25f && *h <= 4 ? *h : 1, *w = *w >= 0.25f && *w <= 4 ? *w : 1;
     return true;
 }
-static int SizeThisBar(BYTE *bar, float h, float w);
-// one unit's health bar: 1 resized, 0 nothing to do or not a health bar
-static int SizeBar(BYTE *unit, float h, float w) {
+static int SizeThisBar(BYTE *bar, float h, float w, bool freshWidth);
+// one unit's health bar (its height: the width is only set in the game's bar work): 1 resized, 0 nothing to do or not a health bar
+static int SizeBar(BYTE *unit, float h) {
     __try {
         BYTE *bars = *(BYTE **)(unit + UNIT_BARS), *bar;
         if (!bars || !(bar = *(BYTE **)(bars + BARS_HEALTH)))
             return 0;
-        return SizeThisBar(bar, h, w);
+        return SizeThisBar(bar, h, 1, false);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return -1;
     }
 }
 // RenderEdge_Widescreen (the user's mix file) hooks the game's per-unit bar work +0x3c6700
 // (called once, from +0x688f65) and divides each unit's health bar width by 0.75 * W/H after
-// it: two features writing the width fought (the bars resized all the time). With such a
-// hook there, the width is left to it and only the height is ours.
+// it, so after our multiplier in the bar's update: the two add up. Only the mana bars, sized
+// in that same update, would come out wider than their health bar: they're divided too.
 static bool ForeignDetour(DWORD rva, char *who, size_t n);
+static float WideK();
 static const DWORD RVA_UNIT_BAR_WORK = 0x3c6700;
 static bool OtherBarWidth() {
     static int r;                   // 1 ours, 2 another mod's
@@ -1078,12 +1089,13 @@ static bool OtherBarWidth() {
         char who[64];
         r = ForeignDetour(RVA_UNIT_BAR_WORK, who, sizeof(who)) ? 2 : 1;
         if (r == 2)
-            Log("health bars: +%06lX is hooked by %s (it sets the bars' width for the window): only their height is ours", RVA_UNIT_BAR_WORK, who);
+            Log("health bars: +%06lX is hooked by %s (it narrows the bars for the window after the game's): the mana bars follow it", RVA_UNIT_BAR_WORK, who);
     }
     return r == 2;
 }
-// a health bar: 1 resized, 0 nothing to do or not a health bar
-static int SizeThisBar(BYTE *bar, float h, float w) {
+// a health bar: 1 resized, 0 nothing to do or not a health bar. freshWidth: the game has just
+// set the width for the bar's unit (the bar's update called from +0x3c6700): it's multiplied
+static int SizeThisBar(BYTE *bar, float h, float w, bool freshWidth) {
     __try {
         if (*(DWORD *)bar != (DWORD)(g_base + RVA_STATBAR_VTABLE) || *(DWORD *)(bar + BAR_KIND) != 5)
             return 0;
@@ -1093,9 +1105,9 @@ static int SizeThisBar(BYTE *bar, float h, float w) {
                 return 0;
             g_defH = *ph, g_defW = *pw;
             g_shared->hbDefHeight = g_defH, g_shared->hbDefWidth = g_defW;
-            Log("health bars: the game's own size is %.5f high, %.5f wide (UI units)", g_defH, g_defW);
+            Log("health bars: the game's own size is %.5f high, %.5f wide (UI units; the width is the first unit's)", g_defH, g_defW);
         }
-        float th = g_defH * h, tw = OtherBarWidth() ? *pw : g_defW * w;   // the width is another mod's then
+        float th = g_defH * h, tw = freshWidth && SaneSize(*pw) ? *pw * w : *pw;
         if (fabsf(*ph - th) < 1e-6f && fabsf(*pw - tw) < 1e-6f)
             return 0;
         *ph = th, *pw = tw;
@@ -1126,12 +1138,12 @@ static void BarsPass() {
         BYTE **units = *(BYTE ***)(list + 8);
         for (DWORD i = 0; units && i < count && i < 4096; i++)
             if (units[i]) {
-                int r = SizeBar(units[i], h, w);
+                int r = SizeBar(units[i], h);
                 n += r > 0, faults += r < 0;
             }
         BYTE *extra = *(BYTE **)(g_base + RVA_UNIT_EXTRA);
-        if (extra && *(BYTE **)extra) {
-            int r = SizeBar(*(BYTE **)extra, h, w);
+        if (extra) {
+            int r = SizeBar(extra, h);
             n += r > 0, faults += r < 0;
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -1283,34 +1295,36 @@ static void ColourBar(BYTE *bar, BYTE *unit) {
 }
 
 static bool g_extrasHooked;                 // mana bars / health numbers: the bar's hide, show and dtor entries are ours too
+static bool g_barFresh;                     // BarExtras runs in the game's bar work: the bar's width isn't another mod's yet
 static void BarExtras(BYTE *bar, BYTE *unit);
 
-static int SizeBar(BYTE *unit, float h, float w);
-static int SizeThisBar(BYTE *bar, float h, float w);
+static int SizeThisBar(BYTE *bar, float h, float w, bool freshWidth);
 static bool BarSizeWanted(float *h, float *w);
 
 // after the game repainted a bar (its update +0x74, or its set-unit +0x78, which repaints
 // without the update): the colour, the size (WFE writes the height here too, every update,
-// so the game's own size never shows in between), the extras
-static void BarAfter(BYTE *bar, BYTE *unit) {
+// so the game's own size never shows in between; the width only when the game's bar work
+// has just set it, ret = where the hook returns to), the extras
+static void BarAfter(BYTE *bar, BYTE *unit, const void *ret) {
     if (g_shared->hcOn)
         ColourBar(bar, unit);
     float h, w;
+    bool fresh = ret == g_base + RVA_BAR_WIDTH_SET_UNIT_RET || ret == g_base + RVA_BAR_WIDTH_UPDATE_RET;
     if (BarSizeWanted(&h, &w))
-        SizeThisBar(bar, h, w);
+        SizeThisBar(bar, h, w, fresh);
     if (g_extrasHooked)
-        BarExtras(bar, unit);
+        g_barFresh = fresh, BarExtras(bar, unit), g_barFresh = false;
 }
 static void __fastcall BarUpdateHook(void *bar, int edx, void *unit) {
     g_gameBarUpdate(bar, edx, unit);        // the game's own update, untouched
-    BarAfter((BYTE *)bar, (BYTE *)unit);
+    BarAfter((BYTE *)bar, (BYTE *)unit, _ReturnAddress());
 }
 // vt+0x78 (+0x4101c0): sets the bar's unit and repaints it, through the update or on its own
 // (WFE replaces it, 0x100793e0; here the game's runs first)
 static BarUpdateFn g_gameBarSetUnit;
 static void __fastcall BarSetUnitHook(void *bar, int edx, void *unit) {
     g_gameBarSetUnit(bar, edx, unit);
-    BarAfter((BYTE *)bar, (BYTE *)unit);
+    BarAfter((BYTE *)bar, (BYTE *)unit, _ReturnAddress());
 }
 
 // point the shared vtable entries (update +0x74, set-unit +0x78) at the hooks (on) or back at the game's (off)
@@ -1409,7 +1423,7 @@ enum { PT_TOP = 1, PT_CENTER = 4, PT_BOTTOM = 7 };
 // A game function with ecx, edx and n stack arguments. esp is put back after
 // the call whoever cleans the stack, so the call can't unbalance it. Floats
 // go as their bits (F).
-static DWORD __declspec(noinline) GameCall(const void *fn, DWORD rc, DWORD rd, int n, const DWORD *a) {
+static __declspec(noinline) DWORD GameCall(const void *fn, DWORD rc, DWORD rd, int n, const DWORD *a) {
     DWORD r;
     __asm {
         mov esi, esp
@@ -1697,12 +1711,16 @@ static volatile bool g_itReading;   // the game thread reads the timers (the wor
 static void TimerFramesPass(BYTE *ui) {
     if (!g_shared->itOn) {
         g_itReading = false;
-        for (TimerSlot &s : g_tCd)
-            SlotHide(s);
-        for (TimerSlot &s : g_tBuff)
-            SlotHide(s);
-        for (TimerSlot &s : g_tItem)
-            SlotHide(s);
+        __try {
+            for (TimerSlot &s : g_tCd)
+                SlotHide(s);
+            for (TimerSlot &s : g_tBuff)
+                SlotHide(s);
+            for (TimerSlot &s : g_tItem)
+                SlotHide(s);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            FramesStop("timers in the game: hiding them faulted");
+        }
         g_shared->itState = 0;
         return;
     }
@@ -1816,7 +1834,11 @@ static float ManaHeight(float h) {
 }
 static float ManaWidth(float w) {
     float k = g_shared->mbWidth;
-    return w * (k >= 0.25f && k <= 2 ? k : 1);
+    w *= k >= 0.25f && k <= 2 ? k : 1;
+    // in the game's bar work, with RenderEdge's hook on it: the health bar gets narrowed by
+    // 0.75 * W/H after this, so the mana bar is now (OtherBarWidth)
+    float r = g_barFresh && OtherBarWidth() ? WideK() : 0;
+    return r > 0.25f && r < 4 ? w / r : w;
 }
 
 // a mana bar for a health bar, as WFE's 0x10078400 makes its inner one (0 = refused / failed)
