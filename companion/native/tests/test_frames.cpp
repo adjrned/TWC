@@ -193,26 +193,57 @@ int main() {
         ((DWORD *)(img + RVA_SIMPLEFRAME_VT))[0x68 / 4] = StubAt(0x610000, FakeNop);
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0.04f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.04f;
         sh.itOn = 1, sh.cdNoBadge = 4, sh.cdLeft[0] = 5, sh.cdTotal[0] = 10;
-        RingsPass(ui, true);
+        RingsPass(ui, true, false);
         Ring *r = g_ringN ? &g_rings[0] : nullptr;
         auto on = [&](int k) { return (*(DWORD *)(r->side[k] + 0x7c) & 1) != 0; };
         bool half = r && r->btn == btns[0] && ringFrames == 1 && ringTextures == 4 && allPoints == 1 && ringPath && strstr(ringPath, "TeamColor04")
             && on(0) && on(1) && !on(2) && !on(3) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.04f) < 1e-5f && fabsf(*(float *)(r->side[1] + LAYOUT_HEIGHT) - 0.04f) < 1e-5f
             && fabsf(*(float *)(r->side[0] + LAYOUT_HEIGHT) - RING_THICK) < 1e-6f;
-        sh.cdLeft[0] = 1.25f; RingsPass(ui, true);
+        sh.cdLeft[0] = 1.25f; RingsPass(ui, true, false);
         bool eighth = r && on(0) && !on(1) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.02f) < 1e-5f;
-        sh.cdLeft[0] = 0; RingsPass(ui, true);
+        sh.cdLeft[0] = 0; RingsPass(ui, true, false);
         bool gone = r && !on(0) && !on(1) && g_ringN == 1;
-        sh.cdLeft[0] = 9; RingsPass(ui, true);
+        sh.cdLeft[0] = 9; RingsPass(ui, true, false);
         bool again = r && on(3) && ringFrames == 1;
-        RingsPass(ui, false);
+        RingsPass(ui, false, false);
         CHECK(half && eighth && gone && again && !on(3), "the ring: half left = top and right sides; an eighth = half the top; over: hidden; the same frame next time; off: hidden");
+        // on a buff (bfOpts 2): a ring of its own round the buff's icon, its time left of its full time; none on an aura
+        *(float *)(bbtns[2] + LAYOUT_WIDTH) = 0.03f, *(float *)(bbtns[2] + LAYOUT_HEIGHT) = 0.03f;
+        sh.itOn = 2, sh.bfOpts = BF_RING, sh.buffFlags[2] = 1, sh.buffLeft[2] = 1, sh.buffTotal[2] = 4;
+        RingsPass(ui, false, true);
+        Ring *br = nullptr;
+        for (int i = 0; i < g_ringN; i++)
+            if (g_rings[i].btn == bbtns[2])
+                br = &g_rings[i];
+        auto bon = [&](int k) { return br && (*(DWORD *)(br->side[k] + 0x7c) & 1) != 0; };
+        bool quarter = br && g_ringN == 2 && bon(0) && !bon(1) && fabsf(*(float *)(br->side[0] + LAYOUT_WIDTH) - 0.03f) < 1e-5f && !on(0);
+        sh.buffFlags[2] = 3; RingsPass(ui, false, true);
+        bool auraNone = !bon(0);
+        sh.bfOpts = BF_RING | BF_AURAS; RingsPass(ui, false, true);
+        bool auraAsked = bon(0);
+        sh.buffFlags[2] = 1; RingsPass(ui, false, false);
+        CHECK(quarter && auraNone && auraAsked && !bon(0), "a buff's ring: a quarter left = the top side; an aura: none (with 'auras too': one); off: hidden");
+        sh.bfOpts = 0, sh.buffLeft[2] = 0.46f, sh.buffTotal[2] = 0, sh.itOn = 1;
         sh.cdNoBadge = 0, sh.cdLeft[0] = 2;
     }
     sh.itOn = 1; TimerFramesDraw(ui);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tBuff[2].text[0x1e0] == 0, "cooldowns only (bit 1): the buff's seconds hidden");
     sh.itOn = 2; TimerFramesDraw(ui);
     CHECK(g_tCd[0].text[0x1e0] == 0 && g_tBuff[2].text[0x1e0] == 1, "buffs only (bit 2): the cooldowns hidden");
+    // the buffs' look (layout 22): gold near the end (bfGold), a size (bfSize), auras' seconds only with bfOpts 1
+    sh.bfGold = 3, sh.buffLeft[2] = 2.4f; TimerFramesDraw(ui);
+    bool bgold = *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == GOLD;
+    sh.buffLeft[2] = 6; TimerFramesDraw(ui);
+    bool bwhite = *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == WHITE;
+    sh.cdGold = 30, sh.bfGold = 0, sh.buffLeft[2] = 2.4f; TimerFramesDraw(ui);
+    CHECK(bgold && bwhite && *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == WHITE, "a buff gold at 2.4 s with 'gold from 3 s', white at 6 s; the cooldowns' setting leaves buffs alone");
+    sh.cdGold = 0, sh.bfSize = 1.5f; TimerFramesDraw(ui);
+    CHECK(fabsf(lastFontH - 0.0195f) < 1e-5f && fabsf(g_tBuff[2].height - 0.0195f) < 1e-5f, "buff size x1.5: %.4f (0.013 x 1.5)", lastFontH);
+    sh.bfSize = 0, sh.buffFlags[2] = 3; TimerFramesDraw(ui);
+    bool auraOff = g_tBuff[2].text[0x1e0] == 0;
+    sh.bfOpts = BF_AURAS; TimerFramesDraw(ui);
+    CHECK(auraOff && g_tBuff[2].text[0x1e0] == 1 && !strcmp(g_tBuff[2].shown, "3"), "an aura: no seconds (WFE's default), with 'auras too' its %s", g_tBuff[2].shown);
+    sh.bfOpts = 0, sh.buffFlags[2] = 1, sh.buffLeft[2] = 0.46f; TimerFramesDraw(ui);
     sh.buffFlags[2] = 3; TimerFramesDraw(ui);
     CHECK(g_tBuff[2].text[0x1e0] == 0, "an aura: no seconds (WFE's ISDRAWAURADURATION is off)");
     sh.buffFlags[2] = 1, sh.itOn = 3; TimerFramesDraw(ui);

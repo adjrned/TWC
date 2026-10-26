@@ -112,6 +112,13 @@ TwcModuleRun() {
     ok := timersHud.setCdSize("1.25") && timersHud.setCdGold(99) && !timersHud.setCdSize("abc")
     TwcCheck(ok && NumGet(v, Shm.cdSize, "float") = 1.25 && NumGet(v, Shm.cdGold, "float") = 30, "size typed 1.25, gold 99 -> 30, not a number refused")
     timersHud.setCdSize(1), timersHud.setCdGold(5)
+    ; the buffs' look (layout 22): x1, gold from 5 s, no aura seconds, no ring by default; their own values
+    TwcCheck(NumGet(v, Shm.bfSize, "float") = 1 && NumGet(v, Shm.bfGold, "float") = 5 && NumGet(v, Shm.bfOpts, "uint") = 0, "pushed the buffs' look: x1, gold from 5 s, auras / ring off")
+    ok := timersHud.setBfSize("0.8") && timersHud.setBfGold(2) && !timersHud.setBfGold("x")
+    timersHud.setBfAuras(1), timersHud.setBfRing(1)
+    TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 3 && NumGet(v, Shm.cdSize, "float") = 1,
+        "buffs x0.8, gold from 2 s, auras (1) and ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
+    timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0), timersHud.setBfRing(0)
     ; the ping key: only on a button the module says is under the cursor
     TwcCheck(!timersHud.pingActive(), "ping key: not in the game window, so the click is the game's")
     rows := ModuleCheckRows(ModuleCheckLog())

@@ -59,6 +59,17 @@ static bool Rtti(DWORD rva, const char *want) {
     return ok;
 }
 
+// does the vtable's class have base at offset 0 (its RTTI class hierarchy: base class descriptors, mdisp +8)
+static bool BaseAt0(DWORD vt, const char *base) {
+    DWORD col = *(DWORD *)(g_base + vt - 4), chd = *(DWORD *)(col + 16), n = *(DWORD *)(chd + 8), arr = *(DWORD *)(chd + 12);
+    for (DWORD i = 0; i < n && i < 16; i++) {
+        DWORD bcd = ((DWORD *)arr)[i], td = *(DWORD *)bcd;
+        if (strstr((const char *)td + 8, base) && *(int *)(bcd + 8) == 0)
+            return true;
+    }
+    return false;
+}
+
 int main() {
     strcpy_s(g_logPath, "gamedll.log"); DeleteFileA("gamedll.log");
     static Shared sh; g_shared = &sh;
@@ -344,6 +355,9 @@ int main() {
           && *(DWORD *)(g_base + 0x3fe214) == (DWORD)(g_base + BUFF_UI_MASK) && *(DWORD *)(g_base + 0x3fe22a) == (DWORD)(g_base + BUFF_UI_BUCKETS)
           && !memcmp(g_base + 0x3fe27b, "\x6A\x40", 2) && !memcmp(g_base + 0x3fe27e, "\x8D\x86\x1C\x01\x00\x00", 6) && BUFF_UI_NAME == 0x11c,
           "the buff UI table: bucket id & mask (12 bytes), the chain [rec + [bucket] + 4] while > 0, the name 64 bytes at +0x11C");
+    // the buff ring: a buff indicator is a simple frame / layout frame at +0 as a command button is (the ring's frame, SetAllPoints, +0x58 / +0x5C)
+    CHECK(BaseAt0(0xaad470, "CSimpleFrame@") && BaseAt0(0xaad470, "CLayoutFrame@") && BaseAt0(RVA_COMMAND_BUTTON_VTABLE, "CSimpleFrame@") && BaseAt0(RVA_COMMAND_BUTTON_VTABLE, "CLayoutFrame@"),
+          "CBuffIndicator and CCommandButton both start with CSimpleFrame / CLayoutFrame (RTTI): the ring fits a buff's icon as a button's");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)

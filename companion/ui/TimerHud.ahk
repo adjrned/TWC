@@ -13,7 +13,9 @@
 ;  the cursor and writes the line, the companion types it with Enter: the
 ;  game opens the chat to the Chat dialog's recipient, allies unless changed).
 ;  WFE's DISPLAYMINUTES per switch (layout 19, [Timers] cdMinutes /
-;  buffMinutes, off as WFE's: 95 rather than 1:35).
+;  buffMinutes, off as WFE's: 95 rather than 1:35). The buffs' own size and
+;  gold from, seconds on auras (WFE's ISDRAWAURADURATION, off) and our ring
+;  around them (layout 22, [Timers] bfSize / bfGold / bfAuras / bfRing).
 ;  No screen reading on 1.28f: that's for Reforged (planned, see the WC3
 ;  page's Timers tab). The buff bar setup here (two presses in game, per
 ;  window size: [Timers] buff_<window>) is the buff alerts' (BuffWatch).
@@ -95,6 +97,16 @@ class TimerHud {
     cdRing => Integer(Ini(this.section, "cdRing", 0))
     setCdRing(on) => (SetIni(on ? 1 : 0, this.section, "cdRing"), this.pushGame())
     setCdNoSweep(on) => (SetIni(on ? 1 : 0, this.section, "cdNoSweep"), this.pushGame())
+    ; how the buff seconds look (layout 22): their own size and gold from, seconds on auras too
+    ; (WFE's ISDRAWAURADURATION, off), our countdown ring around the buffs (bfOpts bits 1, 2)
+    bfSize => Min(Max(Float(Ini(this.section, "bfSize", 1)), 0.75), 1.5)
+    bfGold => Min(Max(Integer(Ini(this.section, "bfGold", 5)), 0), 30)
+    bfAuras => Integer(Ini(this.section, "bfAuras", 0))
+    bfRing => Integer(Ini(this.section, "bfRing", 0))
+    setBfSize(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0.75), 1.5), 2), this.section, "bfSize"), this.pushGame(), true)
+    setBfGold(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0), 30)), this.section, "bfGold"), this.pushGame(), true)
+    setBfAuras(on) => (SetIni(on ? 1 : 0, this.section, "bfAuras"), this.pushGame())
+    setBfRing(on) => (SetIni(on ? 1 : 0, this.section, "bfRing"), this.pushGame())
     cdMinutes => Integer(Ini(this.section, "cdMinutes", 0))
     buffMinutes => Integer(Ini(this.section, "buffMinutes", 0))
     setMinutes(key, on) {
@@ -125,6 +137,8 @@ class TimerHud {
             NumPut("float", this.cdSize, v, Shm.cdSize), NumPut("float", this.cdGold, v, Shm.cdGold), NumPut("uint", this.cdReady ? 1 : 0, v, Shm.cdReady)
         if v && NumGet(v, Shm.layout, "uint") >= 21
             NumPut("uint", (this.cdNoBadge ? 1 : 0) | (this.cdNoSweep ? 2 : 0) | (this.cdRing ? 4 : 0), v, Shm.cdNoBadge)
+        if v && NumGet(v, Shm.layout, "uint") >= 22
+            NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", (this.bfAuras ? 1 : 0) | (this.bfRing ? 2 : 0), v, Shm.bfOpts)
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {

@@ -1943,7 +1943,8 @@ static void TextAt(BYTE *t, int pt, float x, float y) {
 // full black outline, eight copies around it (the game's text frames have only one
 // drop shadow, and its font flags no outline); cooldowns can be bigger (cdSize), turn
 // gold near the end (cdGold) and say "Ready" in green for half a second when over
-// (cdReady). The copies go first, so the text is drawn over them.
+// (cdReady); the buffs' seconds the same with bfSize / bfGold, and on auras with bfOpts 1.
+// The copies go first, so the text is drawn over them.
 static const int OUTLINES = 8;
 struct TimerSlot { BYTE *btn, *text, *out[OUTLINES]; char shown[12]; float height; DWORD colour; float last; DWORD readyUntil; };
 static TimerSlot g_tCd[12], g_tBuff[16], g_tItem[6];
@@ -1951,8 +1952,16 @@ static BYTE *g_framesUi;            // the game UI the text frames belong to (an
 static const float OUTLINE = 0.0008f, CD_TEXT = 0.014f, BUFF_TEXT_Y = -0.0115f, READY_SIZE = 0.75f;
 static const DWORD WHITE = 0xFFFFFFFF, BLACK = 0xFF000000, GOLD = 0xFFFFCC00, GREEN = 0xFF40FF40;
 static const float OUT_DIR[OUTLINES][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 0.7f, 0.7f }, { -0.7f, 0.7f }, { 0.7f, -0.7f }, { -0.7f, -0.7f } };
-// WFE's [BUFFUI] TEXTSIZE 0.013, 0.0105 with its Upgraded UI on and the buff bar not raised
-static float BuffTextHeight() { return g_shared->ulOn && !(g_shared->ulOn & 2) ? 0.0105f : 0.013f; }
+// WFE's [BUFFUI] TEXTSIZE 0.013, 0.0105 with its Upgraded UI on and the buff bar not raised;
+// times bfSize (0.75-1.5), as the cooldowns' cdSize
+static float BuffTextHeight() {
+    float k = g_shared->bfSize;
+    return (g_shared->ulOn && !(g_shared->ulOn & 2) ? 0.0105f : 0.013f) * (k >= 0.75f && k <= 1.5f ? k : 1);
+}
+// a buff bar slot gets its seconds: a buff, or an aura with bfOpts bit 1 (WFE's ISDRAWAURADURATION:
+// its 0x1007f774..0x1007f785 takes the aura switch for auras, the duration switch for the rest)
+static const DWORD BF_AURAS = 1, BF_RING = 2;
+static bool BuffSlotDrawn(DWORD flags) { return (flags & 1) && (!(flags & 2) || (g_shared->bfOpts & BF_AURAS)); }
 // the cooldowns' size (cdSize, 0.75-1.5 times 0.014)
 static float CdTextHeight() {
     float k = g_shared->cdSize;
@@ -2030,7 +2039,8 @@ static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
         TextAnchor(s.text, btn, pt, pt, 0, y);
         s.btn = btn;
     }
-    DWORD c = ready ? GREEN : !buff && g_shared->cdGold > 0 && left <= g_shared->cdGold ? GOLD : WHITE;
+    float gold = buff ? g_shared->bfGold : g_shared->cdGold;
+    DWORD c = ready ? GREEN : gold > 0 && left <= gold ? GOLD : WHITE;
     if (c != s.colour)
         TextColour(s.text, c), s.colour = c;
     if (strcmp(t, s.shown)) {
@@ -2081,7 +2091,7 @@ static void TimerFramesDraw(BYTE *ui) {
     rows = bar ? *(int *)(bar + 0x124) : 0, cols = bar ? *(int *)(bar + 0x128) : 0;
     bool barOk = rows > 0 && cols > 0 && rows * cols <= 16;
     for (int i = 0; i < 16; i++)
-        SlotDraw(ui, g_tBuff[i], buffs && barOk && i < rows * cols && (g_shared->buffFlags[i] & 3) == 1 ? BuffButton(bar, cols, i) : nullptr, g_shared->buffLeft[i], true);
+        SlotDraw(ui, g_tBuff[i], buffs && barOk && i < rows * cols && BuffSlotDrawn(g_shared->buffFlags[i]) ? BuffButton(bar, cols, i) : nullptr, g_shared->buffLeft[i], true);
     for (int i = 0; i < 6; i++) {
         BYTE *b = ItemButton(ui, i);
         SlotDraw(ui, g_tItem[i], cds && b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE) ? b : nullptr, g_shared->itemLeft[i], false);
@@ -2229,13 +2239,17 @@ static void SweepsPass(BYTE *ui, bool on) {
 // layout at +0), its length set with the width / height setters (+0x13fce0 / +0x13fb40, the
 // layout's +0x58 / +0x5c), hidden with the region hide when empty. Made once per button, kept
 // with the game UI (the game frees them with it), hidden when the button isn't cooling down.
+// Buffs too (bfOpts bit 2): the buff bar's indicators are simple frames as the buttons are
+// (CBuffIndicator: CSimpleFrame / CLayoutFrame at +0, RTTI), so the same ring goes round a buff's
+// icon with its time left of its full time (the slots that get seconds: no auras unless asked).
 static const DWORD RVA_SIMPLEFRAME_CTOR = 0x13ae90, RVA_SIMPLEFRAME_VT = 0xa7cc14, RVA_TEXTURE_CTOR = 0x141fe0, RING_TEXTURE_VT = 0xa7d13c;
 static const DWORD RVA_SET_TEXTURE = 0x1435f0, RVA_SET_ALL_POINTS = 0x13fad0, RVA_SET_WIDTH = 0x13fce0, RVA_SET_HEIGHT = 0x13fb40;
 static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c;
 static const char RING_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
 static const float RING_THICK = 0.0018f, BUTTON_SIZE = 0.039f;
 struct Ring { BYTE *btn, *frame, *side[4]; float len[4]; bool shown[4]; };
-static Ring g_rings[18];
+static const int RINGS = 12 + 6 + 8;       // the command card, the inventory, the buff bar
+static Ring g_rings[RINGS];
 static int g_ringN;
 static bool g_ringBad;
 
@@ -2243,7 +2257,7 @@ static Ring *RingFor(BYTE *btn) {
     for (int i = 0; i < g_ringN; i++)
         if (g_rings[i].btn == btn)
             return &g_rings[i];
-    if (g_ringN >= 18 || g_framesBad)
+    if (g_ringN >= RINGS || g_framesBad)
         return nullptr;
     Ring *r = &g_rings[g_ringN];
     ZeroMemory(r, sizeof(*r));
@@ -2302,34 +2316,55 @@ static void RingDraw(BYTE *btn, float left, float total) {
             Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, r->side[k]), r->shown[k] = show;
     }
 }
-static void RingsPass(BYTE *ui, bool on) {
+// the buff bar (its grid as ReadBuffs reads it) and its buttons, or 0
+static BYTE *BuffBarOf(BYTE *ui, int *rows, int *cols) {
+    BYTE *bar = ui ? *(BYTE **)(ui + 0x3c4) : nullptr;
+    if (bar && (bar = *(BYTE **)(bar + 0x130)))
+        bar = *(BYTE **)(bar + 0x16c);
+    *rows = bar ? *(int *)(bar + 0x124) : 0, *cols = bar ? *(int *)(bar + 0x128) : 0;
+    return bar && *rows > 0 && *cols > 0 && *rows * *cols <= 16 ? bar : nullptr;
+}
+// cd: rings on cooling down command card / inventory buttons; bf: on the buffs that get seconds
+static void RingsPass(BYTE *ui, bool cd, bool bf) {
     if (g_ringBad || g_framesBad)
         return;
     __try {
         BYTE *card = ui ? *(BYTE **)(ui + 0x3c8) : nullptr;
         int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
         bool cardOk = rows > 0 && cols > 0 && rows <= 3 && cols <= 4;
-        // every ring hidden first unless its button is still cooling down (another unit selected: other buttons)
+        int brows, bcols;
+        BYTE *bar = bf ? BuffBarOf(ui, &brows, &bcols) : nullptr;
+        // every ring hidden first unless its button is still counting (another unit selected: other buttons)
         for (int i = 0; i < g_ringN; i++) {
             bool still = false;
-            for (int s = 0; on && cardOk && s < 12 && !still; s++)
+            for (int s = 0; cd && cardOk && s < 12 && !still; s++)
                 still = s / 4 < rows && s % 4 < cols && GridButton(card, s / 4, s % 4) == g_rings[i].btn && g_shared->cdLeft[s] > 0;
-            for (int s = 0; on && s < 6 && !still; s++)
+            for (int s = 0; cd && s < 6 && !still; s++)
                 still = ItemButton(ui, s) == g_rings[i].btn && g_shared->itemLeft[s] > 0;
+            for (int s = 0; bar && s < brows * bcols && !still; s++)
+                still = GridButton(bar, s / bcols, s % bcols) == g_rings[i].btn && BuffSlotDrawn(g_shared->buffFlags[s]) && g_shared->buffLeft[s] > 0;
             if (!still)
                 RingDraw(g_rings[i].btn, 0, 0);
         }
-        if (!on || !ui)
+        if (!ui)
             return;
-        for (int s = 0; cardOk && s < 12; s++)
+        for (int s = 0; cd && cardOk && s < 12; s++)
             if (s / 4 < rows && s % 4 < cols)
                 if (BYTE *b = CardButton(card, s))
                     RingDraw(b, g_shared->cdLeft[s], g_shared->cdTotal[s]);
-        for (int s = 0; s < 6; s++) {
+        for (int s = 0; cd && s < 6; s++) {
             BYTE *b = ItemButton(ui, s);
             if (b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE))
                 RingDraw(b, g_shared->itemLeft[s], g_shared->itemTotal[s]);
         }
+        for (int s = 0; bar && s < brows * bcols; s++)
+            if (BuffSlotDrawn(g_shared->buffFlags[s]))
+                if (BYTE *b = BuffButton(bar, bcols, s)) {
+                    RingDraw(b, g_shared->buffLeft[s], g_shared->buffTotal[s]);
+                    static bool logged;
+                    if (!logged && g_shared->buffLeft[s] > 0 && g_shared->buffTotal[s] > 0)
+                        logged = true, Log("buff ring: the first one on the buff icon %p (vtable +%06lX), %.1f s of %.1f", b, *(DWORD *)b - (DWORD)g_base, g_shared->buffLeft[s], g_shared->buffTotal[s]);
+                }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_ringBad = true;
         Log("cooldown ring: a frame call faulted: no more rings");
@@ -2342,7 +2377,7 @@ static void TimerFramesPass(BYTE *ui) {
     SweepsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 2));
     if (!g_shared->itOn) {
         g_itReading = false;
-        RingsPass(ui, false);
+        RingsPass(ui, false, false);
         __try {
             for (TimerSlot &s : g_tCd)
                 SlotHide(s);
@@ -2374,7 +2409,7 @@ static void TimerFramesPass(BYTE *ui) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         FramesStop("timers in the game: a frame call faulted");
     }
-    RingsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 4));
+    RingsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 4), (g_shared->itOn & 2) && (g_shared->bfOpts & BF_RING));
     static bool logged;
     if (!logged && g_shared->frCount)
         logged = true, Log("timers in the game: drawing (%lu text frames)", g_shared->frCount);
