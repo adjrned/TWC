@@ -26,7 +26,7 @@ static DWORD WINAPI Tester(void *) {
     CHECK(!UnloadStep(GetTickCount()) && g_shared->status == 4 && !g_shared->wsOn && !g_shared->hbOn && !g_shared->hnOn && !g_shared->uiHide,
           "asked: status 4, every switch off");
     bool freed = RunUnload(5000);
-    CHECK(freed && g_unloadNow && g_finalDone == 1, "then given back on the game thread, and the worker frees it");
+    CHECK(freed && g_unloadNow && g_finalDone == 1, "then given back on the game thread, and the worker retires it");
     CHECK(SiteTarget(site) == img + RVA_PROJECTION && (WNDPROC)GetWindowLongPtrA(wnd, GWLP_WNDPROC) == DefWindowProcA,
           "the projection call and the window are the game's again");
     // again, with someone subclassing after us: it stays

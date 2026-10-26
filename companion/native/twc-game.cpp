@@ -2594,8 +2594,10 @@ static void LatencyRestore(bool quiet) {
         BYTE *f = g_base + RVA_LATENCY[i];
         if (!memcmp(f, ours, 6))
             WriteCode(f, g_latOrig[i], 6);
-        else if (!quiet)
+        else if (!quiet) {
             Log("latency: the %s getter was changed by someone else: left as it is", LATENCY_NAME[i]);
+            LogBytes("  its bytes now", f);
+        }
     }
     if (!quiet)
         Log("latency: the game's own again");
@@ -3479,10 +3481,15 @@ static void Click(DWORD flags) {
 // so the passes take their frames and changes away (2 s), then the game thread
 // gives back what's left (vtable entries, rewritten calls, code bytes, the
 // window) and the worker waits a second more, so no game call can still be in
-// our code, before FreeLibraryAndExitThread. If someone subclassed the window
-// after us, ours can't be taken out: the module stays (status 5).
+// our code. Then it retires: the module stays mapped (nothing of ours left
+// running), its shared memory and names go so the new copy can make its own.
+// Not FreeLibrary: the game may keep a pointer into our data (the names our
+// frames were allocated under), and the first live swap crashed the game
+// right after freeing. If someone subclassed the window after us, ours
+// can't be taken out: the module stays (status 5).
 static volatile LONG g_finalDone;   // 1 given back, 2 can't unload
-static bool g_unloadNow;            // Worker frees the module when Run returns
+static bool g_unloadNow;            // Worker retires the module when Run returns
+static Shared g_retired;            // what g_shared points at once retired (nothing reads it)
 
 static void SwitchesOff() {
     Shared *s = g_shared;
@@ -3538,7 +3545,7 @@ static bool UnloadStep(DWORD now) {
         return false;
     }
     Sleep(1000);                    // any game call still in our code returns
-    Log("unloading: everything given back; unloading the module");
+    Log("unloading: everything given back");
     asked = posted = false;
     g_unloadNow = true;
     return true;
@@ -3633,8 +3640,20 @@ static DWORD WINAPI Worker(void *) {
     if (ok)
         g_getUi = (GetUiFn)(g_base + RVA_GET_UI);
     Run();
-    if (g_unloadNow)
-        FreeLibraryAndExitThread(g_self, 0);
+    if (g_unloadNow) {
+        // Retired, not freed: the game may still hold pointers into this
+        // module's data (e.g. the names given to Storm with our frames), so
+        // the code and data stay mapped; only the names go, for the new one
+        Log("unloading: retired (stays mapped, idle); the shared memory is the next module's");
+        g_shared->status = 3;
+        Shared *sh = g_shared;
+        g_shared = &g_retired;
+        UnmapViewOfFile(sh);
+        if (g_map)
+            CloseHandle(g_map), g_map = nullptr;
+        if (g_wake)
+            CloseHandle(g_wake), g_wake = nullptr;
+    }
     return 0;
 }
 
