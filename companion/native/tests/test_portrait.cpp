@@ -4,7 +4,7 @@
 // turning it off gives the entry back.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, prOn) == 780 && sizeof(Shared) == 816, "layout 14");
+static_assert(offsetof(Shared, prOn) == 780 && sizeof(Shared) >= 816, "layout 14");
 
 static BYTE *img;
 static void Stub(DWORD rva, const void *fn) {

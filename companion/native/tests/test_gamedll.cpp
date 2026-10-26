@@ -150,6 +150,25 @@ int main() {
     for (const auto &s : MODELS)
         bad += !(g_base[s.at] == 0x89 && g_base[s.at + 1] == 0x87 && *(DWORD *)(g_base + s.at + 2) == s.off);
     CHECK(!bad && FnStart(0x3e1930) && FnStart(0x3e1a60), "the autocast / cooldown / hero point models are at +0x1a8 / +0x19c / +0x1d8");
+
+    // detailed tooltips: the icon updates are the vtables' +0x6C, the tooltip setter, the getters and fields the lines use
+    CHECK(*(DWORD *)(g_base + RVA_DAMAGE_ICON_VT + ICON_UPDATE) == (DWORD)(g_base + RVA_DAMAGE_UPDATE) && *(DWORD *)(g_base + RVA_ARMOR_ICON_VT + ICON_UPDATE) == (DWORD)(g_base + RVA_ARMOR_UPDATE)
+          && Rtti(RVA_DAMAGE_ICON_VT, "CInfoPanelIconDamage") & Rtti(RVA_ARMOR_ICON_VT, "CInfoPanelIconArmor"), "the damage / armor icon updates are their vtables' entry +0x6C");
+    CHECK(FnStart(RVA_DAMAGE_UPDATE) && FnStart(RVA_ARMOR_UPDATE) && FnStart(RVA_TOOLTIP_SET) && FnStart(RVA_ATTACK_COOLDOWN) && FnStart(RVA_MOVE_SPEED),
+          "the updates, the tooltip setter, the cooldown and move speed getters are function starts");
+    static const struct { DWORD at; const char *bytes; int n; } PIN[] = {
+        { 0x408a1e, "\x8B\xBF\xE8\x01\x00\x00", 6 },          // atk = [unit+0x1e8]
+        { 0x408a2c, "\x83\xBC\x9F\x88\x00\x00\x00\x00", 8 },  // [atk+i*4+0x88] != 0
+        { 0x4cc9f9, "\x8D\x14\xF5\x54\x01\x00\x00", 7 },      // the cooldown getter's [atk+i*8+0x154] entries
+        { 0x4087dd, "\x8B\xBF\xEC\x01\x00\x00", 6 },          // mv = [unit+0x1ec]
+        { 0x409029, "\x8B\x8E\x28\x01\x00\x00", 6 }, { 0x40899d, "\x8B\x8E\x28\x01\x00\x00", 6 } };   // the tooltip frame [icon+0x128]   // the tooltip frame [icon+0x128]
+    bad = 0;
+    for (const auto &q : PIN)
+        if (memcmp(g_base + q.at, q.bytes, q.n))
+            bad++, printf("      +%06lX: not the bytes expected\n", q.at);
+    CHECK(!bad && SiteTarget(g_base + 0x408ad3) == g_base + RVA_ATTACK_COOLDOWN && SiteTarget(g_base + 0x40884d) == g_base + RVA_MOVE_SPEED
+          && SiteTarget(g_base + 0x409041) == g_base + RVA_TOOLTIP_SET && SiteTarget(g_base + 0x4089b5) == g_base + RVA_TOOLTIP_SET,
+          "the fields and calls the lines rely on are where the game's own updates have them");
     Verdict();
     return g_fails;
 }

@@ -40,7 +40,7 @@ Wc3PlannedText(tab, ver) {
         "castingreforged", "",
         "timers128", "",
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
-        "display128", "Planned: detailed tooltips.",
+        "display128", "Nothing more planned yet.",
         "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: the game start countdown when you host.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
@@ -124,6 +124,9 @@ Wc3Features() {
         { tab: "display", title: "Widescreen UI", badge: "1.28f",
             desc: "As WFE's Upgraded UI: on a wide window the UI isn't stretched.",
             on: (*) => gameDisplay.wideUi, set: (v) => gameDisplay.setWideUi(v), status: (*) => gameDisplay.wideUiStatus() },
+        { tab: "display", title: "Detailed tooltips", badge: "1.28f",
+            desc: "As WFE's: the damage and armor tooltips show attack speed, range, move speed.",
+            on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus() },
         { tab: "display", title: "FPS unlock", badge: "1.28f",
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),

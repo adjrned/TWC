@@ -100,6 +100,21 @@ class GameDisplayEngine {
             : st = 2 ? "On · waits for a game in a wide window (4:3 is left as it is)"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
+    ; detailed tooltips (the info panel's damage / armor icons): layout 15, ini [Display] tooltips
+    tooltips => Integer(Ini(this.section, "tooltips", 0))
+    setTooltips(on) {
+        SetIni(on ? 1 : 0, this.section, "tooltips")
+        this.push()
+    }
+    tooltipsStatus() {
+        if !this.tooltips
+            return "Off"
+        if (w := this.moduleWait(15)) != ""
+            return w
+        st := NumGet(this.gm.live(), Shm.ttState, "uint")
+        return st = 1 ? "On · hover the damage or armor icon of a unit"
+            : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
     setHideUi(on) {
         SetIni(on ? 1 : 0, this.section, "hideUi")
         this.push()
@@ -121,6 +136,8 @@ class GameDisplayEngine {
         NumPut("uint", this.hideUi && this.gm.enabled ? this.hideMask : 0, v, Shm.uiHide)
         if NumGet(v, Shm.layout, "uint") >= 14
             NumPut("uint", this.wideUi && this.gm.enabled ? 1 : 0, v, Shm.ulOn)
+        if NumGet(v, Shm.layout, "uint") >= 15
+            NumPut("uint", this.tooltips && this.gm.enabled ? 1 : 0, v, Shm.ttOn)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)

@@ -41,7 +41,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 14
+    DWORD layout;           // 15
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -133,6 +133,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD ulOn;             // companion: 1 = lay the UI out for a wide window as WFE's Upgraded UI does
     DWORD ulState;          // module: 0 off, 1 laid out, 2 waiting (no game, or the window isn't wide), 3 refused (see the log)
     DWORD ulCount;          // module: frames moved in this game
+    // layout 15: detailed tooltips (TooltipHook)
+    DWORD ttOn;             // companion: 1 = the info panel's damage / armor tooltips get WFE-style extra lines
+    DWORD ttState;          // module: 0 off, 1 on, 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -2308,6 +2311,155 @@ static void FollowPortrait() {
         g_shared->prState = !g_shared->prOn ? 0 : g_ui ? 1 : 2;
 }
 
+// -- detailed tooltips -----------------------------------------------------------------
+// WFE (study_tooltips2/3.md) detours the info panel's damage and armor icon
+// updates and rewrites their tooltips with more numbers. 1.28f reaches them
+// through their vtables (the first in-game report: CInfoPanelIconDamage
+// +0xaaf5a8 and CInfoPanelIconArmor +0xaaf61c, entry +0x6C), so here the entry
+// is swapped (a data write, as the bar update's): the game's own update runs
+// first and sets the tooltip (+0x4028c0 on [icon+0x128]: it copies its three
+// strings to the frame's +0x124 (0x100), +0x224 (0x401, the body) and +0x625
+// (0x400)); then the body gets the extra lines and the setter is called again
+// with the frame's own strings. A body that already ends with them is left.
+static const DWORD RVA_DAMAGE_ICON_VT = 0xaaf5a8, RVA_ARMOR_ICON_VT = 0xaaf61c, ICON_UPDATE = 0x6c;
+static const DWORD RVA_DAMAGE_UPDATE = 0x4089d0, RVA_ARMOR_UPDATE = 0x4083a0, RVA_TOOLTIP_SET = 0x4028c0;
+static const DWORD ICON_TIP = 0x128, TIP_LINE = 0x124, TIP_BODY = 0x224, TIP_THIRD = 0x625;
+typedef DWORD(__fastcall *DamageFn)(void *, int, void *, void *, void *, DWORD);
+typedef DWORD(__fastcall *ArmorFn)(void *, int, void *, void *);
+static DamageFn g_gameDamageTip;
+static ArmorFn g_gameArmorTip;
+static bool g_ttHooked, g_ttBad;
+static volatile LONG g_ttCalls;
+static bool TooltipLines(bool damage, BYTE *unit, DWORD attack, char *out, size_t n);
+static BYTE *V(BYTE *f);
+
+// after the game's update, on the game thread
+static void TooltipAppend(BYTE *icon, bool damage, BYTE *unit, DWORD attack) {
+    static int faults;
+    if (!g_shared->ttOn || g_ttBad || !unit)
+        return;
+    __try {
+        BYTE *f = V(*(BYTE **)(icon + ICON_TIP));
+        if (!f)
+            return;
+        char extra[256];
+        if (!TooltipLines(damage, unit, attack, extra, sizeof(extra)) || !extra[0])
+            return;
+        char line[0x100], body[0x401], third[0x400];
+        strncpy_s(line, (const char *)f + TIP_LINE, _TRUNCATE);
+        strncpy_s(body, (const char *)f + TIP_BODY, _TRUNCATE);
+        strncpy_s(third, (const char *)f + TIP_THIRD, _TRUNCATE);
+        size_t bl = strlen(body), el = strlen(extra);
+        if (!line[0] || (bl >= el && !strcmp(body + bl - el, extra)) || bl + el >= sizeof(body))
+            return;
+        strcat_s(body, extra);
+        Game(RVA_TOOLTIP_SET, f, { (DWORD)line, (DWORD)body, (DWORD)third });
+        if (InterlockedIncrement(&g_ttCalls) == 1) {
+            char rtti[64] = "";
+            RttiName(*(DWORD *)f, g_imageSize, rtti, sizeof(rtti));
+            Log("tooltips: the first %s tooltip got its lines (frame %p, %s): \"%s\"", damage ? "damage" : "armor", f, rtti[0] ? rtti : "no RTTI", extra);
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        if (faults++ < 3)
+            Log("tooltips: adding the lines faulted");
+        if (faults >= 3)
+            g_ttBad = true, g_shared->ttState = 3, Log("tooltips: stopping");
+    }
+}
+static DWORD __fastcall DamageTipHook(void *icon, int edx, void *unit, void *p2, void *p3, DWORD attack) {
+    DWORD r = g_gameDamageTip(icon, edx, unit, p2, p3, attack);
+    TooltipAppend((BYTE *)icon, true, (BYTE *)unit, attack);
+    return r;
+}
+static DWORD __fastcall ArmorTipHook(void *icon, int edx, void *unit, void *p2) {
+    DWORD r = g_gameArmorTip(icon, edx, unit, p2);
+    TooltipAppend((BYTE *)icon, false, (BYTE *)unit, 0);
+    return r;
+}
+
+// the two vtable entries: to the hooks, or back. false: refused (logged)
+static bool SwapTooltips(bool on) {
+    if (on == g_ttHooked)
+        return true;
+    DWORD *slot[2] = { (DWORD *)(g_base + RVA_DAMAGE_ICON_VT + ICON_UPDATE), (DWORD *)(g_base + RVA_ARMOR_ICON_VT + ICON_UPDATE) };
+    DWORD game[2] = { (DWORD)(g_base + RVA_DAMAGE_UPDATE), (DWORD)(g_base + RVA_ARMOR_UPDATE) }, ours[2] = { (DWORD)DamageTipHook, (DWORD)ArmorTipHook };
+    for (int i = 0; i < 2; i++)
+        if (*slot[i] != (on ? game[i] : ours[i])) {
+            Log("tooltips: vtable +%06lX entry +%X is %08lX, not the %s: left as it is", i ? RVA_ARMOR_ICON_VT : RVA_DAMAGE_ICON_VT, ICON_UPDATE, *slot[i], on ? "game's update" : "hook");
+            if (!on)
+                g_ttHooked = false;
+            return false;
+        }
+    g_gameDamageTip = (DamageFn)game[0], g_gameArmorTip = (ArmorFn)game[1];
+    for (int i = 0; i < 2; i++) {
+        DWORD old;
+        if (!VirtualProtect(slot[i], 4, PAGE_READWRITE, &old))
+            return false;
+        InterlockedExchange((volatile LONG *)slot[i], (LONG)(on ? ours[i] : game[i]));
+        VirtualProtect(slot[i], 4, old, &old);
+    }
+    g_ttHooked = on;
+    Log(on ? "tooltips: on (the damage / armor icon updates are wrapped)" : "tooltips: off (the updates are the game's again)");
+    return true;
+}
+
+// The lines (study_tooltips3.md, read in the 1.28f Game.dll and against WFE's
+// 0x10079f10 / 0x1007c200): the game's body already has damage, range, a
+// speed word, armor, damage reduction and a move speed word, so only the
+// numbers behind the words are added, in WFE's colours. The attack: atk =
+// [unit+0x1e8], skipped when [atk+0x88+4i] is 0 (as +0x408a2c); its cooldown
+// from the game's own getter +0x4cc9e0 (atk, float *out, i) (base
+// [atk+0x158+8i] over the clamped speed factor, as the attack code uses it),
+// attacks a second 1 / cooldown. Move speed: the game's +0x630a30 (mv, float
+// *out) on mv = [unit+0x1ec] (buffs and the map's limits in), as +0x40884d.
+static const DWORD RVA_ATTACK_COOLDOWN = 0x4cc9e0, RVA_MOVE_SPEED = 0x630a30;
+static const DWORD UNIT_ATTACKS = 0x1e8, UNIT_MOVE = 0x1ec, ATTACK_ON = 0x88;
+static bool TooltipLines(bool damage, BYTE *unit, DWORD attack, char *out, size_t n) {
+    out[0] = 0;
+    if (damage) {
+        BYTE *atk = *(BYTE **)(unit + UNIT_ATTACKS);
+        if (attack > 1 || !atk || (DWORD)(atk - (BYTE *)0x10000) > 0x7ffeffff || !*(int *)(atk + ATTACK_ON + 4 * attack))
+            return false;
+        float cd = 0;
+        Game(RVA_ATTACK_COOLDOWN, atk, { (DWORD)&cd, attack });
+        if (!(cd > 0.01f && cd < 100))
+            return false;
+        sprintf_s(out, n, "|nCooldown: |cFF00FF00%.2f sec|r|nAttacks: |cFF00FF00%.3f/sec|r", cd, 1 / cd);
+    } else {
+        BYTE *mv = *(BYTE **)(unit + UNIT_MOVE);
+        if (!mv || (DWORD)(mv - (BYTE *)0x10000) > 0x7ffeffff)
+            return false;
+        float sp = -1;
+        Game(RVA_MOVE_SPEED, mv, { (DWORD)&sp });
+        if (!(sp >= 0 && sp < 10000))
+            return false;
+        sprintf_s(out, n, "|nMove speed: |cFF00FF00%.0f|r", sp);
+    }
+    return true;
+}
+
+// the worker's part: check once, then follow the switch
+static void FollowTooltips() {
+    static int checked;             // 1 checked out, 2 refused
+    if (!g_getUi || checked == 2)
+        return;
+    bool on = g_shared->ttOn && !g_ttBad;
+    if (on && !checked) {
+        bool ok = FnStart(RVA_DAMAGE_UPDATE) && FnStart(RVA_ARMOR_UPDATE) && FnStart(RVA_TOOLTIP_SET) && FnStart(RVA_ATTACK_COOLDOWN) && FnStart(RVA_MOVE_SPEED)
+            && GameVtable(RVA_DAMAGE_ICON_VT, { ICON_UPDATE }) && GameVtable(RVA_ARMOR_ICON_VT, { ICON_UPDATE });
+        checked = ok ? 1 : 2;
+        if (!ok) {
+            g_shared->ttState = 3;
+            Log("tooltips: refused (the icon updates, their vtables or the tooltip setter aren't where 1.28f has them)");
+            return;
+        }
+    }
+    if (checked && on != g_ttHooked && !SwapTooltips(on))
+        checked = 2, g_shared->ttState = 3;
+    else if (g_shared->ttState != 3)
+        g_shared->ttState = g_ttHooked ? 1 : 0;
+}
+
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
 // Ported from WFE's 1.28f branches (each address re-checked against WFEDll:
 // the tables at 0x10073232, 0x10035715, 0x10070429, 0x1006ff59, 0x1001fec2
@@ -3947,12 +4099,13 @@ static Shared g_retired;            // what g_shared points at once retired (not
 
 static void SwitchesOff() {
     Shared *s = g_shared;
-    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = 0;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
     if (g_portraitSlot)
         SwapPortrait(false);
+    SwapTooltips(false);
     if (g_prSites && g_portraitHooked)
         PointSites(false);
     if (g_wsApplied)
@@ -4040,6 +4193,7 @@ static void Run() {
         QueueBars();
         FollowColours();
         FollowPortrait();
+        FollowTooltips();
         QueueDisplay();
         QueueFrames();
         LONG cseq = g_shared->cmdSeq;
@@ -4128,7 +4282,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 14;
+        g_shared->layout = 15;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
