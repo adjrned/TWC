@@ -22,6 +22,10 @@ static void __fastcall FSetAbs(BYTE *lay, int, DWORD pt, float x, float y, DWORD
 static void __fastcall FClear(BYTE *, int, DWORD) { clears++; }
 static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)to - (p + 5)); }
 static BYTE ui[0x400], ui2[0x400];
+// the buff bar [[[ui+0x3c4]+0x130]+0x16c]: a CBuffBar, hidden / shown with its vtable +0x64 / +0x68
+static BYTE info0[0x200], unitPanel[0x200], buffBar[0x200]; static int bHides, bShows;
+static void __fastcall BHide(BYTE *b, int) { b == buffBar ? bHides++ : wrong++; }
+static void __fastcall BShow(BYTE *b, int) { b == buffBar ? bShows++ : wrong++; }
 static void Pump(int n) { for (int k = 0; k < n; k++) { QueueDisplay(); Sleep(260); } }
 static DWORD WINAPI Tester(void *) {
     Pump(2);
@@ -50,6 +54,10 @@ static DWORD WINAPI Tester(void *) {
           && ptCalls[1].kind == 1 && ptCalls[1].pt == 8 && ptCalls[1].x == 0.8f && ptCalls[1].y == 0.13f,
           "off: its own points back (cleared, then the relative one and the absolute one)");
     CHECK(texShows == 3 && !(g_shared->uiState & 0x20) && regs[0][0x10] == 1, "off: the 3 shown again");
+    g_shared->uiHide = 0x1c | 0x40; Pump(1);
+    CHECK(bHides == 1 && !bShows && (g_shared->uiState & 0x40), "the buff bar hidden with its +0x64, as WFE's ISBUFFBAR with its UI hidden (state %lX)", g_shared->uiState);
+    g_shared->uiHide = 0x1c; Pump(1);
+    CHECK(bShows == 1 && !(g_shared->uiState & 0x40), "off: shown again with its +0x68 (%d)", bShows);
     CHECK(wrong == 0, "all on the game thread");
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
@@ -92,6 +100,11 @@ int main() {
     *(DWORD *)relPt = (DWORD)(img + RVA_REL_POINT_VT); *(BYTE **)(relPt + 4) = anchorFrame; relPt[8] = 0; *(float *)(relPt + 0xc) = 0; *(float *)(relPt + 0x10) = -0.02f;
     *(DWORD *)absPt = (DWORD)(img + RVA_ABS_POINT_VT); *(float *)(absPt + 4) = 0.8f; *(float *)(absPt + 8) = 0.13f;
     *(BYTE **)(world + 0xb4 + 8) = relPt; *(BYTE **)(world + 0xb4 + 8 + 8 * 4) = absPt;
+    Stub(0x300030, BHide); Stub(0x300040, BShow);
+    DWORD *bvt = (DWORD *)rtti(RVA_BUFF_BAR_VT, 0xab9400, ".?AVCBuffBar@@");
+    bvt[0x64 / 4] = (DWORD)(img + 0x300030), bvt[0x68 / 4] = (DWORD)(img + 0x300040);
+    *(DWORD *)buffBar = (DWORD)bvt, *(DWORD *)info0 = *(DWORD *)unitPanel = (DWORD)(img + 0xab8400);
+    *(BYTE **)(ui + 0x3c4) = info0, *(BYTE **)(info0 + 0x130) = unitPanel, *(BYTE **)(unitPanel + 0x16c) = buffBar;
     fakeUi = ui; g_getUi = FakeGetUi;
     mainTid = gameTid = GetCurrentThreadId();
     WNDCLASSA wc = {}; wc.lpfnWndProc = DefWindowProcA; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);

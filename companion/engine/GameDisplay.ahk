@@ -15,7 +15,7 @@
 ;  And hiding the UI (layout 10, WFE's INTERFACE keys for the parts it hides
 ;  with their own calls): one switch, as WFE looks with its UI hidden: the
 ;  console's black background goes (the world shows through), and the time
-;  of day, upper menu bar, resource bar and idle workers with it; the
+;  of day, upper menu bar, resource bar, idle workers and buff bar with it; the
 ;  minimap, portrait, command card and inventory stay; the upper menu bar's
 ;  buttons can stay too ([Display] hideMenu 0). Off by default (ini
 ;  [Display] hideUi).
@@ -28,8 +28,8 @@ class GameDisplayEngine {
     static LIMITS := [120, 144, 165, 200, 240, 300]
     static LATENCIES := [25, 50, 75, 100, 150, 200]
     ; the module's uiHide bits, in order; HIDE: the ones the switch hides (all but the minimap)
-    static PARTS := ["Time of day", "Minimap", "Upper menu bar", "Resource bar", "Idle workers", "The console's background"]
-    static HIDE := 0x3D
+    static PARTS := ["Time of day", "Minimap", "Upper menu bar", "Resource bar", "Idle workers", "The console's background", "Buff bar"]
+    static HIDE := 0x7D
 
     __New(gameModule) {
         this.gm := gameModule

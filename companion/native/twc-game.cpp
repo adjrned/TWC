@@ -16,12 +16,16 @@
 //  Every feature is off until the companion turns it on. Quickcast only reads
 //  the game UI (through the game's own getter) and clicks with SendInput, as
 //  WFE does; game calls that change something run on the game's thread. The
-//  only writes into the game itself: four entries of the health bar's vtable
-//  (colours, health numbers, mana bars), one of the portrait's (its HP / mana
-//  lines), the text of those two lines, the FPS unlock's one byte and the
-//  latency getters' first 6 bytes, all put back when turned off. Frames it
-//  adds (timers in the game, health numbers, mana bars) are made with the
-//  game's own Storm.dll and constructors.
+//  writes into the game's code and data: five entries of the health bar's
+//  vtable (update, set-unit, hide, show, dtor), the portrait update's entry
+//  or its two call sites, the info panel icons' update entries (tooltips),
+//  the camera's call to its projection (widescreen), the menu animation's
+//  first 6 bytes (Fast menu, the one detour), the FPS unlock's one byte and
+//  the latency getters' first 6 bytes; each is checked to still be the
+//  game's (or ours) before it's changed, and put back when turned off and on
+//  unload (RestoreAll). Frames it adds (timers in the game, health numbers,
+//  mana bars, the portrait text) are made with the game's own Storm.dll and
+//  constructors; frames it moves or hides are put back by their passes.
 //
 //  Build: native\build.bat (32-bit, MSVC). Tests: native\tests\run-tests.bat.
 // ============================================================================
@@ -105,7 +109,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD latState;         // module: 0 the game's own, 1 set, 3 refused (see the log)
     DWORD latGame[3];       // module: what the game's LAN / single player / Battle.net getters returned (-1 = faulted)
     // layout 10: hiding parts of the UI (UiHidePass)
-    DWORD uiHide;           // companion: frames to hide, bits: 1 time of day, 2 minimap, 4 upper menu bar, 8 resource bar, 0x10 idle workers, 0x20 the console's background
+    DWORD uiHide;           // companion: frames to hide, bits: 1 time of day, 2 minimap, 4 upper menu bar, 8 resource bar, 0x10 idle workers, 0x20 the console's background, 0x40 the buff bar
     DWORD uiState;          // module: frames hidden now (same bits); 0x80000000 = one was refused (see the log)
     // layout 11: frames added to the game (Storm.dll's SMemAlloc)
     DWORD stState;          // module: 0 not checked yet, 1 the game's Storm.dll checks out, 2 none loaded in the game, 3 refused (see the log)
@@ -145,9 +149,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
 
 // -- 1.28f addresses ---------------------------------------------------------
 // Offsets into the game module (from the WFE study, ahk/unryze-wfe-tools/
-// FINDINGS.md). WFE's base is GetModuleHandle("Game.dll"), or the exe when
-// there's no Game.dll; 1.28 merged Game.dll into Warcraft III.exe, so on 1.28f
-// it's the exe. The same rule is used here (GameBase).
+// FINDINGS.md), each checked in the 1.28f Game.dll (test_gamedll). WFE's base
+// is GetModuleHandle("Game.dll"), or the exe when there's no Game.dll (the
+// user's 1.28f has a Game.dll); the same rule is used here (Probe).
 static const DWORD RVA_GET_UI = 0x3a0b70;       // CGameUI *__fastcall GetGameUI(0, 0): the game UI or 0
 static const DWORD RVA_UI_VTABLE = 0xaaa730;    // CGameUI's vtable (WFE files it under "CGameUI")
 static const DWORD UI_MODE = 0x1b4;             // CGameUI: the current input mode
@@ -1052,7 +1056,7 @@ static const DWORD UNIT_BARS = 0x50, BARS_HEALTH = 0xc, BAR_KIND = 0x138, BAR_WI
 
 typedef void(__fastcall *RefreshFn)(void *, int, int);
 static float g_defH, g_defW;            // the game's own bar size (0 = not seen yet)
-static bool g_barsApplied;              // something was resized and not put back yet
+static volatile bool g_barsApplied;     // something was resized and not put back yet
 
 static bool SaneSize(float f) { return f == f && f > 0.0001f && f < 0.5f; }
 
@@ -1112,6 +1116,8 @@ static int SizeThisBar(BYTE *bar, float h, float w, bool freshWidth) {
             return 0;
         *ph = th, *pw = tw;
         ((RefreshFn)(g_base + RVA_LAYOUT_REFRESH))(bar, 0, 0);
+        if (h != 1)
+            g_barsApplied = true;       // to put back when turned off (the bar's update sizes most of them, not BarsPass)
         return 1;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return -1;
@@ -2985,7 +2991,7 @@ enum { PT_TOPRIGHT = 2, PT_BOTTOMLEFT = 6 };
 struct SavedPoint { int kind; DWORD rel, relPt; float x, y; };     // kind 0 none, 1 absolute, 2 relative
 static SavedPoint g_worldPts[9];
 static void *g_worldUi;             // the game UI whose world frame we stretched (its anchors are saved)
-static const int UI_PART_COUNT = 6;     // the 5 above and the console's background (bit 0x20)
+static const int UI_PART_COUNT = 7;     // the 5 above, the console's background (bit 0x20) and the buff bar (0x40)
 static DWORD g_uiHidden;            // bits hidden by us in this game
 static void *g_uiHideUi;
 
@@ -3155,8 +3161,51 @@ static int WorldCall(BYTE *ui, bool full) {
     return 1;
 }
 
+// The buff bar, as WFE's ISBUFFBAR (0x100902e0) does with its UI hidden: it's called with
+// cl = WFE's UI shown flag [0x1010c09f] (0x10092ffb, 0x100919a6) and hides the bar with its
+// vtable +0x64 when it's 0, shows it with +0x68 when it's 1 (0x1009051c), whether the
+// Upgraded UI is on or not. The bar: [[[ui+0x3c4]+0x130]+0x16c], a CBuffBar (simple frame).
+static BYTE *P(BYTE *f, DWORD off);
+static const DWORD RVA_BUFF_BAR_VT = 0xaad510;
+static int BuffBarCall(BYTE *ui, bool hide) {
+    static int checked;             // 1 checked out, 2 refused
+    if (checked == 2)
+        return -1;
+    BYTE *bar = P(P(P(ui, 0x3c4), 0x130), 0x16c);
+    if (!bar)
+        return 0;
+    __try {
+        DWORD vt = *(DWORD *)bar;
+        BYTE *fn = *(BYTE **)(vt + (hide ? 0x64 : 0x68));
+        if (!checked) {
+            char rtti[64];
+            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+            Log("hide UI: buff bar %p, vtable +%06lX, RTTI %s", bar, vt - (DWORD)g_base, rtti[0] ? rtti : "(none)");
+            if (vt != (DWORD)(g_base + RVA_BUFF_BAR_VT) || (rtti[0] && !strstr(rtti, "CBuffBar"))) {
+                Log("  not the buff bar (+%06lX): refusing it", RVA_BUFF_BAR_VT);
+                checked = 2;
+                return -1;
+            }
+            checked = 1;
+        }
+        if (!IsGameCode(fn)) {
+            checked = 2;
+            Log("hide UI: the buff bar refused, its vtable +%06lX entries aren't game code", vt - (DWORD)g_base);
+            return -1;
+        }
+        ((FrameFn)fn)(bar, 0);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        checked = 2;
+        Log("hide UI: the game's call for the buff bar faulted: refusing it");
+        return -1;
+    }
+}
+
 // the console's background goes with the world frame over the whole screen
 static int UiHideCall(BYTE *ui, int i, bool hide) {
+    if (i == 6)
+        return BuffBarCall(ui, hide);
     if (i != 5)
         return UiPartCall(ui, i, hide);
     int r = ConsoleCall(ui, hide);
@@ -3166,7 +3215,7 @@ static int UiHideCall(BYTE *ui, int i, bool hide) {
 
 static void UiHidePass() {
     static DWORD at;
-    DWORD want = g_shared->uiHide & 0x3f, now = GetTickCount();
+    DWORD want = g_shared->uiHide & 0x7f, now = GetTickCount();
     void *ui = GameUi();
     if (!ui) {
         g_uiHidden = 0, g_uiHideUi = nullptr;           // between games: the next one starts fresh

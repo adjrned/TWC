@@ -128,7 +128,7 @@ Wc3Features() {
             desc: "As WFE's: the menus' screens change at once, without their slow animations.",
             on: (*) => gameDisplay.fastMenu, set: (v) => gameDisplay.setFastMenu(v), status: (*) => gameDisplay.fastMenuStatus() },
         { tab: "display", title: "Detailed tooltips", badge: "1.28f",
-            desc: "As WFE's: the damage and armor tooltips show attack speed, range, move speed.",
+            desc: "As WFE's: the damage and armor tooltips show cooldown, attacks a second, speed.",
             on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus() },
         { tab: "display", title: "FPS unlock", badge: "1.28f",
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",

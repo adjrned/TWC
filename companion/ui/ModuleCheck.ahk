@@ -13,7 +13,7 @@ ModuleCheckFeatures() => [
     ["Quickcast through the game", "quickcast: clicked", ""],
     ["Cooldown and buff timers", "timers: game getter at .* checks out", "timers: refused"],
     ["Clear messages / chat", "clear (messages|chat): frame", "not a message frame|clear .* faulted"],
-    ["Health bar size", "health bars: pass resized", "health bars: refused|reads faulted"],
+    ["Health bar size", "health bars: the game's own size is|health bars: pass resized", "health bars: refused|reads faulted"],
     ["Health bar colours", "health bar colours: on", "health bar colours: refused|colouring a bar faulted"],
     ["FPS unlock", "FPS: limiter patched", "FPS: refused|FPS: the game's option functions faulted|C9 already"],
     ["Multiboard", "multiboard: [0-9A-F]{8}, vtable", "multiboard: refused|not a multiboard|multiboard: the game's call faulted"],
@@ -28,8 +28,9 @@ ModuleCheckFeatures() => [
     ["Fast menu", "fast menu: the first transition sped up", "fast menu: refused|fast menu: writing the detour failed|fast menu: .* faulted|fast menu: .* changed by someone else"],
     ["Widescreen", "widescreen: on, the window is|widescreen: .* already hooked by", "widescreen: refused|isn't the game's call to its projection|widescreen: writing the call"],
     ["Detailed tooltips", "tooltips: the first .* tooltip got its lines", "tooltips: refused|tooltips: adding the lines faulted|tooltips: vtable .* left as it is"],
-    ["Widescreen UI", "UI layout: \d+ frames laid out", "UI layout: .*stopping|UI layout: putting a frame back faulted"],
-    ["Hide the UI", "hide UI: console .* textures|hide UI: .* RTTI", "hide UI: .* refused|hide UI: .* faulted|  not the (time of day|minimap|upper menu bar|resource bar|idle workers)"],
+    ["Widescreen UI", "UI layout: \d+ frames laid out", "UI layout: .*stopping|UI layout: putting a (frame|model) back faulted|UI layout: the .* faulted: left out"],
+    ["Portrait text", "portrait text: on", "portrait text: (no frames|making its frames failed|the portrait update isn't wrapped|giving the lines back faulted)"],
+    ["Hide the UI", "hide UI: console .* textures|hide UI: .* RTTI", "hide UI: .* refused|hide UI: .* faulted|  not the (time of day|minimap|upper menu bar|resource bar|idle workers|buff bar)"],
 ]
 
 ; this session's log lines (from the last "loaded" line), or [] if none

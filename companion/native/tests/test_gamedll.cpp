@@ -217,6 +217,8 @@ int main() {
           && *(DWORD *)(g_base + RVA_STATBAR_VTABLE + BAR_SHOW) == (DWORD)(g_base + 0x13c390) && *(DWORD *)(g_base + RVA_STATBAR_VTABLE + BAR_DTOR) == (DWORD)(g_base + 0x3dcb80)
           && *(DWORD *)(g_base + RVA_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && *(DWORD *)(g_base + RVA_COMMAND_BUTTON_VTABLE + BTN_CLICK) == (DWORD)(g_base + 0x13d7f0),
           "the bar's update / hide / show / dtor, a texture's +0x24 and a command button's +0x6C are those functions");
+    CHECK(*(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x64) == (DWORD)(g_base + 0x13b940) && *(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x68) == (DWORD)(g_base + 0x13c390),
+          "Hide the UI's buff bar: CBuffBar's +0x64 / +0x68 are the simple frame's hide / show (no stack arguments)");
     // health bars: the set-unit entry +0x78 repaints the bar itself or through the update +0x74
     DWORD su = *(DWORD *)(g_base + RVA_STATBAR_VTABLE + STATBAR_SET_UNIT);
     CHECK(su == (DWORD)(g_base + 0x4101c0) && FnStart(0x4101c0) && g_base[0x410254] == 0xFF && g_base[0x410255] == 0x52 && g_base[0x410256] == STATBAR_UPDATE,

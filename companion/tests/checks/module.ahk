@@ -57,10 +57,10 @@ TwcModuleRun() {
     v := twcShmBuf.Ptr
     for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
-    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
+    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x7D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     gameDisplay.toggleHideMenu()
-    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x39, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")
+    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x79, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")
     gameDisplay.toggleHideMenu()
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
@@ -83,6 +83,19 @@ TwcModuleRun() {
     pr.Push("2026-10-25 22:31:00.000  portrait: the call at +40C2A1 was changed by someone else: stopping")
     r := row(ModuleCheckRows(pr), "Portrait regen")
     TwcCheck(r.mark = "✗", "portrait, a call site changed: " r.mark " " r.detail)
+    ; bar size: sized in the bar's update, so a pass may never log "pass resized": the first size line is the sign
+    r := row(ModuleCheckRows(["2026-10-26 10:00:00.000  health bars: the game's own size is 0.00400 high, 0.03000 wide (UI units; the width is the first unit's)"]), "Health bar size")
+    TwcCheck(r.mark = "✓", "bar size from its first size line: " r.mark " " r.detail)
+    ; the widescreen UI's portrait text and its handlers' faults have rows of their own
+    r := row(ModuleCheckRows(["2026-10-26 10:00:00.000  portrait text: no frames (no Storm.dll in the game): the portrait's own lines stay"]), "Portrait text")
+    r2 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  UI layout: 102 frames laid out for a 1920x1080 window", "2026-10-26 10:00:01.000  UI layout: the chat box faulted: left out"]), "Widescreen UI")
+    TwcCheck(r.mark = "✗" && r2.mark = "✗", "portrait text refused: " r.mark ", a layout group faulted: " r2.mark)
+    r := row(ModuleCheckRows(["2026-10-26 10:00:00.000    not the buff bar (+AAD510): refusing it"]), "Hide the UI")
+    TwcCheck(r.mark = "✗", "Hide the UI's buff bar refused: " r.mark " " r.detail)
+    ; Widescreen next to another widescreen mod (state 4): its own status line
+    NumPut("uint", 4, v, Shm.wsState)
+    TwcCheck(InStr(gameDisplay.wsStatus(), "another widescreen mod"), "widescreen, state 4: " gameDisplay.wsStatus())
+    NumPut("uint", 1, v, Shm.wsState)
     ShowPage("wc3"), Wc3ShowVersion("128")
     for tab in Wc3Tabs()
         Wc3ShowTab(tab[1])

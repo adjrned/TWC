@@ -16,6 +16,12 @@ static DWORD WINAPI Tester(void *) {
     for (int k = 0; k < 4; k++) { QueueBars(); Sleep(300); }
     CHECK(fabsf(H(0) - 0.004f) < 1e-6f && fabsf(Wd(0) - 0.05f) < 1e-6f && fabsf(H(1) - 0.004f) < 1e-6f && fabsf(H(3) - 0.004f) < 1e-6f && *(DWORD *)(g_base + 0x200000 - 16) == 6,
         "off: put back (%.4f x %.4f), refreshes %lu", H(0), Wd(0), *(DWORD *)(g_base + 0x200000 - 16));
+    // sized only by the bar's own update (BarAfter), no pass resizing anything: still put back when turned off
+    g_shared->hbOn = 1; g_barsApplied = false;
+    SizeThisBar(bars[0], 2, 1, false), SizeThisBar(bars[1], 2, 1, false);
+    g_shared->hbOn = 0;
+    for (int k = 0; k < 3; k++) { QueueBars(); Sleep(300); }
+    CHECK(fabsf(H(0) - 0.004f) < 1e-6f && fabsf(H(1) - 0.004f) < 1e-6f, "sized in the bar's update only, then off: put back too (%.4f, %.4f)", H(0), H(1));
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
     return 0;
