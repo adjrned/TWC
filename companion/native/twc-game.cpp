@@ -472,17 +472,26 @@ static int Targeting() {
         return -1;
     }
     g_ui = nullptr;
+    static int odd;                     // reads in a row whose object wasn't the game UI
     if (!ui)
-        return -1;
+        return odd = 0, -1;
     if (vt != g_uiVtable) {
-        // the getter returned something that isn't the game UI: the addresses
-        // are wrong for this game, so stop for good
+        // the getter returned something that isn't the game UI: the addresses are wrong
+        // for this game, so stop for good. Only when it stays so (5 reads in a row): this
+        // thread reads the game's global while the game thread runs, and one torn read (the
+        // UI freed as a game ends) must not end quickcast and the rest until a restart
+        if (++odd < 5) {
+            if (odd == 1)
+                Log("the game UI's getter returned %p with vtable %08lX, not +%lX: watching", ui, vt, RVA_UI_VTABLE);
+            return -1;
+        }
         g_getUi = nullptr;
         g_shared->probe = 2;
         sprintf_s(g_shared->probeText, "the game UI at %p has vtable %08lX, not +%lX", ui, vt, RVA_UI_VTABLE);
         Log("stopping: %s", g_shared->probeText);
         return -1;
     }
+    odd = 0;
     if (!g_shared->ui) {
         g_shared->ui = 1;
         Log("game UI at %p (vtable checks out); mode %08lX, target mode %08lX", ui, mode, target);
@@ -4884,7 +4893,7 @@ static void ServeCommand(LONG seq) {
         if (!PostMessageA(g_gameWnd, g_runMsg, (WPARAM)seq, 0))
             Log("game thread: posting to the game window failed (%lu)", GetLastError());
         for (int i = 0; i < 100 && g_shared->cmdDone != seq; i++)
-            Sleep(10);
+            Sleep(10), g_shared->heartbeat = GetTickCount();   // a slow game thread isn't a dead module (quickcast would stand down)
         if (g_shared->cmdDone == seq)
             return;                     // answered by the game thread
         InterlockedExchange(&g_running, 0);
@@ -5027,7 +5036,7 @@ static bool UnloadStep(DWORD now) {
 }
 
 static void Run() {
-    LONG handled = g_shared->qcSeq;
+    LONG handled = g_shared->qcDone;     // not qcSeq: a request made while probing (probe already 1) is answered too
     DWORD askedAt = 0;
     bool fast = false;
     int clicks = 0;

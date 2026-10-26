@@ -45,6 +45,22 @@ static DWORD WINAPI Tester(void *) {
     CHECK(r == 2, "slot 12: refused (%d)", r);
     fakeUi = nullptr; r = Cmd(4, 5);
     CHECK(r == 2 && btnClicks == 1, "outside a game: refused (%d)", r);
+    // a torn read of the game UI (its vtable wrong a few times, e.g. freed as a game ends): not a stop for good
+    fakeUi = ui;
+    DWORD goodVt = *(DWORD *)ui;
+    *(DWORD *)ui = 0x12345678;
+    int t1 = 0;
+    for (int k = 0; k < 4; k++)
+        t1 += Targeting();
+    *(DWORD *)ui = goodVt;
+    Aim(true);
+    int t2 = Targeting();
+    CHECK(t1 == -4 && g_getUi && g_shared->probe != 2 && t2 == 1, "4 odd reads of the game UI: no UI meanwhile, then it works again (no stop; %d, %d)", t1, t2);
+    *(DWORD *)ui = 0x12345678;
+    for (int k = 0; k < 5; k++)
+        Targeting();
+    CHECK(!g_getUi && g_shared->probe == 2, "5 in a row: stopped for good, as before (%s)", g_shared->probeText);
+    *(DWORD *)ui = goodVt;
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
     return 0;

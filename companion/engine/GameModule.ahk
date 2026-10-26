@@ -18,7 +18,7 @@
 ; ============================================================================
 class GameModuleEngine {
     section := "Game"
-    tried := Map()              ; game pid -> true once loading was tried (once per game)
+    tried := Map()              ; game pid -> { n, at, done, fresh }: loading tried n times (a failed one again after 10 s, 3 at most)
     views := Map()              ; game pid -> { map, view } of its shared memory
     wakes := Map()              ; game pid -> its quickcast event (0 if it has none)
     swapping := 0               ; the game pid whose module is being replaced (0 = none)
@@ -43,12 +43,14 @@ class GameModuleEngine {
         }
         return 0
     }
-    ; the copy of twc-game.dll the game loads (made if missing; other copies not in use go)
-    loadCopy() {
+    ; the copy of twc-game.dll the game loads (made if missing; other copies not in use go).
+    ; fresh n: a copy under another name (twc-game.<stamp>-n.dll), for a game that holds a
+    ; retired module of this very build: the game would hand that one back for the same name
+    loadCopy(fresh := 0) {
         dll := this.dir "\twc-game.dll"
         if !(st := GameModuleEngine.FileStamp(dll))
             return ""
-        copy := this.dir "\twc-game." Format("{:08x}", st) ".dll"
+        copy := this.dir "\twc-game." Format("{:08x}", st) (fresh ? "-" fresh : "") ".dll"
         loop files this.dir "\twc-game.*.dll"
             if A_LoopFileFullPath != copy
                 try FileDelete(A_LoopFileFullPath)              ; a game that has it loaded keeps it
@@ -78,22 +80,39 @@ class GameModuleEngine {
             }
             return
         }
-        if this.tried.Has(pid)
+        ; once per game, but a load that failed (files being updated, the injector) is tried again:
+        ; before, one failure left the game without its module (and 1.28f without quickcast) until a restart
+        t := this.tried.Get(pid, 0)
+        if t && (t.done || t.n >= 3 || A_TickCount - t.at < 10000)
             return
-        this.tried[pid] := true
+        if !t
+            this.tried[pid] := t := { n: 0, at: 0, done: false, fresh: 0 }
+        t.n++, t.at := A_TickCount
         try exeName := WinGetProcessName(hwnd)
         catch
             exeName := ""
         if exeName != "Warcraft III.exe" && exeName != "war3.exe"
-            return DebugLog("game module: the window is " exeName "'s, not the game's: not loading")   ; e.g. the crash reporter
-        exe := this.dir "\twc-inject.exe"
-        if !(dll := this.loadCopy()) || !FileExist(exe)
-            return DebugLog("game module: native\ files missing")
-        try code := RunWait('"' exe '" ' pid ' "' dll '"', this.dir, "Hide")
-        catch as e
-            return DebugLog("game module: couldn't start twc-inject: " e.Message)
-        DebugLog("game module: " (code = 0 ? "loaded into" : code = 2 ? "already in" : "couldn't load into") " the game (pid " pid ", code " code ")")
+            return (t.done := true, DebugLog("game module: the window is " exeName "'s, not the game's: not loading"))   ; e.g. the crash reporter
+        this.injectOnce(pid, t)
     }
+    ; one try at loading the module into the game (t: its tried entry)
+    injectOnce(pid, t) {
+        exe := this.dir "\twc-inject.exe"
+        if !(dll := this.loadCopy(t.fresh)) || !FileExist(exe)
+            return DebugLog("game module: native\ files missing (try " t.n " of 3)")
+        try code := this.runInjector(exe, pid, dll)
+        catch as e
+            return DebugLog("game module: couldn't start twc-inject: " e.Message " (try " t.n " of 3)")
+        if code = 2 && !this.view(pid) {
+            ; "already in", but no module answers: a retired one of this build (a live swap back to
+            ; it) holds that file name, and the game would hand it back. A copy under another name loads
+            t.fresh++, t.at := 0, t.n -= t.fresh <= 2
+            return DebugLog("game module: a retired module of this build is in the game: loading a fresh copy (pid " pid ")")
+        }
+        t.done := code = 0 || code = 2
+        DebugLog("game module: " (code = 0 ? "loaded into" : code = 2 ? "already in" : "couldn't load into") " the game (pid " pid ", code " code (t.done ? "" : ", try " t.n " of 3") ")")
+    }
+    runInjector(exe, pid, dll) => RunWait('"' exe '" ' pid ' "' dll '"', this.dir, "Hide")
 
     ; while swapping: the old module unloaded (status 3) -> load the new one; it stays (5) or takes too long -> give up
     swapStep(pid) {
@@ -298,7 +317,7 @@ class GameModuleEngine {
     ; the module's wake event: it looks at once, not on its next round
     wake() {
         pid := WinGetPID(WarcraftIII)
-        if !this.wakes.Has(pid)
+        if !this.wakes.Get(pid, 0)              ; not kept while it fails: the module makes it just after its memory
             this.wakes[pid] := DllCall("OpenEvent", "uint", 0x2, "int", 0, "str", "Local\TWC_GameQc_" pid, "ptr")  ; EVENT_MODIFY_STATE
         if this.wakes[pid]
             DllCall("SetEvent", "ptr", this.wakes[pid])

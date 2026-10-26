@@ -167,6 +167,18 @@ TwcModuleSwap() {
     TwcCheck(!gm2.dropUnloaded(pid, v) && gm2.views.Has(pid), "a running module's view: kept")
     gm2.drop(pid)
     DllCall("CloseHandle", "ptr", h)
+    ; loading again after a failure, and past a retired module of the same build ("already in", no memory)
+    FileAppend("", tmp "\twc-inject.exe")
+    codes := [1, 2, 0], seen := []
+    gm3 := GameModuleEngine()
+    gm3.DefineProp("dir", { get: (*) => tmp })
+    gm3.DefineProp("runInjector", { call: (self, exe, p, dll) => (seen.Push(dll), codes.RemoveAt(1)) })
+    t := { n: 1, at: A_TickCount, done: false, fresh: 0 }
+    gm3.injectOnce(999999, t), d1 := t.done
+    gm3.injectOnce(999999, t), f1 := t.fresh
+    gm3.injectOnce(999999, t)
+    TwcCheck(!d1 && f1 = 1 && t.done && seen.Length = 3 && !InStr(seen[2], "-1") && InStr(seen[3], "-1.dll"),
+        "a failed load isn't the end; 'already in' with no module memory: a fresh copy (" SubStr(seen[3], StrLen(tmp) + 2) ")")
     try DirDelete(tmp, 1)
 }
 SetTimer(TwcModuleRun, -7000)
