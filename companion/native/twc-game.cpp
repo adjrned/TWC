@@ -3330,6 +3330,106 @@ static void UlBuffs(BYTE *ui, BYTE *root) {
                 UlWidth(b, BUFF_W, true), UlHeight(b, BUFF_H, true);
 }
 
+// -- the buttons' models, squeezed sideways (the cooldown sweep, autocast, hero point, the clock)
+// A model frame draws its model at the frame's height, so on the narrower
+// square buttons it overhangs them. WFE (read by hand: ISABILITYBAR
+// 0x1008c499, ISHEROBAR 0x1008b6fb, ISTIMEOFDAYINDICATOR 0x1008b9c4, its
+// Cooldown UI 0x100811b0) takes the frame's first sprite ([frame+0x174] > 0,
+// [[frame+0x178]]), its 3x3 matrix by the sprite's vtable (0x10036d80: +0x64
+// for CSpriteMini_, +0x108 for CSpriteUber_; the game's own vtable +0x38
+// getters read the same 36 bytes), takes the matrix apart into angles
+// (0x10035310 atan2, 0x10035570) and rebuilds it as a pure rotation times
+// (sx, 1, 1) (0x10035390: m0, m1 x sx; m3, m4 x sy; m8 x sz), written straight
+// in. sx = 0.725 (0x1008bfd0: .rdata 0x100fae00[0]) for the buttons, 0.75
+// (0x100fae10[0]) for the time of day clock. For an unrotated model that's
+// diag(sx, 1, 1), which is what's written here, only to unrotated ones (WFE's
+// angle round trip isn't exact otherwise), each saved first and put back
+// while its frame still holds the same sprite. The models: a command button's
+// cooldown sweep [+0x19c] (WFE's Cooldown UI does it) and autocast [+0x1a8], an
+// inventory button's sweep [+0x19c], a hero button's point model [+0x1d8], the
+// time of day [ui+0x3f8] itself. The game makes the sweep and autocast ones
+// the first time they're needed (+0x3e1a60 / +0x3e1930; WFE detours the
+// autocast maker): the 2 s pass picks them up.
+static const DWORD RVA_SPRITE_MINI_VT[2] = { 0xa825a4, 0xa82784 }, RVA_SPRITE_UBER_VT[2] = { 0xa8266c, 0xa8270c };
+struct ModelSave { BYTE *frame, *sprite; float orig[9], sx; };
+static ModelSave g_ulModels[64];
+static int g_ulModelN, g_ulModelResets;
+
+static float *ModelMatrix(BYTE *frame, BYTE **sprite) {
+    int n = V(frame) ? *(int *)(frame + 0x174) : 0;
+    BYTE **list = n > 0 && n < 64 ? *(BYTE ***)(frame + 0x178) : nullptr;
+    BYTE *s = list && (DWORD)((BYTE *)list - (BYTE *)0x10000) <= 0x7ffeffff ? V(list[0]) : nullptr;
+    if (!s)
+        return nullptr;
+    DWORD vt = *(DWORD *)s - (DWORD)g_base;
+    *sprite = s;
+    if (vt == RVA_SPRITE_MINI_VT[0] || vt == RVA_SPRITE_MINI_VT[1])
+        return (float *)(s + 0x64);
+    if (vt == RVA_SPRITE_UBER_VT[0] || vt == RVA_SPRITE_UBER_VT[1])
+        return (float *)(s + 0x108);
+    return nullptr;
+}
+static void UlModel(BYTE *frame, float sx) {
+    BYTE *s;
+    float *m = ModelMatrix(frame, &s);
+    if (!m)
+        return;
+    ModelSave *sv = nullptr;
+    for (int i = 0; i < g_ulModelN && !sv; i++)
+        if (g_ulModels[i].sprite == s)
+            sv = &g_ulModels[i];
+    if (!sv) {
+        static const int OFF[] = { 1, 2, 3, 5, 6, 7 };
+        for (int i : OFF)
+            if (fabsf(m[i]) > 1e-4f) {
+                Log("UI layout: model %p (frame %p) is turned (m[%d] %.3f): left alone", s, frame, i, m[i]);
+                return;
+            }
+        if (m[0] <= 0 || m[4] <= 0 || m[8] <= 0 || g_ulModelN >= (int)(sizeof(g_ulModels) / sizeof(g_ulModels[0])))
+            return;
+        sv = &g_ulModels[g_ulModelN++];
+        sv->frame = frame, sv->sprite = s, sv->sx = sx;
+        memcpy(sv->orig, m, sizeof(sv->orig));
+        if (g_ulModelN <= 3)
+            Log("  model %p (frame %p, %s): %.3f / %.3f / %.3f -> x %.3f", s, frame, (BYTE *)m - s == 0x64 ? "mini" : "uber", m[0], m[4], m[8], sx);
+    } else if (m[0] != sx && !g_ulModelResets++)
+        Log("UI layout: the game put model %p's matrix back (m[0] %.3f): squeezed again every 2 s", s, m[0]);
+    m[0] = sx, m[4] = 1, m[8] = 1;
+}
+// put back while the frame still holds the same sprite (else it's gone, or a new one)
+static void UlModelsRestore() {
+    for (int i = g_ulModelN - 1; i >= 0; i--) {
+        BYTE *s = nullptr;
+        float *m = ModelMatrix(g_ulModels[i].frame, &s);
+        if (m && s == g_ulModels[i].sprite)
+            memcpy(m, g_ulModels[i].orig, sizeof(g_ulModels[i].orig));
+    }
+    if (g_ulModelN)
+        Log("UI layout: %d models put back", g_ulModelN);
+    g_ulModelN = 0;
+}
+static const float UL_MODEL_X = 0.725f, UL_CLOCK_X = 0.75f;
+static void UlModels(BYTE *ui, BYTE *) {
+    if (BYTE *card = P(ui, 0x3c8)) {
+        int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128);
+        for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                if (BYTE *b = GridButton(card, r, c))
+                    UlModel(P(b, 0x19c), UL_MODEL_X), UlModel(P(b, 0x1a8), UL_MODEL_X);
+    }
+    if (BYTE *hb = P(ui, 0x3dc)) {
+        int rows = *(int *)(hb + 0x124), cols = *(int *)(hb + 0x128);
+        for (int r = 0; rows > 0 && rows <= 12 && cols > 0 && cols <= 12 && r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                if (BYTE *b = GridButton(hb, r, c))
+                    UlModel(P(b, 0x1d8), UL_MODEL_X);
+    }
+    for (int i = 0; i < 6; i++)
+        if (BYTE *b = ItemButton(ui, i))
+            UlModel(P(b, 0x19c), UL_MODEL_X);
+    UlModel(P(ui, 0x3f8), UL_CLOCK_X);
+}
+
 // -- the portrait's HP / mana text, as WFE's Upgraded UI draws it
 // WFE (read by hand: 0x10086cd0, its object 0x1013e008) doesn't move the
 // portrait's own two lines: after each portrait update it empties them
@@ -3493,6 +3593,7 @@ static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUP
     { "upper menu bar", UlMenuBar, 0x3d0 }, { "resource bar", UlResources, 0x3cc }, { "idle workers", UlIdle, 0x3e0 },
     { "time of day", UlTimeOfDay, 0x3f8 }, { "tooltip", UlTooltip, 0x1cc }, { "messages", UlMessages, 0x3e4 },
     { "chat box", UlChat, 0x3fc }, { "console art", UlConsole, UI_CONSOLE }, { "buff bar", UlBuffs, 0x3c4 },
+    { "button models", UlModels, 0x3c8 },
 };
 static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
 static int g_ulStage;               // groups taken so far in this game (one more each pass at first)
@@ -3528,12 +3629,20 @@ static void UiLayoutPass() {
     BYTE *ui = (BYTE *)GameUi();
     if (ui != g_ulUi) {
         g_ulN = 0, g_ulUi = ui, g_ulAt = 0, g_shared->ulCount = 0, g_ulStage = 0;    // a new game: its own frames
-        g_ptOn = false;
+        g_ptOn = false, g_ulModelN = 0;                                                 // (the old models went with the old game)
     }
     RECT r = {};
     bool wide = g_gameWnd && GetClientRect(g_gameWnd, &r) && r.bottom > 0 && r.right * 2 >= r.bottom * 3;
     if (!on || !ui || !wide) {
         PortraitTextOff();
+        if (g_ulModelN && ui) {
+            __try {
+                UlModelsRestore();
+            } __except (EXCEPTION_EXECUTE_HANDLER) {
+                Log("UI layout: putting a model back faulted");
+                g_ulModelN = 0;
+            }
+        }
         if (g_ulN && ui) {
             __try {
                 for (int i = g_ulN - 1; i >= 0; i--)
@@ -3581,7 +3690,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))

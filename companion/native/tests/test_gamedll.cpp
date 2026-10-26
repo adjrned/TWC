@@ -137,6 +137,19 @@ int main() {
         if (g_base[s.at] != 0x89 || *(DWORD *)(g_base + s.at + 2) != s.field)
             bad++, printf("      +%06lX: %02X %02X %08lX, want a mov to +%lX\n", s.at, g_base[s.at], g_base[s.at + 1], *(DWORD *)(g_base + s.at + 2), s.field);
     CHECK(!bad, "the game UI stores them at +0x3e0 / +0x3f8 / +0x1cc / +0x3d0 / +0x3cc");
+
+    // the button models: the sprite kinds, where their matrix is, and the buttons' model fields
+    CHECK(Rtti(0xa7ac24, "CSpriteFrame") & Rtti(RVA_SPRITE_MINI_VT[0], "CSpriteMini_") & Rtti(RVA_SPRITE_MINI_VT[1], "CSpriteMini_")
+        & Rtti(RVA_SPRITE_UBER_VT[0], "CSpriteUber_") & Rtti(RVA_SPRITE_UBER_VT[1], "CSpriteUber_"), "the model frame and sprite vtables");
+    static const BYTE MINI_GET[] = { 0xF3, 0x0F, 0x6F, 0x41, 0x64 }, UBER_GET[] = { 0xF3, 0x0F, 0x6F, 0x81, 0x08, 0x01, 0x00, 0x00 };
+    BYTE *mg = *(BYTE **)(g_base + RVA_SPRITE_MINI_VT[0] + 0x38), *ug = *(BYTE **)(g_base + RVA_SPRITE_UBER_VT[0] + 0x38);
+    CHECK(mg == g_base + 0x1d39c0 && ug == g_base + 0x1d39f0 && !memcmp(mg + 6, MINI_GET, 5) && !memcmp(ug + 6, UBER_GET, 8),
+          "the sprites' matrix getters (vtable +0x38) read +0x64 / +0x108");
+    static const struct { DWORD at, off; } MODELS[] = { { 0x3e199e, 0x1a8 }, { 0x3e1ace, 0x19c }, { 0x3d2594, 0x1d8 } };
+    bad = 0;
+    for (const auto &s : MODELS)
+        bad += !(g_base[s.at] == 0x89 && g_base[s.at + 1] == 0x87 && *(DWORD *)(g_base + s.at + 2) == s.off);
+    CHECK(!bad && FnStart(0x3e1930) && FnStart(0x3e1a60), "the autocast / cooldown / hero point models are at +0x1a8 / +0x19c / +0x1d8");
     Verdict();
     return g_fails;
 }
