@@ -340,7 +340,8 @@ Wc3PageOpened() {
     RefreshWc3()
 }
 Wc3Switch(f, *) {
-    f.set(!f.on())
+    set := f.set                ; called as a function: f.set(v) would pass f as a first parameter
+    set(!f.on())
     RefreshWc3()
 }
 Wc3OpenLog() {

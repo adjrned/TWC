@@ -63,6 +63,18 @@ TwcModuleRun() {
     for tab in Wc3Tabs()
         Wc3ShowTab(tab[1])
     TwcCheck(true, "WC3 page with the module running")
+    ; every switch and button on the page, as a click does it (off -> on -> off)
+    for f in Wc3Features() {
+        if !Wc3OnVersion(f, "128")
+            continue
+        Wc3ShowTab(f.tab)
+        if f.HasProp("on") {
+            Wc3Switch(f), Wc3Switch(f)
+            TwcCheck(true, "switch: " f.title)
+        }
+    }
+    gameModule.setEnabled(false), RefreshWc3(), gameModule.setEnabled(true), RefreshWc3()
+    TwcCheck(true, "the game module's own switch")
     fake.Destroy()
     TwcCheckDone()
 }
