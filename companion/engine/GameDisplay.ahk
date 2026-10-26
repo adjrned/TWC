@@ -19,6 +19,9 @@
 ;  minimap, portrait, command card and inventory stay; the upper menu bar's
 ;  buttons can stay too ([Display] hideMenu 0). Off by default (ini
 ;  [Display] hideUi).
+;  And the widescreen UI layout (layout 14, WFE's Upgraded UI): on a wide
+;  window the module lays the UI frames out again as WFE does, so the 4:3 UI
+;  isn't stretched. Off by default ([Display] wideUi).
 ; ============================================================================
 class GameDisplayEngine {
     section := "Display"
@@ -81,6 +84,22 @@ class GameDisplayEngine {
     }
     menuLabel => this.hideMenu ? "Menu buttons: hidden" : "Menu buttons: shown"
     hideMask => this.hideMenu ? GameDisplayEngine.HIDE : GameDisplayEngine.HIDE & ~4
+    ; WFE's widescreen UI layout (its Upgraded UI): layout 14, ini [Display] wideUi
+    wideUi => Integer(Ini(this.section, "wideUi", 0))
+    setWideUi(on) {
+        SetIni(on ? 1 : 0, this.section, "wideUi")
+        this.push()
+    }
+    wideUiStatus() {
+        if !this.wideUi
+            return "Off"
+        if (w := this.moduleWait(14)) != ""
+            return w
+        v := this.gm.live(), st := NumGet(v, Shm.ulState, "uint")
+        return st = 1 ? "On · " NumGet(v, Shm.ulCount, "uint") " frames laid out for the wide window"
+            : st = 2 ? "On · waits for a game in a wide window (4:3 is left as it is)"
+            : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
     setHideUi(on) {
         SetIni(on ? 1 : 0, this.section, "hideUi")
         this.push()
@@ -100,6 +119,8 @@ class GameDisplayEngine {
         if NumGet(v, Shm.layout, "uint") < 10
             return
         NumPut("uint", this.hideUi && this.gm.enabled ? this.hideMask : 0, v, Shm.uiHide)
+        if NumGet(v, Shm.layout, "uint") >= 14
+            NumPut("uint", this.wideUi && this.gm.enabled ? 1 : 0, v, Shm.ulOn)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)

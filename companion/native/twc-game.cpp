@@ -41,7 +41,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 13
+    DWORD layout;           // 14
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -129,6 +129,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 13: a newer module replaces this one while the game runs
     DWORD unload;           // companion: 1 = turn everything off, give it all back and unload (status 4, then 3)
     DWORD stamp;            // module: its own build stamp (the PE header's TimeDateStamp)
+    // layout 14: WFE's widescreen UI layout (UiLayoutPass)
+    DWORD ulOn;             // companion: 1 = lay the UI out for a wide window as WFE's Upgraded UI does
+    DWORD ulState;          // module: 0 off, 1 laid out, 2 waiting (no game, or the window isn't wide), 3 refused (see the log)
+    DWORD ulCount;          // module: frames moved in this game
 };
 #pragma pack(pop)
 
@@ -2883,6 +2887,236 @@ static void UiHidePass() {
     g_shared->uiState = (g_shared->uiState & 0x80000000) | g_uiHidden;
 }
 
+
+// -- WFE's widescreen UI layout ("Upgraded UI") ------------------------------------------
+// On a wide window the game draws its 0.8 x 0.6 UI stretched. WFE's Upgraded
+// UI ([UPGRADEDUI] ISENABLED, aspect index 1 = 16:9) lays the frames out
+// again in that same space so they look right: narrower widths and moved
+// anchors, frame by frame, from its tables (study_upgradedui_a/b/c.md, each
+// value read in WFEDll). Here the same calls on the game thread: each frame's
+// own anchors and size are saved before its first change (WFE's 0x10087510:
+// the 9 point slots at layout+8, width +0x58, height +0x5c), the layout is
+// applied at game start and again every 2 s (the game may move frames
+// itself), and turning it off puts every saved frame back (WFE's 0x100872d0).
+// A frame's layout part: frame+0xb4 for a CFrame ([frame+0x44] == frame),
+// else the frame itself (WFE's kinds 1 / 2 / 3). Only on a window at least
+// 1.5 wide for 1 tall: WFE's 4:3 values are a different layout, not the game's.
+struct LaySave { BYTE *frame, *lay; SavedPoint pts[9]; float w, h; };
+static LaySave g_ul[160];
+static int g_ulN;
+static void *g_ulUi;                // the game UI the saves belong to
+static bool g_ulBad;                // a frame's point couldn't be read: no more layout this session
+static DWORD g_ulAt;
+
+static BYTE *LayOf(BYTE *f) { return f && *(BYTE **)(f + 0x44) == f ? f + FRAME_LAYOUT : f; }
+
+// a frame's own anchors and size, once per game (nullptr: refused)
+static LaySave *UlSave(BYTE *f) {
+    if (!f)
+        return nullptr;
+    for (int i = 0; i < g_ulN; i++)
+        if (g_ul[i].frame == f)
+            return &g_ul[i];
+    if (g_ulN >= (int)(sizeof(g_ul) / sizeof(g_ul[0])))
+        return nullptr;
+    LaySave &s = g_ul[g_ulN];
+    s.frame = f, s.lay = LayOf(f);
+    for (int i = 0; i < 9; i++) {
+        BYTE *pt = *(BYTE **)(s.lay + LAYOUT_POINTS + i * 4);
+        s.pts[i] = {};
+        if (!pt)
+            continue;
+        DWORD vt = *(DWORD *)pt;
+        if (vt == (DWORD)(g_base + RVA_REL_POINT_VT))
+            s.pts[i] = { 2, *(DWORD *)(pt + 4), pt[8], *(float *)(pt + 0xc), *(float *)(pt + 0x10) };
+        else if (vt == (DWORD)(g_base + RVA_ABS_POINT_VT))
+            s.pts[i] = { 1, 0, 0, *(float *)(pt + 4), *(float *)(pt + 8) };
+        else {
+            Log("UI layout: frame %p's point %d has vtable %08lX, neither kind: stopping (it couldn't be put back)", f, i, vt);
+            g_ulBad = true;
+            return nullptr;
+        }
+    }
+    s.w = *(float *)(s.lay + 0x58), s.h = *(float *)(s.lay + 0x5c);
+    g_ulN++;
+    return &s;
+}
+static void UlRestore(LaySave &s) {
+    Game(RVA_CLEAR_POINTS, s.lay, { 1 });
+    for (int i = 0; i < 9; i++) {
+        const SavedPoint &p = s.pts[i];
+        if (p.kind == 2)
+            Game(RVA_SET_POINT, s.lay, { (DWORD)i, p.rel, p.relPt, F(p.x), F(p.y), 1 });
+        else if (p.kind == 1)
+            Game(RVA_SET_ABS_POINT, s.lay, { (DWORD)i, F(p.x), F(p.y), 1 });
+    }
+    *(float *)(s.lay + 0x58) = s.w;
+    Game(RVA_LAYOUT_REFRESH, s.lay, { 0 });
+    *(float *)(s.lay + 0x5c) = s.h;
+    Game(RVA_LAYOUT_REFRESH, s.lay, { 0 });
+}
+
+// the ops (each saves the frame first; a frame that can't be saved is left alone)
+static void UlWidth(BYTE *f, float w) {
+    LaySave *s = UlSave(f);
+    if (s && *(float *)(s->lay + 0x58) != w)
+        *(float *)(s->lay + 0x58) = w, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
+}
+static void UlHeight(BYTE *f, float h) {
+    LaySave *s = UlSave(f);
+    if (s && *(float *)(s->lay + 0x5c) != h)
+        *(float *)(s->lay + 0x5c) = h, Game(RVA_LAYOUT_REFRESH, s->lay, { 0 });
+}
+// rel: the layout part anchored to (as WFE passes it)
+static void UlPoint(BYTE *f, DWORD pt, BYTE *rel, DWORD relPt, float x, float y) {
+    LaySave *s = UlSave(f);
+    if (s && rel)
+        Game(RVA_SET_POINT, s->lay, { pt, (DWORD)rel, relPt, F(x), F(y), 1 });
+}
+static void UlAbs(BYTE *f, DWORD pt, float x, float y) {
+    LaySave *s = UlSave(f);
+    if (s)
+        Game(RVA_SET_ABS_POINT, s->lay, { pt, F(x), F(y), 1 });
+}
+static void UlClear(BYTE *f) {
+    LaySave *s = UlSave(f);
+    if (s)
+        Game(RVA_CLEAR_POINTS, s->lay, { 1 });
+}
+static BYTE *P(BYTE *f, DWORD off) { return f ? *(BYTE **)(f + off) : nullptr; }
+
+// WFE's handlers' widescreen path (aspect index 1), in its order (0x100919a0)
+static void UlApply(BYTE *ui) {
+    BYTE *root = ui + FRAME_LAYOUT;     // the game UI's own layout: the whole screen
+    // ISUPPERMENUBAR 0x10087cf0: the 4 children's widths, the bar's anchor
+    BYTE *menu = P(ui, 0x3d0);
+    UlWidth(P(menu, 0x138), 0.064f);
+    UlWidth(P(menu, 0x130), 0.064f);
+    if (menu)
+        UlPoint(P(menu, 0x130), 0, menu + FRAME_LAYOUT, 0, 0.100f, 0);
+    UlWidth(P(menu, 0x134), 0.064f);
+    UlWidth(P(menu, 0x160), 0.064f);
+    // ISRESOURCEBAR 0x10088100: the two fixed anchors (the per-child passes aren't fully read yet)
+    BYTE *res = P(ui, 0x3cc);
+    UlPoint(P(res, 0x148), 1, root, 1, -0.045f, -0.100f);
+    UlPoint(P(res, 0x14c), 1, root, 1, 0.0375f, -0.045f);
+    // ISMINIMAP 0x1008a250: two corners, then CMinimap +0xe4 as WFE does
+    BYTE *mm = P(ui, 0x3c0);
+    if (mm) {
+        UlPoint(mm, 6, root, 6, 0.1075f, 0.007f);
+        UlPoint(mm, 2, root, 6, 0.210f, 0.145f);
+        DWORD f = *(DWORD *)(*(DWORD *)mm + 0xe4);
+        if (IsGameCode((BYTE *)f))
+            ((FrameFn)f)(mm, 0);
+    }
+    // ISMINIMAPBUTTONS 0x1008a580: 5 buttons
+    for (DWORD o = 0x408; o <= 0x418; o += 4) {
+        UlWidth(P(ui, o), 0.016f);
+        UlPoint(P(ui, o), 0, root, 0, 0.2165f, -0.456f);
+    }
+    // ISPEONBAR 0x1008afa0
+    UlWidth(P(ui, 0x3e0), 0.0275f);
+    UlPoint(P(ui, 0x3e0), 6, root, 6, 0.100f, 0.173f);
+    // ISHEROBAR 0x1008b2b0: every hero button and its parts
+    BYTE *hb = P(ui, 0x3dc);
+    if (hb) {
+        int rows = *(int *)(hb + 0x124), cols = *(int *)(hb + 0x128);
+        for (int r = 0; rows > 0 && rows <= 12 && cols > 0 && cols <= 12 && r < rows; r++)
+            for (int c = 0; c < cols; c++) {
+                BYTE *b = GridButton(hb, r, c);
+                if (!b)
+                    continue;
+                UlWidth(b, 0.0275f);
+                UlWidth(P(b, 0x1cc), 0.0275f);
+                UlWidth(P(b, 0x1d0), 0.0275f);
+                UlWidth(P(b, 0x194), 0.0125f);
+            }
+    }
+    // ISABILITYBAR 0x1008c0a0: the command card narrower, its buttons and their small part too, to the top right
+    BYTE *card = P(ui, 0x3c8);
+    if (card) {
+        UlWidth(card, 0.130f);
+        int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128);
+        for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                if (BYTE *b = GridButton(card, r, c))
+                    UlWidth(b, 0.0275f), UlWidth(P(b, 0x194), 0.0125f);
+        UlPoint(card, 8, root, 8, -0.107f, 0.003f);
+    }
+    // ISPORTRAIT 0x1008ac30: narrower, anchored to [ui+0x424]'s layout
+    if (BYTE *pf = P(ui, UI_PORTRAIT))
+        if (BYTE *pa = P(ui, 0x424))
+            UlWidth(pf, 0.060f), UlPoint(pf, 6, pa + FRAME_LAYOUT, 6, 0.260f, 0.031f);
+    // ISINVENTORYCOVER 0x1008bc80
+    BYTE *info0 = P(ui, 0x3c4);
+    if (BYTE *cover = P(info0, 0x14c))
+        UlWidth(cover, 0.095f), UlClear(cover), UlAbs(cover, 8, 0.550f, 0);
+    // ISITEMBAR 0x1008d790: the inventory around the screen's centre, its slots 2 a row
+    if (BYTE *inv = P(info0, 0x150)) {
+        UlClear(inv), UlPoint(inv, 4, root, 4, 0.110f, -0.175f);
+        BYTE *list = P(info0, 0x148);
+        int n = list ? *(int *)(list + 0x12c) : 0;
+        float y0 = (float)(n >> 1) * 0.039f - 0.32f;
+        for (int i = 0; n > 0 && n <= 6 && i < n; i++)
+            if (BYTE *slot = ItemButton(ui, i)) {
+                UlClear(slot), UlWidth(slot, 0.021f);
+                UlPoint(slot, 4, root, 4, (float)(i & 1) * 0.030f + 0.0975f, y0 - (float)(i >> 1) * 0.039f);
+                UlWidth(P(slot, 0x194), 0.013f);
+            }
+    }
+    // ISTIMEOFDAYINDICATOR 0x1008b880
+    if (BYTE *tod = P(ui, 0x3f8))
+        UlClear(tod), UlAbs(tod, 4, 0.1635f, 0);
+    // ISINFOBAR 0x10090940: the panel's two anchors
+    BYTE *info = P(ui, 0x3c4);
+    if (BYTE *ip = P(info, 0x130))
+        UlClear(ip), UlPoint(ip, 6, LayOf(P(ui, 0x428)), 6, 0.33f, 0);
+    UlPoint(P(info, 0x128), 1, LayOf(P(info, 0x130)), 1, 0, -0.0225f);
+    // ISTOOLTIP 0x10091730
+    UlPoint(P(ui, 0x1cc), 8, root, 0, 0.6875f, -0.435f);
+}
+
+// on the game thread
+static void UiLayoutPass() {
+    bool on = g_shared->ulOn != 0 && !g_ulBad;
+    BYTE *ui = (BYTE *)GameUi();
+    if (ui != g_ulUi) {
+        g_ulN = 0, g_ulUi = ui, g_ulAt = 0, g_shared->ulCount = 0;    // a new game: its own frames
+    }
+    RECT r = {};
+    bool wide = g_gameWnd && GetClientRect(g_gameWnd, &r) && r.bottom > 0 && r.right * 2 >= r.bottom * 3;
+    if (!on || !ui || !wide) {
+        if (g_ulN && ui) {
+            __try {
+                for (int i = g_ulN - 1; i >= 0; i--)
+                    UlRestore(g_ul[i]);
+            } __except (EXCEPTION_EXECUTE_HANDLER) {
+                Log("UI layout: putting a frame back faulted");
+            }
+            Log("UI layout: %d frames put back", g_ulN);
+            g_ulN = 0, g_shared->ulCount = 0;
+        }
+        g_ulAt = 0;                 // laid out at once when it's wanted again
+        g_shared->ulState = g_ulBad ? 3 : !g_shared->ulOn ? 0 : 2;
+        return;
+    }
+    DWORD now = GetTickCount();
+    if (g_ulAt && now - g_ulAt < 2000)
+        return;
+    g_ulAt = now;
+    int before = g_ulN;
+    __try {
+        UlApply(ui);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_ulBad = true;
+        Log("UI layout: a frame call faulted: stopping (the frames moved so far are put back next)");
+    }
+    if (g_ulN != before)
+        Log("UI layout: %d frames laid out for a %ldx%ld window", g_ulN, r.right, r.bottom);
+    g_shared->ulCount = g_ulN;
+    g_shared->ulState = g_ulBad ? 3 : 1;
+}
+
 // on the game thread
 static void DisplayPass() {
     if (!g_getUi)
@@ -2891,13 +3125,14 @@ static void DisplayPass() {
     FpsPass();
     LatencyPass();
     UiHidePass();
+    UiLayoutPass();
 }
 
 // the worker's part: a pass 4 times a second while any is on, or has something to put back
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -3149,7 +3384,7 @@ static bool g_unloadNow;            // Worker frees the module when Run returns
 
 static void SwitchesOff() {
     Shared *s = g_shared;
-    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = 0;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
@@ -3318,7 +3553,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 13;
+        g_shared->layout = 14;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

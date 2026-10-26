@@ -82,5 +82,8 @@ class Shm {
     static mbWidth := 792
     static unload := 796
     static stamp := 800
-    static size := 804
+    static ulOn := 804
+    static ulState := 808
+    static ulCount := 812
+    static size := 816
 }
