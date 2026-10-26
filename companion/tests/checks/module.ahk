@@ -59,6 +59,25 @@ TwcModuleRun() {
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: parts, FPS limit, latency, mana and bar height")
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
+    ; the lines 1.28f's portrait fallback logs (call sites instead of the vtable): not a refusal, then working
+    row(rows, name) {
+        for r in rows
+            if r.name = name
+                return r
+        return { mark: "?", detail: "no row" }
+    }
+    pr := ["2026-10-25 22:30:22.504  portrait: the update +40D0E0 isn't in the first 128 entries of vtable +AB05B4"
+        , "2026-10-25 22:30:22.590    called directly at +40C2A1 (call)"
+        , "2026-10-25 22:30:22.591  portrait: the update will be wrapped at its 1 call sites (on the game thread)"]
+    r := row(ModuleCheckRows(pr), "Portrait regen")
+    TwcCheck(r.mark = "·", "portrait, call sites found, not wrapped yet: " r.mark " " r.detail)
+    pr.Push("2026-10-25 22:30:22.700  portrait: on (its update +40D0E0 is wrapped at 1 call sites)"
+        , "2026-10-25 22:30:22.800  portrait: the first update wrapped (portrait 2EA90088, unit 1E000000, lines +240 3BFA0088 / +244 3BFA0188)")
+    r := row(ModuleCheckRows(pr), "Portrait regen")
+    TwcCheck(r.mark = "✓", "portrait through its call sites: " r.mark " " r.detail)
+    pr.Push("2026-10-25 22:31:00.000  portrait: the call at +40C2A1 was changed by someone else: stopping")
+    r := row(ModuleCheckRows(pr), "Portrait regen")
+    TwcCheck(r.mark = "✗", "portrait, a call site changed: " r.mark " " r.detail)
     ShowPage("wc3"), Wc3ShowVersion("128")
     for tab in Wc3Tabs()
         Wc3ShowTab(tab[1])

@@ -836,6 +836,9 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 
 static int RunOnGameThread(DWORD cmd);
 static void *GameUi();
+static void PortraitSitesPass();
+static UINT g_prMsg;                // "TWC_GameThreadPortrait": PortraitSitesPass on the game thread
+static volatile LONG g_prQueued;
 static void BarsPass();
 static UINT g_barsMsg;              // "TWC_GameThreadBars": run BarsPass on the game thread
 static volatile LONG g_barsQueued;
@@ -871,6 +874,11 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_framesMsg && g_framesMsg) {
         InterlockedExchange(&g_framesQueued, 0);
         FramesPass();
+        return 0;
+    }
+    if (m == g_prMsg && g_prMsg) {
+        InterlockedExchange(&g_prQueued, 0);
+        PortraitSitesPass();
         return 0;
     }
     if (m == g_timersMsg && g_timersMsg) {
@@ -910,6 +918,7 @@ static bool Subclass() {
     g_selfMsg = RegisterWindowMessageA("TWC_GameThreadSelfCast");
     g_framesMsg = RegisterWindowMessageA("TWC_GameThreadFrames");
     g_timersMsg = RegisterWindowMessageA("TWC_GameThreadTimers");
+    g_prMsg = RegisterWindowMessageA("TWC_GameThreadPortrait");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -2013,7 +2022,13 @@ static void QueueFrames() {
 // "cur / max", the regen in green (red when losing), and the percent if asked.
 // Off: the entry is the game's again, and the game's next update writes its
 // own text back. Nothing new is made, so no Storm.dll is needed.
+// 1.28f doesn't have it in that vtable (the first in-game report): then the
+// game UI's own portrait's vtable is searched, and failing that, the update's
+// direct callers (call / jmp rel32 to it in the game's code, at most 8) are
+// pointed at the hook instead, on the game thread, and put back when off.
 static const DWORD RVA_PORTRAIT_VTABLE = 0xab05b4;     // CPortraitButton (WFE's [0x1013a48c])
+static const DWORD RVA_PORTRAIT_VTABLE2 = 0xab06dc;    // its second one ([0x1013a490]): another base, another this (logged only)
+static const DWORD UI_PORTRAIT = 0x3f4;                // the game UI's portrait (also self-cast's)
 static const DWORD RVA_PORTRAIT_UPDATE = 0x40d0e0;     // its update, __fastcall(portrait, 0) ([0x1013a4a4])
 static const DWORD RVA_FONTSTRING_VTABLE = 0xa7d178;   // CSimpleFontString ([0x1013aa0c])
 static const DWORD RVA_FONTSTRING_SET = 0x143430;      // __fastcall(string, 0, const char *) ([0x1013aa28])
@@ -2072,6 +2087,16 @@ static DWORD __fastcall PortraitHook(void *portrait, int edx) {
     return r;
 }
 
+static bool WriteCode(BYTE *p, const BYTE *b, int n) {
+    DWORD old;
+    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old))
+        return false;
+    memcpy(p, b, n);
+    VirtualProtect(p, n, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), p, n);
+    return true;
+}
+
 static bool SwapPortrait(bool on) {
     if (on == g_portraitHooked)
         return true;
@@ -2090,35 +2115,139 @@ static bool SwapPortrait(bool on) {
     return true;
 }
 
-// the worker's part: find the entry once, then follow the switch
+// -- its direct callers
+static BYTE *g_prSite[8];
+static int g_prSites;                   // > 0: the update is wrapped at these call sites (no vtable entry)
+static bool g_prSitesBad;
+
+static const BYTE *SiteTarget(const BYTE *site) { return site + 5 + *(const LONG *)(site + 1); }
+
+// the call / jmp rel32 in the game's code that go to fn: their count, the first `most` in out
+static int FindCallSites(const BYTE *fn, BYTE **out, int most) {
+    int n = 0;
+    for (DWORD pg = 0; pg + 5 <= g_imageSize; pg += 0x1000) {
+        BYTE *p = g_base + pg;
+        if (!PageIs(p, EXEC))
+            continue;
+        DWORD end = g_imageSize - pg < 0x1000 ? g_imageSize - pg : 0x1000;
+        if (!(end == 0x1000 && pg + 0x1000 < g_imageSize && PageIs(p + 0x1000, EXEC)))
+            end -= 4;                       // the rel32 mustn't run off the code
+        for (DWORD i = 0; i < end; i++)
+            if ((p[i] == 0xE8 || p[i] == 0xE9) && SiteTarget(p + i) == fn) {
+                if (n < most)
+                    out[n] = p + i;
+                n++;
+            }
+    }
+    return n;
+}
+
+// on the game thread (and on unload): every site to the hook, or back
+static bool PointSites(bool on) {
+    const BYTE *from = on ? (BYTE *)g_gamePortrait : (BYTE *)PortraitHook, *to = on ? (BYTE *)PortraitHook : (BYTE *)g_gamePortrait;
+    for (int i = 0; i < g_prSites; i++)
+        if (SiteTarget(g_prSite[i]) != from && SiteTarget(g_prSite[i]) != to) {
+            Log("portrait: the call at +%06lX was changed by someone else: stopping", (DWORD)(g_prSite[i] - g_base));
+            return false;
+        }
+    for (int i = 0; i < g_prSites; i++) {
+        LONG rel = (LONG)(to - (g_prSite[i] + 5));
+        if (SiteTarget(g_prSite[i]) != to && !WriteCode(g_prSite[i] + 1, (const BYTE *)&rel, 4)) {
+            Log("portrait: writing the call at +%06lX failed", (DWORD)(g_prSite[i] - g_base));
+            return false;
+        }
+    }
+    g_portraitHooked = on;
+    if (on)
+        Log("portrait: on (its update +%06lX is wrapped at %d call sites)", RVA_PORTRAIT_UPDATE, g_prSites);
+    else
+        Log("portrait: off (its %d call sites go to the game's update again)", g_prSites);
+    return true;
+}
+static void PortraitSitesPass() {
+    bool on = g_shared->prOn && !g_portraitBad;
+    if (g_prSites && !g_prSitesBad && on != g_portraitHooked && !PointSites(on))
+        g_prSitesBad = true, g_shared->prState = 3;
+}
+
+// the update's entry in a vtable's first 128
+static DWORD *FindEntry(DWORD *vt, DWORD fn) {
+    for (int i = 0; i < 128 && PageIs(vt + i, READ); i++)
+        if (vt[i] == fn)
+            return vt + i;
+    return nullptr;
+}
+
+// where to wrap the update: true = a vtable entry or call sites found, false = refused (logged)
+static bool FindPortrait() {
+    DWORD *vt = (DWORD *)(g_base + RVA_PORTRAIT_VTABLE), fn = (DWORD)(g_base + RVA_PORTRAIT_UPDATE);
+    bool ok = PageIs(vt, READ) && !PageIs(vt, EXEC) && FnStart(RVA_PORTRAIT_UPDATE) && FnStart(RVA_FONTSTRING_SET)
+        && FnStart(RVA_UNIT_HP) && FnStart(RVA_HANDLE_LOOKUP) && PageIs(g_base + RVA_FONTSTRING_VTABLE, READ) && !PageIs(g_base + RVA_FONTSTRING_VTABLE, EXEC);
+    if (!ok) {
+        Log("portrait: refused (its functions or vtables aren't where 1.28f has them)");
+        return false;
+    }
+    g_gamePortrait = (PortraitFn)fn;
+    if ((g_portraitSlot = FindEntry(vt, fn)) != nullptr) {
+        Log("portrait: the update +%06lX is vtable +%06lX entry +%X", RVA_PORTRAIT_UPDATE, RVA_PORTRAIT_VTABLE, (DWORD)((BYTE *)g_portraitSlot - (BYTE *)vt));
+        return true;
+    }
+    Log("portrait: the update +%06lX isn't in the first 128 entries of vtable +%06lX", RVA_PORTRAIT_UPDATE, RVA_PORTRAIT_VTABLE);
+    DWORD *vt2 = (DWORD *)(g_base + RVA_PORTRAIT_VTABLE2), *e;
+    if (PageIs(vt2, READ) && !PageIs(vt2, EXEC) && (e = FindEntry(vt2, fn)) != nullptr)
+        Log("  it's entry +%X of the second vtable +%06lX (not used: that one passes another this)", (DWORD)((BYTE *)e - (BYTE *)vt2), RVA_PORTRAIT_VTABLE2);
+    // the game UI's own portrait may be of a class of its own
+    BYTE *pb = g_ui ? UiFrame(g_ui, UI_PORTRAIT) : nullptr;
+    if (pb) {
+        DWORD pv = *(DWORD *)pb;
+        char rtti[96];
+        RttiName(pv, g_imageSize, rtti, sizeof(rtti));
+        Log("  the game UI's portrait %p: vtable +%06lX, RTTI %s", pb, pv - (DWORD)g_base, rtti[0] ? rtti : "(none)");
+        if (pv != (DWORD)vt && strstr(rtti, "Portrait") && (g_portraitSlot = FindEntry((DWORD *)pv, fn)) != nullptr) {
+            Log("portrait: the update +%06lX is vtable +%06lX entry +%X", RVA_PORTRAIT_UPDATE, pv - (DWORD)g_base, (DWORD)((BYTE *)g_portraitSlot - (BYTE *)pv));
+            return true;
+        }
+    }
+    int n = FindCallSites((const BYTE *)fn, g_prSite, 8);
+    for (int i = 0; i < n && i < 8; i++)
+        Log("  called directly at +%06lX (%s)", (DWORD)(g_prSite[i] - g_base), g_prSite[i][0] == 0xE8 ? "call" : "jmp");
+    if (n < 1 || n > 8) {
+        Log("portrait: refused, %d direct calls to the update (1 to 8 are wrapped)", n);
+        return false;
+    }
+    g_prSites = n;
+    Log("portrait: the update will be wrapped at its %d call sites (on the game thread)", n);
+    return true;
+}
+
+// the worker's part: find where to wrap it once (in a game), then follow the switch
 static void FollowPortrait() {
     static bool refused;
     if (!g_getUi || refused)
         return;
     bool on = g_shared->prOn != 0;
-    if (on && !g_portraitSlot) {
-        DWORD *vt = (DWORD *)(g_base + RVA_PORTRAIT_VTABLE), fn = (DWORD)(g_base + RVA_PORTRAIT_UPDATE);
-        bool ok = PageIs(vt, READ) && !PageIs(vt, EXEC) && FnStart(RVA_PORTRAIT_UPDATE) && FnStart(RVA_FONTSTRING_SET)
-            && FnStart(RVA_UNIT_HP) && FnStart(RVA_HANDLE_LOOKUP) && PageIs(g_base + RVA_FONTSTRING_VTABLE, READ) && !PageIs(g_base + RVA_FONTSTRING_VTABLE, EXEC);
-        for (int i = 0; ok && i < 128 && PageIs(vt + i, READ); i++)
-            if (vt[i] == fn) {
-                g_portraitSlot = vt + i;
-                break;
-            }
-        if (!g_portraitSlot) {
-            refused = true, g_shared->prState = 3;
-            Log(ok ? "portrait: refused, the update +%06lX isn't in the first 128 entries of vtable +%06lX" : "portrait: refused (its functions or vtables aren't where 1.28f has them)",
-                RVA_PORTRAIT_UPDATE, RVA_PORTRAIT_VTABLE);
+    if (on && !g_portraitSlot && !g_prSites) {
+        if (!g_ui) {
+            g_shared->prState = 2;              // waits for a game: the game UI's portrait is one place to look
             return;
         }
-        g_gamePortrait = (PortraitFn)fn;
-        Log("portrait: the update +%06lX is vtable +%06lX entry +%X", RVA_PORTRAIT_UPDATE, RVA_PORTRAIT_VTABLE, (DWORD)((BYTE *)g_portraitSlot - (BYTE *)vt));
+        if (!FindPortrait()) {
+            refused = true, g_shared->prState = 3;
+            return;
+        }
     }
-    if (on != g_portraitHooked && g_portraitSlot && !SwapPortrait(on))
-        refused = true, g_shared->prState = 3;
-    if (g_portraitBad && g_portraitHooked)
-        SwapPortrait(false);
-    if (g_portraitBad)
+    if (g_prSites) {
+        if ((on && !g_portraitBad) != g_portraitHooked && Subclass() && !InterlockedExchange(&g_prQueued, 1))
+            PostMessageA(g_gameWnd, g_prMsg, 0, 0);
+        if (g_prSitesBad)
+            refused = true, g_shared->prState = 3;
+    } else if (g_portraitSlot) {
+        if (on != g_portraitHooked && !SwapPortrait(on))
+            refused = true, g_shared->prState = 3;
+        if (g_portraitBad && g_portraitHooked)
+            SwapPortrait(false);
+    }
+    if (g_portraitBad && !g_portraitHooked)
         refused = true, g_shared->prState = 3;
     else if (g_shared->prState != 3)
         g_shared->prState = !on ? 0 : g_ui ? 1 : 2;
@@ -2401,15 +2530,6 @@ static bool LatencyPatchable(const BYTE *f) {
     return false;
 }
 
-static bool WriteCode(BYTE *p, const BYTE *b, int n) {
-    DWORD old;
-    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old))
-        return false;
-    memcpy(p, b, n);
-    VirtualProtect(p, n, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), p, n);
-    return true;
-}
 static void LatencyBytes(DWORD ms, BYTE *b) {
     b[0] = 0xB8, memcpy(b + 1, &ms, 4), b[5] = 0xC3;   // mov eax, ms; ret
 }
@@ -2642,7 +2762,6 @@ static int ToggleMultiboard(BYTE *ui) {
 // function +0x1407b0 (WFE's [0x1013a2a0]), __fastcall(control, 0, 1). The
 // game takes that as the target: your selected unit. Here the worker watches
 // for it (once per aim) and hands the click to the game thread.
-static const DWORD UI_PORTRAIT = 0x3f4;
 static const DWORD RVA_CONTROL_CLICK = 0x1407b0;
 
 typedef int(__fastcall *ClickFn)(void *, int, int);
@@ -2949,7 +3068,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), g_portraitSlot && SwapPortrait(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;

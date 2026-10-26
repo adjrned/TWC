@@ -40,7 +40,8 @@ int main() {
     *(float *)(unit + UNIT_MANA) = 30; *(float *)(mpObj + 0x84) = 120; *(float *)(mpObj + STAT_REGEN) = -0.75f;
     ((DWORD *)(unit + UNIT_MAXHP_HANDLE))[0] = (DWORD)hpObj, ((DWORD *)(unit + UNIT_MAXHP_HANDLE))[1] = 1;
     ((DWORD *)(unit + UNIT_MAXMANA_HANDLE))[0] = (DWORD)mpObj, ((DWORD *)(unit + UNIT_MAXMANA_HANDLE))[1] = 1;
-    g_getUi = FakeGetUi;
+    static BYTE ui[0x400]; *(BYTE **)(ui + UI_PORTRAIT) = portrait;
+    g_getUi = FakeGetUi; g_ui = ui;         // it looks once a game is on
     auto update = [&] { ((PortraitFn)pv[0x30 / 4])(portrait, 0); };
     update();
     CHECK(updates == 1 && sets == 0, "off: the game's update alone");
@@ -58,6 +59,21 @@ int main() {
     CHECK(sets == before && updates == 6, "no unit: nothing written, the game's update still runs");
     sh.prOn = 0; FollowPortrait();
     CHECK(pv[0x30 / 4] == (DWORD)(img + RVA_PORTRAIT_UPDATE) && !g_portraitHooked && sh.prState == 0, "off: the entry is the game's again");
+
+    // 1.28f: not in the vtable, called directly: its call site is pointed at the hook (on the game thread)
+    pv[0x30 / 4] = (DWORD)(img + 0x100000); g_portraitSlot = nullptr;
+    BYTE caller[] = { 0xE8, 0, 0, 0, 0, 0xC3 };   // call update; ret
+    memcpy(img + 0x200000, caller, sizeof(caller)); *(LONG *)(img + 0x200001) = (LONG)(RVA_PORTRAIT_UPDATE - 0x200005);
+    sh.prOn = 1; sh.prMode = 0; *(float *)(hpObj + STAT_REGEN) = 2; *(float *)(mpObj + 0x84) = 120;
+    *(DWORD *)s0 = (DWORD)fv; *(BYTE **)(portrait + PORTRAIT_UNIT) = unit;
+    FollowPortrait();
+    CHECK(!g_portraitSlot && g_prSites == 1 && g_prSite[0] == img + 0x200000 && !g_portraitHooked, "not in the vtable: its one call site found, nothing written yet");
+    PortraitSitesPass();
+    CHECK(SiteTarget(img + 0x200000) == (BYTE *)PortraitHook && g_portraitHooked, "the game thread points the call at the hook");
+    int u = updates; ((PortraitFn)(img + 0x200000))(portrait, 0);
+    CHECK(updates == u + 1 && !strcmp(lastSet[0], "250 / 500 |cFF40E040+2.0|r"), "through the call site: the game's update, then the line \"%s\"", lastSet[0]);
+    sh.prOn = 0; FollowPortrait(); PortraitSitesPass();
+    CHECK(SiteTarget(img + 0x200000) == img + RVA_PORTRAIT_UPDATE && !g_portraitHooked && sh.prState == 0, "off: the call goes to the game's update again");
     Verdict();
     return g_fails;
 }
