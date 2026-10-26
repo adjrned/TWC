@@ -2312,6 +2312,33 @@ static DWORD g_wsAgain[2];      // GetTickCount() when to set it again (0 = no)
 static bool g_wsApplied;        // set on, not put back yet
 
 // 1 set, 0 no object to set, -1 faulted
+static void HexDump(const BYTE *p, int n, char *out, size_t size) {
+    int o = 0;
+    for (int i = 0; i < n && o + 4 < (int)size; i++)
+        o += sprintf_s(out + o, size - o, "%02X ", p[i]);
+    out[o] = 0;
+}
+
+// The UI's sizes once a game is in widescreen (the root frame, the portrait,
+// the command card, the world frame: width +0x58, height +0x5c of their layout)
+static void LogUiSizes(BYTE *ui, const char *when) {
+    static const struct { const char *name; DWORD off; } F[] = { { "game UI", 0 }, { "portrait", 0x3f4 }, { "command card", 0x3c8 }, { "world", 0x3bc }, { "console", 0x428 } };
+    char b[400];
+    int o = 0;
+    __try {
+        for (auto &f : F) {
+            BYTE *fr = f.off ? *(BYTE **)(ui + f.off) : ui;
+            if (!fr)
+                continue;
+            BYTE *l = fr + 0xb4;
+            o += sprintf_s(b + o, sizeof(b) - o, " %s %.4f x %.4f (own %.4f x %.4f);", f.name, *(float *)(l + 0x58), *(float *)(l + 0x5c), *(float *)(fr + 0x58), *(float *)(fr + 0x5c));
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+    b[o] = 0;
+    Log("widescreen: UI sizes %s:%s", when, b);
+}
+
 static int CallWide(int on) {
     __try {
         BYTE *obj = *(BYTE **)(g_base + RVA_WIDE_OBJ);
@@ -2329,7 +2356,20 @@ static int CallWide(int on) {
             RttiName(vt, g_imageSize, rtti, sizeof(rtti));
             Log("widescreen: object %p (vtable +%06lX, RTTI %s), mode %lu, so +%lX", obj, vt - (DWORD)g_base, rtti[0] ? rtti : "(none)", mode, off);
         }
+        // what the setter changes, for the UI stretch question (the first 3 calls)
+        static int dumps;
+        char before[3 * 48 + 1];
+        bool dump = dumps < 3 && PageIs(obj + off + 47, READ);
+        if (dump)
+            HexDump(obj + off, 48, before, sizeof(before));
         ((WideFn)(g_base + RVA_WIDE_SET))(obj + off, 0, on, 0);
+        if (dump) {
+            char after[3 * 48 + 1];
+            HexDump(obj + off, 48, after, sizeof(after));
+            dumps++;
+            Log("widescreen: set(%d): +%lX before %s", on, off, before);
+            Log("                     after  %s", after);
+        }
         return 1;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return -1;
@@ -2384,7 +2424,7 @@ static void WidescreenPass() {
     }
     static int logs;
     if (r == 1 && logs < 6)
-        logs++, Log("widescreen: set in the game at %p", ui);
+        logs++, Log("widescreen: set in the game at %p", ui), LogUiSizes((BYTE *)ui, "after setting it");
     g_wsApplied |= r == 1;
     g_shared->wsState = r == 1 ? 1 : 2;
 }
