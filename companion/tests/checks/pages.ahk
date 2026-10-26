@@ -73,6 +73,19 @@ TwcPagesRun() {
     BarPlayerColour("allies", "0080FF", 0)
     TwcCheck(healthBars.colour("allies") = "0080FF", "back to their own colour: " healthBars.colour("allies"))
     cg.Destroy()
+    ; the mouse slots are gone: an old [Remap] mouse key is neither a slot nor a macro conflict, and can be bound again
+    IniWrite("$XButton2", iniFile, "Remap", "mouse1")
+    noMouse := true
+    for s in remap.get().slots
+        noMouse := noMouse && s.group != "mouse"
+    TwcCheck(noMouse && MacroKeyConflict("XButton2") = "", "an old [Remap] mouse1 key: no slot, no macro conflict")
+    r := remap.setKey(Map("group", "card", "index", 9, "key", "XButton2"))
+    TwcCheck(r.ok && r.msg = "" && remap.yourKey("card", 9) = "$XButton2", "and it binds to a slot without 'moved from' (" r.msg ")")
+    remap.setKey(Map("group", "card", "index", 9, "key", "-")), IniDelete(iniFile, "Remap", "mouse1")
+    ; the List view keeps the quickcast panel
+    SetIni("list", "Remap", "view"), ShowPage("remap"), RefreshRemap()
+    TwcCheck(remapQcCtrls["hook"].sw.Visible && remapQcCtrls["screen"].ob.Visible, "Remap List view: the quickcast switches are there")
+    SetIni("hud", "Remap", "view"), RefreshRemap()
     TwcCheckDone()
 }
 ; as typing does it: the edit's own change notice (setting .Value raises no event)
