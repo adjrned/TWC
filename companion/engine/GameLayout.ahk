@@ -100,5 +100,8 @@ class Shm {
     static pingText := 864
     static tmMinutes := 992
     static pingChat := 996
-    static size := 1000
+    static cdSize := 1000
+    static cdGold := 1004
+    static cdReady := 1008
+    static size := 1012
 }

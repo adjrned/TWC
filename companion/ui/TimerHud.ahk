@@ -79,6 +79,13 @@ class TimerHud {
             DebugLog("cooldown ping: the game's Chat dialog sends to " names[dest + 1] ", not allies: the line goes there")
         wc3Chat(text)
     }
+    ; how the cooldowns look (layout 20): size x0.75-1.5, gold from n s left (0 = never), "Ready" when over
+    cdSize => Min(Max(Float(Ini(this.section, "cdSize", 1)), 0.75), 1.5)
+    cdGold => Min(Max(Integer(Ini(this.section, "cdGold", 5)), 0), 30)
+    cdReady => Integer(Ini(this.section, "cdReady", 1))
+    setCdSize(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0.75), 1.5), 2), this.section, "cdSize"), this.pushGame(), true)
+    setCdGold(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0), 30)), this.section, "cdGold"), this.pushGame(), true)
+    setCdReady(on) => (SetIni(on ? 1 : 0, this.section, "cdReady"), this.pushGame())
     cdMinutes => Integer(Ini(this.section, "cdMinutes", 0))
     buffMinutes => Integer(Ini(this.section, "buffMinutes", 0))
     setMinutes(key, on) {
@@ -105,6 +112,8 @@ class TimerHud {
         }
         if v && NumGet(v, Shm.layout, "uint") >= 19
             NumPut("uint", (this.cdMinutes ? 1 : 0) | (this.buffMinutes ? 2 : 0), v, Shm.tmMinutes)
+        if v && NumGet(v, Shm.layout, "uint") >= 20
+            NumPut("float", this.cdSize, v, Shm.cdSize), NumPut("float", this.cdGold, v, Shm.cdGold), NumPut("uint", this.cdReady ? 1 : 0, v, Shm.cdReady)
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {

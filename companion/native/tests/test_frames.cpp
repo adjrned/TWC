@@ -114,31 +114,47 @@ int main() {
     sh.itOn = 3;                                // bits: 1 cooldowns, 2 buffs
     sh.cdLeft[0] = 5.3f; sh.cdLeft[5] = 3; sh.cdLeft[11] = 75; sh.buffLeft[2] = 0.46f; sh.buffFlags[2] = 1;
     TimerFramesDraw(ui);
-    CHECK(texts == 5 && !g_tItem[0].text && g_tCd[0].text && g_tCd[11].text && !g_tCd[5].text && g_tBuff[2].text && !g_tBuff[2].shadow,
-        "frames for the 2 command buttons (text + shadow) and 1 buff (text only, as WFE's BUFFUI): %d", texts);
+    CHECK(texts == 27 && !g_tItem[0].text && g_tCd[0].text && g_tCd[11].text && !g_tCd[5].text && g_tBuff[2].text && g_tBuff[2].out[7],
+        "frames for the 2 command buttons and 1 buff, each a text and its 8-copy outline: %d", texts);
     CHECK(fabsf(lastFontH - 0.013f) < 1e-6f, "the buff's text at WFE's TEXTSIZE 0.013 (%.4f)", lastFontH);
     CHECK(!strcmp(g_tCd[0].shown, "6") && !strcmp(g_tCd[11].shown, "75") && !strcmp(g_tBuff[2].shown, "0.5"), "texts: %s, %s, %s (whole seconds: WFE's DISPLAYMINUTES off)", g_tCd[0].shown, g_tCd[11].shown, g_tBuff[2].shown);
     sh.tmMinutes = MIN_COOLDOWNS;
     TimerFramesDraw(ui);
-    CHECK(!strcmp(g_tCd[11].shown, "1:15") && texts == 5, "minutes on for cooldowns: %s, the same frame", g_tCd[11].shown);
+    CHECK(!strcmp(g_tCd[11].shown, "1:15") && texts == 27, "minutes on for cooldowns: %s, the same frame", g_tCd[11].shown);
     sh.tmMinutes = 0;
     TimerFramesDraw(ui);
-    CHECK(!strcmp(lastFont, "Fonts\\Test.ttf") && fonts == 5 && flagCalls == 5, "the skin's MasterFont, flags set (%s, %d fonts)", lastFont, fonts);
-    CHECK(g_tCd[0].text[0x1e0] == 1 && g_tCd[0].shadow[0x1e0] == 1 && *(DWORD *)(g_tCd[0].shadow + TEXT_COLOURS) == 0xFF000000 && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == 0xFFFFFFFF,
-        "shown; white text, black shadow");
-    CHECK(*(DWORD *)(g_tCd[0].text + TEXT_SHADOW) == 0 && *(float *)(g_tCd[0].text + 0x210) == 0 && *(float *)(g_tCd[0].shadow + 0x214) == 0,
+    CHECK(!strcmp(lastFont, "Fonts\\Test.ttf") && fonts == 27 && flagCalls == 27, "the skin's MasterFont, flags set (%s, %d fonts)", lastFont, fonts);
+    CHECK(g_tCd[0].text[0x1e0] == 1 && g_tCd[0].out[0][0x1e0] == 1 && *(DWORD *)(g_tCd[0].out[7] + TEXT_COLOURS) == 0xFF000000 && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == 0xFFFFFFFF,
+        "shown; white text, black outline");
+    CHECK(*(DWORD *)(g_tCd[0].text + TEXT_SHADOW) == 0 && *(float *)(g_tCd[0].text + 0x210) == 0 && *(float *)(g_tCd[0].out[0] + 0x214) == 0,
         "the game's own shadow (black, 0.015 off: the dark second number) is off on our text frames");
-    CHECK(anchors == 5 && lastRel == bbtns[2] && fabsf(lastY - BUFF_TEXT_Y) < 1e-6f, "anchored to their buttons (the buff text under its icon)");
+    CHECK(anchors == 27 && lastRel == bbtns[2] && fabsf(lastY - BUFF_TEXT_Y) < 1e-6f, "anchored to their buttons (the buff text under its icon)");
     sh.itemLeft[3] = 12.2f; int a0 = anchors; TimerFramesDraw(ui);
-    CHECK(texts == 7 && g_tItem[3].text && !strcmp(g_tItem[3].shown, "13") && anchors == a0 + 2 && lastRel == ibtns[3], "an item cooling down: its text on its inventory button");
+    CHECK(texts == 36 && g_tItem[3].text && !strcmp(g_tItem[3].shown, "13") && anchors == a0 + 9 && lastRel == ibtns[3], "an item cooling down: its text on its inventory button");
     sh.itemLeft[3] = 0; TimerFramesDraw(ui);
     CHECK(g_tItem[3].text[0x1e0] == 0, "and hidden when it's ready");
     int setBefore = setTexts; TimerFramesDraw(ui);
-    CHECK(setTexts == setBefore && anchors == a0 + 2, "nothing changed: no text set, no anchoring again");
+    CHECK(setTexts == setBefore && anchors == a0 + 9, "nothing changed: no text set, no anchoring again");
     sh.cdLeft[0] = 0; TimerFramesDraw(ui);
-    CHECK(g_tCd[0].text[0x1e0] == 0 && g_tCd[0].shadow[0x1e0] == 0 && texts == 7, "ready: hidden, the frames kept");
+    CHECK(g_tCd[0].text[0x1e0] == 0 && g_tCd[0].out[3][0x1e0] == 0 && texts == 36, "ready: hidden, the frames kept");
     sh.cdLeft[0] = 2; TimerFramesDraw(ui);
-    CHECK(g_tCd[0].text[0x1e0] == 1 && texts == 7 && !strcmp(g_tCd[0].shown, "2"), "cooling down again: the same frames shown");
+    CHECK(g_tCd[0].text[0x1e0] == 1 && texts == 36 && !strcmp(g_tCd[0].shown, "2"), "cooling down again: the same frames shown");
+    // the cooldowns' look (layout 20): gold near the end, a size, "Ready" in green when over
+    sh.cdGold = 5; sh.cdLeft[0] = 4.2f; TimerFramesDraw(ui);
+    bool gold = *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == GOLD && *(DWORD *)(g_tCd[0].out[0] + TEXT_COLOURS) == BLACK;
+    sh.cdLeft[0] = 8; TimerFramesDraw(ui);
+    CHECK(gold && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == WHITE, "gold at 4.2 s with 'gold from 5 s', white again at 8 s; the outline black");
+    int fn0 = fonts, an0 = anchors;
+    sh.cdSize = 1.5f; TimerFramesDraw(ui);
+    CHECK(fonts >= fn0 + 9 && anchors >= an0 + 9 && fabsf(lastFontH - 0.021f) < 1e-5f && texts == 36, "size x1.5: %.4f, the outline anchored again further out, no new frames", lastFontH);
+    sh.cdSize = 0; sh.cdReady = 1; sh.cdLeft[0] = 0.3f; TimerFramesDraw(ui);
+    sh.cdLeft[0] = 0; TimerFramesDraw(ui);
+    bool ready = !strcmp(g_tCd[0].shown, "Ready") && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == GREEN && g_tCd[0].text[0x1e0] == 1;
+    g_tCd[0].readyUntil = GetTickCount() - 1; TimerFramesDraw(ui);
+    CHECK(ready && g_tCd[0].text[0x1e0] == 0 && texts == 36, "a cooldown over: 'Ready' in green, then hidden after its half second");
+    sh.cdLeft[5] = 0; sh.cdLeft[11] = 30; TimerFramesDraw(ui); sh.cdLeft[11] = 0; TimerFramesDraw(ui);
+    CHECK(g_tCd[11].text[0x1e0] == 0, "no 'Ready' when the seconds vanish from 30 (another unit selected), only when they run out");
+    sh.cdGold = 0, sh.cdReady = 0, sh.cdLeft[0] = 2, sh.cdLeft[11] = 75; TimerFramesDraw(ui);
     sh.itOn = 1; TimerFramesDraw(ui);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tBuff[2].text[0x1e0] == 0, "cooldowns only (bit 1): the buff's seconds hidden");
     sh.itOn = 2; TimerFramesDraw(ui);

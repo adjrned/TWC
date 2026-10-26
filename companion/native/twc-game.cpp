@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 19
+    DWORD layout;           // 20
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -159,6 +159,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 19: WFE's DISPLAYMINUTES, and where the chat opens for a ping
     DWORD tmMinutes;        // companion: m:ss from a minute up, bits: 1 cooldowns ([COOLDOWNUI] DISPLAYMINUTES), 2 buffs ([BUFFUI]); off (WFE's default): whole seconds
     DWORD pingChat;         // module, with command 5: where Enter opens the chat (the Chat dialog's recipient): 0 unknown, 1 all, 2 allies, 3 observers, 4 one player
+    // layout 20: how the cooldowns drawn in the game look (every text drawn has a black outline)
+    float cdSize;           // companion: their size, times 0.014 (0.75-1.5; 0 = 1)
+    float cdGold;           // companion: gold from this many seconds left down (0 = always white)
+    DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
 };
 #pragma pack(pop)
 
@@ -1745,15 +1749,27 @@ static void TextAt(BYTE *t, int pt, float x, float y) {
 // As WFE's Cooldown UI and BUFFUI, text only (no models): seconds left in the
 // middle of each command card and inventory button that's cooling down (both
 // CCommandButtons: WFE's class 0x2d is only that vtable), and under each buff
-// icon (WFE's spot: bottom to bottom, 0.0115 lower). A black copy a little
-// down and right is the shadow (WFE uses four). The times are read here on
+// icon (WFE's spot: bottom to bottom, 0.0115 lower). The times are read here on
 // the game thread, 10 times a second.
-struct TimerSlot { BYTE *btn, *text, *shadow; char shown[12]; float height; };
+// Better seen than WFE's (which puts four black copies under white): every text has a
+// full black outline, eight copies around it (the game's text frames have only one
+// drop shadow, and its font flags no outline); cooldowns can be bigger (cdSize), turn
+// gold near the end (cdGold) and say "Ready" in green for half a second when over
+// (cdReady). The copies go first, so the text is drawn over them.
+static const int OUTLINES = 8;
+struct TimerSlot { BYTE *btn, *text, *out[OUTLINES]; char shown[12]; float height; DWORD colour; float last; DWORD readyUntil; };
 static TimerSlot g_tCd[12], g_tBuff[16], g_tItem[6];
 static BYTE *g_framesUi;            // the game UI the text frames belong to (another one: they're gone)
-static const float SHADOW = 0.0006f, CD_TEXT = 0.014f, BUFF_TEXT_Y = -0.0115f;
+static const float OUTLINE = 0.0008f, CD_TEXT = 0.014f, BUFF_TEXT_Y = -0.0115f, READY_SIZE = 0.75f;
+static const DWORD WHITE = 0xFFFFFFFF, BLACK = 0xFF000000, GOLD = 0xFFFFCC00, GREEN = 0xFF40FF40;
+static const float OUT_DIR[OUTLINES][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 0.7f, 0.7f }, { -0.7f, 0.7f }, { 0.7f, -0.7f }, { -0.7f, -0.7f } };
 // WFE's [BUFFUI] TEXTSIZE 0.013, 0.0105 with its Upgraded UI on and the buff bar not raised
 static float BuffTextHeight() { return g_shared->ulOn && !(g_shared->ulOn & 2) ? 0.0105f : 0.013f; }
+// the cooldowns' size (cdSize, 0.75-1.5 times 0.014)
+static float CdTextHeight() {
+    float k = g_shared->cdSize;
+    return CD_TEXT * (k >= 0.75f && k <= 1.5f ? k : 1);
+}
 
 // as WFE's 0x10033b60: tenths under 1 s, else whole seconds rounded up; m:ss from a minute
 // only with DISPLAYMINUTES (tmMinutes; WFE's default is off: 0x1006c70e reads it with 0)
@@ -1774,49 +1790,68 @@ static void TimeText(float s, char *b, size_t n, bool minutes) {
 
 static void SlotHide(TimerSlot &s) {
     if (s.shown[0] && s.text) {
-        if (s.shadow)
-            TextShow(s.shadow, false);
+        for (BYTE *o : s.out)
+            if (o)
+                TextShow(o, false);
         TextShow(s.text, false);
     }
     s.shown[0] = 0;
 }
 
-// a slot's seconds on its button. The buffs' as WFE's BUFFUI draws them: one text, no shadow,
-// bottom to the icon's bottom 0.0115 lower; the cooldowns' in the middle with a shadow
+// a slot's text on its button: the buffs' where WFE's BUFFUI puts them (bottom to the icon's
+// bottom 0.0115 lower), the cooldowns' in the middle; each with its outline
 static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
     char t[12];
     TimeText(left, t, sizeof(t), (g_shared->tmMinutes & (buff ? MIN_BUFFS : MIN_COOLDOWNS)) != 0);
+    // a cooldown that just ran out on the same button (not another unit selected): "Ready"
+    DWORD now = GetTickCount();
+    if (!buff && btn && btn == s.btn && !t[0] && s.last > 0 && s.last < 0.6f && g_shared->cdReady)
+        s.readyUntil = now + 500;
+    s.last = btn ? left : 0;
+    bool ready = !buff && !t[0] && btn && btn == s.btn && s.readyUntil && (LONG)(now - s.readyUntil) < 0;
+    if (!ready)
+        s.readyUntil = 0;
+    if (ready)
+        strcpy_s(t, "Ready");
     if (!t[0] || !btn) {
         SlotHide(s);
         return;
     }
-    float h = buff ? BuffTextHeight() : CD_TEXT;
+    float h = buff ? BuffTextHeight() : CdTextHeight() * (ready ? READY_SIZE : 1);
     if (!s.text) {
-        s.shadow = buff ? nullptr : NewText(ui, 4, h, 0xFF000000);
-        s.text = buff || s.shadow ? NewText(ui, buff ? 0 : 4, h, 0xFFFFFFFF) : nullptr;
-        if (!s.text)
+        for (BYTE *&o : s.out)
+            if (!(o = NewText(ui, buff ? 0 : 4, h, BLACK)))
+                return;                     // frames stopped (logged): nothing more is made
+        if (!(s.text = NewText(ui, buff ? 0 : 4, h, WHITE)))
             return;
-        s.btn = nullptr, s.height = h;
+        s.btn = nullptr, s.height = h, s.colour = WHITE;
     }
-    if (s.height != h) {                    // the widescreen UI's buff bar changed: WFE's other size
+    if (s.height != h) {                    // another size: the widescreen UI's buff bar, cdSize, "Ready"
+        for (BYTE *o : s.out)
+            Game(RVA_SET_FONT, o, { (DWORD)FontPath(), F(h), 0 });
         Game(RVA_SET_FONT, s.text, { (DWORD)FontPath(), F(h), 0 });
         s.height = h;
+        if (s.btn == btn)
+            s.btn = nullptr;                // anchored again: the outline's distance follows the size
     }
     if (s.btn != btn) {
         int pt = buff ? PT_BOTTOM : PT_CENTER;
-        float y = buff ? BUFF_TEXT_Y : 0;
-        if (s.shadow)
-            TextAnchor(s.shadow, btn, pt, pt, SHADOW, y - SHADOW);
+        float y = buff ? BUFF_TEXT_Y : 0, d = OUTLINE * h / CD_TEXT;
+        for (int i = 0; i < OUTLINES; i++)
+            TextAnchor(s.out[i], btn, pt, pt, d * OUT_DIR[i][0], y + d * OUT_DIR[i][1]);
         TextAnchor(s.text, btn, pt, pt, 0, y);
         s.btn = btn;
     }
+    DWORD c = ready ? GREEN : !buff && g_shared->cdGold > 0 && left <= g_shared->cdGold ? GOLD : WHITE;
+    if (c != s.colour)
+        TextColour(s.text, c), s.colour = c;
     if (strcmp(t, s.shown)) {
-        if (s.shadow)
-            TextSet(s.shadow, t);
+        for (BYTE *o : s.out)
+            TextSet(o, t);
         TextSet(s.text, t);
         if (!s.shown[0]) {
-            if (s.shadow)
-                TextShow(s.shadow, true);
+            for (BYTE *o : s.out)
+                TextShow(o, true);
             TextShow(s.text, true);
         }
         strcpy_s(s.shown, t);
@@ -5159,7 +5194,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 19;
+        g_shared->layout = 20;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
