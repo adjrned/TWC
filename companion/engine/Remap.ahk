@@ -222,24 +222,26 @@ class RemapEngine {
     ; waits castGap (450 ms) before pressing again: the hero may still be
     ; turning or walking into range, and each press reopens the reticle (its
     ; animation and sound) and gives the order again.
-    ; On 1.28f the game module's quickcast says when the game waits for a
-    ; target (no setup); the screen quickcast is Reforged's only. Without it
-    ; (the module off or not ready, Reforged not set up) the key goes alone.
+    ; Two ways to know the game waits for a target: the game hook (1.28f
+    ; only: the injected game module asks the game; no setup) and the screen
+    ; (1.28f and Reforged: reads the command card; set up per window size).
+    ; On 1.28f the hook goes first, the screen when the hook is off or not
+    ; ready. Neither: the key goes alone.
     castQuick(game, yourKey) {
         global quickcast, gameModule
         static hinted := Map()          ; window keys already hinted about
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         reforged := InStr(WC3WindowKey(), "reforged") = 1
-        inGameQc := !reforged && gameModule.qcReady()
-        on := reforged ? QuickcastReforgedOn() : gameModule.quickcast
-        cal := reforged && on ? quickcast.current() : 0
+        hookOn := !reforged && gameModule.quickcast, screenOn := QuickcastScreenOn()
+        inGameQc := hookOn && gameModule.qcReady()
+        cal := !inGameQc && screenOn ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /
-        ; windowed switch or a resize changes it; none when that version's switch is off)
-        if on && !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
+        ; windowed switch or a resize changes it; none when both switches are off)
+        if (hookOn || screenOn) && !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
             hinted[k] := true
-            DebugLog("quickcast: " (reforged ? "no setup for " k : "the game module isn't ready") ": the key alone")
-            Toast(reforged ? "Quickcast isn't set up for this window size (" WC3WindowName(k) "): Remap page > Quickcast Reforged > Options"
-                : "Quickcast needs the game module: WC3 page, top row (" gameModule.qcStatusText() ")", "", 6000)
+            DebugLog("quickcast: " (hookOn ? "the game hook isn't ready, " : "") (screenOn ? "the screen isn't set up for " k : "the screen is off") ": the key alone")
+            Toast(hookOn ? "Quickcast: the game hook isn't ready (" gameModule.qcStatusText() ")" (screenOn ? "; or set up Screen quickcast: Remap page > Screen > Options" : "")
+                : "Quickcast isn't set up for this window size (" WC3WindowName(k) "): Remap page > Screen > Options", "", 6000)
         }
         this.holding[base] := true, start := A_TickCount
         loop {

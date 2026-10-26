@@ -32,12 +32,12 @@ TwcPagesRun() {
     TwcCheck(n >= 12, "every Options window opens (" n ")")
     ; the Remap page's quickcast switches and their windows
     ShowPage("remap")
-    for v in ["128", "reforged"] {
-        was := v = "128" ? gameModule.quickcast : QuickcastReforgedOn()
+    for v in ["hook", "screen"] {
+        was := v = "hook" ? gameModule.quickcast : QuickcastScreenOn()
         RemapQcSwitch(v), RemapQcSwitch(v)
         qg := QuickcastSettings(v)
         try qg.Destroy()
-        TwcCheck((v = "128" ? gameModule.quickcast : QuickcastReforgedOn()) = was && remapQcCtrls[v].sw.Text = (was ? "On" : "Off"), "Remap: quickcast " v " switch and Options")
+        TwcCheck((v = "hook" ? gameModule.quickcast : QuickcastScreenOn()) = was && remapQcCtrls[v].sw.Text = (was ? "On" : "Off"), "Remap: quickcast " v " switch and Options")
     }
     ; one page a tab on 1.28f (two columns): no pager
     global wc3PagerCtls

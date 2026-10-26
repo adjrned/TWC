@@ -1500,24 +1500,24 @@ BuildRemapTiles() {
     UISetFont(qh, "s9 w600")
     local qb := Box("remap", qx, y0, qw, 3 * (th + gap) - gap, C.card, C.frame, 5)
     AddToPage("remap", qh), remapHudCtrls.Push(qh)
-    local qy := y0 + 10
-    for v in [["128", "1.28f", "the game says when"], ["reforged", "Reforged", "read from the screen"]] {
+    local qy := y0 + 8
+    for v in [["hook", "Game hook", "1.28f", "Injected into the game: it knows when a target is wanted. No setup."],
+        ["screen", "Screen", "1.28f · Reforged", "Reads the screen, nothing injected. Set up once per window size."]] {
         local vl := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20) " h18 +Background" C.card " c" C.text, v[2])
         UISetFont(vl, "s9 w600")
-        local vd := mainGui.AddText("x" (qx + 10) " y" (qy + 18) " w" (qw - 20) " h16 +Background" C.card " c" C.dim, v[3])
+        local vt := mainGui.AddText("x" (qx + 10) " y" (qy + 17) " w" (qw - 20) " h15 +Background" C.card " c" C.accent, v[3])
+        UISetFont(vt, "s7 w600")
+        local vd := mainGui.AddText("x" (qx + 10) " y" (qy + 33) " w" (qw - 20) " h44 +Background" C.card " c" C.dim, v[4])
         UISetFont(vd, "s8")
-        local sw := MkButton("Off", qx + 10, qy + 38, 44, 24, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
-        local ob := MkButton("Options", qx + 60, qy + 38, qw - 70, 24, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
+        local sw := MkButton("Off", qx + 10, qy + 80, 44, 22, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
+        local ob := MkButton("Options", qx + 60, qy + 80, qw - 70, 22, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
         for b in [sw, ob]
             UISetFont(b, "s8 w600")
-        AddToPage("remap", vl, vd, sw, ob)
-        remapHudCtrls.Push(vl, vd, sw, ob)
+        AddToPage("remap", vl, vt, vd, sw, ob)
+        remapHudCtrls.Push(vl, vt, vd, sw, ob)
         remapQcCtrls[v[1]] := { label: vl, sw: sw, ob: ob }
-        qy += 76
+        qy += 112
     }
-    local qn := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20) " h60 +Background" C.card " c" C.dim, "QC on a slot: it casts at the cursor. Right-click a slot to switch it.")
-    UISetFont(qn, "s8")
-    AddToPage("remap", qn), remapHudCtrls.Push(qn)
     remapQcCtrls["box"] := qb
 }
 ; Only what changed is touched, each control repainting itself: repainting the
@@ -1530,22 +1530,23 @@ RemapMoveBtn(b, x, y) {
     } else
         b.Move(x, y)
 }
-; the quickcast switches: 1.28f is the game module's ([Game] quickcast), Reforged the screen's ([Quickcast] reforged)
-RemapQcSwitch(ver, *) {
+; the quickcast switches: the game hook (1.28f, the injected game module: [Game] quickcast) and the
+; screen (1.28f and Reforged: [Quickcast] screen; it was "reforged" for a while)
+RemapQcSwitch(which, *) {
     global gameModule
-    if ver = "128"
+    if which = "hook"
         gameModule.setQuickcast(!gameModule.quickcast)
     else
-        SetIni(QuickcastReforgedOn() ? 0 : 1, "Quickcast", "reforged")
+        SetIni(QuickcastScreenOn() ? 0 : 1, "Quickcast", "screen")
     RemapQcRefresh()
 }
-QuickcastReforgedOn() => Integer(Ini("Quickcast", "reforged", 1))
+QuickcastScreenOn() => Integer(Ini("Quickcast", "screen", Ini("Quickcast", "reforged", 1)))
 RemapQcRefresh() {
     global remapQcCtrls, gameModule
-    if !remapQcCtrls.Has("128")
+    if !remapQcCtrls.Has("hook")
         return
-    Wc3SetSwitch(remapQcCtrls["128"].sw, gameModule.quickcast)
-    Wc3SetSwitch(remapQcCtrls["reforged"].sw, QuickcastReforgedOn())
+    Wc3SetSwitch(remapQcCtrls["hook"].sw, gameModule.quickcast)
+    Wc3SetSwitch(remapQcCtrls["screen"].sw, QuickcastScreenOn())
 }
 RefreshRemap(capturing := false) {
     global remap, remapSel, remapSlots, remapViewBtns, remapListCtrls, remapHudCtrls, remapTiles, remapListBox,
@@ -1702,21 +1703,21 @@ RemapClear() {
 }
 ; Quickcast Setup window, in the .modal style of Dialog: the status for the
 ; running game, the three in-game steps, hold to repeat, and the buttons
-; ver: "128" (the game module's: no setup) or "reforged" (the screen's); default: the running
-; game's, else the WC3 page's side
+; ver: "hook" (the game hook: 1.28f, injected, no setup) or "screen" (1.28f and Reforged, set
+; up per window size); default: the hook in a 1.28f game, else the screen
 QuickcastSettings(ver := "") {
     global C, mainGui, quickcast, gameModule, UI_FONT, wc3Ver
     static g := 0
     if g
         try g.Destroy()
     if ver = ""
-        ver := (r := Wc3RunningVer()) != "" ? r : wc3Ver
-    s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "128"
+        ver := Wc3RunningVer() = "128" ? "hook" : "screen"
+    s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "hook"
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     g.BackColor := C.frame                           ; = the 1px border
     g.MarginX := 0, g.MarginY := 0
     card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
-    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, mod128 ? "Quickcast · 1.28f" : "Quickcast · Reforged")
+    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, mod128 ? "Quickcast · Game hook" : "Quickcast · Screen")
     t.SetFont("s13 w700 q4", "Cinzel")
     where := WC3WindowName(s.window)
     ok := mod128 ? gameModule.qcReady() : s.calibrated
@@ -1726,12 +1727,12 @@ QuickcastSettings(ver := "") {
         : "Not set up for " where " yet"
     st := g.AddText("x" x " y56 w" tw " h20 +Background" C.card " c" (ok ? C.accent : C.muted), (ok ? "✓  " : "") status)
     UISetFont(st, "s10 w600")
-    intro := mod128 ? "Casts at the cursor the moment you press the key: the game module clicks the moment "
-        . "the game waits for a target, so a cooldown or missing mana never clicks a unit. No setup. "
-        . "Which keys quickcast: the Remap page."
-        : "Casts at the cursor the moment you press the key, and clicks only when the game is "
-        . "waiting for a target, so a cooldown or missing mana never clicks a unit. Until it's set "
-        . "up, quickcast slots just send their key."
+    intro := mod128 ? "1.28f only. The companion's game module is injected into Warcraft III and asks the game "
+        . "itself when it waits for a target: the moment it does, it clicks at the cursor, so a cooldown "
+        . "or missing mana never clicks a unit. No setup. Which keys quickcast: QC on their slot."
+        : "1.28f and Reforged. Nothing is injected: it reads the command card on the screen to see when "
+        . "the game waits for a target, then clicks at the cursor. Set it up once per window size. On "
+        . "1.28f it's used when the game hook is off or not ready."
     it := g.AddText("x" x " y82 w" tw " +Background" C.card " c" C.dim, intro)
     UISetFont(it, "s9")
     y := 82 + TextHeight(it, intro, tw) + 18
