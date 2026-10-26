@@ -10,6 +10,10 @@ static int Idx(void *f) { for (int i = 0; i < 5; i++) if (f == frames[i]) return
 static void __fastcall FHide(void *f, int) { hides[Idx(f)]++; if (GetCurrentThreadId() != gameTid) wrong++; }
 static void __fastcall FShow(void *f, int) { shows[Idx(f)]++; }
 static void __fastcall FAfter(void *f, int) { afters[Idx(f)]++; }
+// the console: 4 regions, 3 of them CSimpleTextures, one a font string
+static BYTE con[0x100], links[4][0x10], regs[4][0x20]; static int texHides, texShows, otherCalls;
+static void __fastcall RHide(BYTE *r, int) { r == regs[2] ? otherCalls++ : texHides++; r[0x10] = 0; }
+static void __fastcall RShow(BYTE *r, int) { r == regs[2] ? otherCalls++ : texShows++; r[0x10] = 1; }
 static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)to - (p + 5)); }
 static BYTE ui[0x400], ui2[0x400];
 static void Pump(int n) { for (int k = 0; k < n; k++) { QueueDisplay(); Sleep(260); } }
@@ -30,6 +34,10 @@ static DWORD WINAPI Tester(void *) {
     CHECK(shows[1] == 1 && afters[1] >= 3 && hides[2] == 1 && hides[3] == 1 && hides[4] == 1 && g_shared->uiState == 0x1c, "minimap shown (+0xe4 after), the three simple frames hidden (state %lX)", g_shared->uiState);
     fakeUi = nullptr; Pump(1);
     CHECK((g_shared->uiState & 0x1f) == 0, "between games: state 0");
+    fakeUi = ui; g_shared->uiHide = 0x20; Pump(1);
+    CHECK(texHides == 3 && !otherCalls && (g_shared->uiState & 0x20) && !regs[0][0x10] && !regs[3][0x10] && regs[2][0x10], "the console's background: its 3 textures hidden, the font string left (state %lX)", g_shared->uiState);
+    g_shared->uiHide = 0x1c; Pump(1);
+    CHECK(texShows == 3 && !(g_shared->uiState & 0x20) && regs[0][0x10] == 1, "off: the 3 shown again");
     CHECK(wrong == 0, "all on the game thread");
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
@@ -50,6 +58,22 @@ int main() {
         *(BYTE **)(ui + UI_PARTS[i].off) = frames[i]; *(BYTE **)(ui2 + UI_PARTS[i].off) = frames[i];
     }
     *(DWORD *)ui = *(DWORD *)ui2 = (DWORD)(img + RVA_UI_VTABLE); g_uiVtable = *(DWORD *)ui;
+    Stub(RVA_REGION_HIDE, RHide); Stub(RVA_REGION_SHOW, RShow);
+    VirtualProtect(img + 0xab8000, 0x2000, PAGE_READWRITE, &old);       // vtables and RTTI: data
+    // RTTI: vtable[-1] -> locator (+0xc the type) -> type +8 the name
+    auto rtti = [&](DWORD vtOff, DWORD colOff, const char *name) {
+        DWORD *vt = (DWORD *)(img + vtOff), *col = (DWORD *)(img + colOff);
+        vt[-1] = (DWORD)col; col[0] = 0; col[3] = (DWORD)(img + colOff + 0x20); strcpy_s((char *)img + colOff + 0x28, 64, name);
+        return (DWORD)vt;
+    };
+    DWORD texVt = rtti(0xab8000, 0xab9000, ".?AVCSimpleTexture@@"), strVt = rtti(0xab8100, 0xab9100, ".?AVCSimpleFontString@@");
+    *(DWORD *)con = rtti(0xab8200, 0xab9200, ".?AVCConsole@@");
+    *(BYTE **)(con + CONSOLE_REGIONS) = links[0];
+    for (int i = 0; i < 4; i++) {
+        *(BYTE **)(links[i] + 4) = i < 3 ? links[i + 1] : nullptr; *(BYTE **)(links[i] + 8) = regs[i];
+        *(DWORD *)regs[i] = i == 2 ? strVt : texVt; regs[i][0x10] = 1;
+    }
+    *(BYTE **)(ui + UI_CONSOLE) = con;
     fakeUi = ui; g_getUi = FakeGetUi;
     mainTid = gameTid = GetCurrentThreadId();
     WNDCLASSA wc = {}; wc.lpfnWndProc = DefWindowProcA; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);

@@ -104,7 +104,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD latState;         // module: 0 the game's own, 1 set, 3 refused (see the log)
     DWORD latGame[3];       // module: what the game's LAN / single player / Battle.net getters returned (-1 = faulted)
     // layout 10: hiding parts of the UI (UiHidePass)
-    DWORD uiHide;           // companion: frames to hide, bits: 1 time of day, 2 minimap, 4 upper menu bar, 8 resource bar, 0x10 idle workers
+    DWORD uiHide;           // companion: frames to hide, bits: 1 time of day, 2 minimap, 4 upper menu bar, 8 resource bar, 0x10 idle workers, 0x20 the console's background
     DWORD uiState;          // module: frames hidden now (same bits); 0x80000000 = one was refused (see the log)
     // layout 11: frames added to the game (Storm.dll's SMemAlloc)
     DWORD stState;          // module: 0 not checked yet, 1 the game's Storm.dll checks out, 2 none loaded in the game, 3 refused (see the log)
@@ -2642,6 +2642,12 @@ static void LatencyPass() {
 // vtable +0xe4 after either (WFE does; its role isn't known). Hidden again
 // every 1.5 s (WFE re-applies too: the game may show them itself) and at each
 // game start; shown again once when you turn one off.
+// The console's background (WFE's ISCONSOLE, 0x100890c0; study_uihide2.md):
+// the black panel under the bottom UI that stays where the parts were. Its
+// pieces are the CSimpleTextures in the console frame's region list
+// ([ui+0x428], first link [+0xd8], next [link+4], the region [link+8]; WFE
+// takes 9), each hidden with the region hide +0x141ce0 and shown with
+// +0x141e80 (WFE's [0x1013aa3c] / [0x1013aa40]). The world shows through.
 static const struct UiPart { const char *name; DWORD off, hide, show, after; const char *rtti; } UI_PARTS[5] = {
     { "time of day",    0x3f8, 0xd0, 0xd4, 0,    "TimeOfDay" },     // WFE 0x1008b880
     { "minimap",        0x3c0, 0xd0, 0xd4, 0xe4, "Minimap" },       // 0x1008a250
@@ -2649,6 +2655,8 @@ static const struct UiPart { const char *name; DWORD off, hide, show, after; con
     { "resource bar",   0x3cc, 0x64, 0x68, 0,    nullptr },         // 0x10088100
     { "idle workers",   0x3e0, 0x64, 0x68, 0,    nullptr },         // 0x1008afa0
 };
+static const DWORD UI_CONSOLE = 0x428, CONSOLE_REGIONS = 0xd8, RVA_REGION_HIDE = 0x141ce0, RVA_REGION_SHOW = 0x141e80;
+static const int UI_PART_COUNT = 6;     // the 5 above and the console's background (bit 0x20)
 static DWORD g_uiHidden;            // bits hidden by us in this game
 static void *g_uiHideUi;
 
@@ -2691,9 +2699,53 @@ static int UiPartCall(BYTE *ui, int i, bool hide) {
     }
 }
 
+// the console's background textures: hide (or show). 1 done, 0 none there, -1 refused for good
+static int ConsoleCall(BYTE *ui, bool hide) {
+    static int checked;             // 1 checked out, 2 refused
+    if (checked == 2)
+        return -1;
+    BYTE *con = UiFrame(ui, UI_CONSOLE);
+    if (!con)
+        return 0;
+    if (!FnStart(RVA_REGION_HIDE) || !FnStart(RVA_REGION_SHOW)) {
+        checked = 2;
+        Log("hide UI: the console's background refused (the region hide / show aren't functions)");
+        return -1;
+    }
+    BYTE *tex[9];
+    int n = 0, links = 0;
+    char rtti[64];
+    __try {
+        for (BYTE *l = *(BYTE **)(con + CONSOLE_REGIONS); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && links < 64 && n < 9; l = *(BYTE **)(l + 4), links++) {
+            BYTE *r = *(BYTE **)(l + 8);
+            if (!r || (DWORD)(r - (BYTE *)0x10000) > 0x7ffeffff)
+                continue;
+            DWORD vt = *(DWORD *)r;
+            if (vt < (DWORD)g_base || vt - (DWORD)g_base >= g_imageSize)
+                continue;
+            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+            if (strstr(rtti, "CSimpleTexture"))
+                tex[n++] = r;
+        }
+        if (!checked) {
+            checked = 1;
+            RttiName(*(DWORD *)con, g_imageSize, rtti, sizeof(rtti));
+            Log("hide UI: console %p, vtable +%06lX, RTTI %s: %d regions, %d textures", con, *(DWORD *)con - (DWORD)g_base, rtti[0] ? rtti : "(none)", links, n);
+        }
+        for (int i = 0; i < n; i++)
+            ((FrameFn)(g_base + (hide ? RVA_REGION_HIDE : RVA_REGION_SHOW)))(tex[i], 0);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        checked = 2;
+        Log("hide UI: the console's background faulted: refusing it");
+        return -1;
+    }
+    return n ? 1 : 0;
+}
+static int UiHideCall(BYTE *ui, int i, bool hide) { return i == 5 ? ConsoleCall(ui, hide) : UiPartCall(ui, i, hide); }
+
 static void UiHidePass() {
     static DWORD at;
-    DWORD want = g_shared->uiHide & 0x1f, now = GetTickCount();
+    DWORD want = g_shared->uiHide & 0x3f, now = GetTickCount();
     void *ui = GameUi();
     if (!ui) {
         g_uiHidden = 0, g_uiHideUi = nullptr;           // between games: the next one starts fresh
@@ -2702,17 +2754,17 @@ static void UiHidePass() {
     }
     if (ui != g_uiHideUi)
         g_uiHideUi = ui, g_uiHidden = 0, at = 0;
-    for (int i = 0; i < 5; i++)                         // turned off: show it again, once
+    for (int i = 0; i < UI_PART_COUNT; i++)             // turned off: show it again, once
         if ((g_uiHidden & (1u << i)) && !(want & (1u << i))) {
-            UiPartCall((BYTE *)ui, i, false);
+            UiHideCall((BYTE *)ui, i, false);
             g_uiHidden &= ~(1u << i);
         }
     bool fresh = (want & ~g_uiHidden) != 0;
     if (want && (fresh || now - at >= 1500)) {
         at = now;
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < UI_PART_COUNT; i++)
             if (want & (1u << i)) {
-                int r = UiPartCall((BYTE *)ui, i, true);
+                int r = UiHideCall((BYTE *)ui, i, true);
                 if (r == 1)
                     g_uiHidden |= 1u << i;
                 else if (r < 0)

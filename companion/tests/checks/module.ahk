@@ -7,7 +7,6 @@ TwcModuleIni() {
     for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi"], "Hosting", ["latency"], "Timers", ["show"])
         for key in keys
             IniWrite(1, iniFile, sect, key)
-    IniWrite(3, iniFile, "Display", "hideParts")
     IniWrite("game", iniFile, "Timers", "where")
 }
 TwcModuleIni()
@@ -55,8 +54,8 @@ TwcModuleRun() {
     v := twcShmBuf.Ptr
     for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
-    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 3 && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
-        && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: parts, FPS limit, latency, mana and bar height")
+    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
+        && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
     ; the lines 1.28f's portrait fallback logs (call sites instead of the vtable): not a refusal, then working

@@ -40,7 +40,7 @@ Wc3PlannedText(tab, ver) {
         "castingreforged", "",
         "timers128", "",
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
-        "display128", "Planned: hiding more of the UI, detailed tooltips.",
+        "display128", "Planned: detailed tooltips.",
         "displayreforged", "Nothing planned yet.",
         "hosting128", "Planned: the game start countdown when you host.",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
@@ -110,10 +110,9 @@ Wc3Features() {
             buttons: [[(*) => "Messages: " gameCmds.keyText("clearMessages"), (*) => Wc3Capture("clearMessages")],
                 [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")],
                 [(*) => "Multiboard: " gameCmds.keyText("multiboard"), (*) => Wc3Capture("multiboard")]] },
-        { tab: "display", title: "Hide UI parts", badge: "1.28f",
-            desc: "Hides the parts you pick: time of day, minimap, menu bar, resources...",
-            on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
-            buttons: [[(*) => gameDisplay.partsLabel, (*) => HidePartsDialog()]] },
+        { tab: "display", title: "Hide the UI", badge: "1.28f",
+            desc: "As WFE: the black console goes, the world shows through; the minimap stays.",
+            on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus() },
         { tab: "hosting", title: "Lobby latency", badge: "1.28f",
             desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
@@ -267,39 +266,6 @@ BuffWatchDialog() {
     h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
-    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
-}
-
-; Hide UI parts: one checkbox per part, in the Buffs window's style
-HidePartsDialog() {
-    global C, mainGui, gameDisplay, UI_FONT
-    static g := 0
-    if g
-        try g.Destroy()
-    w := 360, x := 26, tw := w - 52
-    g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
-    g.BackColor := C.frame                           ; = the 1px border
-    g.MarginX := 0, g.MarginY := 0
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
-    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Hide UI parts")
-    t.SetFont("s13 w700 q4", "Cinzel")
-    it := g.AddText("x" x " y56 w" tw " h18 +Background" C.card " c" C.dim, "In 1.28f games, while the card is on.")
-    UISetFont(it, "s9")
-    y := 86
-    g.SetFont("s10", UI_FONT)
-    for i, name in GameDisplayEngine.PARTS {
-        cb := g.AddCheckbox("x" x " y" y " w" tw " h22 +Background" C.card " c" C.text ((gameDisplay.hideParts >> (i - 1)) & 1 ? " Checked" : ""), " " name)
-        cb.OnEvent("Click", ((i, src, *) => (gameDisplay.setPart(i, src.Value), RefreshWc3())).Bind(i))
-        y += 28
-    }
-    y += 14
-    close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
-    UISetFont(close, "s9 w600"), Box.Round(close, 104, 34, 4)
-    close.OnEvent("Click", (*) => g.Destroy())
-    h := y + 34 + 24
-    card.Move(, , , h - 2)
-    g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
 }

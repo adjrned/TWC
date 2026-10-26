@@ -55,8 +55,6 @@ TwcPagesRun() {
     BarPlayerColour("allies", "0080FF", cg["Static5"], 0)
     TwcCheck(healthBars.colour("allies") = "0080FF", "back to their own colour: " healthBars.colour("allies"))
     cg.Destroy()
-    HidePartsDialog()
-    TwcCheck(true, "Hide UI parts window")
     TwcCheckDone()
 }
 ; as typing does it: the edit's own change notice (setting .Value raises no event)

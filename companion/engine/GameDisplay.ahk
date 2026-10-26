@@ -11,16 +11,20 @@
 ;  Hosting; WFE's [DELAY]): the game's LAN, single player and Battle.net
 ;  latency getters return the ms set here. Off by default (ini [Hosting]
 ;  latency, latencyMs).
-;  And hiding parts of the UI (layout 10, WFE's INTERFACE keys for the parts
-;  it hides with their own calls): time of day, minimap, upper menu bar,
-;  resource bar, idle workers. Off by default (ini [Display] hideUi, and
-;  hideParts: the parts as bits, in PARTS order).
+;  And hiding the UI (layout 10, WFE's INTERFACE keys for the parts it hides
+;  with their own calls): one switch, as WFE looks with its UI hidden: the
+;  console's black background goes (the world shows through), and the time
+;  of day, upper menu bar, resource bar and idle workers with it; the
+;  minimap, portrait, command card and inventory stay. Off by default (ini
+;  [Display] hideUi).
 ; ============================================================================
 class GameDisplayEngine {
     section := "Display"
     static LIMITS := [120, 144, 165, 200, 240, 300]
     static LATENCIES := [25, 50, 75, 100, 150, 200]
-    static PARTS := ["Time of day", "Minimap", "Upper menu bar", "Resource bar", "Idle workers"]
+    ; the module's uiHide bits, in order; HIDE: the ones the switch hides (all but the minimap)
+    static PARTS := ["Time of day", "Minimap", "Upper menu bar", "Resource bar", "Idle workers", "The console's background"]
+    static HIDE := 0x3D
 
     __New(gameModule) {
         this.gm := gameModule
@@ -72,19 +76,6 @@ class GameDisplayEngine {
         SetIni(on ? 1 : 0, this.section, "hideUi")
         this.push()
     }
-    hideParts => Integer(Ini(this.section, "hideParts", 0)) & 0x1f
-    setPart(i, on) {
-        m := this.hideParts
-        SetIni(on ? m | (1 << (i - 1)) : m & ~(1 << (i - 1)), this.section, "hideParts")
-        this.push()
-    }
-    partsCount() {
-        n := 0
-        loop GameDisplayEngine.PARTS.Length
-            n += (this.hideParts >> (A_Index - 1)) & 1
-        return n
-    }
-    partsLabel => "Parts: " this.partsCount() " of " GameDisplayEngine.PARTS.Length
 
     ; the switches to the module in the running game (once a second, and on changes)
     push() {
@@ -99,7 +90,7 @@ class GameDisplayEngine {
         NumPut("uint", this.latency && this.gm.enabled ? 1 : 0, v, Shm.latOn)
         if NumGet(v, Shm.layout, "uint") < 10
             return
-        NumPut("uint", this.hideUi && this.gm.enabled ? this.hideParts : 0, v, Shm.uiHide)
+        NumPut("uint", this.hideUi && this.gm.enabled ? GameDisplayEngine.HIDE : 0, v, Shm.uiHide)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)
@@ -127,15 +118,13 @@ class GameDisplayEngine {
     hideStatus() {
         if !this.hideUi
             return "Off"
-        if !this.hideParts
-            return "On · pick the parts to hide"
         if (w := this.moduleWait(10)) != ""
             return w
         st := NumGet(this.gm.live(), Shm.uiState, "uint"), names := []
         for i, n in GameDisplayEngine.PARTS
             if st & (1 << (i - 1))
                 names.Push(StrLower(n))
-        return st & 0x80000000 ? "On · one part was refused by the module's checks (see the log)"
+        return st & 0x80000000 ? "On · a part was refused by the module's checks (see the log)"
             : names.Length ? "On · hidden: " Join(", ", names*) : "On · waiting for a game"
     }
     latencyStatus() {
