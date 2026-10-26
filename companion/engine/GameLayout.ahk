@@ -1,0 +1,83 @@
+#Requires AutoHotkey v2.0
+; ============================================================================
+;  Shm - where each field of the game module's shared memory is (byte
+;  offsets into "Local\TWC_Game_<pid>"; Shared in native\twc-game.cpp).
+;  WRITTEN BY native\tests\test_layout.exe write - don't edit by hand;
+;  run-tests.bat fails when it's out of date.
+; ============================================================================
+class Shm {
+    static magic := 0
+    static layout := 4
+    static build := 8
+    static status := 12
+    static heartbeat := 16
+    static targeting := 20
+    static probe := 24
+    static ui := 28
+    static qcSeq := 32
+    static qcUntil := 36
+    static qcFlags := 40
+    static qcDone := 44
+    static qcResult := 48
+    static qcMs := 52
+    static probeText := 56
+    static tmWant := 168
+    static tmSeq := 172
+    static tmFlags := 176
+    static cdLeft := 180
+    static cdTotal := 228
+    static buffCount := 276
+    static buffLeft := 280
+    static buffTotal := 344
+    static buffFlags := 408
+    static buffId := 472
+    static cmdSeq := 536
+    static cmd := 540
+    static cmdDone := 544
+    static cmdResult := 548
+    static hbOn := 552
+    static hbHeight := 556
+    static hbWidth := 560
+    static hbState := 564
+    static hbDefHeight := 568
+    static hbDefWidth := 572
+    static hbCount := 576
+    static hcOn := 580
+    static hcMode := 584
+    static hcColours := 588
+    static hcState := 608
+    static wsOn := 612
+    static wsState := 616
+    static fpsOn := 620
+    static fpsLimit := 624
+    static fpsState := 628
+    static fpsGameLimit := 632
+    static scHeld := 636
+    static scState := 640
+    static scCount := 644
+    static cmdArg := 648
+    static latOn := 652
+    static latMs := 656
+    static latState := 660
+    static latGame := 664
+    static uiHide := 676
+    static uiState := 680
+    static stState := 684
+    static itOn := 688
+    static itState := 692
+    static frCount := 696
+    static hnOn := 700
+    static hnMode := 704
+    static hnState := 708
+    static mbOn := 712
+    static mbHeight := 716
+    static mbState := 720
+    static hnCount := 724
+    static mbCount := 728
+    static itemLeft := 732
+    static itemTotal := 756
+    static prOn := 780
+    static prMode := 784
+    static prState := 788
+    static size := 792
+}

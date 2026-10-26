@@ -88,18 +88,18 @@ class GameDisplayEngine {
 
     ; the switches to the module in the running game (once a second, and on changes)
     push() {
-        if !(v := this.gm.live()) || NumGet(v, 4, "uint") < 7
+        if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 7
             return
-        NumPut("uint", this.fpsLimit, v, 624)
-        NumPut("uint", this.fps && this.gm.enabled ? 1 : 0, v, 620)
-        NumPut("uint", this.widescreen && this.gm.enabled ? 1 : 0, v, 612)
-        if NumGet(v, 4, "uint") < 9
+        NumPut("uint", this.fpsLimit, v, Shm.fpsLimit)
+        NumPut("uint", this.fps && this.gm.enabled ? 1 : 0, v, Shm.fpsOn)
+        NumPut("uint", this.widescreen && this.gm.enabled ? 1 : 0, v, Shm.wsOn)
+        if NumGet(v, Shm.layout, "uint") < 9
             return
-        NumPut("uint", this.latencyMs, v, 656)
-        NumPut("uint", this.latency && this.gm.enabled ? 1 : 0, v, 652)
-        if NumGet(v, 4, "uint") < 10
+        NumPut("uint", this.latencyMs, v, Shm.latMs)
+        NumPut("uint", this.latency && this.gm.enabled ? 1 : 0, v, Shm.latOn)
+        if NumGet(v, Shm.layout, "uint") < 10
             return
-        NumPut("uint", this.hideUi && this.gm.enabled ? this.hideParts : 0, v, 676)
+        NumPut("uint", this.hideUi && this.gm.enabled ? this.hideParts : 0, v, Shm.uiHide)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)
@@ -120,7 +120,7 @@ class GameDisplayEngine {
             return "Off"
         if (w := this.moduleWait()) != ""
             return w
-        st := NumGet(this.gm.live(), 616, "uint")
+        st := NumGet(this.gm.live(), Shm.wsState, "uint")
         return st = 1 ? "On · 16:9 in this game" : st = 2 ? "On · waiting for a game"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
@@ -131,7 +131,7 @@ class GameDisplayEngine {
             return "On · pick the parts to hide"
         if (w := this.moduleWait(10)) != ""
             return w
-        st := NumGet(this.gm.live(), 680, "uint"), names := []
+        st := NumGet(this.gm.live(), Shm.uiState, "uint"), names := []
         for i, n in GameDisplayEngine.PARTS
             if st & (1 << (i - 1))
                 names.Push(StrLower(n))
@@ -143,8 +143,8 @@ class GameDisplayEngine {
             return "Off"
         if (w := this.moduleWait(9)) != ""
             return w
-        v := this.gm.live(), st := NumGet(v, 660, "uint")
-        own := st = 1 ? " (the game's own: LAN " NumGet(v, 664, "int") ", Battle.net " NumGet(v, 672, "int") ")" : ""
+        v := this.gm.live(), st := NumGet(v, Shm.latState, "uint")
+        own := st = 1 ? " (the game's own: LAN " NumGet(v, Shm.latGame, "int") ", Battle.net " NumGet(v, Shm.latGame + 8, "int") ")" : ""
         return st = 1 ? "On · " this.latencyMs " ms in games you host" own
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
@@ -153,7 +153,7 @@ class GameDisplayEngine {
             return "Off"
         if (w := this.moduleWait()) != ""
             return w
-        v := this.gm.live(), st := NumGet(v, 628, "uint"), own := NumGet(v, 632, "uint")
+        v := this.gm.live(), st := NumGet(v, Shm.fpsState, "uint"), own := NumGet(v, Shm.fpsGameLimit, "uint")
         return st = 1 ? "On · unlocked up to " this.fpsLimit (own ? " (the game's own setting: " own ")" : "")
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }

@@ -116,24 +116,24 @@ class HealthBarsEngine {
 
     ; the wanted sizes to the module in the running game (once a second, and on changes)
     push() {
-        if !(v := this.gm.live()) || NumGet(v, 4, "uint") < 5
+        if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 5
             return
         on := this.enabled && this.gm.enabled
-        NumPut("float", this.height, v, 556), NumPut("float", this.width, v, 560)
-        NumPut("uint", on ? 1 : 0, v, 552)                     ; last
-        if NumGet(v, 4, "uint") < 6
+        NumPut("float", this.height, v, Shm.hbHeight), NumPut("float", this.width, v, Shm.hbWidth)
+        NumPut("uint", on ? 1 : 0, v, Shm.hbOn)                     ; last
+        if NumGet(v, Shm.layout, "uint") < 6
             return
         for i, o in HealthBarsEngine.OWNERS
-            NumPut("uint", 0xFF000000 | Integer("0x" Ini(this.section, o[1], o[2])), v, 588 + 4 * (i - 1))
-        NumPut("uint", this.colourMode = "health" ? 1 : 0, v, 584)
-        NumPut("uint", this.colours && this.gm.enabled ? 1 : 0, v, 580)   ; last
-        if NumGet(v, 4, "uint") < 11
+            NumPut("uint", 0xFF000000 | Integer("0x" Ini(this.section, o[1], o[2])), v, Shm.hcColours + 4 * (i - 1))
+        NumPut("uint", this.colourMode = "health" ? 1 : 0, v, Shm.hcMode)
+        NumPut("uint", this.colours && this.gm.enabled ? 1 : 0, v, Shm.hcOn)   ; last
+        if NumGet(v, Shm.layout, "uint") < 11
             return
-        NumPut("uint", this.numberMode - 1, v, 704), NumPut("float", this.manaHeight, v, 716)
-        NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, 700)
-        NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, 712)
-        NumPut("uint", this.portraitPercent, v, 784)
-        NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, 780)
+        NumPut("uint", this.numberMode - 1, v, Shm.hnMode), NumPut("float", this.manaHeight, v, Shm.mbHeight)
+        NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, Shm.hnOn)
+        NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, Shm.mbOn)
+        NumPut("uint", this.portraitPercent, v, Shm.prMode)
+        NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, Shm.prOn)
     }
     ; the status line of a frame feature: its state at stateOff; what(view) says what's on
     frameStatus(on, stateOff, what) {
@@ -149,7 +149,7 @@ class HealthBarsEngine {
         if !s.live || s.probe != 1
             return "On · the module isn't ready"
         v := this.gm.live(), st := NumGet(v, stateOff, "uint")
-        return NumGet(v, 684, "uint") = 2 ? "On · the game has no Storm.dll loaded: the module can't add frames"
+        return NumGet(v, Shm.stState, "uint") = 2 ? "On · the game has no Storm.dll loaded: the module can't add frames"
             : st = 1 ? "On · " what(v) : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
     }
     portraitStatus() {
@@ -162,11 +162,11 @@ class HealthBarsEngine {
             return "On · starts with a 1.28f game"
         if s.layout < 11
             return "On · the game has an older module loaded: restart the game"
-        st := NumGet(this.gm.live(), 788, "uint")
+        st := NumGet(this.gm.live(), Shm.prState, "uint")
         return st = 1 ? "On · regen next to the portrait's HP and mana" : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
     }
-    numberStatus() => this.frameStatus(this.numbers, 708, (v) => "numbers over the health bars (" NumGet(v, 724, "uint") " now)")
-    manaStatus() => this.frameStatus(this.mana, 720, (v) => "mana bars under the health bars (" NumGet(v, 728, "uint") " now)")
+    numberStatus() => this.frameStatus(this.numbers, Shm.hnState, (v) => "numbers over the health bars (" NumGet(v, Shm.hnCount, "uint") " now)")
+    manaStatus() => this.frameStatus(this.mana, Shm.mbState, (v) => "mana bars under the health bars (" NumGet(v, Shm.mbCount, "uint") " now)")
     colourStatus() {
         if !this.colours
             return "Off"
@@ -177,7 +177,7 @@ class HealthBarsEngine {
             return "On · starts with a 1.28f game"
         if s.layout < 6
             return "On · the game has an older module loaded: restart the game"
-        st := NumGet(this.gm.live(), 608, "uint")
+        st := NumGet(this.gm.live(), Shm.hcState, "uint")
         mode := this.colourMode = "owner" ? "yours green, allies blue, enemies red, neutral orange / grey" : "green, to yellow at half, to red"
         return st = 1 ? "On · " mode : st = 2 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
@@ -194,8 +194,8 @@ class HealthBarsEngine {
             return "On · the game has an older module loaded: restart the game"
         if !s.live || s.probe != 1
             return "On · the module isn't ready"
-        v := this.gm.live(), st := NumGet(v, 564, "uint")
-        return st = 1 ? "On · bars resized (the game's own: " Format("{:.4f}", NumGet(v, 568, "float")) " high)"
+        v := this.gm.live(), st := NumGet(v, Shm.hbState, "uint")
+        return st = 1 ? "On · bars resized (the game's own: " Format("{:.4f}", NumGet(v, Shm.hbDefHeight, "float")) " high)"
             : st = 2 ? "On · no health bars seen yet (in a game?)"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }

@@ -300,7 +300,7 @@ WC3WindowKey() {
     if kind[hwnd] = "classic" && A_TickCount - wideAt > 500 {
         wideAt := A_TickCount
         wide := IsSet(gameDisplay) && gameDisplay.widescreen && gameModule.enabled
-            && (v := gameModule.live()) && NumGet(v, 4, "uint") >= 7 && NumGet(v, 616, "uint") = 1
+            && (v := gameModule.live()) && NumGet(v, Shm.layout, "uint") >= 7 && NumGet(v, Shm.wsState, "uint") = 1
     }
     return kind[hwnd] (kind[hwnd] = "classic" && wide ? "wide" : "") "_" cw "x" ch
 }

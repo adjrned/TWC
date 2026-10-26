@@ -25,6 +25,7 @@
 #Include engine\Settings.ahk
 #Include engine\Updater.ahk
 #Include engine\SelfUpdate.ahk
+#Include engine\GameLayout.ahk
 #Include engine\GameModule.ahk
 #Include engine\GameCommands.ahk
 #Include engine\BuffWatch.ahk

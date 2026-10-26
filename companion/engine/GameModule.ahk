@@ -62,7 +62,7 @@ class GameModuleEngine {
     live() {
         if !(hwnd := WinExist(WarcraftIII)) || !(v := this.view(WinGetPID(hwnd)))
             return 0
-        return NumGet(v, 0, "uint") = 0x54574331 ? v : 0          ; 'TWC1'
+        return NumGet(v, Shm.magic, "uint") = 0x54574331 ? v : 0          ; 'TWC1'
     }
 
     ; -> { loaded, layout, build, status, live, targeting, probe, ui, probeText } for the running 1.28 game
@@ -71,12 +71,12 @@ class GameModuleEngine {
         out := { loaded: 0, layout: 0, build: 0, status: -1, live: 0, targeting: 0, probe: 0, ui: 0, probeText: "" }
         if !(v := this.live())
             return out
-        out.loaded := 1, out.layout := NumGet(v, 4, "uint")
-        out.build := NumGet(v, 8, "uint"), out.status := NumGet(v, 12, "uint")
-        out.live := out.status = 1 && A_TickCount - NumGet(v, 16, "uint") < 1000
-        out.targeting := NumGet(v, 20, "uint")
+        out.loaded := 1, out.layout := NumGet(v, Shm.layout, "uint")
+        out.build := NumGet(v, Shm.build, "uint"), out.status := NumGet(v, Shm.status, "uint")
+        out.live := out.status = 1 && A_TickCount - NumGet(v, Shm.heartbeat, "uint") < 1000
+        out.targeting := NumGet(v, Shm.targeting, "uint")
         if out.layout >= 2
-            out.probe := NumGet(v, 24, "uint"), out.ui := NumGet(v, 28, "uint"), out.probeText := StrGet(v + 56, 112, "CP0")
+            out.probe := NumGet(v, Shm.probe, "uint"), out.ui := NumGet(v, Shm.ui, "uint"), out.probeText := StrGet(v + Shm.probeText, 112, "CP0")
         return out
     }
 
@@ -98,9 +98,9 @@ class GameModuleEngine {
     qcAsk(ms, keepShift) {
         if !(v := this.live())
             return 0
-        seq := NumGet(v, 32, "int") + 1
-        NumPut("uint", A_TickCount + ms, v, 36), NumPut("uint", keepShift ? 1 : 0, v, 40)
-        NumPut("int", seq, v, 32)                                  ; last: the module acts on it
+        seq := NumGet(v, Shm.qcSeq, "int") + 1
+        NumPut("uint", A_TickCount + ms, v, Shm.qcUntil), NumPut("uint", keepShift ? 1 : 0, v, Shm.qcFlags)
+        NumPut("int", seq, v, Shm.qcSeq)                                  ; last: the module acts on it
         this.wake()
         return seq
     }
@@ -109,10 +109,10 @@ class GameModuleEngine {
     qcResult(seq) {
         if !seq || !(v := this.live())
             return 2
-        done := NumGet(v, 44, "int")
-        return done = seq ? NumGet(v, 48, "uint") : done > seq ? 2 : 0
+        done := NumGet(v, Shm.qcDone, "int")
+        return done = seq ? NumGet(v, Shm.qcResult, "uint") : done > seq ? 2 : 0
     }
-    qcMs() => (v := this.live()) ? NumGet(v, 52, "uint") : 0
+    qcMs() => (v := this.live()) ? NumGet(v, Shm.qcMs, "uint") : 0
     ; wait for the answer (at most ms more than the request's own deadline)
     qcWait(seq, ms) {
         endAt := A_TickCount + ms + 250
@@ -121,8 +121,8 @@ class GameModuleEngine {
         return r ? r : 2
     }
     qcCancel(seq) {
-        if seq && (v := this.live()) && NumGet(v, 32, "int") = seq
-            NumPut("uint", 0, v, 36)
+        if seq && (v := this.live()) && NumGet(v, Shm.qcSeq, "int") = seq
+            NumPut("uint", 0, v, Shm.qcUntil)
     }
     ; one line for the Quickcast window
     qcStatusText() {
@@ -148,23 +148,23 @@ class GameModuleEngine {
             this.tmWho[who] := 1
         else if this.tmWho.Has(who)
             this.tmWho.Delete(who)
-        if (v := this.live()) && NumGet(v, 4, "uint") >= 3
-            NumPut("uint", this.tmWho.Count ? 1 : 0, v, 168)
+        if (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 3
+            NumPut("uint", this.tmWho.Count ? 1 : 0, v, Shm.tmWant)
     }
     ; -> { seq, flags, cd: [{ left, total }] x12 (command card, row by row),
     ;      buffs: [{ left, total, aura, id }] (buff bar, left to right; 0 = empty) }
     ;    or 0 without a module that has them. flags: 1 cooldowns read, 2 buffs
     ;    read, 0x100 a game getter was refused (its times stay 0; see twc-game.log)
     timers() {
-        if !(v := this.live()) || NumGet(v, 4, "uint") < 3
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 3
             return 0
-        out := { seq: NumGet(v, 172, "int"), flags: NumGet(v, 176, "uint"), cd: [], buffs: [] }
+        out := { seq: NumGet(v, Shm.tmSeq, "int"), flags: NumGet(v, Shm.tmFlags, "uint"), cd: [], buffs: [] }
         loop 12
-            out.cd.Push({ left: NumGet(v, 180 + 4 * (A_Index - 1), "float"), total: NumGet(v, 228 + 4 * (A_Index - 1), "float") })
-        n := Min(16, NumGet(v, 276, "uint"))
+            out.cd.Push({ left: NumGet(v, Shm.cdLeft + 4 * (A_Index - 1), "float"), total: NumGet(v, Shm.cdTotal + 4 * (A_Index - 1), "float") })
+        n := Min(16, NumGet(v, Shm.buffCount, "uint"))
         loop n {
-            o := 4 * (A_Index - 1), f := NumGet(v, 408 + o, "uint")
-            out.buffs.Push(f & 1 ? { left: NumGet(v, 280 + o, "float"), total: NumGet(v, 344 + o, "float"), aura: f & 2 ? 1 : 0, id: NumGet(v, 472 + o, "uint") } : 0)
+            o := 4 * (A_Index - 1), f := NumGet(v, Shm.buffFlags + o, "uint")
+            out.buffs.Push(f & 1 ? { left: NumGet(v, Shm.buffLeft + o, "float"), total: NumGet(v, Shm.buffTotal + o, "float"), aura: f & 2 ? 1 : 0, id: NumGet(v, Shm.buffId + o, "uint") } : 0)
         }
         return out
     }
@@ -177,13 +177,13 @@ class GameModuleEngine {
         return this.enabled && s.live && s.probe = 1 && s.layout >= 4
     }
     command(cmd, arg := 0) {
-        if !(v := this.live()) || NumGet(v, 4, "uint") < 4
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 4
             return 0
-        seq := NumGet(v, 536, "int") + 1
-        if NumGet(v, 4, "uint") >= 8
-            NumPut("uint", arg, v, 648)
-        NumPut("uint", cmd, v, 540)
-        NumPut("int", seq, v, 536)                                 ; last: the module acts on it
+        seq := NumGet(v, Shm.cmdSeq, "int") + 1
+        if NumGet(v, Shm.layout, "uint") >= 8
+            NumPut("uint", arg, v, Shm.cmdArg)
+        NumPut("uint", cmd, v, Shm.cmd)
+        NumPut("int", seq, v, Shm.cmdSeq)                                 ; last: the module acts on it
         this.wake()
         return seq
     }
@@ -193,8 +193,8 @@ class GameModuleEngine {
             return 2
         endAt := A_TickCount + ms
         while A_TickCount < endAt {
-            if (v := this.live()) && NumGet(v, 544, "int") = seq
-                return NumGet(v, 548, "uint")
+            if (v := this.live()) && NumGet(v, Shm.cmdDone, "int") = seq
+                return NumGet(v, Shm.cmdResult, "uint")
             Sleep(10)
         }
         return 3

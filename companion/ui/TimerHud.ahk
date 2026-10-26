@@ -50,14 +50,14 @@ class TimerHud {
     whereLabel => this.inGame ? "In the game" : "Overlay"
     ; the switch to the module (layout 11)
     pushGame() {
-        if (v := this.gm.live()) && NumGet(v, 4, "uint") >= 11
-            NumPut("uint", this.enabled && this.inGame && this.gm.enabled ? 1 : 0, v, 688)
+        if (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 11
+            NumPut("uint", this.enabled && this.inGame && this.gm.enabled ? 1 : 0, v, Shm.itOn)
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {
-        if !(v := this.gm.live()) || NumGet(v, 4, "uint") < 11
+        if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 11
             return -1
-        return NumGet(v, 692, "uint")
+        return NumGet(v, Shm.itState, "uint")
     }
 
     ; the buff bar for the game window as it is now: { x, y, dx } (fractions of
@@ -83,7 +83,7 @@ class TimerHud {
         if s.probe != 1
             return "On · the module's check failed: no timers"
         if this.inGame {
-            st := this.gameState(), storm := s.layout >= 11 ? NumGet(this.gm.live(), 684, "uint") : 0
+            st := this.gameState(), storm := s.layout >= 11 ? NumGet(this.gm.live(), Shm.stState, "uint") : 0
             if st = 1
                 return "On · drawn in the game"
             why := st = -1 ? "the game has an older module loaded (restart the game)"

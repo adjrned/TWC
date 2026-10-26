@@ -215,12 +215,12 @@ class GameCommandsEngine {
     ; the self-cast state to the module (on key changes, and once a second in
     ; case a key-up went missing)
     push() {
-        if !(v := this.gm.live()) || NumGet(v, 4, "uint") < 8
+        if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 8
             return
         k := this.heldKey("selfcast"), on := this.selfcast && this.gm.enabled && k != ""
         if this.selfDown && (!on || !GetKeyState(k, "P"))
             this.selfDown := false
-        NumPut("uint", !on ? 0 : this.selfDown && this.active() ? 2 : 1, v, 636)
+        NumPut("uint", !on ? 0 : this.selfDown && this.active() ? 2 : 1, v, Shm.scHeld)
     }
     keyText(name) => (k := this.key(name)) != "" ? ReadableHotkey(k) : "no key"
     heldText(name) => (k := this.heldKey(name)) != "" ? ReadableHotkey(k) : "no key"
@@ -245,8 +245,8 @@ class GameCommandsEngine {
                 : !quickcast.current() ? "needs the quickcast setup for this window"
                 : !this.portraitSpot() ? "set the portrait spot (Portrait)" : "ready")
         t := this.oneKeyStatus(this.selfcast, "selfcast", this.heldText("selfcast"), 8)
-        if this.selfcast && this.gm.enabled && (v := this.gm.live()) && NumGet(v, 4, "uint") >= 8 {
-            st := NumGet(v, 640, "uint"), n := NumGet(v, 644, "uint")
+        if this.selfcast && this.gm.enabled && (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 8 {
+            st := NumGet(v, Shm.scState, "uint"), n := NumGet(v, Shm.scCount, "uint")
             t .= st = 3 ? " · refused by the module's checks (see the log)" : n ? " · " n " self-cast" (n = 1 ? "" : "s") " this game" : ""
         }
         return t
