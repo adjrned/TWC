@@ -12,6 +12,7 @@
 ModuleCheckFeatures() => [
     ["Quickcast through the game", "quickcast: clicked", ""],
     ["Cooldown and buff timers", "timers: game getter at .* checks out|timers in the game: drawing", "timers: refused|frames: refused|no more frames in this session"],
+    ["Cooldowns on the card", "timers in the game: the first cooldown drawn", "cooldowns: the command card .* isn't readable"],
     ["Clear messages / chat", "clear (messages|chat): frame", "not a message frame|clear .* faulted"],
     ["Health bar size", "health bars: the game's own size is|health bars: pass resized", "health bars: refused|reads faulted"],
     ["Health bar colours", "health bar colours: on", "health bar colours: refused|colouring a bar faulted"],

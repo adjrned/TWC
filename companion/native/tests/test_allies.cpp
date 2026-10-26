@@ -140,6 +140,18 @@ int main() {
     char t1[12], t2[12], t3[12];
     TimeText(95, t1, sizeof(t1), false), TimeText(95, t2, sizeof(t2), true), TimeText(0.46f, t3, sizeof(t3), false);
     CHECK(!strcmp(t1, "95") && !strcmp(t2, "1:35") && !strcmp(t3, "0.5"), "95 s: \"%s\", with minutes \"%s\"; under a second \"%s\"", t1, t2, t3);
+    // the cooldowns' trail in the log: what a read of the card found (cooling without the game's sweep model is counted too)
+    *(BYTE **)(btn + 0x19c) = nullptr;
+    float l0 = 0, t0 = 0;
+    int f0 = ButtonCooldown(btn, &l0, &t0);
+    *(BYTE **)(btn + 0x19c) = model;
+    ReadCooldowns(ui);
+    char logText[8192] = "";
+    FILE *lf;
+    if (!fopen_s(&lf, "allies.log", "rb"))
+        logText[fread(logText, 1, sizeof(logText) - 1, lf)] = 0, fclose(lf);
+    CHECK(f0 == (CD_BUTTON | CD_ABILITY | CD_COOLING) && l0 == 0 && strstr(logText, "cooldowns: the command card") && strstr(logText, "1 with an ability, 1 cooling down, 1 with the game's cooldown model"),
+          "the card's read is logged (an ability, cooling, its model); cooling without the model: counted, no times read");
     *(const char **)(nameFs + FS_TEXT) = "";
     PingCommand(ui);
     CHECK(!strcmp(sh.pingText, "Holy Light | Cooldown: 8"), "no unit name: \"%s\"", sh.pingText);

@@ -721,6 +721,7 @@ static int VirtualInt(const void *obj, DWORD slot) {
 // study_buffs.md): the command card ([ui+0x3c8]) and the buff bar
 // ([[[ui+0x3c4]+0x130]+0x16c]) are both grids: rows +0x124, columns +0x128, a
 // row table at +0x154 (16 bytes a row: +4 count, +8 the buttons).
+static const DWORD RVA_COMMAND_BUTTON_VTABLE = 0xaad9b8;    // CCommandButton ([0x1013a6ec]): a simple frame, anchored to as it is
 static const DWORD ID_AHER = 'AHer', ID_ASID = 'Asid', ID_ASUD = 'Asud', ID_ASEI = 'Asei', ID_AMAI = 'Amai', ID_ASEL = 'Asel', ID_APIT = 'Apit';
 
 static BYTE *GridButton(BYTE *bar, int row, int col) {
@@ -736,36 +737,75 @@ static BYTE *GridButton(BYTE *bar, int row, int col) {
 // a command or inventory button's cooldown (WFE's 0x10023850 without its shop path)
 // a rawcode as it's written ('AHhb'; in memory its bytes are the other way round)
 struct IdText { char s[5]; IdText(DWORD id) { for (int i = 0; i < 4; i++) s[i] = (char)(id >> (24 - 8 * i)); s[4] = 0; } };
-static void ButtonCooldown(BYTE *btn, float *left, float *total) {
+// -> what it found, for the cooldowns' log: CD_BUTTON, | CD_ABILITY data and an ability with a
+// cooldown to show, | CD_COOLING its flags say cooling down, | CD_MODEL the game's cooldown sweep
+// [+0x19c] (+0x3e1a60 makes it the first time the button shows a cooldown, +0x4070f4). The times
+// are read only with the sweep there, as WFE's Cooldown UI; the rest is counted for the log.
+static const int CD_BUTTON = 1, CD_MODEL = 2, CD_ABILITY = 4, CD_COOLING = 8;
+static int ButtonCooldown(BYTE *btn, float *left, float *total) {
     BYTE *data, *ab;
-    if (!btn || !*(DWORD *)(btn + 0x19c) || !(data = *(BYTE **)(btn + 0x190)) || !(ab = *(BYTE **)(data + 0x6d4)))
-        return;
+    if (!btn)
+        return 0;
+    int found = CD_BUTTON | (*(DWORD *)(btn + 0x19c) ? CD_MODEL : 0);
+    if (!(data = *(BYTE **)(btn + 0x190)) || !(ab = *(BYTE **)(data + 0x6d4)))
+        return found;
     DWORD id = *(DWORD *)(ab + 0x34), fl = *(DWORD *)(ab + 0x20);
     if (id == ID_AHER || id == ID_ASID || id == ID_ASUD || id == ID_ASEI || id == ID_AMAI || id == ID_ASEL || id == ID_APIT)
-        return;                                 // hero skill menu, shops: no cooldown to show
+        return found;                           // hero skill menu, shops: no cooldown to show
+    bool cooling = (fl & 0x200) && !(fl & 0x400);
+    found |= CD_ABILITY | (cooling ? CD_COOLING : 0);
     // the first in-game test showed no cooldowns on the card and nothing static explains it
-    // (study_cd2.md): the first abilities seen and the first cooling down one go to the log
-    static int seen, cooling;
+    // (study_cd2.md): the first abilities seen and the first cooling down ones go to the log
+    static int seen, cools;
     if (seen < 4)
-        seen++, Log("cooldowns: button %p ability '%s' flags %08lX (cooling: %s)", btn, IdText(id).s, fl, (fl & 0x200) && !(fl & 0x400) ? "yes" : "no");
-    if (!(fl & 0x200) || (fl & 0x400))
-        return;                                 // not cooling down
+        seen++, Log("cooldowns: button %p ability '%s' flags %08lX (cooling: %s, cooldown model: %s)", btn, IdText(id).s, fl, cooling ? "yes" : "no", found & CD_MODEL ? "yes" : "none yet");
+    if (!cooling || !(found & CD_MODEL))
+        return found;
     *left = TimerValue(ab + 0xd0, 0x18);
     *total = TimerValue(ab + 0xd0, 0x10);
-    if (cooling < 3)
-        cooling++, Log("cooldowns: '%s' %.1f s of %.1f left (timer vtable +%06lX)", IdText(id).s, *left, *total, *(DWORD *)(ab + 0xd0) - (DWORD)g_base);
+    if (cools < 3)
+        cools++, Log("cooldowns: '%s' %.1f s of %.1f left (timer vtable +%06lX)", IdText(id).s, *left, *total, *(DWORD *)(ab + 0xd0) - (DWORD)g_base);
+    return found;
 }
 
+// what a read of the card found, logged a few times (the first in-game test showed no
+// cooldowns and nothing in the log said why): the first read, the first with an ability on a
+// button with its cooldown model, the first with one cooling down; an unreadable card once
+static void CooldownsLog(BYTE *card, int rows, int cols, const int *found, int n) {
+    static int logged;                      // bits: 1 first read, 2 an ability, 4 cooling, 8 unreadable
+    int buttons = 0, models = 0, abilities = 0, cooling = 0, cmd = 0;
+    for (int i = 0; i < n; i++) {
+        buttons += (found[i] & CD_BUTTON) != 0, models += (found[i] & CD_MODEL) != 0;
+        abilities += (found[i] & CD_ABILITY) != 0, cooling += (found[i] & CD_COOLING) != 0;
+    }
+    for (int r = 0; r < rows; r++)
+        for (int c = 0; c < cols; c++) {
+            BYTE *b = GridButton(card, r, c);
+            cmd += b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE);
+        }
+    int why = !(logged & 1) ? 1 : abilities && !(logged & 2) ? 2 : cooling && !(logged & 4) ? 4 : 0;
+    if (!why)
+        return;
+    logged |= why;
+    if (why == 1)
+        logged |= (abilities ? 2 : 0) | (cooling ? 4 : 0);   // the first read says it all already
+    Log("cooldowns: the command card %p is %dx%d: %d buttons (%d command buttons, vtable +%06lX), %d with an ability, %d cooling down, %d with the game's cooldown model [+0x19C]",
+        card, rows, cols, buttons, cmd, RVA_COMMAND_BUTTON_VTABLE, abilities, cooling, models);
+}
 static void ReadCooldowns(BYTE *ui) {
     BYTE *card = *(BYTE **)(ui + 0x3c8);
-    if (!card)
+    int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
+    if (!card || rows <= 0 || cols <= 0 || rows > 3 || cols > 4) {
+        static bool said;
+        if (!said)
+            said = true, Log("cooldowns: the command card [ui+0x3C8] = %p (%d x %d) isn't readable: no cooldowns", card, rows, cols);
         return;
-    int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128);
-    if (rows <= 0 || cols <= 0 || rows > 3 || cols > 4)
-        return;
+    }
+    int found[12] = {};
     for (int r = 0; r < rows; r++)
         for (int c = 0; c < cols; c++)
-            ButtonCooldown(GridButton(card, r, c), &g_shared->cdLeft[r * 4 + c], &g_shared->cdTotal[r * 4 + c]);
+            found[r * 4 + c] = ButtonCooldown(GridButton(card, r, c), &g_shared->cdLeft[r * 4 + c], &g_shared->cdTotal[r * 4 + c]);
+    CooldownsLog(card, rows, cols, found, 12);
     g_shared->tmFlags |= 1;
 }
 
@@ -1495,7 +1535,6 @@ static const DWORD RVA_SET_ABS_POINT = 0x13fbb0;    // __fastcall(layout, 0, poi
 static const DWORD RVA_SKIN_LOOKUP = 0x3761e0;      // __fastcall(key, 0) -> const char * ([0x1013c87c]: "MasterFont" -> the font file)
 static const DWORD RVA_TEXT_VTABLE = 0xa7b3d0;      // CTextFrame ([0x1013a598])
 static const DWORD RVA_TEXT_LAYOUT_VTABLE = 0xa7b4e4;   // its layout part, at +0xb4 ([0x1013a59c])
-static const DWORD RVA_COMMAND_BUTTON_VTABLE = 0xaad9b8;    // CCommandButton ([0x1013a6ec]): a simple frame, anchored to as it is
 static const DWORD RVA_BAR_CTOR = 0x3d57f0;         // CStatBar __fastcall(mem, 0, 0, [health bar+0x154], kind) -> it ([0x1013a970])
 static const DWORD RVA_BAR_LEVEL = 0x3a7ca0;        // __fastcall(bar, 0, [health bar+0x84]) ([0x1013a980])
 static const DWORD RVA_REGION_HIDE = 0x141ce0;      // a region's (texture, font string) hide, __fastcall(region, 0) ([0x1013aa3c]): WFE hides a bar's own text [bar+0x140] with it
@@ -1800,6 +1839,10 @@ static void TimerFramesDraw(BYTE *ui) {
     bool cardOk = rows > 0 && cols > 0 && rows <= 3 && cols <= 4;
     for (int i = 0; i < 12; i++)
         SlotDraw(ui, g_tCd[i], cds && cardOk && i / 4 < rows && i % 4 < cols ? CardButton(card, i) : nullptr, g_shared->cdLeft[i], false);
+    static bool cdDrawn;                    // the end of the cooldowns' trail in the log: one is on screen
+    for (int i = 0; i < 12 && !cdDrawn; i++)
+        if (g_tCd[i].shown[0])
+            cdDrawn = true, Log("timers in the game: the first cooldown drawn ('%s' on the command card button %p, slot %d)", g_tCd[i].shown, g_tCd[i].btn, i + 1);
     BYTE *bar = *(BYTE **)(ui + 0x3c4);
     if (bar && (bar = *(BYTE **)(bar + 0x130)))
         bar = *(BYTE **)(bar + 0x16c);
