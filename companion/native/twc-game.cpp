@@ -2193,7 +2193,7 @@ static DWORD *g_portraitSlot;           // its vtable entry (0 = not found yet)
 static bool g_portraitHooked;
 static volatile LONG g_portraitCalls;
 
-// one line: "250 / 500 +1.3" (+ " (50%)"), regen and percent as asked
+// one line: "250 / 500 +1.3" (+ " (50%)"), regen and percent as asked; regen NAN: the game's own "250 / 500"
 static void StatLine(float cur, float max, float regen, bool pct, char *b, size_t n) {
     int o = sprintf_s(b, n, "%d / %d", (int)ceilf(cur), (int)max);
     if (regen == regen && fabsf(regen) >= 0.05f && regen < 1e5f && regen > -1e5f)
@@ -2202,7 +2202,7 @@ static void StatLine(float cur, float max, float regen, bool pct, char *b, size_
         sprintf_s(b + o, n - o, " (%d%%)", (int)ceilf(cur * 100 / max));
 }
 
-static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxHandle) {
+static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxHandle, bool plain = false) {
     BYTE *fs = *(BYTE **)(p + off);
     if (!fs || *(DWORD *)fs != (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
         return;
@@ -2211,14 +2211,15 @@ static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxH
     if (!UnitStat(unit, state, maxHandle, &cur, &max, &mx))
         return;
     char t[96];
-    StatLine(cur, max, mx ? *(float *)(mx + STAT_REGEN) : 0, (g_shared->prMode & 1) != 0, t, sizeof(t));
+    StatLine(cur, max, plain ? NAN : mx ? *(float *)(mx + STAT_REGEN) : 0, !plain && (g_shared->prMode & 1) != 0, t, sizeof(t));
     Game(RVA_FONTSTRING_SET, fs, { (DWORD)t });
 }
 
 static bool g_portraitBad;              // writing a line faulted 3 times: no more (the companion can't turn it back on)
 static bool g_ptOn;                     // the widescreen UI's portrait text is on (UlPortraitText): it needs the update wrapped too
 static void PortraitTextUpdate(BYTE *p);
-static bool PortraitWanted() { return g_shared->prOn || g_ptOn; }
+static volatile bool g_prPutBack;       // regen just went off: the next update writes the plain lines, then it's unwrapped
+static bool PortraitWanted() { return g_shared->prOn || g_ptOn || g_prPutBack; }
 
 static DWORD __fastcall PortraitHook(void *portrait, int edx) {
     DWORD r = g_gamePortrait(portrait, edx);
@@ -2229,6 +2230,12 @@ static DWORD __fastcall PortraitHook(void *portrait, int edx) {
             if (unit && g_shared->prOn) {
                 PortraitLine(p, PORTRAIT_HP, unit, UNIT_HP, UNIT_MAXHP_HANDLE);
                 PortraitLine(p, PORTRAIT_MP, unit, UNIT_MANA, UNIT_MAXMANA_HANDLE);
+            } else if (g_prPutBack) {
+                // regen just went off: the game writes a line only when its value changes, so
+                // the regen would stay until then; the plain "cur / max" now, then unwrapped
+                if (unit)
+                    PortraitLine(p, PORTRAIT_HP, unit, UNIT_HP, UNIT_MAXHP_HANDLE, true), PortraitLine(p, PORTRAIT_MP, unit, UNIT_MANA, UNIT_MAXMANA_HANDLE, true);
+                g_prPutBack = false;
             }
             PortraitTextUpdate(p);
             if (InterlockedIncrement(&g_portraitCalls) == 1)
@@ -2379,9 +2386,13 @@ static bool FindPortrait() {
 
 // the worker's part: find where to wrap it once (in a game), then follow the switch
 static void FollowPortrait() {
-    static bool refused;
+    static bool refused, wasOn;
     if (!g_getUi || refused)
         return;
+    bool pr = g_shared->prOn != 0;
+    if (wasOn && !pr && g_portraitHooked && !g_portraitBad)
+        g_prPutBack = true;             // one more update, with the plain lines
+    wasOn = pr;
     bool on = PortraitWanted();
     if (on && !g_portraitSlot && !g_prSites) {
         if (!g_ui) {
