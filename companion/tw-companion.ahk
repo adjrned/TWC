@@ -1502,14 +1502,14 @@ BuildRemapTiles() {
     local qy := y0 + 8
     for v in [["hook", "Game hook", "1.28f", "Injected into the game: it knows when a target is wanted. No setup."],
         ["screen", "Screen", "1.28f · Reforged", "Reads the screen, nothing injected. Set up once per window size."]] {
-        local vl := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20) " h18 +Background" C.card " c" C.text, v[2])
+        local vl := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20 - 46) " h18 +Background" C.card " c" C.text, v[2])
         UISetFont(vl, "s9 w600")
         local vt := mainGui.AddText("x" (qx + 10) " y" (qy + 17) " w" (qw - 20) " h15 +Background" C.card " c" C.accent, v[3])
         UISetFont(vt, "s7 w600")
         local vd := mainGui.AddText("x" (qx + 10) " y" (qy + 33) " w" (qw - 20) " h44 +Background" C.card " c" C.dim, v[4])
         UISetFont(vd, "s8")
-        local ob := MkButton("Options", qx + 10, qy + 80, qw - 70, 22, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
-        local sw := MkButton("Off", qx + qw - 54, qy + 80, 44, 22, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
+        local sw := MkButton("Off", qx + qw - 50, qy, 40, 18, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))     ; top right, as a slot's QC pill
+        local ob := MkButton("Options", qx + 10, qy + 80, qw - 20, 22, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
         for b in [sw, ob]
             UISetFont(b, "s8 w600")
         AddToPage("remap", vl, vt, vd, sw, ob)

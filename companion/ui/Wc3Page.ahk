@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
 ;  WC3 page - features that read or change the running game, in one place.
-;  At the top, the version switch: 1.28f | Reforged. The page shows only what
+;  At the top right, the version switch: 1.28f | Reforged. The page shows only what
 ;  works on that version (and "Both" features); opening the page picks the
 ;  running game's version. 1.28f features use the game module (injected;
 ;  its row is only on the 1.28f side); Reforged ones only read the screen.
@@ -21,13 +21,13 @@
 ;  with more cards than fit shows them in pages (‹ n/m › in the tab row).
 ; ============================================================================
 
-global wc3Tab := "timers", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
+global wc3Tab := "display", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
 global wc3Ver := Ini("Wc3", "view", "128"), wc3VerBtns := Map(), wc3VerText, wc3ModuleRow := []
 global wc3PageNo := Map(), wc3PagerCtls := [], wc3PagerText       ; tab + version -> the page shown
 global wc3HoverCard := 0                                           ; the card under the cursor
 global WC3_COL_W := 335, WC3_CARD_H := 48, WC3_ROW := 54
 
-Wc3Tabs() => [["timers", "Timers"], ["display", "Display"], ["hosting", "Hosting"]]
+Wc3Tabs() => [["display", "Display"], ["timers", "Timers"], ["hosting", "Hosting"]]
 ; the two versions: key, switch label
 Wc3Versions() => [["128", "1.28f"], ["reforged", "Reforged"]]
 Wc3VerBadge(ver) => ver = "128" ? "1.28f" : "Reforged"
@@ -145,15 +145,15 @@ Wc3ScreenQcStatus(*) {
 BuildWc3Page() {
     global
     local x := 40, y := 160, cw := 682
-    ; the version switch, in the title row right after the title (its control
-    ; is 150 wide from CX; page space is shifted by CX - 40, CY - 160)
-    local vx := 150 + 10 + 40
+    ; the version switch, at the far right of the title row (page space is
+    ; shifted by CX - 40, CY - 160), what's running just left of it
+    local vx := TB_R - (CX - 40) - 2 * 86 + 4
     for i, v in Wc3Versions() {
         local b := MkButton(v[2], vx + (i - 1) * 86, TB_Y + 1 - CY + 160, 82, 26, C.chip, C.muted, Wc3ShowVersion.Bind(v[1]))
         wc3VerBtns[v[1]] := b
         AddToPage("wc3", b)
     }
-    wc3VerText := mainGui.AddText("x" (vx + 2 * 86 + 8) " y" (TB_Y + 5 - CY + 160) " w270 h18 0x200 +Background" C.panel " c" C.dim, "")
+    wc3VerText := mainGui.AddText("x" (vx - 8 - 270) " y" (TB_Y + 5 - CY + 160) " w270 h18 Right 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3VerText, "s8")
     AddToPage("wc3", wc3VerText)
     ; tabs, like the Overlay page's dock switch
@@ -591,7 +591,7 @@ RefreshWc3() {
         SetShown(c, withModule)
     Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     SetIf(wc3ModuleText, gameModule.statusText())
-    wc3TabBtns["timers"].GetPos(&tx, &ty, , &th)
+    wc3TabBtns[Wc3Tabs()[1][1]].GetPos(&tx, &ty, , &th)
     topY := ty + th + (withModule ? 44 : 12)        ; under the module row, or right under the tabs
     hintY := H - 40                                 ; the bottom line
     ; the tab's cards on this version, two a row, in pages of as many rows as fit
