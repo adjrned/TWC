@@ -1,57 +1,48 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
-;  TimerHud - cooldown and buff countdowns drawn over the game, like WFE's
-;  Cooldown UI and BUFFUI, but in a see-through, click-through window of the
-;  companion's own (nothing is drawn inside the game).
-;  1.28f: the times come from the game module (GameModuleEngine.timers).
-;  Where they go: the command card from the quickcast setup, the buff bar
-;  from its own two-press setup (setupStart), both per game window size.
-;  Or drawn in the game itself ([Timers] where = game): the module makes text
-;  frames on the command card, inventory and buff icons (layout 11, needs the game's
-;  Storm.dll) and no setup is needed; until the module draws them, the
-;  overlay does.
-;  Off by default (ini [Timers] show; WC3 page > Timers).
+;  TimerHud - the 1.28f cooldown and buff timers, drawn in the game itself by
+;  the game module (layout 11, needs the game's Storm.dll), as WFE's Cooldown
+;  UI and BUFFUI: seconds left on the command card and inventory buttons, and
+;  under the buff bar's icons. Two switches, off by default (ini [Timers]
+;  cooldowns, buffs; sent as the module's itOn bits 1 and 2).
+;  No screen reading on 1.28f: that's for Reforged (planned, see the WC3
+;  page's Timers tab). The buff bar setup here (two presses in game, per
+;  window size: [Timers] buff_<window>) is the buff alerts' (BuffWatch).
 ; ============================================================================
 class TimerHud {
     section := "Timers"
-    static KEY := "010203"          ; the see-through colour
-    gui := 0, cds := [], buffs := []    ; { text, shadow, color } controls
-    sizes := { cd: 0, buff: 0 }         ; font sizes in use
-    shown := false
     cal := 0                        ; the buff bar setup in progress: { step, p1 }
     calHotkey := "$Space"
     static STEPS := ["Point at the middle of your hero's first buff icon (left) and press Space",
         "Point at the middle of the buff slot right of it (empty is fine) and press Space"]
 
-    __New(gameModule, quickcast) {
-        this.gm := gameModule, this.qc := quickcast
-        this.tickFn := ObjBindMethod(this, "tick")
-        if this.enabled
-            this.start()
+    __New(gameModule) {
+        this.gm := gameModule
+        ; before the split (one switch for both): it carries over to both
+        if (old := Ini(this.section, "show", "")) != "" {
+            for k in ["cooldowns", "buffs"]
+                if Ini(this.section, k, "") = ""
+                    SetIni(old, this.section, k)
+            try IniDelete(iniFile, this.section, "show")
+            try IniDelete(iniFile, this.section, "where")
+        }
+        this.pushFn := ObjBindMethod(this, "pushGame")
+        SetTimer(this.pushFn, 1000)
     }
-    enabled => Integer(Ini(this.section, "show", 0))
-    setEnabled(on) {
-        SetIni(on ? 1 : 0, this.section, "show")
-        on ? this.start() : this.stop()
-    }
-    start() => SetTimer(this.tickFn, 100)
-    stop() {
-        SetTimer(this.tickFn, 0)
-        this.hide()
-        this.gm.timersWanted(false)
+    cooldowns => Integer(Ini(this.section, "cooldowns", 0))
+    buffs => Integer(Ini(this.section, "buffs", 0))
+    setCooldowns(on) {
+        SetIni(on ? 1 : 0, this.section, "cooldowns")
         this.pushGame()
     }
-    ; drawn over the game (overlay) or in it (game)
-    inGame => Ini(this.section, "where", "overlay") = "game"
-    toggleWhere() {
-        SetIni(this.inGame ? "overlay" : "game", this.section, "where")
+    setBuffs(on) {
+        SetIni(on ? 1 : 0, this.section, "buffs")
         this.pushGame()
     }
-    whereLabel => this.inGame ? "In the game" : "Overlay"
-    ; the switch to the module (layout 11)
+    ; the switches to the module (layout 11): bit 1 cooldowns (command card, items), bit 2 buffs
     pushGame() {
         if (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 11
-            NumPut("uint", this.enabled && this.inGame && this.gm.enabled ? 1 : 0, v, Shm.itOn)
+            NumPut("uint", this.gm.enabled ? (this.cooldowns ? 1 : 0) | (this.buffs ? 2 : 0) : 0, v, Shm.itOn)
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {
@@ -69,131 +60,25 @@ class TimerHud {
         return p.Length = 3 ? { x: p[1] + 0, y: p[2] + 0, dx: p[3] + 0 } : 0
     }
 
-    ; one line for the Quickcast window
-    statusText() {
-        if !this.enabled
+    cooldownStatus() => this.statusOf(this.cooldowns, "on the command card and items")
+    buffStatus() => this.statusOf(this.buffs, "under the buff icons")
+    statusOf(on, where) {
+        if !on
             return "Off"
         if !this.gm.enabled
             return "On · needs the game module (top of this page)"
         s := this.gm.state()
         if !WinExist(WarcraftIII) || !s.loaded
             return "On · starts with a 1.28f game"
-        if s.layout < 3
+        if s.layout < 11
             return "On · the game has an older module loaded: restart the game"
         if s.probe != 1
-            return "On · the module's check failed: no timers"
-        if this.inGame {
-            st := this.gameState(), storm := s.layout >= 11 ? NumGet(this.gm.live(), Shm.stState, "uint") : 0
-            if st = 1
-                return "On · drawn in the game"
-            why := st = -1 ? "the game has an older module loaded (restart the game)"
-                : storm = 2 ? "the game has no Storm.dll loaded"
-                : st = 3 ? "refused by the module's checks (see the log)" : ""
-            if why = ""
-                return "On · in the game: waiting for a game"
-            return "On · " why ", so over the game" (this.qc.current() && this.buffBar() ? "" : " (needs the setups)")
-        }
-        t := this.gm.timers(), miss := []
-        if !this.qc.current()
-            miss.Push("Quickcast Setup (cooldowns)")
-        if !this.buffBar()
-            miss.Push("buff bar setup")
-        return "On" (miss.Length ? " · needs " Join(" and ", miss*) : " · ready")
-            . (t && t.flags & 0x100 ? " · some game timers refused (see twc-game.log)" : "")
-    }
-
-    ; -- drawing --------------------------------------------------------------
-    ; Whole seconds, tenths under 1 s, m:ss from a minute (as WFE shows them)
-    static Fmt(s) => s <= 0 ? "" : s < 1 ? Format("{:.1f}", s) : s < 60 ? Ceil(s) : Format("{}:{:02}", Ceil(s) // 60, Mod(Ceil(s), 60))
-
-    build() {
-        g := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000", "twc-timers")   ; click-through, never takes focus
-        g.BackColor := TimerHud.KEY
-        g.MarginX := 0, g.MarginY := 0
-        mk() {
-            sh := g.AddText("x0 y0 w60 h24 Center +BackgroundTrans c000000", "")
-            tx := g.AddText("x0 y0 w60 h24 Center +BackgroundTrans cFFFFFF", "")
-            return { text: tx, shadow: sh, color: "FFFFFF" }
-        }
-        loop 12
-            this.cds.Push(mk())
-        loop 16
-            this.buffs.Push(mk())
-        this.gui := g
-        WinSetTransColor(TimerHud.KEY, g)
-    }
-    hide() {
-        if this.gui && this.shown
-            this.gui.Hide(), this.shown := false
-    }
-    ; a label centred on (cx, cy) in the window, sized by the button pitch
-    place(c, cx, cy, pitch, txt, color) {
-        w := Round(pitch), h := Round(pitch * 0.6)
-        if c.text.Text != txt
-            c.text.Text := txt, c.shadow.Text := txt
-        if c.color != color
-            c.text.Opt("c" color), c.color := color
-        c.text.Move(Round(cx - w / 2), Round(cy - h / 2), w, h)
-        c.shadow.Move(Round(cx - w / 2) + 1, Round(cy - h / 2) + 1, w, h)
-    }
-
-    ; the labels' font, when the button size changed
-    resize(list, key, size) {
-        if this.sizes.%key% = size
-            return
-        this.sizes.%key% := size
-        for c in list
-            UISetFont(c.text, "s" size " w700 q3"), UISetFont(c.shadow, "s" size " w700 q3")
-    }
-    clear(c) {
-        if c.text.Text != ""
-            c.text.Text := "", c.shadow.Text := ""
-    }
-
-    tick() {
-        this.pushGame()
-        if this.cal || !WinActive(WarcraftIII) || !this.gm.enabled
-            return this.hide()
-        if this.inGame && this.gameState() = 1
-            return this.hide()              ; the module draws them
-        s := this.gm.state()
-        if !s.live || s.probe != 1 || s.layout < 3
-            return this.hide()
-        this.gm.timersWanted(true)
-        if !(t := this.gm.timers())
-            return this.hide()
-        cal := this.qc.current(), bar := this.buffBar()
-        if !cal && !bar
-            return this.hide()
-        if !this.gui
-            this.build()
-        WinGetClientPos(&wx, &wy, &cw, &ch, WarcraftIII)
-        ; command card: the quickcast setup's grid
-        pitch := cal ? (cal.p2[1] - cal.p1[1]) * cw / 3 : 0
-        this.resize(this.cds, "cd", Max(8, Round(pitch * 0.3)))
-        for i, c in this.cds {
-            txt := cal ? TimerHud.Fmt(t.cd[i].left) : ""
-            if txt != "" {
-                p := this.qc.slotAt(cal, i)
-                this.place(c, p[1] * cw, p[2] * ch, pitch, txt, "FFFFFF")
-            } else
-                this.clear(c)
-        }
-        ; buff bar: a row from the first icon (more rows, if any, below it)
-        bpitch := bar ? bar.dx * cw : 0, per := 8   ; a row of 8 (1.28's bar); more would wrap below
-        this.resize(this.buffs, "buff", Max(7, Round(bpitch * 0.4)))
-        for i, c in this.buffs {
-            b := bar && i <= t.buffs.Length ? t.buffs[i] : 0
-            txt := b ? TimerHud.Fmt(b.left) : ""
-            if txt != "" {
-                col := Mod(i - 1, per), row := (i - 1) // per
-                ; under 3 s: orange, about to run out
-                this.place(c, (bar.x * cw) + col * bpitch, (bar.y * ch) + row * bpitch, bpitch, txt, b.left < 3 ? "FFA040" : "FFFFFF")
-            } else
-                this.clear(c)
-        }
-        this.gui.Show("NA x" wx " y" wy " w" cw " h" ch)
-        this.shown := true
+            return "On · the module's check failed"
+        st := this.gameState(), storm := NumGet(this.gm.live(), Shm.stState, "uint"), t := this.gm.timers()
+        return storm = 2 ? "On · the game has no Storm.dll loaded: no timers"
+            : st = 3 ? "On · refused by the module's checks (see the log)"
+            : st = 1 ? "On · drawn " where (t && t.flags & 0x100 ? " · some game timers refused (see the log)" : "")
+            : "On · waiting for a game"
     }
 
     ; -- the buff bar setup (two presses of Space in game) --------------------

@@ -4,10 +4,9 @@
 ; activated, no keys sent; the injector is never run). Every status line must
 ; read its own field, and every push must land where the module reads it.
 TwcModuleIni() {
-    for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi", "wideUi", "tooltips", "fastMenu"], "Hosting", ["latency", "countdown"], "Timers", ["show"])
+    for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi", "wideUi", "tooltips", "fastMenu"], "Hosting", ["latency", "countdown"], "Timers", ["cooldowns", "buffs"])
         for key in keys
             IniWrite(1, iniFile, sect, key)
-    IniWrite("game", iniFile, "Timers", "where")
 }
 TwcModuleIni()
 global twcShmBuf := Buffer(Shm.size, 0)
@@ -41,10 +40,11 @@ TwcModuleRun() {
         "numbers", [(*) => healthBars.numberStatus(), "(12 now)"],
         "mana", [(*) => healthBars.manaStatus(), "(5 now)"],
         "portrait", [(*) => healthBars.portraitStatus(), "regen next to"],
+        "cooldowns", [(*) => timersHud.cooldownStatus(), "drawn on the command card"],
+        "buffs", [(*) => timersHud.buffStatus(), "drawn under the buff icons"],
         "fps", [(*) => gameDisplay.fpsStatus(), "the game's own setting: 60"],
         "hide", [(*) => gameDisplay.hideStatus(), "time of day, minimap"],
         "latency", [(*) => gameDisplay.latencyStatus(), "LAN 100, Battle.net 250"],
-        "timers", [(*) => timersHud.statusText(), "drawn in the game"],
         "wideUi", [(*) => gameDisplay.wideUiStatus(), "laid out for the wide window"],
         "widescreen", [(*) => gameDisplay.wsStatus(), "the world fits the window"],
         "tooltips", [(*) => gameDisplay.tooltipsStatus(), "hover the damage or armor icon"],
@@ -56,7 +56,8 @@ TwcModuleRun() {
     }
     healthBars.push(), gameDisplay.push(), timersHud.pushGame()
     v := twcShmBuf.Ptr
-    for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn"]
+    TwcCheck(NumGet(v, Shm.itOn, "uint") = 3, "pushed itOn: cooldowns (1) and buffs (2)")
+    for f in ["hnOn", "mbOn", "prOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x7D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")

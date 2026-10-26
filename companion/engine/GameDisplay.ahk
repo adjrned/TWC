@@ -62,6 +62,14 @@ class GameDisplayEngine {
         this.push()
     }
     limitLabel => "Limit " this.fpsLimit
+    ; typed or slid (64-1000; false if it isn't a number)
+    setFpsLimit(v) {
+        if !IsNumber(v)
+            return false
+        SetIni(Round(Min(Max(v + 0, 64), 1000)), this.section, "fpsLimit")
+        this.push()
+        return true
+    }
     latency => Integer(Ini("Hosting", "latency", 0))
     setLatency(on) {
         SetIni(on ? 1 : 0, "Hosting", "latency")
@@ -79,6 +87,22 @@ class GameDisplayEngine {
         this.push()
     }
     latencyLabel => this.latencyMs " ms"
+    ; typed or slid (5-1000 ms)
+    setLatencyMs(v) {
+        if !IsNumber(v)
+            return false
+        SetIni(Round(Min(Max(v + 0, 5), 1000)), "Hosting", "latencyMs")
+        this.push()
+        return true
+    }
+    setHideMenu(on) {
+        SetIni(on ? 1 : 0, this.section, "hideMenu")
+        this.push()
+    }
+    setBuffBarUp(on) {
+        SetIni(on ? 1 : 0, this.section, "buffBarUp")
+        this.push()
+    }
     ; the game start countdown of games you host (WFE's [DELAY] GAMESTART): layout 17, ini [Hosting] countdown, countdownSecs
     countdown => Integer(Ini("Hosting", "countdown", 0))
     setCountdown(on) {
@@ -158,16 +182,18 @@ class GameDisplayEngine {
     ; detailed tooltips (the info panel's damage / armor icons): layout 15, ini [Display] tooltips
     tooltips => Integer(Ini(this.section, "tooltips", 0))
     setTooltips(on) {
+        global healthBars
         SetIni(on ? 1 : 0, this.section, "tooltips")
-        this.push()
+        this.push(), healthBars.push()          ; its portrait regen option goes with it
     }
     tooltipsStatus() {
         if !this.tooltips
             return "Off"
         if (w := this.moduleWait(15)) != ""
             return w
-        st := NumGet(this.gm.live(), Shm.ttState, "uint")
-        return st = 1 ? "On · hover the damage or armor icon of a unit"
+        global healthBars
+        st := NumGet(this.gm.live(), Shm.ttState, "uint"), pr := healthBars.portrait ? " · portrait regen" : ""
+        return st = 1 ? "On · hover the damage or armor icon" pr
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
     setHideUi(on) {

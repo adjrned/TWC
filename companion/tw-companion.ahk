@@ -159,7 +159,7 @@ settings := SettingsEngine()
 updater := UpdaterEngine()
 selfUpdate := SelfUpdateEngine()
 gameModule := GameModuleEngine()
-timersHud := TimerHud(gameModule, quickcast)
+timersHud := TimerHud(gameModule)
 gameCmds := GameCommandsEngine(gameModule)
 buffWatch := BuffWatchEngine(timersHud)
 healthBars := HealthBarsEngine(gameModule)
@@ -1415,7 +1415,7 @@ BuildRemapPage() {
         remapViewBtns[v] := b
         AddToPage("remap", b)
     }
-    remapQcSetupBtn := MkButton("Quickcast Setup", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
+    remapQcSetupBtn := MkButton("Quickcast", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
     UISetFont(remapQcSetupBtn, "s8 w600")
     AddToPage("remap", remapQcSetupBtn)
     ; List: column header over a list
@@ -1652,44 +1652,60 @@ RemapClear() {
 }
 ; Quickcast Setup window, in the .modal style of Dialog: the status for the
 ; running game, the three in-game steps, hold to repeat, and the buttons
-QuickcastSettings() {
-    global C, mainGui, quickcast, UI_FONT
-    s := quickcast.get(), w := 460, x := 26, tw := w - 52
+; ver: "128" (the game module's: no setup) or "reforged" (the screen's); default: the running
+; game's, else the WC3 page's side
+QuickcastSettings(ver := "") {
+    global C, mainGui, quickcast, gameModule, UI_FONT, wc3Ver
+    static g := 0
+    if g
+        try g.Destroy()
+    if ver = ""
+        ver := (r := Wc3RunningVer()) != "" ? r : wc3Ver
+    s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "128"
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     g.BackColor := C.frame                           ; = the 1px border
     g.MarginX := 0, g.MarginY := 0
     card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
-    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Quickcast")
+    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, mod128 ? "Quickcast · 1.28f" : "Quickcast · Reforged")
     t.SetFont("s13 w700 q4", "Cinzel")
     where := WC3WindowName(s.window)
-    status := !s.window ? "Start Warcraft III to set it up"
+    ok := mod128 ? gameModule.qcReady() : s.calibrated
+    status := mod128 ? gameModule.qcStatusText()
+        : !s.window ? "Start Warcraft III to set it up"
         : s.calibrated ? "Set up for " where
         : "Not set up for " where " yet"
-    st := g.AddText("x" x " y56 w" tw " h20 +Background" C.card " c" (s.calibrated ? C.accent : C.muted), (s.calibrated ? "✓  " : "") status)
+    st := g.AddText("x" x " y56 w" tw " h20 +Background" C.card " c" (ok ? C.accent : C.muted), (ok ? "✓  " : "") status)
     UISetFont(st, "s10 w600")
-    intro := "Casts at the cursor the moment you press the key, and clicks only when the game is "
+    intro := mod128 ? "Casts at the cursor the moment you press the key: the game module clicks the moment "
+        . "the game waits for a target, so a cooldown or missing mana never clicks a unit. No setup. "
+        . "Which keys quickcast: the Remap page."
+        : "Casts at the cursor the moment you press the key, and clicks only when the game is "
         . "waiting for a target, so a cooldown or missing mana never clicks a unit. Until it's set "
         . "up, quickcast slots just send their key."
     it := g.AddText("x" x " y82 w" tw " +Background" C.card " c" C.dim, intro)
     UISetFont(it, "s9")
     y := 82 + TextHeight(it, intro, tw) + 18
     it.Move(, , , y - 100)
+    if mod128
+        y -= 4
+    else {
 
-    ; the three steps, as on screen during the setup
-    hd := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.muted, "SETUP IN GAME")
-    UISetFont(hd, "s8 w600")
-    y += 26
-    for i, step in QuickcastEngine.STEPS {
-        n := g.AddText("x" x " y" y " w20 h20 Center 0x200 +Background" C.navOn " c" C.accent, i)
-        UISetFont(n, "s8 w700"), Box.Round(n, 20, 20, 10)
-        l := g.AddText("x" (x + 32) " y" (y + 1) " w" (tw - 32) " +Background" C.card " c" C.text, step)
-        UISetFont(l, "s9")
-        lh := Max(20, TextHeight(l, step, tw - 32)), l.Move(, , , lh)
-        y += lh + 10
+        ; the three steps, as on screen during the setup (Reforged only)
+        hd := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.muted, "SETUP IN GAME")
+        UISetFont(hd, "s8 w600")
+        y += 26
+        for i, step in QuickcastEngine.STEPS {
+            n := g.AddText("x" x " y" y " w20 h20 Center 0x200 +Background" C.navOn " c" C.accent, i)
+            UISetFont(n, "s8 w700"), Box.Round(n, 20, 20, 10)
+            l := g.AddText("x" (x + 32) " y" (y + 1) " w" (tw - 32) " +Background" C.card " c" C.text, step)
+            UISetFont(l, "s9")
+            lh := Max(20, TextHeight(l, step, tw - 32)), l.Move(, , , lh)
+            y += lh + 10
     }
-    nt := g.AddText("x" (x + 32) " y" y " w" (tw - 32) " h18 +Background" C.card " c" C.dim, "Once per game version and window size. Esc cancels.")
+    nt := g.AddText("x" (x + 32) " y" y " w" (tw - 32) " h18 +Background" C.card " c" C.dim, "Once per window size. Esc cancels.")
     UISetFont(nt, "s8")
     y += 30
+    }
     g.AddText("x" x " y" y " w" tw " h1 +Background" C.border)     ; divider
     y += 16
 
@@ -1705,24 +1721,23 @@ QuickcastSettings() {
     gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
     g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
     gv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("castGap", Max(0, Min(3000, src.Value + 0)))))
-    y += 36
-    ; the game module versions (1.28f) live on the WC3 page
-    mp := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.dim, "On 1.28f the game module can quickcast and show timers: see the WC3 page.")
-    UISetFont(mp, "s8")
-    y += 34
-
-    label := s.calibrated ? "Set up again" : "Set up in game"
-    setup := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, label)
+    y += 44
     close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
-    for b in [setup, close]
+    btns := [close]
+    if !mod128 {
+        setup := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, s.calibrated ? "Set up again" : "Set up in game")
+        setup.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), quickcast.calibrateStart(QuickcastSetupDone)))
+        btns.Push(setup)
+    }
+    for b in btns
         UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
-    setup.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), quickcast.calibrateStart(QuickcastSetupDone)))
-    close.OnEvent("Click", (*) => g.Destroy())
+    close.OnEvent("Click", (*) => (g.Destroy(), RefreshWc3()))
     h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    return g
 }
 ; the in-game setup ended: its toast already said how it went
 QuickcastSetupDone(ok, msg) {
@@ -2257,8 +2272,6 @@ EscInGame() {
         return timersHud.setupEnd(0, "Buff bar setup cancelled")
     if buffWatch.capturing
         return buffWatch.captureEnd(0, "Adding a buff cancelled")
-    if gameCmds.settingUp
-        return gameCmds.portraitSetupEnd(false)
     if !KeyWait("Esc", "T1.5") {
         ToggleTool()
         KeyWait("Esc")

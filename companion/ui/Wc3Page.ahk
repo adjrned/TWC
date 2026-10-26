@@ -3,26 +3,30 @@
 ;  WC3 page - features that read or change the running game, in one place.
 ;  At the top, the version switch: 1.28f | Reforged. The page shows only what
 ;  works on that version (and "Both" features); opening the page picks the
-;  running game's version. 1.28f features may use the game module (injected;
+;  running game's version. 1.28f features use the game module (injected;
 ;  its row is only on the 1.28f side); Reforged ones only read the screen.
 ;  Four tabs set where every feature goes, now and later:
-;    Casting   how abilities go off: quickcast (screen or game module), the
-;              self-cast and autocast toggle keys
-;    Timers    what's ready and what's running out: cooldown and buff timers
-;              (over the game or in it), buff alerts
-;    Display   how the game looks: health bar size and colours, health
-;              numbers, mana bars, portrait regen, game keys (messages, chat,
-;              the multiboard), widescreen, FPS unlock, hiding the UI; later detailed tooltips
-;    Hosting   games you host: lobby latency; later the start countdown
-;  Each feature is one entry in Wc3Features(): a card with its version
-;  (badge), an On/Off switch (if it has one), a live status line and its
-;  buttons. Built in the pages' (40, 160) layout space like the other pages.
-;  A tab with more cards than fit shows them in pages (‹ n/m › in the tab row).
+;    Casting   how abilities go off: quickcast (the game module's on 1.28f,
+;              the screen's on Reforged)
+;    Timers    what's ready and what's running out: cooldowns, buff timers,
+;              buff alerts
+;    Display   how the game looks: health bars (size, colours, numbers, mana
+;              bars), game keys, hiding the UI, widescreen, the widescreen UI,
+;              fast menu, detailed tooltips, FPS unlock
+;    Hosting   games you host: lobby latency, the start countdown
+;  Each feature is one entry in Wc3Features(): a compact card (two columns)
+;  with its version badge, its On/Off switch, an Options button under it
+;  that opens the feature's own window, and a short status line; hovering a
+;  card shows what it does and its full status on the line at the bottom.
+;  Built in the pages' (40, 160) layout space like the other pages. A tab
+;  with more cards than fit shows them in pages (‹ n/m › in the tab row).
 ; ============================================================================
 
 global wc3Tab := "casting", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
 global wc3Ver := Ini("Wc3", "view", "128"), wc3VerBtns := Map(), wc3VerText, wc3ModuleRow := []
 global wc3PageNo := Map(), wc3PagerCtls := [], wc3PagerText       ; tab + version -> the page shown
+global wc3HoverCard := 0                                           ; the card under the cursor
+global WC3_COL_W := 335, WC3_CARD_H := 48, WC3_ROW := 54
 
 Wc3Tabs() => [["casting", "Casting"], ["timers", "Timers"], ["display", "Display"], ["hosting", "Hosting"]]
 ; the two versions: key, switch label
@@ -33,112 +37,105 @@ Wc3RunningVer() => (k := WC3WindowKey()) = "" ? "" : InStr(k, "reforged") = 1 ? 
 ; does a feature show on the version in view?
 Wc3OnVersion(f, ver) => f.badge = "Both" || f.badge = Wc3VerBadge(ver)
 
-; what each tab will hold later on each version (shown under its cards)
+; what each tab will hold later on each version (on the line at the bottom)
 Wc3PlannedText(tab, ver) {
     static p := Map(
-        "casting128", "",
-        "castingreforged", "",
+        "casting128", "Which keys quickcast: the Remap page.",
+        "castingreforged", "Which keys quickcast: the Remap page.",
         "timers128", "",
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
-        "display128", "Nothing more planned yet.",
+        "display128", "",
         "displayreforged", "Nothing planned yet.",
-        "hosting128", "Nothing more planned yet.",
+        "hosting128", "",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
     return p[tab ver]
 }
 
 ; Every feature on the page. Keys: tab, title, badge ("1.28f" / "Reforged" /
-; "Both"), desc, status() -> text; optional on() / set(v) for the switch,
-; setupLabel + setup() for one button, or buttons: [[label, click], ...]
-; (a label can be a function: it's refreshed with the status).
+; "Both"), desc (what it does: the hover line and its window's intro),
+; status() -> text; optional on() / set(v) for the switch, and either
+; opts(d) (rows added to the feature's standard Options window, see Opt*)
+; or window() (a window of its own).
 Wc3Features() {
     global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars, gameDisplay
     static list := 0
     if list
         return list
     list := [
-        { tab: "casting", title: "Quickcast from the screen", badge: "Both",
-            desc: "Reads the command card to see when the game wants a target. On per key in Remap.",
-            status: Wc3ScreenQcStatus, setupLabel: "Set up", setup: (*) => QuickcastSettings() },
-        { tab: "casting", title: "Quickcast through the game", badge: "1.28f",
-            desc: "The game itself says when it wants a target: no setup. Until then, the screen.",
-            on: (*) => gameModule.quickcast, set: (v) => gameModule.setQuickcast(v), status: (*) => gameModule.qcStatusText() },
-        { tab: "casting", title: "Self-cast key", badge: "Both",
-            desc: "Hold it while you cast: the ability goes on your selected unit.",
-            on: (*) => gameCmds.selfcast, set: (v) => gameCmds.setSelfcast(v), status: (*) => gameCmds.selfStatusText(),
-            buttons: [[(*) => "Key: " gameCmds.heldText("selfcast"), (*) => Wc3Capture("selfcast")],
-                ["Portrait", (*) => (WinExist(WarcraftIII) && HideMainWindow(), gameCmds.portraitSetupStart())]] },
-        { tab: "casting", title: "Autocast toggle key", badge: "1.28f",
-            desc: "Hold it and press an ability's key: its autocast turns on or off.",
-            on: (*) => gameCmds.autocast, set: (v) => gameCmds.setAutocast(v), status: (*) => gameCmds.acStatusText(),
-            buttons: [[(*) => "Key: " gameCmds.heldText("autocast"), (*) => Wc3Capture("autocast")]] },
-        { tab: "timers", title: "Cooldown and buff timers", badge: "1.28f",
-            desc: "Seconds left on abilities and buffs, over the game, or in it (items too).",
-            on: (*) => timersHud.enabled, set: (v) => timersHud.setEnabled(v), status: (*) => timersHud.statusText(),
-            buttons: [[(*) => timersHud.whereLabel, (*) => (timersHud.toggleWhere(), RefreshWc3())],
-                ["Set up buff bar", (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]] },
+        { tab: "casting", title: "Quickcast", badge: "1.28f",
+            desc: "Casts at the cursor: the game itself says when it wants a target, no setup.",
+            on: (*) => gameModule.quickcast, set: (v) => gameModule.setQuickcast(v), status: (*) => gameModule.qcStatusText(),
+            window: (*) => QuickcastSettings("128") },
+        { tab: "casting", title: "Quickcast", badge: "Reforged",
+            desc: "Casts at the cursor: reads the command card to see when the game wants a target.",
+            status: Wc3ScreenQcStatus, window: (*) => QuickcastSettings("reforged") },
+        { tab: "timers", title: "Cooldowns", badge: "1.28f",
+            desc: "Seconds left on abilities and items, drawn on their buttons in the game.",
+            on: (*) => timersHud.cooldowns, set: (v) => timersHud.setCooldowns(v), status: (*) => timersHud.cooldownStatus() },
+        { tab: "timers", title: "Buff timers", badge: "1.28f",
+            desc: "Seconds left on buffs, drawn under their icons in the game's buff bar.",
+            on: (*) => timersHud.buffs, set: (v) => timersHud.setBuffs(v), status: (*) => timersHud.buffStatus() },
         { tab: "timers", title: "Buff alerts", badge: "Both",
             desc: "A line over the game when a buff you added is missing, or (1.28f) running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
-            buttons: [["Buff bar", (*) => (WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())],
-                ["Add buff", (*) => (WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
-                ["Buffs", (*) => BuffWatchDialog()]] },
+            window: (*) => BuffWatchDialog() },
         { tab: "display", title: "Health bar size", badge: "1.28f",
-            desc: "Bigger health bars on every unit. Width is experimental.",
+            desc: "Bigger health bars (and mana bars) on every unit. Width is experimental.",
             on: (*) => healthBars.enabled, set: (v) => healthBars.setEnabled(v), status: (*) => healthBars.statusText(),
-            buttons: [[(*) => healthBars.sizeLabel, (*) => BarSizeDialog("health")]] },
+            window: (*) => BarSizeDialog() },
         { tab: "display", title: "Health bar colours", badge: "1.28f",
             desc: "By owner (your colour or each player's own) or by health left.",
             on: (*) => healthBars.colours, set: (v) => healthBars.setColours(v), status: (*) => healthBars.colourStatus(),
-            buttons: [[(*) => healthBars.colourModeLabel, (*) => (healthBars.toggleColourMode(), RefreshWc3())],
-                ["Colours", (*) => BarColoursDialog()]] },
+            window: (*) => BarColoursDialog() },
         { tab: "display", title: "Health numbers", badge: "1.28f",
             desc: "A number over every health bar: current, current / max or percent (Storm.dll).",
             on: (*) => healthBars.numbers, set: (v) => healthBars.setNumbers(v), status: (*) => healthBars.numberStatus(),
-            buttons: [[(*) => healthBars.numberModeLabel, (*) => (healthBars.cycleNumberMode(), RefreshWc3())]] },
+            opts: (d) => OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)) },
         { tab: "display", title: "Mana bars", badge: "1.28f",
             desc: "A mana bar under the health bar of every unit with mana (Storm.dll).",
             on: (*) => healthBars.mana, set: (v) => healthBars.setMana(v), status: (*) => healthBars.manaStatus(),
-            buttons: [[(*) => healthBars.manaSizeLabel, (*) => BarSizeDialog("mana")]] },
-        { tab: "display", title: "Portrait regen", badge: "1.28f",
-            desc: "The portrait's HP and mana lines with regen per second (and the percent).",
-            on: (*) => healthBars.portrait, set: (v) => healthBars.setPortrait(v), status: (*) => healthBars.portraitStatus(),
-            buttons: [[(*) => healthBars.portraitPercentLabel, (*) => (healthBars.togglePortraitPercent(), RefreshWc3())]] },
+            window: (*) => BarSizeDialog() },
         { tab: "display", title: "Game keys", badge: "1.28f",
             desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
-            buttons: [[(*) => "Messages: " gameCmds.keyText("clearMessages"), (*) => Wc3Capture("clearMessages")],
-                [(*) => "Chat: " gameCmds.keyText("clearChat"), (*) => Wc3Capture("clearChat")],
-                [(*) => "Multiboard: " gameCmds.keyText("multiboard"), (*) => Wc3Capture("multiboard")]] },
+            opts: (d) => (OptKey(d, "Clear messages", "clearMessages"), OptKey(d, "Clear chat", "clearChat"), OptKey(d, "Multiboard", "multiboard"),
+                OptNote(d, "Esc while setting one: no key.")) },
         { tab: "display", title: "Hide the UI", badge: "1.28f",
             desc: "As WFE: the black console goes, the world shows through; the minimap stays.",
             on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
-            buttons: [[(*) => gameDisplay.menuLabel, (*) => (gameDisplay.toggleHideMenu(), RefreshWc3())]] },
-        { tab: "hosting", title: "Lobby latency", badge: "1.28f",
-            desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
-            on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
-            buttons: [[(*) => gameDisplay.latencyLabel, (*) => (gameDisplay.cycleLatency(), RefreshWc3())]] },
-        { tab: "hosting", title: "Start countdown", badge: "1.28f",
-            desc: "As WFE's: games you host start this long after Start Game, not 6 s.",
-            on: (*) => gameDisplay.countdown, set: (v) => gameDisplay.setCountdown(v), status: (*) => gameDisplay.countdownStatus(),
-            buttons: [[(*) => gameDisplay.countdownLabel, (*) => CountdownDialog()]] },
+            opts: (d) => OptCheck(d, "Hide the upper menu bar's buttons too", gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(v)) },
         { tab: "display", title: "Widescreen", badge: "1.28f",
             desc: "As WFE's: the world isn't stretched. Steps aside for a widescreen mix file.",
             on: (*) => gameDisplay.widescreen, set: (v) => gameDisplay.setWidescreen(v), status: (*) => gameDisplay.wsStatus() },
         { tab: "display", title: "Widescreen UI", badge: "1.28f",
             desc: "As WFE's Upgraded UI: on a wide window the UI isn't stretched.",
             on: (*) => gameDisplay.wideUi, set: (v) => gameDisplay.setWideUi(v), status: (*) => gameDisplay.wideUiStatus(),
-            buttons: [[(*) => gameDisplay.buffBarLabel, (*) => (gameDisplay.toggleBuffBarUp(), RefreshWc3())]] },
+            opts: (d) => (OptCheck(d, "Raise the buff bar over the console", gameDisplay.buffBarUp, (v) => gameDisplay.setBuffBarUp(v)),
+                OptNote(d, "As WFE's upgraded buff bar: it floats above the command card, without its label.")) },
         { tab: "display", title: "Fast menu", badge: "1.28f",
             desc: "As WFE's: the menus' screens change at once, without their slow animations.",
             on: (*) => gameDisplay.fastMenu, set: (v) => gameDisplay.setFastMenu(v), status: (*) => gameDisplay.fastMenuStatus() },
         { tab: "display", title: "Detailed tooltips", badge: "1.28f",
             desc: "As WFE's: the damage and armor tooltips show cooldown, attacks a second, speed.",
-            on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus() },
+            on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus(),
+            opts: (d) => (OptCheck(d, "Portrait: HP and mana with their regen per second", healthBars.portrait, (v) => healthBars.setPortrait(v)),
+                OptCheck(d, "and the percent", healthBars.portraitPercent, (v) => healthBars.setPortraitPercent(v), 22),
+                OptNote(d, "The portrait lines go with this switch.")) },
         { tab: "display", title: "FPS unlock", badge: "1.28f",
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
-            buttons: [[(*) => gameDisplay.limitLabel, (*) => (gameDisplay.cycleLimit(), RefreshWc3())]] },
+            opts: (d) => (OptSlider(d, "Limit", (*) => gameDisplay.fpsLimit, (v) => gameDisplay.setFpsLimit(v), 64, 1000, 1),
+                OptNote(d, "Frames a second, 64 to 1000.")) },
+        { tab: "hosting", title: "Lobby latency", badge: "1.28f",
+            desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
+            on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
+            opts: (d) => (OptSlider(d, "Latency", (*) => gameDisplay.latencyMs, (v) => gameDisplay.setLatencyMs(v), 5, 1000, 1),
+                OptNote(d, "Milliseconds, 5 to 1000; the game's own is 100 (WFE's default).")) },
+        { tab: "hosting", title: "Start countdown", badge: "1.28f",
+            desc: "As WFE's: games you host start this long after Start Game, not 6 s.",
+            on: (*) => gameDisplay.countdown, set: (v) => gameDisplay.setCountdown(v), status: (*) => gameDisplay.countdownStatus(),
+            opts: (d) => (OptSlider(d, "Seconds", (*) => gameDisplay.countdownSecs, (v) => gameDisplay.setCountdownSecs(v), 0, 6, 0.1, SecsText),
+                OptNote(d, "From 0 to 6 s; the game's own is 6. WFE adds 0.1 s, so does this.")) },
     ]
     return list
 }
@@ -172,54 +169,41 @@ BuildWc3Page() {
         AddToPage("wc3", b)
     }
     ; the game module (1.28f side only): its master switch and log
-    local gl := mainGui.AddText("x" x " y" (y + 44) " w170 h22 0x200 +Background" C.panel " c" C.text, "Game module (1.28f)")
+    local gl := mainGui.AddText("x" x " y" (y + 40) " w170 h22 0x200 +Background" C.panel " c" C.text, "Game module (1.28f)")
     UISetFont(gl, "s10 w600")
-    wc3ModuleText := mainGui.AddText("x" (x + 176) " y" (y + 44) " w" (cw - 176 - 246) " h22 0x200 +Background" C.panel " c" C.dim, "")
+    wc3ModuleText := mainGui.AddText("x" (x + 176) " y" (y + 40) " w" (cw - 176 - 246) " h22 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3ModuleText, "s8")
-    local chkBtn := MkButton("Check", x + cw - 236, y + 42, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
-    wc3ModuleBtn := MkButton("Off", x + cw - 160, y + 42, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
-    local logBtn := MkButton("Log", x + cw - 84, y + 42, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
+    local chkBtn := MkButton("Check", x + cw - 236, y + 38, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
+    wc3ModuleBtn := MkButton("Off", x + cw - 160, y + 38, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
+    local logBtn := MkButton("Log", x + cw - 84, y + 38, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
     AddToPage("wc3", gl, wc3ModuleText, chkBtn, wc3ModuleBtn, logBtn)
     wc3ModuleRow := [gl, wc3ModuleText, chkBtn, wc3ModuleBtn, logBtn]
     ; feature cards, all built at one spot: RefreshWc3 shows the tab's and
-    ; version's own and stacks them
+    ; version's own and lays them out in two columns
     for f in Wc3Features() {
-        local top := y + 82
-        local card := Box("wc3", x, top, cw, 70, C.card, C.border, 6)
-        local tt := mainGui.AddText("x" (x + 14) " y" (top + 8) " w300 h20 0x200 +Background" C.card " c" C.text, f.title)
+        local top := y + 82, cwd := WC3_COL_W, right := x + cwd - 12 - 64
+        local card := Box("wc3", x, top, cwd, WC3_CARD_H, C.card, C.border, 6)
+        local tt := mainGui.AddText("x" (x + 12) " y" (top + 6) " w200 h20 0x200 +Background" C.card " c" C.text, f.title)
         UISetFont(tt, "s10 w600")
-        local tw := TextWidth(tt, f.title)
+        local tw := Min(TextWidth(tt, f.title), cwd - 12 - 90 - 70)
         tt.Move(, , tw + 4)
-        local bd := mainGui.AddText("x" (x + 22 + tw) " y" (top + 10) " w70 h16 0x200 +Background" C.card " c" C.accent, f.badge)
+        local bd := mainGui.AddText("x" (x + 20 + tw) " y" (top + 8) " w62 h16 0x200 +Background" C.card " c" C.accent, f.badge)
         UISetFont(bd, "s8 w600")
-        local ds := mainGui.AddText("x" (x + 14) " y" (top + 29) " w" (cw - 200) " h16 +Background" C.card " c" C.dim, f.desc)
-        UISetFont(ds, "s8")
-        local st := mainGui.AddText("x" (x + 14) " y" (top + 47) " w" (cw - 200) " h16 +Background" C.card " c" C.muted, "")
+        local st := mainGui.AddText("x" (x + 12) " y" (top + 27) " w" (right - x - 20) " h16 0x200 0x4000 +Background" C.card " c" C.muted, "")
         UISetFont(st, "s8")
-        local sw := 0, btns := []
+        local sw := 0, ob := 0
         if f.HasProp("on") {
-            sw := MkButton("Off", x + cw - 84, top + 10, 70, 24, C.chip, C.muted, Wc3Switch.Bind(f))
+            sw := MkButton("Off", right, top + 5, 64, 19, C.chip, C.muted, Wc3Switch.Bind(f))
+            UISetFont(sw, "s8 w600")
             AddToPage("wc3", sw)
         }
-        ; buttons: under the switch (or in the middle), right to left, each as
-        ; wide as its label (a live label gets room to change)
-        local defs := f.HasProp("buttons") ? f.buttons : f.HasProp("setup") ? [[f.setupLabel, f.setup]] : []
-        local bx := x + cw - 14
-        loop defs.Length {
-            local d := defs[defs.Length - A_Index + 1], lbl := Wc3Label(d[1])
-            local b := MkButton(lbl, 0, top + (sw ? 38 : 22), 70, 24, C.chip, C.text, d[2])
-            local bw := HasMethod(d[1]) ? 116 : Max(70, TextWidth(b, lbl) + 20)
-            bx -= bw
-            b.Move(bx, , bw)
-            bx -= 6
-            AddToPage("wc3", b)
-            btns.Push({ ctl: b, label: d[1] })
+        if f.HasProp("opts") || f.HasProp("window") {
+            ob := MkButton("Options", right, top + (sw ? 26 : 5), 64, 18, C.chip, C.text, Wc3Options.Bind(f))
+            UISetFont(ob, "s8 w600")
+            AddToPage("wc3", ob)
         }
-        ; the text lines end where the buttons begin
-        if btns.Length > 1
-            ds.Move(, , bx - x - 24), st.Move(, , bx - x - 24)
-        AddToPage("wc3", tt, bd, ds, st)
-        wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, ds, st], sw: sw, btns: btns, top: 0, shown: false })
+        AddToPage("wc3", tt, bd, st)
+        wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, st], sw: sw, ob: ob, x: 0, y: 0, shown: false })
     }
     ; the pager, at the right end of the tab row (shown only when a tab has pages)
     local pr := MkButton("‹", x + cw - 108, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(-1))
@@ -228,64 +212,95 @@ BuildWc3Page() {
     local nx := MkButton("›", x + cw - 28, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(1))
     AddToPage("wc3", pr, wc3PagerText, nx)
     wc3PagerCtls := [pr, wc3PagerText, nx]
-    wc3Planned := mainGui.AddText("x" x " y" (y + 82 + 4 * 80) " w" cw " h34 +Background" C.panel " c" C.dim, "")
+    ; the line at the bottom: the hovered card's description and status, else what's planned
+    wc3Planned := mainGui.AddText("x" x " y" (y + 82 + 4 * 80) " w" cw " h32 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3Planned, "s8")
     AddToPage("wc3", wc3Planned)
+    OnMessage(0x200, Wc3Hover)              ; WM_MOUSEMOVE (the popovers' handler runs too)
 }
 
-; The buff alerts' Buffs window, in the Quickcast Setup window's style: a
-; name for each watched buff (shown in the alert line), Remove, and the
+; a feature's Options: its own window, or the standard one with its rows
+Wc3Options(f, *) {
+    static g := 0
+    if f.HasProp("window")
+        return (w := f.window)()
+    if g
+        try g.Destroy()
+    d := Wc3Dialog(f.title, f.desc, 440)
+    g := d.g
+    (o := f.opts)(d)
+    Wc3DialogShow(d)
+    return g
+}
+
+; the hovered card's description and full status on the bottom line (static
+; texts don't get mouse messages, so it's the cursor against the cards' boxes)
+Wc3Hover(wParam, lParam, msg, hwnd) {
+    global wc3HoverCard, wc3Cards, wc3Planned, currentPage, mainGui, DPI_K
+    if currentPage != "wc3" || !IsSet(wc3Planned)
+        return
+    if DllCall("GetAncestor", "ptr", hwnd, "uint", 2, "ptr") != mainGui.Hwnd
+        return                                  ; another window (an Options window): keep the line
+    pt := Buffer(8), DllCall("GetCursorPos", "ptr", pt), DllCall("ScreenToClient", "ptr", mainGui.Hwnd, "ptr", pt)
+    mx := NumGet(pt, 0, "int") / DPI_K, my := NumGet(pt, 4, "int") / DPI_K
+    c := 0
+    for card in wc3Cards
+        if card.shown && mx >= card.x && mx < card.x + WC3_COL_W && my >= card.y && my < card.y + WC3_CARD_H {
+            c := card
+            break
+        }
+    if c = wc3HoverCard
+        return
+    wc3HoverCard := c
+    Wc3HintLine()
+}
+Wc3HintLine() {
+    global wc3HoverCard, wc3Planned, wc3Tab, wc3Ver, C
+    if hc := wc3HoverCard {
+        SetIf(wc3Planned, hc.f.title " (" hc.f.badge "): " hc.f.desc "`n" hc.f.status())
+        wc3Planned.Opt("c" C.muted)
+    } else {
+        SetIf(wc3Planned, (p := Wc3PlannedText(wc3Tab, wc3Ver)) != "" ? p : "Point at a feature to see what it does.")
+        wc3Planned.Opt("c" C.dim)
+    }
+}
+
+; Buff alerts' Options: the watched buffs (a name each, shown in the alert
+; line; Remove), adding one and the buff bar setup (both in game), and the
 ; running-out warning (1.28f, game module). Names save as you type.
 BuffWatchDialog() {
-    global C, mainGui, buffWatch, UI_FONT
+    global C, buffWatch, timersHud
     static g := 0
     if g
         try g.Destroy()
-    list := buffWatch.buffs(), w := 460, x := 26, tw := w - 52
-    g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
-    g.BackColor := C.frame                           ; = the 1px border
-    g.MarginX := 0, g.MarginY := 0
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
-    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Watched buffs")
-    t.SetFont("s13 w700 q4", "Cinzel")
-    intro := list.Length ? "Their names show in the alert line over the game." : "None yet: Add buff on the WC3 page, in a game with the buff on your hero."
-    it := g.AddText("x" x " y56 w" tw " h18 +Background" C.card " c" C.dim, intro)
-    UISetFont(it, "s9")
-    y := 86
-    g.SetFont("s10", UI_FONT)
+    list := buffWatch.buffs()
+    d := Wc3Dialog("Buff alerts", "A line over the game when a buff you added is missing, or (1.28f) running out.", 460)
+    g := d.g
+    OptButtons(d, [["Add a buff", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), buffWatch.captureStart())],
+        ["Set up the buff bar", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), timersHud.setupStart())]])
+    OptNote(d, timersHud.buffBar() ? "The buff bar is set up for this window size." : "The buff bar isn't set up for this window size yet (in a game, your hero selected).")
+    OptDivider(d)
+    hd := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.muted, list.Length ? "WATCHED BUFFS" : "NO BUFFS YET: add one in a game, with the buff on your hero")
+    UISetFont(hd, "s8 w600")
+    d.y += 26
     for i, b in list {
-        n := g.AddText("x" x " y" (y + 2) " w24 h20 +Background" C.card " c" C.muted, i)
+        n := g.AddText("x" d.x " y" (d.y + 2) " w24 h20 +Background" C.card " c" C.muted, i)
         UISetFont(n, "s9 w600")
-        e := g.AddEdit("x" (x + 28) " y" y " w" (tw - 28 - 96) " h24 +Background" C.well " c" C.text, b.name)
+        e := g.AddEdit("x" (d.x + 28) " y" d.y " w" (d.tw - 28 - 96) " h24 +Background" C.well " c" C.text, b.name)
         e.OnEvent("Change", ((i, src, *) => buffWatch.rename(i, src.Value)).Bind(i))
-        r := g.AddText("x" (x + tw - 86) " y" y " w86 h24 Center 0x200 +Background" C.chip " c" C.text, "Remove")
+        r := g.AddText("x" (d.x + d.tw - 86) " y" d.y " w86 h24 Center 0x200 +Background" C.chip " c" C.text, "Remove")
         UISetFont(r, "s9 w600"), Box.Round(r, 86, 24, 4)
         r.OnEvent("Click", ((i, *) => (buffWatch.remove(i), BuffWatchDialog(), RefreshWc3())).Bind(i))
-        y += 32
+        d.y += 32
     }
-    y += 8
-    g.AddText("x" x " y" y " w" tw " h1 +Background" C.border)     ; divider
-    y += 16
-    wl := g.AddText("x" x " y" (y + 2) " w226 h20 +Background" C.card " c" C.text, "Warn when one has this left:")
-    UISetFont(wl, "s10")
-    wv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, buffWatch.warnAt)
-    g.AddText("x" (x + 284) " y" (y + 2) " w120 h20 +Background" C.card " c" C.text, "s  (0 = never)")
-    wv.OnEvent("Change", (src, *) => (src.Value != "" && buffWatch.setWarnAt(src.Value)))
-    y += 28
-    wn := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.dim, "1.28f with the game module: it reads how long each buff has left.")
-    UISetFont(wn, "s8")
-    y += 34
-    close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
-    UISetFont(close, "s9 w600"), Box.Round(close, 104, 34, 4)
-    close.OnEvent("Click", (*) => (g.Destroy(), RefreshWc3()))
-    h := y + 34 + 24
-    card.Move(, , , h - 2)
-    g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
-    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    OptDivider(d)
+    OptSlider(d, "Warn at", (*) => buffWatch.warnAt, (v) => (IsNumber(v) && (buffWatch.setWarnAt(Round(Min(Max(v + 0, 0), 60))), true)), 0, 60, 1)
+    OptNote(d, "Seconds left when a buff counts as running out (0 = never); 1.28f, with the game module.")
+    Wc3DialogShow(d)
+    return g
 }
 
-; a dialog in the Buffs window's style: -> { g, card, x, tw, y } to add to, then Wc3DialogShow
+; a dialog in the companion's style: -> { g, card, x, tw, w, y } to add rows to, then Wc3DialogShow
 Wc3Dialog(title, intro, w := 380) {
     global C, mainGui, UI_FONT
     x := 26, tw := w - 52
@@ -297,8 +312,9 @@ Wc3Dialog(title, intro, w := 380) {
     t.SetFont("s13 w700 q4", "Cinzel")
     it := g.AddText("x" x " y56 w" tw " h18 +Background" C.card " c" C.dim, intro)
     UISetFont(it, "s9")
+    ih := Max(18, TextHeight(it, intro, tw)), it.Move(, , , ih)
     g.SetFont("s10", UI_FONT)
-    return { g: g, card: card, x: x, tw: tw, w: w, y: 86 }
+    return { g: g, card: card, x: x, tw: tw, w: w, y: 56 + ih + 16 }
 }
 Wc3DialogShow(d) {
     global C, mainGui, DPI_K
@@ -313,61 +329,114 @@ Wc3DialogShow(d) {
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
 }
 
-; Health bar / mana bar size: a slider and a box to type in, per side; it
-; changes in the game as you go
-BarSizeDialog(kind) {
+; -- rows for the Options windows (d: a Wc3Dialog) ------------------------------
+; a checkbox; indent moves it right (a sub-option)
+OptCheck(d, text, on, set, indent := 0) {
+    global C
+    cb := d.g.AddCheckbox("x" (d.x + indent) " y" d.y " w" (d.tw - indent) " h24 +Background" C.card " c" C.text (on ? " Checked" : ""), " " text)
+    cb.OnEvent("Click", (src, *) => set(src.Value))
+    d.y += 30
+    return cb
+}
+; a number: a slider and a box to type in (the game changes as you go). get() -> the value,
+; set(v) -> false if it isn't one; step: the slider's step (0.1 for tenths); fmt: the box's text
+OptSlider(d, label, get, set, lo, hi, step, fmt := 0) {
+    global C
+    fmt := fmt ? fmt : (v) => step < 1 ? RTrim(RTrim(Format("{:.2f}", v), "0"), ".") : Round(v)
+    g := d.g
+    lb := g.AddText("x" d.x " y" (d.y + 2) " w76 h22 0x200 +Background" C.card " c" C.text, label)
+    sl := g.AddSlider("x" (d.x + 80) " y" d.y " w" (d.tw - 80 - 74) " h26 NoTicks Range" Round(lo / step) "-" Round(hi / step) " +Background" C.card, Round(get() / step))
+    ed := g.AddEdit("x" (d.x + d.tw - 64) " y" (d.y + 1) " w64 h24 Center +Background" C.well " c" C.text, fmt(get()))
+    busy := { on: false }
+    sl.OnEvent("Change", (src, *) => (set(src.Value * step), busy.on := true, ed.Value := fmt(get()), busy.on := false))
+    ed.OnEvent("Change", (src, *) => (!busy.on && set(StrReplace(Trim(src.Value), ",", ".")) && (sl.Value := Round(get() / step))))
+    d.y += 36
+    return [sl, ed]
+}
+; one of a few: a row of buttons, the chosen one lit. choices: [[value, text], ...]
+OptChoice(d, label, choices, get, set) {
+    global C
+    g := d.g, bx := d.x + 80, btns := []
+    lb := g.AddText("x" d.x " y" (d.y + 3) " w76 h22 0x200 +Background" C.card " c" C.text, label)
+    for ch in choices {
+        b := g.AddText("x" bx " y" d.y " w60 h26 Center 0x200 +Background" C.chip " c" C.muted, ch[2])
+        UISetFont(b, "s9 w600")
+        bw := Max(70, TextWidth(b, ch[2]) + 22), b.Move(, , bw), Box.Round(b, bw, 26, 4)
+        btns.Push({ ctl: b, v: ch[1] })
+        bx += bw + 6
+    }
+    paint() {
+        for it in btns
+            it.ctl.Opt("+Background" (it.v = get() ? C.navOn : C.chip) " +c" (it.v = get() ? C.accent : C.muted)), it.ctl.Redraw()
+    }
+    for it in btns
+        it.ctl.OnEvent("Click", ((v, *) => (set(v), paint())).Bind(it.v))
+    paint()
+    d.y += 34
+}
+; a row of buttons: [[text, click], ...]
+OptButtons(d, list) {
+    global C
+    bx := d.x
+    for b in list {
+        bt := d.g.AddText("x" bx " y" d.y " w60 h28 Center 0x200 +Background" C.chip " c" C.text, b[1])
+        UISetFont(bt, "s9 w600")
+        bw := Max(90, TextWidth(bt, b[1]) + 24), bt.Move(, , bw), Box.Round(bt, bw, 28, 4)
+        bt.OnEvent("Click", b[2])
+        bx += bw + 8
+    }
+    d.y += 36
+}
+; a game key (GameCommands): its key, and a button that asks for a new one
+OptKey(d, label, name) {
+    global C, gameCmds
+    g := d.g
+    lb := g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
+    kt := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w" (d.tw - 146 - 100) " h22 0x200 +Background" C.card " c" C.accent, gameCmds.keyText(name))
+    b := g.AddText("x" (d.x + d.tw - 90) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Set key")
+    UISetFont(b, "s9 w600"), Box.Round(b, 90, 28, 4)
+    b.OnEvent("Click", (*) => (Wc3Capture(name), kt.Text := gameCmds.keyText(name)))
+    d.y += 34
+}
+OptNote(d, text) {
+    global C
+    nt := d.g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, text)
+    UISetFont(nt, "s8")
+    nh := Max(16, TextHeight(nt, text, d.tw)), nt.Move(, , , nh)
+    d.y += nh + 8
+}
+OptDivider(d) {
+    global C
+    d.y += 4
+    d.g.AddText("x" d.x " y" d.y " w" d.tw " h1 +Background" C.border)
+    d.y += 14
+}
+
+; Health bar and mana bar size, in one window: a slider and a box to type in
+; for each (the game changes as you go)
+BarSizeDialog(*) {
     global C, healthBars
     static g := 0
     if g
         try g.Destroy()
-    rows := kind = "mana" ? [["manaHeight", "Height"], ["manaWidth", "Width"]] : [["height", "Height"], ["width", "Width"]]
-    d := Wc3Dialog(kind = "mana" ? "Mana bar size" : "Health bar size",
-        kind = "mana" ? "Times the health bar's height and width." : "Times the game's own size. Width is experimental.")
+    d := Wc3Dialog("Health and mana bar size", "Health bars: times the game's own size (Health bar size switch). Mana bars: times their health bar's.", 460)
     g := d.g
-    for r in rows {
-        lim := HealthBarsEngine.SIZES[r[1]]
-        lb := g.AddText("x" d.x " y" (d.y + 2) " w60 h22 0x200 +Background" C.card " c" C.text, r[2])
-        sl := g.AddSlider("x" (d.x + 64) " y" d.y " w" (d.tw - 64 - 70) " h26 NoTicks Range" Round(lim[2] * 100) "-" Round(lim[3] * 100)
-            " +Background" C.card, Round(healthBars.size(r[1]) * 100))
-        ed := g.AddEdit("x" (d.x + d.tw - 60) " y" (d.y + 1) " w60 h24 Center +Background" C.well " c" C.text, BarSizeText(healthBars.size(r[1])))
-        busy := { on: false }
-        sl.OnEvent("Change", ((key, ed, busy, src, *) => (healthBars.setSize(key, src.Value / 100), busy.on := true,
-            ed.Value := BarSizeText(healthBars.size(key)), busy.on := false)).Bind(r[1], ed, busy))
-        ed.OnEvent("Change", ((key, sl, busy, src, *) => (!busy.on && healthBars.setSize(key, StrReplace(Trim(src.Value), ",", "."))
-            && (sl.Value := Round(healthBars.size(key) * 100)))).Bind(r[1], sl, busy))
-        d.y += 36
+    for sec in [["HEALTH BARS", [["height", "Height"], ["width", "Width"]]], ["MANA BARS", [["manaHeight", "Height"], ["manaWidth", "Width"]]]] {
+        hd := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.muted, sec[1])
+        UISetFont(hd, "s8 w600")
+        d.y += 24
+        for r in sec[2] {
+            lim := HealthBarsEngine.SIZES[r[1]]
+            OptSlider(d, r[2], ((k, *) => healthBars.size(k)).Bind(r[1]), ((k, v) => healthBars.setSize(k, v)).Bind(r[1]), lim[2], lim[3], 0.01, BarSizeText)
+        }
+        OptNote(d, sec[1] = "HEALTH BARS" ? "×0.25 to ×4; ×1 is the game's own. The width is experimental." : "×0.25 to ×2 of the health bar; shown with the Mana bars switch.")
     }
-    lim := HealthBarsEngine.SIZES[rows[1][1]]
-    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "From ×" lim[2] " to ×" lim[3] "; ×1 is the game's own" (kind = "mana" ? " health bar's." : "."))
-    UISetFont(nt, "s8")
-    d.y += 22
     Wc3DialogShow(d)
     return g
 }
+
 BarSizeText(v) => RTrim(RTrim(Format("{:.2f}", v), "0"), ".")
 SecsText(v) => RTrim(RTrim(Format("{:.1f}", v), "0"), ".")
-
-; the start countdown of games you host: a slider and a box, in tenths of a second
-CountdownDialog() {
-    global C, gameDisplay
-    static g := 0
-    if g
-        try g.Destroy()
-    d := Wc3Dialog("Start countdown", "Seconds from Start Game to the game, in games you host.")
-    g := d.g
-    lb := g.AddText("x" d.x " y" (d.y + 2) " w60 h22 0x200 +Background" C.card " c" C.text, "Seconds")
-    sl := g.AddSlider("x" (d.x + 64) " y" d.y " w" (d.tw - 64 - 70) " h26 NoTicks Range0-60 +Background" C.card, Round(gameDisplay.countdownSecs * 10))
-    ed := g.AddEdit("x" (d.x + d.tw - 60) " y" (d.y + 1) " w60 h24 Center +Background" C.well " c" C.text, SecsText(gameDisplay.countdownSecs))
-    busy := { on: false }
-    sl.OnEvent("Change", (src, *) => (gameDisplay.setCountdownSecs(src.Value / 10), busy.on := true, ed.Value := SecsText(gameDisplay.countdownSecs), busy.on := false))
-    ed.OnEvent("Change", (src, *) => (!busy.on && gameDisplay.setCountdownSecs(StrReplace(Trim(src.Value), ",", ".")) && (sl.Value := Round(gameDisplay.countdownSecs * 10))))
-    d.y += 36
-    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "From 0 to 6 s; the game's own is 6. WFE adds 0.1 s, so does this.")
-    UISetFont(nt, "s8")
-    d.y += 22
-    Wc3DialogShow(d)
-    return g
-}
 
 ; Health bar colours by owner: each a colour of your own, or the owner's player colour
 BarColoursDialog() {
@@ -375,8 +444,10 @@ BarColoursDialog() {
     static g := 0
     if g
         try g.Destroy()
-    d := Wc3Dialog("Health bar colours", "By owner. Player colour: the owner's own colour in the game.", 420)
+    d := Wc3Dialog("Health bar colours", "By owner (your own colour, or each owner's player colour), or by health left.", 440)
     g := d.g
+    OptChoice(d, "Colour", [["owner", "By owner"], ["health", "By health"]], (*) => healthBars.colourMode, (v) => healthBars.setColourMode(v))
+    OptDivider(d)
     for o in HealthBarsEngine.OWNERS {
         col := healthBars.colour(o[1])
         lb := g.AddText("x" d.x " y" (d.y + 2) " w130 h22 0x200 +Background" C.card " c" C.text, o[3])
@@ -386,7 +457,7 @@ BarColoursDialog() {
         cb.OnEvent("Click", ((key, def, sw, src, *) => BarPlayerColour(key, def, sw, src.Value)).Bind(o[1], o[2], sw))
         d.y += 32
     }
-    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "Click a colour to change it.")
+    nt := g.AddText("x" d.x " y" d.y " w" d.tw " h18 +Background" C.card " c" C.dim, "By owner: click a colour to change it. By health: green, to yellow at half, to red.")
     UISetFont(nt, "s8")
     d.y += 22
     Wc3DialogShow(d)
@@ -486,33 +557,34 @@ Wc3VerLine() {
         : "● " Wc3VerBadge(r) " is running (this is the " Wc3VerBadge(wc3Ver) " side)"
 }
 
-; move a card (its box, texts, switch, buttons and their boxes) to top y (window units)
-Wc3MoveCard(card, y) {
+; move a card (its box, texts, switch, Options and their boxes) to x, y (window units)
+Wc3MoveCard(card, x, y) {
     global boxes
-    if !card.top
-        card.box.outer.GetPos(, &t), card.top := t
-    d := y - card.top
-    if !d
+    if !card.x
+        card.box.outer.GetPos(&l, &t), card.x := l, card.y := t
+    dx := x - card.x, dy := y - card.y
+    if !dx && !dy
         return
-    card.top := y
+    card.x := x, card.y := y
     ctls := [card.box.outer, card.box.inner, card.ctrls*]
-    if card.sw
-        ctls.Push(card.sw)
-    for b in card.btns
-        ctls.Push(b.ctl)
+    for b in [card.sw, card.ob]
+        if b
+            ctls.Push(b)
     for c in ctls {
-        c.GetPos(, &cTop)
-        c.Move(, cTop + d)
+        c.GetPos(&cl, &cTop)
+        c.Move(cl + dx, cTop + dy)
         if boxes.Has(c.Hwnd) {
             bx := boxes[c.Hwnd]
-            bx.Move(bx.x, bx.y + d, bx.w, bx.h)
+            bx.Move(bx.x + dx, bx.y + dy, bx.w, bx.h)
         }
     }
 }
+; the short form of a status line for a card (the full one is on the hover line)
+Wc3Short(s) => (p := InStr(s, " (")) ? SubStr(s, 1, p - 1) : s
 
 RefreshWc3() {
     global wc3Tab, wc3TabBtns, wc3Cards, wc3ModuleBtn, wc3ModuleText, wc3Planned, gameModule, currentPage
-    global wc3Ver, wc3VerBtns, wc3VerText, wc3ModuleRow, wc3PageNo, wc3PagerCtls, wc3PagerText, H
+    global wc3Ver, wc3VerBtns, wc3VerText, wc3ModuleRow, wc3PageNo, wc3PagerCtls, wc3PagerText, H, wc3HoverCard
     Freeze()
     for ver, b in wc3VerBtns
         Wc3SetSelected(b, ver = wc3Ver)
@@ -525,26 +597,22 @@ RefreshWc3() {
         SetShown(c, withModule)
     Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     SetIf(wc3ModuleText, gameModule.statusText())
-    wc3TabBtns["casting"].GetPos(, &ty, , &th)
-    nextY := ty + th + (withModule ? 56 : 14)          ; under the module row, or right under the tabs
-    ; the tab's cards on this version, in pages of as many as fit (70 high, 80 apart);
-    ; the planned line goes under the last page's cards, or on a page of its own
-    ; when they fill it
+    wc3TabBtns["casting"].GetPos(&tx, &ty, , &th)
+    topY := ty + th + (withModule ? 44 : 12)        ; under the module row, or right under the tabs
+    hintY := H - 40                                 ; the bottom line
+    ; the tab's cards on this version, two a row, in pages of as many rows as fit
     inTab := 0
     for card in wc3Cards
         inTab += card.f.tab = wc3Tab && Wc3OnVersion(card.f, wc3Ver)
-    perPage := Max(1, (H - nextY) // 80)
+    perPage := 2 * Max(1, (hintY - 4 - topY + (WC3_ROW - WC3_CARD_H)) // WC3_ROW)
     pageCount := Max(1, Ceil(inTab / perPage))
-    planned := Wc3PlannedText(wc3Tab, wc3Ver)
-    if inTab && planned != "" && Mod(inTab, perPage) = 0 && nextY + perPage * 80 + 36 > H - 6
-        pageCount++
     pk := wc3Tab wc3Ver, pageNo := wc3PageNo.Get(pk, 1)
     pageNo := pageNo < 1 ? pageCount : pageNo > pageCount ? 1 : pageNo
     wc3PageNo[pk] := pageNo
     for c in wc3PagerCtls
         SetShown(c, pageCount > 1)
     wc3PagerText.Text := pageNo " / " pageCount
-    shown := 0, lastBottom := 0, idx := 0
+    idx := 0
     for card in wc3Cards {
         vis := card.f.tab = wc3Tab && Wc3OnVersion(card.f, wc3Ver)
         idx += vis
@@ -553,32 +621,30 @@ RefreshWc3() {
         card.box.Visible := vis
         for c in card.ctrls
             c.Visible := vis
-        if card.sw
-            SetShown(card.sw, vis)
-        for b in card.btns {
-            SetShown(b.ctl, vis)
-            if vis
-                SetIf(b.ctl, Wc3Label(b.label))
-        }
+        for b in [card.sw, card.ob]
+            if b
+                SetShown(b, vis)
         if !vis
             continue
-        shown++
-        Wc3MoveCard(card, nextY)
-        nextY += 80, lastBottom := card.top + 70
+        k := idx - (pageNo - 1) * perPage - 1
+        Wc3MoveCard(card, tx + Mod(k, 2) * (WC3_COL_W + 12), topY + (k // 2) * WC3_ROW)
         if card.sw
             Wc3SetSwitch(card.sw, card.f.on())
-        SetIf(card.ctrls[4], card.f.status())
+        SetIf(card.ctrls[3], Wc3Short(card.f.status()))
     }
-    wc3Planned.Text := (inTab ? "" : "Nothing here yet.  ") planned
-    wc3Planned.Move(, lastBottom ? lastBottom + 12 : nextY)
-    wc3Planned.Visible := pageNo = pageCount
+    if !inTab
+        wc3HoverCard := 0
+    wc3Planned.Move(, hintY)
+    Wc3HintLine()
+    if !inTab
+        SetIf(wc3Planned, "Nothing here yet.  " Wc3PlannedText(wc3Tab, wc3Ver))
     Thaw()
     ; live status lines while the page is open
     SetTimer(Wc3Tick, currentPage = "wc3" ? 1000 : 0)
 }
 ; once a second: just the status lines and switches (no repaint of the rest)
 Wc3Tick() {
-    global currentPage, mainGui, wc3Tab, wc3Cards, wc3ModuleBtn, wc3ModuleText, gameModule, wc3Ver, wc3VerText
+    global currentPage, mainGui, wc3Tab, wc3Cards, wc3ModuleBtn, wc3ModuleText, gameModule, wc3Ver, wc3VerText, wc3HoverCard
     if currentPage != "wc3" || !DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
         return SetTimer(Wc3Tick, 0)
     SetIf(wc3VerText, Wc3VerLine())
@@ -587,10 +653,12 @@ Wc3Tick() {
         Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     for card in wc3Cards
         if card.shown {
-            SetIf(card.ctrls[4], card.f.status())
+            SetIf(card.ctrls[3], Wc3Short(card.f.status()))
             if card.sw && (card.sw.Text = "On") != !!card.f.on()
                 Wc3SetSwitch(card.sw, card.f.on())
         }
+    if wc3HoverCard
+        Wc3HintLine()
 }
 SetIf(ctl, text) {
     if ctl.Text != text

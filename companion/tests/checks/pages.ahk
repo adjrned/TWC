@@ -21,9 +21,24 @@ TwcPagesRun() {
         }
     ModuleCheckDialog()
     TwcCheck(true, "Module check window")
+    ; every feature's Options window opens (and closes)
+    n := 0
+    for f in Wc3Features()
+        if f.HasProp("opts") || f.HasProp("window") {
+            og := Wc3Options(f), n++
+            if IsObject(og)
+                try og.Destroy()
+        }
+    TwcCheck(n >= 14, "every Options window opens (" n ")")
+    ; one page a tab on 1.28f (two columns): no pager
+    global wc3PagerCtls
+    for t in Wc3Tabs() {
+        Wc3ShowVersion("128"), Wc3ShowTab(t[1])
+        TwcCheck(!wc3PagerCtls[1].Visible, "1.28f > " t[2] ": one page")
+    }
     ; the size and colour windows: typed, slid, player colour
     global healthBars
-    sg := BarSizeDialog("health"), eds := [], sls := []
+    sg := BarSizeDialog(), eds := [], sls := []
     for ctl in sg
         if ctl.Type = "Edit"
             eds.Push(ctl)
@@ -35,15 +50,9 @@ TwcPagesRun() {
     TwcCheck(healthBars.width = 4, "a width past the limit is x4: " healthBars.width)
     TypeIn(eds[2], "abc")
     TwcCheck(healthBars.width = 4, "not a number: left as it was")
+    TypeIn(eds[3], "0.5")
+    TwcCheck(Abs(healthBars.manaHeight - 0.5) < 0.001 && eds.Length = 4, "mana bar height typed in the same window: " healthBars.manaHeight)
     sg.Destroy()
-    mg := BarSizeDialog("mana")
-    for ctl in mg
-        if ctl.Type = "Edit" {
-            TypeIn(ctl, "0.5")
-            break
-        }
-    TwcCheck(Abs(healthBars.manaHeight - 0.5) < 0.001, "mana bar height typed: " healthBars.manaHeight)
-    mg.Destroy()
     cg := BarColoursDialog()
     cbs := []
     for ctl in cg

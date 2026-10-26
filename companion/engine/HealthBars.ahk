@@ -22,7 +22,8 @@
 ;  Portrait regen (layout 11, off by default, no Storm.dll needed): the
 ;  portrait's own HP / mana lines become "cur / max +regen" (and the percent,
 ;  [HealthBars] portraitPercent) right after the game writes them
-;  ([HealthBars] portrait).
+;  ([HealthBars] portrait). An option of Detailed tooltips since 2026-10-26:
+;  it's on only while that switch is.
 ; ============================================================================
 class HealthBarsEngine {
     section := "HealthBars"
@@ -55,6 +56,18 @@ class HealthBarsEngine {
         return true
     }
     sizeLabel => "Size " HealthBarsEngine.Fmt(this.height) " / " HealthBarsEngine.Fmt(this.width)
+    setPortraitPercent(on) {
+        SetIni(on ? 1 : 0, this.section, "portraitPercent")
+        this.push()
+    }
+    setNumberMode(i) {
+        SetIni(HealthBarsEngine.NUMBER_MODES[i][1], this.section, "numberMode")
+        this.push()
+    }
+    setColourMode(mode) {
+        SetIni(mode = "health" ? "health" : "owner", this.section, "colourMode")
+        this.push()
+    }
     manaSizeLabel => "Size " HealthBarsEngine.Fmt(this.manaHeight) " / " HealthBarsEngine.Fmt(this.size("manaWidth"))
     ; an owner's colour: "player" or RRGGBB
     colour(key) {
@@ -142,7 +155,8 @@ class HealthBarsEngine {
         NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, Shm.hnOn)
         NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, Shm.mbOn)
         NumPut("uint", this.portraitPercent, v, Shm.prMode)
-        NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, Shm.prOn)
+        global gameDisplay
+        NumPut("uint", this.portrait && IsSet(gameDisplay) && gameDisplay.tooltips && this.gm.enabled ? 1 : 0, v, Shm.prOn)
         if NumGet(v, Shm.layout, "uint") >= 12
             NumPut("float", this.size("manaWidth"), v, Shm.mbWidth)
     }

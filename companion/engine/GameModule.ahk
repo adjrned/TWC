@@ -24,7 +24,7 @@ class GameModuleEngine {
     swapping := 0               ; the game pid whose module is being replaced (0 = none)
     swapAt := 0
 
-    enabled => Integer(Ini(this.section, "module", 0))
+    enabled => Integer(Ini(this.section, "module", 1))      ; on by default since 2026-10-26: its quickcast is 1.28f's
     dir => A_ScriptDir "\native"
 
     setEnabled(on) {
@@ -177,11 +177,11 @@ class GameModuleEngine {
     }
 
     ; -- quickcast in the game ---------------------------------------------------
-    ; Off by default (ini [Game] quickcast); the screen quickcast is used otherwise.
+    ; On by default (ini [Game] quickcast): on 1.28f it's the only quickcast (the screen's is Reforged's).
     ; The companion sends the ability's key, then asks the module for a click:
     ; it clicks at the cursor the moment the game waits for a target, or gives
     ; up at the deadline. Requests are numbered; the module answers the latest.
-    quickcast => Integer(Ini(this.section, "quickcast", 0))
+    quickcast => Integer(Ini(this.section, "quickcast", 1))
     setQuickcast(on) => SetIni(on ? 1 : 0, this.section, "quickcast")
     ; on, loaded in this game, alive, and its probe passed
     qcReady() {
@@ -222,16 +222,16 @@ class GameModuleEngine {
     }
     ; one line for the Quickcast window
     qcStatusText() {
-        if !this.enabled
-            return "Needs Settings > Game module for 1.28"
         if !this.quickcast
-            return "Off: the screen quickcast is used"
+            return "Off: quickcast keys send their key alone"
+        if !this.enabled
+            return "On · needs the game module (top of this page)"
         s := this.state()
         return !WinExist(WarcraftIII) || !s.loaded ? "On · starts with a 1.28f game"
             : s.layout < 2 ? "On · the game has an older module loaded: restart the game"
-            : s.probe = 2 ? "On · the module's check failed, so the screen quickcast is used"
+            : s.probe = 2 ? "On · the module's check failed: keys go alone (see the log)"
             : s.live && s.probe = 1 ? "On · the game says when it waits for a target" (s.ui ? "" : " (seen in a game: not yet)")
-            : "On · the module isn't running, so the screen quickcast is used"
+            : "On · the module isn't running: keys go alone"
     }
 
     ; -- cooldown and buff timers (layout 3) ------------------------------------

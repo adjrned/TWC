@@ -190,10 +190,6 @@ class RemapEngine {
                     this.registered.Push(RegisterHotkey(key " up", this.released.Bind(this, HotkeyBase(key)), WarcraftIII, true))
             }
         }
-        ; the autocast key's card hotkeys follow your keys
-        global gameCmds
-        if IsSet(gameCmds)
-            gameCmds.bind()
     }
 
     refresh() {
@@ -202,17 +198,6 @@ class RemapEngine {
     }
 
     ; -- actions -------------------------------------------------------------
-    ; the autocast key held (Game commands): a command card key toggles that
-    ; button's autocast instead -> true if it was handed over
-    toAutocast(game) {
-        global gameCmds
-        if !gameCmds.autocastHeld()
-            return false
-        for i, c in RemapEngine.CARD
-            if c.game = game
-                return (gameCmds.autocastSlot(i), true)
-        return false
-    }
     ; "{q}", never "{Q}": an upper-case letter is sent with Shift (a queued order)
     keyText(key) {
         key := RegExReplace(key, "[$*~]")
@@ -222,11 +207,6 @@ class RemapEngine {
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
     castPlain(game, yourKey) {
-        global gameCmds
-        if this.toAutocast(game)
-            return
-        if gameCmds.screenSelfHeld()
-            return gameCmds.screenSelfCast(game, this.queued(yourKey))
         SendInput(this.queued(yourKey) this.keyText(game))
         DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
@@ -240,28 +220,23 @@ class RemapEngine {
     ; waits castGap (450 ms) before pressing again: the hero may still be
     ; turning or walking into range, and each press reopens the reticle (its
     ; animation and sound) and gives the order again.
-    ; With the 1.28 game module's quickcast on and ready, the game itself says
-    ; when it waits for a target (no setup needed); otherwise the screen does.
+    ; On 1.28f the game module's quickcast says when the game waits for a
+    ; target (no setup); the screen quickcast is Reforged's only. Without it
+    ; (the module off or not ready, Reforged not set up) the key goes alone.
     castQuick(game, yourKey) {
-        global quickcast, gameModule, gameCmds
+        global quickcast, gameModule
         static hinted := Map()          ; window keys already hinted about
-        if this.toAutocast(game)
-            return
-        ; self-cast held: your portrait is clicked as the game wants a target
-        ; (by the game module, or from the screen)
-        if gameCmds.selfCastHeld()
-            return this.castPlain(game, yourKey)
-        if gameCmds.screenSelfHeld()
-            return gameCmds.screenSelfCast(game, this.queued(yourKey))
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
-        inGameQc := gameModule.qcReady()
-        cal := inGameQc ? 0 : quickcast.current()
-        ; not set up for this game window: the key alone, with a hint once per
-        ; window size (a fullscreen / windowed switch or a resize changes it)
+        reforged := InStr(WC3WindowKey(), "reforged") = 1
+        inGameQc := !reforged && gameModule.qcReady()
+        cal := reforged ? quickcast.current() : 0
+        ; neither: the key alone, with a hint once per window (a fullscreen /
+        ; windowed switch or a resize changes it)
         if !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
             hinted[k] := true
-            DebugLog("quickcast: no setup for " k ": the key alone")
-            Toast("Quickcast isn't set up for this window size (" WC3WindowName(k) "): WC3 page > Casting > Set up", "", 6000)
+            DebugLog("quickcast: " (reforged ? "no setup for " k : "the game module isn't ready") ": the key alone")
+            Toast(reforged ? "Quickcast isn't set up for this window size (" WC3WindowName(k) "): WC3 page > Casting > Quickcast > Options"
+                : "Quickcast needs the game module: WC3 page, top row (" gameModule.qcStatusText() ")", "", 6000)
         }
         this.holding[base] := true, start := A_TickCount
         loop {
