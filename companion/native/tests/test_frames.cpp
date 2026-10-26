@@ -9,6 +9,7 @@
 static_assert(offsetof(Shared, itOn) == 688 && offsetof(Shared, mbCount) == 728 && offsetof(Shared, itemLeft) == 732 && sizeof(Shared) >= 780, "layout 11");
 
 static BYTE *img;
+static BYTE *imgRef() { return img; }
 static void Stub(DWORD rva, const void *fn) {
     img[rva - 1] = 0xCC;
     img[rva] = 0xE9;
@@ -42,10 +43,23 @@ static void __fastcall FakeTextHide(BYTE *t, int) { hides++; t[0x1e0] = 0; }
 static BYTE barTexts[3][0x20]; static int barTextHides;
 static BYTE badgeRegs[2][0x100]; static int badgeHides, badgeShows;
 static void __fastcall FakeRegionHide(BYTE *r, int) {
+    if (*(DWORD *)r == (DWORD)(imgRef() + RING_TEXTURE_VT)) *(DWORD *)(r + 0x7c) = 0;
     if (r >= barTexts[0] && r < barTexts[3]) barTextHides++, r[0x10] = 0;
     if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeHides++, *(DWORD *)(r + 0x7c) &= ~1u;
 }
-static void __fastcall FakeRegionShow(BYTE *r, int) { if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeShows++, *(DWORD *)(r + 0x7c) |= 1; }
+// the cooldown ring's game calls
+static int ringFrames, ringTextures, allPoints; static const char *ringPath;
+static BYTE *imgRef();
+static void __fastcall FakeRegionShow(BYTE *r, int);
+static void *__fastcall FakeFrameCtor(BYTE *mem, int, void *) { ringFrames++; *(DWORD *)mem = (DWORD)(imgRef() + RVA_SIMPLEFRAME_VT); return mem; }
+static void *__fastcall FakeTexCtor(BYTE *mem, int, void *, DWORD, DWORD) { ringTextures++; *(DWORD *)mem = (DWORD)(imgRef() + RING_TEXTURE_VT); *(DWORD *)(mem + 0x7c) = 1; return mem; }
+static void __fastcall FakeSetTex(BYTE *, int, const char *path, DWORD) { ringPath = path; }
+static void __fastcall FakeAllPoints(BYTE *, int, void *, DWORD) { allPoints++; }
+static void __fastcall FakeSetW(BYTE *t, int, float w) { *(float *)(t + LAYOUT_WIDTH) = w; }
+static void __fastcall FakeSetH(BYTE *t, int, float h) { *(float *)(t + LAYOUT_HEIGHT) = h; }
+static void __fastcall FakeRegionShow(BYTE *r, int) {
+    if (*(DWORD *)r == (DWORD)(imgRef() + RING_TEXTURE_VT)) *(DWORD *)(r + 0x7c) = 1;
+    if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeShows++, *(DWORD *)(r + 0x7c) |= 1; }
 static void __fastcall FakeTextShow(BYTE *t, int) { shows++; t[0x1e0] = 1; }
 static void __fastcall FakeNop(void *, int) {}
 
@@ -82,6 +96,8 @@ int main() {
     Stub(RVA_SKIN_LOOKUP, FakeSkin); Stub(RVA_LAYOUT_REFRESH, FakeRefresh); Stub(RVA_BAR_CTOR, FakeBarCtor);
     Stub(RVA_BAR_LEVEL, FakeBarLevel); Stub(RVA_REGION_HIDE, FakeRegionHide); Stub(RVA_REGION_SHOW, FakeRegionShow); Stub(RVA_UNIT_HP, FakeState);
     Stub(RVA_HANDLE_LOOKUP, FakeLookup);
+    Stub(RVA_SIMPLEFRAME_CTOR, FakeFrameCtor); Stub(RVA_TEXTURE_CTOR, FakeTexCtor); Stub(RVA_SET_TEXTURE, FakeSetTex);
+    Stub(RVA_SET_ALL_POINTS, FakeAllPoints); Stub(RVA_SET_WIDTH, FakeSetW); Stub(RVA_SET_HEIGHT, FakeSetH);
     // vtables: data pages (the code they point to is in the stub area at 0x200000)
     DWORD *tv = (DWORD *)(img + RVA_TEXT_VTABLE), *lv = (DWORD *)(img + RVA_TEXT_LAYOUT_VTABLE), *cv = (DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE);
     DWORD *bv = (DWORD *)(img + RVA_STATBAR_VTABLE), *fv = (DWORD *)(img + 0xab0000), *uv = (DWORD *)(img + RVA_UI_VTABLE);
@@ -171,6 +187,28 @@ int main() {
     BadgesPass(ui, false);
     CHECK(hidden && badgeShows == 2 && (*(DWORD *)(badgeRegs[1] + REGION_SHOWN) & 1), "the number badge's two regions hidden once (not again on the next pass), shown again when off");
     *(BYTE **)(btns[0] + BTN_BADGE) = nullptr;
+    // our cooldown ring (bit 4): a frame over the button, four sides running out clockwise from the top-left
+    {
+        DWORD old2; VirtualProtect(img + RVA_SIMPLEFRAME_VT, 0x100, PAGE_READWRITE, &old2);
+        ((DWORD *)(img + RVA_SIMPLEFRAME_VT))[0x68 / 4] = StubAt(0x610000, FakeNop);
+        *(float *)(btns[0] + LAYOUT_WIDTH) = 0.04f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.04f;
+        sh.itOn = 1, sh.cdNoBadge = 4, sh.cdLeft[0] = 5, sh.cdTotal[0] = 10;
+        RingsPass(ui, true);
+        Ring *r = g_ringN ? &g_rings[0] : nullptr;
+        auto on = [&](int k) { return (*(DWORD *)(r->side[k] + 0x7c) & 1) != 0; };
+        bool half = r && r->btn == btns[0] && ringFrames == 1 && ringTextures == 4 && allPoints == 1 && ringPath && strstr(ringPath, "TeamColor04")
+            && on(0) && on(1) && !on(2) && !on(3) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.04f) < 1e-5f && fabsf(*(float *)(r->side[1] + LAYOUT_HEIGHT) - 0.04f) < 1e-5f
+            && fabsf(*(float *)(r->side[0] + LAYOUT_HEIGHT) - RING_THICK) < 1e-6f;
+        sh.cdLeft[0] = 1.25f; RingsPass(ui, true);
+        bool eighth = r && on(0) && !on(1) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.02f) < 1e-5f;
+        sh.cdLeft[0] = 0; RingsPass(ui, true);
+        bool gone = r && !on(0) && !on(1) && g_ringN == 1;
+        sh.cdLeft[0] = 9; RingsPass(ui, true);
+        bool again = r && on(3) && ringFrames == 1;
+        RingsPass(ui, false);
+        CHECK(half && eighth && gone && again && !on(3), "the ring: half left = top and right sides; an eighth = half the top; over: hidden; the same frame next time; off: hidden");
+        sh.cdNoBadge = 0, sh.cdLeft[0] = 2;
+    }
     sh.itOn = 1; TimerFramesDraw(ui);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tBuff[2].text[0x1e0] == 0, "cooldowns only (bit 1): the buff's seconds hidden");
     sh.itOn = 2; TimerFramesDraw(ui);

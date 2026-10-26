@@ -277,6 +277,20 @@ int main() {
           && *(DWORD *)(g_base + 0x4034f1) == (DWORD)(g_base + 0xa702a0) && !strcmp((const char *)g_base + 0xa702a0, "%d") && !memcmp(g_base + 0x141ce3, RH, 4)
           && !memcmp(g_base + 0x141cec, "\x8B\x4E\x74", 3) && BTN_BADGE == 0x194 && REGION_FRAME == 0x74 && REGION_SHOWN == 0x7c,
           "the command button's number badge [+0x194] ('%%d' into [+0x198]); the region hide works on [r+0x7C] / [r+0x74]");
+    // our cooldown ring, made as the badge is: a CSimpleFrame (+13AE90(mem, parent), ret 4, vtable +A7CC14 at +13AEBE), CSimpleTextures
+    // (+141FE0(mem, frame, 2, 1), ret 12, vtable +A7D13C at +142019; the badge's at +3E1D86..+3E1D92), SetTexture (path, 0) ret 8,
+    // SetAllPoints ret 8, SetPoint ret 24, the width / height setters writing the layout's +0x58 / +0x5C then refreshing
+    static const BYTE TX_CALL[] = { 0x6A, 0x01, 0x6A, 0x02, 0xFF, 0xB6, 0x94, 0x01, 0, 0, 0x8B, 0xC8 }, SW[] = { 0xF3, 0x0F, 0x11, 0x41, 0x58 }, SH2[] = { 0xF3, 0x0F, 0x11, 0x41, 0x5C };
+    const BYTE *rb[] = { g_base + 0x13b04b, g_base + 0x142158, g_base + 0x143804, g_base + 0x13fb3a, g_base + 0x13fc92 };
+    static const WORD rp[] = { 4, 12, 8, 8, 24 };
+    bool retsOk = true;
+    for (int i = 0; i < 5; i++)
+        retsOk = retsOk && rb[i][0] == 0xC2 && *(const WORD *)(rb[i] + 1) == rp[i];
+    CHECK(retsOk && *(DWORD *)(g_base + 0x13aec0) == (DWORD)(g_base + RVA_SIMPLEFRAME_VT) && *(DWORD *)(g_base + 0x14201b) == (DWORD)(g_base + RING_TEXTURE_VT)
+          && Rtti(RVA_SIMPLEFRAME_VT, "CSimpleFrame") && Rtti(RING_TEXTURE_VT, "CSimpleTexture") && !memcmp(g_base + 0x3e1d86, TX_CALL, 12) && SiteTarget(g_base + 0x3e1d92) == g_base + RVA_TEXTURE_CTOR
+          && SiteTarget(g_base + 0x3e1d03) == g_base + RVA_SIMPLEFRAME_CTOR && !memcmp(g_base + RVA_SET_WIDTH + 8, SW, 5) && !memcmp(g_base + RVA_SET_HEIGHT + 8, SH2, 5)
+          && *(DWORD *)(g_base + RVA_SIMPLEFRAME_VT + 0x68) == (DWORD)(g_base + 0x13c390),
+          "the ring's frame and textures are made as the game makes the badge's; their setters' stack sizes and fields");
     // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
     CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
           && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");

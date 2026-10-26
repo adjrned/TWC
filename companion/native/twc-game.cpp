@@ -164,7 +164,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float cdGold;           // companion: gold from this many seconds left down (0 = always white)
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
     // layout 21
-    DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons
+    DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons, 4 our cooldown ring around them
 };
 #pragma pack(pop)
 
@@ -2033,12 +2033,130 @@ static void SweepsPass(BYTE *ui, bool on) {
     }
 }
 
+// Our cooldown ring (cdNoBadge bit 4, an option next to the game's clock): a line around the
+// button's edge that runs out as the cooldown does, clockwise from the top-left corner. Made the
+// way the game makes the number badge (+0x3e1cb0): a simple frame of ours over the button
+// (CSimpleFrame +0x13ae90(mem, button), ret 4; SetAllPoints +0x13fad0 onto it, shown as SetNumber
+// shows the badge: [+0x90] = 1, vt+0x68), and in it four textures (CSimpleTexture +0x141fe0(mem,
+// frame, layer 2, shown 1), ret 12; SetTexture +0x1435f0(path, 0), ret 8): the game's yellow team
+// colour, a solid square. Each side anchored to its corner (SetPoint +0x13fc20, ret 24, a region's
+// layout at +0), its length set with the width / height setters (+0x13fce0 / +0x13fb40, the
+// layout's +0x58 / +0x5c), hidden with the region hide when empty. Made once per button, kept
+// with the game UI (the game frees them with it), hidden when the button isn't cooling down.
+static const DWORD RVA_SIMPLEFRAME_CTOR = 0x13ae90, RVA_SIMPLEFRAME_VT = 0xa7cc14, RVA_TEXTURE_CTOR = 0x141fe0, RING_TEXTURE_VT = 0xa7d13c;
+static const DWORD RVA_SET_TEXTURE = 0x1435f0, RVA_SET_ALL_POINTS = 0x13fad0, RVA_SET_WIDTH = 0x13fce0, RVA_SET_HEIGHT = 0x13fb40;
+static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c;
+static const char RING_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
+static const float RING_THICK = 0.0018f, BUTTON_SIZE = 0.039f;
+struct Ring { BYTE *btn, *frame, *side[4]; float len[4]; bool shown[4]; };
+static Ring g_rings[18];
+static int g_ringN;
+static bool g_ringBad;
+
+static Ring *RingFor(BYTE *btn) {
+    for (int i = 0; i < g_ringN; i++)
+        if (g_rings[i].btn == btn)
+            return &g_rings[i];
+    if (g_ringN >= 18 || g_framesBad)
+        return nullptr;
+    Ring *r = &g_rings[g_ringN];
+    ZeroMemory(r, sizeof(*r));
+    void *mem = g_smemAlloc(SIMPLEFRAME_SIZE, "TWC cooldown ring", __LINE__, 0);
+    if (!mem)
+        return nullptr;
+    BYTE *f = (BYTE *)Game(RVA_SIMPLEFRAME_CTOR, mem, { (DWORD)btn });
+    if (f != mem || *(DWORD *)f != (DWORD)(g_base + RVA_SIMPLEFRAME_VT)) {
+        Log("cooldown ring: the new frame %p has vtable %08lX, not +%06lX: no rings", f, f == mem ? *(DWORD *)f : 0, RVA_SIMPLEFRAME_VT);
+        g_ringBad = true;
+        return nullptr;
+    }
+    Game(RVA_SET_ALL_POINTS, f, { (DWORD)btn, 1 });
+    *(DWORD *)(f + 0x90) = 1;
+    Virt(f, 0x68);
+    static const int PT[4] = { 0, 2, 8, 6 };                  // top, right, bottom, left
+    for (int k = 0; k < 4; k++) {
+        void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown ring", __LINE__, 0);
+        BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)f, 2, 1 }) : nullptr;
+        if (!t || t != tm || *(DWORD *)t != (DWORD)(g_base + RING_TEXTURE_VT)) {
+            Log("cooldown ring: a new texture %p isn't a CSimpleTexture: no rings", t);
+            g_ringBad = true;
+            return nullptr;
+        }
+        Game(RVA_SET_TEXTURE, t, { (DWORD)RING_TEXTURE, 0 });
+        Game(RVA_SET_POINT, t, { (DWORD)PT[k], (DWORD)f, (DWORD)PT[k], F(0), F(0), 1 });
+        Game(k % 2 ? RVA_SET_WIDTH : RVA_SET_HEIGHT, t, { F(RING_THICK) });
+        Game(RVA_REGION_HIDE, t);
+        r->side[k] = t, r->len[k] = -1;
+    }
+    r->btn = btn, r->frame = f;
+    if (!g_ringN++)
+        Log("cooldown ring: the first one made (frame %p over the button %p, textures %s)", f, btn, RING_TEXTURE);
+    return r;
+}
+// the line left: 4 x the time left / the full time, from the top-left corner clockwise
+static void RingDraw(BYTE *btn, float left, float total) {
+    bool on = btn && left > 0 && total > 0;
+    Ring *r = nullptr;
+    for (int i = 0; i < g_ringN && !r; i++)
+        if (g_rings[i].btn == btn)
+            r = &g_rings[i];
+    if (!on && !r)
+        return;
+    if (on && !r && !(r = RingFor(btn)))
+        return;
+    float w = *(float *)(btn + LAYOUT_WIDTH), h = *(float *)(btn + LAYOUT_HEIGHT);
+    w = w > 0.005f && w < 0.2f ? w : BUTTON_SIZE, h = h > 0.005f && h < 0.2f ? h : BUTTON_SIZE;
+    float l4 = on ? 4 * min(1.0f, left / total) : 0;
+    for (int k = 0; k < 4; k++) {
+        float part = max(0.0f, min(1.0f, l4 - k)), len = part * (k % 2 ? h : w);
+        bool show = part > 0.01f;
+        if (show && fabsf(len - r->len[k]) > 0.0002f)
+            Game(k % 2 ? RVA_SET_HEIGHT : RVA_SET_WIDTH, r->side[k], { F(len) }), r->len[k] = len;
+        if (show != r->shown[k])
+            Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, r->side[k]), r->shown[k] = show;
+    }
+}
+static void RingsPass(BYTE *ui, bool on) {
+    if (g_ringBad || g_framesBad)
+        return;
+    __try {
+        BYTE *card = ui ? *(BYTE **)(ui + 0x3c8) : nullptr;
+        int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
+        bool cardOk = rows > 0 && cols > 0 && rows <= 3 && cols <= 4;
+        // every ring hidden first unless its button is still cooling down (another unit selected: other buttons)
+        for (int i = 0; i < g_ringN; i++) {
+            bool still = false;
+            for (int s = 0; on && cardOk && s < 12 && !still; s++)
+                still = s / 4 < rows && s % 4 < cols && GridButton(card, s / 4, s % 4) == g_rings[i].btn && g_shared->cdLeft[s] > 0;
+            for (int s = 0; on && s < 6 && !still; s++)
+                still = ItemButton(ui, s) == g_rings[i].btn && g_shared->itemLeft[s] > 0;
+            if (!still)
+                RingDraw(g_rings[i].btn, 0, 0);
+        }
+        if (!on || !ui)
+            return;
+        for (int s = 0; cardOk && s < 12; s++)
+            if (s / 4 < rows && s % 4 < cols)
+                if (BYTE *b = CardButton(card, s))
+                    RingDraw(b, g_shared->cdLeft[s], g_shared->cdTotal[s]);
+        for (int s = 0; s < 6; s++) {
+            BYTE *b = ItemButton(ui, s);
+            if (b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE))
+                RingDraw(b, g_shared->itemLeft[s], g_shared->itemTotal[s]);
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_ringBad = true;
+        Log("cooldown ring: a frame call faulted: no more rings");
+    }
+}
+
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
     BadgesPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 1));
     SweepsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 2));
     if (!g_shared->itOn) {
         g_itReading = false;
+        RingsPass(ui, false);
         __try {
             for (TimerSlot &s : g_tCd)
                 SlotHide(s);
@@ -2070,6 +2188,7 @@ static void TimerFramesPass(BYTE *ui) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         FramesStop("timers in the game: a frame call faulted");
     }
+    RingsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 4));
     static bool logged;
     if (!logged && g_shared->frCount)
         logged = true, Log("timers in the game: drawing (%lu text frames)", g_shared->frCount);
@@ -2445,7 +2564,7 @@ static void FramesForget(BYTE *newUi) {
     ZeroMemory(g_tCd, sizeof(g_tCd));
     ZeroMemory(g_tBuff, sizeof(g_tBuff));
     ZeroMemory(g_tItem, sizeof(g_tItem));
-    g_badgeN = 0, g_sweepN = 0;     // the badges' regions and the sweeps went with the game UI
+    g_badgeN = 0, g_sweepN = 0, g_ringN = 0;    // the badges' regions, the sweeps and our rings went with the game UI
     g_textPoolN = g_textHideN = 0;
     for (BarExtra &e : g_bx)
         if (e.bar && e.text)
