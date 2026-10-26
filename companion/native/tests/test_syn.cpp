@@ -15,7 +15,16 @@ int main() {
     CHECK(!WalkGetter(img + 0x200, 0), "a virtual call is refused");
     // k at +0x300: call f (f itself calls g): two levels deep
     BYTE k[] = { 0xE8, 0,0,0,0, 0xC3 }; memcpy(img + 0x300, k, sizeof(k)); *(LONG *)(img + 0x301) = 0 - 0x305;
-    CHECK(!WalkGetter(img + 0x300, 0), "two levels deep is refused");
+    CHECK(!WalkGetter(img + 0x300, 0), "two levels deep is refused by default");
+    CHECK(WalkGetter(img + 0x300, 0, GETTER_DEPTH), "two levels deep passes for the timer getters");
+    // m at +0x400: call k (3 deep), then n at +0x500: call m (4 deep)
+    BYTE m[] = { 0xE8, 0,0,0,0, 0xC3 }; memcpy(img + 0x400, m, sizeof(m)); *(LONG *)(img + 0x401) = 0x300 - 0x405;
+    memcpy(img + 0x500, m, sizeof(m)); *(LONG *)(img + 0x501) = 0x400 - 0x505;
+    CHECK(WalkGetter(img + 0x400, 0, GETTER_DEPTH) && !WalkGetter(img + 0x500, 0, GETTER_DEPTH), "three calls deep pass, four are refused");
+    // q at +0x600: call f; call h (the virtual call): refused, and the walk says h
+    BYTE q[] = { 0xE8, 0,0,0,0, 0xE8, 0,0,0,0, 0xC3 }; memcpy(img + 0x600, q, sizeof(q));
+    *(LONG *)(img + 0x601) = 0 - 0x605; *(LONG *)(img + 0x606) = 0x200 - 0x60a;
+    CHECK(!WalkGetter(img + 0x600, 0, GETTER_DEPTH) && g_walkBad == img + 0x200, "the refused function is the one with the virtual call (+%X)", (DWORD)(g_walkBad - img));
     Verdict();
     return g_fails;
 }

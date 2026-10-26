@@ -457,11 +457,12 @@ static int Targeting() {
 
 // -- calling the game's getters --------------------------------------------------
 // Buff and cooldown times come from the game's own timer objects, through
-// their getters (as WFE does). These run on this thread, not the game's, so
-// only small read-only getters are called: a tiny x86 decoder walks each one
-// to its ret first and refuses it if it calls out (other than into another
-// such getter), jumps indirectly, or uses an instruction it doesn't know. A
-// refused getter is logged with its bytes and never called.
+// their getters (as WFE does), called on the game's thread (TimersPass). A
+// tiny x86 decoder walks each one to its ret first and refuses it if it calls
+// out (other than into such getters, up to 3 calls deep: 1.28f's cooldown
+// time left is one), jumps indirectly, or uses an instruction it doesn't
+// know. A refused getter is logged with its bytes (and the function in it
+// that was refused) and never called.
 enum { I_BAD = -1, I_OK, I_RET, I_CALL, I_JMP, I_JCC };
 
 static int ModrmLen(const BYTE *p) {        // the ModRM byte, SIB and displacement
@@ -568,9 +569,12 @@ static void LogBytes(const char *what, const BYTE *f) {
     Log("  %s +%06lX: %s", what, (DWORD)(f - g_base), b);
 }
 
-// Walks a getter to its last ret. depth 0 may call (or tail-jump to) getters
-// that call nothing themselves.
-static bool WalkGetter(const BYTE *f, int depth) {
+// Walks a getter to its last ret. A function at depth < most may call (or
+// tail-jump to) functions that pass at depth + 1; at most, none. g_walkBad is
+// where the walk was refused (the function's start).
+static const BYTE *g_walkBad;
+static bool WalkGetter(const BYTE *f, int depth, int most = 1) {
+    g_walkBad = f;
     if (!IsGameCode(f))
         return false;
     const BYTE *p = f, *furthest = f;              // furthest: the furthest branch target inside it
@@ -583,11 +587,11 @@ static bool WalkGetter(const BYTE *f, int depth) {
         if (kind == I_BAD || n <= 0)
             return false;
         bool inside = t && t >= f && t < f + 1024;
-        if (kind == I_CALL && (depth > 0 || !WalkGetter(t, depth + 1)))
+        if (kind == I_CALL && (depth >= most || !WalkGetter(t, depth + 1, most)))
             return false;
         if (kind == I_JCC) {
             if (!inside)
-                return false;
+                return g_walkBad = f, false;
             if (t > furthest)
                 furthest = t;
         }
@@ -595,16 +599,19 @@ static bool WalkGetter(const BYTE *f, int depth) {
             if (inside) {
                 if (t > furthest)
                     furthest = t;
-            } else if (depth > 0 || !WalkGetter(t, depth + 1))
+            } else if (depth >= most || !WalkGetter(t, depth + 1, most))
                 return false;
         }
         p += n;
         // the end: a ret or an unconditional jump, with no branch landing further on
         if ((kind == I_RET || kind == I_JMP) && p > furthest)
             return true;
+        g_walkBad = f;
     }
     return false;
 }
+
+static const int GETTER_DEPTH = 3;
 
 // cached verdict per getter; a refused one is logged once with its bytes
 static bool SafeGetter(const BYTE *f) {
@@ -613,12 +620,14 @@ static bool SafeGetter(const BYTE *f) {
     for (int i = 0; i < n; i++)
         if (seen[i].f == f)
             return seen[i].ok;
-    bool ok = WalkGetter(f, 0);
+    bool ok = WalkGetter(f, 0, GETTER_DEPTH);
     if (n < 32) {
         seen[n].f = f, seen[n].ok = ok, n++;
         if (!ok) {
             Log("timers: refused to call the game getter at +%06lX (not a plain getter):", (DWORD)(f - g_base));
             LogBytes("bytes", f);
+            if (g_walkBad != f && IsGameCode(g_walkBad))
+                LogBytes("refused in the function", g_walkBad);
         } else
             Log("timers: game getter at +%06lX checks out", (DWORD)(f - g_base));
     }
@@ -826,6 +835,7 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 }
 
 static int RunOnGameThread(DWORD cmd);
+static void *GameUi();
 static void BarsPass();
 static UINT g_barsMsg;              // "TWC_GameThreadBars": run BarsPass on the game thread
 static volatile LONG g_barsQueued;
@@ -839,6 +849,8 @@ static void SelfCast();
 static UINT g_selfMsg;              // "TWC_GameThreadSelfCast": run SelfCast on the game thread
 static void FramesPass();
 static UINT g_framesMsg;            // "TWC_GameThreadFrames": run FramesPass on the game thread
+static UINT g_timersMsg;            // "TWC_GameThreadTimers": read the timers on the game thread (for the overlay)
+static volatile LONG g_timersQueued;
 static volatile LONG g_framesQueued;
 
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
@@ -859,6 +871,11 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_framesMsg && g_framesMsg) {
         InterlockedExchange(&g_framesQueued, 0);
         FramesPass();
+        return 0;
+    }
+    if (m == g_timersMsg && g_timersMsg) {
+        InterlockedExchange(&g_timersQueued, 0);
+        ReadTimers((BYTE *)GameUi());
         return 0;
     }
     if (m == WM_SIZE || m == WM_DISPLAYCHANGE)
@@ -892,6 +909,7 @@ static bool Subclass() {
     g_dispMsg = RegisterWindowMessageA("TWC_GameThreadDisplay");
     g_selfMsg = RegisterWindowMessageA("TWC_GameThreadSelfCast");
     g_framesMsg = RegisterWindowMessageA("TWC_GameThreadFrames");
+    g_timersMsg = RegisterWindowMessageA("TWC_GameThreadTimers");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -1080,6 +1098,12 @@ static void QueueBars() {
         g_barsApplied = false;          // this pass puts them back
     if (Subclass() && !InterlockedExchange(&g_barsQueued, 1))
         PostMessageA(g_gameWnd, g_barsMsg, 0, 0);
+}
+
+// the timers for the overlay: the game thread reads them (its getters run there)
+static void QueueTimers() {
+    if (g_getUi && Subclass() && !InterlockedExchange(&g_timersQueued, 1))
+        PostMessageA(g_gameWnd, g_timersMsg, 0, 0);
 }
 
 // -- health bar colours ---------------------------------------------------------------
@@ -2836,7 +2860,7 @@ static void Run() {
         WatchSelfCast(t);
         if (g_shared->tmWant && !g_itReading && now - timersAt >= 100) {
             timersAt = now;                     // 10 a second is plenty for whole seconds
-            ReadTimers(g_ui);                   // (drawn in the game: the game thread reads them)
+            QueueTimers();                      // (drawn in the game: TimerFramesPass reads them)
         }
         QueueBars();
         FollowColours();
