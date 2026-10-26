@@ -2114,17 +2114,21 @@ static void PortraitLine(BYTE *p, DWORD off, BYTE *unit, DWORD state, DWORD maxH
 }
 
 static bool g_portraitBad;              // writing a line faulted 3 times: no more (the companion can't turn it back on)
+static bool g_ptOn;                     // the widescreen UI's portrait text is on (UlPortraitText): it needs the update wrapped too
+static void PortraitTextUpdate(BYTE *p);
+static bool PortraitWanted() { return g_shared->prOn || g_ptOn; }
 
 static DWORD __fastcall PortraitHook(void *portrait, int edx) {
     DWORD r = g_gamePortrait(portrait, edx);
-    if (g_shared->prOn && !g_portraitBad) {
+    if (PortraitWanted() && !g_portraitBad) {
         static int faults;
         __try {
             BYTE *p = (BYTE *)portrait, *unit = *(BYTE **)(p + PORTRAIT_UNIT);
-            if (unit) {
+            if (unit && g_shared->prOn) {
                 PortraitLine(p, PORTRAIT_HP, unit, UNIT_HP, UNIT_MAXHP_HANDLE);
                 PortraitLine(p, PORTRAIT_MP, unit, UNIT_MANA, UNIT_MAXMANA_HANDLE);
             }
+            PortraitTextUpdate(p);
             if (InterlockedIncrement(&g_portraitCalls) == 1)
                 Log("portrait: the first update wrapped (portrait %p, unit %p, lines +%lX %08lX / +%lX %08lX)", p, unit,
                     PORTRAIT_HP, *(DWORD *)(p + PORTRAIT_HP), PORTRAIT_MP, *(DWORD *)(p + PORTRAIT_MP));
@@ -2216,7 +2220,7 @@ static bool PointSites(bool on) {
     return true;
 }
 static void PortraitSitesPass() {
-    bool on = g_shared->prOn && !g_portraitBad;
+    bool on = PortraitWanted() && !g_portraitBad;
     if (g_prSites && !g_prSitesBad && on != g_portraitHooked && !PointSites(on))
         g_prSitesBad = true, g_shared->prState = 3;
 }
@@ -2276,7 +2280,7 @@ static void FollowPortrait() {
     static bool refused;
     if (!g_getUi || refused)
         return;
-    bool on = g_shared->prOn != 0;
+    bool on = PortraitWanted();
     if (on && !g_portraitSlot && !g_prSites) {
         if (!g_ui) {
             g_shared->prState = 2;              // waits for a game: the game UI's portrait is one place to look
@@ -2301,7 +2305,7 @@ static void FollowPortrait() {
     if (g_portraitBad && !g_portraitHooked)
         refused = true, g_shared->prState = 3;
     else if (g_shared->prState != 3)
-        g_shared->prState = !on ? 0 : g_ui ? 1 : 2;
+        g_shared->prState = !g_shared->prOn ? 0 : g_ui ? 1 : 2;
 }
 
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
@@ -3154,13 +3158,167 @@ static void UlInfo(BYTE *ui, BYTE *) {
     }
 }
 
+// -- the portrait's HP / mana text, as WFE's Upgraded UI draws it
+// WFE (read by hand: 0x10086cd0, its object 0x1013e008) doesn't move the
+// portrait's own two lines: after each portrait update it empties them
+// (0x100863c0: [0x1013aa28] = +0x143430 with "" on [portrait+0x240] / +0x244)
+// and shows text frames of its own, WFEHPTextFrame / WFEMPTextFrame
+// (0x100214f0: SMemAlloc(0x240) + the CTextFrame constructor, parent the game
+// UI, layer 0; set up as NewText does, 0x10085250), each centred on the game
+// UI's centre (0x10086aa0: SetPoint(text+0xb4, 4, ui+0xb4, 4, x, y, 1),
+// x = -0.11 for 16:9 (.rdata 0x100faef0[0]), y -0.278 HP / -0.2915 mana), in
+// the game's font at FontHeights / PortraitStats (the game reads it with
+// +0x71240 for its own lines, +0x40d2f7) times 0.8 with the console's art
+// shown, 1.3635 without (0x100867a0 / 0x10086950: [INTERFACE] ISCONSOLE),
+// shown while the portrait has a unit and [ui+0x180] is 0, 2 or 4
+// (0x10086710). Here the same frames, with the game's own lines' text (its
+// buffer [string+0x9c], "%u / %u", or the regen lines when those are on) and
+// colour (+0x68..+0x6b, as +0x141e40 stores it) copied in. The game only
+// writes a line when the value changes, so the last text is kept; turning it
+// off writes it back into the game's lines.
+static const DWORD RVA_FONT_HEIGHT = 0x71240;      // __fastcall(section, key, float default) -> float in st0 (the game's FontHeights lookup)
+static const DWORD RVA_FONT_HEIGHTS_NAME = 0xcb30a4;   // data: -> "FontHeights" (what +0x40d2ea passes)
+static const DWORD UI_STATE180 = 0x180, FS_COLOUR = 0x68, FS_TEXT = 0x9c;
+static const float PT_X = -0.11f, PT_Y[2] = { -0.278f, -0.2915f };
+static BYTE *g_pt[2];                // our two text frames (the game UI's children: the game frees them)
+static BYTE *g_ptUi;                // the game UI they belong to
+static float g_ptHeight;            // the font height they have
+static char g_ptText[2][96];        // the last text of the game's lines
+static bool g_ptBad;                // refused for the session (logged); g_ptOn (above): the portrait's lines go to ours
+
+static DWORD __declspec(noinline) GameCallFloat(const void *fn, DWORD rc, DWORD rd, DWORD a0, float *out) {
+    float r;
+    __asm {
+        mov esi, esp
+        push a0
+        mov ecx, rc
+        mov edx, rd
+        mov eax, fn
+        call eax
+        mov esp, esi
+        fstp dword ptr r
+    }
+    *out = r;
+    return 0;
+}
+static float PortraitFontHeight() {
+    static float h;
+    if (!h) {
+        const char *const *sec = (const char *const *)(g_base + RVA_FONT_HEIGHTS_NAME);
+        float v = 0;
+        __try {
+            if (FnStart(RVA_FONT_HEIGHT) && PageIs(sec, READ) && PageIs(*sec, READ) && !strcmp(*sec, "FontHeights"))
+                GameCallFloat(g_base + RVA_FONT_HEIGHT, (DWORD)*sec, (DWORD)"PortraitStats", 0, &v);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            v = 0;
+        }
+        h = v > 0.004f && v < 0.05f ? v : 0.0115f;
+        Log("portrait text: FontHeights / PortraitStats %.4f (%s)", v, h == v ? "the game's" : "not usable: 0.0115");
+    }
+    return h;
+}
+static DWORD FsColour(BYTE *fs) {    // ARGB, from the bytes +0x141e40 stores (A, B, G, R)
+    BYTE *c = fs + FS_COLOUR;
+    return (DWORD)c[0] << 24 | (DWORD)c[3] << 16 | (DWORD)c[2] << 8 | c[1];
+}
+static BYTE *PortraitString(BYTE *p, int i) {
+    BYTE *fs = *(BYTE **)(p + (i ? PORTRAIT_MP : PORTRAIT_HP));
+    return fs && *(DWORD *)fs == (DWORD)(g_base + RVA_FONTSTRING_VTABLE) ? fs : nullptr;
+}
+
+// from PortraitHook, on the game thread, after the game's update (and the regen lines)
+static void PortraitTextUpdate(BYTE *p) {
+    if (!g_ptOn || !g_pt[0] || !g_pt[1] || (BYTE *)GameUi() != g_ptUi)
+        return;
+    for (int i = 0; i < 2; i++)
+        if (BYTE *fs = PortraitString(p, i)) {
+            const char *t = *(const char **)(fs + FS_TEXT);
+            if (t && t[0]) {
+                strncpy_s(g_ptText[i], t, _TRUNCATE);
+                TextSet(g_pt[i], g_ptText[i]);
+                TextColour(g_pt[i], FsColour(fs));
+                Game(RVA_FONTSTRING_SET, fs, { (DWORD)"" });
+            }
+        }
+    DWORD mode = *(DWORD *)(g_ptUi + UI_STATE180);
+    bool show = *(BYTE **)(p + PORTRAIT_UNIT) && (mode == 0 || mode == 2 || mode == 4);
+    TextShow(g_pt[0], show), TextShow(g_pt[1], show);
+}
+
+// the game's lines get their text back, ours hide (on the game thread)
+static void PortraitTextOff() {
+    if (!g_ptOn)
+        return;
+    g_ptOn = false;
+    BYTE *ui = (BYTE *)GameUi(), *p = ui == g_ptUi ? P(ui, UI_PORTRAIT) : nullptr;
+    __try {
+        for (int i = 0; i < 2; i++) {
+            BYTE *fs = p ? PortraitString(p, i) : nullptr;
+            if (fs && g_ptText[i][0] && !(*(const char **)(fs + FS_TEXT) && **(const char **)(fs + FS_TEXT)))
+                Game(RVA_FONTSTRING_SET, fs, { (DWORD)g_ptText[i] });
+            if (g_pt[i] && ui == g_ptUi)
+                TextShow(g_pt[i], false);
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("portrait text: giving the lines back faulted");
+    }
+    Log("portrait text: off (the portrait's own lines again)");
+}
+
+// with the layout, on the game thread: make the two frames (once a game), place them and set their font
+static void UlPortraitText(BYTE *ui, BYTE *root) {
+    if (g_ptBad)
+        return;
+    if (g_shared->prState == 3) {       // the update can't be wrapped: the game would write its lines again
+        g_ptBad = true;
+        Log("portrait text: the portrait update isn't wrapped (refused, see above): the portrait's own lines stay");
+        return;
+    }
+    if (ui != g_ptUi)
+        g_pt[0] = g_pt[1] = nullptr, g_ptUi = ui, g_ptHeight = 0, g_ptText[0][0] = g_ptText[1][0] = 0;
+    if (!g_pt[0] || !g_pt[1]) {
+        int fc = FramesCheck();
+        if (fc != 1 || g_framesBad) {
+            g_ptBad = true;
+            Log("portrait text: no frames (%s): the portrait's own lines stay", fc == 2 ? "no Storm.dll in the game" : "refused, see above");
+            return;
+        }
+        for (int i = 0; i < 2; i++)
+            if (!g_pt[i] && !(g_pt[i] = NewText(ui, 0, PortraitFontHeight(), 0xffffffff))) {
+                g_ptBad = true;
+                Log("portrait text: making its frames failed: the portrait's own lines stay");
+                return;
+            }
+        for (int i = 0; i < 2; i++) {
+            BYTE *t = g_pt[i];
+            *(DWORD *)(t + 0x200) = 0xe6000000, *(DWORD *)(t + 0x22c) = 1;     // as 0x10085250: its shadow colour,
+            *(float *)(t + 0x208) = 0, *(float *)(t + 0x20c) = 0;              // and offset (.rdata 0x100fae60)
+            *(float *)(t + 0x210) = 0.0012f, *(float *)(t + 0x214) = -0.0012f;
+        }
+        Log("portrait text: frames %p / %p (game UI mode [ui+%lX] = %lu)", g_pt[0], g_pt[1], UI_STATE180, *(DWORD *)(ui + UI_STATE180));
+    }
+    float h = PortraitFontHeight() * ((g_uiHidden & 0x20) ? 1.3635f : 0.8f);
+    for (int i = 0; i < 2; i++) {
+        if (h != g_ptHeight)
+            Game(RVA_SET_FONT, g_pt[i], { (DWORD)FontPath(), F(h), 0 });
+        TextAnchor(g_pt[i], root, PT_CENTER, PT_CENTER, PT_X, PT_Y[i]);
+    }
+    g_ptHeight = h;
+    if (!g_ptOn) {
+        g_ptOn = true;
+        Log("portrait text: on (font height %.4f)", h);
+        if (BYTE *p = P(ui, UI_PORTRAIT))
+            PortraitTextUpdate(p);
+    }
+}
+
 typedef void (*UlFn)(BYTE *, BYTE *);
 static const struct UlGroup { const char *name; UlFn fn; DWORD frame; } UL_GROUPS[] = {
     // checked by hand; left out until they are: the upper menu bar, the resource bar, idle workers,
     // time of day (Hide the UI hides them), the tooltip
     { "minimap", UlMinimap, 0x3c0 }, { "minimap buttons", UlMinimapButtons, 0x408 }, { "hero buttons", UlHeroes, 0x3dc },
     { "command card", UlCard, 0x3c8 }, { "portrait", UlPortrait, UI_PORTRAIT }, { "inventory cover", UlCover, 0x3c4 },
-    { "inventory", UlItems, 0x3c4 }, { "info panel", UlInfo, 0x3c4 },
+    { "inventory", UlItems, 0x3c4 }, { "info panel", UlInfo, 0x3c4 }, { "portrait text", UlPortraitText, UI_PORTRAIT },
 };
 static const int UL_GROUP_COUNT = sizeof(UL_GROUPS) / sizeof(UL_GROUPS[0]);
 static int g_ulStage;               // groups taken so far in this game (one more each pass at first)
@@ -3196,10 +3354,12 @@ static void UiLayoutPass() {
     BYTE *ui = (BYTE *)GameUi();
     if (ui != g_ulUi) {
         g_ulN = 0, g_ulUi = ui, g_ulAt = 0, g_shared->ulCount = 0, g_ulStage = 0;    // a new game: its own frames
+        g_ptOn = false;
     }
     RECT r = {};
     bool wide = g_gameWnd && GetClientRect(g_gameWnd, &r) && r.bottom > 0 && r.right * 2 >= r.bottom * 3;
     if (!on || !ui || !wide) {
+        PortraitTextOff();
         if (g_ulN && ui) {
             __try {
                 for (int i = g_ulN - 1; i >= 0; i--)

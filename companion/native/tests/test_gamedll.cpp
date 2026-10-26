@@ -115,6 +115,16 @@ int main() {
         bad += !LatencyPatchable(g_base + l);
     CHECK(!bad, "the 3 latency getters are patchable");
     CHECK(g_base[RVA_FPS_BYTE] == 0xE0, "the FPS limiter byte is the game's (%02X)", g_base[RVA_FPS_BYTE]);
+
+    // the widescreen UI's portrait text: the FontHeights lookup, and the font string fields it reads
+    const char *fh = *(const char **)(g_base + RVA_FONT_HEIGHTS_NAME);
+    CHECK(FnStart(RVA_FONT_HEIGHT) && PageIs(fh, READ) && !strcmp(fh, "FontHeights"), "the FontHeights lookup +%06lX, its section name at +%06lX", RVA_FONT_HEIGHT, RVA_FONT_HEIGHTS_NAME);
+    static const BYTE PS_CALL[] = { 0xBA }, FS_TEXT_READ[] = { 0x8B, 0x86, 0x9C, 0, 0, 0 }, FS_A[] = { 0x88, 0x41, 0x68 }, FS_R[] = { 0x88, 0x41, 0x6B };
+    const char *ps = *(const char **)(g_base + 0x40d2f1);
+    CHECK(g_base[0x40d2f0] == PS_CALL[0] && PageIs(ps, READ) && !strcmp(ps, "PortraitStats") && SiteTarget(g_base + 0x40d2f7) == g_base + RVA_FONT_HEIGHT,
+          "the portrait's own lines take FontHeights / PortraitStats from it (+40D2F7)");
+    CHECK(!memcmp(g_base + RVA_FONTSTRING_SET + 6, FS_TEXT_READ, 6) && !memcmp(g_base + 0x141e4a, FS_A, 3) && !memcmp(g_base + 0x141e51, FS_R, 3),
+          "a font string's text is at +0x9C (its setter), its colour at +0x68 A .. +0x6B R (+141E40)");
     Verdict();
     return g_fails;
 }
