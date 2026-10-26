@@ -903,9 +903,8 @@ ShowPopover(name, show := true) {
     }
     if !p.gui {
         g := Gui("-Caption +ToolWindow +Owner" mainGui.Hwnd)
-        g.BackColor := C.frame                           ; = the 1px border
         g.MarginX := 0, g.MarginY := 0
-        w := 470, card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+        w := 470, card := DialogCard(g, w)
         y := 14
         for line in p.lines {
             if line[2] = "" {
@@ -1509,8 +1508,8 @@ BuildRemapTiles() {
         UISetFont(vt, "s7 w600")
         local vd := mainGui.AddText("x" (qx + 10) " y" (qy + 33) " w" (qw - 20) " h44 +Background" C.card " c" C.dim, v[4])
         UISetFont(vd, "s8")
-        local sw := MkButton("Off", qx + 10, qy + 80, 44, 22, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
-        local ob := MkButton("Options", qx + 60, qy + 80, qw - 70, 22, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
+        local ob := MkButton("Options", qx + 10, qy + 80, qw - 70, 22, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
+        local sw := MkButton("Off", qx + qw - 54, qy + 80, 44, 22, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))
         for b in [sw, ob]
             UISetFont(b, "s8 w600")
         AddToPage("remap", vl, vt, vd, sw, ob)
@@ -1714,9 +1713,8 @@ QuickcastSettings(ver := "") {
         ver := Wc3RunningVer() = "128" ? "hook" : "screen"
     s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "hook"
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
-    g.BackColor := C.frame                           ; = the 1px border
     g.MarginX := 0, g.MarginY := 0
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    card := DialogCard(g, w)
     t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, mod128 ? "Quickcast · Game hook" : "Quickcast · Screen")
     t.SetFont("s13 w700 q4", "Cinzel")
     where := WC3WindowName(s.window)
@@ -1788,8 +1786,27 @@ QuickcastSettings(ver := "") {
     g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    DialogRepaint(g)
     return g
 }
+; A dialog's look: the window itself in the card colour, and a 1px frame drawn as four
+; thin lines once its height is known (card.Move(, , , h - 2), as the dialogs call it).
+; Not one card-sized control under the others: overlapping siblings repaint in no set
+; order, and the dialogs tore as they opened.
+class DialogCard {
+    __New(g, w) {
+        global C
+        this.g := g, this.w := w, g.BackColor := C.card
+    }
+    Move(x := "", y := "", ww := "", hh := "") {
+        global C
+        h := hh + 2, w := this.w
+        for r in [[0, 0, w, 1], [0, h - 1, w, 1], [0, 0, 1, h], [w - 1, 0, 1, h]]
+            this.g.AddText("x" r[1] " y" r[2] " w" r[3] " h" r[4] " +Background" C.frame)
+    }
+}
+; once shown: the whole window and its controls painted again at once (RDW_INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW)
+DialogRepaint(g) => DllCall("RedrawWindow", "ptr", g.Hwnd, "ptr", 0, "ptr", 0, "uint", 0x1 | 0x4 | 0x80 | 0x100)
 ; the in-game setup ended: its toast already said how it went
 QuickcastSetupDone(ok, msg) {
 }
@@ -2461,10 +2478,9 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     global C, UI_FONT, mainGui
     owned := IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
     g := Gui("-Caption +ToolWindow +AlwaysOnTop" (owned ? " +Owner" mainGui.Hwnd : ""))
-    g.BackColor := C.frame                           ; = the 1px border
     g.MarginX := 0, g.MarginY := 0
     w := 440, res := { v: buttons[buttons.Length] }
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    card := DialogCard(g, w)
     t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, title)
     t.SetFont("s13 w700 q4", "Cinzel")
     body := g.AddText("x26 y58 w" (w - 52) " +Background" C.card " c" C.muted, text)

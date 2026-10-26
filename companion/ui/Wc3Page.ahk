@@ -299,9 +299,8 @@ Wc3Dialog(title, intro, w := 380) {
     global C, mainGui, UI_FONT
     x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
-    g.BackColor := C.frame                           ; = the 1px border
     g.MarginX := 0, g.MarginY := 0
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    card := DialogCard(g, w)
     t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, title)
     t.SetFont("s13 w700 q4", "Cinzel")
     it := g.AddText("x" x " y56 w" tw " h18 +Background" C.card " c" C.dim, intro)
@@ -321,6 +320,7 @@ Wc3DialogShow(d) {
     g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    DialogRepaint(g)
 }
 
 ; -- rows for the Options windows (d: a Wc3Dialog) ------------------------------
