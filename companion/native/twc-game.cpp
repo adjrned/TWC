@@ -135,7 +135,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD unload;           // companion: 1 = turn everything off, give it all back and unload (status 4, then 3)
     DWORD stamp;            // module: its own build stamp (the PE header's TimeDateStamp)
     // layout 14: WFE's widescreen UI layout (UiLayoutPass)
-    DWORD ulOn;             // companion: 1 = lay the UI out for a wide window as WFE's Upgraded UI does
+    DWORD ulOn;             // companion: 1 = lay the UI out for a wide window as WFE's Upgraded UI does; | 2 = the buff bar raised (WFE's [BUFFUI] ISUPGRADEDBUFFBAR)
     DWORD ulState;          // module: 0 off, 1 laid out, 2 waiting (no game, or the window isn't wide), 3 refused (see the log)
     DWORD ulCount;          // module: frames moved in this game
     // layout 15: detailed tooltips (TooltipHook)
@@ -3653,14 +3653,19 @@ static void UlConsole(BYTE *ui, BYTE *) {
     }
 }
 
-// ISBUFFBAR 0x100902e0 (read by hand 0x1009033f..0x100908f0), with WFE's own
-// [BUFFUI] defaults (ISUPGRADEDBUFFBAR and ISDRAWBUFFDURATION off): the buff
-// bar B = [[[ui+0x3c4]+0x130]+0x16c] (CBuffBar), all raw (no 0x10087510 here):
-// cleared, 1.05 x cols x 0.0182725 wide (0x100fa898, 0x100faa70[0]) and rows x
-// 0.0165 high (0x100fab50[0]), its bottom right on the game UI's at cols x
-// 0.0182725 - 0.435 (0x100fa860), 0; its label [B+0x15c] right to B's left at
-// -0.0025 (0x100fa948); each indicator 0.0182725 x 0.0165. WFE's show / hide
-// of the bar with its UI (cl) is left to the game.
+// ISBUFFBAR 0x100902e0 (read by hand 0x1009033f..0x100908f6): the buff bar
+// B = [[[ui+0x3c4]+0x130]+0x16c] (CBuffBar), all raw (no 0x10087510 here):
+// cleared, k x cols x 0.0182725 wide (0x100faa70[0]) and rows x 0.0165 (x h)
+// high (0x100fab50[0]), its bottom right on the game UI's at cols x 0.0182725
+// - 0.435 (0x100fa860), y; its label [B+0x15c] right to B's left at -0.0025
+// (0x100fa948); each indicator 0.0182725 x 0.0165. WFE's [BUFFUI] options:
+// ISDRAWBUFFDURATION (it draws the seconds under the buffs: here when the
+// timers are drawn in the game, itOn) k = 1.1 (0x100fa89c), h = 1.25
+// (0x100fa8a0), y = 0.00375 (0x100fa6dc), else k = 1.05 (0x100fa898), h = 1,
+// y = 0 (0x10090761..0x10090787); ISUPGRADEDBUFFBAR (ulOn bit 2) raises it
+// by rows x 0.0165 + 0.13 (0x100fa7e8, 0x1009079a) and puts the label off
+// at x -1 (0x100fa9c0, 0x100907fa). WFE's show / hide of the bar with its UI
+// is Hide the UI's (BuffBarCall).
 static const float BUFF_W = 0.0182725f, BUFF_H = 0.0165f;
 static void UlBuffs(BYTE *ui, BYTE *root) {
     BYTE *bar = P(P(P(ui, 0x3c4), 0x130), 0x16c);
@@ -3669,12 +3674,16 @@ static void UlBuffs(BYTE *ui, BYTE *root) {
     int rows = *(int *)(bar + 0x124), cols = *(int *)(bar + 0x128);
     if (rows < 1 || rows > 4 || cols < 1 || cols > 16)
         return;
+    bool dur = g_shared->itOn != 0, up = (g_shared->ulOn & 2) != 0;
+    float h = (float)rows * BUFF_H, y = dur ? 0.00375f : 0;
+    if (up)
+        y += h + 0.13f;
     UlClear(bar, true);
-    UlWidth(bar, 1.05f * (float)cols * BUFF_W, true), UlHeight(bar, (float)rows * BUFF_H, true);
-    UlPointRaw(bar, 8, root, 8, (float)cols * BUFF_W - 0.435f, 0);
+    UlWidth(bar, (dur ? 1.1f : 1.05f) * (float)cols * BUFF_W, true), UlHeight(bar, dur ? h * 1.25f : h, true);
+    UlPointRaw(bar, 8, root, 8, (float)cols * BUFF_W - 0.435f, y);
     BYTE *label = P(bar, 0x15c);
     if (label && *(DWORD *)label == (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
-        UlPointRaw(label, 5, bar, 3, -0.0025f, 0);
+        UlPointRaw(label, 5, bar, 3, up ? -1.0f : -0.0025f, 0);
     for (int r = 0; r < rows; r++)
         for (int c = 0; c < cols; c++)
             if (BYTE *b = GridButton(bar, r, c))

@@ -21,7 +21,8 @@
 ;  [Display] hideUi).
 ;  And the widescreen UI layout (layout 14, WFE's Upgraded UI): on a wide
 ;  window the module lays the UI frames out again as WFE does, so the 4:3 UI
-;  isn't stretched. Off by default ([Display] wideUi).
+;  isn't stretched. Off by default ([Display] wideUi); the buff bar can be
+;  raised over the console as WFE's ISUPGRADEDBUFFBAR ([Display] buffBarUp).
 ; ============================================================================
 class GameDisplayEngine {
     section := "Display"
@@ -90,6 +91,13 @@ class GameDisplayEngine {
         SetIni(on ? 1 : 0, this.section, "wideUi")
         this.push()
     }
+    ; WFE's [BUFFUI] ISUPGRADEDBUFFBAR with it: the buff bar raised over the console (ulOn bit 2)
+    buffBarUp => Integer(Ini(this.section, "buffBarUp", 0))
+    toggleBuffBarUp() {
+        SetIni(this.buffBarUp ? 0 : 1, this.section, "buffBarUp")
+        this.push()
+    }
+    buffBarLabel => this.buffBarUp ? "Buff bar: raised" : "Buff bar: in place"
     wideUiStatus() {
         if !this.wideUi
             return "Off"
@@ -150,7 +158,7 @@ class GameDisplayEngine {
             return
         NumPut("uint", this.hideUi && this.gm.enabled ? this.hideMask : 0, v, Shm.uiHide)
         if NumGet(v, Shm.layout, "uint") >= 14
-            NumPut("uint", this.wideUi && this.gm.enabled ? 1 : 0, v, Shm.ulOn)
+            NumPut("uint", this.wideUi && this.gm.enabled ? 1 | (this.buffBarUp ? 2 : 0) : 0, v, Shm.ulOn)
         if NumGet(v, Shm.layout, "uint") >= 15
             NumPut("uint", this.tooltips && this.gm.enabled ? 1 : 0, v, Shm.ttOn)
         if NumGet(v, Shm.layout, "uint") >= 16

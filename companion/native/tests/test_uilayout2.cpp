@@ -94,6 +94,16 @@ int main() {
     CHECK(fabsf(W(bb) - 1.05f * 8 * 0.0182725f) < 1e-6f && *(float *)(bb + 0x5c) == 0.0165f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0)
           && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0) && W(ind[7]) == 0.0182725f && *(float *)(ind[7] + 0x5c) == 0.0165f,
           "buff bar (1 x 8): 1.05 x 8 x 0.0182725 wide, bottom right at 8 x 0.0182725 - 0.435, its label and indicators");
+    // WFE's [BUFFUI] options: ISDRAWBUFFDURATION with the timers drawn in the game, ISUPGRADEDBUFFBAR (ulOn bit 2)
+    sh.itOn = 1; UlBuffs(ui, ui + 0xb4);
+    CHECK(fabsf(W(bb) - 1.1f * 8 * 0.0182725f) < 1e-6f && fabsf(*(float *)(bb + 0x5c) - 0.0165f * 1.25f) < 1e-6f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0.00375f),
+          "with the timers in the game (WFE's ISDRAWBUFFDURATION): 1.1 x wide, 1.25 x high, up 0.00375");
+    sh.ulOn = 1 | 2; UlBuffs(ui, ui + 0xb4);
+    CHECK(Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0.00375f + 0.0165f + 0.13f) && Is(Find(blabel, 5), (DWORD)bb, 3, -1.0f, 0),
+          "raised (WFE's ISUPGRADEDBUFFBAR): up rows x 0.0165 + 0.13, its label off at -1");
+    sh.itOn = 0, sh.ulOn = 1; UlBuffs(ui, ui + 0xb4);
+    CHECK(fabsf(W(bb) - 1.05f * 8 * 0.0182725f) < 1e-6f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0) && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0),
+          "both off again: WFE's default layout");
     // off: every one of them back
     int n = g_ulN;
     for (int i = g_ulN - 1; i >= 0; i--) UlRestore(g_ul[i]);

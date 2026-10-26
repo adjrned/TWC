@@ -62,6 +62,10 @@ TwcModuleRun() {
     gameDisplay.toggleHideMenu()
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x79, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")
     gameDisplay.toggleHideMenu()
+    gameDisplay.toggleBuffBarUp()
+    TwcCheck(NumGet(v, Shm.ulOn, "uint") = 3 && gameDisplay.buffBarLabel = "Buff bar: raised", "the buff bar raised: ulOn bit 2 (" NumGet(v, Shm.ulOn, "uint") ")")
+    gameDisplay.toggleBuffBarUp()
+    TwcCheck(NumGet(v, Shm.ulOn, "uint") = 1, "and back in place")
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
     ; the lines 1.28f's portrait fallback logs (call sites instead of the vtable): not a refusal, then working
