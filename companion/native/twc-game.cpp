@@ -550,7 +550,7 @@ static int Decode(const BYTE *p, int *kind, const BYTE **target) {
             *kind = I_JCC, *target = p + 4 + *(const LONG *)p, n = 4;
         else if (o2 == 0x10 || o2 == 0x11 || o2 == 0x14 || o2 == 0x15 || o2 == 0x1F || (o2 >= 0x28 && o2 <= 0x2F && o2 != 0x2B)
                  || (o2 >= 0x40 && o2 <= 0x4F) || (o2 >= 0x51 && o2 <= 0x5F) || o2 == 0x6E || o2 == 0x7E || (o2 >= 0x90 && o2 <= 0x9F)
-                 || o2 == 0xAF || o2 == 0xB6 || o2 == 0xB7 || o2 == 0xBE || o2 == 0xBF || o2 == 0xD6 || o2 == 0xE6)
+                 || o2 == 0xAF || o2 == 0xB6 || o2 == 0xB7 || o2 == 0xBC || o2 == 0xBD || o2 == 0xBE || o2 == 0xBF || o2 == 0xD6 || o2 == 0xE6)   // BC / BD bsf / bsr (the game's float maths)
             n = ModrmLen(p);
         else
             return *kind = I_BAD, 0;
