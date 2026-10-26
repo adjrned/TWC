@@ -27,6 +27,7 @@ static void *__fastcall FakeTextCtor(BYTE *mem, int, void *parent, DWORD layer, 
     *(DWORD *)mem = (DWORD)(img + RVA_TEXT_VTABLE);
     *(DWORD *)(mem + TEXT_LAYOUT) = (DWORD)(img + RVA_TEXT_LAYOUT_VTABLE);
     *(DWORD **)(mem + TEXT_FLAGS) = flagsStruct[texts % 64];
+    *(DWORD *)(mem + TEXT_SHADOW) = 0xFF000000, *(float *)(mem + 0x210) = 0.015f, *(float *)(mem + 0x214) = -0.015f;   // the game's default shadow (+0x12b48a)
     texts++;
     return parent && id == TEXT_ID ? mem : nullptr;
 }
@@ -118,6 +119,8 @@ int main() {
     CHECK(!strcmp(lastFont, "Fonts\\Test.ttf") && fonts == 6 && flagCalls == 6, "the skin's MasterFont, flags set (%s, %d fonts)", lastFont, fonts);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tCd[0].shadow[0x1e0] == 1 && *(DWORD *)(g_tCd[0].shadow + TEXT_COLOURS) == 0xFF000000 && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == 0xFFFFFFFF,
         "shown; white text, black shadow");
+    CHECK(*(DWORD *)(g_tCd[0].text + TEXT_SHADOW) == 0 && *(float *)(g_tCd[0].text + 0x210) == 0 && *(float *)(g_tCd[0].shadow + 0x214) == 0,
+        "the game's own shadow (black, 0.015 off: the dark second number) is off on our text frames");
     CHECK(anchors == 6 && lastRel == bbtns[2] && fabsf(lastY - BUFF_TEXT_Y) < 1e-6f, "anchored to their buttons (the buff text under its icon)");
     sh.itemLeft[3] = 12.2f; int a0 = anchors; TimerFramesDraw(ui);
     CHECK(texts == 8 && g_tItem[3].text && !strcmp(g_tItem[3].shown, "13") && anchors == a0 + 2 && lastRel == ibtns[3], "an item cooling down: its text on its inventory button");

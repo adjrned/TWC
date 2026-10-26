@@ -156,6 +156,8 @@ int main() {
           && Rtti(RVA_DAMAGE_ICON_VT, "CInfoPanelIconDamage") & Rtti(RVA_ARMOR_ICON_VT, "CInfoPanelIconArmor"), "the damage / armor icon updates are their vtables' entry +0x6C");
     CHECK(FnStart(RVA_DAMAGE_UPDATE) && FnStart(RVA_ARMOR_UPDATE) && FnStart(RVA_TOOLTIP_SET) && FnStart(RVA_ATTACK_COOLDOWN) && FnStart(RVA_MOVE_SPEED),
           "the updates, the tooltip setter, the cooldown and move speed getters are function starts");
+    CHECK(g_base[0x409056] == 0xC2 && *(WORD *)(g_base + 0x409057) == 0x10 && g_base[0x4089ca] == 0xC2 && *(WORD *)(g_base + 0x4089cb) == 0xC,
+          "the damage update pops 4 stack arguments (ret 0x10), the armor update 3 (ret 0xC): the hooks' own signatures");
     static const struct { DWORD at; const char *bytes; int n; } PIN[] = {
         { 0x408a1e, "\x8B\xBF\xE8\x01\x00\x00", 6 },          // atk = [unit+0x1e8]
         { 0x408a2c, "\x83\xBC\x9F\x88\x00\x00\x00\x00", 8 },  // [atk+i*4+0x88] != 0

@@ -141,7 +141,7 @@ class GameDisplayEngine {
             return
         NumPut("uint", this.fpsLimit, v, Shm.fpsLimit)
         NumPut("uint", this.fps && this.gm.enabled ? 1 : 0, v, Shm.fpsOn)
-        NumPut("uint", this.widescreen && this.gm.enabled ? 1 : 0, v, Shm.wsOn)
+        NumPut("uint", 0, v, Shm.wsOn)          ; Widescreen is gone: 1.28f already draws the world for the window (the user's game looked right without it, squeezed with it)
         if NumGet(v, Shm.layout, "uint") < 9
             return
         NumPut("uint", this.latencyMs, v, Shm.latMs)

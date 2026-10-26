@@ -41,7 +41,6 @@ TwcModuleRun() {
         "numbers", [(*) => healthBars.numberStatus(), "(12 now)"],
         "mana", [(*) => healthBars.manaStatus(), "(5 now)"],
         "portrait", [(*) => healthBars.portraitStatus(), "regen next to"],
-        "widescreen", [(*) => gameDisplay.wsStatus(), "the world fits the window"],
         "fps", [(*) => gameDisplay.fpsStatus(), "the game's own setting: 60"],
         "hide", [(*) => gameDisplay.hideStatus(), "time of day, minimap"],
         "latency", [(*) => gameDisplay.latencyStatus(), "LAN 100, Battle.net 250"],
@@ -55,8 +54,9 @@ TwcModuleRun() {
     }
     healthBars.push(), gameDisplay.push(), timersHud.pushGame()
     v := twcShmBuf.Ptr
-    for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn"]
+    for f in ["hnOn", "mbOn", "prOn", "itOn", "hbOn", "hcOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
+    TwcCheck(NumGet(v, Shm.wsOn, "uint") = 0, "Widescreen (removed) is never pushed on, even with its old ini key set")
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     gameDisplay.toggleHideMenu()
@@ -130,6 +130,12 @@ TwcModuleSwap() {
     NumPut("uint", 3, v, Shm.status)
     gm2.swapStep(pid)
     TwcCheck(!gm2.swapping && !gm2.views.Has(pid) && calls.n = 1, "unloaded (status 3): the view is let go and the new one is loaded")
+    ; the old module still had its name open: the view opened again is the old one's (status 3) -> let go, loaded again
+    v := gm2.view(pid), gm2.tried[pid] := true
+    TwcCheck(v && gm2.dropUnloaded(pid, v) && !gm2.views.Has(pid) && !gm2.tried.Has(pid), "a view of an unloaded module (the old one's, in the race): let go, to be loaded again")
+    v := gm2.view(pid), NumPut("uint", 1, v, Shm.status)
+    TwcCheck(!gm2.dropUnloaded(pid, v) && gm2.views.Has(pid), "a running module's view: kept")
+    gm2.drop(pid)
     DllCall("CloseHandle", "ptr", h)
     try DirDelete(tmp, 1)
 }

@@ -68,6 +68,8 @@ class GameModuleEngine {
         if this.swapping
             return this.swapStep(this.swapping)
         if (v := this.view(pid)) {
+            if this.dropUnloaded(pid, v)
+                return                          ; loaded again on the next round
             if NumGet(v, Shm.magic, "uint") = 0x54574331 && NumGet(v, Shm.layout, "uint") >= 13 && NumGet(v, Shm.status, "uint") = 1
                 && !NumGet(v, Shm.unload, "uint") && (st := GameModuleEngine.FileStamp(this.dir "\twc-game.dll")) && NumGet(v, Shm.stamp, "uint") != st {
                 this.swapping := pid, this.swapAt := A_TickCount
@@ -108,6 +110,19 @@ class GameModuleEngine {
             this.swapping := 0
             DebugLog("game module: the old one stays (status " st "): restart the game for the new one")
         }
+    }
+    ; An unloaded module's memory (status 3): let go of it, and load again.
+    ; After a live swap the old module writes 3 a moment before it closes its
+    ; name: a view opened in between is the old one's, and kept, it held the
+    ; name, so the new module was never loaded (quickcast stopped working).
+    dropUnloaded(pid, v) {
+        if NumGet(v, Shm.magic, "uint") != 0x54574331 || NumGet(v, Shm.status, "uint") != 3
+            return false
+        this.drop(pid)
+        if this.tried.Has(pid)
+            this.tried.Delete(pid)
+        DebugLog("game module: the game's module memory says unloaded: let go, loading again")
+        return true
     }
     ; let go of a game's shared memory and event (the module's name is free again)
     drop(pid) {

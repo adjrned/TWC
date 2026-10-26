@@ -1380,7 +1380,7 @@ static const DWORD RVA_BAR_LEVEL = 0x3a7ca0;        // __fastcall(bar, 0, [healt
 static const DWORD RVA_REGION_HIDE = 0x141ce0;      // a region's (texture, font string) hide, __fastcall(region, 0) ([0x1013aa3c]): WFE hides a bar's own text [bar+0x140] with it
 static const DWORD RVA_REGION_SHOW = 0x141e80;      // and its show ([0x1013aa40])
 static const DWORD TEXT_LAYOUT = 0xb4, TEXT_FLAGS = 0x1f0, TEXT_COLOURS = 0x1f4, TEXT_SIZE = 0x240, TEXT_ID = 0x1388;
-static const DWORD TEXT_HIDE = 0xd0, TEXT_SHOW = 0xd4;
+static const DWORD TEXT_HIDE = 0xd0, TEXT_SHOW = 0xd4, TEXT_SHADOW = 0x200, TEXT_SHADOW_OFFSET = 0x208;
 static const DWORD BAR_SIZE = 0x160;                // WFE fits two in 0x2bc (the second at +0x158)
 static const DWORD BAR_DTOR = 0x08, BAR_HIDE = 0x64, BAR_SHOW = 0x68, BAR_RATIO = 0x6c;
 static const DWORD BAR_POS = 0xc, BAR_SHOWN = 0x94, BAR_LEVEL_ARG = 0x84, BAR_TEXT = 0x140, BAR_CUR = 0x148, BAR_MAX = 0x14c;
@@ -1543,6 +1543,13 @@ static BYTE *NewText(BYTE *ui, DWORD layer, float height, DWORD argb) {
             *(DWORD *)(t + 0x224) = 1, *(DWORD *)(t + 0x22c) = 1, *(DWORD *)(t + 0x230) = 1, *(DWORD *)(t + 0x23c) = 1;
         }
         TextColour(t, argb);
+        // no shadow of its own: the game's constructor gives a text frame a black one 0.015 right
+        // and down (+0x200 = FF000000, +0x210 / +0x214 = 0.015 / -0.015, +0x12b48a): the dark
+        // second number beside each health number (the user's screenshot). As WFE's 0x10080f60:
+        // +0x200 = 0, the 16 bytes at +0x208 cleared, then marked to be laid out again.
+        *(DWORD *)(t + TEXT_SHADOW) = 0, *(DWORD *)(t + 0x22c) = 1;
+        memset(t + TEXT_SHADOW_OFFSET, 0, 16);
+        *(DWORD *)(t + 0xc) |= *(DWORD *)(t + 0x10) | 2;
         Virt(t, TEXT_HIDE);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         FramesStop("setting up a text frame faulted");
@@ -2370,7 +2377,7 @@ static const DWORD RVA_DAMAGE_ICON_VT = 0xaaf5a8, RVA_ARMOR_ICON_VT = 0xaaf61c, 
 static const DWORD RVA_DAMAGE_UPDATE = 0x4089d0, RVA_ARMOR_UPDATE = 0x4083a0, RVA_TOOLTIP_SET = 0x4028c0;
 static const DWORD ICON_TIP = 0x128, TIP_LINE = 0x124, TIP_BODY = 0x224, TIP_THIRD = 0x625;
 typedef DWORD(__fastcall *DamageFn)(void *, int, void *, void *, void *, DWORD);
-typedef DWORD(__fastcall *ArmorFn)(void *, int, void *, void *);
+typedef DWORD(__fastcall *ArmorFn)(void *, int, void *, void *, void *);   // 3 stack arguments: ret 0xC (+0x4089ca)
 static DamageFn g_gameDamageTip;
 static ArmorFn g_gameArmorTip;
 static bool g_ttHooked, g_ttBad;
@@ -2416,8 +2423,8 @@ static DWORD __fastcall DamageTipHook(void *icon, int edx, void *unit, void *p2,
     TooltipAppend((BYTE *)icon, true, (BYTE *)unit, attack);
     return r;
 }
-static DWORD __fastcall ArmorTipHook(void *icon, int edx, void *unit, void *p2) {
-    DWORD r = g_gameArmorTip(icon, edx, unit, p2);
+static DWORD __fastcall ArmorTipHook(void *icon, int edx, void *unit, void *p2, void *p3) {
+    DWORD r = g_gameArmorTip(icon, edx, unit, p2, p3);
     TooltipAppend((BYTE *)icon, false, (BYTE *)unit, 0);
     return r;
 }

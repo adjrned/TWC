@@ -10,13 +10,14 @@ static_assert(offsetof(Shared, ttOn) == 816 && offsetof(Shared, ttState) == 820 
 static BYTE *img;
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC; img[rva] = 0xE9; *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }
 static BYTE tip[0xa40];
+static bool stackOk = true;
 static int sets, damageCalls, armorCalls;
 static void __fastcall FakeSet(BYTE *f, int, const char *a, const char *b, const char *c) {
     sets++;
     strncpy_s((char *)f + TIP_LINE, 0x100, a, _TRUNCATE); strncpy_s((char *)f + TIP_BODY, 0x401, b, _TRUNCATE); strncpy_s((char *)f + TIP_THIRD, 0x400, c, _TRUNCATE);
 }
 static DWORD __fastcall FakeDamage(BYTE *icon, int, void *, void *, void *, DWORD) { damageCalls++; FakeSet(*(BYTE **)(icon + ICON_TIP), 0, "12 - 15", "Damage: 12 - 15|nRange: 600|nSpeed: Average", "Attack"); return 7; }
-static DWORD __fastcall FakeArmor(BYTE *icon, int, void *, void *) { armorCalls++; FakeSet(*(BYTE **)(icon + ICON_TIP), 0, "3", "Armor: 3|nMove speed: Fast", "Armor"); return 9; }
+static DWORD __fastcall FakeArmor(BYTE *icon, int, void *, void *, void *) { armorCalls++; FakeSet(*(BYTE **)(icon + ICON_TIP), 0, "3", "Armor: 3|nMove speed: Fast", "Armor"); return 9; }
 static void *__fastcall FakeGetUi(int, int) { return (void *)1; }
 // the game's getters: cooldown (atk, out, i), move speed (mv, out)
 static BYTE atk[0x300], mv[0x100];
@@ -27,6 +28,25 @@ static void TestUnit(BYTE *u) {
     *(BYTE **)(u + UNIT_MOVE) = mv; *(float *)(mv + 0x70) = 300;
 }
 static const char *DAMAGE_WANT = "|nCooldown: |cFF00FF00" "2.00 sec|r|nAttacks: |cFF00FF00" "0.500/sec|r", *ARMOR_WANT = "|nMove speed: |cFF00FF00" "320|r";
+
+// the armor update called as the game calls it (3 stack args, the callee pops 12); esp checked after
+static DWORD ArmorRaw(DWORD f, BYTE *icon, BYTE *unit) {
+    DWORD r, sp0, sp1;
+    __asm {
+        mov sp0, esp
+        push 0
+        push 0
+        push unit
+        mov ecx, icon
+        xor edx, edx
+        call f
+        mov r, eax
+        mov sp1, esp
+        mov esp, sp0
+    }
+    stackOk &= sp0 == sp1;
+    return r;
+}
 
 int main() {
     strcpy_s(g_logPath, "tooltips.log"); DeleteFileA("tooltips.log");
@@ -46,7 +66,7 @@ int main() {
     TestUnit(unit);
     g_getUi = FakeGetUi;
     auto damage = [&] { return ((DamageFn)dv[ICON_UPDATE / 4])(icon, 0, unit, nullptr, nullptr, 0); };
-    auto armor = [&] { return ((ArmorFn)av[ICON_UPDATE / 4])(icon, 0, unit, nullptr); };
+    auto armor = [&] { return ArmorRaw(av[ICON_UPDATE / 4], icon, unit); };
     damage();
     CHECK(sets == 1 && damageCalls == 1, "off: the game's update alone");
     sh.ttOn = 1; FollowTooltips();
@@ -59,6 +79,7 @@ int main() {
     TooltipAppend(icon, true, unit, 0);
     CHECK(sets == before, "a body that already has them: not set again");
     r = armor();
+    CHECK(stackOk, "the armor hook pops the game's 3 stack arguments (ret 0xC): esp is where the caller left it");
     CHECK(r == 9 && armorCalls == 1 && strstr(body, "Move speed: Fast") && strstr(body, ARMOR_WANT), "armor: \"%s\"", body);
     *(int *)(atk + ATTACK_ON + 4) = 0; before = sets; ((DamageFn)dv[ICON_UPDATE / 4])(icon, 0, unit, nullptr, nullptr, 1);
     CHECK(sets == before + 1, "an attack the unit doesn't have: the game's tooltip alone");
