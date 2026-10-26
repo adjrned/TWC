@@ -17,6 +17,8 @@ ModuleCheckFeatures() => [
     ["Health bar colours", "health bar colours: on", "health bar colours: refused|colouring a bar faulted"],
     ["FPS unlock", "FPS: limiter patched", "FPS: refused|FPS: the game's option functions faulted|C9 already"],
     ["Multiboard", "multiboard: [0-9A-F]{8}, vtable", "multiboard: refused|not a multiboard|multiboard: the game's call faulted"],
+    ["Allies' abilities", "allies' abilities: on|allies' abilities: the first ability shown", "allies' abilities: refused|allies' abilities: writing the hooks failed|allies' abilities: .* faulted"],
+    ["Cooldown ping", "ping: .+\| (Cooldown|Ready)", "ping: reading the button faulted"],
     ["Lobby latency", "latency: \d+ ms", "latency: refused|writing the patch failed|latency: a getter was changed"],
     ["Start countdown", "start countdown: [0-9.]+ s in games you host", "start countdown: refused|start countdown: writing it failed|start countdown: .* changed by someone else"],
     ["Health numbers", "health numbers: the first one", "frames: refused|no more frames in this session|health numbers / mana bars: refused"],

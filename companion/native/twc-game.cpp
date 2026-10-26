@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 17
+    DWORD layout;           // 18
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -75,7 +75,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 4: commands run on the game's thread (RunCommand)
     volatile LONG cmdSeq;   // companion: +1 per command (written last)
     DWORD cmd;              // companion: 1 clear messages, 2 clear chat, 3 multiboard minimise / maximise,
-                            //   4 autocast toggle on the command card slot cmdArg
+                            //   4 autocast toggle on the command card slot cmdArg (unused since 2026-10-26),
+                            //   5 the cooldown ping of the button under the cursor (layout 18: pingText)
     volatile LONG cmdDone;  // module: the command it answered
     DWORD cmdResult;        // module: 1 done, 2 refused (see the log), 3 the game thread didn't run it in time
     // layout 5: health bar size (BarsPass)
@@ -113,7 +114,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD uiState;          // module: frames hidden now (same bits); 0x80000000 = one was refused (see the log)
     // layout 11: frames added to the game (Storm.dll's SMemAlloc)
     DWORD stState;          // module: 0 not checked yet, 1 the game's Storm.dll checks out, 2 none loaded in the game, 3 refused (see the log)
-    DWORD itOn;             // companion: 1 = cooldown and buff timers drawn in the game (TimerFramesPass)
+    DWORD itOn;             // companion: timers drawn in the game (TimerFramesPass), bits: 1 cooldowns (card, items), 2 buffs
     DWORD itState;          // module: 0 off, 1 on, 2 waiting (no game yet, or no Storm.dll), 3 refused (see the log)
     DWORD frCount;          // module: text frames made in this game
     DWORD hnOn;             // companion: 1 = health numbers over the health bars (BarExtras)
@@ -149,6 +150,12 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float csSecs;           // companion: the seconds (0-6; WFE's [DELAY] GAMESTART, default 0)
     DWORD csState;          // module: 0 the game's own, 1 set, 3 refused (see the log)
     float csGame;           // module: the game's own countdown, as read (0 = not read)
+    // layout 18: allies' abilities on the command card, and cooldown pings
+    DWORD alOn;             // companion: 1 = allied units' abilities and cooldowns on the command card (WFE's ISALLYABILITYBAR)
+    DWORD alState;          // module: 0 off, 1 on, 3 refused (see the log)
+    DWORD pingOn;           // companion: 1 = keep `hover` up to date (the ping key is on)
+    DWORD hover;            // module: 1 the cursor is on a command card or inventory button
+    char pingText[128];     // module: command 5's message ("" = nothing to ping)
 };
 #pragma pack(pop)
 
@@ -711,7 +718,7 @@ static int VirtualInt(const void *obj, DWORD slot) {
 // study_buffs.md): the command card ([ui+0x3c8]) and the buff bar
 // ([[[ui+0x3c4]+0x130]+0x16c]) are both grids: rows +0x124, columns +0x128, a
 // row table at +0x154 (16 bytes a row: +4 count, +8 the buttons).
-static const DWORD ID_AHER = 'AHer', ID_ASID = 'Asid', ID_ASUD = 'Asud', ID_ASEI = 'Asei', ID_AMAI = 'Amai', ID_ASEL = 'Asel';
+static const DWORD ID_AHER = 'AHer', ID_ASID = 'Asid', ID_ASUD = 'Asud', ID_ASEI = 'Asei', ID_AMAI = 'Amai', ID_ASEL = 'Asel', ID_APIT = 'Apit';
 
 static BYTE *GridButton(BYTE *bar, int row, int col) {
     BYTE *rows = *(BYTE **)(bar + 0x154);
@@ -724,17 +731,26 @@ static BYTE *GridButton(BYTE *bar, int row, int col) {
 }
 
 // a command or inventory button's cooldown (WFE's 0x10023850 without its shop path)
+// a rawcode as it's written ('AHhb'; in memory its bytes are the other way round)
+struct IdText { char s[5]; IdText(DWORD id) { for (int i = 0; i < 4; i++) s[i] = (char)(id >> (24 - 8 * i)); s[4] = 0; } };
 static void ButtonCooldown(BYTE *btn, float *left, float *total) {
     BYTE *data, *ab;
     if (!btn || !*(DWORD *)(btn + 0x19c) || !(data = *(BYTE **)(btn + 0x190)) || !(ab = *(BYTE **)(data + 0x6d4)))
         return;
     DWORD id = *(DWORD *)(ab + 0x34), fl = *(DWORD *)(ab + 0x20);
-    if (id == ID_AHER || id == ID_ASID || id == ID_ASUD || id == ID_ASEI || id == ID_AMAI || id == ID_ASEL)
+    if (id == ID_AHER || id == ID_ASID || id == ID_ASUD || id == ID_ASEI || id == ID_AMAI || id == ID_ASEL || id == ID_APIT)
         return;                                 // hero skill menu, shops: no cooldown to show
+    // the first in-game test showed no cooldowns on the card and nothing static explains it
+    // (study_cd2.md): the first abilities seen and the first cooling down one go to the log
+    static int seen, cooling;
+    if (seen < 4)
+        seen++, Log("cooldowns: button %p ability '%s' flags %08lX (cooling: %s)", btn, IdText(id).s, fl, (fl & 0x200) && !(fl & 0x400) ? "yes" : "no");
     if (!(fl & 0x200) || (fl & 0x400))
         return;                                 // not cooling down
     *left = TimerValue(ab + 0xd0, 0x18);
     *total = TimerValue(ab + 0xd0, 0x10);
+    if (cooling < 3)
+        cooling++, Log("cooldowns: '%s' %.1f s of %.1f left (timer vtable +%06lX)", IdText(id).s, *left, *total, *(DWORD *)(ab + 0xd0) - (DWORD)g_base);
 }
 
 static void ReadCooldowns(BYTE *ui) {
@@ -766,6 +782,39 @@ static void ReadItems(BYTE *ui) {
     g_shared->tmFlags |= 4;
 }
 
+// The buff bar's buffs, as WFE's BUFFUI reads them (study_buffs2.md; read by hand in
+// WFEDll and checked in the 1.28f Game.dll): each indicator [+0x90] shown / [+0x94] visible
+// (the game's show / hide set them), its buff [+0x978]; aura: vt+0x1e8 (CBuff 0, CBuffAura 1);
+// the rawcode [buff+0x34] (the game looks its data up with it, +0x45b9e8); time left from the
+// timer at +0x84 (CAgentTimerExtended, vt+0x18), or +0xac while [+0x48] > 0 (paused); the full
+// time [+0xc8] when the buff's unit [buff+0x30] is a hero, else [+0xc0] (WFE's 0x10038600,
+// its hero test 0x100417b0: a CUnit whose type id starts with a capital, or [unit+0x1f0]).
+// Four kinds ('Bpsd', 'BIpd', 'Bcsd', 'Bssd' by their vt+0x1c tag) keep their time on a
+// linked buff: the handle pair at +0x114 -> [obj+0x54], tagged 'B...' (WFE's 0x10038550).
+static BYTE *V(BYTE *f);
+static const DWORD RVA_HANDLE_LOOKUP = 0x7e090; // __fastcall obj(id1, id2) (WFE's [0x1013ba2c])
+typedef void *(__fastcall *LookupFn)(DWORD, DWORD);
+static const DWORD RVA_UNIT_VT = 0xb68914;       // CUnit (its vt+0xec is the owner [+0x58], +0x6b9f30)
+static const DWORD BUFF_UNIT = 0x30, BUFF_ID = 0x34, BUFF_LINK = 0x114;
+static bool BuffOnHero(BYTE *buff) {
+    BYTE *u = *(BYTE **)(buff + BUFF_UNIT);
+    if (!u || (DWORD)(u - (BYTE *)0x10000) > 0x7ffeffff || *(DWORD *)u != (DWORD)(g_base + RVA_UNIT_VT))
+        return false;                           // (WFE's fallback through the buff's handle at +0xc isn't ported)
+    DWORD id = *(DWORD *)(u + 0x30);
+    return (id >> 24) >= 'A' && (id >> 24) <= 'Z' || *(DWORD *)(u + 0x1f0) != 0;
+}
+// where the buff's times are: itself, or for the four linked kinds the buff they point at
+static BYTE *BuffTimes(BYTE *buff) {
+    DWORD tag = (DWORD)VirtualInt(buff, 0x1c);
+    if (tag != 'Bpsd' && tag != 'BIpd' && tag != 'Bcsd' && tag != 'Bssd')
+        return buff;
+    DWORD *pair = (DWORD *)(buff + BUFF_LINK);
+    if (pair[0] == 0xFFFFFFFF || pair[1] == 0xFFFFFFFF)
+        return buff;
+    BYTE *o = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(pair[0], pair[1]);
+    BYTE *b2 = o ? V(*(BYTE **)(o + 0x54)) : nullptr;
+    return b2 && ((DWORD)VirtualInt(b2, 0x1c) >> 24) == 'B' ? b2 : buff;
+}
 static void ReadBuffs(BYTE *ui) {
     BYTE *p = *(BYTE **)(ui + 0x3c4);
     if (!p || !(p = *(BYTE **)(p + 0x130)) || !(p = *(BYTE **)(p + 0x16c)))
@@ -777,26 +826,22 @@ static void ReadBuffs(BYTE *ui) {
         for (int c = 0; c < cols; c++) {
             int i = r * cols + c;
             BYTE *btn = GridButton(p, r, c), *buff;
-            if (!btn || !*(DWORD *)(btn + 0x90) || !*(DWORD *)(btn + 0x94) || !(buff = *(BYTE **)(btn + 0x978)))
+            if (!btn || !*(DWORD *)(btn + 0x90) || !*(DWORD *)(btn + 0x94) || !(buff = V(*(BYTE **)(btn + 0x978))))
                 continue;
             bool aura = VirtualInt(buff, 0x1e8) != 0;
             g_shared->buffFlags[i] = aura ? 3 : 1;
-            g_shared->buffId[i] = (DWORD)VirtualInt(buff, 0x1c);
-            float left = *(int *)(buff + 0x48) > 0 ? *(float *)(buff + 0xac) : TimerValue(buff + 0x84, 0x18);
+            g_shared->buffId[i] = *(DWORD *)(buff + BUFF_ID);
+            BYTE *t = BuffTimes(buff);
+            float left = *(int *)(t + 0x48) > 0 ? *(float *)(t + 0xac) : TimerValue(t + 0x84, 0x18);
             left = Finite(left) ? left : 0;
-            float total;
-            if (aura)
-                total = TimerValue(buff + 0x84, 0x10);
-            else {
-                // WFE picks +0xc0 or +0xc8 by the buff's owner (normal vs hero
-                // duration, it seems); without that check: the shorter one that fits
-                float a = *(float *)(buff + 0xc0), b = *(float *)(buff + 0xc8);
-                a = Finite(a) ? a : 0, b = Finite(b) ? b : 0;
-                float lo = a < b ? a : b, hi = a < b ? b : a;
-                total = lo >= left && lo > 0 ? lo : hi;
-            }
+            float total = aura ? TimerValue(t + 0x84, 0x10) : *(float *)(t + (BuffOnHero(t) ? 0xc8 : 0xc0));
+            if (!Finite(total) || total < left)
+                total = TimerValue(t + 0x84, 0x10);
             g_shared->buffLeft[i] = left;
-            g_shared->buffTotal[i] = total;
+            g_shared->buffTotal[i] = Finite(total) ? total : 0;
+            static int logs;
+            if (left > 0 && logs < 3)
+                logs++, Log("buffs: '%s' %s, %.1f s of %.1f left%s", IdText(g_shared->buffId[i]).s, aura ? "aura" : "buff", left, g_shared->buffTotal[i], t != buff ? " (its linked buff's)" : "");
         }
     g_shared->buffCount = rows * cols;
     g_shared->tmFlags |= 2;
@@ -876,6 +921,7 @@ static UINT g_dispMsg;              // "TWC_GameThreadDisplay": run DisplayPass 
 static volatile LONG g_dispQueued;
 static int ToggleMultiboard(BYTE *ui);
 static int AutocastToggle(BYTE *ui, DWORD slot);
+static int PingCommand(BYTE *ui);
 static void SelfCast();
 static UINT g_selfMsg;              // "TWC_GameThreadSelfCast": run SelfCast on the game thread
 static void FramesPass();
@@ -1034,6 +1080,8 @@ static int RunOnGameThread(DWORD cmd) {
         return ToggleMultiboard((BYTE *)ui);
     if (cmd == 4)
         return AutocastToggle((BYTE *)ui, g_shared->cmdArg);
+    if (cmd == 5)
+        return PingCommand((BYTE *)ui);
     return 2;
 }
 
@@ -1204,13 +1252,11 @@ static void QueueTimers() {
 static const DWORD STATBAR_UPDATE = 0x74;       // __fastcall Update(bar, 0, unit), ret 4
 static const DWORD RVA_PLAYERS = 0xd305e0;      // [it] = the game state: local player id word +0x28, player count +0x54, players +0x58
                                                 // (one deref: the game's own +0x22b560 / +0x213720; WFE's slot holds this address, so its [[slot]] is ours [it])
-static const DWORD RVA_HANDLE_LOOKUP = 0x7e090; // __fastcall obj(id1, id2) (WFE's [0x1013ba2c])
 static const DWORD RVA_UNIT_HP = 0x81b30;       // __fastcall(unit + 0x98, 0, float *hp) (WFE's [0x1013ce3c])
 static const DWORD BAR_UNIT = 0x154, BAR_FILL = 0x134;      // the bar's unit; its fill (the coloured part)
 static const DWORD UNIT_OWNER = 0x58, UNIT_HP = 0x98, UNIT_MAXHP_HANDLE = 0xa0;
 
 typedef void(__fastcall *BarUpdateFn)(void *, int, void *);
-typedef void *(__fastcall *LookupFn)(DWORD, DWORD);
 typedef void(__fastcall *HpFn)(void *, int, float *);
 typedef void(__fastcall *ColourFn)(void *, int);
 
@@ -1623,10 +1669,12 @@ static void TextAt(BYTE *t, int pt, float x, float y) {
 // icon (WFE's spot: bottom to bottom, 0.0115 lower). A black copy a little
 // down and right is the shadow (WFE uses four). The times are read here on
 // the game thread, 10 times a second.
-struct TimerSlot { BYTE *btn, *text, *shadow; char shown[12]; };
+struct TimerSlot { BYTE *btn, *text, *shadow; char shown[12]; float height; };
 static TimerSlot g_tCd[12], g_tBuff[16], g_tItem[6];
 static BYTE *g_framesUi;            // the game UI the text frames belong to (another one: they're gone)
-static const float SHADOW = 0.0006f, CD_TEXT = 0.014f, BUFF_TEXT = 0.0105f, BUFF_TEXT_Y = -0.0115f;
+static const float SHADOW = 0.0006f, CD_TEXT = 0.014f, BUFF_TEXT_Y = -0.0115f;
+// WFE's [BUFFUI] TEXTSIZE 0.013, 0.0105 with its Upgraded UI on and the buff bar not raised
+static float BuffTextHeight() { return g_shared->ulOn && !(g_shared->ulOn & 2) ? 0.0105f : 0.013f; }
 
 // whole seconds, tenths under 1 s, m:ss from a minute (TimerHud's)
 static void TimeText(float s, char *b, size_t n) {
@@ -1644,11 +1692,16 @@ static void TimeText(float s, char *b, size_t n) {
 }
 
 static void SlotHide(TimerSlot &s) {
-    if (s.shown[0] && s.text)
-        TextShow(s.shadow, false), TextShow(s.text, false);
+    if (s.shown[0] && s.text) {
+        if (s.shadow)
+            TextShow(s.shadow, false);
+        TextShow(s.text, false);
+    }
     s.shown[0] = 0;
 }
 
+// a slot's seconds on its button. The buffs' as WFE's BUFFUI draws them: one text, no shadow,
+// bottom to the icon's bottom 0.0115 lower; the cooldowns' in the middle with a shadow
 static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
     char t[12];
     TimeText(left, t, sizeof(t));
@@ -1656,25 +1709,35 @@ static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
         SlotHide(s);
         return;
     }
+    float h = buff ? BuffTextHeight() : CD_TEXT;
     if (!s.text) {
-        float h = buff ? BUFF_TEXT : CD_TEXT;
-        s.shadow = NewText(ui, buff ? 0 : 4, h, 0xFF000000);
-        s.text = s.shadow ? NewText(ui, buff ? 0 : 4, h, 0xFFFFFFFF) : nullptr;
+        s.shadow = buff ? nullptr : NewText(ui, 4, h, 0xFF000000);
+        s.text = buff || s.shadow ? NewText(ui, buff ? 0 : 4, h, 0xFFFFFFFF) : nullptr;
         if (!s.text)
             return;
-        s.btn = nullptr;
+        s.btn = nullptr, s.height = h;
+    }
+    if (s.height != h) {                    // the widescreen UI's buff bar changed: WFE's other size
+        Game(RVA_SET_FONT, s.text, { (DWORD)FontPath(), F(h), 0 });
+        s.height = h;
     }
     if (s.btn != btn) {
         int pt = buff ? PT_BOTTOM : PT_CENTER;
         float y = buff ? BUFF_TEXT_Y : 0;
-        TextAnchor(s.shadow, btn, pt, pt, SHADOW, y - SHADOW);
+        if (s.shadow)
+            TextAnchor(s.shadow, btn, pt, pt, SHADOW, y - SHADOW);
         TextAnchor(s.text, btn, pt, pt, 0, y);
         s.btn = btn;
     }
     if (strcmp(t, s.shown)) {
-        TextSet(s.shadow, t), TextSet(s.text, t);
-        if (!s.shown[0])
-            TextShow(s.shadow, true), TextShow(s.text, true);
+        if (s.shadow)
+            TextSet(s.shadow, t);
+        TextSet(s.text, t);
+        if (!s.shown[0]) {
+            if (s.shadow)
+                TextShow(s.shadow, true);
+            TextShow(s.text, true);
+        }
         strcpy_s(s.shown, t);
     }
 }
@@ -1698,21 +1761,22 @@ static BYTE *BuffButton(BYTE *bar, int cols, int i) {
 
 // the frames, from what's in shared memory
 static void TimerFramesDraw(BYTE *ui) {
+    bool cds = (g_shared->itOn & 1) != 0, buffs = (g_shared->itOn & 2) != 0;
     BYTE *card = *(BYTE **)(ui + 0x3c8);
     int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
     bool cardOk = rows > 0 && cols > 0 && rows <= 3 && cols <= 4;
     for (int i = 0; i < 12; i++)
-        SlotDraw(ui, g_tCd[i], cardOk && i / 4 < rows && i % 4 < cols ? CardButton(card, i) : nullptr, g_shared->cdLeft[i], false);
+        SlotDraw(ui, g_tCd[i], cds && cardOk && i / 4 < rows && i % 4 < cols ? CardButton(card, i) : nullptr, g_shared->cdLeft[i], false);
     BYTE *bar = *(BYTE **)(ui + 0x3c4);
     if (bar && (bar = *(BYTE **)(bar + 0x130)))
         bar = *(BYTE **)(bar + 0x16c);
     rows = bar ? *(int *)(bar + 0x124) : 0, cols = bar ? *(int *)(bar + 0x128) : 0;
     bool barOk = rows > 0 && cols > 0 && rows * cols <= 16;
     for (int i = 0; i < 16; i++)
-        SlotDraw(ui, g_tBuff[i], barOk && i < rows * cols && (g_shared->buffFlags[i] & 1) ? BuffButton(bar, cols, i) : nullptr, g_shared->buffLeft[i], true);
+        SlotDraw(ui, g_tBuff[i], buffs && barOk && i < rows * cols && (g_shared->buffFlags[i] & 3) == 1 ? BuffButton(bar, cols, i) : nullptr, g_shared->buffLeft[i], true);
     for (int i = 0; i < 6; i++) {
         BYTE *b = ItemButton(ui, i);
-        SlotDraw(ui, g_tItem[i], b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE) ? b : nullptr, g_shared->itemLeft[i], false);
+        SlotDraw(ui, g_tItem[i], cds && b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE) ? b : nullptr, g_shared->itemLeft[i], false);
     }
 }
 
@@ -2140,6 +2204,7 @@ static void FramesForget(BYTE *newUi) {
     g_shared->frCount = 0;
 }
 
+static void HoverPass(BYTE *ui);
 static void FramesPass() {
     if (!g_getUi)
         return;
@@ -2152,12 +2217,14 @@ static void FramesPass() {
     }
     TimerFramesPass(ui);
     ExtrasPass(ui);
+    if (g_shared->pingOn)
+        HoverPass(ui);
 }
 
 // while any is on, and from then on (a pass also hides and cleans up after them)
 static bool FramesWork() {
     static bool used;
-    used |= g_shared->itOn || g_shared->hnOn || g_shared->mbOn;
+    used |= g_shared->itOn || g_shared->hnOn || g_shared->mbOn || g_shared->pingOn;
     return used;
 }
 
@@ -2424,6 +2491,206 @@ static void FollowPortrait() {
         refused = true, g_shared->prState = 3;
     else if (g_shared->prState != 3)
         g_shared->prState = !g_shared->prOn ? 0 : g_ui ? 1 : 2;
+}
+
+// -- allies' abilities on the command card (WFE's [UPGRADEDUI] ISALLYABILITYBAR) ----------
+// WFE (study_cd2.md; read by hand: 0x10095f30, 0x100960a0, its installer 0x100320e0) has
+// the game show allied units' abilities on the command card the way observers see them;
+// the cooldowns are then drawn on them as on yours. Two places, checked in the 1.28f
+// Game.dll:
+//  +0x6bffd0 "the local player sees every unit's commands" (no stack arguments, ret 0; the
+//  game's ignores ecx, its 24 callers all pass the unit there, e.g. +0x39ea4e, +0x3a0554):
+//  its first 7 bytes (push esi; mov esi, [+0xd305e0]) go to a copy that jumps back, and the
+//  start to AllySeesHook: the game's answer, or true for your and allies' units;
+//  +0x3e4060 the per-ability display callback (fastcall(unit, ability), ret 0; its only
+//  reference is the push at +0x3fae1a, given to the enumerator +0x2c2250): it updates an
+//  ability's display (+0x6b2700, ret 4) only for observers (+0x6a2d90); the push is
+//  pointed at AllyAbilityHook, which also does it for your and allies' units (as WFE's).
+// Both on the game thread, put back when off and on unload.
+static const DWORD RVA_SEES_ALL = 0x6bffd0, RVA_ABILITY_CB = 0x3e4060, RVA_ABILITY_CB_PUSH = 0x3fae1a,
+    RVA_IS_OBSERVER = 0x6a2d90, RVA_ABILITY_DISPLAY = 0x6b2700, DATA_ABILITY_DEFAULT = 0xb68800;
+typedef int(__fastcall *SeesFn)(void *, int);
+typedef int(__fastcall *AbilityCbFn)(void *, void *);
+static BYTE *g_alTramp;             // the 7 bytes and a jmp back (stays allocated, as Fast menu's)
+static bool g_alHooked, g_alBad;
+
+// a unit of yours or an ally's (a CUnit: owner [+0x58], the alliance test of the colours)
+static bool MineOrAllied(BYTE *unit) {
+    if (!unit || (DWORD)(unit - (BYTE *)0x10000) > 0x7ffeffff || *(DWORD *)unit != (DWORD)(g_base + RVA_UNIT_VT))
+        return false;
+    BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
+    if (!state)
+        return false;
+    int owner = *(int *)(unit + UNIT_OWNER), local = *(short *)(state + 0x28);
+    if (owner < 0 || owner > 15 || local < 0 || local > 15)
+        return false;
+    return owner == local || Allied(state, local, owner);
+}
+static int __fastcall AllySeesHook(void *unit, int edx) {
+    int r = ((SeesFn)g_alTramp)(unit, edx);
+    if (r || !g_shared->alOn || g_alBad)
+        return r;
+    __try {
+        return MineOrAllied((BYTE *)unit) ? 1 : 0;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_alBad = true;
+        return 0;
+    }
+}
+static int __fastcall AllyAbilityHook(void *unit, void *ability) {
+    int r = ((AbilityCbFn)(g_base + RVA_ABILITY_CB))(unit, ability);
+    if (!g_shared->alOn || g_alBad || !ability)
+        return r;
+    __try {
+        if (!GameCall(g_base + RVA_IS_OBSERVER, 0, 0, 0, nullptr) && MineOrAllied((BYTE *)unit)) {
+            BYTE *a = (BYTE *)ability, *e = *(BYTE **)(a + 0x1bc);     // as the game's: [+0x1bc] > 0 ? [[+0x1bc]+8] : [+0xb68800]
+            DWORD arg = (LONG)(DWORD)e > 0 ? *(DWORD *)(e + 8) : *(DWORD *)(g_base + DATA_ABILITY_DEFAULT);
+            GameCall(g_base + RVA_ABILITY_DISPLAY, (DWORD)unit, 0, 1, &arg);
+            static int logs;
+            if (!logs++)
+                Log("allies' abilities: the first ability shown for unit %p (owner %d)", unit, *(int *)((BYTE *)unit + UNIT_OWNER));
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_alBad = true, g_shared->alState = 3;
+        Log("allies' abilities: showing one faulted: stopping");
+    }
+    return r;
+}
+// the two places as 1.28f has them (the start's abs32 is the game state's address)
+static bool AlliesPatchable() {
+    BYTE *f = g_base + RVA_SEES_ALL, *push = g_base + RVA_ABILITY_CB_PUSH;
+    return FnStart(RVA_SEES_ALL) && f[0] == 0x56 && f[1] == 0x8B && f[2] == 0x35 && *(DWORD *)(f + 3) == (DWORD)(g_base + RVA_PLAYERS)
+        && f[7] == 0xE8 && FnStart(RVA_ABILITY_CB) && FnStart(RVA_IS_OBSERVER) && FnStart(RVA_ABILITY_DISPLAY)
+        && PageIs(push, EXEC) && push[0] == 0x68 && *(DWORD *)(push + 1) == (DWORD)(g_base + RVA_ABILITY_CB);
+}
+// on the game thread (and on unload): both in or out. false = refused (logged)
+static bool AlliesHook(bool on) {
+    if (on == g_alHooked)
+        return true;
+    BYTE *f = g_base + RVA_SEES_ALL, *push = g_base + RVA_ABILITY_CB_PUSH;
+    if (on) {
+        if (!AlliesPatchable()) {
+            Log("allies' abilities: refused, +%06lX / +%06lX aren't as 1.28f has them", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH);
+            LogBytes("  +6BFFD0", f), LogBytes("  +3FAE1A", push);
+            return false;
+        }
+        if (!g_alTramp && (g_alTramp = (BYTE *)VirtualAlloc(nullptr, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)) != nullptr) {
+            memcpy(g_alTramp, f, 7);
+            g_alTramp[7] = 0xE9, *(LONG *)(g_alTramp + 8) = (LONG)((f + 7) - (g_alTramp + 12));
+            FlushInstructionCache(GetCurrentProcess(), g_alTramp, 16);
+        }
+        BYTE jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
+        *(LONG *)(jmp + 1) = (LONG)((BYTE *)AllySeesHook - (f + 5));
+        DWORD to = (DWORD)AllyAbilityHook;
+        if (!g_alTramp || !WriteCode(f, jmp, 7) || !WriteCode(push + 1, (const BYTE *)&to, 4)) {
+            Log("allies' abilities: writing the hooks failed");
+            return false;
+        }
+        g_alHooked = true;
+        Log("allies' abilities: on (+%06lX detoured, the callback at +%06lX is ours)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH);
+        return true;
+    }
+    if (f[0] == 0xE9 && f + 5 + *(LONG *)(f + 1) == (BYTE *)AllySeesHook && g_alTramp)
+        WriteCode(f, g_alTramp, 7);
+    else
+        Log("allies' abilities: +%06lX was changed by someone else: left as it is", RVA_SEES_ALL);
+    DWORD game = (DWORD)(g_base + RVA_ABILITY_CB);
+    if (push[0] == 0x68 && *(DWORD *)(push + 1) == (DWORD)AllyAbilityHook)
+        WriteCode(push + 1, (const BYTE *)&game, 4);
+    g_alHooked = false;
+    Log("allies' abilities: off (the game's own again)");
+    return true;
+}
+// on the game thread
+static void AlliesPass() {
+    bool on = g_shared->alOn && !g_alBad;
+    if (on != g_alHooked && !(on && g_shared->alState == 3) && !AlliesHook(on))
+        g_shared->alState = 3;
+    if (g_shared->alState != 3)
+        g_shared->alState = g_alHooked ? 1 : 0;
+}
+
+// -- the cooldown ping (WFE's Alt + click on an ability or item) ---------------------------
+// WFE (study_cd2.md; 0x10068043, 0x10053cb0) takes the frame under the cursor, the game's
+// CSimpleTop [+0xd0f948]'s +0x16c (its mouse-move pass hit-tests the frames and keeps the
+// one hit there, +0x13a2f0..+0x13a320), and for a command or inventory button says in the
+// allies' chat "<unit> >> <ability> | Cooldown: 7" or "| Ready!". Here the module keeps
+// `hover` up to date for the companion's Alt + click key, and command 5 writes the line
+// (pingText): the ability's name (the string at [button+0x190]+0x2c, as WFE reads it), the
+// unit's name from the info panel ([[[ui+0x3c4]+0x130]+0x128]'s text), the cooldown as the
+// timers read it. The companion sends it (its chat line). WFE's "Not enough mana!" isn't
+// ported (its mana cost field wasn't found).
+static const DWORD RVA_SIMPLE_TOP = 0xd0f948, RVA_SIMPLE_TOP_VT = 0xa7cae4, TOP_HOVER = 0x16c, DATA_NAME = 0x2c;
+static const DWORD FS_TEXT = 0x9c;                  // a CSimpleFontString's text (its setter +0x143430 writes it there)
+static BYTE *P(BYTE *f, DWORD off);
+// the command card or inventory button under the cursor (nullptr: none)
+static BYTE *HoveredButton(BYTE *ui) {
+    BYTE *top = *(BYTE **)(g_base + RVA_SIMPLE_TOP);
+    if (!top || (DWORD)(top - (BYTE *)0x10000) > 0x7ffeffff || *(DWORD *)top != (DWORD)(g_base + RVA_SIMPLE_TOP_VT))
+        return nullptr;
+    BYTE *f = *(BYTE **)(top + TOP_HOVER), *card = *(BYTE **)(ui + 0x3c8);
+    if (!f)
+        return nullptr;
+    int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
+    for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
+        for (int c = 0; c < cols; c++)
+            if (GridButton(card, r, c) == f)
+                return f;
+    for (int i = 0; i < 6; i++)
+        if (ItemButton(ui, i) == f)
+            return f;
+    return nullptr;
+}
+// a game string without its colour codes (|cAARRGGBB, |r), at most n - 1 characters
+static void PlainText(const char *src, char *out, size_t n) {
+    size_t o = 0;
+    for (size_t i = 0; src && src[i] && o + 1 < n && i < 256; i++) {
+        if (src[i] == '|' && (src[i + 1] == 'c' || src[i + 1] == 'C') && strlen(src + i) >= 10)
+            i += 9;
+        else if (src[i] == '|' && (src[i + 1] == 'r' || src[i + 1] == 'R'))
+            i++;
+        else if ((BYTE)src[i] >= 0x20)
+            out[o++] = src[i];
+    }
+    out[o] = 0;
+}
+// on the game thread, 10 times a second while the ping key is on
+static void HoverPass(BYTE *ui) {
+    __try {
+        g_shared->hover = ui && HoveredButton(ui) ? 1 : 0;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_shared->hover = 0;
+    }
+}
+// command 5, on the game thread: 1 pingText written, 2 nothing to ping
+static int PingCommand(BYTE *ui) {
+    g_shared->pingText[0] = 0;
+    __try {
+        BYTE *btn = HoveredButton(ui), *data = btn ? *(BYTE **)(btn + 0x190) : nullptr;
+        if (!data || !PageIs(data + DATA_NAME, READ))
+            return 2;
+        char ability[64], who[64] = "", t[12];
+        PlainText((const char *)(data + DATA_NAME), ability, sizeof(ability));
+        if (!ability[0])
+            return 2;
+        BYTE *name = P(P(P(ui, 0x3c4), 0x130), 0x128);
+        if (name && *(DWORD *)name == (DWORD)(g_base + RVA_FONTSTRING_VTABLE) && PageIs(*(BYTE **)(name + FS_TEXT), READ))
+            PlainText(*(const char **)(name + FS_TEXT), who, sizeof(who));
+        float left = 0, total = 0;
+        ButtonCooldown(btn, &left, &total);
+        TimeText(left, t, sizeof(t));
+        char state[32];
+        sprintf_s(state, t[0] ? "Cooldown: %s" : "Ready!", t);
+        sprintf_s(g_shared->pingText, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, ability, state);
+        static int logs;
+        if (logs++ < 3)
+            Log("ping: \"%s\" (button %p)", g_shared->pingText, btn);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("ping: reading the button faulted");
+        g_shared->pingText[0] = 0;
+        return 2;
+    }
 }
 
 // -- detailed tooltips -----------------------------------------------------------------
@@ -3352,7 +3619,7 @@ static void UiHidePass() {
 // version crashed: the studies had the upper menu bar's anchor on the wrong
 // child and relative to the bar's +0xb4, which a simple frame doesn't have.
 struct LaySave { BYTE *frame, *lay; SavedPoint pts[9]; float w, h; bool raw, cleared; };
-static const DWORD RVA_REGION_VT = 0xa7d100, RVA_TEXTURE_VT = 0xa7d13c, RVA_SIMPLE_TOP_VT = 0xa7cae4;   // WFE's [0x1013aa34], -, [0x1013a4f8]
+static const DWORD RVA_REGION_VT = 0xa7d100, RVA_TEXTURE_VT = 0xa7d13c;   // WFE's [0x1013aa34], - (CSimpleTop's +0xa7cae4: [0x1013a4f8], with the ping)
 static LaySave g_ul[160];
 static int g_ulN;
 static void *g_ulUi;                // the game UI the saves belong to
@@ -3902,7 +4169,7 @@ static void UlModels(BYTE *ui, BYTE *) {
 // off writes it back into the game's lines.
 static const DWORD RVA_FONT_HEIGHT = 0x71240;      // __fastcall(section, key, float default) -> float in st0 (the game's FontHeights lookup)
 static const DWORD RVA_FONT_HEIGHTS_NAME = 0xcb30a4;   // data: -> "FontHeights" (what +0x40d2ea passes)
-static const DWORD UI_STATE180 = 0x180, FS_COLOUR = 0x68, FS_TEXT = 0x9c;
+static const DWORD UI_STATE180 = 0x180, FS_COLOUR = 0x68;     // (FS_TEXT = 0x9c: with the ping)
 static const float PT_X = -0.11f, PT_Y[2] = { -0.278f, -0.2915f };
 static BYTE *g_pt[2];                // our two text frames (the game UI's children: the game frees them)
 static BYTE *g_ptUi;                // the game UI they belong to
@@ -4257,6 +4524,7 @@ static void DisplayPass() {
     FpsPass();
     LatencyPass();
     CountdownPass();
+    AlliesPass();
     UiHidePass();
     UiLayoutPass();
 }
@@ -4265,7 +4533,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -4522,7 +4790,7 @@ static Shared g_retired;            // what g_shared points at once retired (not
 
 static void SwitchesOff() {
     Shared *s = g_shared;
-    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = 0;
+    s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = 0;
     s->qcUntil = 0;
 }
 static void RestoreAll() {
@@ -4534,7 +4802,7 @@ static void RestoreAll() {
         PointSites(false);
     if (g_wsApplied)
         PointProjection(false), g_wsApplied = false;
-    SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true);
+    SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false);
 }
 // on the game thread: the last of it, and the window back
 static void FinalPass() {
@@ -4706,7 +4974,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 17;
+        g_shared->layout = 18;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

@@ -223,6 +223,23 @@ int main() {
     float *cs = CountdownFloat();
     CHECK(cs == (float *)(g_base + RVA_COUNTDOWN_SECS) && *cs == 6.0f && SiteTarget(g_base + 0x322458) == g_base + RVA_COUNTDOWN && FnStart(RVA_TIMER_START),
           "the start countdown's 6.0 s at +%06lX, in the handler +%06lX the lobby calls (+322458)", RVA_COUNTDOWN_SECS, RVA_COUNTDOWN);
+    // allies' abilities: the observer-view function's start as the detour copies it, its 24 callers, the callback's one push
+    BYTE *sites2[32];
+    int nsees = FindCallSites(g_base + RVA_SEES_ALL, sites2, 32);
+    CHECK(AlliesPatchable() && nsees == 24 && g_base[0x39ea4e] == 0x8B && g_base[0x39ea4f] == 0xCE && g_base[0x3a0554] == 0x8B && g_base[0x3a0555] == 0xCE,
+          "+6BFFD0 starts push esi; mov esi, [state] (24 callers, each with the unit in ecx, e.g. +39EA4E / +3A0554); the callback +3E4060 is pushed at +3FAE1A only");
+    CHECK(g_base[0x6c0010] == 0xC3 && g_base[0x6c0017] == 0xC3 && g_base[0x3e406a] == 0xC3 && g_base[0x6b276a] == 0xC2 && *(WORD *)(g_base + 0x6b276b) == 4
+          && g_base[0x3e4081] == 0xE8 && SiteTarget(g_base + 0x3e4081) == g_base + RVA_IS_OBSERVER && SiteTarget(g_base + 0x3e408d) == g_base + RVA_ABILITY_DISPLAY
+          && *(DWORD *)(g_base + 0x3e407d) == (DWORD)(g_base + DATA_ABILITY_DEFAULT),
+          "both return with no stack arguments, the display update pops 4; the callback updates only after the observer test, else [+B68800]");
+    CHECK(Rtti(RVA_UNIT_VT, "CUnit") && *(DWORD *)(g_base + RVA_UNIT_VT + 0xec) == (DWORD)(g_base + 0x6b9f30) && !memcmp(g_base + 0x6b9f30, "\x8B\x41\x58\xC3", 4),
+          "CUnit's vtable +B68914: its owner (vt+0xEC) is [unit+0x58]");
+    // the ping: CSimpleTop [+D0F948] (its getter +13B920) keeps the frame under the cursor at +0x16C (+13A320)
+    CHECK(g_base[0x13b920] == 0xA1 && *(DWORD *)(g_base + 0x13b921) == (DWORD)(g_base + RVA_SIMPLE_TOP) && !memcmp(g_base + 0x13a320, "\x89\x9F\x6C\x01\x00\x00", 6)
+          && Rtti(RVA_SIMPLE_TOP_VT, "CSimpleTop"), "the frame under the cursor: [[+D0F948]+0x16C] (set by the mouse-move pass +13A320)");
+    // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
+    CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
+          && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)

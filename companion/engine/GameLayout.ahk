@@ -93,5 +93,10 @@ class Shm {
     static csSecs := 836
     static csState := 840
     static csGame := 844
-    static size := 848
+    static alOn := 848
+    static alState := 852
+    static pingOn := 856
+    static hover := 860
+    static pingText := 864
+    static size := 992
 }
