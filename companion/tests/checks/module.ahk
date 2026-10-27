@@ -120,6 +120,10 @@ TwcModuleRun() {
     TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 3 && NumGet(v, Shm.cdSize, "float") = 1,
         "buffs x0.8, gold from 2 s, auras (1) and ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
     timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0), timersHud.setBfRing(0)
+    ; our shade with the game's clock hidden: on by default (bit 8 clear), off sets bit 8
+    timersHud.setCdNoSweep(1), nb1 := NumGet(v, Shm.cdNoBadge, "uint"), timersHud.setCdShade(0), nb2 := NumGet(v, Shm.cdNoBadge, "uint")
+    timersHud.setCdShade(1), timersHud.setCdNoSweep(0)
+    TwcCheck((nb1 & 2) && !(nb1 & 8) && (nb2 & 8), "the clock hidden: our shade by default (" nb1 "), off: bit 8 (" nb2 ")")
     ; Battle.net login (layout 24): the password in Credential Manager (a check's own entry, never the real one),
     ; handed over only at the login screen (blState 2), once; the switch pushed
     BattleNetLoginEngine.TARGET := "TW Companion/Battle.net (check)"

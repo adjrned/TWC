@@ -164,7 +164,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float cdGold;           // companion: gold from this many seconds left down (0 = always white)
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
     // layout 21
-    DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons, 4 our cooldown ring around them
+    DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons, 4 our cooldown ring around them, 8 no shade of ours in place of the hidden clock (layout 25 on: with bit 2, a dark shade drains on the button)
     // layout 22: your hero's buffs, read from the unit itself, whatever is selected (ReadHeroBuffs), and how the buff seconds look
     DWORD hrWant;           // companion: 1 = read them too (with the other timers: tmWant on as well)
     DWORD hrHero;           // module: the hero's type id ('Hpal'; 0 = no hero of yours found)
@@ -2261,7 +2261,15 @@ static const DWORD RVA_SET_TEXTURE = 0x1435f0, RVA_SET_ALL_POINTS = 0x13fad0, RV
 static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c;
 static const char RING_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
 static const float RING_THICK = 0.0018f, BUTTON_SIZE = 0.039f;
-struct Ring { BYTE *btn, *frame, *side[4]; float len[4]; bool shown[4]; };
+// Our shade (cdNoBadge bit 2 hides the game's clock, bit 8 = no shade): the user's test showed the
+// game's cooldown model is the dark sweep and TWRPG's clock badge and timer at once, so hiding it
+// left no sign the ability was used. A fifth texture in the ring's frame: the same square tinted
+// black and see-through (a texture's alpha +0x68 and colour +0x69 B / +0x6a G / +0x6b R, applied
+// by its vt+0x24 +0x141d00, which multiplies the alpha by the frame's [+0x88]: as the health bars'
+// colours), from the button's bottom corners up to the time left of the full time: it drains from
+// the top as the cooldown runs out. Drawn before the ring's sides, so the line stays over it.
+static const BYTE SHADE_ALPHA = 0x99;      // 60%
+struct Ring { BYTE *btn, *frame, *side[4], *shade; float len[4], shadeH; bool shown[4], shadeShown; };
 static const int RINGS = 12 + 6 + 8;       // the command card, the inventory, the buff bar
 static Ring g_rings[RINGS];
 static int g_ringN;
@@ -2288,6 +2296,17 @@ static Ring *RingFor(BYTE *btn) {
     *(DWORD *)(f + 0x90) = 1;
     Virt(f, 0x68);
     static const int PT[4] = { 0, 2, 8, 6 };                  // top, right, bottom, left
+    void *sm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown shade", __LINE__, 0);
+    BYTE *sh = sm ? (BYTE *)Game(RVA_TEXTURE_CTOR, sm, { (DWORD)f, 2, 1 }) : nullptr;
+    if (sh && sh == sm && *(DWORD *)sh == (DWORD)(g_base + RING_TEXTURE_VT)) {
+        Game(RVA_SET_TEXTURE, sh, { (DWORD)RING_TEXTURE, 0 });
+        Game(RVA_SET_POINT, sh, { 6, (DWORD)f, 6, F(0), F(0), 1 });      // bottom left and right to the button's
+        Game(RVA_SET_POINT, sh, { 8, (DWORD)f, 8, F(0), F(0), 1 });
+        sh[0x68] = SHADE_ALPHA, sh[0x69] = sh[0x6a] = sh[0x6b] = 0;
+        Virt(sh, 0x24);
+        Game(RVA_REGION_HIDE, sh);
+        r->shade = sh, r->shadeH = -1;
+    }
     for (int k = 0; k < 4; k++) {
         void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown ring", __LINE__, 0);
         BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)f, 2, 1 }) : nullptr;
@@ -2308,7 +2327,7 @@ static Ring *RingFor(BYTE *btn) {
     return r;
 }
 // the line left: 4 x the time left / the full time, from the top-left corner clockwise
-static void RingDraw(BYTE *btn, float left, float total) {
+static void RingDraw(BYTE *btn, float left, float total, bool ring = true, bool shade = false) {
     bool on = btn && left > 0 && total > 0;
     Ring *r = nullptr;
     for (int i = 0; i < g_ringN && !r; i++)
@@ -2320,7 +2339,15 @@ static void RingDraw(BYTE *btn, float left, float total) {
         return;
     float w = *(float *)(btn + LAYOUT_WIDTH), h = *(float *)(btn + LAYOUT_HEIGHT);
     w = w > 0.005f && w < 0.2f ? w : BUTTON_SIZE, h = h > 0.005f && h < 0.2f ? h : BUTTON_SIZE;
-    float l4 = on ? 4 * min(1.0f, left / total) : 0;
+    if (r->shade) {
+        float sh = shade && on ? h * min(1.0f, left / total) : 0;
+        bool show = sh > 0.0005f;
+        if (show && fabsf(sh - r->shadeH) > 0.0002f)
+            Game(RVA_SET_HEIGHT, r->shade, { F(sh) }), r->shadeH = sh;
+        if (show != r->shadeShown)
+            Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, r->shade), r->shadeShown = show;
+    }
+    float l4 = on && ring ? 4 * min(1.0f, left / total) : 0;
     for (int k = 0; k < 4; k++) {
         float part = max(0.0f, min(1.0f, l4 - k)), len = part * (k % 2 ? h : w);
         bool show = part > 0.01f;
@@ -2339,7 +2366,8 @@ static BYTE *BuffBarOf(BYTE *ui, int *rows, int *cols) {
     return bar && *rows > 0 && *cols > 0 && *rows * *cols <= 16 ? bar : nullptr;
 }
 // cd: rings on cooling down command card / inventory buttons; bf: on the buffs that get seconds
-static void RingsPass(BYTE *ui, bool cd, bool bf) {
+static void RingsPass(BYTE *ui, bool cdRing, bool bf, bool cdShade = false) {
+    bool cd = cdRing || cdShade;
     if (g_ringBad || g_framesBad)
         return;
     __try {
@@ -2365,11 +2393,11 @@ static void RingsPass(BYTE *ui, bool cd, bool bf) {
         for (int s = 0; cd && cardOk && s < 12; s++)
             if (s / 4 < rows && s % 4 < cols)
                 if (BYTE *b = CardButton(card, s))
-                    RingDraw(b, g_shared->cdLeft[s], g_shared->cdTotal[s]);
+                    RingDraw(b, g_shared->cdLeft[s], g_shared->cdTotal[s], cdRing, cdShade);
         for (int s = 0; cd && s < 6; s++) {
             BYTE *b = ItemButton(ui, s);
             if (b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE))
-                RingDraw(b, g_shared->itemLeft[s], g_shared->itemTotal[s]);
+                RingDraw(b, g_shared->itemLeft[s], g_shared->itemTotal[s], cdRing, cdShade);
         }
         for (int s = 0; bar && s < brows * bcols; s++)
             if (BuffSlotDrawn(g_shared->buffFlags[s]))
@@ -2423,7 +2451,8 @@ static void TimerFramesPass(BYTE *ui) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         FramesStop("timers in the game: a frame call faulted");
     }
-    RingsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 4), (g_shared->itOn & 2) && (g_shared->bfOpts & BF_RING));
+    RingsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 4), (g_shared->itOn & 2) && (g_shared->bfOpts & BF_RING),
+              (g_shared->itOn & 1) && (g_shared->cdNoBadge & 2) && !(g_shared->cdNoBadge & 8));
     static bool logged;
     if (!logged && g_shared->frCount)
         logged = true, Log("timers in the game: drawing (%lu text frames)", g_shared->frCount);

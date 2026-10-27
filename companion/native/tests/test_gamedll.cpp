@@ -420,6 +420,12 @@ int main() {
           && Rtti(RVA_CHAT_PANEL_VT, "CBattleNetChatPanel") & Rtti(RVA_JOIN_PANEL_VT, "CBattleNetCustomJoinPanel") & Rtti(RVA_LISTBOX_WAR3_VT, "CListBoxWar3")
           && CHAT_CUSTOM_BUTTON == 0x2e0 && JOIN_NAME == 0x204 && JOIN_LIST == 0x208 && JOIN_BUTTON == 0x214 && LIST_SELECTED == 0x1f4,
           "the chat panel's Custom Game (command 3), the custom games' name box / list / Join (command 4: the selected game, else the typed name)");
+    // our shade's tint: a texture's vt+0x24 (+141D00) multiplies its alpha +0x68 by its frame's [+0x88] into +0x6C and takes its
+    // colour from +0x69 / +0x6A / +0x6B (white: none)
+    CHECK(*(DWORD *)(g_base + RING_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && !memcmp(g_base + 0x141d0c, "\x0F\xB6\xB0\x88\x00\x00\x00", 7)
+          && !memcmp(g_base + 0x141d13, "\x0F\xB6\x41\x68", 4) && !memcmp(g_base + 0x141d2d, "\x88\x41\x6C", 3) && !memcmp(g_base + 0x141d35, "\x80\x79\x6B\xFF", 4)
+          && !memcmp(g_base + 0x141d41, "\x80\x79\x69\xFF", 4) && !memcmp(g_base + 0x141d50, "\x8D\x41\x69", 3),
+          "a texture's alpha is +0x68 (times its frame's +0x88), its colour +0x69..+0x6B, applied by its vt+0x24 (+141D00): our shade's tint");
     // a control's enabled state: SetEnabled (vt+0x10c of the glue buttons and the edit box, +12B9C0) sets / clears bit 1 of [+0x1D4]
     // (+1406E0 ors it in, +141700 masks it out); the login screen disables its Logon that way (+32D3FC .. +32D404: vt+0x10c(0))
     CHECK(*(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[0] + 0x10c) == (DWORD)(g_base + 0x12b9c0) && *(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[1] + 0x10c) == (DWORD)(g_base + 0x12b9c0)

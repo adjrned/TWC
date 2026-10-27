@@ -97,6 +97,9 @@ class TimerHud {
     cdRing => Integer(Ini(this.section, "cdRing", 0))
     setCdRing(on) => (SetIni(on ? 1 : 0, this.section, "cdRing"), this.pushGame())
     setCdNoSweep(on) => (SetIni(on ? 1 : 0, this.section, "cdNoSweep"), this.pushGame())
+    ; with the game's clock hidden, our dark shade that drains on the button in its place (on by default; cdNoBadge bit 8 = none)
+    cdShade => Integer(Ini(this.section, "cdShade", 1))
+    setCdShade(on) => (SetIni(on ? 1 : 0, this.section, "cdShade"), this.pushGame())
     ; how the buff seconds look (layout 22): their own size and gold from, seconds on auras too
     ; (WFE's ISDRAWAURADURATION, off), our countdown ring around the buffs (bfOpts bits 1, 2)
     bfSize => Min(Max(Float(Ini(this.section, "bfSize", 1)), 0.75), 1.5)
@@ -136,7 +139,7 @@ class TimerHud {
         if v && NumGet(v, Shm.layout, "uint") >= 20
             NumPut("float", this.cdSize, v, Shm.cdSize), NumPut("float", this.cdGold, v, Shm.cdGold), NumPut("uint", this.cdReady ? 1 : 0, v, Shm.cdReady)
         if v && NumGet(v, Shm.layout, "uint") >= 21
-            NumPut("uint", (this.cdNoBadge ? 1 : 0) | (this.cdNoSweep ? 2 : 0) | (this.cdRing ? 4 : 0), v, Shm.cdNoBadge)
+            NumPut("uint", (this.cdNoBadge ? 1 : 0) | (this.cdNoSweep ? 2 : 0) | (this.cdRing ? 4 : 0) | (this.cdShade ? 0 : 8), v, Shm.cdNoBadge)
         if v && NumGet(v, Shm.layout, "uint") >= 22
             NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", (this.bfAuras ? 1 : 0) | (this.bfRing ? 2 : 0), v, Shm.bfOpts)
     }
