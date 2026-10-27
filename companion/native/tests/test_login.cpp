@@ -43,6 +43,10 @@ static void __fastcall FakeSetText(BYTE *box, int, const char *t, int) {
     *(char **)(box + EDIT_TEXT) = own;
 }
 static void *__fastcall FakeGetUi(int, int) { return inGameUi; }
+static int altJ;
+static bool inFront = true;
+static void FakeAltJ() { altJ++; }
+static bool FakeInFront() { return inFront; }
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC, img[rva] = 0xE9, *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }
 
 int main() {
@@ -51,7 +55,7 @@ int main() {
     img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     g_base = img; g_imageSize = 0x1000000;
     Stub(RVA_FRAME_BY_NAME, FakeByName), Stub(RVA_CONTROL_CLICK, FakeClick), Stub(RVA_EDIT_SET_TEXT, FakeSetText);
-    g_getUi = FakeGetUi;
+    g_getUi = FakeGetUi, g_pressAltJ = FakeAltJ, g_gameInFront = FakeInFront;       // never a real key
     static BYTE uiObj[0x10]; *(DWORD *)uiObj = 0x1234; g_uiVtable = 0x1234;
     *(DWORD *)mainBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[1]), *(DWORD *)logonBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
     *(DWORD *)screen = (DWORD)(img + RVA_BNET_MAIN_VT), *(DWORD *)decoyLogon = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
@@ -151,10 +155,17 @@ int main() {
     bool waitChat = g_blStep == 10 && clicks == c0 + 1;            // ready, not yet for a second
     Sleep(1100); LoginPass();
     bool customClicked = g_blStep == 11 && clicks == c0 + 2 && clicked[(c0 + 1) % 8] == customBtn;
-    chatUp = false, joinUp = true;
+    chatUp = false, joinUp = true, inFront = false;
     LoginPass(); Sleep(1100); LoginPass();
-    CHECK(toChat && waitChat && customClicked && g_blStep == 9 && sh.blState == 7 && clicks == c0 + 3 && !strcmp(*(const char **)(gameBox + EDIT_TEXT), "TWRPG 1.0"),
-          "logged in: Custom Game clicked once the chat panel was ready a second, then 'TWRPG 1.0' typed into the name box and Join clicked (blState 7)");
+    bool typedWaits = g_blStep == 12 && altJ == 0 && !strcmp(*(const char **)(gameBox + EDIT_TEXT), "TWRPG 1.0");
+    inFront = true; LoginPass();
+    CHECK(toChat && waitChat && customClicked && typedWaits && g_blStep == 9 && sh.blState == 7 && altJ == 1 && clicks == c0 + 2,
+          "logged in: Custom Game clicked once the chat panel was ready a second, 'TWRPG 1.0' typed in, Alt+J once the game is in front (no click on the panel's +0x214)");
+    // not in front for 10 s: the name stays typed in, Join left to you
+    loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
+    chatUp = false, joinUp = true, inFront = false; LoginPass(); Sleep(1100); LoginPass(); g_blAt -= 11000; LoginPass();
+    CHECK(sh.blState == 8 && altJ == 1 && g_blStep == 9, "the game not in front for 10 s: no key sent, Join left to you");
+    inFront = true;
     // a game selected in the list: Join would join it, so not clicked: the list left to you; no name set: the list stays open
     c0 = clicks; loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
     chatUp = false, joinUp = true, *(BYTE **)(gameList + LIST_SELECTED) = other; LoginPass(); Sleep(1100); LoginPass();
@@ -174,7 +185,7 @@ int main() {
     CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret")
           && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)")
           && strstr(logText, "the account name's bytes: 52 75 7A 61 69 (5)")
-          && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'): Join clicked")
+          && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'); the panel's +0x214 is") && strstr(logText, "Alt+J pressed (the game's Join shortcut) for 'TWRPG 1.0'")
           && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty"),
           "the log: the steps, what the boxes hold (the account, the password's length only), the menus after Logon, never the password");
     Verdict();

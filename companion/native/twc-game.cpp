@@ -5316,7 +5316,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -5470,12 +5470,35 @@ static BYTE *GluePanel(const char *name, DWORD vt) {
     BYTE *f = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(name, 0);
     return f && (DWORD)(f - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)f == (DWORD)(g_base + vt) && GlueShown(f) ? f : nullptr;
 }
+static bool GameInFront();
+static void Key(INPUT *in, int &n, WORD vk, bool up);
+// Join by the game's own shortcut, Alt+J (the user's first try: the click on the panel's +0x214 seemed
+// to load a game instead; the key is whatever the panel's Join is bound to): only with the game in front
+static void PressAltJ() {
+    INPUT in[4];
+    int n = 0;
+    Key(in, n, VK_MENU, false), Key(in, n, 'J', false), Key(in, n, 'J', true), Key(in, n, VK_MENU, true);
+    SendInput(n, in, sizeof(INPUT));
+}
+static void (*g_pressAltJ)() = PressAltJ;   // the tests' own (they never send keys)
+static bool (*g_gameInFront)() = GameInFront;
 static void AfterLoginPass() {
     Shared *s = g_shared;
     DWORD now = GetTickCount();
     static DWORD readySince;
     auto settled = [&](bool ready) { readySince = ready ? readySince ? readySince : now : 0; return ready && now - readySince >= 1000; };
     __try {
+        if (g_blStep == 12) {                   // the name typed: Alt+J once the game is in front
+            if (g_gameInFront()) {
+                g_pressAltJ();
+                g_blStep = 9, s->blState = 7;
+                Log("battle.net login: Alt+J pressed (the game's Join shortcut) for '%s'; if there's no such game, the game says so and the list stays", s->blGame);
+            } else if (now - g_blAt > 10000) {
+                g_blStep = 9, s->blState = 8;
+                Log("battle.net login: the game wasn't in front for 10 s: '%s' is typed in, press Join yourself", s->blGame);
+            }
+            return;
+        }
         if (g_blStep == 10) {                   // logged in: the chat panel's Custom Game
             BYTE *chat = GluePanel("BattleNetChatPanel", RVA_CHAT_PANEL_VT);
             BYTE *custom = chat ? GlueCheck(*(BYTE **)(chat + CHAT_CUSTOM_BUTTON), false, "the chat panel's Custom Game") : nullptr;
@@ -5502,8 +5525,8 @@ static void AfterLoginPass() {
             }
             return;
         }
-        g_blStep = 9;
         s->blGame[sizeof(s->blGame) - 1] = 0;
+        g_blStep = 9;
         if (!s->blGame[0]) {
             s->blState = 6;
             Log("battle.net login: the custom games list is open (no game name set: pick one)");
@@ -5521,9 +5544,10 @@ static void AfterLoginPass() {
         }
         Game(RVA_EDIT_SET_TEXT, box, { (DWORD)s->blGame, 1 });
         const char *held = *(const char **)(box + EDIT_TEXT);
-        ((ClickFn)(g_base + RVA_CONTROL_CLICK))(button, 0, 1);
-        s->blState = 7;
-        Log("battle.net login: joining '%s' (the name box holds '%s'): Join clicked; if there's no such game, the game says so and the list stays", s->blGame, held ? held : "");
+        BYTE *byName = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("JoinGameButton", 0), *load = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("LoadGameButton", 0);
+        Log("battle.net login: joining '%s' (the name box holds '%s'); the panel's +0x214 is %p (vtable +%06lX), 'JoinGameButton' by name %p, 'LoadGameButton' %p: pressing Alt+J",
+            s->blGame, held ? held : "", button, *(DWORD *)button - (DWORD)g_base, byName, load);
+        g_blStep = 12, g_blAt = now;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_blStep = 9, s->blState = 5;
         Log("battle.net login: a custom games call faulted: left to you");
@@ -5533,7 +5557,7 @@ static void LoginPass() {
     static bool bad;
     Shared *s = g_shared;
     LoginWatch();
-    if (!bad && (g_blStep == 10 || g_blStep == 11))
+    if (!bad && (g_blStep == 10 || g_blStep == 11 || g_blStep == 12))
         return AfterLoginPass();
     if (bad || g_blStep == 9)
         return;
