@@ -372,6 +372,29 @@ int main() {
           && !memcmp(g_base + 0x3e8126, "\x8B\x8F\x6C\x01\x00\x00", 6) && *(float *)(g_base + 0x3e813c) == fm003 && !memcmp(g_base + 0x3e8140, "\x6A\x08\x57\x6A\x08", 5)
           && SiteTarget(g_base + 0x3e8145) == g_base + RVA_SET_POINT && GAME_BUFF_BAR_W == f012 && GAME_BUFF_BAR_H == f015 && GAME_BUFF_ICON == f015 && Rtti(RVA_BUFF_INDICATOR_VT, "CBuffIndicator"),
           "the buff bar: a 1 x 8 grid 0.12 x 0.015 of 0.015 icons (+3D0100), laid out again on a rect change (vt+0 +13CC90), pinned by its bottom right (+3E8126)");
+    // Battle.net login: the main menu's BattleNetButton is its command 1 (+30E9B3 .. +30E9C4, +314480 -> the name lookup and +141430,
+    // the click event 0x40090064), which connects (+322D79 -> +318EB0); the login screen's boxes AccountName / Password at +0x1F8 / +0x1FC
+    // and LogonButton command 5 (+30A4C8), whose handler (+321568 -> +32D450) reads the boxes' text [box+0x1E4] (+1311C0)
+    const BYTE *jt5 = *(const BYTE **)(g_base + 0x321764 + 5 * 4), *jt1 = *(const BYTE **)(g_base + 0x322f48 + 1 * 4);
+    CHECK(!memcmp(g_base + 0x30e9b3, "\x6A\x01\x6A\x01\x68", 5) && !strcmp(*(const char **)(g_base + 0x30e9b8), "BattleNetButton") && SiteTarget(g_base + 0x30e9c4) == g_base + 0x314480
+          && SiteTarget(g_base + 0x31448c) == g_base + RVA_FRAME_BY_NAME && !memcmp(g_base + 0x314487, "\x33\xD2", 2) && SiteTarget(g_base + 0x31449b) == g_base + 0x141430
+          && *(DWORD *)(g_base + 0x141447) == 0x40090064 && *(DWORD *)(g_base + 0x1407b5) == 0x40090064 && jt1 == g_base + 0x322d79 && SiteTarget(g_base + 0x322d79) == g_base + 0x318eb0
+          && !memcmp(g_base + 0x30a4c8, "\x6A\x05\x68", 3) && !strcmp(*(const char **)(g_base + 0x30a4cb), "LogonButton") && SiteTarget(g_base + 0x30a4d7) == g_base + 0x3141d0
+          && !strcmp(*(const char **)(g_base + 0x30a4f7), "AccountName") && SiteTarget(g_base + 0x30a4fb) == g_base + RVA_FRAME_BY_NAME && !memcmp(g_base + 0x30a502, "\x89\x86\xF8\x01\x00\x00", 6)
+          && !strcmp(*(const char **)(g_base + 0x30a509), "Password") && !memcmp(g_base + 0x30a514, "\x89\x86\xFC\x01\x00\x00", 6) && !memcmp(g_base + 0x30a4dc, "\x33\xD2", 2)
+          && *(DWORD *)(g_base + 0xa9e764 + 0xc) == (DWORD)(g_base + 0x321510) && *(DWORD *)(g_base + 0xaa1abc + 0xc) == (DWORD)(g_base + 0x322b70)
+          && jt5 == g_base + 0x321568 && SiteTarget(g_base + 0x32156a) == g_base + 0x32d450 && SiteTarget(g_base + 0x32d46e) == g_base + 0x1311c0 && !memcmp(g_base + 0x1311c0, "\x8B\x81\xE4\x01\x00\x00\xC3", 7)
+          && Rtti(0xa9e764, "CBattleNetMain") & Rtti(0xaa1abc, "CMainMenu"),
+          "the main menu's Battle.net is its command 1 (connects), the login screen's Logon its command 5 (reads AccountName / Password)");
+    // the module's calls: the name lookup (fastcall(name, 0), read-only: +1213B0 with create 0, the record's +0x18), the shown test
+    // ([+0xB0] & 3), the control click (ret 4), the edit box's setter (ret 8, the screen's own prefill +30AFF8), the classes it checks
+    CHECK(!memcmp(g_base + 0x1212f8, "\x6A\x00\xE8", 3) && SiteTarget(g_base + 0x1212fa) == g_base + 0x1213b0 && !memcmp(g_base + 0x121303, "\x8B\x40\x18", 3) && g_base[0x121309] == 0xC3
+          && !memcmp(g_base + 0x11cdf0, "\xF6\x81\xB0\x00\x00\x00\x03", 7) && *(DWORD *)(g_base + 0xa9e764 + 0xd0) == (DWORD)(g_base + 0x11c6d0) && !memcmp(g_base + 0x11c6dd, "\x83\xC8\x01", 3)
+          && g_base[0x1407ea] == 0xC2 && *(WORD *)(g_base + 0x1407eb) == 4 && g_base[0x132894] == 0xC2 && *(WORD *)(g_base + 0x132895) == 8
+          && SiteTarget(g_base + 0x30aff8) == g_base + RVA_EDIT_SET_TEXT && !memcmp(g_base + 0x30aff5, "\x6A\x01", 2)
+          && Rtti(RVA_GLUE_BUTTON_VT[0], "CGlueButtonWar3") & Rtti(RVA_GLUE_BUTTON_VT[1], "CGlueTextButtonWar3") & Rtti(RVA_GLUE_EDIT_VT, "CGlueEditBoxWar3")
+          && RVA_CONTROL_CLICK == 0x1407b0 && FRAME_HIDDEN == 0xb0,
+          "the login's game calls: the name lookup, the shown test, the click (ret 4), the edit box setter (ret 8), the glue classes");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)

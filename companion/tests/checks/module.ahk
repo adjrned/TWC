@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 23, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 24, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 23 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 23, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 24 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 24, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -120,6 +120,23 @@ TwcModuleRun() {
     TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 3 && NumGet(v, Shm.cdSize, "float") = 1,
         "buffs x0.8, gold from 2 s, auras (1) and ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
     timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0), timersHud.setBfRing(0)
+    ; Battle.net login (layout 24): the password in Credential Manager (a check's own entry, never the real one),
+    ; handed over only at the login screen (blState 2), once; the switch pushed
+    BattleNetLoginEngine.TARGET := "TW Companion/Battle.net (check)"
+    bnetLogin.setEnabled(0), bnetLogin.tick(), off1 := NumGet(v, Shm.blOn, "uint")
+    bnetLogin.setAccount("Ruzai"), saved := bnetLogin.setPassword("pä55|word"), has := bnetLogin.hasPassword()
+    bnetLogin.setEnabled(1), on1 := NumGet(v, Shm.blOn, "uint")
+    NumPut("uint", 1, v, Shm.blState), bnetLogin.tick(), early := NumGet(v, Shm.blSeq, "int")
+    NumPut("uint", 2, v, Shm.blState), bnetLogin.tick()
+    acc := StrGet(v + Shm.blAccount, 32, "UTF-8"), pwSent := StrGet(v + Shm.blPassword, 64, "UTF-8"), seq1 := NumGet(v, Shm.blSeq, "int")
+    bnetLogin.tick(), seq2 := NumGet(v, Shm.blSeq, "int")
+    TwcCheck(off1 = 0 && saved && has && on1 = 1 && early = 0 && acc = "Ruzai" && pwSent = "pä55|word" && seq1 = 1 && seq2 = 1,
+        "battle.net login: off 0 / on 1 pushed; nothing before the login screen; then the account and the saved password, once (seq " seq1 ", " seq2 ")")
+    NumPut("int", 1, v, Shm.blDone), NumPut("uint", 3, v, Shm.blState)
+    TwcCheck(InStr(bnetLogin.statusText(), "Ruzai · logged in"), "battle.net login: " bnetLogin.statusText())
+    gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
+    TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())
+    bnetLogin.setEnabled(0), BattleNetLoginEngine.TARGET := "TW Companion/Battle.net"
     ; the bigger buff bar (layout 23): x1.5 by default, typed values clamped to 1-2, 0 when off
     k1 := NumGet(v, Shm.bbScale, "float"), ok := gameDisplay.setBuffBarScale("2.5") && !gameDisplay.setBuffBarScale("big")
     k2 := NumGet(v, Shm.bbScale, "float"), gameDisplay.setBuffBar(0), k3 := NumGet(v, Shm.bbScale, "float")

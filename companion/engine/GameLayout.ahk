@@ -118,5 +118,11 @@ class Shm {
     static bfOpts := 2576
     static bbScale := 2580
     static bbState := 2584
-    static size := 2588
+    static blOn := 2588
+    static blState := 2592
+    static blSeq := 2596
+    static blDone := 2600
+    static blAccount := 2604
+    static blPassword := 2636
+    static size := 2700
 }

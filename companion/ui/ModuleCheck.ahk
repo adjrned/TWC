@@ -34,6 +34,7 @@ ModuleCheckFeatures() => [
     ["Hide the UI", "hide UI: console .* textures|hide UI: .* RTTI", "hide UI: .* refused|hide UI: .* faulted|  not the (time of day|minimap|upper menu bar|resource bar|idle workers|buff bar)"],
     ["Your hero's buffs (alerts)", "hero buffs: your hero is", ""],
     ["Buff ring", "buff ring: the first one on the buff icon", "cooldown ring: .*(no rings|faulted)"],
+    ["Battle.net login", "battle.net login: account '.*' typed in, Logon clicked", "battle.net login: .*(faulted|not a glue)"],
     ["Bigger buff bar", "buff bar size: x[0-9.]+ \(\d+ frames resized", "buff bar size: .*(refused|faulted)"],
 ]
 

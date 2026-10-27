@@ -12,7 +12,8 @@
 ;    Display   how the game looks: health bars (size, colours, numbers, mana
 ;              bars), game keys, hiding the UI, widescreen, the widescreen UI,
 ;              fast menu, detailed tooltips, FPS unlock
-;    Hosting   games you host: lobby latency, the start countdown
+;    Hosting   games you host: lobby latency, the start countdown; logging in
+;              to Battle.net (eurobattle.net) by itself
 ;  Each feature is one entry in Wc3Features(): a compact card (two columns)
 ;  with its version badge, its On/Off switch, an Options button under it
 ;  that opens the feature's own window, and a short status line; hovering a
@@ -54,7 +55,7 @@ Wc3PlannedText(tab, ver) {
 ; opts(d) (rows added to the feature's standard Options window, see Opt*)
 ; or window() (a window of its own).
 Wc3Features() {
-    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars, gameDisplay
+    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin
     static list := 0
     if list
         return list
@@ -156,6 +157,10 @@ Wc3Features() {
             on: (*) => gameDisplay.countdown, set: (v) => gameDisplay.setCountdown(v), status: (*) => gameDisplay.countdownStatus(),
             opts: (d) => (OptSlider(d, "Seconds", (*) => gameDisplay.countdownSecs, (v) => gameDisplay.setCountdownSecs(v), 0, 6, 0.1, SecsText),
                 OptNote(d, "From 0 to 6 s; the game's own is 6. WFE adds 0.1 s, so does this.")) },
+        { tab: "hosting", title: "Battle.net login", badge: "1.28f",
+            desc: "At the main menu, straight to Battle.net and logged in with your account.",
+            on: (*) => bnetLogin.enabled, set: (v) => bnetLogin.setEnabled(v), status: (*) => bnetLogin.statusText(),
+            window: (*) => BattleNetLoginDialog() },
     ]
     return list
 }
@@ -368,6 +373,39 @@ BuffWatchDialog() {
     OptDivider(d)
     OptSlider(d, "Warn at", (*) => buffWatch.warnAt, (v) => (IsNumber(v) && (buffWatch.setWarnAt(Round(Min(Max(v + 0, 0), 60))), true)), 0, 60, 1)
     OptNote(d, "Seconds left when a buff counts as running out (0 = never); 1.28f, with the game module.")
+    Wc3DialogShow(d)
+    return g
+}
+
+; Battle.net login's Options: the account name (saved as you type) and the
+; password (saved in Windows' Credential Manager with Save; the box is
+; emptied then and never shows a saved one).
+BattleNetLoginDialog() {
+    global C, bnetLogin
+    static g := 0
+    if g
+        try g.Destroy()
+    d := Wc3Dialog("Battle.net login", "At the main menu, the game goes to Battle.net and logs in with your account: on the gateway chosen in the game (eurobattle.net).", 460)
+    g := d.g
+    row(label, opts, value) {
+        lb := g.AddText("x" d.x " y" (d.y + 3) " w100 h22 0x200 +Background" C.card " c" C.text, label)
+        e := g.AddEdit("x" (d.x + 104) " y" (d.y + 1) " w" (d.tw - 104 - 100) " h24 +Background" C.well " c" C.text " " opts, value)
+        return e
+    }
+    acc := row("Account", "Limit31", bnetLogin.account)
+    acc.OnEvent("Change", (src, *) => bnetLogin.setAccount(src.Value))
+    d.y += 34
+    pw := row("Password", "Password Limit63", "")
+    SendMessage(0x1501, 1, StrPtr(bnetLogin.hasPassword() ? "saved (type to replace)" : "not saved yet"), pw)   ; EM_SETCUEBANNER
+    save := g.AddText("x" (d.x + d.tw - 90) " y" (d.y - 1) " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Save")
+    UISetFont(save, "s9 w600"), Box.Round(save, 90, 28, 4)
+    save.OnEvent("Click", (*) => (pw.Value != "" && (bnetLogin.setPassword(pw.Value) ? Toast("Password saved in Windows' Credential Manager") : Toast("The password couldn't be saved", "error")),
+        pw.Value := "", BattleNetLoginDialog(), RefreshWc3()))
+    d.y += 36
+    OptNote(d, "The password is kept in Windows' Credential Manager (encrypted for your Windows account), never in the companion's files. It goes to the game only at the login screen.")
+    OptButtons(d, [["Forget the password", (*) => (bnetLogin.setPassword(""), Toast("Password removed"), BattleNetLoginDialog(), RefreshWc3())]])
+    OptDivider(d)
+    OptNote(d, "Once each time the game starts. Hold Shift at the main menu to stay there. A wrong password isn't tried again: the game says so, log in yourself.")
     Wc3DialogShow(d)
     return g
 }

@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 23
+    DWORD layout;           // 24
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -181,6 +181,13 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 23: a bigger buff bar (BuffBarSizePass; with the widescreen UI on, its UlBuffs)
     float bbScale;          // companion: the buff bar and its icons, times the game's size (1-2; 0 or 1 = the game's own)
     DWORD bbState;          // module: 0 the game's own, 1 bigger now, 2 waiting (no buff bar yet), 3 refused (see the log)
+    // layout 24: Battle.net login at game start (LoginPass)
+    DWORD blOn;             // companion: 1 = at the main menu go to Battle.net and log in (once per game start; Shift held skips)
+    DWORD blState;          // module: 0 idle, 1 Battle.net clicked, 2 at the login screen: asking for the account, 3 Logon clicked, 4 left to you (the log says why), 5 refused
+    volatile LONG blSeq;    // companion: +1 once blAccount / blPassword are written (written last)
+    volatile LONG blDone;   // module: the blSeq it used
+    char blAccount[32];     // companion: the account name (UTF-8)
+    char blPassword[64];    // companion: its password, only while blState is 2; the module wipes it once typed in
 };
 #pragma pack(pop)
 
@@ -5283,6 +5290,8 @@ static void FastMenuPass() {
 }
 
 // on the game thread
+static void LoginPass();
+static int g_blStep;                // Battle.net login: 0 waiting for the main menu, 1 Battle.net clicked, 2 at the login screen, 9 done for this game start
 static void DisplayPass() {
     if (!g_getUi)
         return;
@@ -5295,13 +5304,14 @@ static void DisplayPass() {
     UiHidePass();
     UiLayoutPass();
     BuffBarSizePass();
+    LoginPass();
 }
 
 // the worker's part: a pass 4 times a second while any is on, or has something to put back
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9)))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -5355,6 +5365,112 @@ static int ToggleMultiboard(BYTE *ui) {
 static const DWORD RVA_CONTROL_CLICK = 0x1407b0;
 
 typedef int(__fastcall *ClickFn)(void *, int, int);
+
+// -- Battle.net login (layout 24) ------------------------------------------------------
+// The menus, read by hand in Game.dll (study: the commit message): the main menu (CMainMenu)
+// registers its "BattleNetButton" as command 1 (+0x30e9b7, through +0x314480 -> +0x141430:
+// the click event 0x40090064 sent to the menu), which connects to the gateway chosen in the
+// game (+0x318eb0, BNET_CONNECT_INIT); the login screen (CBattleNetMain, its init +0x30a420)
+// keeps the "AccountName" / "Password" edit boxes at +0x1f8 / +0x1fc and registers its
+// "LogonButton" as command 5 (+0x30a4c8), whose handler +0x32d450 reads both boxes' text
+// (+0x1311c0: [box+0x1e4]), sends the logon and empties the password box. Frames are found
+// by name as the game's screens find theirs (+0x1212f0, fastcall(name, 0): a read-only
+// lookup, the record's +0x18); a frame is shown when ([+0xb0] & 3) == 0 (+0x11cdf0: bit 1
+// its own hide, bit 2 a hidden parent); a click is the control's own +0x1407b0(control, 0, 1)
+// (it sends 0x40090064 through the control's vt+0x10, as a mouse click does); text goes in
+// with the edit box's setter +0x132820(text, 1), ret 8 (the screen's own fill of the last
+// account name, +0x30aff8). Once per game start, only outside a game: the main menu's
+// Battle.net clicked (unless Shift is held then), then on the login screen the companion is
+// asked for the account (blState 2), it's typed in and Logon clicked; the password's copy here
+// is wiped at once. A failed logon isn't tried again (the game shows its own message).
+static const DWORD RVA_FRAME_BY_NAME = 0x1212f0, RVA_EDIT_SET_TEXT = 0x132820, FRAME_HIDDEN = 0xb0;
+static const DWORD RVA_GLUE_BUTTON_VT[2] = { 0xa93b68, 0xa93ca4 }, RVA_GLUE_EDIT_VT = 0xa93f1c;
+typedef BYTE *(__fastcall *FrameByNameFn)(const char *, int);
+static DWORD g_blAt;
+static BYTE *GlueFrame(const char *name, bool edit) {
+    BYTE *f = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(name, 0);
+    if (!f || (DWORD)(f - (BYTE *)0x10000) > 0x7ffeffff)
+        return nullptr;
+    DWORD vt = *(DWORD *)f - (DWORD)g_base;
+    if (edit ? vt != RVA_GLUE_EDIT_VT : vt != RVA_GLUE_BUTTON_VT[0] && vt != RVA_GLUE_BUTTON_VT[1]) {
+        static int logs;
+        if (logs < 4)
+            logs++, Log("battle.net login: the frame '%s' %p has vtable +%06lX, not a glue %s: left alone", name, f, vt, edit ? "edit box" : "button");
+        return nullptr;
+    }
+    return f;
+}
+static bool GlueShown(BYTE *f) { return f && !(*(DWORD *)(f + FRAME_HIDDEN) & 3); }
+static void LoginEnd(DWORD state, const char *why) {
+    g_blStep = 9, g_shared->blState = state;
+    SecureZeroMemory(g_shared->blPassword, sizeof(g_shared->blPassword));
+    Log("battle.net login: %s", why);
+}
+static void LoginPass() {
+    static bool bad;
+    Shared *s = g_shared;
+    if (bad || g_blStep == 9)
+        return;
+    if (!s->blOn) {
+        if (g_blStep)
+            LoginEnd(4, "turned off: left to you");
+        return;
+    }
+    if (GameUi())
+        return LoginEnd(4, "a game is running: not now (only at game start)");
+    DWORD now = GetTickCount();
+    __try {
+        BYTE *bn = GlueFrame("BattleNetButton", false), *logon = GlueFrame("LogonButton", false);
+        BYTE *acc = GlueFrame("AccountName", true), *pw = GlueFrame("Password", true);
+        bool atLogin = GlueShown(logon) && GlueShown(acc) && GlueShown(pw);
+        if (g_blStep == 0) {
+            if (atLogin) {
+                g_blStep = 2, g_blAt = now, s->blState = 2;
+                Log("battle.net login: at the login screen (account box %p, password %p, Logon %p): asking for the account", acc, pw, logon);
+            } else if (GlueShown(bn)) {
+                if (!g_blAt) {
+                    g_blAt = now;                       // the menu's own animation first
+                    Log("battle.net login: the main menu is up (Battle.net button %p, vtable +%06lX)", bn, *(DWORD *)bn - (DWORD)g_base);
+                } else if (now - g_blAt > 1000) {
+                    if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+                        return LoginEnd(4, "Shift held at the main menu: skipped this time");
+                    ((ClickFn)(g_base + RVA_CONTROL_CLICK))(bn, 0, 1);
+                    g_blStep = 1, g_blAt = now, s->blState = 1;
+                    Log("battle.net login: Battle.net clicked");
+                }
+            }
+            return;
+        }
+        if (g_blStep == 1) {
+            if (atLogin) {
+                g_blStep = 2, g_blAt = now, s->blState = 2;
+                Log("battle.net login: at the login screen (account box %p, password %p, Logon %p): asking for the account", acc, pw, logon);
+            } else if (now - g_blAt > 30000)
+                LoginEnd(4, "no login screen within 30 s (not connected?): left to you");
+            return;
+        }
+        // at the login screen: the companion's account (blSeq moved past blDone)
+        if (!atLogin || s->blSeq == s->blDone) {
+            if (now - g_blAt > 15000)
+                LoginEnd(4, "the companion gave no account in 15 s: left to you");
+            return;
+        }
+        s->blDone = s->blSeq;
+        s->blAccount[sizeof(s->blAccount) - 1] = 0, s->blPassword[sizeof(s->blPassword) - 1] = 0;
+        if (!s->blAccount[0] || !s->blPassword[0])
+            return LoginEnd(4, "no account name or password set in the companion: left to you");
+        Game(RVA_EDIT_SET_TEXT, acc, { (DWORD)s->blAccount, 1 });
+        Game(RVA_EDIT_SET_TEXT, pw, { (DWORD)s->blPassword, 1 });
+        SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
+        ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
+        g_blStep = 9, s->blState = 3;
+        Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        bad = true, s->blState = 5;
+        SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
+        Log("battle.net login: a menu call faulted: no more tries");
+    }
+}
 
 static bool GameInFront();
 static bool SelfHeld() { return g_shared->scHeld == 2; }
@@ -5559,7 +5675,8 @@ static Shared g_retired;            // what g_shared points at once retired (not
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
-    s->bbScale = 0;
+    s->bbScale = 0, s->blOn = 0;
+    SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
     s->qcUntil = 0;
 }
 static void RestoreAll() {
@@ -5743,7 +5860,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 23;
+        g_shared->layout = 24;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
