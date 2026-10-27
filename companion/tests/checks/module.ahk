@@ -133,6 +133,10 @@ TwcModuleRun() {
     TwcCheck(off1 = 0 && saved && has && on1 = 1 && early = 0 && acc = "Ruzai" && pwSent = "pä55|word" && seq1 = 1 && seq2 = 1,
         "battle.net login: off 0 / on 1 pushed; nothing before the login screen; then the account and the saved password, once (seq " seq1 ", " seq2 ")")
     NumPut("int", 1, v, Shm.blDone), NumPut("uint", 3, v, Shm.blState)
+    ; the game restarted (a new module: its counters from 0 again) and asking again: answered again
+    bnetLogin.tick(), NumPut("int", 0, v, Shm.blSeq), NumPut("int", 0, v, Shm.blDone), NumPut("uint", 2, v, Shm.blState), bnetLogin.tick()
+    TwcCheck(NumGet(v, Shm.blSeq, "int") = 1 && StrGet(v + Shm.blAccount, 32, "UTF-8") = "Ruzai", "battle.net login: a new game start (counters from 0) is answered again")
+    NumPut("int", 1, v, Shm.blDone), NumPut("uint", 3, v, Shm.blState)
     TwcCheck(InStr(bnetLogin.statusText(), "Ruzai · logged in"), "battle.net login: " bnetLogin.statusText())
     gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
     TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())

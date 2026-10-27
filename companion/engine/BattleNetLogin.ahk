@@ -80,7 +80,7 @@ class BattleNetLoginEngine {
             return
         NumPut("uint", this.enabled && this.gm.enabled ? 1 : 0, v, Shm.blOn)
         if NumGet(v, Shm.blState, "uint") != 2 || !this.enabled
-            return
+            return this.answered := 0               ; not asking now: the next ask (a new game start too) is answered again
         seq := NumGet(v, Shm.blSeq, "int")
         if seq != NumGet(v, Shm.blDone, "int")
             return                                  ; written, the module hasn't used it yet
