@@ -15,7 +15,7 @@
 ;  WFE's DISPLAYMINUTES per switch (layout 19, [Timers] cdMinutes /
 ;  buffMinutes; on by default: 1:35 rather than 95). The buffs' own size and
 ;  gold from, seconds on auras (WFE's ISDRAWAURADURATION, off) and our ring
-;  around them (layout 22, [Timers] bfSize / bfGold / bfAuras / bfRing).
+;  (layout 22, [Timers] bfSize / bfGold / bfAuras; the ring round buffs is gone).
 ;  No screen reading on 1.28f: that's for Reforged (planned, see the WC3
 ;  page's Timers tab). The buff bar setup here (two presses in game, per
 ;  window size: [Timers] buff_<window>) is the buff alerts' (BuffWatch).
@@ -100,11 +100,9 @@ class TimerHud {
     bfSize => Min(Max(Float(Ini(this.section, "bfSize", 1)), 0.75), 1.5)
     bfGold => Min(Max(Integer(Ini(this.section, "bfGold", 5)), 0), 30)
     bfAuras => Integer(Ini(this.section, "bfAuras", 0))
-    bfRing => Integer(Ini(this.section, "bfRing", 0))
     setBfSize(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0.75), 1.5), 2), this.section, "bfSize"), this.pushGame(), true)
     setBfGold(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0), 30)), this.section, "bfGold"), this.pushGame(), true)
     setBfAuras(on) => (SetIni(on ? 1 : 0, this.section, "bfAuras"), this.pushGame())
-    setBfRing(on) => (SetIni(on ? 1 : 0, this.section, "bfRing"), this.pushGame())
     cdMinutes => Integer(Ini(this.section, "cdMinutes", 1))       ; m:ss by default (the user's pick; WFE's is off)
     buffMinutes => Integer(Ini(this.section, "buffMinutes", 1))
     setMinutes(key, on) {
@@ -136,7 +134,7 @@ class TimerHud {
         if v && NumGet(v, Shm.layout, "uint") >= 21
             NumPut("uint", this.cdSweep ? 2 : 0, v, Shm.cdNoBadge)
         if v && NumGet(v, Shm.layout, "uint") >= 22
-            NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", (this.bfAuras ? 1 : 0) | (this.bfRing ? 2 : 0), v, Shm.bfOpts)
+            NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", this.bfAuras ? 1 : 0, v, Shm.bfOpts)   ; bit 2 (our ring round buffs) is never sent: removed at the user's word, as the cooldowns' ring
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {

@@ -114,13 +114,13 @@ TwcModuleRun() {
     ok := timersHud.setCdSize("1.25") && timersHud.setCdGold(99) && !timersHud.setCdSize("abc")
     TwcCheck(ok && NumGet(v, Shm.cdSize, "float") = 1.25 && NumGet(v, Shm.cdGold, "float") = 30, "size typed 1.25, gold 99 -> 30, not a number refused")
     timersHud.setCdSize(1), timersHud.setCdGold(5)
-    ; the buffs' look (layout 22): x1, gold from 5 s, no aura seconds, no ring by default; their own values
-    TwcCheck(NumGet(v, Shm.bfSize, "float") = 1 && NumGet(v, Shm.bfGold, "float") = 5 && NumGet(v, Shm.bfOpts, "uint") = 0, "pushed the buffs' look: x1, gold from 5 s, auras / ring off")
+    ; the buffs' look (layout 22): x1, gold from 5 s, no aura seconds by default (no ring any more); their own values
+    TwcCheck(NumGet(v, Shm.bfSize, "float") = 1 && NumGet(v, Shm.bfGold, "float") = 5 && NumGet(v, Shm.bfOpts, "uint") = 0, "pushed the buffs' look: x1, gold from 5 s, auras off")
     ok := timersHud.setBfSize("0.8") && timersHud.setBfGold(2) && !timersHud.setBfGold("x")
-    timersHud.setBfAuras(1), timersHud.setBfRing(1)
-    TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 3 && NumGet(v, Shm.cdSize, "float") = 1,
-        "buffs x0.8, gold from 2 s, auras (1) and ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
-    timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0), timersHud.setBfRing(0)
+    timersHud.setBfAuras(1)
+    TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 1 && NumGet(v, Shm.cdSize, "float") = 1,
+        "buffs x0.8, gold from 2 s, auras (1), never the ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
+    timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0)
     ; our own sweep: one switch (bit 2), off: the game's clock
     timersHud.setCdSweep(0), nb1 := NumGet(v, Shm.cdNoBadge, "uint"), timersHud.setCdSweep(1), nb2 := NumGet(v, Shm.cdNoBadge, "uint")
     TwcCheck(nb1 = 0 && nb2 = 2, "our own cooldown sweep: off 0, on 2 (" nb1 ", " nb2 ")")
@@ -186,10 +186,10 @@ TwcModuleRun() {
     r2 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  UI layout: 102 frames laid out for a 1920x1080 window", "2026-10-26 10:00:01.000  UI layout: the chat box faulted: left out"]), "Widescreen UI")
     TwcCheck(r.mark = "✗" && r2.mark = "✗", "portrait text refused: " r.mark ", a layout group faulted: " r2.mark)
     r1 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  hero buffs: your hero is 'Hpal' (unit 0A0B0C0D)"]), "Your hero's buffs (alerts)")
-    r2 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  buff ring: the first one on the buff icon 0A0B0C0D (vtable +AAD470), 4.0 s of 12.0"]), "Buff ring")
+    r2 := row(ModuleCheckRows(["2026-10-27 10:00:00.000  cooldown sweep: the first one made (sprite 0A0B0C0D, holder 0A0B0C0E over the button 0A0B0C0F, model x)"]), "Cooldown sweep")
     r3 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  buff bar size: x1.50 (9 frames resized; bar 0A0B0C0D 1x8)"]), "Bigger buff bar")
     r4 := row(ModuleCheckRows(["2026-10-26 10:00:00.000  buff bar size: resizing faulted: left to the game"]), "Bigger buff bar")
-    TwcCheck(r1.mark = "✓" && r2.mark = "✓" && r3.mark = "✓" && r4.mark = "✗", "hero buffs, buff ring, buff bar size rows: " r1.mark r2.mark r3.mark r4.mark)
+    TwcCheck(r1.mark = "✓" && r2.mark = "✓" && r3.mark = "✓" && r4.mark = "✗", "hero buffs, cooldown sweep, buff bar size rows: " r1.mark r2.mark r3.mark r4.mark)
     r := row(ModuleCheckRows(["2026-10-26 10:00:00.000    not the buff bar (+AAD510): refusing it"]), "Hide the UI")
     TwcCheck(r.mark = "✗", "Hide the UI's buff bar refused: " r.mark " " r.detail)
     ; Widescreen next to another widescreen mod (state 4): its own status line

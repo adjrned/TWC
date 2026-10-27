@@ -84,8 +84,6 @@ Wc3Features() {
                 OptNote(d, "Seconds left when the number turns gold (0 = always white). Every number has a black outline."),
                 OptCheck(d, "Seconds on auras too", timersHud.bfAuras, (v) => timersHud.setBfAuras(v)),
                 OptNote(d, "As WFE's aura duration (off by default): an aura's timer restarts all the time, so it counts down from a few seconds."),
-                OptCheck(d, "Our countdown ring: a line around the buff that runs out", timersHud.bfRing, (v) => timersHud.setBfRing(v)),
-                OptNote(d, "As the cooldowns' ring: clockwise from the top-left corner, in the game's yellow."),
                 OptCheck(d, "Minutes as m:ss", timersHud.buffMinutes, (v) => timersHud.setMinutes("buffMinutes", v)),
                 OptNote(d, "1:35 rather than 95 from a minute up.")) },
         { tab: "timers", title: "Buff alerts", badge: "Both",
