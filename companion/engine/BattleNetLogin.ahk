@@ -24,7 +24,7 @@ class BattleNetLoginEngine {
     __New(gameModule) {
         this.gm := gameModule
         this.tickFn := ObjBindMethod(this, "tick")
-        SetTimer(this.tickFn, 300)
+        SetTimer(this.tickFn, 100)          ; the module waits on it at the login screen
     }
     enabled => Integer(Ini(this.section, "autoLogin", 0))
     setEnabled(on) {

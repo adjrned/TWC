@@ -190,7 +190,7 @@ SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
-SetTimer(() => gameModule.check(), 3000)    ; the 1.28 game module, when it's on
+SetTimer(() => gameModule.check(), 1000)    ; the 1.28 game module, when it's on (soon after the game starts: the Battle.net login waits on it)
 SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
 SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 

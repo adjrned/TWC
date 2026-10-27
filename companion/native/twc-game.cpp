@@ -5295,6 +5295,10 @@ static void FastMenuPass() {
 
 // on the game thread
 static void LoginPass();
+// How long a screen's controls must have been shown and enabled before the next step (1 s up to
+// the user's tests: the logon failures turned out to be their own input, not timing), and how often
+// the passes run while a step waits (the display passes' 4 a second otherwise)
+static const DWORD MENU_SETTLE = 300, MENU_PASS_MS = 50;
 static DWORD g_blWatchUntil;        // Battle.net login: watching the menus after Logon until then (0 = not)
 static int g_blStep;                // Battle.net login: 0 waiting for the main menu, 1 Battle.net clicked, 2 at the login screen, 9 done for this game start
 static void DisplayPass() {
@@ -5316,7 +5320,8 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -5486,7 +5491,7 @@ static void AfterLoginPass() {
     Shared *s = g_shared;
     DWORD now = GetTickCount();
     static DWORD readySince;
-    auto settled = [&](bool ready) { readySince = ready ? readySince ? readySince : now : 0; return ready && now - readySince >= 1000; };
+    auto settled = [&](bool ready) { readySince = ready ? readySince ? readySince : now : 0; return ready && now - readySince >= MENU_SETTLE; };
     __try {
         if (g_blStep == 12) {                   // the name typed: Alt+J once the game is in front
             if (g_gameInFront()) {
@@ -5603,7 +5608,7 @@ static void LoginPass() {
         bool ready = shownLogin && GlueEnabled(logon) && GlueEnabled(acc) && GlueEnabled(pw);
         static DWORD readySince;                // the login screen ready (enabled) since then, 0 = not now
         readySince = ready ? readySince ? readySince : now : 0;
-        bool atLogin = ready && now - readySince >= 1000;
+        bool atLogin = ready && now - readySince >= MENU_SETTLE;
         static bool saidWaiting;
         if (shownLogin && !ready && !saidWaiting)
             saidWaiting = true, Log("battle.net login: the login screen is up but not ready (Logon %s, account box %s, password %s): waiting",
@@ -5616,7 +5621,7 @@ static void LoginPass() {
                 if (!g_blAt) {
                     g_blAt = now;                       // the menu's own animation first
                     Log("battle.net login: the main menu is up (Battle.net button %p, vtable +%06lX)", bn, *(DWORD *)bn - (DWORD)g_base);
-                } else if (now - g_blAt > 1000) {
+                } else if (now - g_blAt > MENU_SETTLE) {
                     if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
                         return LoginEnd(4, "Shift held at the main menu: skipped this time");
                     ((ClickFn)(g_base + RVA_CONTROL_CLICK))(bn, 0, 1);
