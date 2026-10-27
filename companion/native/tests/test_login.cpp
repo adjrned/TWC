@@ -130,8 +130,9 @@ int main() {
     if (!fopen_s(&lf, "login.log", "rb"))
         logText[fread(logText, 1, sizeof(logText) - 1, lf)] = 0, fclose(lf);
     CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret")
-          && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)"),
-          "the log: the steps, what the boxes hold (the account, the password's length only), never the password");
+          && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)")
+          && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty"),
+          "the log: the steps, what the boxes hold (the account, the password's length only), the menus after Logon, never the password");
     Verdict();
     return g_fails;
 }

@@ -5291,6 +5291,7 @@ static void FastMenuPass() {
 
 // on the game thread
 static void LoginPass();
+static DWORD g_blWatchUntil;        // Battle.net login: watching the menus after Logon until then (0 = not)
 static int g_blStep;                // Battle.net login: 0 waiting for the main menu, 1 Battle.net clicked, 2 at the login screen, 9 done for this game start
 static void DisplayPass() {
     if (!g_getUi)
@@ -5311,7 +5312,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9)))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -5418,9 +5419,40 @@ static void LoginEnd(DWORD state, const char *why) {
     SecureZeroMemory(g_shared->blPassword, sizeof(g_shared->blPassword));
     Log("battle.net login: %s", why);
 }
+// After Logon: 15 s of what the menus do (the fourth / fifth tests: everything emptied, and no
+// message seen, though every failed result in the game's logon handler +0x329a20 shows one and
+// only result 1, success, goes on quietly to +0x329a70). Each change of which screens are shown
+// (the login screen, the chat room, the main menu) and of whether the account box holds a name.
+static void LoginWatch() {
+    DWORD now = GetTickCount();
+    if (g_blWatchUntil && (LONG)(now - g_blWatchUntil) > 0)
+        g_blWatchUntil = 0;
+    if (!g_blWatchUntil)
+        return;
+    __try {
+        BYTE *scr = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(BNET_SCREEN_NAME, 0);
+        BYTE *chat = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("BattleNetChatroom", 0);
+        BYTE *menu = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("MainMenuFrame", 0);
+        auto ok = [](BYTE *f) { return f && (DWORD)(f - (BYTE *)0x10000) <= 0x7ffeffff; };
+        bool login = ok(scr) && GlueShown(scr), room = ok(chat) && GlueShown(chat), main = ok(menu) && GlueShown(menu);
+        BYTE *acc = login && *(DWORD *)scr == (DWORD)(g_base + RVA_BNET_MAIN_VT) ? *(BYTE **)(scr + BNET_ACCOUNT) : nullptr;
+        const char *at = acc && ok(acc) ? *(const char **)(acc + EDIT_TEXT) : nullptr;
+        bool named = at && ok((BYTE *)at) && at[0];
+        DWORD key = (login ? 1 : 0) | (room ? 2 : 0) | (main ? 4 : 0) | (named ? 8 : 0);
+        static DWORD last = 0xFFFFFFFF;
+        if (key != last) {
+            last = key;
+            Log("battle.net login: after Logon: the login screen %s, the chat room %s, the main menu %s; the account box %s",
+                login ? "shown" : "not shown", room ? "shown" : "not shown", main ? "shown" : "not shown", named ? "holds the name" : "empty");
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_blWatchUntil = 0;
+    }
+}
 static void LoginPass() {
     static bool bad;
     Shared *s = g_shared;
+    LoginWatch();
     if (bad || g_blStep == 9)
         return;
     if (!s->blOn) {
@@ -5517,7 +5549,7 @@ static void LoginPass() {
         Log("battle.net login: the boxes now hold account '%s', a password of %u characters (%s the companion's %u)",
             at ? at : "(none)", (unsigned)held, same ? "the same as" : "NOT the same as", (unsigned)given);
         ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
-        g_blStep = 9, s->blState = 3;
+        g_blStep = 9, s->blState = 3, g_blWatchUntil = GetTickCount() + 15000;
         Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         bad = true, s->blState = 5;
