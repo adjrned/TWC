@@ -5548,6 +5548,10 @@ static void LoginPass() {
         SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
         Log("battle.net login: the boxes now hold account '%s', a password of %u characters (%s the companion's %u)",
             at ? at : "(none)", (unsigned)held, same ? "the same as" : "NOT the same as", (unsigned)given);
+        char hex[3 * 32 + 1] = "";
+        for (int i = 0, o = 0; at && at[i] && i < 32; i++)
+            o += sprintf_s(hex + o, sizeof(hex) - o, "%02X ", (BYTE)at[i]);
+        Log("battle.net login: the account name's bytes: %s(%u)", hex, at ? (unsigned)strnlen(at, 256) : 0);
         ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
         g_blStep = 9, s->blState = 3, g_blWatchUntil = GetTickCount() + 15000;
         Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);
