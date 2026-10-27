@@ -395,6 +395,15 @@ int main() {
           && Rtti(RVA_GLUE_BUTTON_VT[0], "CGlueButtonWar3") & Rtti(RVA_GLUE_BUTTON_VT[1], "CGlueTextButtonWar3") & Rtti(RVA_EDIT_VT[0], "CGlueEditBoxWar3") & Rtti(RVA_EDIT_VT[1], "CEditBox") && *(DWORD *)(g_base + 0x1306a1) == (DWORD)(g_base + RVA_EDIT_VT[1]) && BaseAt0(RVA_EDIT_VT[0], "CEditBox@")
           && RVA_CONTROL_CLICK == 0x1407b0 && FRAME_HIDDEN == 0xb0,
           "the login's game calls: the name lookup, the shown test, the click (ret 4), the edit box setter (ret 8), the glue classes");
+    // a control's enabled state: SetEnabled (vt+0x10c of the glue buttons and the edit box, +12B9C0) sets / clears bit 1 of [+0x1D4]
+    // (+1406E0 ors it in, +141700 masks it out); the login screen disables its Logon that way (+32D3FC .. +32D404: vt+0x10c(0))
+    CHECK(*(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[0] + 0x10c) == (DWORD)(g_base + 0x12b9c0) && *(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[1] + 0x10c) == (DWORD)(g_base + 0x12b9c0)
+          && *(DWORD *)(g_base + RVA_EDIT_VT[1] + 0x10c) == (DWORD)(g_base + 0x12b9c0) && !memcmp(g_base + 0x12b9c9, "\xC7\x45\x08\x01\x00\x00\x00", 7)
+          && SiteTarget(g_base + 0x12b9d1) == g_base + 0x1406e0 && SiteTarget(g_base + 0x12b9de) == g_base + 0x141700
+          && !memcmp(g_base + 0x1406e3, "\x8B\x81\xD4\x01\x00\x00", 6) && !memcmp(g_base + 0x1406f1, "\x0B\x55\x08", 3) && !memcmp(g_base + 0x14170c, "\xF7\xD2\x23\xD0", 4)
+          && !memcmp(g_base + 0x32d3fc, "\x8B\x8E\x14\x02\x00\x00", 6) && !memcmp(g_base + 0x32d404, "\xFF\x90\x0C\x01\x00\x00", 6)
+          && CONTROL_STATE == 0x1d4 && CONTROL_ENABLED == 1,
+          "a control is enabled when [+0x1D4] bit 1 is set (SetEnabled vt+0x10C +12B9C0); the login screen disables Logon with it");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)
     static const BYTE QS_TEST[] = { 0x83, 0xBF, 0x3C, 0x01, 0, 0, 0 }, QS_STORE[] = { 0x89, 0x87, 0x3C, 0x01, 0, 0 }, QS_PUSH[] = { 0xFF, 0xB7, 0x38, 0x01, 0, 0 };
     CHECK(!memcmp(g_base + 0x3e4da9, QS_TEST, 7) && SiteTarget(g_base + 0x3e4ded) == g_base + 0x124ff0 && !memcmp(g_base + 0x3e4df8, QS_STORE, 6)

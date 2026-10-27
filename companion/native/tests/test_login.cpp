@@ -65,7 +65,14 @@ int main() {
     bool waitPw = g_blStep == 1;
     *(DWORD *)(pwBox + FRAME_HIDDEN) = 0;
     LoginPass();
-    CHECK(waitPw && g_blStep == 2 && sh.blState == 2 && clicks == 1, "the login screen (account, password, Logon all shown): the companion asked (blState 2)");
+    bool waitEnabled = g_blStep == 1;                           // shown, but Logon still disabled (connecting)
+    *(DWORD *)(logonBtn + CONTROL_STATE) = *(DWORD *)(accBox + CONTROL_STATE) = *(DWORD *)(pwBox + CONTROL_STATE) = CONTROL_ENABLED;
+    LoginPass();
+    bool waitSettle = g_blStep == 1;                            // enabled, not yet for a second
+    Sleep(1100);
+    LoginPass();
+    CHECK(waitPw && waitEnabled && waitSettle && g_blStep == 2 && sh.blState == 2 && clicks == 1,
+          "the login screen: not while a frame is hidden or Logon disabled, nor before it's been ready for 1 s; then the companion asked (blState 2)");
     // nothing typed until the companion's account comes (blSeq)
     LoginPass();
     bool waitAcc = !sets && clicks == 1;
@@ -84,7 +91,7 @@ int main() {
 
     // a new start: an empty password from the companion leaves it to you; a game running stops it
     g_blStep = 0, g_blAt = 0, sh.blState = 0, menuUp = false, loginUp = true;
-    LoginPass();
+    LoginPass(); Sleep(1100); LoginPass();
     strcpy_s(sh.blAccount, "Ruzai"), sh.blPassword[0] = 0, InterlockedIncrement(&sh.blSeq);
     LoginPass();
     CHECK(sh.blState == 4 && clicks == 2 && sets == 2, "no password set in the companion: left to you (nothing typed)");

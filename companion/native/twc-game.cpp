@@ -5403,6 +5403,13 @@ static BYTE *GlueFrame(const char *name, bool edit) {
     return f;
 }
 static bool GlueShown(BYTE *f) { return f && !(*(DWORD *)(f + FRAME_HIDDEN) & 3); }
+// a control the game has enabled: its SetEnabled (vt+0x10c, +0x12b9c0) sets / clears bit 1 of
+// [+0x1d4] (+0x1406e0 / +0x141700). The second in-game test clicked Logon 0.25 s after the
+// login screen showed and the server answered with the failed-logon path that empties the
+// account box (+0x329bea): the click came before the screen was ready (a mouse can't click a
+// disabled button; the control click +0x1407b0 doesn't ask). So: all three enabled, for 1 s.
+static const DWORD CONTROL_STATE = 0x1d4, CONTROL_ENABLED = 1;
+static bool GlueEnabled(BYTE *f) { return GlueShown(f) && (*(DWORD *)(f + CONTROL_STATE) & CONTROL_ENABLED); }
 static void LoginEnd(DWORD state, const char *why) {
     g_blStep = 9, g_shared->blState = state;
     SecureZeroMemory(g_shared->blPassword, sizeof(g_shared->blPassword));
@@ -5424,7 +5431,15 @@ static void LoginPass() {
     __try {
         BYTE *bn = GlueFrame("BattleNetButton", false), *logon = GlueFrame("LogonButton", false);
         BYTE *acc = GlueFrame("AccountName", true), *pw = GlueFrame("Password", true);
-        bool atLogin = GlueShown(logon) && GlueShown(acc) && GlueShown(pw);
+        bool shownLogin = GlueShown(logon) && GlueShown(acc) && GlueShown(pw);
+        bool ready = shownLogin && GlueEnabled(logon) && GlueEnabled(acc) && GlueEnabled(pw);
+        static DWORD readySince;                // the login screen ready (enabled) since then, 0 = not now
+        readySince = ready ? readySince ? readySince : now : 0;
+        bool atLogin = ready && now - readySince >= 1000;
+        static bool saidWaiting;
+        if (shownLogin && !ready && !saidWaiting)
+            saidWaiting = true, Log("battle.net login: the login screen is up but not ready (Logon %s, account box %s, password %s): waiting",
+                                    GlueEnabled(logon) ? "enabled" : "disabled", GlueEnabled(acc) ? "enabled" : "disabled", GlueEnabled(pw) ? "enabled" : "disabled");
         if (g_blStep == 0) {
             if (atLogin) {
                 g_blStep = 2, g_blAt = now, s->blState = 2;
@@ -5448,7 +5463,7 @@ static void LoginPass() {
                 g_blStep = 2, g_blAt = now, s->blState = 2;
                 Log("battle.net login: at the login screen (account box %p, password %p, Logon %p): asking for the account", acc, pw, logon);
             } else if (now - g_blAt > 30000)
-                LoginEnd(4, "no login screen within 30 s (not connected?): left to you");
+                LoginEnd(4, shownLogin ? "the login screen never got ready in 30 s (Logon disabled): left to you" : "no login screen within 30 s (not connected?): left to you");
             return;
         }
         // at the login screen: the companion's account (blSeq moved past blDone)
