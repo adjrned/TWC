@@ -5384,13 +5384,16 @@ typedef int(__fastcall *ClickFn)(void *, int, int);
 // asked for the account (blState 2), it's typed in and Logon clicked; the password's copy here
 // is wiped at once. A failed logon isn't tried again (the game shows its own message).
 static const DWORD RVA_FRAME_BY_NAME = 0x1212f0, RVA_EDIT_SET_TEXT = 0x132820, FRAME_HIDDEN = 0xb0;
+static const DWORD RVA_BNET_MAIN_VT = 0xa9e764, BNET_ACCOUNT = 0x1f8, BNET_PASSWORD = 0x1fc, BNET_LOGON = 0x214;
+static const char BNET_SCREEN_NAME[] = "BattleNetMainFrame";
 // the login screen's boxes are plain CEditBoxes (+0xa7c03c, the first in-game test), the glue one derives from it;
 // the setter +0x132820 and the text [+0x1e4] are CEditBox's own (its ctor +0x13069f)
 static const DWORD RVA_GLUE_BUTTON_VT[2] = { 0xa93b68, 0xa93ca4 }, RVA_EDIT_VT[2] = { 0xa93f1c, 0xa7c03c };
 typedef BYTE *(__fastcall *FrameByNameFn)(const char *, int);
 static DWORD g_blAt;
-static BYTE *GlueFrame(const char *name, bool edit) {
-    BYTE *f = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(name, 0);
+static BYTE *GlueCheck(BYTE *f, bool edit, const char *name);
+static BYTE *GlueFrame(const char *name, bool edit) { return GlueCheck(((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(name, 0), edit, name); }
+static BYTE *GlueCheck(BYTE *f, bool edit, const char *name) {
     if (!f || (DWORD)(f - (BYTE *)0x10000) > 0x7ffeffff)
         return nullptr;
     DWORD vt = *(DWORD *)f - (DWORD)g_base;
@@ -5429,8 +5432,35 @@ static void LoginPass() {
         return LoginEnd(4, "a game is running: not now (only at game start)");
     DWORD now = GetTickCount();
     __try {
-        BYTE *bn = GlueFrame("BattleNetButton", false), *logon = GlueFrame("LogonButton", false);
-        BYTE *acc = GlueFrame("AccountName", true), *pw = GlueFrame("Password", true);
+        // the login screen itself (its frame "BattleNetMainFrame", the glue's screen list +0xcb31dc, a
+        // CBattleNetMain), and its own boxes and Logon (+0x1f8 / +0x1fc / +0x214, its init +0x30a420):
+        // the fourth test's Logon found by name sat next to the main menu's frames, likely another
+        // screen's button of that name, and everything was emptied with no message
+        BYTE *bn = GlueFrame("BattleNetButton", false), *logon = nullptr, *acc = nullptr, *pw = nullptr;
+        BYTE *scr = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(BNET_SCREEN_NAME, 0);
+        if (scr && (DWORD)(scr - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)scr == (DWORD)(g_base + RVA_BNET_MAIN_VT)) {
+            acc = GlueCheck(*(BYTE **)(scr + BNET_ACCOUNT), true, "the screen's account box");
+            pw = GlueCheck(*(BYTE **)(scr + BNET_PASSWORD), true, "the screen's password box");
+            logon = GlueCheck(*(BYTE **)(scr + BNET_LOGON), false, "the screen's Logon");
+            static bool compared;
+            if (!compared && GlueShown(scr)) {
+                compared = true;
+                Log("battle.net login: the login screen %p: its Logon %p (by name %p), account box %p (by name %p), password %p (by name %p)", scr, logon,
+                    ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("LogonButton", 0), acc, ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("AccountName", 0),
+                    pw, ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("Password", 0));
+            }
+            if (!GlueShown(scr))
+                logon = acc = pw = nullptr;
+        } else if (!scr) {
+            static bool said;                       // the by-name boxes are up, but the screen itself isn't found: nothing is typed
+            BYTE *nAcc = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("AccountName", 0);
+            if (!said && nAcc && (DWORD)(nAcc - (BYTE *)0x10000) <= 0x7ffeffff && GlueShown(nAcc))
+                said = true, Log("battle.net login: an 'AccountName' box is up but no frame '%s' is found by name: not typing (send this line)", BNET_SCREEN_NAME);
+        } else {
+            static bool said;
+            if (!said)
+                said = true, Log("battle.net login: '%s' %p has vtable +%06lX, not CBattleNetMain's +%06lX: left alone", BNET_SCREEN_NAME, scr, *(DWORD *)scr - (DWORD)g_base, RVA_BNET_MAIN_VT);
+        }
         bool shownLogin = GlueShown(logon) && GlueShown(acc) && GlueShown(pw);
         bool ready = shownLogin && GlueEnabled(logon) && GlueEnabled(acc) && GlueEnabled(pw);
         static DWORD readySince;                // the login screen ready (enabled) since then, 0 = not now

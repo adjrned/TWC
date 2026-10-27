@@ -395,6 +395,12 @@ int main() {
           && Rtti(RVA_GLUE_BUTTON_VT[0], "CGlueButtonWar3") & Rtti(RVA_GLUE_BUTTON_VT[1], "CGlueTextButtonWar3") & Rtti(RVA_EDIT_VT[0], "CGlueEditBoxWar3") & Rtti(RVA_EDIT_VT[1], "CEditBox") && *(DWORD *)(g_base + 0x1306a1) == (DWORD)(g_base + RVA_EDIT_VT[1]) && BaseAt0(RVA_EDIT_VT[0], "CEditBox@")
           && RVA_CONTROL_CLICK == 0x1407b0 && FRAME_HIDDEN == 0xb0,
           "the login's game calls: the name lookup, the shown test, the click (ret 4), the edit box setter (ret 8), the glue classes");
+    // the login screen itself: the glue's screen list (+CB3130: id, frame name, maker) has id 0xE "BattleNetMainFrame" made by +2F38F0,
+    // which builds a CBattleNetMain (+2F3942 -> +2F7170, vtable at +2F71B2); its init keeps its Logon at +0x214 (+30A4DE)
+    CHECK(*(DWORD *)(g_base + 0xcb31d8) == 0xe && !strcmp(*(const char **)(g_base + 0xcb31dc), BNET_SCREEN_NAME) && *(DWORD *)(g_base + 0xcb31e0) == (DWORD)(g_base + 0x2f38f0)
+          && SiteTarget(g_base + 0x2f3942) == g_base + 0x2f7170 && *(DWORD *)(g_base + 0x2f71b4) == (DWORD)(g_base + RVA_BNET_MAIN_VT)
+          && !memcmp(g_base + 0x30a4de, "\x89\x86\x14\x02\x00\x00", 6) && BNET_LOGON == 0x214 && BNET_ACCOUNT == 0x1f8 && BNET_PASSWORD == 0x1fc,
+          "the login screen is the frame 'BattleNetMainFrame' (a CBattleNetMain); its own Logon +0x214, boxes +0x1F8 / +0x1FC");
     // a control's enabled state: SetEnabled (vt+0x10c of the glue buttons and the edit box, +12B9C0) sets / clears bit 1 of [+0x1D4]
     // (+1406E0 ors it in, +141700 masks it out); the login screen disables its Logon that way (+32D3FC .. +32D404: vt+0x10c(0))
     CHECK(*(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[0] + 0x10c) == (DWORD)(g_base + 0x12b9c0) && *(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[1] + 0x10c) == (DWORD)(g_base + 0x12b9c0)

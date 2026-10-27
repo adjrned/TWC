@@ -7,7 +7,7 @@
 #include "check.h"
 
 static BYTE *img;
-static BYTE mainBtn[0x200], logonBtn[0x200], accBox[0x300], pwBox[0x300], other[0x200];
+static BYTE mainBtn[0x200], logonBtn[0x200], accBox[0x300], pwBox[0x300], other[0x200], screen[0x300], decoyLogon[0x200];
 static bool menuUp, loginUp;
 static BYTE *clicked[8];
 static int clicks, sets;
@@ -18,8 +18,10 @@ static BYTE *__fastcall FakeByName(const char *name, int ctx) {
         return nullptr;
     if (!strcmp(name, "BattleNetButton"))
         return menuUp ? mainBtn : nullptr;
+    if (!strcmp(name, "BattleNetMainFrame"))
+        return loginUp ? screen : nullptr;
     if (!strcmp(name, "LogonButton"))
-        return loginUp ? logonBtn : nullptr;
+        return decoyLogon;                      // another screen's button of that name (the fourth in-game test)
     if (!strcmp(name, "AccountName"))
         return loginUp ? accBox : nullptr;
     if (!strcmp(name, "Password"))
@@ -46,6 +48,9 @@ int main() {
     g_getUi = FakeGetUi;
     static BYTE uiObj[0x10]; *(DWORD *)uiObj = 0x1234; g_uiVtable = 0x1234;
     *(DWORD *)mainBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[1]), *(DWORD *)logonBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
+    *(DWORD *)screen = (DWORD)(img + RVA_BNET_MAIN_VT), *(DWORD *)decoyLogon = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
+    *(BYTE **)(screen + BNET_ACCOUNT) = accBox, *(BYTE **)(screen + BNET_PASSWORD) = pwBox, *(BYTE **)(screen + BNET_LOGON) = logonBtn;
+    *(DWORD *)(decoyLogon + CONTROL_STATE) = CONTROL_ENABLED;
     *(DWORD *)accBox = (DWORD)(img + RVA_EDIT_VT[1]), *(DWORD *)pwBox = (DWORD)(img + RVA_EDIT_VT[0]);   // a plain CEditBox (as in game) and a glue one
 
     // off: nothing
@@ -89,7 +94,7 @@ int main() {
     for (char c : sh.blPassword)
         wiped &= c == 0;
     CHECK(waitAcc && sets == 2 && !strcmp(setAcc, "Ruzai") && !strcmp(setPw, "s3cret!") && clicks == 2 && clicked[1] == logonBtn && wiped
-          && sh.blState == 3 && sh.blDone == sh.blSeq && g_blStep == 9, "the account typed in, the password too and wiped here, Logon clicked");
+          && sh.blState == 3 && sh.blDone == sh.blSeq && g_blStep == 9, "the account typed in, the password too and wiped here, the login screen's own Logon clicked (not the one found by name)");
     // done for this game start: back at the main menu later, nothing again
     menuUp = true, loginUp = false; g_blAt = 0;
     LoginPass(); LoginPass();
