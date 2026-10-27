@@ -5408,7 +5408,7 @@ static bool GlueShown(BYTE *f) { return f && !(*(DWORD *)(f + FRAME_HIDDEN) & 3)
 // login screen showed and the server answered with the failed-logon path that empties the
 // account box (+0x329bea): the click came before the screen was ready (a mouse can't click a
 // disabled button; the control click +0x1407b0 doesn't ask). So: all three enabled, for 1 s.
-static const DWORD CONTROL_STATE = 0x1d4, CONTROL_ENABLED = 1;
+static const DWORD CONTROL_STATE = 0x1d4, CONTROL_ENABLED = 1, EDIT_TEXT = 0x1e4;   // an edit box's text (+0x1311c0)
 static bool GlueEnabled(BYTE *f) { return GlueShown(f) && (*(DWORD *)(f + CONTROL_STATE) & CONTROL_ENABLED); }
 static void LoginEnd(DWORD state, const char *why) {
     g_blStep = 9, g_shared->blState = state;
@@ -5478,7 +5478,14 @@ static void LoginPass() {
             return LoginEnd(4, "no account name or password set in the companion: left to you");
         Game(RVA_EDIT_SET_TEXT, acc, { (DWORD)s->blAccount, 1 });
         Game(RVA_EDIT_SET_TEXT, pw, { (DWORD)s->blPassword, 1 });
+        // what the boxes hold now, as the Logon handler reads them ([box+0x1e4], +0x1311c0): the
+        // account as it is, the password only as its length and whether it's what was handed over
+        const char *at = *(const char **)(acc + EDIT_TEXT), *pt = *(const char **)(pw + EDIT_TEXT);
+        size_t given = strlen(s->blPassword), held = pt ? strnlen(pt, 256) : 0;
+        bool same = pt && held == given && !memcmp(pt, s->blPassword, given);
         SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
+        Log("battle.net login: the boxes now hold account '%s', a password of %u characters (%s the companion's %u)",
+            at ? at : "(none)", (unsigned)held, same ? "the same as" : "NOT the same as", (unsigned)given);
         ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
         g_blStep = 9, s->blState = 3;
         Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);

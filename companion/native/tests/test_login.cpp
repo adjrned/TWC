@@ -27,7 +27,13 @@ static BYTE *__fastcall FakeByName(const char *name, int ctx) {
     return nullptr;
 }
 static int __fastcall FakeClick(BYTE *c, int, int button) { if (clicks < 8) clicked[clicks] = c; clicks++; return button; }
-static void __fastcall FakeSetText(BYTE *box, int, const char *t, int) { sets++; strcpy_s(box == accBox ? setAcc : setPw, t); }
+// the game's setter keeps its own copy, pointed to by [box+0x1e4]
+static void __fastcall FakeSetText(BYTE *box, int, const char *t, int) {
+    sets++;
+    char *own = box == accBox ? setAcc : setPw;
+    strcpy_s(own, 64, t);
+    *(char **)(box + EDIT_TEXT) = own;
+}
 static void *__fastcall FakeGetUi(int, int) { return inGameUi; }
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC, img[rva] = 0xE9, *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }
 
@@ -118,8 +124,9 @@ int main() {
     FILE *lf;
     if (!fopen_s(&lf, "login.log", "rb"))
         logText[fread(logText, 1, sizeof(logText) - 1, lf)] = 0, fclose(lf);
-    CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret"),
-          "the log: the steps, the account name, never the password");
+    CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret")
+          && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)"),
+          "the log: the steps, what the boxes hold (the account, the password's length only), never the password");
     Verdict();
     return g_fails;
 }
