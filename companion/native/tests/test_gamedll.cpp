@@ -409,7 +409,8 @@ int main() {
           && !memcmp(g_base + 0x30a4de, "\x89\x86\x14\x02\x00\x00", 6) && BNET_LOGON == 0x214 && BNET_ACCOUNT == 0x1f8 && BNET_PASSWORD == 0x1fc,
           "the login screen is the frame 'BattleNetMainFrame' (a CBattleNetMain); its own Logon +0x214, boxes +0x1F8 / +0x1FC");
     // after the login, the custom games: the chat panel's CustomGameButton is its command 3 (kept at +0x2E0), which opens them; the
-    // custom games panel keeps its name box +0x204, its games list +0x208 (a ListBoxWar3), its JoinGameButton (command 4) +0x214;
+    // custom games panel keeps its name box +0x204, its games list +0x208 (a ListBoxWar3); JoinGameButton (command 4) goes to +0x214
+    // first, then LoadGameButton (command 3) over it in the same init (+309CC1), so Join is found by name as the init finds it (+314150);
     // Join joins the list's selected game (vt+0x148 on +0x208) else the typed name (+0x307540); the selected item is [list+0x1F4]
     const BYTE *cj3 = *(const BYTE **)(g_base + 0x3208b4 + 3 * 4), *jj4 = *(const BYTE **)(g_base + 0x321194 + 4 * 4);
     CHECK(!memcmp(g_base + 0x307cba, "\x6A\x03\x68", 3) && !strcmp(*(const char **)(g_base + 0x307cbd), "CustomGameButton") && SiteTarget(g_base + 0x307cc9) == g_base + 0x3140a0
@@ -419,14 +420,17 @@ int main() {
           && !strcmp(*(const char **)(g_base + 0x3099c3), "ListBoxWar3") && !memcmp(g_base + 0x3099ce, "\x89\x87\x08\x02\x00\x00", 6)
           && !memcmp(g_base + 0x3099f0, "\x6A\x04\x68", 3) && !strcmp(*(const char **)(g_base + 0x3099f3), "JoinGameButton") && SiteTarget(g_base + 0x3099ff) == g_base + 0x314150
           && !memcmp(g_base + 0x309a0b, "\x89\x87\x14\x02\x00\x00", 6) && *(DWORD *)(g_base + RVA_JOIN_PANEL_VT + 0xc) == (DWORD)(g_base + 0x320fb0)
+          && !memcmp(g_base + 0x309caa, "\x6A\x03\x68", 3) && !strcmp(*(const char **)(g_base + 0x309cad), "LoadGameButton") && SiteTarget(g_base + 0x309cb3) == g_base + 0x314150
+          && !memcmp(g_base + 0x309cc1, "\x89\x87\x14\x02\x00\x00", 6) && SiteTarget(g_base + 0x31415c) == g_base + RVA_FRAME_BY_NAME && !memcmp(g_base + 0x314156, "\x33\xD2", 2)
+          && *(const BYTE **)(g_base + 0x321194 + 3 * 4) == g_base + 0x320ff0 && SiteTarget(g_base + 0x320ff2) == g_base + 0x328f50 && !strcmp(JOIN_BUTTON_NAME, "JoinGameButton")
           && jj4 == g_base + 0x320ffc && SiteTarget(g_base + 0x321000) == g_base + 0x3270d0
           && !memcmp(g_base + 0x32713a, "\x8B\x8F\x08\x02\x00\x00", 6) && !memcmp(g_base + 0x32715d, "\xFF\x90\x48\x01\x00\x00", 6)
           && !memcmp(g_base + 0x32727f, "\x8B\x8F\x04\x02\x00\x00", 6) && SiteTarget(g_base + 0x327292) == g_base + 0x307540
           && *(DWORD *)(g_base + RVA_LISTBOX_WAR3_VT + 0x148) == (DWORD)(g_base + 0x2e1fc0) && !memcmp(g_base + 0x2e1fcc, "\x8B\xBA\xF4\x01\x00\x00", 6)
           && !strcmp(*(const char **)(g_base + 0xa995dc), "BattleNetChatPanel") && !strcmp(*(const char **)(g_base + 0xa995e4), "BattleNetCustomJoinPanel")
           && Rtti(RVA_CHAT_PANEL_VT, "CBattleNetChatPanel") & Rtti(RVA_JOIN_PANEL_VT, "CBattleNetCustomJoinPanel") & Rtti(RVA_LISTBOX_WAR3_VT, "CListBoxWar3")
-          && CHAT_CUSTOM_BUTTON == 0x2e0 && JOIN_NAME == 0x204 && JOIN_LIST == 0x208 && JOIN_BUTTON == 0x214 && LIST_SELECTED == 0x1f4,
-          "the chat panel's Custom Game (command 3), the custom games' name box / list / Join (command 4: the selected game, else the typed name)");
+          && CHAT_CUSTOM_BUTTON == 0x2e0 && JOIN_NAME == 0x204 && JOIN_LIST == 0x208 && JOIN_LOAD_BUTTON == 0x214 && LIST_SELECTED == 0x1f4,
+          "the chat panel's Custom Game (command 3), the custom games' name box / list / Join (command 4, by name: the selected game, else the typed name); +0x214 ends up as Load (command 3)");
     // our sweep's tint: a texture's vt+0x24 (+141D00) multiplies its alpha +0x68 by its frame's [+0x88] into +0x6C and takes its
     // colour from +0x69 / +0x6A / +0x6B (white: none)
     CHECK(*(DWORD *)(g_base + SWEEP_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && !memcmp(g_base + 0x141d0c, "\x0F\xB6\xB0\x88\x00\x00\x00", 7)

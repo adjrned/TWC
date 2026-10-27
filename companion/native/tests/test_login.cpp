@@ -9,7 +9,7 @@
 static BYTE *img;
 static BYTE mainBtn[0x200], logonBtn[0x200], accBox[0x300], pwBox[0x300], other[0x200], screen[0x300], decoyLogon[0x200];
 static bool menuUp, loginUp, chatUp, joinUp;
-static BYTE chatPanel[0x400], customBtn[0x200], joinPanel[0x300], gameBox[0x300], gameList[0x300], joinBtn[0x200];
+static BYTE chatPanel[0x400], customBtn[0x200], joinPanel[0x300], gameBox[0x300], gameList[0x300], joinBtn[0x200], loadBtn[0x200];
 static BYTE *clicked[8];
 static int clicks, sets;
 static char setAcc[64], setPw[64];
@@ -23,6 +23,8 @@ static BYTE *__fastcall FakeByName(const char *name, int ctx) {
         return chatUp ? chatPanel : nullptr;
     if (!strcmp(name, "BattleNetCustomJoinPanel"))
         return joinUp ? joinPanel : nullptr;
+    if (!strcmp(name, "JoinGameButton"))
+        return joinUp ? joinBtn : nullptr;
     if (!strcmp(name, "BattleNetMainFrame"))
         return loginUp ? screen : nullptr;
     if (!strcmp(name, "LogonButton"))
@@ -138,7 +140,9 @@ int main() {
     // after the login, the custom games (layout 25): Custom Game clicked once the chat panel is ready, then the game name typed and Join
     *(DWORD *)chatPanel = (DWORD)(img + RVA_CHAT_PANEL_VT), *(BYTE **)(chatPanel + CHAT_CUSTOM_BUTTON) = customBtn;
     *(DWORD *)customBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[1]), *(DWORD *)(customBtn + CONTROL_STATE) = CONTROL_ENABLED;
-    *(DWORD *)joinPanel = (DWORD)(img + RVA_JOIN_PANEL_VT), *(BYTE **)(joinPanel + JOIN_NAME) = gameBox, *(BYTE **)(joinPanel + JOIN_LIST) = gameList, *(BYTE **)(joinPanel + JOIN_BUTTON) = joinBtn;
+    *(DWORD *)joinPanel = (DWORD)(img + RVA_JOIN_PANEL_VT), *(BYTE **)(joinPanel + JOIN_NAME) = gameBox, *(BYTE **)(joinPanel + JOIN_LIST) = gameList;
+    // the panel's +0x214 is LoadGameButton (the game's init puts Load over Join there): Join is found by name
+    *(BYTE **)(joinPanel + JOIN_LOAD_BUTTON) = loadBtn, *(DWORD *)loadBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]), *(DWORD *)(loadBtn + CONTROL_STATE) = CONTROL_ENABLED;
     *(DWORD *)gameBox = (DWORD)(img + RVA_EDIT_VT[0]), *(DWORD *)(gameBox + CONTROL_STATE) = CONTROL_ENABLED;
     *(DWORD *)gameList = (DWORD)(img + RVA_LISTBOX_WAR3_VT), *(DWORD *)joinBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]), *(DWORD *)(joinBtn + CONTROL_STATE) = CONTROL_ENABLED;
     auto loginAgain = [&]() {                                  // a fresh start up to Logon, with the custom games asked for
@@ -174,6 +178,12 @@ int main() {
     c0 = clicks; loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
     chatUp = false, joinUp = true; LoginPass(); Sleep(1100); LoginPass();
     CHECK(selected && sh.blState == 6 && clicks == c0 + 2 && g_blStep == 9, "a game selected in the list: Join not clicked (left to you); no name set: the custom games list stays open (blState 6)");
+    // Join (by name) disabled while Load (the panel's +0x214) is enabled: no Alt+J, left to you
+    strcpy_s(sh.blGame, "TWRPG 1.0"), *(DWORD *)(joinBtn + CONTROL_STATE) = 0;
+    int k0 = altJ; c0 = clicks; loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
+    chatUp = false, joinUp = true; LoginPass(); Sleep(1100); LoginPass(); LoginPass();
+    CHECK(sh.blState == 8 && altJ == k0 && clicks == c0 + 2 && g_blStep == 9, "Join (found by name) not enabled: no Alt+J, even with the panel's +0x214 (Load) enabled");
+    *(DWORD *)(joinBtn + CONTROL_STATE) = CONTROL_ENABLED;
     // no chat panel in 30 s (not logged in): left to you
     sh.blAfter = 1; loginAgain(); loginUp = false; LoginPass(); g_blAt -= 31000; LoginPass();
     CHECK(sh.blState == 8 && g_blStep == 9, "no chat panel within 30 s of Logon: the custom games left to you");
@@ -185,7 +195,7 @@ int main() {
     CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret")
           && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)")
           && strstr(logText, "the account name's bytes: 52 75 7A 61 69 (5)")
-          && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'); the panel's +0x214 is") && strstr(logText, "Alt+J pressed (the game's Join shortcut) for 'TWRPG 1.0'")
+          && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'; Join ") && strstr(logText, "Alt+J pressed (the game's Join shortcut) for 'TWRPG 1.0'")
           && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty"),
           "the log: the steps, what the boxes hold (the account, the password's length only), the menus after Logon, never the password");
     Verdict();

@@ -5464,23 +5464,29 @@ static void LoginWatch() {
 // panel (CBattleNetChatPanel, vtable +0xa9c130, its frame "BattleNetChatPanel" in the panels' name
 // list +0xa995dc) registers "CustomGameButton" as its command 3 (+0x307cba, kept at +0x2e0), which
 // opens the custom games (+0x320356 -> +0x31e4f0); the custom games panel (CBattleNetCustomJoinPanel,
-// +0xa9dfe0, "BattleNetCustomJoinPanel") keeps the game name box "JoinGameNameEditBox" at +0x204, the
-// games list (a CListBoxWar3, +0xa941b8) at +0x208 and "JoinGameButton" (command 4) at +0x214; Join
+// +0xa9dfe0, "BattleNetCustomJoinPanel") keeps the game name box "JoinGameNameEditBox" at +0x204 and the
+// games list (a CListBoxWar3, +0xa941b8) at +0x208. Its init (+0x309980) registers "JoinGameButton" as
+// command 4 and puts it at +0x214 (+0x309a0b), but later in the same init "LoadGameButton" (command 3:
+// +0x328f50 opens the load game screen) goes to +0x214 too (+0x309cc1): the field ends up as Load, which
+// is why the first try's click loaded a game. Join isn't kept in any field: it's found by name, as the
+// init itself finds it (+0x314150 -> +0x1212f0(name, 0)), and only read here (it has to be enabled);
+// the join itself is the game's own shortcut, Alt+J. Join
 // (+0x320ffc -> +0x3270d0) joins the list's selected game if there is one (its selected item
 // [list+0x1f4], +0x2e1fcc; +0x32717e), else the name in the box (+0x32727f -> +0x307540). So the name
 // is typed in and Join clicked only while nothing is selected; with no name set (or a game selected,
 // or nothing ready in time) the list is left open: the fallback. Each step waits for its frames to be
 // shown and enabled for 1 s, as the login does.
 static const DWORD RVA_CHAT_PANEL_VT = 0xa9c130, CHAT_CUSTOM_BUTTON = 0x2e0, RVA_JOIN_PANEL_VT = 0xa9dfe0, JOIN_NAME = 0x204, JOIN_LIST = 0x208,
-    JOIN_BUTTON = 0x214, RVA_LISTBOX_WAR3_VT = 0xa941b8, LIST_SELECTED = 0x1f4;
+    JOIN_LOAD_BUTTON = 0x214, RVA_LISTBOX_WAR3_VT = 0xa941b8, LIST_SELECTED = 0x1f4;
+static const char JOIN_BUTTON_NAME[] = "JoinGameButton";
 static BYTE *GluePanel(const char *name, DWORD vt) {
     BYTE *f = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(name, 0);
     return f && (DWORD)(f - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)f == (DWORD)(g_base + vt) && GlueShown(f) ? f : nullptr;
 }
 static bool GameInFront();
 static void Key(INPUT *in, int &n, WORD vk, bool up);
-// Join by the game's own shortcut, Alt+J (the user's first try: the click on the panel's +0x214 seemed
-// to load a game instead; the key is whatever the panel's Join is bound to): only with the game in front
+// Join by the game's own shortcut, Alt+J (the user's first try clicked the panel's +0x214, which is
+// LoadGameButton, see above; the key is whatever the panel's Join is bound to): only with the game in front
 static void PressAltJ() {
     INPUT in[4];
     int n = 0;
@@ -5522,7 +5528,7 @@ static void AfterLoginPass() {
         // the custom games panel: the name typed and Join clicked, or the list left open
         BYTE *join = GluePanel("BattleNetCustomJoinPanel", RVA_JOIN_PANEL_VT);
         BYTE *box = join ? GlueCheck(*(BYTE **)(join + JOIN_NAME), true, "the custom games' name box") : nullptr;
-        BYTE *button = join ? GlueCheck(*(BYTE **)(join + JOIN_BUTTON), false, "the custom games' Join") : nullptr;
+        BYTE *button = join ? GlueCheck(((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(JOIN_BUTTON_NAME, 0), false, "the custom games' Join") : nullptr;
         BYTE *list = join ? *(BYTE **)(join + JOIN_LIST) : nullptr;
         bool listOk = list && (DWORD)(list - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)list == (DWORD)(g_base + RVA_LISTBOX_WAR3_VT);
         if (!settled(box && GlueEnabled(box) && listOk)) {
@@ -5551,9 +5557,8 @@ static void AfterLoginPass() {
         }
         Game(RVA_EDIT_SET_TEXT, box, { (DWORD)s->blGame, 1 });
         const char *held = *(const char **)(box + EDIT_TEXT);
-        BYTE *byName = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("JoinGameButton", 0), *load = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))("LoadGameButton", 0);
-        Log("battle.net login: joining '%s' (the name box holds '%s'); the panel's +0x214 is %p (vtable +%06lX), 'JoinGameButton' by name %p, 'LoadGameButton' %p: pressing Alt+J",
-            s->blGame, held ? held : "", button, *(DWORD *)button - (DWORD)g_base, byName, load);
+        Log("battle.net login: joining '%s' (the name box holds '%s'; Join %p, the panel's +0x214 = Load %p): pressing Alt+J",
+            s->blGame, held ? held : "", button, *(BYTE **)(join + JOIN_LOAD_BUTTON));
         g_blStep = 12, g_blAt = now;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_blStep = 9, s->blState = 5;
