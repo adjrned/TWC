@@ -4517,6 +4517,7 @@ static void UlHeroes(BYTE *ui, BYTE *) {
             }
     }
 }
+static const float CARD_BUTTON_W = 0.0275f, CARD_BUTTON_H = 0.039f;   // the Widescreen UI's command buttons (WFE's width, the game's height)
 static const float CARD_Y = 0.003f - 0.0045f;
 static void UlCard(BYTE *ui, BYTE *root) {
     // ISABILITYBAR 0x1008c0a0: the command card narrower, its buttons and their small part too, to the top right
@@ -4527,7 +4528,7 @@ static void UlCard(BYTE *ui, BYTE *root) {
         for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
             for (int c = 0; c < cols; c++)
                 if (BYTE *b = GridButton(card, r, c))
-                    UlWidth(b, 0.0275f), UlWidth(P(b, 0x194), 0.0125f, true);
+                    UlWidth(b, CARD_BUTTON_W), UlWidth(P(b, 0x194), 0.0125f, true);
         // WFE's y is 0.003; the user's 1080p screenshot showed each row ~6.5 px (0.0045) above the inventory's: lowered to line up
         UlPoint(card, 8, root, 8, -0.107f, CARD_Y);
     }
@@ -4735,8 +4736,13 @@ static void UlConsole(BYTE *ui, BYTE *) {
 // y = 0 (0x10090761..0x10090787); ISUPGRADEDBUFFBAR (ulOn bit 2) raises it
 // by rows x 0.0165 + 0.13 (0x100fa7e8, 0x1009079a) and puts the label off
 // at x -1 (0x100fa9c0, 0x100907fa). WFE's show / hide of the bar with its UI
-// is Hide the UI's (BuffBarCall).
+// is Hide the UI's (BuffBarCall). One change from WFE (the user's, 2026-10-27): WFE's icons come
+// out wider than tall (0.0182725 x 0.0165 in the 4:3 UI, stretched sideways on a 16:9 screen: about
+// 1.5 : 1, next to the nearly square command buttons, 0.0275 x 0.039), so each icon gets the command
+// buttons' shape (BUFF_ICON_W) at WFE's height, the bar its gaps over that, and its left edge
+// stays where WFE's is.
 static const float BUFF_W = 0.0182725f, BUFF_H = 0.0165f;
+static const float BUFF_ICON_W = BUFF_H * CARD_BUTTON_W / CARD_BUTTON_H;
 static float BuffBarScale() {
     float k = g_shared->bbScale;
     return k > 1 && k <= 2 ? k : 1;
@@ -4750,20 +4756,21 @@ static void UlBuffs(BYTE *ui, BYTE *root) {
         return;
     // bbScale: the bar and its icons k times bigger, WFE's left edge kept (its right edge moves out)
     bool dur = g_shared->itOn != 0, up = (g_shared->ulOn & 2) != 0;
-    float k = BuffBarScale(), bw = (dur ? 1.1f : 1.05f) * (float)cols * BUFF_W;
+    float k = BuffBarScale(), gap = dur ? 1.1f : 1.05f, bw = gap * (float)cols * BUFF_ICON_W;
+    float left = (float)cols * BUFF_W - 0.435f - gap * (float)cols * BUFF_W;    // WFE's left edge
     float h = (float)rows * BUFF_H, y = dur ? 0.00375f : 0;
     if (up)
         y += h * k + 0.13f;
     UlClear(bar, true);
     UlWidth(bar, bw * k, true), UlHeight(bar, (dur ? h * 1.25f : h) * k, true);
-    UlPointRaw(bar, 8, root, 8, (float)cols * BUFF_W - 0.435f + bw * (k - 1), y);
+    UlPointRaw(bar, 8, root, 8, left + bw * k, y);
     BYTE *label = P(bar, 0x15c);
     if (label && *(DWORD *)label == (DWORD)(g_base + RVA_FONTSTRING_VTABLE))
         UlPointRaw(label, 5, bar, 3, up ? -1.0f : -0.0025f, 0);
     for (int r = 0; r < rows; r++)
         for (int c = 0; c < cols; c++)
             if (BYTE *b = GridButton(bar, r, c))
-                UlWidth(b, BUFF_W * k, true), UlHeight(b, BUFF_H * k, true);
+                UlWidth(b, BUFF_ICON_W * k, true), UlHeight(b, BUFF_H * k, true);
 }
 
 // A bigger buff bar without the widescreen UI (bbScale). The bar is a grid (CBuffBar: 1 row of 8

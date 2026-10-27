@@ -15,6 +15,11 @@ static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] 
 static const Call *Find(BYTE *lay, DWORD pt) { for (int i = nCalls - 1; i >= 0; i--) if (calls[i].lay == lay && calls[i].pt == pt) return &calls[i]; return nullptr; }
 static bool Is(const Call *c, DWORD rel, DWORD relPt, float x, float y) { return c && c->kind == 2 && c->rel == rel && c->relPt == relPt && c->x == x && c->y == y; }
 static float W(BYTE *lay) { return *(float *)(lay + 0x58); }
+static bool Near(const Call *c, DWORD rel, DWORD relPt, float x, float y) { return c && c->kind == 2 && c->rel == rel && c->relPt == relPt && fabsf(c->x - x) < 1e-6f && fabsf(c->y - y) < 1e-6f; }
+// the buff bar: icons in the command buttons' shape (0.0165 high, 0.0275 / 0.039 of that wide), the bar gap x 8 of them wide,
+// its left edge where WFE's is (WFE's right edge 8 x 0.0182725 - 0.435, less its width gap x 8 x 0.0182725)
+static const float ICON_W = 0.0165f * 0.0275f / 0.039f;
+static float BarRight(float gap) { return 8 * 0.0182725f - 0.435f - gap * 8 * 0.0182725f + gap * 8 * ICON_W; }
 
 static BYTE ui[0x500], top[0x20], menu[0x200], btn[4][0x200], res[0x200], fs[2][0x100], reg[7][0x100], link[7][0x10];
 static BYTE peon[0x200], tod[0x200], tip[0x200], con[0x200], msg[0x200], umsg[0x200], chat[0x200], full[0x200];
@@ -91,18 +96,18 @@ int main() {
         cart &= Is(c, (DWORD)con, UL_CONSOLE[i].pt, UL_CONSOLE[i].x, 0) && W(ctex[i]) == UL_CONSOLE[i].w && *(float *)(ctex[i] + 0x5c) == UL_CONSOLE[i].h;
     }
     CHECK(cart && W(cfs) == 0 && UL_CONSOLE[0].x == 0.0993f && UL_CONSOLE[6].h == 0.15f && UL_CONSOLE[8].pt == 8, "console art: its 9 textures (the font string between them skipped) sized and on the console's points");
-    CHECK(fabsf(W(bb) - 1.05f * 8 * 0.0182725f) < 1e-6f && *(float *)(bb + 0x5c) == 0.0165f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0)
-          && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0) && W(ind[7]) == 0.0182725f && *(float *)(ind[7] + 0x5c) == 0.0165f,
-          "buff bar (1 x 8): 1.05 x 8 x 0.0182725 wide, bottom right at 8 x 0.0182725 - 0.435, its label and indicators");
+    CHECK(fabsf(W(bb) - 1.05f * 8 * ICON_W) < 1e-6f && *(float *)(bb + 0x5c) == 0.0165f && Near(Find(bb, 8), root, 8, BarRight(1.05f), 0)
+          && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0) && fabsf(W(ind[7]) - ICON_W) < 1e-7f && *(float *)(ind[7] + 0x5c) == 0.0165f,
+          "buff bar (1 x 8): icons %.5f x 0.0165 (the command buttons' shape, not WFE's 0.0182725), the bar 1.05 x 8 of them, WFE's left edge; its label", ICON_W);
     // WFE's [BUFFUI] options: ISDRAWBUFFDURATION with the timers drawn in the game, ISUPGRADEDBUFFBAR (ulOn bit 2)
     sh.itOn = 1; UlBuffs(ui, ui + 0xb4);
-    CHECK(fabsf(W(bb) - 1.1f * 8 * 0.0182725f) < 1e-6f && fabsf(*(float *)(bb + 0x5c) - 0.0165f * 1.25f) < 1e-6f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0.00375f),
+    CHECK(fabsf(W(bb) - 1.1f * 8 * ICON_W) < 1e-6f && fabsf(*(float *)(bb + 0x5c) - 0.0165f * 1.25f) < 1e-6f && Near(Find(bb, 8), root, 8, BarRight(1.1f), 0.00375f),
           "with the timers in the game (WFE's ISDRAWBUFFDURATION): 1.1 x wide, 1.25 x high, up 0.00375");
     sh.ulOn = 1 | 2; UlBuffs(ui, ui + 0xb4);
-    CHECK(Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0.00375f + 0.0165f + 0.13f) && Is(Find(blabel, 5), (DWORD)bb, 3, -1.0f, 0),
+    CHECK(Near(Find(bb, 8), root, 8, BarRight(1.1f), 0.00375f + 0.0165f + 0.13f) && Is(Find(blabel, 5), (DWORD)bb, 3, -1.0f, 0),
           "raised (WFE's ISUPGRADEDBUFFBAR): up rows x 0.0165 + 0.13, its label off at -1");
     sh.itOn = 0, sh.ulOn = 1; UlBuffs(ui, ui + 0xb4);
-    CHECK(fabsf(W(bb) - 1.05f * 8 * 0.0182725f) < 1e-6f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0) && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0),
+    CHECK(fabsf(W(bb) - 1.05f * 8 * ICON_W) < 1e-6f && Near(Find(bb, 8), root, 8, BarRight(1.05f), 0) && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0),
           "both off again: WFE's default layout");
     // the command card: WFE's bottom right, lowered 0.0045 to line up with the inventory (the user's screenshot)
     static BYTE cardF[0x200];
