@@ -425,22 +425,7 @@ int main() {
     CHECK(*(DWORD *)(g_base + RING_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && !memcmp(g_base + 0x141d0c, "\x0F\xB6\xB0\x88\x00\x00\x00", 7)
           && !memcmp(g_base + 0x141d13, "\x0F\xB6\x41\x68", 4) && !memcmp(g_base + 0x141d2d, "\x88\x41\x6C", 3) && !memcmp(g_base + 0x141d35, "\x80\x79\x6B\xFF", 4)
           && !memcmp(g_base + 0x141d41, "\x80\x79\x69\xFF", 4) && !memcmp(g_base + 0x141d50, "\x8D\x41\x69", 3),
-          "a texture's alpha is +0x68 (times its frame's +0x88), its colour +0x69..+0x6B, applied by its vt+0x24 (+141D00): our shade's tint");
-    // our sweep, made as the game makes a button's (+3E1A60): a CSpriteFrame of 0x1B0 (+124FF0(the game UI (getter with 1), 0, 0), ret 0xC),
-    // its model from the skin key CommandButtonCooldown through vt+0xE8 (ret 0xC), SetAllPoints on +0xB4, a CSimpleGlueFrame holder of 0x128
-    // (+143B40(button, sprite), ret 8, vtable +A7D1DC); at a cooldown's start (+4070F9..) the sprite's instance (+1256D0) gets the progress
-    // callback +3E1660 (fastcall(context, float *), ret 4) through +1DF320(inst, slot 0, callback, context, 0.0) (ret 0xC), the holder shown
-    CHECK(!memcmp(g_base + 0x3e1a95, "\x68\xB0\x01\x00\x00", 5) && !memcmp(g_base + 0x3e1ab8, "\x8D\x4A\x01", 3) && SiteTarget(g_base + 0x3e1abb) == g_base + RVA_GET_UI
-          && SiteTarget(g_base + 0x3e1ac3) == g_base + RVA_SPRITE_CTOR && !strcmp(*(const char **)(g_base + 0x3e1ad9), "CommandButtonCooldown")
-          && !memcmp(g_base + 0x3e1af2, "\xFF\x96\xE8\x00\x00\x00", 6) && !memcmp(g_base + 0x3e1b01, "\x81\xC1\xB4\x00\x00\x00", 6) && SiteTarget(g_base + 0x3e1b07) == g_base + RVA_SET_ALL_POINTS
-          && !memcmp(g_base + 0x3e1b27, "\x68\x28\x01\x00\x00", 5) && SiteTarget(g_base + 0x3e1b4b) == g_base + RVA_GLUE_HOLDER_CTOR && *(DWORD *)(g_base + 0x143b7c) == (DWORD)(g_base + RVA_GLUE_HOLDER_VT)
-          && *(DWORD *)(g_base + 0x407109) == (DWORD)(g_base + 0x3e1660) && SiteTarget(g_base + 0x40710d) == g_base + RVA_SPRITE_INST && SiteTarget(g_base + 0x407116) == g_base + RVA_ANIM_PROVIDER
-          && !memcmp(g_base + 0x407123, "\xC7\x81\x90\x00\x00\x00\x01\x00\x00\x00", 10) && !memcmp(g_base + 0x40712d, "\xFF\x50\x68", 3)
-          && g_base[0x1250ce] == 0xC2 && *(WORD *)(g_base + 0x1250cf) == 12 && g_base[0x143bbc] == 0xC2 && *(WORD *)(g_base + 0x143bbd) == 8
-          && g_base[0x1df33c] == 0xC2 && *(WORD *)(g_base + 0x1df33d) == 12 && g_base[0x3e1675] == 0xC2 && *(WORD *)(g_base + 0x3e1676) == 4
-          && *(DWORD *)(g_base + RVA_SPRITE_VT + SPRITE_SET_MODEL) == (DWORD)(g_base + 0x125c90) && g_base[0x125cf8] == 0xC2 && *(WORD *)(g_base + 0x125cf9) == 12
-          && !memcmp(g_base + 0x1256d0, "\x83\xB9\x74\x01\x00\x00\x00", 7) && Rtti(RVA_SPRITE_VT, "CSpriteFrame") & Rtti(RVA_GLUE_HOLDER_VT, "CSimpleGlueFrame"),
-          "our sweep is made and driven as the game's cooldown sweep is (+3E1A60, +4070F9): sprite, model, holder, progress callback; their stack sizes");
+          "a texture's alpha is +0x68 (times its frame's +0x88), its colour +0x69..+0x6B, applied by its vt+0x24 (+141D00): our sweep's tint");
     // a control's enabled state: SetEnabled (vt+0x10c of the glue buttons and the edit box, +12B9C0) sets / clears bit 1 of [+0x1D4]
     // (+1406E0 ors it in, +141700 masks it out); the login screen disables its Logon that way (+32D3FC .. +32D404: vt+0x10c(0))
     CHECK(*(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[0] + 0x10c) == (DWORD)(g_base + 0x12b9c0) && *(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[1] + 0x10c) == (DWORD)(g_base + 0x12b9c0)
