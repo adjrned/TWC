@@ -392,7 +392,7 @@ int main() {
           && !memcmp(g_base + 0x11cdf0, "\xF6\x81\xB0\x00\x00\x00\x03", 7) && *(DWORD *)(g_base + 0xa9e764 + 0xd0) == (DWORD)(g_base + 0x11c6d0) && !memcmp(g_base + 0x11c6dd, "\x83\xC8\x01", 3)
           && g_base[0x1407ea] == 0xC2 && *(WORD *)(g_base + 0x1407eb) == 4 && g_base[0x132894] == 0xC2 && *(WORD *)(g_base + 0x132895) == 8
           && SiteTarget(g_base + 0x30aff8) == g_base + RVA_EDIT_SET_TEXT && !memcmp(g_base + 0x30aff5, "\x6A\x01", 2)
-          && Rtti(RVA_GLUE_BUTTON_VT[0], "CGlueButtonWar3") & Rtti(RVA_GLUE_BUTTON_VT[1], "CGlueTextButtonWar3") & Rtti(RVA_GLUE_EDIT_VT, "CGlueEditBoxWar3")
+          && Rtti(RVA_GLUE_BUTTON_VT[0], "CGlueButtonWar3") & Rtti(RVA_GLUE_BUTTON_VT[1], "CGlueTextButtonWar3") & Rtti(RVA_EDIT_VT[0], "CGlueEditBoxWar3") & Rtti(RVA_EDIT_VT[1], "CEditBox") && *(DWORD *)(g_base + 0x1306a1) == (DWORD)(g_base + RVA_EDIT_VT[1]) && BaseAt0(RVA_EDIT_VT[0], "CEditBox@")
           && RVA_CONTROL_CLICK == 0x1407b0 && FRAME_HIDDEN == 0xb0,
           "the login's game calls: the name lookup, the shown test, the click (ret 4), the edit box setter (ret 8), the glue classes");
     // the quest sprite: the menu bar's +0x13c, a CSpriteFrame (+0x124ff0) the game makes once (+0x3e4da9) and fits onto the Quests button [+0x138] (SetAllPoints +0x13fad0)

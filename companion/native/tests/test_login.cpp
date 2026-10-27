@@ -40,7 +40,7 @@ int main() {
     g_getUi = FakeGetUi;
     static BYTE uiObj[0x10]; *(DWORD *)uiObj = 0x1234; g_uiVtable = 0x1234;
     *(DWORD *)mainBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[1]), *(DWORD *)logonBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
-    *(DWORD *)accBox = *(DWORD *)pwBox = (DWORD)(img + RVA_GLUE_EDIT_VT);
+    *(DWORD *)accBox = (DWORD)(img + RVA_EDIT_VT[1]), *(DWORD *)pwBox = (DWORD)(img + RVA_EDIT_VT[0]);   // a plain CEditBox (as in game) and a glue one
 
     // off: nothing
     menuUp = true;

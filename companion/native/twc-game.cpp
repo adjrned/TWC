@@ -5384,7 +5384,9 @@ typedef int(__fastcall *ClickFn)(void *, int, int);
 // asked for the account (blState 2), it's typed in and Logon clicked; the password's copy here
 // is wiped at once. A failed logon isn't tried again (the game shows its own message).
 static const DWORD RVA_FRAME_BY_NAME = 0x1212f0, RVA_EDIT_SET_TEXT = 0x132820, FRAME_HIDDEN = 0xb0;
-static const DWORD RVA_GLUE_BUTTON_VT[2] = { 0xa93b68, 0xa93ca4 }, RVA_GLUE_EDIT_VT = 0xa93f1c;
+// the login screen's boxes are plain CEditBoxes (+0xa7c03c, the first in-game test), the glue one derives from it;
+// the setter +0x132820 and the text [+0x1e4] are CEditBox's own (its ctor +0x13069f)
+static const DWORD RVA_GLUE_BUTTON_VT[2] = { 0xa93b68, 0xa93ca4 }, RVA_EDIT_VT[2] = { 0xa93f1c, 0xa7c03c };
 typedef BYTE *(__fastcall *FrameByNameFn)(const char *, int);
 static DWORD g_blAt;
 static BYTE *GlueFrame(const char *name, bool edit) {
@@ -5392,10 +5394,10 @@ static BYTE *GlueFrame(const char *name, bool edit) {
     if (!f || (DWORD)(f - (BYTE *)0x10000) > 0x7ffeffff)
         return nullptr;
     DWORD vt = *(DWORD *)f - (DWORD)g_base;
-    if (edit ? vt != RVA_GLUE_EDIT_VT : vt != RVA_GLUE_BUTTON_VT[0] && vt != RVA_GLUE_BUTTON_VT[1]) {
+    if (edit ? vt != RVA_EDIT_VT[0] && vt != RVA_EDIT_VT[1] : vt != RVA_GLUE_BUTTON_VT[0] && vt != RVA_GLUE_BUTTON_VT[1]) {
         static int logs;
         if (logs < 4)
-            logs++, Log("battle.net login: the frame '%s' %p has vtable +%06lX, not a glue %s: left alone", name, f, vt, edit ? "edit box" : "button");
+            logs++, Log("battle.net login: the frame '%s' %p has vtable +%06lX, not a%s: left alone", name, f, vt, edit ? "n edit box" : " glue button");
         return nullptr;
     }
     return f;
