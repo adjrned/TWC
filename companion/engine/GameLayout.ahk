@@ -103,7 +103,7 @@ class Shm {
     static cdSize := 1000
     static cdGold := 1004
     static cdReady := 1008
-    static cdNoBadge := 1012
+    static cdSweep := 1012
     static hrWant := 1016
     static hrHero := 1020
     static hrAlive := 1024

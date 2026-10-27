@@ -42,19 +42,17 @@ static void __fastcall FakeSetAbs(BYTE *lay, int, int, float x, float y, int) { 
 static const char *__fastcall FakeSkin(const char *key, int) { return !strcmp(key, "MasterFont") ? "Fonts\\Test.ttf" : nullptr; }
 static void __fastcall FakeTextHide(BYTE *t, int) { hides++; t[0x1e0] = 0; }
 static BYTE barTexts[3][0x20]; static int barTextHides;
-static BYTE badgeRegs[2][0x100]; static int badgeHides, badgeShows;
 static void __fastcall FakeRegionHide(BYTE *r, int) {
-    if (*(DWORD *)r == (DWORD)(imgRef() + RING_TEXTURE_VT)) *(DWORD *)(r + 0x7c) = 0;
+    if (*(DWORD *)r == (DWORD)(imgRef() + SWEEP_TEXTURE_VT)) *(DWORD *)(r + 0x7c) = 0;
     if (r >= barTexts[0] && r < barTexts[3]) barTextHides++, r[0x10] = 0;
-    if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeHides++, *(DWORD *)(r + 0x7c) &= ~1u;
 }
-// the cooldown ring's game calls
-static int ringFrames, ringTextures, allPoints; static const char *ringPath;
+// our cooldown sweep's game calls
+static int sweepFrames, sweepTextures, allPoints; static const char *sweepPath;
 static BYTE *imgRef();
 static void __fastcall FakeRegionShow(BYTE *r, int);
-static void *__fastcall FakeFrameCtor(BYTE *mem, int, void *) { ringFrames++; *(DWORD *)mem = (DWORD)(imgRef() + RVA_SIMPLEFRAME_VT); return mem; }
-static void *__fastcall FakeTexCtor(BYTE *mem, int, void *, DWORD, DWORD) { ringTextures++; *(DWORD *)mem = (DWORD)(imgRef() + RING_TEXTURE_VT); *(DWORD *)(mem + 0x7c) = 1; return mem; }
-static void __fastcall FakeSetTex(BYTE *, int, const char *path, DWORD) { ringPath = path; }
+static void *__fastcall FakeFrameCtor(BYTE *mem, int, void *) { sweepFrames++; *(DWORD *)mem = (DWORD)(imgRef() + RVA_SIMPLEFRAME_VT); return mem; }
+static void *__fastcall FakeTexCtor(BYTE *mem, int, void *, DWORD, DWORD) { sweepTextures++; *(DWORD *)mem = (DWORD)(imgRef() + SWEEP_TEXTURE_VT); *(DWORD *)(mem + 0x7c) = 1; return mem; }
+static void __fastcall FakeSetTex(BYTE *, int, const char *path, DWORD) { sweepPath = path; }
 // our sweep's squares: their tint applied (a texture's vt+0x24)
 static int tints;
 static void __fastcall FakeTint(BYTE *, int) { tints++; }
@@ -62,8 +60,7 @@ static void __fastcall FakeAllPoints(BYTE *, int, void *, DWORD) { allPoints++; 
 static void __fastcall FakeSetW(BYTE *t, int, float w) { *(float *)(t + LAYOUT_WIDTH) = w; }
 static void __fastcall FakeSetH(BYTE *t, int, float h) { *(float *)(t + LAYOUT_HEIGHT) = h; }
 static void __fastcall FakeRegionShow(BYTE *r, int) {
-    if (*(DWORD *)r == (DWORD)(imgRef() + RING_TEXTURE_VT)) *(DWORD *)(r + 0x7c) = 1;
-    if (r >= badgeRegs[0] && r < badgeRegs[2]) badgeShows++, *(DWORD *)(r + 0x7c) |= 1; }
+    if (*(DWORD *)r == (DWORD)(imgRef() + SWEEP_TEXTURE_VT)) *(DWORD *)(r + 0x7c) = 1; }
 static void __fastcall FakeTextShow(BYTE *t, int) { shows++; t[0x1e0] = 1; }
 static void __fastcall FakeNop(void *, int) {}
 
@@ -180,82 +177,67 @@ int main() {
     sh.cdLeft[5] = 0; sh.cdLeft[11] = 30; TimerFramesDraw(ui); sh.cdLeft[11] = 0; TimerFramesDraw(ui);
     CHECK(g_tCd[11].text[0x1e0] == 0, "no 'Ready' when the seconds vanish from 30 (another unit selected), only when they run out");
     sh.cdGold = 0, sh.cdReady = 0, sh.cdLeft[0] = 2, sh.cdLeft[11] = 75; TimerFramesDraw(ui);
-    // the game's number badge on the command card (a map's counter): its regions hidden while cooldowns are drawn, shown again off
-    static BYTE badge[0x200], links[2][0x10];
-    *(DWORD *)badge = (DWORD)fv, *(BYTE **)(btns[0] + BTN_BADGE) = badge, *(BYTE **)(badge + FRAME_REGIONS) = links[0];
-    *(BYTE **)(links[0] + 4) = links[1], *(BYTE **)(links[0] + 8) = badgeRegs[0], *(BYTE **)(links[1] + 8) = badgeRegs[1];
-    for (BYTE *r : badgeRegs)
-        *(DWORD *)r = (DWORD)fv, *(BYTE **)(r + REGION_FRAME) = badge, *(DWORD *)(r + REGION_SHOWN) = 1;
-    BadgesPass(ui, true); BadgesPass(ui, true);
-    bool hidden = badgeHides == 2 && !(*(DWORD *)(badgeRegs[0] + REGION_SHOWN) & 1) && !(*(DWORD *)(badgeRegs[1] + REGION_SHOWN) & 1);
-    BadgesPass(ui, false);
-    CHECK(hidden && badgeShows == 2 && (*(DWORD *)(badgeRegs[1] + REGION_SHOWN) & 1), "the number badge's two regions hidden once (not again on the next pass), shown again when off");
-    *(BYTE **)(btns[0] + BTN_BADGE) = nullptr;
-    // our cooldown ring (bit 4): a frame over the button, four sides running out clockwise from the top-left
+    // our sweep (cdSweep bit 2): a frame of ours over the button, 32 squares tinted black at 60%, the part to come clockwise from 12 o'clock
     {
         DWORD old2; VirtualProtect(img + RVA_SIMPLEFRAME_VT, 0x100, PAGE_READWRITE, &old2);
         ((DWORD *)(img + RVA_SIMPLEFRAME_VT))[0x68 / 4] = StubAt(0x610000, FakeNop);
-        VirtualProtect(img + RING_TEXTURE_VT, 0x100, PAGE_READWRITE, &old2);
-        ((DWORD *)(img + RING_TEXTURE_VT))[0x24 / 4] = StubAt(0x610100, FakeTint);
+        VirtualProtect(img + SWEEP_TEXTURE_VT, 0x100, PAGE_READWRITE, &old2);
+        ((DWORD *)(img + SWEEP_TEXTURE_VT))[0x24 / 4] = StubAt(0x610100, FakeTint);
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0.04f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.04f;
-        sh.itOn = 1, sh.cdNoBadge = 4, sh.cdLeft[0] = 5, sh.cdTotal[0] = 10;
-        RingsPass(ui, true, false);
-        Ring *r = g_ringN ? &g_rings[0] : nullptr;
-        auto on = [&](int k) { return (*(DWORD *)(r->side[k] + 0x7c) & 1) != 0; };
-        bool half = r && r->btn == btns[0] && ringFrames == 1 && ringTextures == 4 && allPoints == 1 && ringPath && strstr(ringPath, "TeamColor04")
-            && on(0) && on(1) && !on(2) && !on(3) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.04f) < 1e-5f && fabsf(*(float *)(r->side[1] + LAYOUT_HEIGHT) - 0.04f) < 1e-5f
-            && fabsf(*(float *)(r->side[0] + LAYOUT_HEIGHT) - RING_THICK) < 1e-6f;
-        sh.cdLeft[0] = 1.25f; RingsPass(ui, true, false);
-        bool eighth = r && on(0) && !on(1) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.02f) < 1e-5f;
-        sh.cdLeft[0] = 0; RingsPass(ui, true, false);
-        bool gone = r && !on(0) && !on(1) && g_ringN == 1;
-        sh.cdLeft[0] = 9; RingsPass(ui, true, false);
-        bool again = r && on(3) && ringFrames == 1;
-        RingsPass(ui, false, false);
-        CHECK(half && eighth && gone && again && !on(3), "the ring: half left = top and right sides; an eighth = half the top; over: hidden; the same frame next time; off: hidden");
-        // our sweep (bit 2 on, bit 8 off): 32 squares tinted black at 60%, the part to come clockwise from 12 o'clock
-        sh.cdNoBadge = 2, sh.cdLeft[0] = 7.5f, sh.cdTotal[0] = 10;
-        RingsPass(ui, false, false, true);
+        sh.itOn = 1, sh.cdSweep = CD_SWEEP, sh.cdLeft[0] = 7.5f, sh.cdTotal[0] = 10;
+        SweepsPass(ui, true);
+        Sweep *r = g_swN ? &g_sw[0] : nullptr;
         auto shown = [&](int k) { return r && r->cell[k] && (*(DWORD *)(r->cell[k] + 0x7c) & 1) != 0; };
         auto W = [&](int k) { return *(float *)(r->cell[k] + LAYOUT_WIDTH); };
-        bool made = r && r->sweepMade && tints == SWEEP_CELLS && r->cell[0][0x68] == SWEEP_ALPHA && !r->cell[0][0x69] && !on(0);
+        auto H = [&](int k) { return *(float *)(r->cell[k] + LAYOUT_HEIGHT); };
+        bool made = r && r->btn == btns[0] && sweepFrames == 1 && sweepTextures == SWEEP_CELLS && allPoints == 1 && sweepPath && strstr(sweepPath, "TeamColor04")
+            && tints == SWEEP_CELLS && r->cell[0][0x68] == SWEEP_ALPHA && !r->cell[0][0x69] && !r->cell[0][0x6b];
         // 3/4 to come (7.5 of 10 s): the top right quarter is clear, the rest dark: row 0 right half empty, left half full,
         // the bottom row's halves both full
-        bool q = !shown(1) && shown(0) && fabsf(W(0) - 0.02f) < 1e-4f && shown(30) && shown(31) && fabsf(W(31) - 0.02f) < 1e-4f;
-        sh.cdLeft[0] = 2.5f; RingsPass(ui, false, false, true);
+        bool q = !shown(1) && shown(0) && fabsf(W(0) - 0.02f) < 1e-4f && shown(30) && shown(31) && fabsf(W(31) - 0.02f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
+        sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
         // 1/4 to come: only the top left quarter dark
         bool q2 = shown(0) && !shown(1) && !shown(30) && !shown(31) && shown(14) && !shown(16) && !shown(15) && fabsf(W(0) - 0.02f) < 1e-4f;
-        sh.cdLeft[0] = 9.99f; RingsPass(ui, false, false, true);
+        int a1 = anchors; SweepsPass(ui, true);
+        bool still = anchors == a1;                 // nothing changed: no square moved
+        sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
         bool full = true;
         for (int k = 0; k < SWEEP_CELLS; k++)
             full &= shown(k);
-        sh.cdLeft[0] = 0; RingsPass(ui, false, false, true);
+        sh.cdLeft[0] = 0; SweepsPass(ui, true);
         bool swGone = true;
         for (int k = 0; k < SWEEP_CELLS; k++)
             swGone &= !shown(k);
-        sh.cdLeft[0] = 5; RingsPass(ui, false, false, false);
+        sh.cdLeft[0] = 5; SweepsPass(ui, false);
         bool off = !shown(0) && !shown(31);
-        CHECK(made && q && q2 && full && swGone && off && ringFrames == 1,
-              "our sweep: 32 squares, black at 60%%; 3/4 to come: all but the top right quarter; 1/4: only the top left; just cast: all; over or off: none");
-        sh.cdNoBadge = 4, sh.cdLeft[0] = 9;
-        // on a buff (bfOpts 2): a ring of its own round the buff's icon, its time left of its full time; none on an aura
-        *(float *)(bbtns[2] + LAYOUT_WIDTH) = 0.03f, *(float *)(bbtns[2] + LAYOUT_HEIGHT) = 0.03f;
-        sh.itOn = 2, sh.bfOpts = BF_RING, sh.buffFlags[2] = 1, sh.buffLeft[2] = 1, sh.buffTotal[2] = 4;
-        RingsPass(ui, false, true);
-        Ring *br = nullptr;
-        for (int i = 0; i < g_ringN; i++)
-            if (g_rings[i].btn == bbtns[2])
-                br = &g_rings[i];
-        auto bon = [&](int k) { return br && (*(DWORD *)(br->side[k] + 0x7c) & 1) != 0; };
-        bool quarter = br && g_ringN == 2 && bon(0) && !bon(1) && fabsf(*(float *)(br->side[0] + LAYOUT_WIDTH) - 0.03f) < 1e-5f && !on(0);
-        sh.buffFlags[2] = 3; RingsPass(ui, false, true);
-        bool auraNone = !bon(0);
-        sh.bfOpts = BF_RING | BF_AURAS; RingsPass(ui, false, true);
-        bool auraAsked = bon(0);
-        sh.buffFlags[2] = 1; RingsPass(ui, false, false);
-        CHECK(quarter && auraNone && auraAsked && !bon(0), "a buff's ring: a quarter left = the top side; an aura: none (with 'auras too': one); off: hidden");
-        sh.bfOpts = 0, sh.buffLeft[2] = 0.46f, sh.buffTotal[2] = 0, sh.itOn = 1;
-        sh.cdNoBadge = 0, sh.cdLeft[0] = 2;
+        CHECK(made && q && q2 && still && full && swGone && off && sweepFrames == 1,
+              "our sweep: 32 squares, black at 60%%; 3/4 to come: all but the top right quarter; 1/4: only the top left; unchanged: none moved; just cast: all; over or off: none");
+        // the button's laid-out rect wins over its +0x58 / +0x5C (sized by its anchors, or narrowed by the Widescreen UI):
+        // a 0.0275 x 0.04 button gets 0.01375-wide halves; a new height places every square again
+        float *rc = (float *)(btns[0] + LAYOUT_RECT);
+        rc[0] = 0.5f, rc[1] = 0.1f, rc[2] = 0.5275f, rc[3] = 0.14f;
+        sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
+        bool narrow = fabsf(W(0) - 0.01375f) < 1e-4f && fabsf(W(31) - 0.01375f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
+        int a2 = anchors;
+        rc[3] = 0.132f; SweepsPass(ui, true);
+        bool lower = anchors - a2 >= SWEEP_CELLS && fabsf(H(0) - 0.002f) < 1e-4f;
+        float w, h;
+        rc[0] = rc[1] = rc[2] = rc[3] = 0;
+        *(float *)(btns[0] + LAYOUT_WIDTH) = 0, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0;
+        ButtonSize(btns[0], &w, &h);
+        bool fallback = w == BUTTON_SIZE && h == BUTTON_SIZE;
+        *(float *)(btns[0] + LAYOUT_WIDTH) = 0.032f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.032f;
+        ButtonSize(btns[0], &w, &h);
+        CHECK(narrow && lower && fallback && w == 0.032f && h == 0.032f,
+              "the sweep fits the button as laid out (0.0275 wide: %.5f halves), a lower button: every square again; no rect: its own size, else 0.039", W(0));
+        *(float *)(btns[0] + LAYOUT_WIDTH) = 0.04f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.04f;
+        sh.cdLeft[0] = 0; SweepsPass(ui, true);
+        bool wanted = SweepWanted();
+        g_swBad = true;
+        bool refused = !SweepWanted();
+        g_swBad = false, sh.itOn = 2;
+        CHECK(wanted && refused && !SweepWanted(), "the game's clock is hidden only while ours can be drawn: not once ours is refused, nor without cooldowns");
+        sh.itOn = 1, sh.cdSweep = 0, sh.cdLeft[0] = 2;
     }
     sh.itOn = 1; TimerFramesDraw(ui);
     CHECK(g_tCd[0].text[0x1e0] == 1 && g_tBuff[2].text[0x1e0] == 0, "cooldowns only (bit 1): the buff's seconds hidden");

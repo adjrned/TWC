@@ -110,7 +110,7 @@ TwcModuleRun() {
     m0 := NumGet(v, Shm.tmMinutes, "uint"), timersHud.setMinutes("cdMinutes", 1), timersHud.setMinutes("buffMinutes", 1)
     TwcCheck(m1 = 3 && m2 = 3 && m0 = 0, "minutes pushed: cooldowns 1, buffs 2 (" m1 ", " m2 ")")
     ; the cooldowns' look (layout 20): defaults x1, gold from 5 s, Ready on; typed values clamped
-    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 2, "pushed the cooldowns' look: x1, gold from 5 s, Ready, our own sweep (bit 2 only: no badge switch, no ring)")
+    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdSweep, "uint") = 2, "pushed the cooldowns' look: x1, gold from 5 s, Ready, our own sweep (cdSweep bit 2, the only one)")
     ok := timersHud.setCdSize("1.25") && timersHud.setCdGold(99) && !timersHud.setCdSize("abc")
     TwcCheck(ok && NumGet(v, Shm.cdSize, "float") = 1.25 && NumGet(v, Shm.cdGold, "float") = 30, "size typed 1.25, gold 99 -> 30, not a number refused")
     timersHud.setCdSize(1), timersHud.setCdGold(5)
@@ -119,10 +119,10 @@ TwcModuleRun() {
     ok := timersHud.setBfSize("0.8") && timersHud.setBfGold(2) && !timersHud.setBfGold("x")
     timersHud.setBfAuras(1)
     TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 1 && NumGet(v, Shm.cdSize, "float") = 1,
-        "buffs x0.8, gold from 2 s, auras (1), never the ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
+        "buffs x0.8, gold from 2 s, auras (1) only: bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
     timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0)
     ; our own sweep: one switch (bit 2), off: the game's clock
-    timersHud.setCdSweep(0), nb1 := NumGet(v, Shm.cdNoBadge, "uint"), timersHud.setCdSweep(1), nb2 := NumGet(v, Shm.cdNoBadge, "uint")
+    timersHud.setCdSweep(0), nb1 := NumGet(v, Shm.cdSweep, "uint"), timersHud.setCdSweep(1), nb2 := NumGet(v, Shm.cdSweep, "uint")
     TwcCheck(nb1 = 0 && nb2 = 2, "our own cooldown sweep: off 0, on 2 (" nb1 ", " nb2 ")")
     ; Battle.net login (layout 24): the password in Credential Manager (a check's own entry, never the real one),
     ; handed over only at the login screen (blState 2), once; the switch pushed

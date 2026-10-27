@@ -14,8 +14,8 @@
 ;  game opens the chat to the Chat dialog's recipient, allies unless changed).
 ;  WFE's DISPLAYMINUTES per switch (layout 19, [Timers] cdMinutes /
 ;  buffMinutes; on by default: 1:35 rather than 95). The buffs' own size and
-;  gold from, seconds on auras (WFE's ISDRAWAURADURATION, off) and our ring
-;  (layout 22, [Timers] bfSize / bfGold / bfAuras; the ring round buffs is gone).
+;  gold from and seconds on auras (WFE's ISDRAWAURADURATION, off)
+;  (layout 22, [Timers] bfSize / bfGold / bfAuras).
 ;  No screen reading on 1.28f: that's for Reforged (planned, see the WC3
 ;  page's Timers tab). The buff bar setup here (two presses in game, per
 ;  window size: [Timers] buff_<window>) is the buff alerts' (BuffWatch).
@@ -88,15 +88,13 @@ class TimerHud {
     setCdSize(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0.75), 1.5), 2), this.section, "cdSize"), this.pushGame(), true)
     setCdGold(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0), 30)), this.section, "cdGold"), this.pushGame(), true)
     setCdReady(on) => (SetIni(on ? 1 : 0, this.section, "cdReady"), this.pushGame())
-    ; the game's number badge on the command card (a map's counters, shop stock) hidden while cooldowns are drawn (layout 21)
-    ; our own cooldown sweep: the game's clock (the map's model, TWRPG's with its clock badge and timer)
-    ; hidden and Blizzard's plain sweep drawn in its place (cdNoBadge bit 2; on by default, the user's pick).
-    ; The number badge switch and our ring are gone (the badge switch did nothing on TWRPG's buttons, the
-    ; ring was ugly): bits 1 and 4 are never sent now.
+    ; our own cooldown sweep (layout 21, cdSweep bit 2; on by default, the user's pick): the game's clock
+    ; (the map's model: TWRPG's has its clock badge and timer) hidden and a plain dark sweep drawn by the
+    ; module in its place. The ini key keeps its old name.
     cdSweep => Integer(Ini(this.section, "cdNoSweep", 1))
     setCdSweep(on) => (SetIni(on ? 1 : 0, this.section, "cdNoSweep"), this.pushGame())
     ; how the buff seconds look (layout 22): their own size and gold from, seconds on auras too
-    ; (WFE's ISDRAWAURADURATION, off), our countdown ring around the buffs (bfOpts bits 1, 2)
+    ; (WFE's ISDRAWAURADURATION, off; bfOpts bit 1)
     bfSize => Min(Max(Float(Ini(this.section, "bfSize", 1)), 0.75), 1.5)
     bfGold => Min(Max(Integer(Ini(this.section, "bfGold", 5)), 0), 30)
     bfAuras => Integer(Ini(this.section, "bfAuras", 0))
@@ -132,9 +130,9 @@ class TimerHud {
         if v && NumGet(v, Shm.layout, "uint") >= 20
             NumPut("float", this.cdSize, v, Shm.cdSize), NumPut("float", this.cdGold, v, Shm.cdGold), NumPut("uint", this.cdReady ? 1 : 0, v, Shm.cdReady)
         if v && NumGet(v, Shm.layout, "uint") >= 21
-            NumPut("uint", this.cdSweep ? 2 : 0, v, Shm.cdNoBadge)
+            NumPut("uint", this.cdSweep ? 2 : 0, v, Shm.cdSweep)
         if v && NumGet(v, Shm.layout, "uint") >= 22
-            NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", this.bfAuras ? 1 : 0, v, Shm.bfOpts)   ; bit 2 (our ring round buffs) is never sent: removed at the user's word, as the cooldowns' ring
+            NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", this.bfAuras ? 1 : 0, v, Shm.bfOpts)
     }
     ; the module's own drawing: 0 off, 1 drawing, 2 waiting, 3 refused; -1 no module that can
     gameState() {

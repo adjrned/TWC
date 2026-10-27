@@ -282,13 +282,14 @@ int main() {
           && !memcmp(g_base + 0x3e38f9, "\xB9\x01\x00\x00\x00", 5) && SiteTarget(g_base + 0x3e38fe) == g_base + 0x9cdd0 && SiteTarget(g_base + 0x3e3924) == g_base + 0x404600,
           "the chat opens to the Chat dialog's recipient ([[ui+0x23C]+0xC]+0x1A0, allies when you have one), Ctrl: allies");
     // the number badge: SetNumber +4034B0 makes it (+3E1CB0: the frame [btn+0x194] at +3E1D1A, the number [btn+0x198] at +3E1E69)
-    // and shows the frame; the region hide takes a shown region ([r+0x7C] bit 1) out of its frame [r+0x74]
+    // and shows the frame (our sweep's frame is made the same way); the region hide takes a shown region ([r+0x7C] bit 1) out of
+    // its frame [r+0x74] (our squares are hidden with it)
     static const BYTE BG_FRAME[] = { 0x89, 0x86, 0x94, 0x01, 0, 0 }, BG_NUM[] = { 0x89, 0xBE, 0x98, 0x01, 0, 0 }, RH[] = { 0xF6, 0x46, 0x7C, 0x01 };
     CHECK(SiteTarget(g_base + 0x4034e1) == g_base + 0x3e1cb0 && !memcmp(g_base + 0x3e1d1a, BG_FRAME, 6) && !memcmp(g_base + 0x3e1e69, BG_NUM, 6)
           && *(DWORD *)(g_base + 0x4034f1) == (DWORD)(g_base + 0xa702a0) && !strcmp((const char *)g_base + 0xa702a0, "%d") && !memcmp(g_base + 0x141ce3, RH, 4)
-          && !memcmp(g_base + 0x141cec, "\x8B\x4E\x74", 3) && BTN_BADGE == 0x194 && REGION_FRAME == 0x74 && REGION_SHOWN == 0x7c,
+          && !memcmp(g_base + 0x141cec, "\x8B\x4E\x74", 3),
           "the command button's number badge [+0x194] ('%%d' into [+0x198]); the region hide works on [r+0x7C] / [r+0x74]");
-    // our cooldown ring, made as the badge is: a CSimpleFrame (+13AE90(mem, parent), ret 4, vtable +A7CC14 at +13AEBE), CSimpleTextures
+    // our cooldown sweep's frame and squares, made as the badge is: a CSimpleFrame (+13AE90(mem, parent), ret 4, vtable +A7CC14 at +13AEBE), CSimpleTextures
     // (+141FE0(mem, frame, 2, 1), ret 12, vtable +A7D13C at +142019; the badge's at +3E1D86..+3E1D92), SetTexture (path, 0) ret 8,
     // SetAllPoints ret 8, SetPoint ret 24, the width / height setters writing the layout's +0x58 / +0x5C then refreshing
     static const BYTE TX_CALL[] = { 0x6A, 0x01, 0x6A, 0x02, 0xFF, 0xB6, 0x94, 0x01, 0, 0, 0x8B, 0xC8 }, SW[] = { 0xF3, 0x0F, 0x11, 0x41, 0x58 }, SH2[] = { 0xF3, 0x0F, 0x11, 0x41, 0x5C };
@@ -297,11 +298,17 @@ int main() {
     bool retsOk = true;
     for (int i = 0; i < 5; i++)
         retsOk = retsOk && rb[i][0] == 0xC2 && *(const WORD *)(rb[i] + 1) == rp[i];
-    CHECK(retsOk && *(DWORD *)(g_base + 0x13aec0) == (DWORD)(g_base + RVA_SIMPLEFRAME_VT) && *(DWORD *)(g_base + 0x14201b) == (DWORD)(g_base + RING_TEXTURE_VT)
-          && Rtti(RVA_SIMPLEFRAME_VT, "CSimpleFrame") && Rtti(RING_TEXTURE_VT, "CSimpleTexture") && !memcmp(g_base + 0x3e1d86, TX_CALL, 12) && SiteTarget(g_base + 0x3e1d92) == g_base + RVA_TEXTURE_CTOR
+    CHECK(retsOk && *(DWORD *)(g_base + 0x13aec0) == (DWORD)(g_base + RVA_SIMPLEFRAME_VT) && *(DWORD *)(g_base + 0x14201b) == (DWORD)(g_base + SWEEP_TEXTURE_VT)
+          && Rtti(RVA_SIMPLEFRAME_VT, "CSimpleFrame") && Rtti(SWEEP_TEXTURE_VT, "CSimpleTexture") && !memcmp(g_base + 0x3e1d86, TX_CALL, 12) && SiteTarget(g_base + 0x3e1d92) == g_base + RVA_TEXTURE_CTOR
           && SiteTarget(g_base + 0x3e1d03) == g_base + RVA_SIMPLEFRAME_CTOR && !memcmp(g_base + RVA_SET_WIDTH + 8, SW, 5) && !memcmp(g_base + RVA_SET_HEIGHT + 8, SH2, 5)
           && *(DWORD *)(g_base + RVA_SIMPLEFRAME_VT + 0x68) == (DWORD)(g_base + 0x13c390),
-          "the ring's frame and textures are made as the game makes the badge's; their setters' stack sizes and fields");
+          "the sweep's frame and textures are made as the game makes the badge's; their setters' stack sizes and fields");
+    // the sweep's size: a layout's rect is left +0x44, bottom +0x48, right +0x4C, top +0x50 (+13F690 compares a new rect's
+    // right / top with +0x4C / +0x50 and their widths), and a frame given a parent is drawn one level over it (+13C30A: [parent+0x84] + 1)
+    CHECK(!memcmp(g_base + 0x13f6b6, "\xF3\x0F\x10\x79\x4C", 5) && !memcmp(g_base + 0x13f6c3, "\xF3\x0F\x10\x71\x50", 5)
+          && !memcmp(g_base + 0x13f6c8, "\xF3\x0F\x5C\x79\x44", 5) && !memcmp(g_base + 0x13f6cd, "\xF3\x0F\x5C\x71\x48", 5) && LAYOUT_RECT == 0x44
+          && !memcmp(g_base + 0x13c30a, "\x8B\x81\x84\x00\x00\x00\x40\x89\x86\x84\x00\x00\x00", 13) && SiteTarget(g_base + 0x13afeb) == g_base + 0x13c2d0,
+          "a layout's rect at +0x44..+0x50 (the sweep's size as laid out); a new simple frame's level is its parent's + 1 (over the button's icon)");
     // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
     CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
           && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");
@@ -355,9 +362,9 @@ int main() {
           && *(DWORD *)(g_base + 0x3fe214) == (DWORD)(g_base + BUFF_UI_MASK) && *(DWORD *)(g_base + 0x3fe22a) == (DWORD)(g_base + BUFF_UI_BUCKETS)
           && !memcmp(g_base + 0x3fe27b, "\x6A\x40", 2) && !memcmp(g_base + 0x3fe27e, "\x8D\x86\x1C\x01\x00\x00", 6) && BUFF_UI_NAME == 0x11c,
           "the buff UI table: bucket id & mask (12 bytes), the chain [rec + [bucket] + 4] while > 0, the name 64 bytes at +0x11C");
-    // the buff ring: a buff indicator is a simple frame / layout frame at +0 as a command button is (the ring's frame, SetAllPoints, +0x58 / +0x5C)
+    // a buff indicator is a simple frame / layout frame at +0 as a command button is (the bigger buff bar sizes it at +0x58 / +0x5C)
     CHECK(BaseAt0(0xaad470, "CSimpleFrame@") && BaseAt0(0xaad470, "CLayoutFrame@") && BaseAt0(RVA_COMMAND_BUTTON_VTABLE, "CSimpleFrame@") && BaseAt0(RVA_COMMAND_BUTTON_VTABLE, "CLayoutFrame@"),
-          "CBuffIndicator and CCommandButton both start with CSimpleFrame / CLayoutFrame (RTTI): the ring fits a buff's icon as a button's");
+          "CBuffIndicator and CCommandButton both start with CSimpleFrame / CLayoutFrame (RTTI)");
     // the buff bar size: CBuffBar's ctor +3D0100 makes a 1 x 8 grid (+13D380(1, 8)) 0.12 x 0.015 and 8 indicators of 0.015 x 0.015;
     // the grid lays its items out again on a rect change (its vt+0 +13CC90, pointing each item, +13CE4E); the info panel pins the bar's
     // bottom right (+3E8126: SetPoint 8 -> 8, -0.003); the module's sizes are those
@@ -420,9 +427,9 @@ int main() {
           && Rtti(RVA_CHAT_PANEL_VT, "CBattleNetChatPanel") & Rtti(RVA_JOIN_PANEL_VT, "CBattleNetCustomJoinPanel") & Rtti(RVA_LISTBOX_WAR3_VT, "CListBoxWar3")
           && CHAT_CUSTOM_BUTTON == 0x2e0 && JOIN_NAME == 0x204 && JOIN_LIST == 0x208 && JOIN_BUTTON == 0x214 && LIST_SELECTED == 0x1f4,
           "the chat panel's Custom Game (command 3), the custom games' name box / list / Join (command 4: the selected game, else the typed name)");
-    // our shade's tint: a texture's vt+0x24 (+141D00) multiplies its alpha +0x68 by its frame's [+0x88] into +0x6C and takes its
+    // our sweep's tint: a texture's vt+0x24 (+141D00) multiplies its alpha +0x68 by its frame's [+0x88] into +0x6C and takes its
     // colour from +0x69 / +0x6A / +0x6B (white: none)
-    CHECK(*(DWORD *)(g_base + RING_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && !memcmp(g_base + 0x141d0c, "\x0F\xB6\xB0\x88\x00\x00\x00", 7)
+    CHECK(*(DWORD *)(g_base + SWEEP_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && !memcmp(g_base + 0x141d0c, "\x0F\xB6\xB0\x88\x00\x00\x00", 7)
           && !memcmp(g_base + 0x141d13, "\x0F\xB6\x41\x68", 4) && !memcmp(g_base + 0x141d2d, "\x88\x41\x6C", 3) && !memcmp(g_base + 0x141d35, "\x80\x79\x6B\xFF", 4)
           && !memcmp(g_base + 0x141d41, "\x80\x79\x69\xFF", 4) && !memcmp(g_base + 0x141d50, "\x8D\x41\x69", 3),
           "a texture's alpha is +0x68 (times its frame's +0x88), its colour +0x69..+0x6B, applied by its vt+0x24 (+141D00): our sweep's tint");

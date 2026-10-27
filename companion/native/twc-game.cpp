@@ -164,7 +164,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float cdGold;           // companion: gold from this many seconds left down (0 = always white)
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
     // layout 21
-    DWORD cdNoBadge;        // companion, while cooldowns are drawn, bits: 1 hide the game's number badge on command card buttons (maps' counters), 2 hide the game's cooldown sweep (the clock) on command card and inventory buttons, 4 our cooldown ring around them, 8 no shade of ours in place of the hidden clock (layout 25 on: with bit 2, a dark shade drains on the button)
+    DWORD cdSweep;          // companion, while cooldowns are drawn: bit 2 = the game's cooldown clock hidden on command card and inventory buttons and our own sweep drawn in its place (bits 1, 4, 8 are retired, never set: the number badge hide, our ring, 'no shade')
     // layout 22: your hero's buffs, read from the unit itself, whatever is selected (ReadHeroBuffs), and how the buff seconds look
     DWORD hrWant;           // companion: 1 = read them too (with the other timers: tmWant on as well)
     DWORD hrHero;           // module: the hero's type id ('Hpal'; 0 = no hero of yours found)
@@ -177,7 +177,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     char hrName[24][48];    //   the game's name for it (its Bufftip, colour codes taken out; UTF-8), "" = none found
     float bfSize;           // companion: the buff seconds' size, times WFE's 0.013 (0.75-1.5; 0 = 1)
     float bfGold;           // companion: gold from this many seconds left down (0 = always white)
-    DWORD bfOpts;           // companion, bits: 1 seconds on auras too (WFE's ISDRAWAURADURATION), 2 our countdown ring around the buffs
+    DWORD bfOpts;           // companion, bits: 1 seconds on auras too (WFE's ISDRAWAURADURATION); 2 (our ring round the buffs) is retired, never set
     // layout 23: a bigger buff bar (BuffBarSizePass; with the widescreen UI on, its UlBuffs)
     float bbScale;          // companion: the buff bar and its icons, times the game's size (1-2; 0 or 1 = the game's own)
     DWORD bbState;          // module: 0 the game's own, 1 bigger now, 2 waiting (no buff bar yet), 3 refused (see the log)
@@ -1974,7 +1974,7 @@ static float BuffTextHeight() {
 }
 // a buff bar slot gets its seconds: a buff, or an aura with bfOpts bit 1 (WFE's ISDRAWAURADURATION:
 // its 0x1007f774..0x1007f785 takes the aura switch for auras, the duration switch for the rest)
-static const DWORD BF_AURAS = 1, BF_RING = 2;
+static const DWORD BF_AURAS = 1;       // bit 2 (our ring round buffs) is retired: never set
 static bool BuffSlotDrawn(DWORD flags) { return (flags & 1) && (!(flags & 2) || (g_shared->bfOpts & BF_AURAS)); }
 // the cooldowns' size (cdSize, 0.75-1.5 times 0.014)
 static float CdTextHeight() {
@@ -2114,95 +2114,47 @@ static void TimerFramesDraw(BYTE *ui) {
 
 static volatile bool g_itReading;   // the game thread reads the timers (the worker leaves them)
 
-// The game's number badge on command card buttons (cdNoBadge): maps use it for counters of
-// their own (TWRPG: a number counting down on abilities), which sits over our cooldowns. The
-// button keeps it at [btn+0x194], a simple frame made the first time a number is set
-// (+0x3e1cb0, from +0x4034b0 SetNumber: '%d' into the font string [btn+0x198] and the frame
-// shown; +0x403540 shows / hides it). Its regions (the badge texture and the number) are
-// hidden here with the region hide +0x141ce0, which takes a region out of its frame's drawing
-// ([r+0x7c] bit 1, frame [r+0x74]); showing the frame again (SetNumber) doesn't put them back,
-// nothing in the button code shows them, so a pass only finds new ones. Inventory buttons are
-// left (item charges). Shown again with +0x141e80 when turned off; forgotten with the game UI.
-static const DWORD BTN_BADGE = 0x194, FRAME_REGIONS = 0xd8, REGION_FRAME = 0x74, REGION_SHOWN = 0x7c;
-static BYTE *g_badgeRegions[48];
-static int g_badgeN;
-static bool g_badgeBad;
-static void BadgesPass(BYTE *ui, bool on) {
-    if (g_badgeBad)
-        return;
-    __try {
-        if (!on || !ui) {
-            for (int i = 0; i < g_badgeN; i++)
-                ((FrameFn)(g_base + RVA_REGION_SHOW))(g_badgeRegions[i], 0);
-            if (g_badgeN)
-                Log("badges: the game's number badges shown again (%d regions)", g_badgeN);
-            g_badgeN = 0;
-            return;
-        }
-        BYTE *card = *(BYTE **)(ui + 0x3c8);
-        int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
-        if (rows <= 0 || cols <= 0 || rows > 3 || cols > 4)
-            return;
-        int before = g_badgeN;
-        for (int i = 0; i < rows * 4; i++) {
-            if (i % 4 >= cols)
-                continue;
-            BYTE *b = GridButton(card, i / 4, i % 4), *ov;
-            if (!b || *(DWORD *)b != (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE) || !(ov = V(*(BYTE **)(b + BTN_BADGE))))
-                continue;
-            int k = 0;
-            for (BYTE *l = *(BYTE **)(ov + FRAME_REGIONS); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && k < 8; l = *(BYTE **)(l + 4), k++) {
-                BYTE *r = V(*(BYTE **)(l + 8));
-                if (!r || *(BYTE **)(r + REGION_FRAME) != ov || !(*(DWORD *)(r + REGION_SHOWN) & 1))
-                    continue;
-                ((FrameFn)(g_base + RVA_REGION_HIDE))(r, 0);
-                bool known = false;
-                for (int j = 0; j < g_badgeN && !known; j++)
-                    known = g_badgeRegions[j] == r;
-                if (!known && g_badgeN < 48)
-                    g_badgeRegions[g_badgeN++] = r;
-            }
-        }
-        static bool logged;
-        if (!logged && g_badgeN > before)
-            logged = true, Log("badges: the game's number badge hidden on the command card (%d regions, the first %p of its frame %p)", g_badgeN, g_badgeRegions[0], *(BYTE **)(g_badgeRegions[0] + REGION_FRAME));
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        g_badgeBad = true;
-        Log("badges: hiding the game's number badge faulted: left to the game");
-    }
+// the buff bar (its grid as ReadBuffs reads it) and its buttons, or 0
+static BYTE *BuffBarOf(BYTE *ui, int *rows, int *cols) {
+    BYTE *bar = ui ? *(BYTE **)(ui + 0x3c4) : nullptr;
+    if (bar && (bar = *(BYTE **)(bar + 0x130)))
+        bar = *(BYTE **)(bar + 0x16c);
+    *rows = bar ? *(int *)(bar + 0x124) : 0, *cols = bar ? *(int *)(bar + 0x128) : 0;
+    return bar && *rows > 0 && *cols > 0 && *rows * *cols <= 16 ? bar : nullptr;
 }
-
-// The game's cooldown sweep (the clock over a button cooling down; cdNoBadge bit 2): the
-// button's [+0x19c] (CommandButtonCooldown, +0x3e1a60), a sprite frame whose model is squeezed
-// flat (x 0) the way WFE hides it with its indicator off (study_ul2_cooldown: S.x 0 "which
-// hides it"): its matrix written as the Widescreen UI's squeeze does (ModelMatrix, saved
-// first), 10 times a second so a reset by the game is undone at once. Command card and
+// The game's cooldown clock (over a button cooling down) hidden while our sweep is drawn in its
+// place (cdSweep bit 2): the button's [+0x19c] (CommandButtonCooldown, +0x3e1a60), a sprite frame
+// whose model is squeezed flat (x 0) the way WFE hides it with its indicator off (study_ul2_cooldown:
+// S.x 0 "which hides it"): its matrix written as the Widescreen UI's squeeze does (ModelMatrix,
+// saved first), 10 times a second so a reset by the game is undone at once. Command card and
 // inventory buttons. Put back (the matrix as found, or as the Widescreen UI found it) when off;
-// forgotten with the game UI. The Widescreen UI leaves these models alone meanwhile.
+// forgotten with the game UI. The Widescreen UI leaves these models alone meanwhile. TWRPG
+// replaces the model (UI-Cooldown-Indicator.mdx included) with its clock badge and timer: they go
+// with it, which is why our sweep draws no model.
 static float *ModelMatrix(BYTE *frame, BYTE **sprite);
 static BYTE *P(BYTE *f, DWORD off);
-struct SweepSave { BYTE *frame, *sprite; float orig[9]; };
-static SweepSave g_sweeps[24];
-static int g_sweepN;
-static bool g_sweepBad, g_sweepOn;
+struct ClockSave { BYTE *frame, *sprite; float orig[9]; };
+static ClockSave g_clocks[24];
+static int g_clockN;
+static bool g_clockBad, g_clockHidden;
 static float *UlOriginal(BYTE *sprite);
-static void SweepHide(BYTE *b) {
+static void ClockHide(BYTE *b) {
     BYTE *s, *f = b ? P(b, 0x19c) : nullptr;
     float *m = f ? ModelMatrix(f, &s) : nullptr;
     if (!m)
         return;
-    SweepSave *sv = nullptr;
-    for (int i = 0; i < g_sweepN && !sv; i++)
-        if (g_sweeps[i].sprite == s)
-            sv = &g_sweeps[i];
+    ClockSave *sv = nullptr;
+    for (int i = 0; i < g_clockN && !sv; i++)
+        if (g_clocks[i].sprite == s)
+            sv = &g_clocks[i];
     if (!sv) {
         static const int OFF[] = { 1, 2, 3, 5, 6, 7 };
         for (int i : OFF)
             if (fabsf(m[i]) > 1e-4f)
                 return;                     // turned: left alone (as the Widescreen UI's squeeze)
-        if (m[0] <= 0 || m[4] <= 0 || m[8] <= 0 || g_sweepN >= 24)
+        if (m[0] <= 0 || m[4] <= 0 || m[8] <= 0 || g_clockN >= 24)
             return;
-        sv = &g_sweeps[g_sweepN++];
+        sv = &g_clocks[g_clockN++];
         sv->frame = f, sv->sprite = s;
         float *ul = UlOriginal(s);
         memcpy(sv->orig, ul ? ul : m, sizeof(sv->orig));
@@ -2212,116 +2164,111 @@ static void SweepHide(BYTE *b) {
     }
     m[0] = 0;
 }
-static void SweepsPass(BYTE *ui, bool on) {
-    if (g_sweepBad)
+static void ClockHidePass(BYTE *ui, bool on) {
+    if (g_clockBad)
         return;
     __try {
-        g_sweepOn = on && ui;
-        if (!g_sweepOn) {
-            for (int i = 0; i < g_sweepN && ui; i++) {
+        g_clockHidden = on && ui;
+        if (!g_clockHidden) {
+            for (int i = 0; i < g_clockN && ui; i++) {
                 BYTE *s2 = nullptr;
-                float *m2 = ModelMatrix(g_sweeps[i].frame, &s2);
-                if (m2 && s2 == g_sweeps[i].sprite)     // still the same model on that button
-                    memcpy(m2, g_sweeps[i].orig, sizeof(g_sweeps[i].orig));
+                float *m2 = ModelMatrix(g_clocks[i].frame, &s2);
+                if (m2 && s2 == g_clocks[i].sprite)     // still the same model on that button
+                    memcpy(m2, g_clocks[i].orig, sizeof(g_clocks[i].orig));
             }
-            if (g_sweepN && ui)
-                Log("sweeps: the game's cooldown clocks shown again (%d)", g_sweepN);
-            g_sweepN = 0;
+            if (g_clockN && ui)
+                Log("sweeps: the game's cooldown clocks shown again (%d)", g_clockN);
+            g_clockN = 0;
             return;
         }
         if (BYTE *card = P(ui, 0x3c8)) {
             int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128);
             for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
                 for (int c = 0; c < cols; c++)
-                    SweepHide(GridButton(card, r, c));
+                    ClockHide(GridButton(card, r, c));
         }
         for (int i = 0; i < 6; i++)
-            SweepHide(ItemButton(ui, i));
+            ClockHide(ItemButton(ui, i));
     } __except (EXCEPTION_EXECUTE_HANDLER) {
-        g_sweepBad = true, g_sweepOn = false;
+        g_clockBad = true, g_clockHidden = false;
         Log("sweeps: hiding the game's cooldown clock faulted: left to the game");
     }
 }
 
-// Our cooldown ring (cdNoBadge bit 4, an option next to the game's clock): a line around the
-// button's edge that runs out as the cooldown does, clockwise from the top-left corner. Made the
-// way the game makes the number badge (+0x3e1cb0): a simple frame of ours over the button
-// (CSimpleFrame +0x13ae90(mem, button), ret 4; SetAllPoints +0x13fad0 onto it, shown as SetNumber
-// shows the badge: [+0x90] = 1, vt+0x68), and in it four textures (CSimpleTexture +0x141fe0(mem,
-// frame, layer 2, shown 1), ret 12; SetTexture +0x1435f0(path, 0), ret 8): the game's yellow team
-// colour, a solid square. Each side anchored to its corner (SetPoint +0x13fc20, ret 24, a region's
-// layout at +0), its length set with the width / height setters (+0x13fce0 / +0x13fb40, the
-// layout's +0x58 / +0x5c), hidden with the region hide when empty. Made once per button, kept
-// with the game UI (the game frees them with it), hidden when the button isn't cooling down.
-// Buffs too (bfOpts bit 2): the buff bar's indicators are simple frames as the buttons are
-// (CBuffIndicator: CSimpleFrame / CLayoutFrame at +0, RTTI), so the same ring goes round a buff's
-// icon with its time left of its full time (the slots that get seconds: no auras unless asked).
-static const DWORD RVA_SIMPLEFRAME_CTOR = 0x13ae90, RVA_SIMPLEFRAME_VT = 0xa7cc14, RVA_TEXTURE_CTOR = 0x141fe0, RING_TEXTURE_VT = 0xa7d13c;
+// Our sweep, drawn by us (cdSweep bit 2). The first try made the game's own sweep sprite on
+// Blizzard's standard model path, but the user's screenshots showed TWRPG's clock badge and timer
+// on it again (the map replaces that file too) and the wrong size; so no model: the dark part is
+// our own squares. Per button a simple frame of ours over it, made the way the game makes the
+// number badge (+0x3e1cb0): CSimpleFrame +0x13ae90(mem, button), ret 4 (its level is the
+// button's + 1, +0x13c310, so it's drawn over the button's icon); SetAllPoints +0x13fad0 onto it,
+// shown as SetNumber shows the badge: [+0x90] = 1, vt+0x68. In it 32 textures (CSimpleTexture
+// +0x141fe0(mem, frame, layer 2, shown 1), ret 12; SetTexture +0x1435f0(path, 0), ret 8: the
+// game's team colour square, tinted black and see-through: a texture's alpha +0x68 and colour
+// +0x69..+0x6b, applied by its vt+0x24 +0x141d00, pinned in test_gamedll). The button is cut into
+// 16 rows, each in a left and a right half; in each half-row the part still to come (clockwise
+// from 12 o'clock, on the button's own width and height, so a narrowed button gets a squeezed
+// circle as the game's model does) is one interval, so one square per half-row, anchored to the
+// frame's top left (SetPoint +0x13fc20, ret 24) and sized with the width / height setters
+// (+0x13fce0 / +0x13fb40, the layout's +0x58 / +0x5c); hidden with the region hide when empty.
+// Only squares whose place or size changed are touched. The edge is a staircase of 16 steps,
+// about 2.5 px a step on a 1080p button. Made once per button, kept with the game UI (the game
+// frees them with it). Our text frames (CTextFrames, not simple frames) stay over the squares,
+// as the timers drawn in the game stayed over the buttons.
+static const DWORD RVA_SIMPLEFRAME_CTOR = 0x13ae90, RVA_SIMPLEFRAME_VT = 0xa7cc14, RVA_TEXTURE_CTOR = 0x141fe0, SWEEP_TEXTURE_VT = 0xa7d13c;
 static const DWORD RVA_SET_TEXTURE = 0x1435f0, RVA_SET_ALL_POINTS = 0x13fad0, RVA_SET_WIDTH = 0x13fce0, RVA_SET_HEIGHT = 0x13fb40;
-static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c;
-static const char RING_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
-static const float RING_THICK = 0.0018f, BUTTON_SIZE = 0.039f;
-// cdNoBadge bit 2 hides the game's clock, bit 8 = none of ours in its place (see the sweep below)
+static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c, LAYOUT_RECT = 0x44;
+static const char SWEEP_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
+static const float BUTTON_SIZE = 0.039f;
+static const DWORD CD_SWEEP = 2;           // cdSweep: the only bit sent (1, 4 and 8 retired: never set)
 static const int SWEEP_ROWS = 16, SWEEP_CELLS = 2 * SWEEP_ROWS;
-struct Ring { BYTE *btn, *frame, *side[4], *cell[SWEEP_CELLS]; float len[4], cellL[SWEEP_CELLS], cellW[SWEEP_CELLS]; bool shown[4], cellShown[SWEEP_CELLS], sweepBad, sweepMade; };
-static const int RINGS = 12 + 6 + 8;       // the command card, the inventory, the buff bar
-static Ring g_rings[RINGS];
-static int g_ringN;
-static bool g_ringBad;
+struct Sweep { BYTE *btn, *frame, *cell[SWEEP_CELLS]; float cellL[SWEEP_CELLS], cellW[SWEEP_CELLS], rowH; bool cellShown[SWEEP_CELLS]; };
+static const int SWEEPS = 12 + 6;          // the command card, the inventory
+static Sweep g_sw[SWEEPS];
+static int g_swN;
+static bool g_swBad;
+static const BYTE SWEEP_ALPHA = 0x99;      // 60% black, about the game's own sweep
+static const float PI_2 = 6.2831853f;
 
-static Ring *RingFor(BYTE *btn) {
-    for (int i = 0; i < g_ringN; i++)
-        if (g_rings[i].btn == btn)
-            return &g_rings[i];
-    if (g_ringN >= RINGS || g_framesBad)
+// a button's frame and its 32 squares, made the first time it cools down (nullptr: refused, logged)
+static Sweep *SweepFor(BYTE *btn) {
+    for (int i = 0; i < g_swN; i++)
+        if (g_sw[i].btn == btn)
+            return &g_sw[i];
+    if (g_swN >= SWEEPS || g_framesBad || g_swBad)
         return nullptr;
-    Ring *r = &g_rings[g_ringN];
+    Sweep *r = &g_sw[g_swN];
     ZeroMemory(r, sizeof(*r));
-    void *mem = g_smemAlloc(SIMPLEFRAME_SIZE, "TWC cooldown ring", __LINE__, 0);
+    void *mem = g_smemAlloc(SIMPLEFRAME_SIZE, "TWC cooldown sweep", __LINE__, 0);
     if (!mem)
         return nullptr;
     BYTE *f = (BYTE *)Game(RVA_SIMPLEFRAME_CTOR, mem, { (DWORD)btn });
     if (f != mem || *(DWORD *)f != (DWORD)(g_base + RVA_SIMPLEFRAME_VT)) {
-        Log("cooldown ring: the new frame %p has vtable %08lX, not +%06lX: no rings", f, f == mem ? *(DWORD *)f : 0, RVA_SIMPLEFRAME_VT);
-        g_ringBad = true;
+        Log("cooldown sweep: the new frame %p has vtable %08lX, not +%06lX: no sweeps", f, f == mem ? *(DWORD *)f : 0, RVA_SIMPLEFRAME_VT);
+        g_swBad = true;
         return nullptr;
     }
     Game(RVA_SET_ALL_POINTS, f, { (DWORD)btn, 1 });
     *(DWORD *)(f + 0x90) = 1;
     Virt(f, 0x68);
-    static const int PT[4] = { 0, 2, 8, 6 };                  // top, right, bottom, left
-    for (int k = 0; k < 4; k++) {
-        void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown ring", __LINE__, 0);
+    for (int k = 0; k < SWEEP_CELLS; k++) {
+        void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown sweep", __LINE__, 0);
         BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)f, 2, 1 }) : nullptr;
-        if (!t || t != tm || *(DWORD *)t != (DWORD)(g_base + RING_TEXTURE_VT)) {
-            Log("cooldown ring: a new texture %p isn't a CSimpleTexture: no rings", t);
-            g_ringBad = true;
+        if (!t || t != tm || *(DWORD *)t != (DWORD)(g_base + SWEEP_TEXTURE_VT)) {
+            Log("cooldown sweep: a new texture %p isn't a CSimpleTexture: no sweeps", t);
+            g_swBad = true;
             return nullptr;
         }
-        Game(RVA_SET_TEXTURE, t, { (DWORD)RING_TEXTURE, 0 });
-        Game(RVA_SET_POINT, t, { (DWORD)PT[k], (DWORD)f, (DWORD)PT[k], F(0), F(0), 1 });
-        Game(k % 2 ? RVA_SET_WIDTH : RVA_SET_HEIGHT, t, { F(RING_THICK) });
+        Game(RVA_SET_TEXTURE, t, { (DWORD)SWEEP_TEXTURE, 0 });
+        t[0x68] = SWEEP_ALPHA, t[0x69] = t[0x6a] = t[0x6b] = 0;
+        Virt(t, 0x24);
         Game(RVA_REGION_HIDE, t);
-        r->side[k] = t, r->len[k] = -1;
+        r->cell[k] = t, r->cellL[k] = r->cellW[k] = -1;
     }
-    r->btn = btn, r->frame = f;
-    if (!g_ringN++)
-        Log("cooldown ring: the first one made (frame %p over the button %p, textures %s)", f, btn, RING_TEXTURE);
+    r->btn = btn, r->frame = f, r->rowH = -1;
+    if (!g_swN++)
+        Log("cooldown sweep: the first one made (%d squares in the frame %p over the button %p)", SWEEP_CELLS, f, btn);
     return r;
 }
-// the line left: 4 x the time left / the full time, from the top-left corner clockwise
-// Our sweep, drawn by us. The first try made the game's own sweep sprite on Blizzard's standard
-// model path, but the user's screenshots showed TWRPG's clock badge and timer on it again (the map
-// replaces that file too) and the wrong size; so no model: the dark part is drawn with our own
-// squares, as the ring's sides were (CSimpleTexture +0x141fe0 in the ring's frame, the same square
-// texture tinted black and see-through: a texture's alpha +0x68 and colour +0x69..+0x6b, applied by
-// its vt+0x24 +0x141d00, pinned in test_gamedll). The button is cut into 16 rows, each in a left and
-// a right half; in each half-row the part still to come (clockwise from 12 o'clock, on the button's
-// own width and height, so a narrowed button gets a squeezed circle as the game's model does) is one
-// interval, so one square per half-row, placed from the button's top left and sized to it. The
-// edge is a staircase of 16 steps, about 2.5 px a step on a 1080p button.
-static const BYTE SWEEP_ALPHA = 0x99;      // 60% black, about the game's own sweep
-static const float PI_2 = 6.2831853f;
 // the angle of (x, y) clockwise from 12 o'clock, 0..2pi (x right, y up, about the centre)
 static float ClockAngle(float x, float y) {
     float a = atan2f(x, y);
@@ -2348,32 +2295,23 @@ static void SweepSpan(float y, float x0, float x1, float A, float *l, float *r) 
     else
         *l = e, *r = x1;
 }
-static bool SweepMake(Ring *r) {
-    if (r->sweepMade || r->sweepBad)
-        return r->sweepMade;
-    r->sweepBad = true;
-    for (int k = 0; k < SWEEP_CELLS; k++) {
-        void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown sweep", __LINE__, 0);
-        BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)r->frame, 2, 1 }) : nullptr;
-        if (!t || t != tm || *(DWORD *)t != (DWORD)(g_base + RING_TEXTURE_VT)) {
-            Log("cooldown sweep: a new texture %p isn't a CSimpleTexture: no sweeps", t);
-            return false;
-        }
-        Game(RVA_SET_TEXTURE, t, { (DWORD)RING_TEXTURE, 0 });
-        t[0x68] = SWEEP_ALPHA, t[0x69] = t[0x6a] = t[0x6b] = 0;
-        Virt(t, 0x24);
-        Game(RVA_REGION_HIDE, t);
-        r->cell[k] = t, r->cellL[k] = r->cellW[k] = -1, r->cellShown[k] = false;
-    }
-    r->sweepMade = true, r->sweepBad = false;
-    static bool logged;
-    if (!logged)
-        logged = true, Log("cooldown sweep: the first one made (%d squares in the frame %p over the button %p)", SWEEP_CELLS, r->frame, r->btn);
-    return true;
+// a button's size as drawn: its laid-out rect (left +0x44, bottom +0x48, right +0x4c, top +0x50,
+// as the game's +0x13f690 compares them), so a button sized by its anchors (no +0x58 / +0x5c of its
+// own) or narrowed by the Widescreen UI is right too; else its width / height; else the game's 0.039
+static void ButtonSize(BYTE *btn, float *w, float *h) {
+    float *rc = (float *)(btn + LAYOUT_RECT);
+    *w = rc[2] - rc[0], *h = rc[3] - rc[1];
+    if (!(*w > 0.005f && *w < 0.2f))
+        *w = *(float *)(btn + LAYOUT_WIDTH);
+    if (!(*h > 0.005f && *h < 0.2f))
+        *h = *(float *)(btn + LAYOUT_HEIGHT);
+    *w = *w > 0.005f && *w < 0.2f ? *w : BUTTON_SIZE, *h = *h > 0.005f && *h < 0.2f ? *h : BUTTON_SIZE;
 }
 // the part to come: 1 at the cast, 0 when it's ready (f), on a button w x h
-static void SweepDraw(Ring *r, float f, float w, float h) {
+static void SweepDraw(Sweep *r, float f, float w, float h) {
     float A = PI_2 * (1 - f), rowH = h / SWEEP_ROWS;
+    bool moved = fabsf(rowH - r->rowH) > 0.00001f;     // another height: every square placed again
+    r->rowH = rowH;
     for (int row = 0; row < SWEEP_ROWS; row++)
         for (int half = 0; half < 2; half++) {
             int k = row * 2 + half;
@@ -2383,7 +2321,7 @@ static void SweepDraw(Ring *r, float f, float w, float h) {
             float lw = (l + 1) / 2 * w, ww = (rr - l) / 2 * w;        // from the button's left, and its width
             bool show = ww > 0.0003f;
             BYTE *t = r->cell[k];
-            if (show && (fabsf(lw - r->cellL[k]) > 0.0002f || fabsf(ww - r->cellW[k]) > 0.0002f)) {
+            if (show && (moved || fabsf(lw - r->cellL[k]) > 0.0002f || fabsf(ww - r->cellW[k]) > 0.0002f)) {
                 Game(RVA_SET_POINT, t, { 0, (DWORD)r->frame, 0, F(lw), F(-row * rowH), 1 });
                 Game(RVA_SET_WIDTH, t, { F(ww) }), Game(RVA_SET_HEIGHT, t, { F(rowH + 0.00005f) });
                 r->cellL[k] = lw, r->cellW[k] = ww;
@@ -2392,95 +2330,68 @@ static void SweepDraw(Ring *r, float f, float w, float h) {
                 Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, t), r->cellShown[k] = show;
         }
 }
-static void RingDraw(BYTE *btn, float left, float total, bool ring = true, bool shade = false) {
+// a button's sweep for its time left of its full time (none: hidden; nothing made until it cools down)
+static void SweepSet(BYTE *btn, float left, float total) {
     bool on = btn && left > 0 && total > 0;
-    Ring *r = nullptr;
-    for (int i = 0; i < g_ringN && !r; i++)
-        if (g_rings[i].btn == btn)
-            r = &g_rings[i];
+    Sweep *r = nullptr;
+    for (int i = 0; i < g_swN && !r; i++)
+        if (g_sw[i].btn == btn)
+            r = &g_sw[i];
     if (!on && !r)
         return;
-    if (on && !r && !(r = RingFor(btn)))
+    if (on && !r && !(r = SweepFor(btn)))
         return;
-    float w = *(float *)(btn + LAYOUT_WIDTH), h = *(float *)(btn + LAYOUT_HEIGHT);
-    w = w > 0.005f && w < 0.2f ? w : BUTTON_SIZE, h = h > 0.005f && h < 0.2f ? h : BUTTON_SIZE;
-    if (shade && on && SweepMake(r))            // "shade": our sweep (a shade before it, the user's first pick)
-        SweepDraw(r, min(1.0f, left / total), w, h);
-    else if (r->sweepMade)
-        SweepDraw(r, 0, w, h);
-    float l4 = on && ring ? 4 * min(1.0f, left / total) : 0;
-    for (int k = 0; k < 4; k++) {
-        float part = max(0.0f, min(1.0f, l4 - k)), len = part * (k % 2 ? h : w);
-        bool show = part > 0.01f;
-        if (show && fabsf(len - r->len[k]) > 0.0002f)
-            Game(k % 2 ? RVA_SET_HEIGHT : RVA_SET_WIDTH, r->side[k], { F(len) }), r->len[k] = len;
-        if (show != r->shown[k])
-            Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, r->side[k]), r->shown[k] = show;
-    }
+    float w, h;
+    ButtonSize(btn, &w, &h);
+    SweepDraw(r, on ? min(1.0f, left / total) : 0, w, h);
 }
-// the buff bar (its grid as ReadBuffs reads it) and its buttons, or 0
-static BYTE *BuffBarOf(BYTE *ui, int *rows, int *cols) {
-    BYTE *bar = ui ? *(BYTE **)(ui + 0x3c4) : nullptr;
-    if (bar && (bar = *(BYTE **)(bar + 0x130)))
-        bar = *(BYTE **)(bar + 0x16c);
-    *rows = bar ? *(int *)(bar + 0x124) : 0, *cols = bar ? *(int *)(bar + 0x128) : 0;
-    return bar && *rows > 0 && *cols > 0 && *rows * *cols <= 16 ? bar : nullptr;
-}
-// cd: rings on cooling down command card / inventory buttons; bf: on the buffs that get seconds
-static void RingsPass(BYTE *ui, bool cdRing, bool bf, bool cdShade = false) {
-    bool cd = cdRing || cdShade;
-    if (g_ringBad || g_framesBad)
+// our sweeps on the command card and inventory buttons cooling down (on), else all hidden
+static void SweepsPass(BYTE *ui, bool on) {
+    if (g_swBad || g_framesBad)
         return;
     __try {
         BYTE *card = ui ? *(BYTE **)(ui + 0x3c8) : nullptr;
         int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
         bool cardOk = rows > 0 && cols > 0 && rows <= 3 && cols <= 4;
-        int brows, bcols;
-        BYTE *bar = bf ? BuffBarOf(ui, &brows, &bcols) : nullptr;
-        // every ring hidden first unless its button is still counting (another unit selected: other buttons)
-        for (int i = 0; i < g_ringN; i++) {
+        // every sweep hidden first unless its button is still counting (another unit selected: other buttons)
+        for (int i = 0; i < g_swN; i++) {
             bool still = false;
-            for (int s = 0; cd && cardOk && s < 12 && !still; s++)
-                still = s / 4 < rows && s % 4 < cols && GridButton(card, s / 4, s % 4) == g_rings[i].btn && g_shared->cdLeft[s] > 0;
-            for (int s = 0; cd && s < 6 && !still; s++)
-                still = ItemButton(ui, s) == g_rings[i].btn && g_shared->itemLeft[s] > 0;
-            for (int s = 0; bar && s < brows * bcols && !still; s++)
-                still = GridButton(bar, s / bcols, s % bcols) == g_rings[i].btn && BuffSlotDrawn(g_shared->buffFlags[s]) && g_shared->buffLeft[s] > 0;
+            for (int s = 0; on && cardOk && s < 12 && !still; s++)
+                still = s / 4 < rows && s % 4 < cols && GridButton(card, s / 4, s % 4) == g_sw[i].btn && g_shared->cdLeft[s] > 0;
+            for (int s = 0; on && s < 6 && !still; s++)
+                still = ItemButton(ui, s) == g_sw[i].btn && g_shared->itemLeft[s] > 0;
             if (!still)
-                RingDraw(g_rings[i].btn, 0, 0);
+                SweepSet(g_sw[i].btn, 0, 0);
         }
-        if (!ui)
+        if (!ui || !on)
             return;
-        for (int s = 0; cd && cardOk && s < 12; s++)
+        for (int s = 0; cardOk && s < 12; s++)
             if (s / 4 < rows && s % 4 < cols)
                 if (BYTE *b = CardButton(card, s))
-                    RingDraw(b, g_shared->cdLeft[s], g_shared->cdTotal[s], cdRing, cdShade);
-        for (int s = 0; cd && s < 6; s++) {
+                    SweepSet(b, g_shared->cdLeft[s], g_shared->cdTotal[s]);
+        for (int s = 0; s < 6; s++) {
             BYTE *b = ItemButton(ui, s);
             if (b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE))
-                RingDraw(b, g_shared->itemLeft[s], g_shared->itemTotal[s], cdRing, cdShade);
+                SweepSet(b, g_shared->itemLeft[s], g_shared->itemTotal[s]);
         }
-        for (int s = 0; bar && s < brows * bcols; s++)
-            if (BuffSlotDrawn(g_shared->buffFlags[s]))
-                if (BYTE *b = BuffButton(bar, bcols, s)) {
-                    RingDraw(b, g_shared->buffLeft[s], g_shared->buffTotal[s]);
-                    static bool logged;
-                    if (!logged && g_shared->buffLeft[s] > 0 && g_shared->buffTotal[s] > 0)
-                        logged = true, Log("buff ring: the first one on the buff icon %p (vtable +%06lX), %.1f s of %.1f", b, *(DWORD *)b - (DWORD)g_base, g_shared->buffLeft[s], g_shared->buffTotal[s]);
-                }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
-        g_ringBad = true;
-        Log("cooldown ring: a frame call faulted: no more rings");
+        g_swBad = true;
+        Log("cooldown sweep: a frame call faulted: no more sweeps");
     }
+}
+
+// our sweep wanted and possible: the game's clock is only hidden then (ours refused: the game's stays)
+static bool SweepWanted() {
+    return (g_shared->itOn & 1) && (g_shared->cdSweep & CD_SWEEP) && !g_swBad && !g_framesBad;
 }
 
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
-    BadgesPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 1));
-    SweepsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 2));
+    bool sweep = SweepWanted();
+    ClockHidePass(ui, sweep);
     if (!g_shared->itOn) {
         g_itReading = false;
-        RingsPass(ui, false, false);
+        SweepsPass(ui, false);
         __try {
             for (TimerSlot &s : g_tCd)
                 SlotHide(s);
@@ -2512,8 +2423,7 @@ static void TimerFramesPass(BYTE *ui) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         FramesStop("timers in the game: a frame call faulted");
     }
-    RingsPass(ui, (g_shared->itOn & 1) && (g_shared->cdNoBadge & 4), (g_shared->itOn & 2) && (g_shared->bfOpts & BF_RING),
-              (g_shared->itOn & 1) && (g_shared->cdNoBadge & 2) && !(g_shared->cdNoBadge & 8));
+    SweepsPass(ui, sweep);
     static bool logged;
     if (!logged && g_shared->frCount)
         logged = true, Log("timers in the game: drawing (%lu text frames)", g_shared->frCount);
@@ -2889,7 +2799,7 @@ static void FramesForget(BYTE *newUi) {
     ZeroMemory(g_tCd, sizeof(g_tCd));
     ZeroMemory(g_tBuff, sizeof(g_tBuff));
     ZeroMemory(g_tItem, sizeof(g_tItem));
-    g_badgeN = 0, g_sweepN = 0, g_ringN = 0;    // the badges' regions, the sweeps and our rings went with the game UI
+    g_clockN = 0, g_swN = 0;    // the clocks hidden and our sweeps went with the game UI
     g_textPoolN = g_textHideN = 0;
     for (BarExtra &e : g_bx)
         if (e.bar && e.text)
@@ -4998,7 +4908,7 @@ static void UlModels(BYTE *ui, BYTE *) {
         for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
             for (int c = 0; c < cols; c++)
                 if (BYTE *b = GridButton(card, r, c))
-                    (g_sweepOn ? (void)0 : UlModel(P(b, 0x19c), UL_MODEL_X)), UlModel(P(b, 0x1a8), UL_MODEL_X);
+                    (g_clockHidden ? (void)0 : UlModel(P(b, 0x19c), UL_MODEL_X)), UlModel(P(b, 0x1a8), UL_MODEL_X);
     }
     if (BYTE *hb = P(ui, 0x3dc)) {
         int rows = *(int *)(hb + 0x124), cols = *(int *)(hb + 0x128);
@@ -5008,7 +4918,7 @@ static void UlModels(BYTE *ui, BYTE *) {
                     UlModel(P(b, 0x1d8), UL_MODEL_X);
     }
     for (int i = 0; i < 6; i++)
-        if (BYTE *b = g_sweepOn ? nullptr : ItemButton(ui, i))
+        if (BYTE *b = g_clockHidden ? nullptr : ItemButton(ui, i))
             UlModel(P(b, 0x19c), UL_MODEL_X);
     UlModel(P(ui, 0x3f8), UL_CLOCK_X);
     // the quest sprite (WFE's 0x10087750, after ISUPPERMENUBAR and in its hook of the game's

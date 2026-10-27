@@ -16,7 +16,7 @@
     X(hbState) X(hbDefHeight) X(hbDefWidth) X(hbCount) X(hcOn) X(hcMode) X(hcColours) X(hcState) X(wsOn) X(wsState) X(fpsOn) \
     X(fpsLimit) X(fpsState) X(fpsGameLimit) X(scHeld) X(scState) X(scCount) X(cmdArg) X(latOn) X(latMs) X(latState) X(latGame) \
     X(uiHide) X(uiState) X(stState) X(itOn) X(itState) X(frCount) X(hnOn) X(hnMode) X(hnState) X(mbOn) X(mbHeight) X(mbState) \
-    X(hnCount) X(mbCount) X(itemLeft) X(itemTotal) X(prOn) X(prMode) X(prState) X(mbWidth) X(unload) X(stamp) X(ulOn) X(ulState) X(ulCount) X(ttOn) X(ttState) X(fmOn) X(fmState) X(csOn) X(csSecs) X(csState) X(csGame) X(alOn) X(alState) X(pingOn) X(hover) X(pingText) X(tmMinutes) X(pingChat) X(cdSize) X(cdGold) X(cdReady) X(cdNoBadge) \
+    X(hnCount) X(mbCount) X(itemLeft) X(itemTotal) X(prOn) X(prMode) X(prState) X(mbWidth) X(unload) X(stamp) X(ulOn) X(ulState) X(ulCount) X(ttOn) X(ttState) X(fmOn) X(fmState) X(csOn) X(csSecs) X(csState) X(csGame) X(alOn) X(alState) X(pingOn) X(hover) X(pingText) X(tmMinutes) X(pingChat) X(cdSize) X(cdGold) X(cdReady) X(cdSweep) \
     X(hrWant) X(hrHero) X(hrAlive) X(hrCount) X(hrId) X(hrLeft) X(hrTotal) X(hrFlags) X(hrName) X(bfSize) X(bfGold) X(bfOpts) X(bbScale) X(bbState) X(blOn) X(blState) X(blSeq) X(blDone) X(blAccount) X(blPassword) X(blAfter) X(blGame)
 
 struct Field { const char *name; size_t off, size; };
