@@ -34,7 +34,10 @@ for ri, r in enumerate(rows):
         shade = Image.new('L', icon.size, 0)
         sd = ImageDraw.Draw(shade)
         for (x, y, w, h) in cases[key]:
-            sd.rectangle([x * px, y * px, (x + w) * px - 1, (y + h) * px - 1], fill=0x99)
+            x0p, y0p = round(x * px), round(y * px)
+            x1p, y1p = round((x + w) * px), round((y + h) * px)
+            if x1p > x0p and y1p > y0p:     # as the game fills pixels: whole ones, by their centres
+                sd.rectangle([x0p, y0p, x1p - 1, y1p - 1], fill=0x99)
         dark = Image.new('RGB', icon.size, (0, 0, 0))
         icon = Image.composite(dark, icon, shade)
         img.paste(icon, (int(x0), int(y0)))

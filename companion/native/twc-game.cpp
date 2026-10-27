@@ -2201,27 +2201,31 @@ static void ClockHidePass(BYTE *ui, bool on) {
 // our own squares. Per button a simple frame of ours over it, made the way the game makes the
 // number badge (+0x3e1cb0): CSimpleFrame +0x13ae90(mem, button), ret 4 (its level is the
 // button's + 1, +0x13c310, so it's drawn over the button's icon); SetAllPoints +0x13fad0 onto it,
-// shown as SetNumber shows the badge: [+0x90] = 1, vt+0x68. In it 32 textures (CSimpleTexture
+// shown as SetNumber shows the badge: [+0x90] = 1, vt+0x68. In it textures (CSimpleTexture
 // +0x141fe0(mem, frame, layer 2, shown 1), ret 12; SetTexture +0x1435f0(path, 0), ret 8: the
 // game's team colour square, tinted black and see-through: a texture's alpha +0x68 and colour
-// +0x69..+0x6b, applied by its vt+0x24 +0x141d00, pinned in test_gamedll). The button is cut into
-// 16 rows, each in a left and a right half; in each half-row the part still to come (clockwise
-// from 12 o'clock, on the button's own width and height, so a narrowed button gets a squeezed
-// circle as the game's model does) is one interval, so one square per half-row, anchored to the
-// frame's top left (SetPoint +0x13fc20, ret 24) and sized with the width / height setters
-// (+0x13fce0 / +0x13fb40, the layout's +0x58 / +0x5c); hidden with the region hide when empty.
-// Only squares whose place or size changed are touched. The edge is a staircase of 16 steps,
-// about 2.5 px a step on a 1080p button. Made once per button, kept with the game UI (the game
-// frees them with it). Our text frames (CTextFrames, not simple frames) stay over the squares,
-// as the timers drawn in the game stayed over the buttons.
+// +0x69..+0x6b, applied by its vt+0x24 +0x141d00, pinned in test_gamedll), made as they're needed.
+// The button is cut into 64 rows (about 1 px each on a 1080p button: 16 showed as steps in the
+// user's screenshot), each in a left and a right half; in each half-row the part still to come
+// (clockwise from 12 o'clock, on the button's own width and height, so a narrowed button gets a
+// squeezed circle as the game's model does) is one interval. A row whose two halves meet at the
+// centre is one interval, and rows with the same interval (whole rows, half rows: most of the
+// dark part) are one square together, so a button has a few dozen squares at most, not 128.
+// Each square is anchored to the frame's top left (SetPoint +0x13fc20, ret 24) and sized with the
+// width / height setters (+0x13fce0 / +0x13fb40, the layout's +0x58 / +0x5c); unused ones hidden
+// with the region hide. Only squares whose place or size changed are touched. Kept with the game
+// UI (the game frees them with it). Our text frames (CTextFrames, not simple frames) stay over the
+// squares, as the timers drawn in the game stayed over the buttons.
 static const DWORD RVA_SIMPLEFRAME_CTOR = 0x13ae90, RVA_SIMPLEFRAME_VT = 0xa7cc14, RVA_TEXTURE_CTOR = 0x141fe0, SWEEP_TEXTURE_VT = 0xa7d13c;
 static const DWORD RVA_SET_TEXTURE = 0x1435f0, RVA_SET_ALL_POINTS = 0x13fad0, RVA_SET_WIDTH = 0x13fce0, RVA_SET_HEIGHT = 0x13fb40;
 static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c, LAYOUT_RECT = 0x44;
 static const char SWEEP_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
 static const float BUTTON_SIZE = 0.039f;
 static const DWORD CD_SWEEP = 2;           // cdSweep: the only bit sent (1, 4 and 8 retired: never set)
-static const int SWEEP_ROWS = 16, SWEEP_CELLS = 2 * SWEEP_ROWS;
-struct Sweep { BYTE *btn, *frame, *cell[SWEEP_CELLS]; float cellL[SWEEP_CELLS], cellW[SWEEP_CELLS], rowH; bool cellShown[SWEEP_CELLS]; };
+static const int SWEEP_ROWS = 64, SWEEP_CELLS = 2 * SWEEP_ROWS;   // the most squares a button could need
+// a square: from the button's left x, its top t down, w x h (UI units)
+struct SweepCell { BYTE *tex; float x, t, w, h; bool shown; };
+struct Sweep { BYTE *btn, *frame; int made; SweepCell cell[SWEEP_CELLS]; };
 static const int SWEEPS = 12 + 6;          // the command card, the inventory
 static Sweep g_sw[SWEEPS];
 static int g_swN;
@@ -2229,7 +2233,7 @@ static bool g_swBad;
 static const BYTE SWEEP_ALPHA = 0x99;      // 60% black, about the game's own sweep
 static const float PI_2 = 6.2831853f;
 
-// a button's frame and its 32 squares, made the first time it cools down (nullptr: refused, logged)
+// a button's frame, made the first time it cools down (nullptr: refused, logged); its squares come as needed
 static Sweep *SweepFor(BYTE *btn) {
     for (int i = 0; i < g_swN; i++)
         if (g_sw[i].btn == btn)
@@ -2250,24 +2254,29 @@ static Sweep *SweepFor(BYTE *btn) {
     Game(RVA_SET_ALL_POINTS, f, { (DWORD)btn, 1 });
     *(DWORD *)(f + 0x90) = 1;
     Virt(f, 0x68);
-    for (int k = 0; k < SWEEP_CELLS; k++) {
-        void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown sweep", __LINE__, 0);
-        BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)f, 2, 1 }) : nullptr;
-        if (!t || t != tm || *(DWORD *)t != (DWORD)(g_base + SWEEP_TEXTURE_VT)) {
-            Log("cooldown sweep: a new texture %p isn't a CSimpleTexture: no sweeps", t);
-            g_swBad = true;
-            return nullptr;
-        }
-        Game(RVA_SET_TEXTURE, t, { (DWORD)SWEEP_TEXTURE, 0 });
-        t[0x68] = SWEEP_ALPHA, t[0x69] = t[0x6a] = t[0x6b] = 0;
-        Virt(t, 0x24);
-        Game(RVA_REGION_HIDE, t);
-        r->cell[k] = t, r->cellL[k] = r->cellW[k] = -1;
-    }
-    r->btn = btn, r->frame = f, r->rowH = -1;
+    r->btn = btn, r->frame = f;
     if (!g_swN++)
-        Log("cooldown sweep: the first one made (%d squares in the frame %p over the button %p)", SWEEP_CELLS, f, btn);
+        Log("cooldown sweep: the first one made (%d rows, squares made as needed, in the frame %p over the button %p)", SWEEP_ROWS, f, btn);
     return r;
+}
+// the square k of a sweep, made now if it's new (nullptr: refused, logged)
+static SweepCell *SweepCellAt(Sweep *r, int k) {
+    if (k < r->made)
+        return &r->cell[k];
+    void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown sweep", __LINE__, 0);
+    BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)r->frame, 2, 1 }) : nullptr;
+    if (!t || t != tm || *(DWORD *)t != (DWORD)(g_base + SWEEP_TEXTURE_VT)) {
+        Log("cooldown sweep: a new texture %p isn't a CSimpleTexture: no sweeps", t);
+        g_swBad = true;
+        return nullptr;
+    }
+    Game(RVA_SET_TEXTURE, t, { (DWORD)SWEEP_TEXTURE, 0 });
+    t[0x68] = SWEEP_ALPHA, t[0x69] = t[0x6a] = t[0x6b] = 0;
+    Virt(t, 0x24);
+    Game(RVA_REGION_HIDE, t);
+    SweepCell *c = &r->cell[r->made++];
+    c->tex = t, c->x = c->t = c->w = c->h = -1, c->shown = false;
+    return c;
 }
 // the angle of (x, y) clockwise from 12 o'clock, 0..2pi (x right, y up, about the centre)
 static float ClockAngle(float x, float y) {
@@ -2287,7 +2296,7 @@ static void SweepSpan(float y, float x0, float x1, float A, float *l, float *r) 
         return;
     }
     float lo = x0, hi = x1;                     // the edge: where the angle crosses A
-    for (int k = 0; k < 18; k++) {
+    for (int k = 0; k < 14; k++) {                // 1/8192 of the half-row
         float m = (lo + hi) / 2;
         ((ClockAngle(m, y) >= A) == d0 ? lo : hi) = m;
     }
@@ -2315,27 +2324,52 @@ static void ButtonSize(BYTE *btn, float *w, float *h) {
 // the part to come: 1 at the cast, 0 when it's ready (f), on a button w x h
 static void SweepDraw(Sweep *r, float f, float w, float h) {
     float A = PI_2 * (1 - f), rowH = h / SWEEP_ROWS;
-    if (fabsf(rowH - r->rowH) > 0.00001f)               // another height: every square placed again, hidden ones too when shown
-        for (int k = 0; k < SWEEP_CELLS; k++)
-            r->cellL[k] = r->cellW[k] = -1;
-    r->rowH = rowH;
-    for (int row = 0; row < SWEEP_ROWS; row++)
-        for (int half = 0; half < 2; half++) {
-            int k = row * 2 + half;
-            float y = 1 - (row + 0.5f) * 2 / SWEEP_ROWS, l = 0, rr = 0;
-            if (f > 0.001f)
-                SweepSpan(y, half ? 0.0f : -1.0f, half ? 1.0f : 0.0f, A, &l, &rr);
-            float lw = (l + 1) / 2 * w, ww = (rr - l) / 2 * w;        // from the button's left, and its width
-            bool show = ww > 0.0003f;
-            BYTE *t = r->cell[k];
-            if (show && (fabsf(lw - r->cellL[k]) > 0.0002f || fabsf(ww - r->cellW[k]) > 0.0002f)) {
-                Game(RVA_SET_POINT, t, { 0, (DWORD)r->frame, 0, F(lw), F(-row * rowH), 1 });
-                Game(RVA_SET_WIDTH, t, { F(ww) }), Game(RVA_SET_HEIGHT, t, { F(rowH + 0.00005f) });
-                r->cellL[k] = lw, r->cellW[k] = ww;
-            }
-            if (show != r->cellShown[k])
-                Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, t), r->cellShown[k] = show;
+    // the dark intervals row by row (-1..1), the two halves joined where they meet at the centre,
+    // then rows with the same single interval stacked into one square
+    struct Box { float l, r; int row, rows; } box[SWEEP_CELLS];
+    int n = 0;
+    for (int row = 0; f > 0.001f && row < SWEEP_ROWS; row++) {
+        float y = 1 - (row + 0.5f) * 2 / SWEEP_ROWS, s[2][2];
+        SweepSpan(y, -1.0f, 0.0f, A, &s[0][0], &s[0][1]);
+        SweepSpan(y, 0.0f, 1.0f, A, &s[1][0], &s[1][1]);
+        bool e0 = s[0][1] - s[0][0] < 1e-4f, e1 = s[1][1] - s[1][0] < 1e-4f;
+        float iv[2][2];
+        int m = 0;
+        if (!e0 && !e1 && s[0][1] == 0 && s[1][0] == 0)
+            iv[m][0] = s[0][0], iv[m][1] = s[1][1], m++;
+        else {
+            if (!e0)
+                iv[m][0] = s[0][0], iv[m][1] = s[0][1], m++;
+            if (!e1)
+                iv[m][0] = s[1][0], iv[m][1] = s[1][1], m++;
         }
+        bool one = m == 1;
+        for (int i = 0; i < m; i++) {
+            Box *last = n ? &box[n - 1] : nullptr;
+            if (one && last && last->row + last->rows == row && last->l == iv[i][0] && last->r == iv[i][1]
+                && (n < 2 || box[n - 2].row != last->row))      // the row before had only this one too
+                last->rows++;
+            else
+                box[n++] = { iv[i][0], iv[i][1], row, 1 };
+        }
+    }
+    for (int k = 0; k < n; k++) {
+        SweepCell *c = SweepCellAt(r, k);
+        if (!c)
+            return;
+        float x = (box[k].l + 1) / 2 * w, cw = (box[k].r - box[k].l) / 2 * w;     // from the button's left, and its width
+        float t = box[k].row * rowH, ch = box[k].rows * rowH + 0.00005f;          // a hair taller: no gap between rows
+        if (fabsf(x - c->x) > 0.0002f || fabsf(cw - c->w) > 0.0002f || fabsf(t - c->t) > 1e-6f || fabsf(ch - c->h) > 1e-6f) {
+            Game(RVA_SET_POINT, c->tex, { 0, (DWORD)r->frame, 0, F(x), F(-t), 1 });
+            Game(RVA_SET_WIDTH, c->tex, { F(cw) }), Game(RVA_SET_HEIGHT, c->tex, { F(ch) });
+            c->x = x, c->w = cw, c->t = t, c->h = ch;
+        }
+        if (!c->shown)
+            Game(RVA_REGION_SHOW, c->tex), c->shown = true;
+    }
+    for (int k = n; k < r->made; k++)
+        if (r->cell[k].shown)
+            Game(RVA_REGION_HIDE, r->cell[k].tex), r->cell[k].shown = false;
 }
 // a button's sweep for its time left of its full time (none: hidden; nothing made until it cools down)
 static void SweepSet(BYTE *btn, float left, float total) {
@@ -5892,6 +5926,15 @@ static volatile LONG g_finalDone;   // 1 given back, 2 can't unload
 static bool g_unloadNow;            // Worker retires the module when Run returns
 static Shared g_retired;            // what g_shared points at once retired (nothing reads it)
 
+// another module's shared memory, and that module is running (its heartbeat moves): not ours to take
+static bool LiveModuleThere(const Shared *s) {
+    if (s->magic != 'TWC1' || (s->status != 1 && s->status != 2 && s->status != 5))
+        return false;
+    if (s->status != 1)
+        return true;                    // idle on another build / staying: alive, but no heartbeat
+    return GetTickCount() - s->heartbeat < 1000;    // the worker writes it every 30-50 ms (no waiting here: the loader lock)
+}
+
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
@@ -5942,10 +5985,15 @@ static bool UnloadStep(DWORD now) {
     if (!done && now - finalAt < 5000)
         return false;
     if (done != 1) {
-        g_shared->status = 5;
+        // the module stays, and keeps working: status 1 again (it said 5 before, and the companion's
+        // quickcast only uses a module at 1, so quickcast went quiet until the game was restarted;
+        // the switches come back with the companion's next pushes). unload 2: not asked again
         g_shared->unload = 2;
-        Log(done == 2 ? "unloading: the game window was subclassed after us: the module stays (restart the game for the new one)"
-                      : "unloading: the game thread didn't answer: the module stays");
+        g_shared->status = 1;
+        Log(done == 2 ? "unloading: the game window was subclassed after us: this module stays and carries on (restart the game for the new one)"
+                      : "unloading: the game thread didn't answer: this module stays and carries on");
+        if (done == 0)
+            InterlockedExchange(&g_finalDone, 0);
         asked = posted = false;
         return false;
     }
@@ -6075,9 +6123,22 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         g_map = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(Shared), name);
         if (!g_map)
             return FALSE;
+        bool existed = GetLastError() == ERROR_ALREADY_EXISTS;
         g_shared = (Shared *)MapViewOfFile(g_map, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Shared));
         if (!g_shared)
             return FALSE;
+        // Loaded again into a game whose module is alive (injected a second time): two modules in one
+        // game answered the same quickcast requests, and this one's start wiped the other's shared
+        // memory, so quickcast stopped (WFE does the same when injected twice). This copy stays idle
+        // and leaves the live one alone. A module that's unloading or gone (status 3 / 4, a stale
+        // heartbeat) doesn't count: the companion's view can keep its memory after it went.
+        if (existed && LiveModuleThere(g_shared)) {
+            Log("---- twc-game.dll loaded again into pid %lu, but the module there is alive (status %lu): this copy stays idle",
+                GetCurrentProcessId(), g_shared->status);
+            UnmapViewOfFile(g_shared), g_shared = &g_retired;
+            CloseHandle(g_map), g_map = nullptr;
+            return TRUE;
+        }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
         g_shared->layout = 25;
@@ -6096,7 +6157,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         if (g_shared)
             g_shared->status = 3;
         if (!reserved) {            // unloaded: free the names for the next module (the companion's view keeps it until it lets go)
-            if (g_shared)
+            if (g_shared && g_shared != &g_retired)
                 UnmapViewOfFile(g_shared), g_shared = nullptr;
             if (g_map)
                 CloseHandle(g_map), g_map = nullptr;

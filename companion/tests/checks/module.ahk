@@ -243,6 +243,12 @@ TwcModuleSwap() {
     NumPut("uint", 3, v, Shm.status)
     gm2.swapStep(pid)
     TwcCheck(!gm2.swapping && !gm2.views.Has(pid) && calls.n = 1, "unloaded (status 3): the view is let go and the new one is loaded")
+    ; the old module can't go (unload 2) and carries on at status 1: the swap ends, the view is kept, nothing loaded
+    v := gm2.view(pid), NumPut("uint", 1, v, Shm.status), NumPut("uint", 2, v, Shm.unload)
+    gm2.swapping := pid, gm2.swapAt := A_TickCount, calls.n := 0
+    gm2.swapStep(pid)
+    TwcCheck(!gm2.swapping && gm2.views.Has(pid) && !calls.n && gm2.live() = v, "the old module can't go (unload 2, status 1): the swap ends and it's used as before")
+    NumPut("uint", 0, v, Shm.unload), NumPut("uint", 3, v, Shm.status), gm2.drop(pid)
     ; the old module still had its name open: the view opened again is the old one's (status 3) -> let go, loaded again
     v := gm2.view(pid), gm2.tried[pid] := true
     TwcCheck(v && gm2.dropUnloaded(pid, v) && !gm2.views.Has(pid) && !gm2.tried.Has(pid), "a view of an unloaded module (the old one's, in the race): let go, to be loaded again")

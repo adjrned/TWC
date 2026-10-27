@@ -1,7 +1,9 @@
 // Unloading for a newer module (layout 13): asked through shared memory, every
 // switch goes off, then the game thread gives back the rewritten projection
 // call and the window, and the worker is told to free the module. And when
-// someone subclassed the window after us, the module stays (status 5).
+// someone subclassed the window after us, the module stays and carries on
+// (status 1 again, so quickcast keeps working). And a second copy loaded into
+// a game whose module is alive leaves it alone (LiveModuleThere).
 #include "../twc-game.cpp"
 #include "check.h"
 static DWORD mainTid; static BYTE *img; static HWND wnd;
@@ -35,8 +37,26 @@ static DWORD WINAPI Tester(void *) {
     theirs = (WNDPROC)SetWindowLongPtrA(wnd, GWLP_WNDPROC, (LONG_PTR)Theirs);
     g_shared->unload = 1;
     freed = RunUnload(8500);
-    CHECK(!freed && g_shared->status == 5 && g_shared->unload == 2, "a window subclassed after us: the module stays (status %lu)", g_shared->status);
+    CHECK(!freed && g_shared->status == 1 && g_shared->unload == 2, "a window subclassed after us: the module stays and carries on (status %lu, not 5: quickcast needs 1)", g_shared->status);
+    g_shared->wsOn = 1;
+    bool carries = !UnloadStep(GetTickCount()) && g_shared->wsOn == 1 && g_shared->status == 1;
+    CHECK(carries, "and isn't asked again: the companion's switches stay on (nothing turned off)");
     SetWindowLongPtrA(wnd, GWLP_WNDPROC, (LONG_PTR)theirs);
+    // a second copy loaded into this game: the shared memory there is another module's
+    static Shared other;
+    other.magic = 'TWC1', other.status = 1, other.heartbeat = GetTickCount();
+    bool alive = LiveModuleThere(&other);
+    other.heartbeat = GetTickCount() - 5000;
+    bool stale = !LiveModuleThere(&other);
+    other.heartbeat = GetTickCount(), other.status = 3;
+    bool gone = !LiveModuleThere(&other);
+    other.status = 4;
+    bool going = !LiveModuleThere(&other);
+    other.status = 2;
+    bool idle = LiveModuleThere(&other);
+    other.status = 1, other.magic = 0;
+    CHECK(alive && stale && gone && going && idle && !LiveModuleThere(&other),
+          "loaded again: a module there with a moving heartbeat (or idle on another build) is left alone; a stale, unloading or gone one isn't");
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
     return 0;

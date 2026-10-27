@@ -37,7 +37,10 @@ static void __fastcall FakeSetText(BYTE *t, int, const char *s) { setTexts++; st
 static int __fastcall FakeSetFont(BYTE *, int, const char *path, float h, DWORD) { fonts++; strcpy_s(lastFont, path); lastFontH = h; return 1; }
 static int refreshes;
 static void __fastcall FakeRefresh(BYTE *, int, int) { refreshes++; }
-static void __fastcall FakeSetPoint(BYTE *, int, int, void *rel, int, float x, float y, int) { anchors++; lastRel = rel; lastX = x; lastY = y; }
+static void __fastcall FakeSetPoint(BYTE *l, int, int, void *rel, int, float x, float y, int) {
+    anchors++; lastRel = rel; lastX = x; lastY = y;
+    if (*(DWORD *)l == (DWORD)(imgRef() + SWEEP_TEXTURE_VT)) *(float *)(l + 0x10) = x, *(float *)(l + 0x14) = y;     // a sweep square: kept for the test
+}
 static void __fastcall FakeSetAbs(BYTE *lay, int, int, float x, float y, int) { absPoints++; lastX = x; lastY = y; *(float *)(lay + 0x10) = y; }
 static const char *__fastcall FakeSkin(const char *key, int) { return !strcmp(key, "MasterFont") ? "Fonts\\Test.ttf" : nullptr; }
 static void __fastcall FakeTextHide(BYTE *t, int) { hides++; t[0x1e0] = 0; }
@@ -177,7 +180,7 @@ int main() {
     sh.cdLeft[5] = 0; sh.cdLeft[11] = 30; TimerFramesDraw(ui); sh.cdLeft[11] = 0; TimerFramesDraw(ui);
     CHECK(g_tCd[11].text[0x1e0] == 0, "no 'Ready' when the seconds vanish from 30 (another unit selected), only when they run out");
     sh.cdGold = 0, sh.cdReady = 0, sh.cdLeft[0] = 2, sh.cdLeft[11] = 75; TimerFramesDraw(ui);
-    // our sweep (cdSweep bit 2): a frame of ours over the button, 32 squares tinted black at 60%, the part to come clockwise from 12 o'clock
+    // our sweep (cdSweep bit 2): a frame of ours over the button, squares tinted black at 60%, the part to come clockwise from 12 o'clock
     {
         DWORD old2; VirtualProtect(img + RVA_SIMPLEFRAME_VT, 0x100, PAGE_READWRITE, &old2);
         ((DWORD *)(img + RVA_SIMPLEFRAME_VT))[0x68 / 4] = StubAt(0x610000, FakeNop);
@@ -187,51 +190,68 @@ int main() {
         sh.itOn = 1, sh.cdSweep = CD_SWEEP, sh.cdLeft[0] = 7.5f, sh.cdTotal[0] = 10;
         SweepsPass(ui, true);
         Sweep *r = g_swN ? &g_sw[0] : nullptr;
-        auto shown = [&](int k) { return r && r->cell[k] && (*(DWORD *)(r->cell[k] + 0x7c) & 1) != 0; };
-        auto W = [&](int k) { return *(float *)(r->cell[k] + LAYOUT_WIDTH); };
-        auto H = [&](int k) { return *(float *)(r->cell[k] + LAYOUT_HEIGHT); };
-        bool made = r && r->btn == btns[0] && sweepFrames == 1 && sweepTextures == SWEEP_CELLS && allPoints == 1 && sweepPath && strstr(sweepPath, "TeamColor04")
-            && tints == SWEEP_CELLS && r->cell[0][0x68] == SWEEP_ALPHA && !r->cell[0][0x69] && !r->cell[0][0x6b];
-        // 3/4 to come (7.5 of 10 s): the top right quarter is clear, the rest dark: row 0 right half empty, left half full,
-        // the bottom row's halves both full
-        bool q = !shown(1) && shown(0) && fabsf(W(0) - 0.02f) < 1e-4f && shown(30) && shown(31) && fabsf(W(31) - 0.02f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
+        auto tex = [&](int k) { return r->cell[k].tex; };
+        auto shown = [&](int k) { return r && k < r->made && (*(DWORD *)(tex(k) + 0x7c) & 1) != 0; };
+        auto count = [&]() { int n = 0; for (int k = 0; r && k < r->made; k++) n += shown(k); return n; };
+        auto W = [&](int k) { return *(float *)(tex(k) + LAYOUT_WIDTH); };
+        auto H = [&](int k) { return *(float *)(tex(k) + LAYOUT_HEIGHT); };
+        // the shown squares against the clock: a 48 x 48 grid of points over a w x h button, the share that disagree
+        auto wrong = [&](float f, float w, float h) {
+            int bad = 0;
+            for (int i = 0; i < 48; i++)
+                for (int j = 0; j < 48; j++) {
+                    float u = (i + 0.5f) / 48 * w, v = (j + 0.5f) / 48 * h;
+                    bool want = f > 0 && ClockAngle(u / w * 2 - 1, 1 - v / h * 2) >= PI_2 * (1 - f), have = false;
+                    for (int k = 0; r && k < r->made && !have; k++) {
+                        float x = *(float *)(tex(k) + 0x10), t = -*(float *)(tex(k) + 0x14);
+                        have = shown(k) && u >= x && u < x + W(k) && v >= t && v < t + H(k);
+                    }
+                    bad += want != have;
+                }
+            return bad / (48.0f * 48);
+        };
+        bool made = r && r->btn == btns[0] && sweepFrames == 1 && r->made > 0 && sweepTextures == r->made && allPoints == 1 && sweepPath && strstr(sweepPath, "TeamColor04")
+            && tints == r->made && tex(0)[0x68] == SWEEP_ALPHA && !tex(0)[0x69] && !tex(0)[0x6b];
+        // 3/4 to come (7.5 of 10 s): all but the top right quarter, as two squares (the top left quarter, the bottom half)
+        float e1 = wrong(0.75f, 0.04f, 0.04f);
+        bool q = count() == 2 && e1 < 0.001f;
         sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
-        // 1/4 to come: only the top left quarter dark
-        bool q2 = shown(0) && !shown(1) && !shown(30) && !shown(31) && shown(14) && !shown(16) && !shown(15) && fabsf(W(0) - 0.02f) < 1e-4f;
-        // a tenth to come: a thin wedge just left of 12 o'clock: the top rows' left halves, their right ends at the centre
-        sh.cdLeft[0] = 1; SweepsPass(ui, true);
-
-        bool tenth = shown(0) && !shown(1) && shown(14) && !shown(15) && !shown(16) && !shown(31) && fabsf(r->cellL[0] + r->cellW[0] - 0.02f) < 1e-4f && W(0) > 0.012f && W(0) < 0.015f && W(14) < W(0);
-        q2 = q2 && tenth;
+        bool q2 = count() == 1 && wrong(0.25f, 0.04f, 0.04f) < 0.001f && fabsf(W(0) - 0.02f) < 1e-5f && fabsf(H(0) - 0.02f) < 1e-4f;   // the top left quarter
+        sh.cdLeft[0] = 5; SweepsPass(ui, true);
+        bool half = count() == 1 && fabsf(W(0) - 0.02f) < 1e-5f && fabsf(H(0) - 0.04f) < 1e-4f;                                         // the left half
+        // a tenth, and the shapes between: right within a row's height of the edge (under 2% of the points), a few dozen squares at most
+        float e3 = 0, e6 = 0, e9 = 0;
+        int n6 = 0;
+        sh.cdLeft[0] = 1; SweepsPass(ui, true); e3 = wrong(0.1f, 0.04f, 0.04f);
+        bool wedge = shown(0) && *(float *)(tex(0) + 0x10) < 0.02f && *(float *)(tex(0) + 0x10) + W(0) <= 0.02f + 1e-6f;   // left of 12 o'clock
+        sh.cdLeft[0] = 6; SweepsPass(ui, true); e6 = wrong(0.6f, 0.04f, 0.04f), n6 = count();
+        sh.cdLeft[0] = 8.8f; SweepsPass(ui, true); e9 = wrong(0.88f, 0.04f, 0.04f);
+        bool shapes = e3 < 0.02f && e6 < 0.02f && e9 < 0.02f && wedge && n6 <= 70;
         sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
         int a1 = anchors; SweepsPass(ui, true);
         bool still = anchors == a1;                 // nothing changed: no square moved
         sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
-        bool full = true;
-        for (int k = 0; k < SWEEP_CELLS; k++)
-            full &= shown(k);
+        bool full = wrong(0.999f, 0.04f, 0.04f) < 0.02f;
         sh.cdLeft[0] = 0; SweepsPass(ui, true);
-        bool swGone = true;
-        for (int k = 0; k < SWEEP_CELLS; k++)
-            swGone &= !shown(k);
+        bool swGone = count() == 0;
         sh.cdLeft[0] = 5; SweepsPass(ui, false);
-        bool off = !shown(0) && !shown(31);
-        CHECK(made && q && q2 && still && full && swGone && off && sweepFrames == 1,
-              "our sweep: 32 squares, black at 60%%; 3/4 to come: all but the top right quarter; 1/4: only the top left; unchanged: none moved; just cast: all; over or off: none");
+        bool off = count() == 0;
+        CHECK(made && q && q2 && half && shapes && still && full && swGone && off && sweepFrames == 1 && r->made <= SWEEP_CELLS,
+              "our sweep: %d rows, black at 60%%; 3/4 to come: 2 squares, 1/4 and 1/2: 1; a tenth, 0.6, 0.88: %.1f%% / %.1f%% / %.1f%% of points off (%d squares at 0.6); unchanged: none moved; just cast: all; over or off: none (%d made)",
+              SWEEP_ROWS, e3 * 100, e6 * 100, e9 * 100, n6, r ? r->made : 0);
         // the button's laid-out rect wins over its +0x58 / +0x5C (sized by its anchors, or narrowed by the Widescreen UI):
-        // a 0.0275 x 0.04 button gets 0.01375-wide halves; a new height places every square again
+        // a 0.0275 x 0.04 button: half to come is one 0.01375-wide square; a new height places it again
         float *rc = (float *)(btns[0] + LAYOUT_RECT);
         rc[0] = 0.1f, rc[1] = 0.5f, rc[2] = 0.14f, rc[3] = 0.5275f;     // y first: bottom, left, top, right
-        sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
-        bool narrow = fabsf(W(0) - 0.01375f) < 1e-4f && fabsf(W(31) - 0.01375f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
-        int a2 = anchors;
+        sh.cdLeft[0] = 5; SweepsPass(ui, true);
+        bool narrow = count() == 1 && fabsf(W(0) - 0.01375f) < 1e-5f && fabsf(H(0) - 0.04f) < 1e-4f && wrong(0.5f, 0.0275f, 0.04f) < 0.001f;
         rc[2] = 0.132f; SweepsPass(ui, true);
-        bool lower = anchors - a2 >= SWEEP_CELLS && fabsf(H(0) - 0.002f) < 1e-4f;
-        // the height back while only the top left quarter is dark: the squares hidden then get the new height when shown again
+        bool lower = fabsf(H(0) - 0.032f) < 1e-4f;
+        // the height back while one square is used: the second, hidden then, gets the new height when it's shown
         sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
         rc[2] = 0.14f; SweepsPass(ui, true);
-        sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
-        lower = lower && fabsf(H(31) - 0.0025f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
+        sh.cdLeft[0] = 7.5f; SweepsPass(ui, true);
+        lower = lower && count() == 2 && wrong(0.75f, 0.0275f, 0.04f) < 0.001f;
         float w, h;
         rc[0] = rc[1] = rc[2] = rc[3] = 0;
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0;
@@ -240,7 +260,7 @@ int main() {
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0.032f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.032f;
         ButtonSize(btns[0], &w, &h);
         CHECK(narrow && lower && fallback && w == 0.032f && h == 0.032f,
-              "the sweep fits the button as laid out (0.0275 wide: %.5f halves), a lower button: every square again; no rect: its own size, else 0.039", W(0));
+              "the sweep fits the button as laid out (0.0275 x 0.04: half to come %.5f wide), a lower button: placed again; no rect: its own size, else 0.039", W(0));
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0.04f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.04f;
         sh.cdLeft[0] = 0; SweepsPass(ui, true);
         bool wanted = SweepWanted();

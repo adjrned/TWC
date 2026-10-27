@@ -51,8 +51,8 @@ int main() {
             for (int i = 0; i < g_swN; i++)
                 if (g_sw[i].btn == b)
                     r = &g_sw[i];
-            for (int k = 0; r && k < SWEEP_CELLS; k++) {
-                BYTE *t = r->cell[k];
+            for (int k = 0; r && k < r->made; k++) {
+                BYTE *t = r->cell[k].tex;
                 if (*(DWORD *)(t + 0x7c))
                     printf("%d %.5f %.5f %.4f %.6f %.6f %.6f %.6f\n", c, SIZES[c][0], SIZES[c][1], f,
                            *(float *)(t + 0x10), -*(float *)(t + 0x14), *(float *)(t + LAYOUT_WIDTH), *(float *)(t + LAYOUT_HEIGHT));

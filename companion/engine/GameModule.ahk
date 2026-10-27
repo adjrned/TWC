@@ -125,7 +125,8 @@ class GameModuleEngine {
             DebugLog("game module: the old one unloaded: loading the new one")
             return this.check()
         }
-        if st = 5 || A_TickCount - this.swapAt > 20000 || !WinExist("ahk_pid " pid) {
+        ; unload 2: it can't go and carries on (status 1 again since 2026-10-27: quickcast keeps working)
+        if st = 5 || (v && NumGet(v, Shm.unload, "uint") = 2) || A_TickCount - this.swapAt > 20000 || !WinExist("ahk_pid " pid) {
             this.swapping := 0
             DebugLog("game module: the old one stays (status " st "): restart the game for the new one")
         }
