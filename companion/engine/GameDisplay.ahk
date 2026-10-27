@@ -148,7 +148,7 @@ class GameDisplayEngine {
         this.push()
     }
     ; WFE's [BUFFUI] ISUPGRADEDBUFFBAR with it: the buff bar raised over the console (ulOn bit 2)
-    buffBarUp => Integer(Ini(this.section, "buffBarUp", 0))
+    buffBarUp => Integer(Ini(this.section, "buffBarUp", 1))       ; raised by default: buffs above the unit's name, as WFE's (the user's pick)
     toggleBuffBarUp() {
         SetIni(this.buffBarUp ? 0 : 1, this.section, "buffBarUp")
         this.push()

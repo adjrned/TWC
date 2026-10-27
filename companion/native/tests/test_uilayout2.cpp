@@ -104,6 +104,11 @@ int main() {
     sh.itOn = 0, sh.ulOn = 1; UlBuffs(ui, ui + 0xb4);
     CHECK(fabsf(W(bb) - 1.05f * 8 * 0.0182725f) < 1e-6f && Is(Find(bb, 8), root, 8, 8 * 0.0182725f - 0.435f, 0) && Is(Find(blabel, 5), (DWORD)bb, 3, -0.0025f, 0),
           "both off again: WFE's default layout");
+    // the command card: WFE's bottom right, lowered 0.0045 to line up with the inventory (the user's screenshot)
+    static BYTE cardF[0x200];
+    *(BYTE **)(ui + 0x3c8) = Simple(cardF, 0xab0f10);
+    UlCard(ui, ui + 0xb4);
+    CHECK(Is(Find(cardF, 8), root, 8, -0.107f, CARD_Y) && fabsf(CARD_Y - (-0.0015f)) < 1e-6f, "the command card: bottom right at -0.107, 0.003 - 0.0045 (lined up with the inventory)");
     // off: every one of them back
     int n = g_ulN;
     for (int i = g_ulN - 1; i >= 0; i--) UlRestore(g_ul[i]);

@@ -13,7 +13,7 @@
 ;  the cursor and writes the line, the companion types it with Enter: the
 ;  game opens the chat to the Chat dialog's recipient, allies unless changed).
 ;  WFE's DISPLAYMINUTES per switch (layout 19, [Timers] cdMinutes /
-;  buffMinutes, off as WFE's: 95 rather than 1:35). The buffs' own size and
+;  buffMinutes; on by default: 1:35 rather than 95). The buffs' own size and
 ;  gold from, seconds on auras (WFE's ISDRAWAURADURATION, off) and our ring
 ;  around them (layout 22, [Timers] bfSize / bfGold / bfAuras / bfRing).
 ;  No screen reading on 1.28f: that's for Reforged (planned, see the WC3
@@ -89,17 +89,12 @@ class TimerHud {
     setCdGold(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0), 30)), this.section, "cdGold"), this.pushGame(), true)
     setCdReady(on) => (SetIni(on ? 1 : 0, this.section, "cdReady"), this.pushGame())
     ; the game's number badge on the command card (a map's counters, shop stock) hidden while cooldowns are drawn (layout 21)
-    cdNoBadge => Integer(Ini(this.section, "cdNoBadge", 1))
-    setCdNoBadge(on) => (SetIni(on ? 1 : 0, this.section, "cdNoBadge"), this.pushGame())
-    ; and the game's cooldown clock (the sweep) on the buttons (layout 21, cdNoBadge bit 2)
-    cdNoSweep => Integer(Ini(this.section, "cdNoSweep", 1))       ; on by default since the user's pick: our sweep shows the countdown instead
-    ; our own countdown: a line around the button that runs out with the cooldown (cdNoBadge bit 4)
-    cdRing => Integer(Ini(this.section, "cdRing", 0))
-    setCdRing(on) => (SetIni(on ? 1 : 0, this.section, "cdRing"), this.pushGame())
-    setCdNoSweep(on) => (SetIni(on ? 1 : 0, this.section, "cdNoSweep"), this.pushGame())
-    ; with the game's clock hidden, our sweep in its place: Blizzard's own model, without the map's clock badge and timer (on by default; cdNoBadge bit 8 = none)
-    cdShade => Integer(Ini(this.section, "cdShade", 1))
-    setCdShade(on) => (SetIni(on ? 1 : 0, this.section, "cdShade"), this.pushGame())
+    ; our own cooldown sweep: the game's clock (the map's model, TWRPG's with its clock badge and timer)
+    ; hidden and Blizzard's plain sweep drawn in its place (cdNoBadge bit 2; on by default, the user's pick).
+    ; The number badge switch and our ring are gone (the badge switch did nothing on TWRPG's buttons, the
+    ; ring was ugly): bits 1 and 4 are never sent now.
+    cdSweep => Integer(Ini(this.section, "cdNoSweep", 1))
+    setCdSweep(on) => (SetIni(on ? 1 : 0, this.section, "cdNoSweep"), this.pushGame())
     ; how the buff seconds look (layout 22): their own size and gold from, seconds on auras too
     ; (WFE's ISDRAWAURADURATION, off), our countdown ring around the buffs (bfOpts bits 1, 2)
     bfSize => Min(Max(Float(Ini(this.section, "bfSize", 1)), 0.75), 1.5)
@@ -110,8 +105,8 @@ class TimerHud {
     setBfGold(v) => IsNumber(v) && (SetIni(Round(Min(Max(v + 0, 0), 30)), this.section, "bfGold"), this.pushGame(), true)
     setBfAuras(on) => (SetIni(on ? 1 : 0, this.section, "bfAuras"), this.pushGame())
     setBfRing(on) => (SetIni(on ? 1 : 0, this.section, "bfRing"), this.pushGame())
-    cdMinutes => Integer(Ini(this.section, "cdMinutes", 0))
-    buffMinutes => Integer(Ini(this.section, "buffMinutes", 0))
+    cdMinutes => Integer(Ini(this.section, "cdMinutes", 1))       ; m:ss by default (the user's pick; WFE's is off)
+    buffMinutes => Integer(Ini(this.section, "buffMinutes", 1))
     setMinutes(key, on) {
         SetIni(on ? 1 : 0, this.section, key)
         this.pushGame()
@@ -139,7 +134,7 @@ class TimerHud {
         if v && NumGet(v, Shm.layout, "uint") >= 20
             NumPut("float", this.cdSize, v, Shm.cdSize), NumPut("float", this.cdGold, v, Shm.cdGold), NumPut("uint", this.cdReady ? 1 : 0, v, Shm.cdReady)
         if v && NumGet(v, Shm.layout, "uint") >= 21
-            NumPut("uint", (this.cdNoBadge ? 1 : 0) | (this.cdNoSweep ? 2 : 0) | (this.cdRing ? 4 : 0) | (this.cdShade ? 0 : 8), v, Shm.cdNoBadge)
+            NumPut("uint", this.cdSweep ? 2 : 0, v, Shm.cdNoBadge)
         if v && NumGet(v, Shm.layout, "uint") >= 22
             NumPut("float", this.bfSize, v, Shm.bfSize), NumPut("float", this.bfGold, v, Shm.bfGold), NumPut("uint", (this.bfAuras ? 1 : 0) | (this.bfRing ? 2 : 0), v, Shm.bfOpts)
     }

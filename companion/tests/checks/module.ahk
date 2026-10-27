@@ -89,7 +89,7 @@ TwcModuleRun() {
     v := twcShmBuf.Ptr
     TwcCheck(NumGet(v, Shm.itOn, "uint") = 3, "pushed itOn: cooldowns (1) and buffs (2)")
     for f in ["hnOn", "mbOn", "prOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn", "alOn", "pingOn"]
-        TwcCheck(NumGet(v, Shm.%f%, "uint") = 1, "pushed " f)
+        TwcCheck(NumGet(v, Shm.%f%, "uint") = (f = "ulOn" ? 3 : 1), "pushed " f)    ; ulOn 3: the buff bar raised by default
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x7D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     gameDisplay.toggleHideMenu()
@@ -98,18 +98,19 @@ TwcModuleRun() {
     TwcCheck(gameDisplay.setCountdownSecs("2,5") = false && gameDisplay.setCountdownSecs("2.54") && NumGet(v, Shm.csSecs, "float") = 2.5
         && gameDisplay.setCountdownSecs(9) && gameDisplay.countdownSecs = 6 && gameDisplay.countdownLabel = "Countdown: 6 s", "countdown seconds: typed, tenths, at most 6 (" gameDisplay.countdownLabel ")")
     gameDisplay.setCountdownSecs(0)
+    TwcCheck(NumGet(v, Shm.ulOn, "uint") = 3 && gameDisplay.buffBarLabel = "Buff bar: raised", "the buff bar raised by default: ulOn bit 2 (" NumGet(v, Shm.ulOn, "uint") ")")
     gameDisplay.toggleBuffBarUp()
-    TwcCheck(NumGet(v, Shm.ulOn, "uint") = 3 && gameDisplay.buffBarLabel = "Buff bar: raised", "the buff bar raised: ulOn bit 2 (" NumGet(v, Shm.ulOn, "uint") ")")
+    TwcCheck(NumGet(v, Shm.ulOn, "uint") = 1, "and in place when toggled")
     gameDisplay.toggleBuffBarUp()
-    TwcCheck(NumGet(v, Shm.ulOn, "uint") = 1, "and back in place")
-    ; WFE's DISPLAYMINUTES: off by default, a bit each
-    TwcCheck(NumGet(v, Shm.tmMinutes, "uint") = 0, "minutes off by default: whole seconds (WFE's)")
+    ; WFE's DISPLAYMINUTES: on by default now (the user's pick), a bit each
+    TwcCheck(NumGet(v, Shm.tmMinutes, "uint") = 3, "minutes on by default: m:ss for cooldowns and buffs")
     timersHud.setMinutes("cdMinutes", 1), m1 := NumGet(v, Shm.tmMinutes, "uint")
     timersHud.setMinutes("buffMinutes", 1), m2 := NumGet(v, Shm.tmMinutes, "uint")
     timersHud.setMinutes("cdMinutes", 0), timersHud.setMinutes("buffMinutes", 0)
-    TwcCheck(m1 = 1 && m2 = 3 && NumGet(v, Shm.tmMinutes, "uint") = 0, "minutes pushed: cooldowns 1, buffs 2 (" m1 ", " m2 ")")
+    m0 := NumGet(v, Shm.tmMinutes, "uint"), timersHud.setMinutes("cdMinutes", 1), timersHud.setMinutes("buffMinutes", 1)
+    TwcCheck(m1 = 3 && m2 = 3 && m0 = 0, "minutes pushed: cooldowns 1, buffs 2 (" m1 ", " m2 ")")
     ; the cooldowns' look (layout 20): defaults x1, gold from 5 s, Ready on; typed values clamped
-    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 3, "pushed the cooldowns' look: x1, gold from 5 s, Ready, the game's badge and clock hidden (our sweep in its place), no ring")
+    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 2, "pushed the cooldowns' look: x1, gold from 5 s, Ready, our own sweep (bit 2 only: no badge switch, no ring)")
     ok := timersHud.setCdSize("1.25") && timersHud.setCdGold(99) && !timersHud.setCdSize("abc")
     TwcCheck(ok && NumGet(v, Shm.cdSize, "float") = 1.25 && NumGet(v, Shm.cdGold, "float") = 30, "size typed 1.25, gold 99 -> 30, not a number refused")
     timersHud.setCdSize(1), timersHud.setCdGold(5)
@@ -120,10 +121,9 @@ TwcModuleRun() {
     TwcCheck(ok && Abs(NumGet(v, Shm.bfSize, "float") - 0.8) < 1e-6 && NumGet(v, Shm.bfGold, "float") = 2 && NumGet(v, Shm.bfOpts, "uint") = 3 && NumGet(v, Shm.cdSize, "float") = 1,
         "buffs x0.8, gold from 2 s, auras (1) and ring (2): bfOpts " NumGet(v, Shm.bfOpts, "uint") "; the cooldowns' untouched")
     timersHud.setBfSize(1), timersHud.setBfGold(5), timersHud.setBfAuras(0), timersHud.setBfRing(0)
-    ; our shade with the game's clock hidden: on by default (bit 8 clear), off sets bit 8
-    timersHud.setCdNoSweep(1), nb1 := NumGet(v, Shm.cdNoBadge, "uint"), timersHud.setCdShade(0), nb2 := NumGet(v, Shm.cdNoBadge, "uint")
-    timersHud.setCdShade(1), timersHud.setCdNoSweep(0)
-    TwcCheck((nb1 & 2) && !(nb1 & 8) && (nb2 & 8), "the clock hidden: our sweep by default (" nb1 "), off: bit 8 (" nb2 ")")
+    ; our own sweep: one switch (bit 2), off: the game's clock
+    timersHud.setCdSweep(0), nb1 := NumGet(v, Shm.cdNoBadge, "uint"), timersHud.setCdSweep(1), nb2 := NumGet(v, Shm.cdNoBadge, "uint")
+    TwcCheck(nb1 = 0 && nb2 = 2, "our own cooldown sweep: off 0, on 2 (" nb1 ", " nb2 ")")
     ; Battle.net login (layout 24): the password in Credential Manager (a check's own entry, never the real one),
     ; handed over only at the login screen (blState 2), once; the switch pushed
     BattleNetLoginEngine.TARGET := "TW Companion/Battle.net (check)"

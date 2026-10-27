@@ -4577,6 +4577,7 @@ static void UlHeroes(BYTE *ui, BYTE *) {
             }
     }
 }
+static const float CARD_Y = 0.003f - 0.0045f;
 static void UlCard(BYTE *ui, BYTE *root) {
     // ISABILITYBAR 0x1008c0a0: the command card narrower, its buttons and their small part too, to the top right
     BYTE *card = P(ui, 0x3c8);
@@ -4587,7 +4588,8 @@ static void UlCard(BYTE *ui, BYTE *root) {
             for (int c = 0; c < cols; c++)
                 if (BYTE *b = GridButton(card, r, c))
                     UlWidth(b, 0.0275f), UlWidth(P(b, 0x194), 0.0125f, true);
-        UlPoint(card, 8, root, 8, -0.107f, 0.003f);
+        // WFE's y is 0.003; the user's 1080p screenshot showed each row ~6.5 px (0.0045) above the inventory's: lowered to line up
+        UlPoint(card, 8, root, 8, -0.107f, CARD_Y);
     }
 }
 static void UlPortrait(BYTE *ui, BYTE *) {
