@@ -2278,7 +2278,9 @@ static float ClockAngle(float x, float y) {
 // angle is past A (the part to come). The angle runs one way along a half-row, so that's a prefix or a
 // suffix of it: -> [*l, *r] in -1..1 (empty: *r <= *l)
 static void SweepSpan(float y, float x0, float x1, float A, float *l, float *r) {
-    float a0 = ClockAngle(x0, y), a1 = ClockAngle(x1, y);
+    // the left half's right end over the centre is 12 o'clock reached from the left: 2pi, not 0
+    // (the preview showed no sweep at all for the last tenth without this)
+    float a0 = ClockAngle(x0, y), a1 = x1 == 0 && y > 0 ? PI_2 : ClockAngle(x1, y);
     bool d0 = a0 >= A, d1 = a1 >= A;
     if (d0 == d1) {
         *l = x0, *r = d0 ? x1 : x0;
@@ -2310,7 +2312,9 @@ static void ButtonSize(BYTE *btn, float *w, float *h) {
 // the part to come: 1 at the cast, 0 when it's ready (f), on a button w x h
 static void SweepDraw(Sweep *r, float f, float w, float h) {
     float A = PI_2 * (1 - f), rowH = h / SWEEP_ROWS;
-    bool moved = fabsf(rowH - r->rowH) > 0.00001f;     // another height: every square placed again
+    if (fabsf(rowH - r->rowH) > 0.00001f)               // another height: every square placed again, hidden ones too when shown
+        for (int k = 0; k < SWEEP_CELLS; k++)
+            r->cellL[k] = r->cellW[k] = -1;
     r->rowH = rowH;
     for (int row = 0; row < SWEEP_ROWS; row++)
         for (int half = 0; half < 2; half++) {
@@ -2321,7 +2325,7 @@ static void SweepDraw(Sweep *r, float f, float w, float h) {
             float lw = (l + 1) / 2 * w, ww = (rr - l) / 2 * w;        // from the button's left, and its width
             bool show = ww > 0.0003f;
             BYTE *t = r->cell[k];
-            if (show && (moved || fabsf(lw - r->cellL[k]) > 0.0002f || fabsf(ww - r->cellW[k]) > 0.0002f)) {
+            if (show && (fabsf(lw - r->cellL[k]) > 0.0002f || fabsf(ww - r->cellW[k]) > 0.0002f)) {
                 Game(RVA_SET_POINT, t, { 0, (DWORD)r->frame, 0, F(lw), F(-row * rowH), 1 });
                 Game(RVA_SET_WIDTH, t, { F(ww) }), Game(RVA_SET_HEIGHT, t, { F(rowH + 0.00005f) });
                 r->cellL[k] = lw, r->cellW[k] = ww;

@@ -198,6 +198,12 @@ int main() {
         sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
         // 1/4 to come: only the top left quarter dark
         bool q2 = shown(0) && !shown(1) && !shown(30) && !shown(31) && shown(14) && !shown(16) && !shown(15) && fabsf(W(0) - 0.02f) < 1e-4f;
+        // a tenth to come: a thin wedge just left of 12 o'clock: the top rows' left halves, their right ends at the centre
+        sh.cdLeft[0] = 1; SweepsPass(ui, true);
+
+        bool tenth = shown(0) && !shown(1) && shown(14) && !shown(15) && !shown(16) && !shown(31) && fabsf(r->cellL[0] + r->cellW[0] - 0.02f) < 1e-4f && W(0) > 0.012f && W(0) < 0.015f && W(14) < W(0);
+        q2 = q2 && tenth;
+        sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
         int a1 = anchors; SweepsPass(ui, true);
         bool still = anchors == a1;                 // nothing changed: no square moved
         sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
@@ -221,6 +227,11 @@ int main() {
         int a2 = anchors;
         rc[3] = 0.132f; SweepsPass(ui, true);
         bool lower = anchors - a2 >= SWEEP_CELLS && fabsf(H(0) - 0.002f) < 1e-4f;
+        // the height back while only the top left quarter is dark: the squares hidden then get the new height when shown again
+        sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
+        rc[3] = 0.14f; SweepsPass(ui, true);
+        sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
+        lower = lower && fabsf(H(31) - 0.0025f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
         float w, h;
         rc[0] = rc[1] = rc[2] = rc[3] = 0;
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0;
