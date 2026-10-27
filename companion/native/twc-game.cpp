@@ -2261,15 +2261,8 @@ static const DWORD RVA_SET_TEXTURE = 0x1435f0, RVA_SET_ALL_POINTS = 0x13fad0, RV
 static const DWORD SIMPLEFRAME_SIZE = 0x124, TEXTURE_SIZE = 0xe8, LAYOUT_WIDTH = 0x58, LAYOUT_HEIGHT = 0x5c;
 static const char RING_TEXTURE[] = "ReplaceableTextures\\TeamColor\\TeamColor04.blp";
 static const float RING_THICK = 0.0018f, BUTTON_SIZE = 0.039f;
-// Our shade (cdNoBadge bit 2 hides the game's clock, bit 8 = no shade): the user's test showed the
-// game's cooldown model is the dark sweep and TWRPG's clock badge and timer at once, so hiding it
-// left no sign the ability was used. A fifth texture in the ring's frame: the same square tinted
-// black and see-through (a texture's alpha +0x68 and colour +0x69 B / +0x6a G / +0x6b R, applied
-// by its vt+0x24 +0x141d00, which multiplies the alpha by the frame's [+0x88]: as the health bars'
-// colours), from the button's bottom corners up to the time left of the full time: it drains from
-// the top as the cooldown runs out. Drawn before the ring's sides, so the line stays over it.
-static const BYTE SHADE_ALPHA = 0x99;      // 60%
-struct Ring { BYTE *btn, *frame, *side[4], *shade; float len[4], shadeH; bool shown[4], shadeShown; };
+// cdNoBadge bit 2 hides the game's clock, bit 8 = none of ours in its place (see the sweep below)
+struct Ring { BYTE *btn, *frame, *side[4], *sweep, *holder; float len[4], left, total; bool shown[4], sweepShown, sweepBad; };
 static const int RINGS = 12 + 6 + 8;       // the command card, the inventory, the buff bar
 static Ring g_rings[RINGS];
 static int g_ringN;
@@ -2296,17 +2289,6 @@ static Ring *RingFor(BYTE *btn) {
     *(DWORD *)(f + 0x90) = 1;
     Virt(f, 0x68);
     static const int PT[4] = { 0, 2, 8, 6 };                  // top, right, bottom, left
-    void *sm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown shade", __LINE__, 0);
-    BYTE *sh = sm ? (BYTE *)Game(RVA_TEXTURE_CTOR, sm, { (DWORD)f, 2, 1 }) : nullptr;
-    if (sh && sh == sm && *(DWORD *)sh == (DWORD)(g_base + RING_TEXTURE_VT)) {
-        Game(RVA_SET_TEXTURE, sh, { (DWORD)RING_TEXTURE, 0 });
-        Game(RVA_SET_POINT, sh, { 6, (DWORD)f, 6, F(0), F(0), 1 });      // bottom left and right to the button's
-        Game(RVA_SET_POINT, sh, { 8, (DWORD)f, 8, F(0), F(0), 1 });
-        sh[0x68] = SHADE_ALPHA, sh[0x69] = sh[0x6a] = sh[0x6b] = 0;
-        Virt(sh, 0x24);
-        Game(RVA_REGION_HIDE, sh);
-        r->shade = sh, r->shadeH = -1;
-    }
     for (int k = 0; k < 4; k++) {
         void *tm = g_smemAlloc(TEXTURE_SIZE, "TWC cooldown ring", __LINE__, 0);
         BYTE *t = tm ? (BYTE *)Game(RVA_TEXTURE_CTOR, tm, { (DWORD)f, 2, 1 }) : nullptr;
@@ -2327,6 +2309,65 @@ static Ring *RingFor(BYTE *btn) {
     return r;
 }
 // the line left: 4 x the time left / the full time, from the top-left corner clockwise
+// Our sweep (the user's pick over the shade): the game's own cooldown animation, made as the
+// game makes it for a button (+0x3e1a60, read by hand, pinned in test_gamedll) but on Blizzard's
+// standard model rather than the one the map's skin names under CommandButtonCooldown (TWRPG's
+// has its clock badge and timer): a CSpriteFrame (+0x124ff0(mem, the game UI, 0, 0), 0x1b0 bytes)
+// with its model set (vt+0xe8(path, -1, 0)), fitted to the button (SetAllPoints on its layout
+// +0xb4), held by a CSimpleGlueFrame (+0x143b40(mem, button, sprite), 0x128 bytes) that's shown
+// and hidden as the game shows its own ([+0x90], vt+0x68 / +0x64). Its progress comes from a
+// callback the sprite's first instance (+0x1256d0) calls each frame, set with +0x1df320(inst,
+// slot 0, callback, context, 0.0) as the game sets +0x3e1660 at a cooldown's start (+0x407116);
+// ours reports 1 - the time left / the full time (the game's: +0x3ea370 for the button's ability).
+static const DWORD RVA_SPRITE_CTOR = 0x124ff0, SPRITE_SIZE = 0x1b0, SPRITE_SET_MODEL = 0xe8, RVA_GLUE_HOLDER_CTOR = 0x143b40, GLUE_HOLDER_SIZE = 0x128,
+    RVA_SPRITE_INST = 0x1256d0, RVA_ANIM_PROVIDER = 0x1df320, RVA_SPRITE_VT = 0xa7ac24, RVA_GLUE_HOLDER_VT = 0xa7d1dc;
+static const char SWEEP_MODEL[] = "UI\\Feedback\\Cooldown\\UI-Cooldown-Indicator.mdx";
+static float __fastcall SweepProgress(Ring *r, float *out, DWORD) {
+    float p = r && r->total > 0 ? 1 - r->left / r->total : 1;
+    p = p < 0 ? 0 : p > 1 ? 1 : p;
+    if (out)
+        *out = p;
+    return p;
+}
+static bool SweepFor(Ring *r) {
+    if (r->sweep || r->sweepBad)
+        return r->sweep != nullptr;
+    r->sweepBad = true;                         // until it's made, once
+    void *mem = g_smemAlloc(SPRITE_SIZE, "TWC cooldown sweep", __LINE__, 0);
+    BYTE *sp = mem ? (BYTE *)Game(RVA_SPRITE_CTOR, mem, { (DWORD)g_getUi(1, 0), 0, 0 }) : nullptr;
+    if (!sp || sp != mem || *(DWORD *)sp != (DWORD)(g_base + RVA_SPRITE_VT)) {
+        Log("cooldown sweep: the new sprite %p isn't a CSpriteFrame: no sweeps", sp);
+        return false;
+    }
+    Virt(sp, SPRITE_SET_MODEL, { (DWORD)SWEEP_MODEL, 0xFFFFFFFF, 0 });
+    Game(RVA_SET_ALL_POINTS, sp + 0xb4, { (DWORD)r->btn, 1 });
+    *(DWORD *)(sp + 0xc) |= *(DWORD *)(sp + 0x10) | 2;
+    void *hm = g_smemAlloc(GLUE_HOLDER_SIZE, "TWC cooldown sweep", __LINE__, 0);
+    BYTE *h = hm ? (BYTE *)Game(RVA_GLUE_HOLDER_CTOR, hm, { (DWORD)r->btn, (DWORD)sp }) : nullptr;
+    if (!h || h != hm || *(DWORD *)h != (DWORD)(g_base + RVA_GLUE_HOLDER_VT)) {
+        Log("cooldown sweep: the new holder %p isn't a CSimpleGlueFrame: no sweeps", h);
+        return false;
+    }
+    *(DWORD *)(h + 0x90) = 0, Virt(h, 0x64);
+    r->sweep = sp, r->holder = h, r->sweepBad = false, r->sweepShown = false;
+    static bool logged;
+    if (!logged)
+        logged = true, Log("cooldown sweep: the first one made (sprite %p, holder %p over the button %p, model %s)", sp, h, r->btn, SWEEP_MODEL);
+    return true;
+}
+static void SweepShow(Ring *r, bool show) {
+    if (!r->sweep || show == r->sweepShown)
+        return;
+    if (show) {                                 // as the game at a cooldown's start: its progress callback again, then shown
+        if (BYTE *inst = (BYTE *)GameCall(g_base + RVA_SPRITE_INST, (DWORD)r->sweep, 0, 0, nullptr)) {
+            DWORD a[3] = { (DWORD)SweepProgress, (DWORD)r, F(0) };
+            GameCall(g_base + RVA_ANIM_PROVIDER, (DWORD)inst, 0, 3, a);
+        }
+        *(DWORD *)(r->holder + 0x90) = 1, Virt(r->holder, 0x68);
+    } else
+        *(DWORD *)(r->holder + 0x90) = 0, Virt(r->holder, 0x64);
+    r->sweepShown = show;
+}
 static void RingDraw(BYTE *btn, float left, float total, bool ring = true, bool shade = false) {
     bool on = btn && left > 0 && total > 0;
     Ring *r = nullptr;
@@ -2339,14 +2380,11 @@ static void RingDraw(BYTE *btn, float left, float total, bool ring = true, bool 
         return;
     float w = *(float *)(btn + LAYOUT_WIDTH), h = *(float *)(btn + LAYOUT_HEIGHT);
     w = w > 0.005f && w < 0.2f ? w : BUTTON_SIZE, h = h > 0.005f && h < 0.2f ? h : BUTTON_SIZE;
-    if (r->shade) {
-        float sh = shade && on ? h * min(1.0f, left / total) : 0;
-        bool show = sh > 0.0005f;
-        if (show && fabsf(sh - r->shadeH) > 0.0002f)
-            Game(RVA_SET_HEIGHT, r->shade, { F(sh) }), r->shadeH = sh;
-        if (show != r->shadeShown)
-            Game(show ? RVA_REGION_SHOW : RVA_REGION_HIDE, r->shade), r->shadeShown = show;
-    }
+    r->left = on ? left : 0, r->total = on ? total : 0;
+    if (shade && on && SweepFor(r))             // "shade": our sweep (the shade before it, the user's first pick)
+        SweepShow(r, true);
+    else
+        SweepShow(r, false);
     float l4 = on && ring ? 4 * min(1.0f, left / total) : 0;
     for (int k = 0; k < 4; k++) {
         float part = max(0.0f, min(1.0f, l4 - k)), len = part * (k % 2 ? h : w);

@@ -109,7 +109,7 @@ TwcModuleRun() {
     timersHud.setMinutes("cdMinutes", 0), timersHud.setMinutes("buffMinutes", 0)
     TwcCheck(m1 = 1 && m2 = 3 && NumGet(v, Shm.tmMinutes, "uint") = 0, "minutes pushed: cooldowns 1, buffs 2 (" m1 ", " m2 ")")
     ; the cooldowns' look (layout 20): defaults x1, gold from 5 s, Ready on; typed values clamped
-    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 1, "pushed the cooldowns' look: x1, gold from 5 s, Ready, the game's badge hidden, its clock shown, no ring")
+    TwcCheck(NumGet(v, Shm.cdSize, "float") = 1 && NumGet(v, Shm.cdGold, "float") = 5 && NumGet(v, Shm.cdReady, "uint") = 1 && NumGet(v, Shm.cdNoBadge, "uint") = 3, "pushed the cooldowns' look: x1, gold from 5 s, Ready, the game's badge and clock hidden (our sweep in its place), no ring")
     ok := timersHud.setCdSize("1.25") && timersHud.setCdGold(99) && !timersHud.setCdSize("abc")
     TwcCheck(ok && NumGet(v, Shm.cdSize, "float") = 1.25 && NumGet(v, Shm.cdGold, "float") = 30, "size typed 1.25, gold 99 -> 30, not a number refused")
     timersHud.setCdSize(1), timersHud.setCdGold(5)
@@ -123,7 +123,7 @@ TwcModuleRun() {
     ; our shade with the game's clock hidden: on by default (bit 8 clear), off sets bit 8
     timersHud.setCdNoSweep(1), nb1 := NumGet(v, Shm.cdNoBadge, "uint"), timersHud.setCdShade(0), nb2 := NumGet(v, Shm.cdNoBadge, "uint")
     timersHud.setCdShade(1), timersHud.setCdNoSweep(0)
-    TwcCheck((nb1 & 2) && !(nb1 & 8) && (nb2 & 8), "the clock hidden: our shade by default (" nb1 "), off: bit 8 (" nb2 ")")
+    TwcCheck((nb1 & 2) && !(nb1 & 8) && (nb2 & 8), "the clock hidden: our sweep by default (" nb1 "), off: bit 8 (" nb2 ")")
     ; Battle.net login (layout 24): the password in Credential Manager (a check's own entry, never the real one),
     ; handed over only at the login screen (blState 2), once; the switch pushed
     BattleNetLoginEngine.TARGET := "TW Companion/Battle.net (check)"

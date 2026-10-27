@@ -92,12 +92,12 @@ class TimerHud {
     cdNoBadge => Integer(Ini(this.section, "cdNoBadge", 1))
     setCdNoBadge(on) => (SetIni(on ? 1 : 0, this.section, "cdNoBadge"), this.pushGame())
     ; and the game's cooldown clock (the sweep) on the buttons (layout 21, cdNoBadge bit 2)
-    cdNoSweep => Integer(Ini(this.section, "cdNoSweep", 0))       ; off by default: the game's clock shows the countdown
+    cdNoSweep => Integer(Ini(this.section, "cdNoSweep", 1))       ; on by default since the user's pick: our sweep shows the countdown instead
     ; our own countdown: a line around the button that runs out with the cooldown (cdNoBadge bit 4)
     cdRing => Integer(Ini(this.section, "cdRing", 0))
     setCdRing(on) => (SetIni(on ? 1 : 0, this.section, "cdRing"), this.pushGame())
     setCdNoSweep(on) => (SetIni(on ? 1 : 0, this.section, "cdNoSweep"), this.pushGame())
-    ; with the game's clock hidden, our dark shade that drains on the button in its place (on by default; cdNoBadge bit 8 = none)
+    ; with the game's clock hidden, our sweep in its place: Blizzard's own model, without the map's clock badge and timer (on by default; cdNoBadge bit 8 = none)
     cdShade => Integer(Ini(this.section, "cdShade", 1))
     setCdShade(on) => (SetIni(on ? 1 : 0, this.section, "cdShade"), this.pushGame())
     ; how the buff seconds look (layout 22): their own size and gold from, seconds on auras too

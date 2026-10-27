@@ -55,8 +55,17 @@ static void __fastcall FakeRegionShow(BYTE *r, int);
 static void *__fastcall FakeFrameCtor(BYTE *mem, int, void *) { ringFrames++; *(DWORD *)mem = (DWORD)(imgRef() + RVA_SIMPLEFRAME_VT); return mem; }
 static void *__fastcall FakeTexCtor(BYTE *mem, int, void *, DWORD, DWORD) { ringTextures++; *(DWORD *)mem = (DWORD)(imgRef() + RING_TEXTURE_VT); *(DWORD *)(mem + 0x7c) = 1; return mem; }
 static void __fastcall FakeSetTex(BYTE *, int, const char *path, DWORD) { ringPath = path; }
-static int colourApplies;
-static void __fastcall FakeTexColour(BYTE *, int) { colourApplies++; }      // a texture's vt+0x24 (+0x141d00)
+// our sweep: the sprite (its model), its holder (shown / hidden), its instance and the progress callback it's given
+static BYTE sweepInst[0x40]; static const char *sweepModel; static int sweepShows, sweepHides, providers;
+static void *sweepCb, *sweepCtx;
+static BYTE *imgRef();
+static void *__fastcall FakeSpriteCtor(BYTE *mem, int, void *, DWORD, DWORD) { *(DWORD *)mem = (DWORD)(imgRef() + RVA_SPRITE_VT); return mem; }
+static void __fastcall FakeSetModel(BYTE *, int, const char *path, DWORD, DWORD) { sweepModel = path; }
+static void *__fastcall FakeHolderCtor(BYTE *mem, int, void *, void *) { *(DWORD *)mem = (DWORD)(imgRef() + RVA_GLUE_HOLDER_VT); return mem; }
+static void __fastcall FakeHolderShow(BYTE *, int) { sweepShows++; }
+static void __fastcall FakeHolderHide(BYTE *, int) { sweepHides++; }
+static void *__fastcall FakeSpriteInst(BYTE *, int) { return sweepInst; }
+static void __fastcall FakeProvider(BYTE *, int, void *cb, void *ctx, float) { providers++, sweepCb = cb, sweepCtx = ctx; }
 static void __fastcall FakeAllPoints(BYTE *, int, void *, DWORD) { allPoints++; }
 static void __fastcall FakeSetW(BYTE *t, int, float w) { *(float *)(t + LAYOUT_WIDTH) = w; }
 static void __fastcall FakeSetH(BYTE *t, int, float h) { *(float *)(t + LAYOUT_HEIGHT) = h; }
@@ -194,14 +203,16 @@ int main() {
     {
         DWORD old2; VirtualProtect(img + RVA_SIMPLEFRAME_VT, 0x100, PAGE_READWRITE, &old2);
         ((DWORD *)(img + RVA_SIMPLEFRAME_VT))[0x68 / 4] = StubAt(0x610000, FakeNop);
-        VirtualProtect(img + RING_TEXTURE_VT, 0x100, PAGE_READWRITE, &old2);
-        ((DWORD *)(img + RING_TEXTURE_VT))[0x24 / 4] = StubAt(0x610100, FakeTexColour);
+        Stub(RVA_SPRITE_CTOR, FakeSpriteCtor), Stub(RVA_GLUE_HOLDER_CTOR, FakeHolderCtor), Stub(RVA_SPRITE_INST, FakeSpriteInst), Stub(RVA_ANIM_PROVIDER, FakeProvider);
+        VirtualProtect(img + RVA_SPRITE_VT, 0x200, PAGE_READWRITE, &old2), VirtualProtect(img + RVA_GLUE_HOLDER_VT, 0x100, PAGE_READWRITE, &old2);
+        ((DWORD *)(img + RVA_SPRITE_VT))[SPRITE_SET_MODEL / 4] = StubAt(0x610100, FakeSetModel);
+        ((DWORD *)(img + RVA_GLUE_HOLDER_VT))[0x64 / 4] = StubAt(0x610200, FakeHolderHide), ((DWORD *)(img + RVA_GLUE_HOLDER_VT))[0x68 / 4] = StubAt(0x610300, FakeHolderShow);
         *(float *)(btns[0] + LAYOUT_WIDTH) = 0.04f, *(float *)(btns[0] + LAYOUT_HEIGHT) = 0.04f;
         sh.itOn = 1, sh.cdNoBadge = 4, sh.cdLeft[0] = 5, sh.cdTotal[0] = 10;
         RingsPass(ui, true, false);
         Ring *r = g_ringN ? &g_rings[0] : nullptr;
         auto on = [&](int k) { return (*(DWORD *)(r->side[k] + 0x7c) & 1) != 0; };
-        bool half = r && r->btn == btns[0] && ringFrames == 1 && ringTextures == 5 && allPoints == 1 && ringPath && strstr(ringPath, "TeamColor04")
+        bool half = r && r->btn == btns[0] && ringFrames == 1 && ringTextures == 4 && allPoints == 1 && ringPath && strstr(ringPath, "TeamColor04")
             && on(0) && on(1) && !on(2) && !on(3) && fabsf(*(float *)(r->side[0] + LAYOUT_WIDTH) - 0.04f) < 1e-5f && fabsf(*(float *)(r->side[1] + LAYOUT_HEIGHT) - 0.04f) < 1e-5f
             && fabsf(*(float *)(r->side[0] + LAYOUT_HEIGHT) - RING_THICK) < 1e-6f;
         sh.cdLeft[0] = 1.25f; RingsPass(ui, true, false);
@@ -212,19 +223,24 @@ int main() {
         bool again = r && on(3) && ringFrames == 1;
         RingsPass(ui, false, false);
         CHECK(half && eighth && gone && again && !on(3), "the ring: half left = top and right sides; an eighth = half the top; over: hidden; the same frame next time; off: hidden");
-        // our shade in place of the game's clock (bit 2 on, bit 8 off): a dark see-through square from the bottom, the time left of the full
-        // time high, drawn without the ring if that's off; bit 8: no shade
-        bool shadeMade = r && r->shade && r->shade[0x68] == SHADE_ALPHA && !r->shade[0x69] && !r->shade[0x6a] && !r->shade[0x6b] && colourApplies == 1;
+        // our sweep in place of the game's clock (bit 2 on, bit 8 off): the game's kind of sprite on Blizzard's standard model, held by a glue
+        // frame, shown with its progress callback set (ours: 1 - left / total), hidden when over or off; no ring sides with the ring off
         sh.cdNoBadge = 2, sh.cdLeft[0] = 7.5f, sh.cdTotal[0] = 10;
         RingsPass(ui, false, false, true);
-        bool shadeOn = r && (*(DWORD *)(r->shade + 0x7c) & 1) && fabsf(*(float *)(r->shade + LAYOUT_HEIGHT) - 0.03f) < 1e-5f && !on(0) && !on(3);
+        bool made = r && r->sweep && r->holder && sweepModel && strstr(sweepModel, "UI-Cooldown-Indicator") && sweepShows == 1 && providers == 1 && sweepCtx == r && !on(0);
+        float prog = 0;
+        ((float(__fastcall *)(void *, float *, DWORD))sweepCb)(sweepCtx, &prog, 0);
         sh.cdLeft[0] = 2.5f; RingsPass(ui, false, false, true);
-        bool shadeLess = fabsf(*(float *)(r->shade + LAYOUT_HEIGHT) - 0.01f) < 1e-5f;
+        float prog2 = 0;
+        ((float(__fastcall *)(void *, float *, DWORD))sweepCb)(sweepCtx, &prog2, 0);
+        bool still = sweepShows == 1 && providers == 1;
         sh.cdLeft[0] = 0; RingsPass(ui, false, false, true);
-        bool shadeGone = !(*(DWORD *)(r->shade + 0x7c) & 1);
-        sh.cdLeft[0] = 5; RingsPass(ui, false, false, false);
-        CHECK(shadeMade && shadeOn && shadeLess && shadeGone && !(*(DWORD *)(r->shade + 0x7c) & 1) && ringFrames == 1,
-              "our shade: black at 60%% (+0x68 / +0x69..6B, applied once), 3/4 of the button at 7.5 of 10 s, 1/4 at 2.5, gone when over or off; no ring sides");
+        bool hidden = sweepHides >= 2 && !r->sweepShown;
+        sh.cdLeft[0] = 6; RingsPass(ui, false, false, true);
+        bool sweepAgain = sweepShows == 2 && providers == 2 && ringFrames == 1;
+        RingsPass(ui, false, false, false);
+        CHECK(made && fabsf(prog - 0.25f) < 1e-5f && fabsf(prog2 - 0.75f) < 1e-5f && still && hidden && sweepAgain && !r->sweepShown,
+              "our sweep: Blizzard's model, shown with our progress (0.25 at 7.5 of 10 s, 0.75 at 2.5), hidden when over, again with its callback set anew; off: hidden");
         sh.cdNoBadge = 4, sh.cdLeft[0] = 9;
         // on a buff (bfOpts 2): a ring of its own round the buff's icon, its time left of its full time; none on an aura
         *(float *)(bbtns[2] + LAYOUT_WIDTH) = 0.03f, *(float *)(bbtns[2] + LAYOUT_HEIGHT) = 0.03f;
