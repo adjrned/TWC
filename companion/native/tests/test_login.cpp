@@ -36,12 +36,13 @@ static BYTE *__fastcall FakeByName(const char *name, int ctx) {
     return nullptr;
 }
 static int __fastcall FakeClick(BYTE *c, int, int button) { if (clicks < 8) clicked[clicks] = c; clicks++; return button; }
-// the game's setter keeps its own copy, pointed to by [box+0x1e4]
+// the game's setter keeps its own copy, pointed to by [box+0x1e4] (the password box cut to pwMax characters)
+static size_t pwMax = 63;
 static void __fastcall FakeSetText(BYTE *box, int, const char *t, int) {
     sets++;
     static char setGame[64];
     char *own = box == accBox ? setAcc : box == gameBox ? setGame : setPw;
-    strcpy_s(own, 64, t);
+    strncpy_s(own, 64, t, box == pwBox ? pwMax : 63);
     *(char **)(box + EDIT_TEXT) = own;
 }
 static void *__fastcall FakeGetUi(int, int) { return inGameUi; }
@@ -188,16 +189,19 @@ int main() {
     sh.blAfter = 1; loginAgain(); loginUp = false; LoginPass(); g_blAt -= 31000; LoginPass();
     CHECK(sh.blState == 8 && g_blStep == 9, "no chat panel within 30 s of Logon: the custom games left to you");
     sh.blAfter = 0;
+    // the password box keeps only 4 of the 7 characters: one line says so (lengths only), the password itself never
+    pwMax = 4; loginAgain(); pwMax = 63;
     char logText[8192] = "";
     FILE *lf;
     if (!fopen_s(&lf, "login.log", "rb"))
         logText[fread(logText, 1, sizeof(logText) - 1, lf)] = 0, fclose(lf);
     CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret")
-          && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)")
-          && strstr(logText, "the account name's bytes: 52 75 7A 61 69 (5)")
+          && strstr(logText, "the boxes don't hold what was typed: account 'Ruzai' (the companion's 'Ruzai'), a password of 4 characters (NOT the same as the companion's 7)")
+          && !strstr(strstr(logText, "the boxes don't hold") + 1, "the boxes don't hold") && !strstr(logText, "bytes")
+          && !strstr(logText, "s3cr")
           && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'; Join ") && strstr(logText, "Alt+J pressed (the game's Join shortcut) for 'TWRPG 1.0'")
           && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty"),
-          "the log: the steps, what the boxes hold (the account, the password's length only), the menus after Logon, never the password");
+          "the log: the steps, the menus after Logon; a box read-back line only when they don't hold what was typed (lengths only), never the password");
     Verdict();
     return g_fails;
 }

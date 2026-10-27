@@ -5659,17 +5659,15 @@ static void LoginPass() {
         Game(RVA_EDIT_SET_TEXT, acc, { (DWORD)s->blAccount, 1 });
         Game(RVA_EDIT_SET_TEXT, pw, { (DWORD)s->blPassword, 1 });
         // what the boxes hold now, as the Logon handler reads them ([box+0x1e4], +0x1311c0): the
-        // account as it is, the password only as its length and whether it's what was handed over
+        // account as it is, the password never, only whether it's what was handed over (a line of
+        // its own only when something differs: then it says what the box holds, and the lengths)
         const char *at = *(const char **)(acc + EDIT_TEXT), *pt = *(const char **)(pw + EDIT_TEXT);
         size_t given = strlen(s->blPassword), held = pt ? strnlen(pt, 256) : 0;
-        bool same = pt && held == given && !memcmp(pt, s->blPassword, given);
+        bool same = pt && held == given && !memcmp(pt, s->blPassword, given), named = at && !strcmp(at, s->blAccount);
         SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
-        Log("battle.net login: the boxes now hold account '%s', a password of %u characters (%s the companion's %u)",
-            at ? at : "(none)", (unsigned)held, same ? "the same as" : "NOT the same as", (unsigned)given);
-        char hex[3 * 32 + 1] = "";
-        for (int i = 0, o = 0; at && at[i] && i < 32; i++)
-            o += sprintf_s(hex + o, sizeof(hex) - o, "%02X ", (BYTE)at[i]);
-        Log("battle.net login: the account name's bytes: %s(%u)", hex, at ? (unsigned)strnlen(at, 256) : 0);
+        if (!same || !named)
+            Log("battle.net login: the boxes don't hold what was typed: account '%s' (the companion's '%s'), a password of %u characters (%s the companion's %u)",
+                at ? at : "(none)", s->blAccount, (unsigned)held, same ? "the same as" : "NOT the same as", (unsigned)given);
         ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
         g_blStep = s->blAfter ? 10 : 9, s->blState = 3, g_blWatchUntil = GetTickCount() + 15000, g_blAt = GetTickCount();
         Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);
