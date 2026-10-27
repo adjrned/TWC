@@ -8,7 +8,8 @@
 
 static BYTE *img;
 static BYTE mainBtn[0x200], logonBtn[0x200], accBox[0x300], pwBox[0x300], other[0x200], screen[0x300], decoyLogon[0x200];
-static bool menuUp, loginUp;
+static bool menuUp, loginUp, chatUp, joinUp;
+static BYTE chatPanel[0x400], customBtn[0x200], joinPanel[0x300], gameBox[0x300], gameList[0x300], joinBtn[0x200];
 static BYTE *clicked[8];
 static int clicks, sets;
 static char setAcc[64], setPw[64];
@@ -18,6 +19,10 @@ static BYTE *__fastcall FakeByName(const char *name, int ctx) {
         return nullptr;
     if (!strcmp(name, "BattleNetButton"))
         return menuUp ? mainBtn : nullptr;
+    if (!strcmp(name, "BattleNetChatPanel"))
+        return chatUp ? chatPanel : nullptr;
+    if (!strcmp(name, "BattleNetCustomJoinPanel"))
+        return joinUp ? joinPanel : nullptr;
     if (!strcmp(name, "BattleNetMainFrame"))
         return loginUp ? screen : nullptr;
     if (!strcmp(name, "LogonButton"))
@@ -32,7 +37,8 @@ static int __fastcall FakeClick(BYTE *c, int, int button) { if (clicks < 8) clic
 // the game's setter keeps its own copy, pointed to by [box+0x1e4]
 static void __fastcall FakeSetText(BYTE *box, int, const char *t, int) {
     sets++;
-    char *own = box == accBox ? setAcc : setPw;
+    static char setGame[64];
+    char *own = box == accBox ? setAcc : box == gameBox ? setGame : setPw;
     strcpy_s(own, 64, t);
     *(char **)(box + EDIT_TEXT) = own;
 }
@@ -125,6 +131,42 @@ int main() {
     g_blStep = 1, strcpy_s(sh.blPassword, "x"), sh.blOn = 0;
     LoginPass();
     CHECK(sh.blState == 4 && !sh.blPassword[0], "turned off on the way: left to you, the password wiped");
+    // after the login, the custom games (layout 25): Custom Game clicked once the chat panel is ready, then the game name typed and Join
+    *(DWORD *)chatPanel = (DWORD)(img + RVA_CHAT_PANEL_VT), *(BYTE **)(chatPanel + CHAT_CUSTOM_BUTTON) = customBtn;
+    *(DWORD *)customBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[1]), *(DWORD *)(customBtn + CONTROL_STATE) = CONTROL_ENABLED;
+    *(DWORD *)joinPanel = (DWORD)(img + RVA_JOIN_PANEL_VT), *(BYTE **)(joinPanel + JOIN_NAME) = gameBox, *(BYTE **)(joinPanel + JOIN_LIST) = gameList, *(BYTE **)(joinPanel + JOIN_BUTTON) = joinBtn;
+    *(DWORD *)gameBox = (DWORD)(img + RVA_EDIT_VT[0]), *(DWORD *)(gameBox + CONTROL_STATE) = CONTROL_ENABLED;
+    *(DWORD *)gameList = (DWORD)(img + RVA_LISTBOX_WAR3_VT), *(DWORD *)joinBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]), *(DWORD *)(joinBtn + CONTROL_STATE) = CONTROL_ENABLED;
+    auto loginAgain = [&]() {                                  // a fresh start up to Logon, with the custom games asked for
+        g_blStep = 2, g_blAt = GetTickCount(), sh.blState = 2, sh.blOn = 1, menuUp = false, loginUp = true, chatUp = joinUp = false;
+        strcpy_s(sh.blAccount, "Ruzai"), strcpy_s(sh.blPassword, "s3cret!"), InterlockedIncrement(&sh.blSeq);
+        LoginPass(); Sleep(1100); LoginPass();                   // the login screen ready for a second, then typed and Logon
+    };
+    sh.blAfter = 1, strcpy_s(sh.blGame, "TWRPG 1.0");
+    int c0 = clicks;
+    loginAgain();
+    bool toChat = g_blStep == 10 && clicks == c0 + 1;
+    loginUp = false, chatUp = true;
+    LoginPass();
+    bool waitChat = g_blStep == 10 && clicks == c0 + 1;            // ready, not yet for a second
+    Sleep(1100); LoginPass();
+    bool customClicked = g_blStep == 11 && clicks == c0 + 2 && clicked[(c0 + 1) % 8] == customBtn;
+    chatUp = false, joinUp = true;
+    LoginPass(); Sleep(1100); LoginPass();
+    CHECK(toChat && waitChat && customClicked && g_blStep == 9 && sh.blState == 7 && clicks == c0 + 3 && !strcmp(*(const char **)(gameBox + EDIT_TEXT), "TWRPG 1.0"),
+          "logged in: Custom Game clicked once the chat panel was ready a second, then 'TWRPG 1.0' typed into the name box and Join clicked (blState 7)");
+    // a game selected in the list: Join would join it, so not clicked: the list left to you; no name set: the list stays open
+    c0 = clicks; loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
+    chatUp = false, joinUp = true, *(BYTE **)(gameList + LIST_SELECTED) = other; LoginPass(); Sleep(1100); LoginPass();
+    bool selected = sh.blState == 8 && clicks == c0 + 2;
+    *(BYTE **)(gameList + LIST_SELECTED) = nullptr, sh.blGame[0] = 0;
+    c0 = clicks; loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
+    chatUp = false, joinUp = true; LoginPass(); Sleep(1100); LoginPass();
+    CHECK(selected && sh.blState == 6 && clicks == c0 + 2 && g_blStep == 9, "a game selected in the list: Join not clicked (left to you); no name set: the custom games list stays open (blState 6)");
+    // no chat panel in 30 s (not logged in): left to you
+    sh.blAfter = 1; loginAgain(); loginUp = false; LoginPass(); g_blAt -= 31000; LoginPass();
+    CHECK(sh.blState == 8 && g_blStep == 9, "no chat panel within 30 s of Logon: the custom games left to you");
+    sh.blAfter = 0;
     char logText[8192] = "";
     FILE *lf;
     if (!fopen_s(&lf, "login.log", "rb"))
@@ -132,6 +174,7 @@ int main() {
     CHECK(strstr(logText, "battle.net login: Battle.net clicked") && strstr(logText, "account 'Ruzai' typed in, Logon clicked") && !strstr(logText, "s3cret")
           && strstr(logText, "the boxes now hold account 'Ruzai', a password of 7 characters (the same as the companion's 7)")
           && strstr(logText, "the account name's bytes: 52 75 7A 61 69 (5)")
+          && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'): Join clicked")
           && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty"),
           "the log: the steps, what the boxes hold (the account, the password's length only), the menus after Logon, never the password");
     Verdict();

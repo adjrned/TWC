@@ -7,6 +7,10 @@
 ;  clicks Logon (layout 24, LoginPass in native\twc-game.cpp). Once per game
 ;  start; holding Shift at the main menu skips it; a failed logon isn't tried
 ;  again. Off by default (ini [Battle.net] autoLogin; account = the name).
+;  Then (layout 25, on by default: [Battle.net] customGames) the custom games:
+;  Custom Game clicked once logged in, and the game named in [Battle.net] game
+;  joined by its name (typed into the panel's box, Join clicked); with no name
+;  set, or a game selected in the list, the list is left open to pick from.
 ;  The password is kept in Windows' Credential Manager (generic credential
 ;  "TW Companion/Battle.net", encrypted for your Windows account), never in
 ;  the ini. It goes to the module only when the module is at the login
@@ -28,6 +32,10 @@ class BattleNetLoginEngine {
         this.tick()
     }
     account => Ini(this.section, "account", "")
+    customGames => Integer(Ini(this.section, "customGames", 1))
+    setCustomGames(on) => (SetIni(on ? 1 : 0, this.section, "customGames"), this.tick())
+    game => Ini(this.section, "game", "")
+    setGame(name) => (SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "game"), this.tick())
     setAccount(name) => SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "account")
 
     ; -- the password in Credential Manager (CREDENTIALW, generic) -------------
@@ -79,6 +87,8 @@ class BattleNetLoginEngine {
         if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 24
             return
         NumPut("uint", this.enabled && this.gm.enabled ? 1 : 0, v, Shm.blOn)
+        if NumGet(v, Shm.layout, "uint") >= 25
+            NumPut("uint", this.customGames ? 1 : 0, v, Shm.blAfter), StrPut(SubStr(this.game, 1, 31), v + Shm.blGame, 32, "UTF-8")
         if NumGet(v, Shm.blState, "uint") != 2 || !this.enabled
             return this.answered := 0               ; not asking now: the next ask (a new game start too) is answered again
         seq := NumGet(v, Shm.blSeq, "int")
@@ -106,6 +116,7 @@ class BattleNetLoginEngine {
             return "On · " this.account " · when a 1.28f game starts"
         st := NumGet(v, Shm.blState, "uint")
         return "On · " this.account " · " (st = 1 ? "connecting to Battle.net" : st = 2 ? "at the login screen" : st = 3 ? "logged in (Logon clicked)"
+            : st = 6 ? "logged in, the custom games open" : st = 7 ? "joining " this.game : st = 8 ? "logged in, the custom games left to you"
             : st = 4 ? "left to you this time (see the module log)" : st = 5 ? "refused (see the module log)" : "waiting for the main menu")
     }
 }

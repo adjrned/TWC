@@ -124,5 +124,7 @@ class Shm {
     static blDone := 2600
     static blAccount := 2604
     static blPassword := 2636
-    static size := 2700
+    static blAfter := 2700
+    static blGame := 2704
+    static size := 2736
 }

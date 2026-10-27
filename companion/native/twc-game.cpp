@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 24
+    DWORD layout;           // 25
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -188,6 +188,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     volatile LONG blDone;   // module: the blSeq it used
     char blAccount[32];     // companion: the account name (UTF-8)
     char blPassword[64];    // companion: its password, only while blState is 2; the module wipes it once typed in
+    // layout 25: after the login, the custom games (AfterLoginPass); blState then: 6 the custom games list open (no game
+    // to join: it stays), 7 Join clicked for blGame, 8 the list left to you (a game was selected, or it never got ready)
+    DWORD blAfter;          // companion: 1 = once logged in, open the custom games and join blGame if one is set
+    char blGame[32];        // companion: the game to join by its name (UTF-8; "" = only open the list)
 };
 #pragma pack(pop)
 
@@ -5312,7 +5316,7 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil))
+    if (!g_getUi || now - at < 250 || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -5449,10 +5453,88 @@ static void LoginWatch() {
         g_blWatchUntil = 0;
     }
 }
+// After the login: the custom games. Read by hand in Game.dll (pinned in test_gamedll): the chat
+// panel (CBattleNetChatPanel, vtable +0xa9c130, its frame "BattleNetChatPanel" in the panels' name
+// list +0xa995dc) registers "CustomGameButton" as its command 3 (+0x307cba, kept at +0x2e0), which
+// opens the custom games (+0x320356 -> +0x31e4f0); the custom games panel (CBattleNetCustomJoinPanel,
+// +0xa9dfe0, "BattleNetCustomJoinPanel") keeps the game name box "JoinGameNameEditBox" at +0x204, the
+// games list (a CListBoxWar3, +0xa941b8) at +0x208 and "JoinGameButton" (command 4) at +0x214; Join
+// (+0x320ffc -> +0x3270d0) joins the list's selected game if there is one (its selected item
+// [list+0x1f4], +0x2e1fcc; +0x32717e), else the name in the box (+0x32727f -> +0x307540). So the name
+// is typed in and Join clicked only while nothing is selected; with no name set (or a game selected,
+// or nothing ready in time) the list is left open: the fallback. Each step waits for its frames to be
+// shown and enabled for 1 s, as the login does.
+static const DWORD RVA_CHAT_PANEL_VT = 0xa9c130, CHAT_CUSTOM_BUTTON = 0x2e0, RVA_JOIN_PANEL_VT = 0xa9dfe0, JOIN_NAME = 0x204, JOIN_LIST = 0x208,
+    JOIN_BUTTON = 0x214, RVA_LISTBOX_WAR3_VT = 0xa941b8, LIST_SELECTED = 0x1f4;
+static BYTE *GluePanel(const char *name, DWORD vt) {
+    BYTE *f = ((FrameByNameFn)(g_base + RVA_FRAME_BY_NAME))(name, 0);
+    return f && (DWORD)(f - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)f == (DWORD)(g_base + vt) && GlueShown(f) ? f : nullptr;
+}
+static void AfterLoginPass() {
+    Shared *s = g_shared;
+    DWORD now = GetTickCount();
+    static DWORD readySince;
+    auto settled = [&](bool ready) { readySince = ready ? readySince ? readySince : now : 0; return ready && now - readySince >= 1000; };
+    __try {
+        if (g_blStep == 10) {                   // logged in: the chat panel's Custom Game
+            BYTE *chat = GluePanel("BattleNetChatPanel", RVA_CHAT_PANEL_VT);
+            BYTE *custom = chat ? GlueCheck(*(BYTE **)(chat + CHAT_CUSTOM_BUTTON), false, "the chat panel's Custom Game") : nullptr;
+            if (settled(custom && GlueEnabled(custom))) {
+                ((ClickFn)(g_base + RVA_CONTROL_CLICK))(custom, 0, 1);
+                g_blStep = 11, g_blAt = now, readySince = 0;
+                Log("battle.net login: logged in: Custom Game clicked (chat panel %p, button %p)", chat, custom);
+            } else if (now - g_blAt > 30000) {
+                g_blStep = 9, s->blState = 8;
+                Log("battle.net login: no chat panel within 30 s of Logon (not logged in?): the custom games left to you");
+            }
+            return;
+        }
+        // the custom games panel: the name typed and Join clicked, or the list left open
+        BYTE *join = GluePanel("BattleNetCustomJoinPanel", RVA_JOIN_PANEL_VT);
+        BYTE *box = join ? GlueCheck(*(BYTE **)(join + JOIN_NAME), true, "the custom games' name box") : nullptr;
+        BYTE *button = join ? GlueCheck(*(BYTE **)(join + JOIN_BUTTON), false, "the custom games' Join") : nullptr;
+        BYTE *list = join ? *(BYTE **)(join + JOIN_LIST) : nullptr;
+        bool listOk = list && (DWORD)(list - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)list == (DWORD)(g_base + RVA_LISTBOX_WAR3_VT);
+        if (!settled(box && GlueEnabled(box) && listOk)) {
+            if (now - g_blAt > 15000) {
+                g_blStep = 9, s->blState = 8;
+                Log("battle.net login: the custom games panel wasn't ready in 15 s (panel %p, name box %p, list %p): left to you", join, box, list);
+            }
+            return;
+        }
+        g_blStep = 9;
+        s->blGame[sizeof(s->blGame) - 1] = 0;
+        if (!s->blGame[0]) {
+            s->blState = 6;
+            Log("battle.net login: the custom games list is open (no game name set: pick one)");
+            return;
+        }
+        if (*(BYTE **)(list + LIST_SELECTED)) {
+            s->blState = 8;
+            Log("battle.net login: a game is selected in the list (Join would join it, not '%s'): the list left to you", s->blGame);
+            return;
+        }
+        if (!button || !GlueEnabled(button)) {
+            s->blState = 8;
+            Log("battle.net login: the custom games' Join isn't enabled: the list left to you");
+            return;
+        }
+        Game(RVA_EDIT_SET_TEXT, box, { (DWORD)s->blGame, 1 });
+        const char *held = *(const char **)(box + EDIT_TEXT);
+        ((ClickFn)(g_base + RVA_CONTROL_CLICK))(button, 0, 1);
+        s->blState = 7;
+        Log("battle.net login: joining '%s' (the name box holds '%s'): Join clicked; if there's no such game, the game says so and the list stays", s->blGame, held ? held : "");
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_blStep = 9, s->blState = 5;
+        Log("battle.net login: a custom games call faulted: left to you");
+    }
+}
 static void LoginPass() {
     static bool bad;
     Shared *s = g_shared;
     LoginWatch();
+    if (!bad && (g_blStep == 10 || g_blStep == 11))
+        return AfterLoginPass();
     if (bad || g_blStep == 9)
         return;
     if (!s->blOn) {
@@ -5553,7 +5635,7 @@ static void LoginPass() {
             o += sprintf_s(hex + o, sizeof(hex) - o, "%02X ", (BYTE)at[i]);
         Log("battle.net login: the account name's bytes: %s(%u)", hex, at ? (unsigned)strnlen(at, 256) : 0);
         ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
-        g_blStep = 9, s->blState = 3, g_blWatchUntil = GetTickCount() + 15000;
+        g_blStep = s->blAfter ? 10 : 9, s->blState = 3, g_blWatchUntil = GetTickCount() + 15000, g_blAt = GetTickCount();
         Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         bad = true, s->blState = 5;
@@ -5950,7 +6032,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
             return FALSE;
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 24;
+        g_shared->layout = 25;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

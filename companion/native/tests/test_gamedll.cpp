@@ -401,6 +401,25 @@ int main() {
           && SiteTarget(g_base + 0x2f3942) == g_base + 0x2f7170 && *(DWORD *)(g_base + 0x2f71b4) == (DWORD)(g_base + RVA_BNET_MAIN_VT)
           && !memcmp(g_base + 0x30a4de, "\x89\x86\x14\x02\x00\x00", 6) && BNET_LOGON == 0x214 && BNET_ACCOUNT == 0x1f8 && BNET_PASSWORD == 0x1fc,
           "the login screen is the frame 'BattleNetMainFrame' (a CBattleNetMain); its own Logon +0x214, boxes +0x1F8 / +0x1FC");
+    // after the login, the custom games: the chat panel's CustomGameButton is its command 3 (kept at +0x2E0), which opens them; the
+    // custom games panel keeps its name box +0x204, its games list +0x208 (a ListBoxWar3), its JoinGameButton (command 4) +0x214;
+    // Join joins the list's selected game (vt+0x148 on +0x208) else the typed name (+0x307540); the selected item is [list+0x1F4]
+    const BYTE *cj3 = *(const BYTE **)(g_base + 0x3208b4 + 3 * 4), *jj4 = *(const BYTE **)(g_base + 0x321194 + 4 * 4);
+    CHECK(!memcmp(g_base + 0x307cba, "\x6A\x03\x68", 3) && !strcmp(*(const char **)(g_base + 0x307cbd), "CustomGameButton") && SiteTarget(g_base + 0x307cc9) == g_base + 0x3140a0
+          && !memcmp(g_base + 0x307cd7, "\x89\x86\xE0\x02\x00\x00", 6) && SiteTarget(g_base + 0x3140ac) == g_base + RVA_FRAME_BY_NAME && SiteTarget(g_base + 0x3140bb) == g_base + 0x141430
+          && *(DWORD *)(g_base + RVA_CHAT_PANEL_VT + 0xc) == (DWORD)(g_base + 0x320320) && cj3 == g_base + 0x320356 && SiteTarget(g_base + 0x320358) == g_base + 0x31e4f0
+          && !strcmp(*(const char **)(g_base + 0x3099ab), "JoinGameNameEditBox") && !memcmp(g_base + 0x3099bc, "\x89\x87\x04\x02\x00\x00", 6)
+          && !strcmp(*(const char **)(g_base + 0x3099c3), "ListBoxWar3") && !memcmp(g_base + 0x3099ce, "\x89\x87\x08\x02\x00\x00", 6)
+          && !memcmp(g_base + 0x3099f0, "\x6A\x04\x68", 3) && !strcmp(*(const char **)(g_base + 0x3099f3), "JoinGameButton") && SiteTarget(g_base + 0x3099ff) == g_base + 0x314150
+          && !memcmp(g_base + 0x309a0b, "\x89\x87\x14\x02\x00\x00", 6) && *(DWORD *)(g_base + RVA_JOIN_PANEL_VT + 0xc) == (DWORD)(g_base + 0x320fb0)
+          && jj4 == g_base + 0x320ffc && SiteTarget(g_base + 0x321000) == g_base + 0x3270d0
+          && !memcmp(g_base + 0x32713a, "\x8B\x8F\x08\x02\x00\x00", 6) && !memcmp(g_base + 0x32715d, "\xFF\x90\x48\x01\x00\x00", 6)
+          && !memcmp(g_base + 0x32727f, "\x8B\x8F\x04\x02\x00\x00", 6) && SiteTarget(g_base + 0x327292) == g_base + 0x307540
+          && *(DWORD *)(g_base + RVA_LISTBOX_WAR3_VT + 0x148) == (DWORD)(g_base + 0x2e1fc0) && !memcmp(g_base + 0x2e1fcc, "\x8B\xBA\xF4\x01\x00\x00", 6)
+          && !strcmp(*(const char **)(g_base + 0xa995dc), "BattleNetChatPanel") && !strcmp(*(const char **)(g_base + 0xa995e4), "BattleNetCustomJoinPanel")
+          && Rtti(RVA_CHAT_PANEL_VT, "CBattleNetChatPanel") & Rtti(RVA_JOIN_PANEL_VT, "CBattleNetCustomJoinPanel") & Rtti(RVA_LISTBOX_WAR3_VT, "CListBoxWar3")
+          && CHAT_CUSTOM_BUTTON == 0x2e0 && JOIN_NAME == 0x204 && JOIN_LIST == 0x208 && JOIN_BUTTON == 0x214 && LIST_SELECTED == 0x1f4,
+          "the chat panel's Custom Game (command 3), the custom games' name box / list / Join (command 4: the selected game, else the typed name)");
     // a control's enabled state: SetEnabled (vt+0x10c of the glue buttons and the edit box, +12B9C0) sets / clears bit 1 of [+0x1D4]
     // (+1406E0 ors it in, +141700 masks it out); the login screen disables its Logon that way (+32D3FC .. +32D404: vt+0x10c(0))
     CHECK(*(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[0] + 0x10c) == (DWORD)(g_base + 0x12b9c0) && *(DWORD *)(g_base + RVA_GLUE_BUTTON_VT[1] + 0x10c) == (DWORD)(g_base + 0x12b9c0)

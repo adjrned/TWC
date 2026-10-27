@@ -158,7 +158,7 @@ Wc3Features() {
             opts: (d) => (OptSlider(d, "Seconds", (*) => gameDisplay.countdownSecs, (v) => gameDisplay.setCountdownSecs(v), 0, 6, 0.1, SecsText),
                 OptNote(d, "From 0 to 6 s; the game's own is 6. WFE adds 0.1 s, so does this.")) },
         { tab: "hosting", title: "Battle.net login", badge: "1.28f",
-            desc: "At the main menu, straight to Battle.net and logged in with your account.",
+            desc: "Straight to Battle.net, logged in, and into your game (or the custom games).",
             on: (*) => bnetLogin.enabled, set: (v) => bnetLogin.setEnabled(v), status: (*) => bnetLogin.statusText(),
             window: (*) => BattleNetLoginDialog() },
     ]
@@ -404,6 +404,14 @@ BattleNetLoginDialog() {
     d.y += 36
     OptNote(d, "The password is kept in Windows' Credential Manager (encrypted for your Windows account), never in the companion's files. It goes to the game only at the login screen.")
     OptButtons(d, [["Forget the password", (*) => (bnetLogin.setPassword(""), Toast("Password removed"), BattleNetLoginDialog(), RefreshWc3())]])
+    OptDivider(d)
+    OptHeader(d, "THEN")
+    OptCheck(d, "Open the custom games", bnetLogin.customGames, (v) => bnetLogin.setCustomGames(v))
+    gm := row("Join game", "Limit31", bnetLogin.game)
+    SendMessage(0x1501, 1, StrPtr("its name (empty: the list)"), gm)       ; EM_SETCUEBANNER
+    gm.OnEvent("Change", (src, *) => bnetLogin.setGame(src.Value))
+    d.y += 34
+    OptNote(d, "Joined by its name as soon as you're in. Empty, or if it isn't there: the custom games list stays open to pick from.")
     OptDivider(d)
     OptNote(d, "Once each time the game starts. Hold Shift at the main menu to stay there. A wrong password isn't tried again: the game says so, log in yourself.")
     Wc3DialogShow(d)

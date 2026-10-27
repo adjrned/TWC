@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 24, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 25, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 24 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 24, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 25 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 25, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -138,6 +138,11 @@ TwcModuleRun() {
     TwcCheck(NumGet(v, Shm.blSeq, "int") = 1 && StrGet(v + Shm.blAccount, 32, "UTF-8") = "Ruzai", "battle.net login: a new game start (counters from 0) is answered again")
     NumPut("int", 1, v, Shm.blDone), NumPut("uint", 3, v, Shm.blState)
     TwcCheck(InStr(bnetLogin.statusText(), "Ruzai · logged in"), "battle.net login: " bnetLogin.statusText())
+    ; then the custom games (layout 25): on by default, the game name pushed (empty = the list only)
+    after1 := NumGet(v, Shm.blAfter, "uint"), bnetLogin.setGame("TWRPG 1.0"), g1 := StrGet(v + Shm.blGame, 32, "UTF-8")
+    bnetLogin.setCustomGames(0), after0 := NumGet(v, Shm.blAfter, "uint"), bnetLogin.setCustomGames(1)
+    NumPut("uint", 7, v, Shm.blState), st7 := bnetLogin.statusText(), NumPut("uint", 3, v, Shm.blState)
+    TwcCheck(after1 = 1 && g1 = "TWRPG 1.0" && after0 = 0 && InStr(st7, "joining TWRPG 1.0"), "battle.net login: the custom games on by default, the game pushed; status '" st7 "'")
     gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
     TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())
     bnetLogin.setEnabled(0), BattleNetLoginEngine.TARGET := "TW Companion/Battle.net"
