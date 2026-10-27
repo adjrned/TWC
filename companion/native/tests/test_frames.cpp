@@ -221,15 +221,15 @@ int main() {
         // the button's laid-out rect wins over its +0x58 / +0x5C (sized by its anchors, or narrowed by the Widescreen UI):
         // a 0.0275 x 0.04 button gets 0.01375-wide halves; a new height places every square again
         float *rc = (float *)(btns[0] + LAYOUT_RECT);
-        rc[0] = 0.5f, rc[1] = 0.1f, rc[2] = 0.5275f, rc[3] = 0.14f;
+        rc[0] = 0.1f, rc[1] = 0.5f, rc[2] = 0.14f, rc[3] = 0.5275f;     // y first: bottom, left, top, right
         sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
         bool narrow = fabsf(W(0) - 0.01375f) < 1e-4f && fabsf(W(31) - 0.01375f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
         int a2 = anchors;
-        rc[3] = 0.132f; SweepsPass(ui, true);
+        rc[2] = 0.132f; SweepsPass(ui, true);
         bool lower = anchors - a2 >= SWEEP_CELLS && fabsf(H(0) - 0.002f) < 1e-4f;
         // the height back while only the top left quarter is dark: the squares hidden then get the new height when shown again
         sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
-        rc[3] = 0.14f; SweepsPass(ui, true);
+        rc[2] = 0.14f; SweepsPass(ui, true);
         sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
         lower = lower && fabsf(H(31) - 0.0025f) < 1e-4f && fabsf(H(0) - 0.0025f) < 1e-4f;
         float w, h;

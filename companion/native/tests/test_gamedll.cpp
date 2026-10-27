@@ -303,12 +303,18 @@ int main() {
           && SiteTarget(g_base + 0x3e1d03) == g_base + RVA_SIMPLEFRAME_CTOR && !memcmp(g_base + RVA_SET_WIDTH + 8, SW, 5) && !memcmp(g_base + RVA_SET_HEIGHT + 8, SH2, 5)
           && *(DWORD *)(g_base + RVA_SIMPLEFRAME_VT + 0x68) == (DWORD)(g_base + 0x13c390),
           "the sweep's frame and textures are made as the game makes the badge's; their setters' stack sizes and fields");
-    // the sweep's size: a layout's rect is left +0x44, bottom +0x48, right +0x4C, top +0x50 (+13F690 compares a new rect's
-    // right / top with +0x4C / +0x50 and their widths), and a frame given a parent is drawn one level over it (+13C30A: [parent+0x84] + 1)
+    // the sweep's size: a layout's rect is y first: bottom +0x44, left +0x48, top +0x4C, right +0x50. A grid's vt+0 (+13CC90) takes
+    // the rect's [+4]..[+0xC] span over its column count [+0x128] (the cells' width) and [+0]..[+8] over its rows [+0x124]; +13BC72 pairs
+    // the rect's +4 / +0xC with the frame's +0x48 / +0x50 (+13F690 compares the same fields). And a frame given a parent is drawn
+    // one level over it (+13C30A: [parent+0x84] + 1)
     CHECK(!memcmp(g_base + 0x13f6b6, "\xF3\x0F\x10\x79\x4C", 5) && !memcmp(g_base + 0x13f6c3, "\xF3\x0F\x10\x71\x50", 5)
           && !memcmp(g_base + 0x13f6c8, "\xF3\x0F\x5C\x79\x44", 5) && !memcmp(g_base + 0x13f6cd, "\xF3\x0F\x5C\x71\x48", 5) && LAYOUT_RECT == 0x44
+          && !memcmp(g_base + 0x13ccb1, "\x8B\x87\x28\x01\x00\x00", 6) && !memcmp(g_base + 0x13ccdd, "\xF3\x0F\x58\x46\x04", 5)
+          && !memcmp(g_base + 0x13ccea, "\xF3\x0F\x10\x46\x0C", 5) && !memcmp(g_base + 0x13cd13, "\xF3\x0F\x58\x06", 4)
+          && !memcmp(g_base + 0x13bc72, "\xF3\x0F\x10\x47\x50", 5) && !memcmp(g_base + 0x13bc79, "\xF3\x0F\x5C\x47\x48", 5)
+          && !memcmp(g_base + 0x13bc7e, "\xF3\x0F\x10\x4E\x0C", 5) && !memcmp(g_base + 0x13bc83, "\xF3\x0F\x5C\x4E\x04", 5)
           && !memcmp(g_base + 0x13c30a, "\x8B\x81\x84\x00\x00\x00\x40\x89\x86\x84\x00\x00\x00", 13) && SiteTarget(g_base + 0x13afeb) == g_base + 0x13c2d0,
-          "a layout's rect at +0x44..+0x50 (the sweep's size as laid out); a new simple frame's level is its parent's + 1 (over the button's icon)");
+          "a layout's rect at +0x44..+0x50, y first (+0x48 / +0x50 are the x span: the grid's columns); a new simple frame's level is its parent's + 1 (over the button's icon)");
     // buffs: the rawcode [buff+0x34] (the game looks the buff's data up with it), its unit [+0x30]
     CHECK(!memcmp(g_base + 0x45b9e8, "\x8B\x4E\x34", 3) && !memcmp(g_base + 0x45b9ed, "\x89\x46\x30", 3) && SiteTarget(g_base + 0x45b9f0) == g_base + 0x6e06e0
           && Rtti(0xa6fcd0, "CAgentTimerExtended") && Rtti(0xa6f780, "CAgentTimer"), "a buff's rawcode is [+0x34], its unit [+0x30] (+45B9E8); the timers' classes");

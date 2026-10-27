@@ -2297,12 +2297,15 @@ static void SweepSpan(float y, float x0, float x1, float A, float *l, float *r) 
     else
         *l = e, *r = x1;
 }
-// a button's size as drawn: its laid-out rect (left +0x44, bottom +0x48, right +0x4c, top +0x50,
-// as the game's +0x13f690 compares them), so a button sized by its anchors (no +0x58 / +0x5c of its
-// own) or narrowed by the Widescreen UI is right too; else its width / height; else the game's 0.039
+// a button's size as drawn: its laid-out rect, y first: bottom +0x44, left +0x48, top +0x4c, right
+// +0x50 (a grid's vt+0 +0x13cc90 divides the rect's +4..+0xc span by its column count [+0x128], and
+// +0x13bc72 pairs that span with the frame's +0x48 / +0x50; reading it x first swapped width and
+// height: the user's screenshot of 2026-10-27 showed the squares 1.4 x too wide and 0.7 x too low on
+// the Widescreen UI's 0.0275 x 0.039 buttons). So a button sized by its anchors (no +0x58 / +0x5c of
+// its own) or narrowed by the Widescreen UI is right too; else its width / height; else the game's 0.039
 static void ButtonSize(BYTE *btn, float *w, float *h) {
     float *rc = (float *)(btn + LAYOUT_RECT);
-    *w = rc[2] - rc[0], *h = rc[3] - rc[1];
+    *w = rc[3] - rc[1], *h = rc[2] - rc[0];
     if (!(*w > 0.005f && *w < 0.2f))
         *w = *(float *)(btn + LAYOUT_WIDTH);
     if (!(*h > 0.005f && *h < 0.2f))
