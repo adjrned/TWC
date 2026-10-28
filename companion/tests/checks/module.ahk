@@ -4,7 +4,7 @@
 ; activated, no keys sent; the injector is never run). Every status line must
 ; read its own field, and every push must land where the module reads it.
 TwcModuleIni() {
-    for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi", "wideUi", "tooltips", "fastMenu", "buffBar"], "Hosting", ["latency", "countdown"], "Timers", ["cooldowns", "buffs", "allies"])
+    for sect, keys in Map("HealthBars", ["numbers", "mana", "portrait", "on", "colours"], "Display", ["widescreen", "fps", "hideUi", "wideUi", "tooltips", "fastMenu", "buffBar", "unitNames"], "Hosting", ["latency", "countdown"], "Timers", ["cooldowns", "buffs", "allies"])
         for key in keys
             IniWrite(1, iniFile, sect, key)
 }
@@ -13,9 +13,9 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 25, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 26, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
-    for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState"]
+    for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState", "utState"]
         NumPut("uint", 1, v, Shm.%f%)
     NumPut("uint", 3, v, Shm.uiState), NumPut("float", 0.004, v, Shm.hbDefHeight), NumPut("uint", 60, v, Shm.fpsGameLimit)
     NumPut("int", 100, v, Shm.latGame), NumPut("int", 250, v, Shm.latGame + 8)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 25 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 25, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 26 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 26, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -79,6 +79,7 @@ TwcModuleRun() {
         "widescreen", [(*) => gameDisplay.wsStatus(), "the world fits the window"],
         "tooltips", [(*) => gameDisplay.tooltipsStatus(), "hover the damage or armor icon"],
         "fastMenu", [(*) => gameDisplay.fastMenuStatus(), "the menus switch at once"],
+        "unitNames", [(*) => gameDisplay.unitNamesStatus(), "no name over the unit under the mouse"],
         "countdown", [(*) => gameDisplay.countdownStatus(), "start 0 s after Start Game (the game's own: 6 s)"],
         "buffBar", [(*) => gameDisplay.buffBarStatus(), "On · x1.5 (in the widescreen UI's layout)"])
     for name, w in want {
@@ -88,7 +89,7 @@ TwcModuleRun() {
     healthBars.push(), gameDisplay.push(), timersHud.pushGame()
     v := twcShmBuf.Ptr
     TwcCheck(NumGet(v, Shm.itOn, "uint") = 3, "pushed itOn: cooldowns (1) and buffs (2)")
-    for f in ["hnOn", "mbOn", "prOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn", "alOn", "pingOn"]
+    for f in ["hnOn", "mbOn", "prOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn", "alOn", "pingOn", "utOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = (f = "ulOn" ? 3 : 1), "pushed " f)    ; ulOn 3: the buff bar raised by default
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x7D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")

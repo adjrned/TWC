@@ -179,6 +179,21 @@ class GameDisplayEngine {
         return st = 1 ? "On · the menus switch at once"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
+    ; the name tip over the unit under the mouse hidden (WFE's Hero Overhead Tip off): layout 26, ini [Display] unitNames
+    unitNames => Integer(Ini(this.section, "unitNames", 0))
+    setUnitNames(on) {
+        SetIni(on ? 1 : 0, this.section, "unitNames")
+        this.push()
+    }
+    unitNamesStatus() {
+        if !this.unitNames
+            return "Off · the game shows the name over the unit under the mouse"
+        if (w := this.moduleWait(26)) != ""
+            return w
+        st := NumGet(this.gm.live(), Shm.utState, "uint")
+        return st = 1 ? "On · no name over the unit under the mouse"
+            : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
     ; detailed tooltips (the info panel's damage / armor icons): layout 15, ini [Display] tooltips
     tooltips => Integer(Ini(this.section, "tooltips", 0))
     setTooltips(on) {
@@ -244,6 +259,8 @@ class GameDisplayEngine {
         }
         if NumGet(v, Shm.layout, "uint") >= 23
             NumPut("float", this.buffBar && this.gm.enabled ? this.buffBarScale : 0, v, Shm.bbScale)
+        if NumGet(v, Shm.layout, "uint") >= 26
+            NumPut("uint", this.unitNames && this.gm.enabled ? 1 : 0, v, Shm.utOn)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)

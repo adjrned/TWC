@@ -192,6 +192,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // to join: it stays), 7 Join clicked for blGame, 8 the list left to you (a game was selected, or it never got ready)
     DWORD blAfter;          // companion: 1 = once logged in, open the custom games and join blGame if one is set
     char blGame[32];        // companion: the game to join by its name (UTF-8; "" = only open the list)
+    // layout 26: the name tip over the unit under the mouse hidden (WFE's [UPGRADEDUI] ISHEROOVERHEADTIP off)
+    DWORD utOn;             // companion: 1 = the game never shows it
+    DWORD utState;          // module: 0 off, 1 on (its show is ours), 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -3595,6 +3598,71 @@ static void FollowTooltips() {
         g_shared->ttState = g_ttHooked ? 1 : 0;
 }
 
+// -- the name tip over the unit under the mouse ---------------------------------------
+// The game's CUnitTip (vtable +0xab2c00, RTTI): one of it, [+0xd328c4], made by +0x3c5f60 under the
+// console; the hover code (+0x3c6662 / +0x3c684a / +0x3c998f, the hovered unit [+0xd32900]) fills it
+// for a unit (+0x4057c0, ret 4) and shows it there through its vtable +0x68 ([+0x90] = 1 then vt+0x68
+// at +0x405bea; the entry is CSimpleFrame's show +0x13c390, thiscall, ret 0); it's hidden with vt+0x64
+// (+0x13b940). WFE's [UPGRADEDUI] ISHEROOVERHEADTIP off (0x10079a0e) hides it with vt+0x64 once, through
+// the getter ([0x1013a9dc] = +0x3c5f60 on 1.28f, 0x1002a3e6). Here its vtable's +0x68 entry is ours
+// (a data write, as the tooltips' entries): with utOn the show is dropped ([+0x90] left 0), else the
+// game's own show. The vtable is CUnitTip's alone, so no other frame is touched. A tip shown at the
+// moment goes with the game's next hide (the mouse leaving the unit).
+static const DWORD RVA_UNITTIP_VT = 0xab2c00, UNITTIP_SHOW = 0x68, RVA_SIMPLEFRAME_SHOW = 0x13c390;
+typedef int(__fastcall *ShowFn)(void *, int);     // 1 shown, 0 not (+0x13c41f / +0x13c426)
+static bool g_utHooked;
+static int __fastcall UnitTipShow(void *tip, int edx) {
+    if (g_shared->utOn) {
+        *(DWORD *)((BYTE *)tip + 0x90) = 0;     // not wanted shown: as the game's own hide leaves it
+        static bool logged;
+        if (!logged)
+            logged = true, Log("unit names: the first name tip kept hidden (%p)", tip);
+        return 0;
+    }
+    return ((ShowFn)(g_base + RVA_SIMPLEFRAME_SHOW))(tip, edx);
+}
+static bool SwapUnitTip(bool on) {
+    if (on == g_utHooked)
+        return true;
+    DWORD *slot = (DWORD *)(g_base + RVA_UNITTIP_VT + UNITTIP_SHOW), game = (DWORD)(g_base + RVA_SIMPLEFRAME_SHOW), ours = (DWORD)UnitTipShow;
+    if (*slot != (on ? game : ours)) {
+        Log("unit names: vtable +%06lX entry +%X is %08lX, not the %s: left as it is", RVA_UNITTIP_VT, UNITTIP_SHOW, *slot, on ? "game's show" : "hook");
+        if (!on)
+            g_utHooked = false;
+        return false;
+    }
+    DWORD old;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        return false;
+    InterlockedExchange((volatile LONG *)slot, (LONG)(on ? ours : game));
+    VirtualProtect(slot, 4, old, &old);
+    g_utHooked = on;
+    Log(on ? "unit names: on (the name tip's show is ours: it stays hidden)" : "unit names: off (the name tip's show is the game's again)");
+    return true;
+}
+// the worker's part: check once, then follow the switch
+static void FollowUnitTip() {
+    static int checked;             // 1 checked out, 2 refused
+    if (!g_getUi || checked == 2)
+        return;
+    bool on = g_shared->utOn != 0;
+    if (on && !checked) {
+        char rtti[64] = "";
+        RttiName((DWORD)(g_base + RVA_UNITTIP_VT), g_imageSize, rtti, sizeof(rtti));
+        bool ok = FnStart(RVA_SIMPLEFRAME_SHOW) && GameVtable(RVA_UNITTIP_VT, { UNITTIP_SHOW }) && (!rtti[0] || !strcmp(rtti, ".?AVCUnitTip@@"));
+        checked = ok ? 1 : 2;
+        if (!ok) {
+            g_shared->utState = 3;
+            Log("unit names: refused (the name tip's vtable +%06lX isn't where 1.28f has it; RTTI '%s')", RVA_UNITTIP_VT, rtti);
+            return;
+        }
+    }
+    if (checked && on != g_utHooked && !SwapUnitTip(on))
+        checked = 2, g_shared->utState = 3;
+    else if (g_shared->utState != 3)
+        g_shared->utState = g_utHooked ? 1 : 0;
+}
+
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
 // Ported from WFE's 1.28f branches (each address re-checked against WFEDll:
 // the tables at 0x10073232, 0x10035715, 0x10070429, 0x1006ff59, 0x1001fec2
@@ -5942,7 +6010,7 @@ static bool LiveModuleThere(const Shared *s) {
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
-    s->bbScale = 0, s->blOn = 0;
+    s->bbScale = 0, s->blOn = 0, s->utOn = 0;
     SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
     s->qcUntil = 0;
 }
@@ -5950,6 +6018,7 @@ static void RestoreAll() {
     if (g_portraitSlot)
         SwapPortrait(false);
     SwapTooltips(false);
+    SwapUnitTip(false);
     FastMenuHook(false);
     if (g_prSites && g_portraitHooked)
         PointSites(false);
@@ -6044,6 +6113,7 @@ static void Run() {
         FollowColours();
         FollowPortrait();
         FollowTooltips();
+        FollowUnitTip();
         QueueDisplay();
         QueueFrames();
         LONG cseq = g_shared->cmdSeq;
@@ -6145,7 +6215,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 25;
+        g_shared->layout = 26;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

@@ -39,11 +39,13 @@ TwcPagesRun() {
         try qg.Destroy()
         TwcCheck((v = "hook" ? gameModule.quickcast : QuickcastScreenOn()) = was && remapQcCtrls[v].sw.Text = (was ? "On" : "Off"), "Remap: quickcast " v " switch and Options")
     }
-    ; one page a tab on 1.28f (two columns): no pager
-    global wc3PagerCtls
+    ; the pages a tab on 1.28f takes (two columns), read from the pager's own text (.Visible is false on a
+    ; window that isn't shown, so the old check always passed); Display has 13 cards since the hover names: 2 pages
+    ; in the real window, 1 here (no module row)
+    global wc3PagerText
     for t in Wc3Tabs() {
-        Wc3ShowVersion("128"), Wc3ShowTab(t[1])
-        TwcCheck(!wc3PagerCtls[1].Visible, "1.28f > " t[2] ": one page")
+        Wc3ShowVersion("128"), Wc3ShowTab(t[1]), want := t[1] = "display" ? wc3PagerText.Text : "1 / 1"    ; Display: 1 or 2 (the module row shown or not)
+        TwcCheck(wc3PagerText.Text = want, "1.28f > " t[2] ": " wc3PagerText.Text " (" want ")")
     }
     ; the size and colour windows: typed, slid, player colour
     global healthBars

@@ -470,6 +470,20 @@ int main() {
     CHECK(SiteTarget(g_base + 0x33a79e) == g_base + RVA_GLUE && g_base[0x3112c5] == 0xA1 && *(DWORD *)(g_base + 0x3112c6) == (DWORD)(g_base + DATA_GLUE)
           && g_base[0x33a7c5] == 0x81 && g_base[0x33a7c6] == 0xC3 && *(DWORD *)(g_base + 0x33a7c7) == GLUE_MODELS,
           "it takes the glue from +%06lX (kept at +%06lX) and walks its models from +0x194", RVA_GLUE, DATA_GLUE);
+
+    // the name tip over the hovered unit: CUnitTip (vtable +AB2C00) made once by +3C5F60 (kept at +D328C4, its ctor +3D6760);
+    // the hover code calls the getter (+3C6662 / +3C684A / +3C998F, the hovered unit [+D32900]); +4057C0 (the tip for a unit,
+    // ret 4) shows it with [+0x90] = 1 then vt+0x68 (+405BE0); entry +0x68 is CSimpleFrame's show +13C390 (thiscall, ret 0,
+    // eax 1 / 0), +0x64 its hide +13B940 (ret 0)
+    const BYTE *tv = g_base + RVA_UNITTIP_VT;
+    CHECK(Rtti(RVA_UNITTIP_VT, "CUnitTip") && *(DWORD *)(tv + UNITTIP_SHOW) == (DWORD)(g_base + RVA_SIMPLEFRAME_SHOW) && *(DWORD *)(tv + 0x64) == (DWORD)(g_base + 0x13b940)
+          && *(DWORD *)(g_base + RVA_SIMPLEFRAME_VT + 0x68) == (DWORD)(g_base + RVA_SIMPLEFRAME_SHOW)
+          && !memcmp(g_base + 0x3c5fd8, "\x89\x35", 2) && *(DWORD *)(g_base + 0x3c5fda) == (DWORD)(g_base + 0xd328c4) && SiteTarget(g_base + 0x3c5fcd) == g_base + 0x3d6760
+          && SiteTarget(g_base + 0x3c6662) == g_base + 0x3c5f60 && SiteTarget(g_base + 0x3c684a) == g_base + 0x3c5f60 && SiteTarget(g_base + 0x3c998f) == g_base + 0x3c5f60
+          && !memcmp(g_base + 0x405be0, "\xC7\x81\x90\x00\x00\x00\x01\x00\x00\x00\xFF\x50\x68", 13)
+          && g_base[0x13c425] == 0xC3 && g_base[0x13c429] == 0xC3 && !memcmp(g_base + 0x13c41f, "\xB8\x01\x00\x00\x00", 5) && !memcmp(g_base + 0x13c426, "\x33\xC0", 2)
+          && g_base[0x405c84] == 0xC2 && *(WORD *)(g_base + 0x405c85) == 4,
+          "the name tip: CUnitTip's vtable +0x68 is the show (+13C390, ret 0, eax 1 / 0) the hover code calls (+405BE0); one tip, at +D328C4");
     Verdict();
     return g_fails;
 }

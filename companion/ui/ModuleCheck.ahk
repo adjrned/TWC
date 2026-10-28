@@ -26,6 +26,7 @@ ModuleCheckFeatures() => [
     ["Mana bars", "mana bars: the first one .* checks out", "mana bars: the new bar|mana bars: destroying one faulted|health numbers / mana bars: refused"],
     ["Portrait regen", "portrait: the first update wrapped", "portrait: refused|portrait: writing a line faulted|portrait: the update entry was changed|portrait: the call at .* was changed|portrait: writing the call at"],
     ["Storm.dll (for new frames)", "SMemAlloc \(401\) at .* check out", "Storm.dll isn't loaded in the game|ordinals 401 / 403 aren't"],
+    ["Hide hover names", "unit names: on|unit names: the first name tip kept hidden", "unit names: refused|unit names: vtable .* left as it is"],
     ["Fast menu", "fast menu: the first transition sped up", "fast menu: refused|fast menu: writing the detour failed|fast menu: .* faulted|fast menu: .* changed by someone else"],
     ["Widescreen", "widescreen: on, the window is|widescreen: .* already hooked by", "widescreen: refused|isn't the game's call to its projection|widescreen: writing the call"],
     ["Detailed tooltips", "tooltips: the first .* tooltip got its lines", "tooltips: refused|tooltips: adding the lines faulted|tooltips: vtable .* left as it is"],
