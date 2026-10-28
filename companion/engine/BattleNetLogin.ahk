@@ -43,10 +43,30 @@ class BattleNetLoginEngine {
     }
 
     ; -- W3L (eurobattle.net's launcher, w3l.exe), from the sidebar --------------
-    ; Its place is remembered ([Battle.net] w3l); the first time it's looked for in the game's
-    ; folders (the loader's install folders, and their parents), else you pick it once.
-    ; pick: choose it again (Shift + click). -> true if it was started
+    ; Its place is set in Settings ([Battle.net] w3l: Change picks it, Auto-detect looks in the
+    ; game's folders, the loader's install folders and their parents). The sidebar's button
+    ; starts it; with none set it looks once by itself, else it asks you to set it in Settings.
     w3lPath => Ini(this.section, "w3l", "")
+    w3lAuto => Integer(Ini(this.section, "w3lAuto", 0))         ; 1: found by Auto-detect, 0: chosen by you
+    ; Settings' Change: pick it -> true if one was picked
+    pickW3l() {
+        start := this.w3lPath != "" ? this.w3lPath : A_ProgramFiles
+        exe := FileSelect(3, start, "Where's w3l.exe (eurobattle.net's launcher)?", "W3L (w3l.exe)")
+        if exe = ""
+            return false
+        SetIni(exe, this.section, "w3l"), SetIni(0, this.section, "w3lAuto")
+        return true
+    }
+    ; Settings' Auto-detect -> true if found (then saved)
+    autoW3l() {
+        if (exe := this.findW3l()) = ""
+            return false
+        SetIni(exe, this.section, "w3l"), SetIni(1, this.section, "w3lAuto")
+        return true
+    }
+    ; Settings' line about it
+    w3lStatus() => this.w3lPath = "" ? "not set: Change or Auto-detect" : !FileExist(this.w3lPath) ? "not there any more: Change or Auto-detect"
+        : this.w3lAuto ? "found automatically" : "chosen by you"
     findW3l() {
         global loader
         for dir in loader.installDirs() {
@@ -57,16 +77,15 @@ class BattleNetLoginEngine {
         }
         return ""
     }
-    launchW3l(pick := false) {
-        exe := pick ? "" : this.w3lPath
-        if exe = "" || !FileExist(exe)
-            exe := pick ? "" : this.findW3l()
+    ; the sidebar's button -> true if it was started
+    launchW3l() {
+        exe := this.w3lPath
+        if (exe = "" || !FileExist(exe)) && this.autoW3l()
+            exe := this.w3lPath
         if exe = "" || !FileExist(exe) {
-            exe := FileSelect(3, A_ProgramFiles, "Where's w3l.exe (eurobattle.net's launcher)?", "W3L (w3l.exe)")
-            if exe = ""
-                return false
+            Toast("W3L isn't set: Settings > W3L (Change or Auto-detect)", "", 5000)
+            return false
         }
-        SetIni(exe, this.section, "w3l")
         if WinExist(WarcraftIII)
             Toast("Warcraft III is already running: W3L started anyway", "", 4000)
         SplitPath(exe, , &dir)

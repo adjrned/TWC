@@ -223,15 +223,15 @@ BuildWindow() {
     navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
 
     ; under the nav (the user's place for them): the game the Battle.net login joins by its name (the
-    ; same name as in its Options) and W3L, eurobattle.net's launcher (Shift + click: choose w3l.exe again)
+    ; same name as in its Options) and W3L, eurobattle.net's launcher (its place: Settings > W3L)
     ; (above the line bg.png draws over the footer, 12 px over it; the label is the box's hint)
     local gy := H - 64 - 82, gw := SIDE_W - 28, gb
     Box("", 14, gy, gw, 26, C.well, C.frame, 4)
     sideGame := mainGui.AddEdit("x20 y" (gy + 4) " w" (gw - 12) " h19 -E0x200 -TabStop +Background" C.well " c" C.text " Limit31", bnetLogin.game)
     UISetFont(sideGame, "s9")
-    SendMessage(0x1501, 1, StrPtr("Join game (its name)"), sideGame)     ; EM_SETCUEBANNER
+    SendMessage(0x1501, 1, StrPtr("Game Name"), sideGame)     ; EM_SETCUEBANNER
     sideGame.OnEvent("Change", (src, *) => bnetLogin.setGame(src.Value))
-    gb := MkButton("Launch W3L", 14, gy + 32, gw, 28, C.chip, C.text, (*) => bnetLogin.launchW3l(GetKeyState("Shift")))
+    gb := MkButton("Launch W3L", 14, gy + 32, gw, 28, C.chip, C.text, (*) => bnetLogin.launchW3l())
     Box.Round(gb, gw, 28, 4)
 
     ; sidebar footer: tool On | Off as a full-width segmented control (like
@@ -2080,14 +2080,19 @@ BuildSettingsPage() {
     setBtn := MkButton("Change", 490, y + 100, 72, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
     openBtn := MkButton("Open", 568, y + 100, 60, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
     autoBtn := MkButton("Auto-detect", 634, y + 100, 86, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
-    resetBtn := MkButton("Reset all settings", 40, y + 142, 180, 30, C.chip, C.text, (*) => ResetAll())
+    ; W3L (eurobattle.net's launcher) for the sidebar's Launch W3L
+    w3lLabel := mainGui.AddText("x40 y" (y + 142) " w680 h20 +Background" C.panel " c" C.muted, "W3L")
+    w3lEdit := mainGui.AddEdit("x40 y" (y + 162) " w440 h24 ReadOnly +Background" C.well " c" C.text, "")
+    w3lSet := MkButton("Change", 490, y + 160, 72, 26, C.chip, C.text, (*) => (bnetLogin.pickW3l(), RefreshSettings()))
+    w3lAutoBtn := MkButton("Auto-detect", 568, y + 160, 86, 26, C.chip, C.text, (*) => (bnetLogin.autoW3l() || Toast("No w3l.exe in the game's folders: pick it with Change"), RefreshSettings()))
+    resetBtn := MkButton("Reset all settings", 40, y + 202, 180, 30, C.chip, C.text, (*) => ResetAll())
     ; companion updates: which commit this is, when it last looked, and a button
-    updLabel := mainGui.AddText("x40 y" (y + 196) " w500 h20 +Background" C.panel " c" C.muted, "")
-    updBtn := MkButton("Check for updates", 560, y + 192, 160, 28, C.chip, C.text, (*) => UpdateButton())
-    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn, updLabel, updBtn)
+    updLabel := mainGui.AddText("x40 y" (y + 256) " w500 h20 +Background" C.panel " c" C.muted, "")
+    updBtn := MkButton("Check for updates", 560, y + 252, 160, 28, C.chip, C.text, (*) => UpdateButton())
+    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, w3lLabel, w3lEdit, w3lSet, w3lAutoBtn, resetBtn, updLabel, updBtn)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader, w3lEdit, w3lLabel, bnetLogin
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
@@ -2097,6 +2102,8 @@ RefreshSettings() {
     convertCb.Value := cfg.convert
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
+    w3lEdit.Value := bnetLogin.w3lPath
+    w3lLabel.Text := "W3L, eurobattle.net's launcher (the sidebar's Launch W3L)  ·  " bnetLogin.w3lStatus()
     RefreshUpdateLabel()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))

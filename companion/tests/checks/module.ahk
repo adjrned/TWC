@@ -157,10 +157,12 @@ TwcModuleRun() {
     ; W3L: found in the game's folders (or their parent) and remembered; never started here
     w3dir := A_Temp "\twc-check-w3l", DirCreate(w3dir "\Game"), FileOpen(w3dir "\w3l.exe", "w").Close()
     loader.DefineProp("installDirs", { call: (*) => [w3dir "\Game"] })
-    found := bnetLogin.findW3l()
+    found := bnetLogin.findW3l(), auto := bnetLogin.autoW3l(), st1 := bnetLogin.w3lStatus(), p1 := bnetLogin.w3lPath
     loader.DeleteProp("installDirs")
     FileDelete(w3dir "\w3l.exe"), DirDelete(w3dir, true)
-    TwcCheck(found = w3dir "\w3l.exe", "W3L: found next to the game's folder (" found ")")
+    st2 := bnetLogin.w3lStatus(), SetIni("", "Battle.net", "w3l")
+    TwcCheck(found = w3dir "\w3l.exe" && auto && p1 = found && st1 = "found automatically" && InStr(st2, "not there any more") && InStr(bnetLogin.w3lStatus(), "not set"),
+        "W3L: Auto-detect finds it next to the game's folder and saves it (" st1 "); gone: '" st2 "'")
     gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
     TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())
     bnetLogin.setEnabled(0), BattleNetLoginEngine.TARGET := "TW Companion/Battle.net"
