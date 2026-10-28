@@ -148,6 +148,19 @@ TwcModuleRun() {
     bnetLogin.setCustomGames(0), after0 := NumGet(v, Shm.blAfter, "uint"), bnetLogin.setCustomGames(1)
     NumPut("uint", 7, v, Shm.blState), st7 := bnetLogin.statusText(), NumPut("uint", 3, v, Shm.blState)
     TwcCheck(after1 = 1 && g1 = "TWRPG 1.0" && after0 = 0 && InStr(st7, "joining TWRPG 1.0"), "battle.net login: the custom games on by default, the game pushed; status '" st7 "'")
+    ; the sidebar's Join game box: the same name both ways; a space typed at the end isn't taken away while typing
+    global sideGame
+    sb1 := sideGame.Value, sideGame.Value := "rr ", bnetLogin.setGame(sideGame.Value), sb2 := sideGame.Value, g2 := bnetLogin.game
+    bnetLogin.setGame("TWRPG 1.0"), sb3 := sideGame.Value
+    TwcCheck(sb1 = "TWRPG 1.0" && sb2 = "rr " && g2 = "rr" && sb3 = "TWRPG 1.0" && StrGet(v + Shm.blGame, 32, "UTF-8") = "TWRPG 1.0",
+        "sidebar Join game: shows the Options' name (" sb1 "), typing 'rr ' keeps the space (saved 'rr'), a name set elsewhere shows there")
+    ; W3L: found in the game's folders (or their parent) and remembered; never started here
+    w3dir := A_Temp "\twc-check-w3l", DirCreate(w3dir "\Game"), FileOpen(w3dir "\w3l.exe", "w").Close()
+    loader.DefineProp("installDirs", { call: (*) => [w3dir "\Game"] })
+    found := bnetLogin.findW3l()
+    loader.DeleteProp("installDirs")
+    FileDelete(w3dir "\w3l.exe"), DirDelete(w3dir, true)
+    TwcCheck(found = w3dir "\w3l.exe", "W3L: found next to the game's folder (" found ")")
     gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
     TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())
     bnetLogin.setEnabled(0), BattleNetLoginEngine.TARGET := "TW Companion/Battle.net"

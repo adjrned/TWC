@@ -35,7 +35,49 @@ class BattleNetLoginEngine {
     customGames => Integer(Ini(this.section, "customGames", 1))
     setCustomGames(on) => (SetIni(on ? 1 : 0, this.section, "customGames"), this.tick())
     game => Ini(this.section, "game", "")
-    setGame(name) => (SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "game"), this.tick())
+    setGame(name) {
+        global sideGame
+        SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "game"), this.tick()
+        if sideGame && Trim(sideGame.Value) != this.game       ; the sidebar's box shows the same name (not while typing in it: a space at the end stays)
+            sideGame.Value := this.game
+    }
+
+    ; -- W3L (eurobattle.net's launcher, w3l.exe), from the sidebar --------------
+    ; Its place is remembered ([Battle.net] w3l); the first time it's looked for in the game's
+    ; folders (the loader's install folders, and their parents), else you pick it once.
+    ; pick: choose it again (Shift + click). -> true if it was started
+    w3lPath => Ini(this.section, "w3l", "")
+    findW3l() {
+        global loader
+        for dir in loader.installDirs() {
+            SplitPath(dir, , &parent)
+            for d in [dir, parent]
+                if d && FileExist(d "\w3l.exe")
+                    return d "\w3l.exe"
+        }
+        return ""
+    }
+    launchW3l(pick := false) {
+        exe := pick ? "" : this.w3lPath
+        if exe = "" || !FileExist(exe)
+            exe := pick ? "" : this.findW3l()
+        if exe = "" || !FileExist(exe) {
+            exe := FileSelect(3, A_ProgramFiles, "Where's w3l.exe (eurobattle.net's launcher)?", "W3L (w3l.exe)")
+            if exe = ""
+                return false
+        }
+        SetIni(exe, this.section, "w3l")
+        if WinExist(WarcraftIII)
+            Toast("Warcraft III is already running: W3L started anyway", "", 4000)
+        SplitPath(exe, , &dir)
+        try Run('"' exe '"', dir)
+        catch as e {
+            Toast("W3L couldn't be started: " e.Message, "error")
+            return false
+        }
+        DebugLog("w3l: started " exe)
+        return true
+    }
     setAccount(name) => SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "account")
 
     ; -- the password in Credential Manager (CREDENTIALW, generic) -------------

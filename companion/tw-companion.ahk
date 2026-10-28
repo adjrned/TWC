@@ -99,7 +99,7 @@ global toolEnabled := true, chatting := false, inGame := false, qcCalibrating :=
 global debugGui := 0, debugText := 0
 global showMain := false
 global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture
-global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
+global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon, sideGame := 0     ; sideGame: the sidebar's Join game box
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
@@ -221,6 +221,18 @@ BuildWindow() {
         navItems[name] := { box: bx, icon: ic, label: lb }
     }
     navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
+
+    ; under the nav (the user's place for them): the game the Battle.net login joins by its name (the
+    ; same name as in its Options) and W3L, eurobattle.net's launcher (Shift + click: choose w3l.exe again)
+    ; (above the line bg.png draws over the footer, 12 px over it; the label is the box's hint)
+    local gy := H - 64 - 82, gw := SIDE_W - 28, gb
+    Box("", 14, gy, gw, 26, C.well, C.frame, 4)
+    sideGame := mainGui.AddEdit("x20 y" (gy + 4) " w" (gw - 12) " h19 -E0x200 -TabStop +Background" C.well " c" C.text " Limit31", bnetLogin.game)
+    UISetFont(sideGame, "s9")
+    SendMessage(0x1501, 1, StrPtr("Join game (its name)"), sideGame)     ; EM_SETCUEBANNER
+    sideGame.OnEvent("Change", (src, *) => bnetLogin.setGame(src.Value))
+    gb := MkButton("Launch W3L", 14, gy + 32, gw, 28, C.chip, C.text, (*) => bnetLogin.launchW3l(GetKeyState("Shift")))
+    Box.Round(gb, gw, 28, 4)
 
     ; sidebar footer: tool On | Off as a full-width segmented control (like
     ; the site's language switcher)
