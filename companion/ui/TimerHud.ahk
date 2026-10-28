@@ -41,7 +41,7 @@ class TimerHud {
         SetTimer(this.pushFn, 1000)
         ; the ping: Alt + click on a button the module says is under the cursor (else the click is the game's)
         HotIf(ObjBindMethod(this, "pingActive"))
-        Hotkey("<!LButton", (*) => this.ping(), "On")
+        Hotkey("<!LButton", (*) => this.ping(), "On T3")         ; T3: a click while the last one is asking isn't dropped
         HotIf()
     }
     allies => Integer(Ini(this.section, "allies", 0))
@@ -61,25 +61,54 @@ class TimerHud {
         v := this.gm.live()
         return v && NumGet(v, Shm.layout, "uint") >= 18 && NumGet(v, Shm.hover, "uint") = 1
     }
-    ; ask the module for the hovered button's line, and say it in the allies' chat (once a second at most)
+    ; Alt + click: ask the module for the hovered button's line (quick: the hotkey is free again at
+    ; once) and queue it; the queue says the lines in the allies' chat one after another. It used to
+    ; wait for Alt (and Shift, Ctrl) to be let go first, up to a second each, and take one ping a
+    ; second: slow, and a second ping right after was lost (the user's report). The wait isn't
+    ; needed: Send lets go of the modifiers you hold while it types (so no Alt + Enter, which would
+    ; switch the game's window mode) and puts them back after.
+    pingQueue := []
+    pingBusy := false
+    chatFn := wc3Chat               ; how a line is said, and whether the game is in front (the checks' own)
+    inFrontFn := (*) => WinActive(WarcraftIII)
     ping() {
         static last := 0
-        if A_TickCount - last < 1000
+        if A_TickCount - last < 120             ; one click seen twice
             return
         last := A_TickCount
-        r := this.gm.commandWait(this.gm.command(5), 1000)
+        r := this.gm.commandWait(this.gm.command(5), 400)
         text := r = 1 && (v := this.gm.live()) ? StrGet(v + Shm.pingText, 128, "UTF-8") : ""
-        DebugLog("cooldown ping: " (text != "" ? text : "nothing to ping (" r ")"))
+        DebugLog("cooldown ping: " (text != "" ? text : "nothing to ping (" r ")") (this.pingQueue.Length || this.pingBusy ? " (queued)" : ""))
         if text = ""
             return
-        ; Alt + Enter would switch the game's window mode; with Shift the chat opens to all, with Ctrl to allies
-        for held in ["LAlt", "Shift", "Ctrl"]
-            KeyWait(held, "T1")
-        names := ["", "all", "allies", "observers", "one player"]
-        dest := (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 19 ? NumGet(v, Shm.pingChat, "uint") : 0
-        if dest && dest != 2
-            DebugLog("cooldown ping: the game's Chat dialog sends to " names[dest + 1] ", not allies: the line goes there")
-        wc3Chat(text)
+        if this.pingQueue.Length < 4            ; a burst of clicks: four lines at most
+            this.pingQueue.Push(text)
+        if !this.pingBusy
+            SetTimer(ObjBindMethod(this, "pingSay"), -1)
+    }
+    ; say the queued lines, one at a time (a short gap: the chat box closes before it opens again)
+    pingSay() {
+        global chatting
+        if this.pingBusy
+            return
+        this.pingBusy := true
+        try {
+            while this.pingQueue.Length {
+                text := this.pingQueue.RemoveAt(1)
+                if !(this.inFrontFn)() || chatting {
+                    DebugLog("cooldown ping: not said (the game isn't in front, or you're typing): " text)
+                    continue
+                }
+                names := ["", "all", "allies", "observers", "one player"]
+                dest := (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 19 ? NumGet(v, Shm.pingChat, "uint") : 0
+                if dest && dest != 2
+                    DebugLog("cooldown ping: the game's Chat dialog sends to " names[dest + 1] ", not allies: the line goes there")
+                (this.chatFn)(text)
+                if this.pingQueue.Length
+                    Sleep(80)
+            }
+        } finally
+            this.pingBusy := false
     }
     ; how the cooldowns look (layout 20): size x0.75-1.5, gold from n s left (0 = never), "Ready" when over
     cdSize => Min(Max(Float(Ini(this.section, "cdSize", 1)), 0.75), 1.5)

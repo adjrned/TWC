@@ -173,6 +173,18 @@ TwcModuleRun() {
     TwcCheck(k1 = 1.5 && ok && k2 = 2 && k3 = 0 && NumGet(v, Shm.bbScale, "float") = 1.5, "buff bar: pushed x1.5, 2.5 -> 2, off 0 (" k1 " " k2 " " k3 ")")
     ; the ping key: only on a button the module says is under the cursor
     TwcCheck(!timersHud.pingActive(), "ping key: not in the game window, so the click is the game's")
+    ; two pings right after each other: both asked at once and said in order (from a timer: the hotkey
+    ; thread only asks and queues), no wait for Alt, no one-a-second limit. Stand-ins: the module's
+    ; answer, the game in front, the chat
+    said := [], lines := ["Hero >> Bolt | Ready!", "Hero >> Potion | Cooldown: 7"], asked := 0
+    gm := timersHud.gm
+    gm.DefineProp("command", { call: (*) => (StrPut(lines[++asked], v + Shm.pingText, 128, "UTF-8"), asked) }), gm.DefineProp("commandWait", { call: (*) => 1 })
+    timersHud.chatFn := (t) => said.Push(t), timersHud.inFrontFn := (*) => true
+    t0 := A_TickCount, timersHud.ping(), timersHud.ping(), Sleep(130), timersHud.ping(), quick := A_TickCount - t0
+    Sleep(300)
+    gm.DeleteProp("command"), gm.DeleteProp("commandWait"), timersHud.chatFn := wc3Chat, timersHud.inFrontFn := (*) => WinActive(WarcraftIII)
+    TwcCheck(asked = 2 && said.Length = 2 && said[1] = lines[1] && said[2] = lines[2] && quick < 400,
+        "two pings 130 ms apart (and one click seen twice): both said, in order (" said.Length ", " quick " ms; no wait for Alt)")
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
     ; the lines 1.28f's portrait fallback logs (call sites instead of the vtable): not a refusal, then working
