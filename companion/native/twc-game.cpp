@@ -509,21 +509,25 @@ static int Targeting() {
     if (!ui)
         return odd = 0, -1;
     if (vt != g_uiVtable) {
-        // the getter returned something that isn't the game UI: the addresses are wrong
-        // for this game, so stop for good. Only when it stays so (5 reads in a row): this
-        // thread reads the game's global while the game thread runs, and one torn read (the
-        // UI freed as a game ends) must not end quickcast and the rest until a restart
-        if (++odd < 5) {
-            if (odd == 1)
-                Log("the game UI's getter returned %p with vtable %08lX, not +%lX: watching", ui, vt, RVA_UI_VTABLE);
+        // the getter returned something that isn't the game UI. Once the real one has been seen
+        // (g_shared->ui) the addresses are right, and this is the game UI being torn down as a game
+        // ends (a C++ destructor leaves its base classes' vtables in it meanwhile) or not built yet:
+        // never a stop. It was a stop for good after 5 reads (150 ms), and with the frames we add a
+        // teardown takes longer: quickcast died at the end of a game until WC3 was restarted (the
+        // user, 2026-10-27). Only a getter that never gave the game UI, 50 reads in a row (1.5 s),
+        // means wrong addresses for this game: then stop for good
+        if (++odd == 1)
+            Log("the game UI's getter returned %p with vtable %08lX, not +%lX: watching", ui, vt, RVA_UI_VTABLE);
+        if (g_shared->ui || odd < 50)
             return -1;
-        }
         g_getUi = nullptr;
         g_shared->probe = 2;
         sprintf_s(g_shared->probeText, "the game UI at %p has vtable %08lX, not +%lX", ui, vt, RVA_UI_VTABLE);
         Log("stopping: %s", g_shared->probeText);
         return -1;
     }
+    if (odd >= 5)
+        Log("the game UI is back (after %d odd reads)", odd);
     odd = 0;
     if (!g_shared->ui) {
         g_shared->ui = 1;

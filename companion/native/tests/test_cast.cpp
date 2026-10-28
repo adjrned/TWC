@@ -56,10 +56,20 @@ static DWORD WINAPI Tester(void *) {
     Aim(true);
     int t2 = Targeting();
     CHECK(t1 == -4 && g_getUi && g_shared->probe != 2 && t2 == 1, "4 odd reads of the game UI: no UI meanwhile, then it works again (no stop; %d, %d)", t1, t2);
+    // a game UI being torn down as a game ends (its base classes' vtables meanwhile, for a long time): never a stop once seen
     *(DWORD *)ui = 0x12345678;
-    for (int k = 0; k < 5; k++)
+    for (int k = 0; k < 300; k++)
         Targeting();
-    CHECK(!g_getUi && g_shared->probe == 2, "5 in a row: stopped for good, as before (%s)", g_shared->probeText);
+    *(DWORD *)ui = goodVt;
+    int t3 = Targeting();
+    CHECK(g_getUi && g_shared->probe != 2 && t3 == 1, "300 odd reads after the game UI was seen (a teardown): no stop, works again after (%d)", t3);
+    // a getter that never gave the game UI: wrong addresses, a stop for good after 50
+    g_shared->ui = 0, *(DWORD *)ui = 0x12345678;
+    for (int k = 0; k < 49; k++)
+        Targeting();
+    bool notYet = g_getUi != nullptr;
+    Targeting();
+    CHECK(notYet && !g_getUi && g_shared->probe == 2, "never seen: stopped for good at 50 odd reads, not before (%s)", g_shared->probeText);
     *(DWORD *)ui = goodVt;
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
