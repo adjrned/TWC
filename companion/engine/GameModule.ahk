@@ -324,7 +324,7 @@ class GameModuleEngine {
         n := Min(16, NumGet(v, Shm.buffCount, "uint"))
         loop n {
             o := 4 * (A_Index - 1), f := NumGet(v, Shm.buffFlags + o, "uint")
-            out.buffs.Push(f & 1 ? { left: NumGet(v, Shm.buffLeft + o, "float"), total: NumGet(v, Shm.buffTotal + o, "float"), aura: f & 2 ? 1 : 0, id: NumGet(v, Shm.buffId + o, "uint") } : 0)
+            out.buffs.Push(f & 1 ? { left: NumGet(v, Shm.buffLeft + o, "float"), total: NumGet(v, Shm.buffTotal + o, "float"), aura: f & 2 ? 1 : 0, keptUp: f & 4 ? 1 : 0, id: NumGet(v, Shm.buffId + o, "uint") } : 0)
         }
         return out
     }
@@ -347,7 +347,7 @@ class GameModuleEngine {
             o := 4 * (A_Index - 1), f := NumGet(v, Shm.hrFlags + o, "uint")
             if f & 1
                 out.buffs.Push({ id: GameModuleEngine.IdText(NumGet(v, Shm.hrId + o, "uint")), name: StrGet(v + Shm.hrName + 48 * (A_Index - 1), 47, "UTF-8"),
-                    left: NumGet(v, Shm.hrLeft + o, "float"), total: NumGet(v, Shm.hrTotal + o, "float"), aura: f & 2 ? 1 : 0, positive: f & 4 ? 1 : 0 })
+                    left: NumGet(v, Shm.hrLeft + o, "float"), total: NumGet(v, Shm.hrTotal + o, "float"), aura: f & 2 ? 1 : 0, positive: f & 4 ? 1 : 0, keptUp: f & 16 ? 1 : 0 })
         }
         return out
     }

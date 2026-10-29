@@ -80,8 +80,8 @@ int main() {
     ReadHeroBuffs();
     CHECK(sh.hrHero == 'Hpal' && sh.hrAlive == 1 && sh.hrCount == 3 && sh.hrId[0] == 'Binf' && sh.hrId[1] == 'BHad' && sh.hrId[2] == 'Bslo',
           "the selected hero: 3 buffs in the unit's order, the ability left out (%lu: '%s' '%s' '%s')", sh.hrCount, IdText(sh.hrId[0]).s, IdText(sh.hrId[1]).s, IdText(sh.hrId[2]).s);
-    CHECK(sh.hrFlags[0] == (1 | 4 | 8) && sh.hrFlags[1] == (1 | 2 | 4 | 8) && sh.hrFlags[2] == 1 && sh.hrLeft[0] == 4.5f && sh.hrTotal[0] == 12 && sh.hrTotal[1] == 30,
-          "flags: positive (read through a call) / aura / negative, named; times 4.5 of 12 (the hero's +0xc8), the aura's the timer's 30");
+    CHECK(sh.hrFlags[0] == (1 | 4 | 8) && sh.hrFlags[1] == (1 | 2 | 4 | 8 | 16) && sh.hrFlags[2] == 1 && sh.hrLeft[0] == 4.5f && sh.hrTotal[0] == 12 && sh.hrTotal[1] == 30,
+          "flags: positive (read through a call) / aura (kept up: just seen, BuffKeptUp) / negative, named; times 4.5 of 12 (the hero's +0xc8), the aura's the timer's 30");
     CHECK(!strcmp(sh.hrName[0], "Inner Fire") && !strcmp(sh.hrName[1], "Devotion Aura") && !sh.hrName[2][0],
           "names: \"%s\" (colour codes out, found second in its chain), \"%s\" (|n a space, trailing space cut), none for 'Bslo'", sh.hrName[0], sh.hrName[1]);
     // another unit selected (an enemy hero, your footman): still your hero, by its remembered handle

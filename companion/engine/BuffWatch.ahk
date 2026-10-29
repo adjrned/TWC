@@ -195,7 +195,7 @@ class BuffWatchEngine {
                     }
                 if !slot
                     missing.Push(b.name)
-                else if t && slot <= t.buffs.Length && t.buffs[slot] && (left := t.buffs[slot].left) > 0 && left <= warn
+                else if t && slot <= t.buffs.Length && t.buffs[slot] && !t.buffs[slot].keptUp && (left := t.buffs[slot].left) > 0 && left <= warn
                     ending.Push(b.name " " Ceil(left) " s")
             }
         }
@@ -224,7 +224,7 @@ class BuffWatchEngine {
                 }
             if !have
                 missing.Push(BuffWatchEngine.Label(b))
-            else if warn && have.left > 0 && have.left <= warn
+            else if warn && !have.keptUp && have.left > 0 && have.left <= warn     ; kept up (an aura in range): never running out
                 ending.Push(BuffWatchEngine.Label(b, have.name) " " Ceil(have.left) " s")
         }
     }

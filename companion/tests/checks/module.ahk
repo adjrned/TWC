@@ -58,6 +58,13 @@ TwcModuleRun() {
     NumPut("uint", 0, twcShmBuf, Shm.hrAlive)
     missing := [], ending := [], BuffWatchEngine.IdAlerts(buffWatch.buffs(), gameModule.heroBuffs(), 5, missing, ending)
     TwcCheck(m2 = "Slow" && e2 = "IF 4 s" && !missing.Length && !ending.Length, "your labels win; the hero dead: no alerts")
+    ; kept up (the module's hrFlags 16 / buffFlags 4: an aura in range): read, and never "running out"
+    NumPut("uint", 1, twcShmBuf, Shm.hrAlive), NumPut("uint", 1 | 4 | 8 | 16, twcShmBuf, Shm.hrFlags)
+    hk := gameModule.heroBuffs(), missing := [], ending := []
+    BuffWatchEngine.IdAlerts(buffWatch.buffs(), hk, 5, missing, ending)
+    NumPut("uint", 1 | 2 | 4, twcShmBuf, Shm.buffFlags), tk := gameModule.timers()
+    TwcCheck(hk.buffs[1].keptUp && !ending.Length && tk.buffs[1].keptUp && tk.buffs[1].aura, "kept up (flags 16 / 4): read, and never 'running out' (" Join(", ", ending*) ")")
+    NumPut("uint", 1 | 4 | 8, twcShmBuf, Shm.hrFlags), NumPut("uint", 1, twcShmBuf, Shm.buffFlags), NumPut("uint", 0, twcShmBuf, Shm.hrAlive)
     NumPut("uint", 1, twcShmBuf, Shm.hrAlive)
     TwcCheck(InStr(buffWatch.statusText(), "watching IF, Slow"), "buff alerts: " buffWatch.statusText())
     buffWatch.rename(1, ""), TwcCheck(buffWatch.buffs()[1].name = "" && InStr(buffWatch.statusText(), "watching Inner Fire"), "an empty label: the game's name again")

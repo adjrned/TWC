@@ -70,7 +70,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD buffCount;        // buff bar slots read (<= 16)
     float buffLeft[16];     // buff bar, left to right: seconds left (0 = none or no timer)
     float buffTotal[16];    //   and its full duration (0 = unknown)
-    DWORD buffFlags[16];    //   1 a buff is shown, 2 it's an aura
+    DWORD buffFlags[16];    //   1 a buff is shown, 2 it's an aura, 4 kept up (refreshed on a beat: its seconds mean nothing; BuffKeptUp)
     DWORD buffId[16];       //   its type id ('Bxxx', 0 = unknown)
     // layout 4: commands run on the game's thread (RunCommand)
     volatile LONG cmdSeq;   // companion: +1 per command (written last)
@@ -173,7 +173,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD hrId[24];         //   the rawcode ([buff+0x34])
     float hrLeft[24];       //   seconds left (0 = no timer)
     float hrTotal[24];      //   the full time (0 = unknown)
-    DWORD hrFlags[24];      //   1 a buff, 2 an aura, 4 positive (the game shows its name green), 8 hrName is the game's
+    DWORD hrFlags[24];      //   1 a buff, 2 an aura, 4 positive (the game shows its name green), 8 hrName is the game's, 16 kept up (as buffFlags 4)
     char hrName[24][48];    //   the game's name for it (its Bufftip, colour codes taken out; UTF-8), "" = none found
     float bfSize;           // companion: the buff seconds' size, times WFE's 0.013 (0.75-1.5; 0 = 1)
     float bfGold;           // companion: gold from this many seconds left down (0 = always white)
@@ -976,6 +976,49 @@ static BYTE *BuffTimeOf(BYTE *buff, bool aura, float *left, float *total) {
     *left = l, *total = Finite(f) ? f : 0;
     return t;
 }
+// -- buffs kept up ------------------------------------------------------------------------
+// An aura (or a buff the map gives again on a beat) has a short timer the game starts again at
+// each refresh: read as it is, its seconds count down and jump back (the user, 2026-10-29: "they
+// count down then reset"). From the reads alone (10 a second): each buff's time left is followed
+// by its unit and rawcode, a jump back up is a refresh, and the time from one refresh to the
+// next is its beat. While its last refresh is within the beat (+ 0.4 s) it's kept up: nothing
+// runs out, no seconds; once the refreshes stop (out of the aura's range, its source gone) its
+// time left is real. An aura before its beat is known: kept up its first 2.5 s and 2.5 s after
+// its first refresh. A buff that isn't an aura needs the same beat twice (within 30%, under 5 s):
+// one cast again by hand isn't a beat.
+struct BuffTrack { BYTE *unit; DWORD id, refreshAt, seenAt, beat; float last; int refreshes; };
+static BuffTrack g_bt[48];
+static const DWORD BT_GRACE = 400, BT_FIRST = 2500, BT_BEAT_MAX = 5000, BT_LOST = 1000;
+static bool BuffKeptUp(BYTE *unit, DWORD id, bool aura, float left, DWORD now) {
+    BuffTrack *t = nullptr, *free = &g_bt[0];
+    for (BuffTrack &b : g_bt) {
+        if (b.id == id && b.unit == unit) {
+            t = &b;
+            break;
+        }
+        if (free->id && (!b.id || (LONG)(b.seenAt - free->seenAt) < 0))
+            free = &b;                      // an empty one, else the one seen longest ago
+    }
+    if (!t || now - t->seenAt > BT_LOST) {  // new, or out of sight a while: from the start
+        t = t ? t : free;
+        *t = { unit, id, now, now, 0, left, 0 };
+        return aura;
+    }
+    if (left > t->last + 0.15f) {           // jumped back up: refreshed
+        DWORD gap = now - t->refreshAt;
+        if (t->refreshes && t->beat && !aura && (gap * 10 < t->beat * 7 || gap * 10 > t->beat * 13))
+            t->refreshes = 1;               // not the same beat: it counts as the first gap again
+        if (t->refreshes)
+            t->beat = gap;                  // from a refresh to the next (not from first seen)
+        t->refreshes++, t->refreshAt = now;
+    }
+    t->last = left, t->seenAt = now;
+    DWORD since = now - t->refreshAt;
+    if (!t->beat)
+        return aura && since < BT_FIRST;
+    return (aura || t->refreshes >= 3) && t->beat <= BT_BEAT_MAX && since <= t->beat + BT_GRACE;
+}
+
 static void ReadBuffs(BYTE *ui) {
     BYTE *p = *(BYTE **)(ui + 0x3c4);
     if (!p || !(p = *(BYTE **)(p + 0x130)) || !(p = *(BYTE **)(p + 0x16c)))
@@ -994,6 +1037,8 @@ static void ReadBuffs(BYTE *ui) {
             g_shared->buffId[i] = *(DWORD *)(buff + BUFF_ID);
             float left, total;
             BYTE *t = BuffTimeOf(buff, aura, &left, &total);
+            if (left > 0 && BuffKeptUp(AgentOwner(buff), *(DWORD *)(buff + BUFF_ID), aura, left, GetTickCount()))
+                g_shared->buffFlags[i] |= 4;
             g_shared->buffLeft[i] = left;
             g_shared->buffTotal[i] = total;
             static int logs;
@@ -1620,7 +1665,8 @@ static void ReadHeroBuffs() {
         BuffTimeOf(a, aura, &left, &total);
         s->hrId[i] = *(DWORD *)(a + BUFF_ID), s->hrLeft[i] = left, s->hrTotal[i] = total;
         bool named = BuffName(s->hrId[i], s->hrName[i], sizeof(s->hrName[i]));
-        s->hrFlags[i] = 1 | (aura ? 2 : 0) | (pos ? 4 : 0) | (named ? 8 : 0);
+        bool kept = left > 0 && BuffKeptUp(u, s->hrId[i], aura, left, GetTickCount());
+        s->hrFlags[i] = 1 | (aura ? 2 : 0) | (pos ? 4 : 0) | (named ? 8 : 0) | (kept ? 16 : 0);
         bool known = false;
         for (int j = 0; j < nSeen; j++)
             known |= seen[j] == s->hrId[i];
@@ -2027,9 +2073,10 @@ static float BuffTextHeight() {
     return (g_shared->ulOn && !(g_shared->ulOn & 2) ? 0.0105f : 0.013f) * (k >= 0.75f && k <= 1.5f ? k : 1);
 }
 // a buff bar slot gets its seconds: a buff, or an aura with bfOpts bit 1 (WFE's ISDRAWAURADURATION:
-// its 0x1007f774..0x1007f785 takes the aura switch for auras, the duration switch for the rest)
+// its 0x1007f774..0x1007f785 takes the aura switch for auras, the duration switch for the rest);
+// not while it's kept up (buffFlags 4: an aura in range, a buff given again on a beat)
 static const DWORD BF_AURAS = 1;       // bit 2 (our ring round buffs) is retired: never set
-static bool BuffSlotDrawn(DWORD flags) { return (flags & 1) && (!(flags & 2) || (g_shared->bfOpts & BF_AURAS)); }
+static bool BuffSlotDrawn(DWORD flags) { return (flags & 1) && !(flags & 4) && (!(flags & 2) || (g_shared->bfOpts & BF_AURAS)); }
 // the cooldowns' size (cdSize, 0.75-1.5 times 0.014)
 static float CdTextHeight() {
     float k = g_shared->cdSize;
