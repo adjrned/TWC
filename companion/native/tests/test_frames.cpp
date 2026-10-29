@@ -37,9 +37,10 @@ static void __fastcall FakeSetText(BYTE *t, int, const char *s) { setTexts++; st
 static int __fastcall FakeSetFont(BYTE *, int, const char *path, float h, DWORD) { fonts++; strcpy_s(lastFont, path); lastFontH = h; return 1; }
 static int refreshes;
 static void __fastcall FakeRefresh(BYTE *, int, int) { refreshes++; }
-static void __fastcall FakeSetPoint(BYTE *l, int, int, void *rel, int, float x, float y, int) {
+static void __fastcall FakeSetPoint(BYTE *l, int, int pt, void *rel, int, float x, float y, int) {
     anchors++; lastRel = rel; lastX = x; lastY = y;
-    if (*(DWORD *)l == (DWORD)(imgRef() + SWEEP_TEXTURE_VT)) *(float *)(l + 0x10) = x, *(float *)(l + 0x14) = y;     // a sweep square: kept for the test
+    if (*(DWORD *)l == (DWORD)(imgRef() + SWEEP_TEXTURE_VT))       // a sweep square: its top left / bottom left kept for the test
+        pt == 6 ? (void)(*(float *)(l + 0x18) = y) : (void)(*(float *)(l + 0x10) = x, *(float *)(l + 0x14) = y);
 }
 static void __fastcall FakeSetAbs(BYTE *lay, int, int, float x, float y, int) { absPoints++; lastX = x; lastY = y; *(float *)(lay + 0x10) = y; }
 static const char *__fastcall FakeSkin(const char *key, int) { return !strcmp(key, "MasterFont") ? "Fonts\\Test.ttf" : nullptr; }
@@ -225,8 +226,19 @@ int main() {
         sh.cdLeft[0] = 1; SweepsPass(ui, true); e3 = wrong(0.1f, 0.04f, 0.04f);
         bool wedge = shown(0) && *(float *)(tex(0) + 0x10) < 0.02f && *(float *)(tex(0) + 0x10) + W(0) <= 0.02f + 1e-6f;   // left of 12 o'clock
         sh.cdLeft[0] = 6; SweepsPass(ui, true); e6 = wrong(0.6f, 0.04f, 0.04f), n6 = count();
+        // stacked squares meet exactly: a square's bottom point is the very number of the top of one under it, never over it
+        int meet = 0, over = 0;
+        for (int a = 0; a < r->made; a++)
+            for (int b = 0; shown(a) && b < r->made; b++)
+                if (b != a && shown(b)) {
+                    float ab = *(float *)(tex(a) + 0x18), bt = *(float *)(tex(b) + 0x14);
+                    meet += ab == bt;
+                    over += bt > ab && bt < *(float *)(tex(a) + 0x14) && *(float *)(tex(b) + 0x10) < *(float *)(tex(a) + 0x10) + W(a) && *(float *)(tex(a) + 0x10) < *(float *)(tex(b) + 0x10) + W(b);
+                }
+        if (!meet || over)
+            printf("  the 0.6 sweep's squares: %d meet exactly, %d overlap\n", meet, over);
         sh.cdLeft[0] = 8.8f; SweepsPass(ui, true); e9 = wrong(0.88f, 0.04f, 0.04f);
-        bool shapes = e3 < 0.02f && e6 < 0.02f && e9 < 0.02f && wedge && n6 <= 70;
+        bool shapes = e3 < 0.02f && e6 < 0.02f && e9 < 0.02f && wedge && n6 <= 70 && meet > 0 && !over;
         sh.cdLeft[0] = 2.5f; SweepsPass(ui, true);
         int a1 = anchors; SweepsPass(ui, true);
         bool still = anchors == a1;                 // nothing changed: no square moved

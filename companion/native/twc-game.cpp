@@ -2458,10 +2458,15 @@ static void SweepDraw(Sweep *r, float f, float w, float h) {
         SweepCell *c = SweepCellAt(r, k);
         if (!c)
             return;
+        // Its top and bottom pinned to the frame (top left and bottom left points) at the very numbers the
+        // squares above and below use, so stacked squares meet exactly. Each was "a hair taller"
+        // (0.00005, ~0.1 px) so no gap showed: where that overlap took a pixel row's centre the row was
+        // dark twice, black lines across the card (the user, 2026-10-29, once it moved every frame).
         float x = (box[k].l + 1) / 2 * w, cw = (box[k].r - box[k].l) / 2 * w;     // from the button's left, and its width
-        float t = box[k].row * rowH, ch = box[k].rows * rowH + 0.00005f;          // a hair taller: no gap between rows
-        if (fabsf(x - c->x) > 0.0002f || fabsf(cw - c->w) > 0.0002f || fabsf(t - c->t) > 1e-6f || fabsf(ch - c->h) > 1e-6f) {
+        float t = box[k].row * rowH, tb = (box[k].row + box[k].rows) * rowH, ch = tb - t;
+        if (fabsf(x - c->x) > 0.0002f || fabsf(cw - c->w) > 0.0002f || t != c->t || ch != c->h) {
             Game(RVA_SET_POINT, c->tex, { 0, (DWORD)r->frame, 0, F(x), F(-t), 1 });
+            Game(RVA_SET_POINT, c->tex, { 6, (DWORD)r->frame, 0, F(x), F(-tb), 1 });
             Game(RVA_SET_WIDTH, c->tex, { F(cw) }), Game(RVA_SET_HEIGHT, c->tex, { F(ch) });
             c->x = x, c->w = cw, c->t = t, c->h = ch;
         }

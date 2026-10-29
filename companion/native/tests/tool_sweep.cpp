@@ -19,7 +19,7 @@ static void *__fastcall FakeTexCtor(BYTE *mem, int, void *, DWORD, DWORD) { *(DW
 static void __fastcall FakeNop2(void *, int, const void *, DWORD) {}
 static void __fastcall FakeNop(void *, int) {}
 // a square's point: its x / y from the frame's top left kept at +0x10 / +0x14 (free fields of the fake)
-static void __fastcall FakeSetPoint(BYTE *t, int, int, void *, int, float x, float y, int) { *(float *)(t + 0x10) = x, *(float *)(t + 0x14) = y; }
+static void __fastcall FakeSetPoint(BYTE *t, int, int pt, void *, int, float x, float y, int) { if (pt == 0) *(float *)(t + 0x10) = x, *(float *)(t + 0x14) = y; }
 static void __fastcall FakeSetW(BYTE *t, int, float w) { *(float *)(t + LAYOUT_WIDTH) = w; }
 static void __fastcall FakeSetH(BYTE *t, int, float h) { *(float *)(t + LAYOUT_HEIGHT) = h; }
 static void __fastcall FakeShow(BYTE *t, int) { *(DWORD *)(t + 0x7c) = 1; }
