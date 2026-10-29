@@ -30,21 +30,42 @@ KeyWaitAny() {
 ; A key or combo, or one of the extra mouse buttons (an InputHook only sees the
 ; keyboard, so those are caught by hotkeys while it waits). Left and right
 ; click are never taken: they're how you click.
-KeyWaitCombo() {
-    global keyCapturing := true, keyCaptureEnd, capturedMouse := ""
+; The next key (or mouse button) pressed, "" if none: the wait ends by itself after limit ms or
+; as soon as none of the companion's windows is in front. It listens to the whole system, so a
+; bind started and left (back to the game, no key pressed) took the next key pressed in a fight
+; and rebound the slot (a user's report, 2026-10-29).
+global keyCaptureCancelled := false
+KeyWaitCombo(limit := 10000) {
+    global keyCapturing := true, keyCaptureEnd, capturedMouse := "", keyCaptureCancelled := false
     ihGlobal.VisibleNonText := false
     ihGlobal.KeyOpt("{All}", "E")
     ihGlobal.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-E")
     CaptureMouse(true)
+    watch := KeyCaptureWatch.Bind(A_TickCount + limit)
+    SetTimer(watch, 100)
     ihGlobal.Start()
     try ihGlobal.Wait()
     finally {
+        SetTimer(watch, 0)
         CaptureMouse(false)
         keyCapturing := false, keyCaptureEnd := A_TickCount
+    }
+    if keyCaptureCancelled {
+        try Toast("Key binding cancelled: press the key while the companion is in front, within 10 s", "", 3000)
+        return ""
     }
     if capturedMouse
         return (GetKeyState("Ctrl") ? "^" : "") (GetKeyState("Alt") ? "!" : "") (GetKeyState("Shift") ? "+" : "") capturedMouse
     return ihGlobal.EndMods . ihGlobal.EndKey
+}
+; the wait's watch: over its time, or none of our windows in front -> it ends with no key
+KeyCaptureWatch(endAt) {
+    global keyCaptureCancelled
+    hw := WinExist("A")
+    if A_TickCount > endAt || !hw || WinGetPID(hw) != DllCall("GetCurrentProcessId") {
+        keyCaptureCancelled := true
+        ihGlobal.Stop()
+    }
 }
 global capturedMouse := ""
 CaptureMouse(on) {

@@ -30,7 +30,7 @@ class MacrosEngine {
 
     capture(args := 0) {
         combo := KeyWaitCombo()
-        if combo == "Escape"
+        if combo == "Escape" || combo = ""                  ; "": cancelled (the key stays as it was)
             return { hotkey: "", label: "" }
         hk := "$" combo
         return { hotkey: hk, label: ReadableHotkey(hk) }

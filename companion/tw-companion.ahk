@@ -2236,7 +2236,8 @@ OverlayCapture(key, btn) {
     btn.Text := "press keys… (Esc = none)"
     combo := KeyWaitCombo()
     combo := RegExReplace(combo, "[<>]")     ; either Shift/Ctrl/Alt
-    webOverlay.set(key, combo = "Escape" ? "" : combo)
+    if combo != ""                           ; "": cancelled (the key stays as it was)
+        webOverlay.set(key, combo = "Escape" ? "" : combo)
     RefreshOverlay()
 }
 OverlaySide(side, *) {

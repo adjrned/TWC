@@ -641,8 +641,8 @@ Wc3Label(l) => HasMethod(l) ? l() : l
 Wc3Capture(name) {
     global gameCmds
     Toast("Press the key for it (Esc = none)", "", 0)
-    gameCmds.capture(name)
-    Toast("Key set: " gameCmds.keyText(name), "", 1500)
+    if gameCmds.capture(name)
+        Toast("Key set: " gameCmds.keyText(name), "", 1500)
     RefreshWc3()
 }
 

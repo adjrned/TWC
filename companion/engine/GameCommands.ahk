@@ -56,11 +56,14 @@ class GameCommandsEngine {
             this.bound.Push({ hk: hk, cond: cond })
         }
     }
-    ; ask for a new key (Esc = none)
+    ; ask for a new key (Esc = none); false: cancelled, the key stays as it was
     capture(name) {
         combo := RegExReplace(KeyWaitCombo(), "[<>]")
+        if combo = ""
+            return false
         SetIni(combo = "Escape" ? "" : combo, this.section, name)
         this.bind()
+        return true
     }
     run(cmd, name, *) {
         r := this.gm.commandWait(this.gm.command(cmd), 1500)
