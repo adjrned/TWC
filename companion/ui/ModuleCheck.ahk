@@ -40,23 +40,43 @@ ModuleCheckFeatures() => [
 ]
 
 ; this session's log lines (from the last "loaded" line), or [] if none
-ModuleCheckLog() {
+ModuleCheckLog() => ModuleCheckLines(ModuleCheckLogText()).now
+; the module before it, when it was swapped live for this one: its lines from
+; "unloading: a newer module replaces this one" on ([] if there was no swap)
+ModuleCheckSwap() => ModuleCheckLines(ModuleCheckLogText()).before
+ModuleCheckLogText() {
     path := A_ScriptDir "\native\twc-game.log"
     if !FileExist(path)
-        return []
-    try text := FileRead(path)
-    catch
-        return []
+        return ""
+    try return FileRead(path)
+    return ""
+}
+; -> { now, before } from the log's text. A second copy that stays idle ("loaded
+; again ... stays idle") doesn't start a session: the live module's lines go on
+ModuleCheckLines(text) {
     lines := StrSplit(StrReplace(text, "`r"), "`n")
-    start := 1
+    start := 0, prev := 0
     for i, l in lines
-        if InStr(l, "---- twc-game.dll loaded")
-            start := i
-    out := []
+        if InStr(l, "---- twc-game.dll loaded") && !InStr(l, "---- twc-game.dll loaded again")
+            prev := start, start := i
+    now := [], before := []
+    if !start
+        return { now: now, before: before }
     loop lines.Length - start + 1
         if (l := lines[start + A_Index - 1]) != ""
-            out.Push(l)
-    return out
+            now.Push(l)
+    ; the old module's unloading, just above this one's start (after its own start)
+    i := start - 1, from := 0
+    while i > prev && !from {
+        if InStr(lines[i], "unloading: a newer module replaces this one")
+            from := i
+        i--
+    }
+    if from
+        loop start - from
+            if (l := lines[from + A_Index - 1]) != ""
+                before.Push(l)
+    return { now: now, before: before }
 }
 
 ; -> [{ mark, name, detail }] for the probe, the game UI and each feature
@@ -105,13 +125,18 @@ ModuleCheckReport(rows, log) {
     r := "TW Companion " version " · module layout " s.layout " · game build " s.build " · " FormatTime(, "yyyy-MM-dd HH:mm") "`n`n"
     for row in rows
         r .= row.mark " " row.name ": " row.detail "`n"
-    r .= "`nLog (this session, " log.Length " lines):`n"
-    n := 0
-    for l in log
-        if ++n <= 400
+    if (swap := ModuleCheckSwap()).Length {
+        r .= "`nThe module before (swapped live for this one), its unloading:`n"
+        for l in swap
             r .= l "`n"
-    if log.Length > 400
-        r .= "... (" (log.Length - 400) " more lines in native\twc-game.log)`n"
+    }
+    r .= "`nLog (this session, " log.Length " lines):`n"
+    ; a long session: its start and its latest lines (quickcast's state and counts are the latest)
+    for i, l in log
+        if log.Length <= 400 || i <= 100 || i > log.Length - 300
+            r .= l "`n"
+        else if i = 101
+            r .= "... (" (log.Length - 400) " lines left out here; all of them are in native\twc-game.log)`n"
     return r
 }
 

@@ -220,6 +220,12 @@ TwcModuleRun() {
     TwcCheck(r1.mark = "✓" && r2.mark = "✓" && r3.mark = "✓" && r4.mark = "✗", "hero buffs, cooldown sweep, buff bar size rows: " r1.mark r2.mark r3.mark r4.mark)
     r := row(ModuleCheckRows(["2026-10-26 10:00:00.000    not the buff bar (+AAD510): refusing it"]), "Hide the UI")
     TwcCheck(r.mark = "✗", "Hide the UI's buff bar refused: " r.mark " " r.detail)
+    ; the report's log: this module's lines (an idle second copy doesn't cut them), and the old one's unloading after a live swap
+    t := "a ---- twc-game.dll loaded into pid 1`nb quickcast: clicked`nc unloading: a newer module replaces this one; turning everything off`nd unloading: everything given back`n"
+        . "e unloading: retired (stays mapped, idle)`nf ---- twc-game.dll loaded into pid 1`ng probe passed`nh ---- twc-game.dll loaded again into pid 1, but the module there is alive (status 1): this copy stays idle`ni quickcast: ready`n"
+    ll := ModuleCheckLines(t), l0 := ModuleCheckLines("x ---- twc-game.dll loaded into pid 2`ny probe passed`n")
+    TwcCheck(ll.now.Length = 4 && SubStr(ll.now[1], 1, 1) = "f" && SubStr(ll.now[4], 1, 1) = "i" && ll.before.Length = 3 && SubStr(ll.before[1], 1, 1) = "c"
+        && l0.now.Length = 2 && !l0.before.Length, "report log: from the last real load (" ll.now.Length " lines), the old module's 3 unloading lines; no swap: none")
     ; quickcast's state and counts (layout 27): the Module check row, and why it isn't ready
     NumPut("uint", 1, v, Shm.qcState), NumPut("uint", 40, v, Shm.qcAsked), NumPut("uint", 30, v, Shm.qcClicked), NumPut("uint", 6, v, Shm.qcNoTarget)
     NumPut("uint", 1, v, Shm.qcNotFront), NumPut("uint", 3, v, Shm.qcCancelled)
