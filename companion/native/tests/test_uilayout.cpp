@@ -16,24 +16,31 @@ static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] 
 static const Call *Find(BYTE *lay, DWORD pt) { for (int i = nCalls - 1; i >= 0; i--) if (calls[i].lay == lay && calls[i].pt == pt) return &calls[i]; return nullptr; }
 static BYTE ui[0x500], minimap[0x200], peon[0x200], relPt[0x20], anchorFrame[0x20], top[0x20], junk[0x200];
 static void Pump(int n) { for (int k = 0; k < n; k++) { QueueDisplay(); Sleep(300); } }
+// pumped until done (at most ms): a fixed wait failed with the PC busy (the passes, one handler
+// each ~0.3 s apart, hadn't all run)
+template <class F> static void PumpUntil(F done, int ms) { for (DWORD t0 = GetTickCount(); !done() && GetTickCount() - t0 < (DWORD)ms; ) Pump(1); }
 static DWORD WINAPI Tester(void *) {
-    g_shared->ulOn = 1; Pump(16);                      // one handler a pass at first
+    g_shared->ulOn = 1;                                 // one handler a pass at first
+    PumpUntil([] { return g_shared->ulState == 1 && g_ulN >= 2 && Find(peon, 0); }, 20000);
     CHECK(g_shared->ulState == 1 && g_ulN >= 2, "on, a wide window: laid out (state %lu, %d frames saved)", g_shared->ulState, g_ulN);
     const Call *c = Find(minimap + 0xb4, 6), *c2 = Find(minimap + 0xb4, 2), *pc = Find(peon, 0);
     CHECK(c && c2 && c->rel == (DWORD)(ui + 0xb4) && c->x == 0.1075f && c->y == 0.007f && c2->relPt == 6 && c2->x == 0.210f && c2->y == 0.145f,
           "the minimap (a CFrame: its layout +0xb4) gets WFE's two corners on the game UI's layout");
     CHECK(pc && *(float *)(peon + 0x58) == 0.016f && pc->x == 0.2165f && pc->y == -0.456f, "a minimap button (a simple frame: itself) narrowed and moved");
     CHECK(*(float *)(junk + 0x58) == 0.5f && *(float *)(junk + 0xb4 + 0x58) == 0.5f, "a field that isn't a frame of a known kind: not written");
-    int saved = g_ulN; nCalls = 0; Pump(8);
+    int saved = g_ulN; nCalls = 0; PumpUntil([] { return Find(minimap + 0xb4, 6) != nullptr; }, 10000);
     CHECK(g_ulN == saved && Find(minimap + 0xb4, 6), "laid out again every 2 s, nothing saved twice");
     // a 4:3 window: put back
-    SetWindowPos(wnd, 0, 0, 0, 400, 330, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); nCalls = 0; clears = 0; Pump(2);
+    SetWindowPos(wnd, 0, 0, 0, 400, 330, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); nCalls = 0; clears = 0;
+    PumpUntil([] { return g_ulN == 0 && g_shared->ulState == 2; }, 10000);
     const Call *back = Find(minimap + 0xb4, 0);
     CHECK(g_ulN == 0 && g_shared->ulState == 2 && back && back->rel == (DWORD)anchorFrame && back->y == -0.02f && clears >= 2 && *(float *)(peon + 0x58) == 0.05f,
           "a 4:3 window: every frame put back (anchors, width), state 2");
-    SetWindowPos(wnd, 0, 0, 0, 800, 330, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Pump(16);
+    SetWindowPos(wnd, 0, 0, 0, 800, 330, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+    PumpUntil([] { return g_shared->ulState == 1 && *(float *)(peon + 0x58) == 0.016f; }, 20000);
     CHECK(g_shared->ulState == 1 && *(float *)(peon + 0x58) == 0.016f, "wide again: laid out again");
-    g_shared->ulOn = 0; Pump(2);
+    g_shared->ulOn = 0;
+    PumpUntil([] { return g_shared->ulState == 0 && g_ulN == 0; }, 10000);
     CHECK(g_shared->ulState == 0 && g_ulN == 0 && *(float *)(peon + 0x58) == 0.05f, "off: put back");
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);

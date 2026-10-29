@@ -441,9 +441,9 @@ Wc3DialogShow(d) {
     h := y + 34 + 24
     d.card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
+    DialogStyle(g)
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
-    SendMessage(0x127, 0x10001, 0, g)       ; WM_CHANGEUISTATE: UIS_SET UISF_HIDEFOCUS (no dotted box on the first control)
     try if InStr(ControlGetClassNN(ControlGetFocus(g)), "Edit")
         SendMessage(0xB1, -1, 0, ControlGetFocus(g))   ; EM_SETSEL: a name box that has the focus isn't all selected
     DialogRepaint(g)

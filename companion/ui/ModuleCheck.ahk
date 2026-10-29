@@ -180,6 +180,7 @@ ModuleCheckDialog() {
     h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
+    DialogStyle(g)
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(Max(0, oy + (oh - h * UiK(g)) / 2)) " w" w " h" h)
     DialogRepaint(g)

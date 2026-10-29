@@ -1814,6 +1814,7 @@ QuickcastSettings(ver := "") {
     h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
+    DialogStyle(g)
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
     g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
     DialogRepaint(g)
@@ -1835,8 +1836,36 @@ class DialogCard {
             this.g.AddText("x" r[1] " y" r[2] " w" r[3] " h" r[4] " +Background" C.frame)
     }
 }
-; once shown: the whole window and its controls painted again at once (RDW_INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW)
-DialogRepaint(g) => DllCall("RedrawWindow", "ptr", g.Hwnd, "ptr", 0, "ptr", 0, "uint", 0x1 | 0x4 | 0x80 | 0x100)
+; once shown: no dotted focus box (WM_CHANGEUISTATE: UIS_SET UISF_HIDEFOCUS), then the whole
+; window and its controls painted again at once (RDW_INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW)
+DialogRepaint(g) {
+    SendMessage(0x127, 0x10001, 0, g)
+    DllCall("RedrawWindow", "ptr", g.Hwnd, "ptr", 0, "ptr", 0, "uint", 0x1 | 0x4 | 0x80 | 0x100)
+}
+; before it shows: a dialog's text boxes in the pages' look (StyleControl's): no native border
+; (white on the dark card), a --bg2 box with a --border2 edge behind, the text centred in it
+DialogStyle(g) {
+    global C
+    edits := []
+    for hw, ctl in g
+        if ctl.Type = "Edit"
+            edits.Push(ctl)
+    for e in edits {
+        e.Opt("-E0x200 -Border")
+        DllCall("SetWindowPos", "ptr", e.Hwnd, "ptr", 0, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x37)   ; FRAMECHANGED
+        e.GetPos(&ex, &ey, &ew, &eh)
+        ; at the bottom of the z-order, the fill first: the edge goes under it; WS_CLIPSIBLINGS, or
+        ; they paint over the box above them (siblings repaint in no set order)
+        for part in [[ex + 1, ey + 1, ew - 2, eh - 2, C.well, 3], [ex, ey, ew, eh, C.frame, 4]] {
+            bx := g.AddText("x" part[1] " y" part[2] " w" part[3] " h" part[4] " +0x4000000 +Background" part[5])
+            DllCall("SetWindowPos", "ptr", bx.Hwnd, "ptr", 1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x13)   ; HWND_BOTTOM
+            Box.Round(bx, part[3], part[4], part[6])
+        }
+        e.Move(ex + 2, ey + (eh - 20) // 2, ew - 4, 20)              ; 2 in: the 1px edge stays whole at any scale
+        if !(ControlGetStyle(e) & 0x1)                                  ; not ES_CENTER: the pages' padding
+            SendMessage(0xD3, 3, 6 | (6 << 16), e)                      ; EM_SETMARGINS
+    }
+}
 ; the in-game setup ended: its toast already said how it went
 QuickcastSetupDone(ok, msg) {
 }
