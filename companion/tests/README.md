@@ -16,6 +16,8 @@ powershell -ExecutionPolicy Bypass -File companion\tests\run-checks.ps1 pages   
   - `module`: a stand-in game module (a buffer in `engine\GameLayout.ahk`'s layout, every feature on)
     behind an off-screen "Warcraft III" window of its own: every status line and push.
   - `quickcast`: the screen quickcast's setup format and colour tuning.
+  - `scale`: the main window at x1.5 (every page) and a popup at x1.25 (`ui\WindowScale.ahk`): sizes,
+    fonts, round corners, code still in base units; back at x1 every control where it was, to the pixel.
 - **chatpaste**: `chatpaste.py` copies the chat paste out of `lib\Common.ahk` with SendInput stubbed;
   the clipboard is saved first and put back.
 

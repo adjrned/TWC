@@ -265,7 +265,7 @@ Wc3Hover(wParam, lParam, msg, hwnd) {
     if DllCall("GetAncestor", "ptr", hwnd, "uint", 2, "ptr") != mainGui.Hwnd
         return                                  ; another window (an Options window): keep the line
     pt := Buffer(8), DllCall("GetCursorPos", "ptr", pt), DllCall("ScreenToClient", "ptr", mainGui.Hwnd, "ptr", pt)
-    mx := NumGet(pt, 0, "int") / DPI_K, my := NumGet(pt, 4, "int") / DPI_K
+    mx := NumGet(pt, 0, "int") / UiK(mainGui), my := NumGet(pt, 4, "int") / UiK(mainGui)
     c := 0
     for card in wc3Cards
         if card.shown && mx >= card.x && mx < card.x + WC3_COL_W && my >= card.y && my < card.y + WC3_CARD_H {
@@ -421,6 +421,7 @@ Wc3Dialog(title, intro, w := 380) {
     global C, mainGui, UI_FONT
     x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
     card := DialogCard(g, w)
     t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, title)
@@ -441,7 +442,7 @@ Wc3DialogShow(d) {
     d.card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
     SendMessage(0x127, 0x10001, 0, g)       ; WM_CHANGEUISTATE: UIS_SET UISF_HIDEFOCUS (no dotted box on the first control)
     try if InStr(ControlGetClassNN(ControlGetFocus(g)), "Edit")
         SendMessage(0xB1, -1, 0, ControlGetFocus(g))   ; EM_SETSEL: a name box that has the focus isn't all selected

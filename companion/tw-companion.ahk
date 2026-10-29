@@ -37,6 +37,7 @@ A_MaxHotkeysPerInterval := 2000
 #Include engine\GameDisplay.ahk
 #Include engine\BattleNetLogin.ahk
 #Include engine\HudCapture.ahk
+#Include ui\WindowScale.ahk
 #Include ui\TimerHud.ahk
 #Include ui\Wc3Page.ahk
 #Include ui\ModuleCheck.ahk
@@ -204,12 +205,15 @@ SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
 BuildWindow() {
     global
     mainGui := Gui("-Caption +MinimizeBox", "TW Companion")     ; the box: the taskbar button minimizes / restores it too
+    MakeScalable(mainGui, "main")                               ; drag an edge or corner: all of it bigger or smaller
+    OnRescale(mainGui, (*) => MainRegion())
     mainGui.BackColor := C.win
     mainGui.SetFont("s10", UI_FONT)
     mainGui.OnEvent("Close", (*) => HideMainWindow())
     mainGui.OnEvent("Escape", (*) => EscHide())
 
     bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, BgImage())
+    ScaleImage(bgPic, BgImage)                                  ; drawn again for each size
 
     ; sidebar nav, like the site's .nav-link: icon + label, the active one tinted
     ; with an orange icon and an accent bar on the sidebar's edge
@@ -369,9 +373,11 @@ class Box {
     static Round(ctl, w, h, r) {
         if r <= 0
             return
-        k := DPI_K, rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", Round(w * k) + 1, "int", Round(h * k) + 1,
+        k := UiK(ctl.Gui), rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", Round(w * k) + 1, "int", Round(h * k) + 1,
             "int", Round(r * 2 * k), "int", Round(r * 2 * k), "ptr")
         DllCall("SetWindowRgn", "ptr", ctl.Hwnd, "ptr", rgn, "int", 1)
+        if winScale.Has(ctl.Gui.Hwnd)
+            scRgn[ctl.Hwnd] := [w, h, r]
     }
 }
 
@@ -425,8 +431,9 @@ SetShown(ctrl, v) {
 
 ; bg.png drawn for this screen's scale (bg@150.png at 150%...), so the
 ; wordmark and lines aren't a stretched 100% image; else the next bigger one
-BgImage() {
-    pct := Round(DPI_K * 100), best := "", bestPct := 0
+; (k: pixels per unit: the window's size counts too)
+BgImage(k := DPI_K) {
+    pct := Round(k * 100), best := "", bestPct := 0
     for s in [100, 125, 150, 175, 200] {
         f := A_ScriptDir "\assets\" (s = 100 ? "bg.png" : "bg@" s ".png")
         if !FileExist(f)
@@ -443,6 +450,8 @@ BgImage() {
 ; the mouse), so both mean "empty space".
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
     global bgPic, mainGui, macroRowAt
+    if ScClick(hwnd)                                        ; a window's edge: resize; a dialog's empty spot: move
+        return 0
     if IsSet(mainGui) && (hwnd = mainGui.Hwnd || hwnd = bgPic.Hwnd) {
         PostMessage(0xA1, 2, , , "ahk_id " mainGui.Hwnd)    ; WM_NCLBUTTONDOWN, HTCAPTION
         return 0
@@ -488,7 +497,7 @@ Freeze() {
 }
 ; a Box's area as a RECT in real pixels (Box sizes are 96-DPI units)
 BoxRect(b) {
-    rc := Buffer(16), k := DPI_K
+    rc := Buffer(16), k := UiK(mainGui)
     NumPut("int", Floor(b.x * k), "int", Floor(b.y * k), "int", Ceil((b.x + b.w) * k), "int", Ceil((b.y + b.h) * k), rc)
     return rc
 }
@@ -814,7 +823,7 @@ SaveListWheel(wParam, lParam, msg, hwnd) {
         return
     mx := lParam << 48 >> 48, my := lParam << 32 >> 48       ; signed screen coords
     WinGetClientPos(&wx, &wy, , , mainGui)
-    mx := (mx - wx) / DPI_K, my := (my - wy) / DPI_K
+    mx := (mx - wx) / UiK(mainGui), my := (my - wy) / UiK(mainGui)
     if mx < saveCard.x || mx > saveCard.x + saveCard.w || my < saveCard.y || my > saveCard.y + saveCard.h
         return
     step := (wParam << 32 >> 48) > 0 ? -3 : 3
@@ -952,9 +961,9 @@ ShowPopover(name, show := true) {
     }
     p.anchor.GetPos(&ax, &ay, &aw, &ah)
     WinGetClientPos(&wx, &wy, , , mainGui)
-    k := DPI_K
-    x := Round(InStr(p.place, "right") ? wx + (ax + aw - p.w) * k : wx + ax * k)
-    y := Round(InStr(p.place, "above") ? wy + (ay - p.h - 6) * k : wy + (ay + ah + 6) * k)
+    k := UiK(mainGui)
+    x := Round(InStr(p.place, "right") ? wx + (ax + aw) * k - p.w * DPI_K : wx + ax * k)
+    y := Round(InStr(p.place, "above") ? wy + ay * k - (p.h + 6) * DPI_K : wy + (ay + ah) * k + 6 * DPI_K)
     p.gui.Show("NA x" x " y" y)
     SetTimer(PopoverHoverCheck, 120)
 }
@@ -1316,7 +1325,7 @@ MacroRowDown(i) {
             dragging := true
         if dragging {
             ; the gap between rows nearest the mouse: 0 = above the first shown
-            slot := Max(0, Min(Min(MACRO_ROWS, n - macroOffset), Round((my / DPI_K - macroCard.y - 1) / MACRO_ROW_H)))
+            slot := Max(0, Min(Min(MACRO_ROWS, n - macroOffset), Round((my / UiK(mainGui) - macroCard.y - 1) / MACRO_ROW_H)))
             macroDropLine.Move(, macroCard.y + Max(1, slot * MACRO_ROW_H - 1))
             macroDropLine.Visible := true
         }
@@ -1412,7 +1421,7 @@ MacroListWheel(wParam, lParam, msg, hwnd) {
         return
     local mx := lParam << 48 >> 48, my := lParam << 32 >> 48
     WinGetClientPos(&wx, &wy, , , mainGui)
-    mx := (mx - wx) / DPI_K, my := (my - wy) / DPI_K
+    mx := (mx - wx) / UiK(mainGui), my := (my - wy) / UiK(mainGui)
     local c := macroCard
     if mx < c.x || mx > c.x + c.w || my < c.y || my > c.y + c.h
         return
@@ -1733,6 +1742,7 @@ QuickcastSettings(ver := "") {
         ver := Wc3RunningVer() = "128" ? "hook" : "screen"
     s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "hook"
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
     card := DialogCard(g, w)
     t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, mod128 ? "Quickcast · Game hook" : "Quickcast · Screen")
@@ -1805,7 +1815,7 @@ QuickcastSettings(ver := "") {
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
     DialogRepaint(g)
     return g
 }
@@ -2044,7 +2054,7 @@ HostListWheel(wParam, lParam, msg, hwnd) {
         return
     local mx := lParam << 48 >> 48, my := lParam << 32 >> 48
     WinGetClientPos(&wx, &wy, , , mainGui)
-    mx := (mx - wx) / DPI_K, my := (my - wy) / DPI_K
+    mx := (mx - wx) / UiK(mainGui), my := (my - wy) / UiK(mainGui)
     local c := hostCard
     if mx < c.x || mx > c.x + c.w || my < c.y || my > c.y + c.h
         return
@@ -2232,7 +2242,12 @@ ShowMainWindow() {
     if WinExist("ahk_id " mainGui.Hwnd) && WinGetMinMax(mainGui) = -1
         mainGui.Restore()               ; minimized: F8 / the tray brings it back up
     mainGui.Show("w" W " h" H)
-    try WinSetRegion("0-0 w" Round(W * DPI_K) " h" Round(H * DPI_K) " R" Round(14 * DPI_K) "-" Round(14 * DPI_K), mainGui.Hwnd)
+}
+; the main window's round corners, at its size
+MainRegion() {
+    global mainGui, W, H
+    k := UiK(mainGui)
+    try WinSetRegion("0-0 w" Round(W * k) " h" Round(H * k) " R" Round(14 * k) "-" Round(14 * k), mainGui.Hwnd)
 }
 ; Esc hides the window, except when it was the answer to "press a key"
 EscHide() {
@@ -2464,7 +2479,7 @@ Toast(msg, kind := "", ms := 3500) {
         tx := Round(ax + (aw - tw * DPI_K) / 2), ty := Round(ay + 80 * DPI_K)
     } else if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
         WinGetPos(&ax, &ay, , , mainGui)
-        tx := Round(ax + (W - tw) * DPI_K / 2), ty := Round(ay + (H - th - 30) * DPI_K)
+        tx := Round(ax + (W * UiK(mainGui) - tw * DPI_K) / 2), ty := Round(ay + H * UiK(mainGui) - (th + 30) * DPI_K)
     } else {
         MonitorGetWorkArea(MonitorGetPrimary(), &l, &t, &r, &b)
         tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(b - (th + 30) * DPI_K)
@@ -2484,18 +2499,18 @@ TextWidth(ctl, s) {
     DllCall("GetTextExtentPoint32W", "ptr", hdc, "str", s, "int", StrLen(s), "int64*", &size := 0)
     DllCall("SelectObject", "ptr", hdc, "ptr", old)
     DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
-    return Round((size & 0xFFFFFFFF) / DPI_K)
+    return Round((size & 0xFFFFFFFF) / UiK(ctl.Gui))
 }
 
 ; height of s word-wrapped to width in ctl's font (GUI units in and out)
 TextHeight(ctl, s, width) {
     hdc := DllCall("GetDC", "ptr", ctl.Hwnd, "ptr")
     old := DllCall("SelectObject", "ptr", hdc, "ptr", SendMessage(0x31, 0, 0, ctl), "ptr")
-    rc := Buffer(16, 0), NumPut("int", Round(width * DPI_K), rc, 8)
+    rc := Buffer(16, 0), NumPut("int", Round(width * UiK(ctl.Gui)), rc, 8)
     DllCall("DrawTextW", "ptr", hdc, "str", s, "int", -1, "ptr", rc, "uint", 0x410)   ; DT_CALCRECT | DT_WORDBREAK
     DllCall("SelectObject", "ptr", hdc, "ptr", old)
     DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
-    return Round(NumGet(rc, 12, "int") / DPI_K)
+    return Round(NumGet(rc, 12, "int") / UiK(ctl.Gui))
 }
 
 ; Modal dialog in the site's .modal style (card, Cinzel title, muted text,
@@ -2505,6 +2520,7 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     global C, UI_FONT, mainGui
     owned := IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
     g := Gui("-Caption +ToolWindow +AlwaysOnTop" (owned ? " +Owner" mainGui.Hwnd : ""))
+    MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
     w := 440, res := { v: buttons[buttons.Length] }
     card := DialogCard(g, w)
@@ -2531,7 +2547,7 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     g.OnEvent("Close", (*) => g.Destroy())
     if owned {
         WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-        pos := "x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2)
+        pos := "x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2)
     } else {
         pos := "Center"
     }

@@ -151,6 +151,7 @@ ModuleCheckDialog() {
     log := ModuleCheckLog(), rows := ModuleCheckRows(log)
     w := 640, x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
     card := DialogCard(g, w)
     t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Module check")
@@ -180,6 +181,6 @@ ModuleCheckDialog() {
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(Max(0, oy + (oh - h * DPI_K) / 2)) " w" w " h" h)
+    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(Max(0, oy + (oh - h * UiK(g)) / 2)) " w" w " h" h)
     DialogRepaint(g)
 }
