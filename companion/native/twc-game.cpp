@@ -217,7 +217,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD dmPad;            // unused (Shared is packed to 4: the doubles needn't be 8-aligned)
     double dmTotal[16];     // module: damage dealt by each player's units since this module started (the companion takes differences)
     DWORD dmHits[16];       //   and their hits
-    char dmName[16][32];    // module: the players' names (UTF-8), "" for an empty slot
+    char dmName[16][32];    // module: the players' names (UTF-8), "" for an empty slot; colour codes taken out, each kept as it
+                            //   first was in a game (layout 30: the map renames players, SetPlayerName, and names moved between rows)
+    // layout 30
+    int dmColour[16];       // module: each player's colour as GetPlayerColor gives it (0 red ... 11 brown; -1 none)
 };
 #pragma pack(pop)
 
@@ -3864,8 +3867,43 @@ static bool SwapUnitDamage(bool on) {
     Log(on ? "damage: on (CUnit's damage entry is ours: each hit is counted after the game's own)" : "damage: off (the entry is the game's again)");
     return true;
 }
-// the players' names, as GetPlayerName reads them (every 2 s while on)
+// a name with the game's codes taken out: |cAARRGGBB, |r, |n (a space), || (a |)
+static void PlainName(const char *s, char *out, int n) {
+    int o = 0;
+    for (int i = 0; s[i] && o < n - 1; i++) {
+        if (s[i] == '|' && (s[i + 1] == 'c' || s[i + 1] == 'C')) {
+            int k = 2;
+            while (k < 10 && isxdigit((unsigned char)s[i + k]))
+                k++;
+            if (k == 10) {
+                i += 9;
+                continue;
+            }
+        }
+        if (s[i] == '|' && (s[i + 1] == 'r' || s[i + 1] == 'R')) {
+            i++;
+            continue;
+        }
+        if (s[i] == '|' && (s[i + 1] == 'n' || s[i + 1] == 'N')) {
+            out[o++] = ' ', i++;
+            continue;
+        }
+        if (s[i] == '|' && s[i + 1] == '|')
+            i++;
+        out[o++] = s[i];
+    }
+    while (o && out[o - 1] == ' ')
+        o--;
+    out[o] = 0;
+}
+// The players' names, as GetPlayerName reads them (every 2 s while on), each kept as it first was in
+// a game: the map renames players (SetPlayerName +0x246550 writes the same string), and in the
+// user's game of 2026-10-29 a rename put another player's name (with its colour codes) on their row;
+// their scoreboard keeps the first ones too. A new game (another game state or player): read again.
+// The colour: CPlayer [+0x264], as GetPlayerColor (+0x233ed0) gives it.
+// (PLAYER_COLOUR: as the health bar colours read it)
 static void DamageNames() {
+    static BYTE *keptState, *keptPl[16];
     // the first reads logged (the user's first game showed "Player N" for everyone): the names found,
     // and for an empty slot where the chain stopped (player, its slot byte, the string, its text)
     static int logs;
@@ -3876,12 +3914,22 @@ static void DamageNames() {
         int n = state ? *(int *)(state + 0x54) : 0;
         for (int i = 0; i < 16; i++) {
             BYTE *pl = i < n && n <= 32 ? *(BYTE **)(state + 0x58 + 4 * i) : nullptr;
-            BYTE *str = pl && pl[0x30] == i ? *(BYTE **)(pl + 0x24 + 8) : nullptr;
+            if (pl && pl[0x30] != i)
+                pl = nullptr;
+            int colour = pl ? *(int *)(pl + PLAYER_COLOUR) : -1;
+            g_shared->dmColour[i] = colour >= 0 && colour < 24 ? colour : -1;
+            if (state != keptState || pl != keptPl[i])
+                keptPl[i] = nullptr, g_shared->dmName[i][0] = 0;     // a new game or player: its name read again
+            if (keptPl[i])
+                continue;                   // kept as it first was
+            BYTE *str = pl ? *(BYTE **)(pl + 0x24 + 8) : nullptr;
             const char *name = str ? *(const char **)(str + 0x1c) : nullptr;
             if (name)
-                strncpy_s(g_shared->dmName[i], name, _TRUNCATE);
+                PlainName(name, g_shared->dmName[i], sizeof(g_shared->dmName[i]));
             else
                 g_shared->dmName[i][0] = 0;
+            if (g_shared->dmName[i][0])
+                keptPl[i] = pl;
             if (logs < 2 && o < (int)sizeof(b) - 80) {
                 if (g_shared->dmName[i][0])
                     o += sprintf_s(b + o, sizeof(b) - o, " %d '%s'", i, g_shared->dmName[i]);
@@ -3891,6 +3939,7 @@ static void DamageNames() {
         }
         if (logs < 2)
             logs++, Log("damage: player names (%d players, state %p):%s", n, state, o ? b : " none");
+        keptState = state;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         if (logs < 2)
             logs++, Log("damage: reading the player names faulted (after:%s)", o ? b : " none");
@@ -6848,7 +6897,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 29;
+        g_shared->layout = 30;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

@@ -248,6 +248,9 @@ int main() {
     CHECK(SiteTarget(g_base + 0x233f85) == g_base + 0x29a990 && !memcmp(g_base + 0x29a9a4, "\x8D\x4F\x24\xE8", 4) && SiteTarget(g_base + 0x29a9a7) == g_base + 0x98510
           && !memcmp(g_base + 0x98510, "\x8B\x41\x08\x85\xC0\x74\x04\x8B\x40\x1C\xC3", 11) && !memcmp(g_base + 0x29a9ca, "\x0F\xB6\x47\x30", 4),
           "the players' names: GetPlayerName's string at CPlayer +0x24, its text [[+8]+0x1C], the slot byte +0x30");
+    // why the first name is kept: SetPlayerName +246550 writes that same string (lea ecx, [esi+0x24]); GetPlayerColor +233ED0 reads [+0x264]
+    CHECK(!memcmp(g_base + 0x24656b, "\x8D\x4E\x24\xE8", 4) && SiteTarget(g_base + 0x24656e) == g_base + 0x98130 && !memcmp(g_base + 0x233ee1, "\x8B\x80\x64\x02\x00\x00", 6) && PLAYER_COLOUR == 0x264,
+          "SetPlayerName rewrites CPlayer +0x24 (the map's renames), GetPlayerColor reads +0x264");
     // the start countdown: the lobby's start handler +0x324100 (its one caller +0x322458) starts timer 3 with 6.0 s at +0x324146
     float *cs = CountdownFloat();
     CHECK(cs == (float *)(g_base + RVA_COUNTDOWN_SECS) && *cs == 6.0f && SiteTarget(g_base + 0x322458) == g_base + RVA_COUNTDOWN && FnStart(RVA_TIMER_START),

@@ -43,10 +43,11 @@ int main() {
         *(DWORD *)units[i] = (DWORD)vt, *(int *)(units[i] + UNIT_OWNER) = owners[i];
     *(DWORD *)(units[3] + 0x5c) = 0x100;
     // players: the game state's list, CPlayer's slot byte +0x30 and its name string +0x24 (text [[+8]+0x1c])
-    static BYTE state[0x100], pl[3][0x40], str[3][0x20];
-    const char *names[3] = { "Ruzai", "", "Kaelith" };
+    static BYTE state[0x100], pl[3][0x300], str[3][0x20];
+    const char *names[3] = { "|cff540081Ruzai|r", "", "||Kaelith|n|CFF1CE6B9x" };
     for (int i = 0; i < 3; i++) {
         pl[i][0x30] = (BYTE)(i * 2 + 1);                            // slots 1, 3, 5
+        *(int *)(pl[i] + PLAYER_COLOUR) = 3 + i;                    // colours: purple, yellow, orange
         *(BYTE **)(pl[i] + 0x24 + 8) = str[i], *(const char **)(str[i] + 0x1c) = names[i];
         *(BYTE **)(state + 0x58 + 4 * (i * 2 + 1)) = pl[i];
     }
@@ -58,7 +59,18 @@ int main() {
     CHECK(gameCalls == 1 && sh.dmSeq == 0, "off: the game's damage, nothing counted");
     sh.dmOn = 1; FollowDamage(10000);
     CHECK(g_dmHooked && sh.dmState == 1 && vt[UNIT_DAMAGE_SLOT / 4] == (DWORD)UnitDamage, "on: CUnit's vtable +0x120 is ours");
-    CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[5], "Kaelith") && !sh.dmName[3][0] && !sh.dmName[0][0], "names as GetPlayerName reads them: slot 1 '%s', 5 '%s', empty ones ''", sh.dmName[1], sh.dmName[5]);
+    CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[5], "|Kaelith x") && !sh.dmName[3][0] && !sh.dmName[0][0], "names as GetPlayerName reads them, the codes out: slot 1 '%s', 5 '%s', empty ones ''", sh.dmName[1], sh.dmName[5]);
+    CHECK(sh.dmColour[1] == 3 && sh.dmColour[5] == 5 && sh.dmColour[0] == -1, "colours as GetPlayerColor gives them (slot 1: %d, 5: %d, none: %d)", sh.dmColour[1], sh.dmColour[5], sh.dmColour[0]);
+    // the map renames player 1 (SetPlayerName): the first name stays; a player's slot taken by another: read again
+    names[0] = "|cffff8000Silverwolve", *(const char **)(str[0] + 0x1c) = names[0];
+    names[1] = "Morrow", *(const char **)(str[1] + 0x1c) = names[1];
+    FollowDamage(12500);
+    CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[3], "Morrow"), "renamed mid-game: the first name kept ('%s'); one with none before gets it ('%s')", sh.dmName[1], sh.dmName[3]);
+    static BYTE plNew[0x300]; memcpy(plNew, pl[0], sizeof(plNew) < sizeof(pl[0]) ? sizeof(plNew) : sizeof(pl[0]));
+    plNew[0x30] = 1, *(BYTE **)(plNew + 0x24 + 8) = str[0], *(int *)(plNew + PLAYER_COLOUR) = 0;
+    *(BYTE **)(state + 0x58 + 4) = plNew;
+    FollowDamage(15000);
+    CHECK(!strcmp(sh.dmName[1], "Silverwolve") && sh.dmColour[1] == 0, "another player in the slot (a new game): read again ('%s', colour %d)", sh.dmName[1], sh.dmColour[1]);
     Hit(2, 0, 100), Hit(2, 1, 50), Hit(0, 2, 30);
     CHECK(gameCalls == 4 && sh.dmTotal[2] == 75 && sh.dmHits[2] == 2 && sh.dmTotal[5] == 15 && sh.dmSeq == 3,
           "each hit after the game's own: what it dealt to the owner of the source (player 2: %.0f in %lu hits, 5: %.0f)", sh.dmTotal[2], sh.dmHits[2], sh.dmTotal[5]);

@@ -146,5 +146,6 @@ class Shm {
     static dmTotal := 2820
     static dmHits := 2948
     static dmName := 3012
-    static size := 3524
+    static dmColour := 3524
+    static size := 3588
 }

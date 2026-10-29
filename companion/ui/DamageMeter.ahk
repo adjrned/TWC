@@ -25,6 +25,7 @@ class DamageMeter {
     dirty := true
 
     gm := 0
+    colours := Map()                ; player -> the game's colour for them (the module's; else their slot's)
     seen := 0                       ; the module's totals last read (its differences are the hits)
     feedSeq := 0, feedHits := 0
 
@@ -130,7 +131,7 @@ class DamageMeter {
         } else {
             if this.sampleFn
                 SetTimer(this.sampleFn, 0)
-            this.reset(), this.names := Map()
+            this.reset(), this.names := Map(), this.colours := Map()
         }
         this.tick()
     }
@@ -161,9 +162,12 @@ class DamageMeter {
         if !d || d.state != 1
             return
         if !this.sample
-            for i, n in d.names
+            for i, n in d.names {
                 if n != ""
                     this.names[i - 1] := n
+                if d.colours[i] >= 0
+                    this.colours[i - 1] := d.colours[i]
+            }
         if this.seen && d.seq != this.feedSeq
             for i, t in d.total
                 if (dt := t - this.seen[i]) > 0
@@ -267,7 +271,7 @@ class DamageMeter {
                 ctl.Visible := !!r
             if !r
                 continue
-            colour := DamageMeter.COLOURS[Mod(r.player, 12) + 1]
+            colour := DamageMeter.COLOURS[Mod(this.colours.Has(r.player) ? this.colours[r.player] : r.player, 12) + 1]
             if row.color != colour {
                 row.strip.Opt("+Background" colour), row.bar.Opt("+Background" colour), row.color := colour
                 row.strip.Redraw()
