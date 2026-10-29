@@ -11,7 +11,8 @@
 ;  The hits come in through hit(player, amount): from the game module's damage
 ;  feed (layout 29: each player's total dealt to other players' units, read 4
 ;  times a second, the differences are the hits), the names its players'.
-;  ini [DamageMeter]: on, rows (3-12), idle (s), opacity (%).
+;  Its ✕ hides it (it keeps counting; Options > Show the meter brings it back).
+;  ini [DamageMeter]: on, hidden, rows (3-12), idle (s), opacity (%).
 ; ============================================================================
 class DamageMeter {
     section := "DamageMeter"
@@ -37,6 +38,12 @@ class DamageMeter {
         SetTimer(this.tickFn, 250)
     }
     enabled => Integer(Ini(this.section, "on", 0))
+    hidden => Integer(Ini(this.section, "hidden", 0))
+    ; hidden: the window put away, the counting goes on (the ✕ in its corner; Options > Show the meter)
+    setHidden(on) {
+        SetIni(on ? 1 : 0, this.section, "hidden")
+        this.tick()
+    }
     rowCount => Max(3, Min(DamageMeter.MAX_ROWS, Integer(Ini(this.section, "rows", 6))))
     idleSecs => Max(1, Min(60, Ini(this.section, "idle", 5) + 0))
     opacity => Max(30, Min(100, Integer(Ini(this.section, "opacity", 92))))
@@ -147,7 +154,7 @@ class DamageMeter {
         global toolEnabled
         if this.sample
             return true
-        return this.enabled && toolEnabled && WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1
+        return this.enabled && !this.hidden && toolEnabled && WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1
     }
     ; the module's feed: switched as the meter is, its new damage into hit()
     feed() {
@@ -225,11 +232,14 @@ class DamageMeter {
             g.AddText("x" r[1] " y" r[2] " w" r[3] " h" r[4] " +Background" C.frame)
         t := g.AddText("x12 y7 w90 h18 +Background" C.card " c" C.text, "DAMAGE")
         t.SetFont("s9 w700 q4", "Cinzel")
-        this.timeText := g.AddText("x" (w - 110) " y8 w64 h16 Right +Background" C.card " c" C.muted, "")
+        this.timeText := g.AddText("x" (w - 132) " y8 w64 h16 Right +Background" C.card " c" C.muted, "")
         UISetFont(this.timeText, "s8")
-        rs := g.AddText("x" (w - 38) " y4 w26 h22 Center 0x200 +Background" C.chip " c" C.muted, Chr(0xE72C))    ; refresh: reset
+        rs := g.AddText("x" (w - 64) " y4 w26 h22 Center 0x200 +Background" C.chip " c" C.muted, Chr(0xE72C))    ; refresh: reset
         rs.SetFont("s9", ICON_FONT), Box.Round(rs, 26, 22, 4)
         rs.OnEvent("Click", (*) => (this.reset(), this.paint()))
+        hd := g.AddText("x" (w - 34) " y4 w26 h22 Center 0x200 +Background" C.chip " c" C.muted, Chr(0xE711))    ; cancel: hide
+        hd.SetFont("s8", ICON_FONT), Box.Round(hd, 26, 22, 4)
+        hd.OnEvent("Click", (*) => (this.sample ? this.setSample(false) : this.setHidden(true)))
         g.AddText("x10 y" (DamageMeter.HEAD - 3) " w" (w - 20) " h1 +Background" C.border)
         loop this.rowCount {
             y := DamageMeter.HEAD + (A_Index - 1) * DamageMeter.ROW
@@ -290,6 +300,8 @@ class DamageMeter {
             return "Showing a sample: drag it where you want it"
         if !this.enabled
             return "Off"
+        if this.hidden
+            return "Hidden (still counting): Options > Show the meter"
         if !this.gm || !this.gm.live()
             return "On · waiting for a 1.28f game (with the game module on)"
         d := this.gm.damage()

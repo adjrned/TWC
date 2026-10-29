@@ -28,8 +28,11 @@ TwcMeterRun() {
     m.setRows(10), m.tick()
     WinGetPos(, , , &h2, m.gui)
     TwcCheck(m.rows.Length = 10 && h2 > h1, "10 rows: rebuilt taller (" h1 " -> " h2 " px)")
+    IniWrite(1, iniFile, "DamageMeter", "on"), m.setSample(false), m.setHidden(true), m.hit(0, 500)
+    TwcCheck(!m.wanted() && InStr(m.statusText(), "Hidden") && m.standings().Length, "hidden: not shown, still counting (" m.statusText() ")")
+    m.setHidden(false), IniWrite(0, iniFile, "DamageMeter", "on")
     m.setRows(6), m.setSample(false), m.tick()
-    TwcCheck(!DllCall("IsWindowVisible", "ptr", m.gui.Hwnd), "the sample off, the meter off: hidden")
+    TwcCheck(!m.gui || !DllCall("IsWindowVisible", "ptr", m.gui.Hwnd), "the sample off, the meter off: hidden")
     TwcCheckDone()
 }
 SetTimer(TwcMeterRun, -7000)
