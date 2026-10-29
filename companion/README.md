@@ -86,7 +86,7 @@ next to the script records each change and each quickcast with the time.
 - **Loader** (default) — your saves as a list like the site's item rows:
   click ☆ to make a save a favourite (★ saves stay on top, the rest are newest
   first), click the eye to hide one (**Show hidden** brings them back, dimmed).
-  Select a save to edit its **load message**: a chat line sent when it loads;
+  Select a save to edit its **load message**: a chat line sent once it has loaded (after its codes);
   separate options with `|` and one is picked at random each time, and `%` is
   the save's name. The default is `% time!` (`knight time!` for `knight#92`);
   clear the field to send nothing. The ⓘ next

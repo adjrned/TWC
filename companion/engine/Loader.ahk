@@ -446,8 +446,6 @@ class LoaderEngine {
         ; companion has; Ctrl+Alt+Del always releases it)
         BlockInput("On")
         try {
-            if msg := this.pickMessage(this.messageFor(name))
-                wc3Chat(LoaderEngine.FillMessage(msg, name))
             if Integer(Ini(this.section, "convert", 1))
                 wc3Chat("-convert " userName)
             for code in codes {
@@ -455,6 +453,11 @@ class LoaderEngine {
                 wc3Chat(code)
             }
             wc3Chat("-refresh")
+            ; the load message once the save is in (the user's pick, 2026-10-29: after the codes, not before)
+            if msg := this.pickMessage(this.messageFor(name)) {
+                Sleep(delay)
+                wc3Chat(LoaderEngine.FillMessage(msg, name))
+            }
             Sleep(Integer(Ini("Settings", "postLoadDelay", 1000)))
             ControlSend("{f1}{Ctrl Down}{1}{Ctrl Up}", , WarcraftIII)
             if Integer(Ini("Settings", "summonBagAfterLoad", 0))

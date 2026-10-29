@@ -635,7 +635,7 @@ BuildSaveList() {
         ["", "Also -load and -loadlast. Loader commands are never sent to chat. Keyboard and mouse are held for the second or two a load takes."]])
     AddPopover("message", msgInfo, [
         ["Load message", ""],
-        ["What", "A chat line the companion types in Warcraft III each time this save loads, right before its -load codes."],
+        ["What", "A chat line the companion types in Warcraft III each time this save loads, right after its -load codes."],
         ["When", "Every load: LOAD, double-click, Enter, -l, -ll and favourites."],
         ["Random", "Separate options with  |  and one of them is picked at random each load."],
         ["Example", "gl hf | sniper time | brb    →  sends one of these three"],
