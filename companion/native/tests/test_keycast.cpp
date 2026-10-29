@@ -115,6 +115,14 @@ int main() {
     SendMessageA(wnd, WM_KEYDOWN, 'Q', 0);
     CHECK(g_shared->qkState == 0 && gameKeys == 1, "off again: Q goes to the game");
     g_shared->qkOn = 1; FollowKeyCast();
+    // Allies' abilities on: CCommandButton's click entry is its hook, which passes the click on to the game's
+    DWORD *allyVt = (DWORD *)(img + 0xaac800); allyVt[BTN_CLICK / 4] = (DWORD)AllyClickHook;
+    Stub(RVA_BUTTON_CLICK, FakePress);
+    *(DWORD *)btns[8] = (DWORD)allyVt; Idle();
+    int p0 = presses, c0 = clicks;
+    r = KeyCast('Q');
+    *(DWORD *)btns[8] = (DWORD)btnVt;
+    CHECK(r && presses == p0 + 1 && pressThis == btns[8] && pressArg == 1 && clicks == c0 + 1, "Allies' abilities' click hook in the entry: still pressed (through it) and clicked");
     // a button that faults: off for good, the key to the game
     *(DWORD *)btns[11] = (DWORD)badVt; g_shared->qkVk[11] = 'T';
     r = KeyCast('T');

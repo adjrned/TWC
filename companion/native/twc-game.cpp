@@ -6163,7 +6163,9 @@ static bool KeyCast(WPARAM vk) {
             return false;               // an empty slot: the game's
         DWORD vt = *(DWORD *)btn;
         BYTE *fn = InImage(vt, g_imageSize) && !PageIs((void *)vt, EXEC) ? *(BYTE **)(vt + BTN_CLICK) : nullptr;
-        if (!fn || !IsGameCode(fn)) {
+        // the game's click, or ours from Allies' abilities (CCommandButton's entry +0x6c while it's on: it
+        // passes your units' clicks on to the game's +0x13d7f0); the first in-game try refused it (2026-10-29)
+        if (!fn || (!IsGameCode(fn) && fn != (BYTE *)AllyClickHook)) {
             if (logs++ < 3)
                 Log("quickcast keys: slot %d's button %p isn't a game button (vtable %08lX): the game's key", slot, btn, vt);
             return false;

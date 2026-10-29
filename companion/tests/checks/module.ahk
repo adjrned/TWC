@@ -229,6 +229,8 @@ TwcModuleRun() {
     r := row(ModuleCheckRows(["2026-10-29 10:00:00.000  quickcast: the target mode's Enter is ours (the click goes out as the game asks for a target)"]), "Quickcast on the game thread (target mode)")
     r2 := row(ModuleCheckRows(["2026-10-29 10:00:00.000  quickcast: vtable +AAA220 entry +24 is 12345678, not the game's Enter: left as it is (the worker clicks)"]), "Quickcast on the game thread (target mode)")
     TwcCheck(r.mark = "✓" && r2.mark = "✗", "the target mode hook's row: taken " r.mark ", someone else's entry " r2.mark)
+    r := row(ModuleCheckRows(["2026-10-29 12:33:57.215  quickcast keys: on (10 slots: their buttons pressed as the key comes, as WFE)", "2026-10-29 12:34:11.199  quickcast keys: slot 8's button 337B0440 isn't a game button (vtable 7AD5D9B8): the game's key"]), "Quickcast keys (as WFE)")
+    TwcCheck(r.mark = "✗", "quickcast keys refusing a button: marked refused (" r.detail ")")
     ; quickcast keys as WFE (layout 28): the slots' game keys and the switch land where the module reads them
     gameModule.pushKeys([0, 0, 0, 0, 0, 0, 0, 0, 0x51, 0x57, 0, 0, 0x67], true)
     k1 := NumGet(v, Shm.qkVk + 8, "uchar") = 0x51 && NumGet(v, Shm.qkVk + 12, "uchar") = 0x67 && NumGet(v, Shm.qkVk + 13, "uchar") = 0 && NumGet(v, Shm.qkOn, "uint") = 1
