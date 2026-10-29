@@ -27,6 +27,8 @@ static int __fastcall FaultPress(BYTE *, int, int) { return *(volatile int *)8; 
 static int clicks; static DWORD clickFlags;
 static void FakeClick(DWORD f) { clicks++, clickFlags = f; }
 static int gameKeys, gameChars;
+static DWORD fakeNow;
+static DWORD WINAPI FakeNow() { return fakeNow; }
 static LRESULT CALLBACK GameProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == WM_KEYDOWN)
         gameKeys++;
@@ -68,7 +70,7 @@ int main() {
     ShowWindow(wnd, SW_SHOWNOACTIVATE);
 
     CHECK(!KeyCast('Q') && presses == 0, "off (the companion hasn't asked): nothing");
-    g_shared->qkOn = 1; FollowKeyCast();
+    g_shared->qkOn = 1; FollowKeyCast(0);
     CHECK(g_shared->qkState == 1 && g_oldProc, "on: the game window is ours (state %lu)", g_shared->qkState);
     bool r = KeyCast('Q');
     CHECK(r && presses == 1 && pressThis == btns[8] && pressArg == 1 && (flagsSeen & 2) && *(DWORD *)(btns[8] + BTN_FLAGS) == 0x10 && clicks == 1 && clickFlags == 0
@@ -111,10 +113,33 @@ int main() {
     SendMessageA(wnd, WM_KEYDOWN, 'Z', 0);
     SendMessageA(wnd, WM_CHAR, 'z', 0);
     CHECK(gameKeys == 1 && gameChars == 1, "through the window: Q and its character kept from the game, Z and its character passed on (%d, %d)", gameKeys, gameChars);
-    g_shared->qkOn = 0; FollowKeyCast(); gameKeys = 0;
+    g_shared->qkOn = 0; FollowKeyCast(0); gameKeys = 0;
     SendMessageA(wnd, WM_KEYDOWN, 'Q', 0);
     CHECK(g_shared->qkState == 0 && gameKeys == 1, "off again: Q goes to the game");
-    g_shared->qkOn = 1; FollowKeyCast();
+    g_shared->qkOn = 1; FollowKeyCast(0);
+    // held: the key's repeat while our click is out (the reticle still up) neither presses nor clicks again;
+    // another key waits for the target mode to end; after 250 ms (the click surely read) it's a new aim
+    g_kcNow = FakeNow; fakeNow = 1000; Idle();
+    int p1 = presses, k1 = clicks;
+    KeyCast('Q'); fakeNow += 30;
+    bool rep = KeyCast('Q');
+    CHECK(rep && presses == p1 + 1 && clicks == k1 + 1, "Q held: its repeat 30 ms later, the reticle still up: dropped (one press, one click)");
+    fakeNow += 10;
+    KeyCast(VK_NUMPAD7);
+    bool heldBack = g_kcHeldVk == VK_NUMPAD7 && presses == p1 + 1;
+    FollowKeyCast(1); KeyCastHeld();                // still aiming: the worker doesn't post yet... but the game thread re-checks
+    bool stillHeld = presses == p1 + 1 && g_kcHeldVk == VK_NUMPAD7;
+    Idle(); fakeNow += 16;                          // the game read our click: cast, the target mode over
+    KeyCastHeld();
+    CHECK(heldBack && stillHeld && presses == p1 + 2 && pressThis == items[0] && !g_kcHeldVk, "Numpad 7 meanwhile: held back while the reticle is up, pressed once it ends");
+    KeyCast('Q'); fakeNow += 300;
+    int p2 = presses, k2 = clicks;
+    KeyCast('Q');
+    CHECK(presses == p2 + 1 && clicks == k2 + 1, "the reticle still up 300 ms after our click (it missed): the repeat aims and clicks again");
+    Idle(); KeyCast('Q'); fakeNow += 30; KeyCast('W'); fakeNow += 600; Idle();
+    int p3 = presses; KeyCastHeld();
+    CHECK(presses == p3 && !g_kcHeldVk, "a key held back over 500 ms: dropped, not pressed late");
+    g_kcNow = GetTickCount; Idle(); g_kcFiredAt = 0;
     // Allies' abilities on: CCommandButton's click entry is its hook, which passes the click on to the game's
     DWORD *allyVt = (DWORD *)(img + 0xaac800); allyVt[BTN_CLICK / 4] = (DWORD)AllyClickHook;
     Stub(RVA_BUTTON_CLICK, FakePress);
@@ -124,6 +149,7 @@ int main() {
     *(DWORD *)btns[8] = (DWORD)btnVt;
     CHECK(r && presses == p0 + 1 && pressThis == btns[8] && pressArg == 1 && clicks == c0 + 1, "Allies' abilities' click hook in the entry: still pressed (through it) and clicked");
     // a button that faults: off for good, the key to the game
+    Idle(); g_kcFiredAt = 0; g_kcHeldVk = 0;
     *(DWORD *)btns[11] = (DWORD)badVt; g_shared->qkVk[11] = 'T';
     r = KeyCast('T');
     CHECK(!r && g_shared->qkState == 3 && !KeyCast('Q'), "a press faulting: caught, quickcast keys off (state 3)");

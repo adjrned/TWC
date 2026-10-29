@@ -1075,6 +1075,10 @@ static bool KeyCast(WPARAM vk);
 static void PortraitSitesPass();
 static void FinalPass();
 static UINT g_finalMsg;
+static UINT g_kcMsg;                // "TWC_GameThreadKeyCast": a quickcast key held back (KeyCast) is done now
+static volatile LONG g_kcHeldVk;    // that key (0 = none), since g_kcHeldAt
+static volatile DWORD g_kcHeldAt;
+static void KeyCastHeld();
 static UINT g_prMsg;                // "TWC_GameThreadPortrait": PortraitSitesPass on the game thread
 static volatile LONG g_prQueued;
 static void BarsPass();
@@ -1112,6 +1116,10 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_framesMsg && g_framesMsg) {
         InterlockedExchange(&g_framesQueued, 0);
         FramesPass();
+        return 0;
+    }
+    if (m == g_kcMsg && g_kcMsg) {
+        KeyCastHeld();
         return 0;
     }
     if (m == g_finalMsg && g_finalMsg) {
@@ -1171,6 +1179,7 @@ static bool Subclass() {
     g_timersMsg = RegisterWindowMessageA("TWC_GameThreadTimers");
     g_prMsg = RegisterWindowMessageA("TWC_GameThreadPortrait");
     g_finalMsg = RegisterWindowMessageA("TWC_GameThreadFinal");
+    g_kcMsg = RegisterWindowMessageA("TWC_GameThreadKeyCast");
     g_wide = IsWindowUnicode(g_gameWnd) != 0;
     g_oldProc = (WNDPROC)(g_wide ? SetWindowLongPtrW(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc)
                                  : SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc));
@@ -6132,7 +6141,29 @@ static void FollowTargetMode() {
 // repeat presses again (WFE's AutoCast, "repeated until it's being held"). Here the same, in
 // our subclass of the game window: the key is kept from the game when its button was pressed
 // (the game would press it again a frame later: an instant spell or an item twice).
+// One click per target mode, as WFE's [0x1013cfd4] (set when it fires, cleared as the target mode
+// ends): the key's repeat comes every ~30 ms, faster than the game reads its input (once a frame),
+// so a repeat could press the button again with the reticle still up and our click not read yet,
+// and click a second time: the first click cast and ended the target mode, the second landed as a
+// plain click and selected what was under the cursor (the user, 2026-10-29: holding a key
+// "targeted the boss" and dropped the hero). Now, while our click is out (the target mode we
+// clicked is still up, under 250 ms): the same key again is dropped (the cast is on its way), and
+// another quickcast key is held back and done as soon as that target mode ends (the worker posts
+// g_kcMsg), within 500 ms, so a quick Q then W still casts both.
 static const DWORD UI_CHAT_STATE = 0x3fc, UI_UPPER_BAR = 0x3d0, UI_BUSY = 0x258;
+static const DWORD KC_CLICK_OUT = 250, KC_HOLD_MAX = 500;
+static volatile DWORD g_kcFiredAt;  // when our last click went out (0 = none out)
+static volatile LONG g_kcFiredVk;
+static DWORD (WINAPI *g_kcNow)() = GetTickCount;    // the tests' clock
+static bool Aiming(BYTE *ui) { return *(DWORD *)(ui + UI_TARGET_MODE) && *(DWORD *)(ui + UI_MODE) == *(DWORD *)(ui + UI_TARGET_MODE); }
+// our click still out: it went out under 250 ms ago and the target mode it was for is still up
+static bool ClickOut(BYTE *ui) {
+    if (!g_kcFiredAt)
+        return false;
+    if (!Aiming(ui) || g_kcNow() - g_kcFiredAt >= KC_CLICK_OUT)
+        return g_kcFiredAt = 0, false;
+    return true;
+}
 static bool KeyCast(WPARAM vk) {
     Shared *s = g_shared;
     if (!vk || vk > 0xff || !g_getUi || s->qkState != 1)
@@ -6173,13 +6204,25 @@ static bool KeyCast(WPARAM vk) {
         float left = 0, total = 0;
         if (ButtonCooldown(btn, &left, &total) & CD_COOLING)
             return false;               // cooling down: not pressed (as WFE), the game says so
+        if (ClickOut(ui)) {
+            if ((LONG)vk != g_kcFiredVk)
+                g_kcHeldVk = (LONG)vk, g_kcHeldAt = g_kcNow();    // another key: once the target mode ends
+            static int drops;
+            if (drops++ < 3)
+                Log("quickcast keys: key %02X while our click is out (the target mode still up): %s", (DWORD)vk,
+                    (LONG)vk == g_kcFiredVk ? "dropped, the cast is on its way" : "held back until it ends");
+            return true;
+        }
         DWORD flags = *(DWORD *)(btn + BTN_FLAGS);
         *(DWORD *)(btn + BTN_FLAGS) = flags | 2;
         ((ClickFn)fn)(btn, 0, 1);
         *(DWORD *)(btn + BTN_FLAGS) = flags;
         s->qkPressed++;
-        bool aim = *(DWORD *)(ui + UI_TARGET_MODE) && *(DWORD *)(ui + UI_MODE) == *(DWORD *)(ui + UI_TARGET_MODE);
+        bool aim = Aiming(ui);
         if (aim) {
+            g_kcFiredAt = g_kcNow(), g_kcFiredVk = (LONG)vk;
+            if (!g_kcFiredAt)
+                g_kcFiredAt = 1;
             // Shift for a queued order: down for this key (its message's state); still down -> kept,
             // up by now (sent with the key) -> pressed around the click
             bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -6197,8 +6240,22 @@ static bool KeyCast(WPARAM vk) {
         return false;
     }
 }
-// the worker's part: the window ours while the companion wants the keys
-static void FollowKeyCast() {
+// on the game thread (g_kcMsg): a key held back while our click was out, now that it's read
+static void KeyCastHeld() {
+    LONG vk = InterlockedExchange(&g_kcHeldVk, 0);
+    if (vk && g_kcNow() - g_kcHeldAt <= KC_HOLD_MAX && g_shared->qkOn)
+        KeyCast((WPARAM)vk);
+}
+// the worker's part: the window ours while the companion wants the keys; a held-back key posted
+// to the game thread once the target mode it waited for has ended (t: this round's Targeting())
+static void FollowKeyCast(int t) {
+    if (g_kcHeldVk && g_gameWnd && g_kcMsg) {
+        DWORD now = g_kcNow();
+        if (now - g_kcHeldAt > KC_HOLD_MAX)
+            g_kcHeldVk = 0;
+        else if (t != 1 || now - g_kcFiredAt >= KC_CLICK_OUT)
+            PostMessageA(g_gameWnd, g_kcMsg, 0, 0);
+    }
     Shared *s = g_shared;
     if (s->qkState == 3 || !g_getUi)
         return;
@@ -6454,7 +6511,7 @@ static void Run() {
         FollowTooltips();
         FollowUnitTip();
         FollowTargetMode();
-        FollowKeyCast();
+        FollowKeyCast(t);
         QueueDisplay();
         QueueFrames();
         LONG cseq = g_shared->cmdSeq;
@@ -6462,7 +6519,11 @@ static void Run() {
             ServeCommand(cseq);
         if (asked)
             ServeQuickcast(seq, t, now, handled);
-        if (fast && seq == handled) {
+        if (g_kcHeldVk && !fast) {
+            timeBeginPeriod(1);         // a quickcast key waits for the target mode to end: look every 1 ms
+            fast = true;
+        }
+        if (fast && seq == handled && !g_kcHeldVk) {
             timeEndPeriod(1);
             fast = false;
         }
