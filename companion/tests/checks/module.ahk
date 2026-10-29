@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 30, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 31, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState", "utState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 30 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 30, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 31 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 31, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -288,14 +288,15 @@ TwcModuleDamage() {
     loop 16
         NumPut("int", -1, v, Shm.dmColour + 4 * (A_Index - 1))
     NumPut("int", 5, v, Shm.dmColour + 4 * 3)                   ; player 3 is orange in this game
+    NumPut("int", 6, v, Shm.dmLocal), IniWrite("ruzai#1877", iniFile, "Battle.net", "account")   ; you: slot 6 (renamed by the map)
     NumPut("double", 1000, v, Shm.dmTotal + 8 * 3), NumPut("int", 5, v, Shm.dmSeq)
     m.feed()                                    ; the first read: from here on (what came before isn't this fight's)
     s1 := m.standings().Length
     NumPut("double", 1750, v, Shm.dmTotal + 8 * 3), NumPut("double", 400, v, Shm.dmTotal + 8 * 6), NumPut("uint", 4, v, Shm.dmHits + 4 * 3), NumPut("int", 9, v, Shm.dmSeq)
     m.feed()
     s := m.standings()
-    TwcCheck(NumGet(v, Shm.dmOn, "uint") = 1 && !s1 && s.Length = 2 && s[1].player = 3 && s[1].dmg = 750 && s[1].name = "Ruzai" && s[2].dmg = 400 && s[2].name = "Player 7",
-        "the feed: switched on, the first read a baseline, then 750 for 'Ruzai' and 400 for player 7 (" s.Length " rows)")
+    TwcCheck(NumGet(v, Shm.dmOn, "uint") = 1 && !s1 && s.Length = 2 && s[1].player = 3 && s[1].dmg = 750 && s[1].name = "Ruzai" && s[2].dmg = 400 && s[2].name = "ruzai#1877",
+        "the feed: switched on, the first read a baseline, then 750 for 'Ruzai' and 400 for slot 6, you: your account's name (" s.Length " rows, '" s[2].name "')")
     TwcCheck(InStr(m.statusText(), "counting (4 hits"), "its status: " m.statusText())
     TwcCheck(m.colours.Has(3) && m.colours[3] = 5 && !m.colours.Has(6), "colours: player 3's the game's (orange), player 7 none (its slot's)")
     NumPut("double", 0, v, Shm.dmTotal + 8 * 3), NumPut("int", 1, v, Shm.dmSeq), m.feed()      ; a new module: back at 0

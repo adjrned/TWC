@@ -51,7 +51,7 @@ int main() {
         *(BYTE **)(pl[i] + 0x24 + 8) = str[i], *(const char **)(str[i] + 0x1c) = names[i];
         *(BYTE **)(state + 0x58 + 4 * (i * 2 + 1)) = pl[i];
     }
-    *(int *)(state + 0x54) = 12;
+    *(int *)(state + 0x54) = 12; *(short *)(state + 0x28) = 5;      // you: slot 5
     *(BYTE **)(img + RVA_PLAYERS) = state;
     g_getUi = FakeGetUi;
 
@@ -60,7 +60,7 @@ int main() {
     sh.dmOn = 1; FollowDamage(10000);
     CHECK(g_dmHooked && sh.dmState == 1 && vt[UNIT_DAMAGE_SLOT / 4] == (DWORD)UnitDamage, "on: CUnit's vtable +0x120 is ours");
     CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[5], "|Kaelith x") && !sh.dmName[3][0] && !sh.dmName[0][0], "names as GetPlayerName reads them, the codes out: slot 1 '%s', 5 '%s', empty ones ''", sh.dmName[1], sh.dmName[5]);
-    CHECK(sh.dmColour[1] == 3 && sh.dmColour[5] == 5 && sh.dmColour[0] == -1, "colours as GetPlayerColor gives them (slot 1: %d, 5: %d, none: %d)", sh.dmColour[1], sh.dmColour[5], sh.dmColour[0]);
+    CHECK(sh.dmColour[1] == 3 && sh.dmColour[5] == 5 && sh.dmColour[0] == -1 && sh.dmLocal == 5, "colours as GetPlayerColor gives them (slot 1: %d, 5: %d, none: %d); you: slot %d", sh.dmColour[1], sh.dmColour[5], sh.dmColour[0], sh.dmLocal);
     // the map renames player 1 (SetPlayerName): the first name stays; a player's slot taken by another: read again
     names[0] = "|cffff8000Silverwolve", *(const char **)(str[0] + 0x1c) = names[0];
     names[1] = "Morrow", *(const char **)(str[1] + 0x1c) = names[1];

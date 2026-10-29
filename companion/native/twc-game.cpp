@@ -221,6 +221,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
                             //   first was in a game (layout 30: the map renames players, SetPlayerName, and names moved between rows)
     // layout 30
     int dmColour[16];       // module: each player's colour as GetPlayerColor gives it (0 red ... 11 brown; -1 none)
+    // layout 31
+    int dmLocal;            // module: your own slot (the game state's local player, -1 none): the companion names it with
+                            //   your Battle.net account (the user's game of 2026-10-29: their own row read "Player 6")
 };
 #pragma pack(pop)
 
@@ -3907,11 +3910,16 @@ static void DamageNames() {
     // the first reads logged (the user's first game showed "Player N" for everyone): the names found,
     // and for an empty slot where the chain stopped (player, its slot byte, the string, its text)
     static int logs;
-    char b[600];
+    char b[1400];
     int o = 0;
     __try {
         BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
         int n = state ? *(int *)(state + 0x54) : 0;
+        g_shared->dmLocal = -1;
+        if (state) {
+            BYTE *dummy;
+            g_shared->dmLocal = LocalPlayer(&dummy);
+        }
         for (int i = 0; i < 16; i++) {
             BYTE *pl = i < n && n <= 32 ? *(BYTE **)(state + 0x58 + 4 * i) : nullptr;
             if (pl && pl[0x30] != i)
@@ -3920,25 +3928,29 @@ static void DamageNames() {
             g_shared->dmColour[i] = colour >= 0 && colour < 24 ? colour : -1;
             if (state != keptState || pl != keptPl[i])
                 keptPl[i] = nullptr, g_shared->dmName[i][0] = 0;     // a new game or player: its name read again
-            if (keptPl[i])
-                continue;                   // kept as it first was
             BYTE *str = pl ? *(BYTE **)(pl + 0x24 + 8) : nullptr;
             const char *name = str ? *(const char **)(str + 0x1c) : nullptr;
-            if (name)
-                PlainName(name, g_shared->dmName[i], sizeof(g_shared->dmName[i]));
-            else
-                g_shared->dmName[i][0] = 0;
-            if (g_shared->dmName[i][0])
-                keptPl[i] = pl;
-            if (logs < 2 && o < (int)sizeof(b) - 80) {
+            if (!keptPl[i]) {               // else kept as it first was
+                if (name)
+                    PlainName(name, g_shared->dmName[i], sizeof(g_shared->dmName[i]));
+                else
+                    g_shared->dmName[i][0] = 0;
                 if (g_shared->dmName[i][0])
-                    o += sprintf_s(b + o, sizeof(b) - o, " %d '%s'", i, g_shared->dmName[i]);
-                else if (pl)
-                    o += sprintf_s(b + o, sizeof(b) - o, " %d (player %p slot %u, string %p, text %p)", i, pl, pl[0x30], pl ? *(BYTE **)(pl + 0x2c) : nullptr, (void *)name);
+                    keptPl[i] = pl;
+            }
+            // logged: the name kept, and the game's own now (codes and all) when it's another
+            if (logs < 2 && pl && o < (int)sizeof(b) - 120) {
+                char now[40] = "";
+                if (name)
+                    strncpy_s(now, name, _TRUNCATE);
+                if (g_shared->dmName[i][0])
+                    o += sprintf_s(b + o, sizeof(b) - o, strcmp(now, g_shared->dmName[i]) ? " %d '%s' (now '%s')" : " %d '%s'", i, g_shared->dmName[i], now);
+                else
+                    o += sprintf_s(b + o, sizeof(b) - o, " %d (empty: player %p slot %u, string %p, text %p '%s')", i, pl, pl[0x30], *(BYTE **)(pl + 0x2c), (void *)name, now);
             }
         }
-        if (logs < 2)
-            logs++, Log("damage: player names (%d players, state %p):%s", n, state, o ? b : " none");
+        if (logs < 2 && state && n > 0)         // in a game only (at the menu there's no game state: those said nothing)
+            logs++, Log("damage: player names (%d players, state %p, you %d):%s", n, state, g_shared->dmLocal, o ? b : " none");
         keptState = state;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         if (logs < 2)
@@ -6897,7 +6909,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 30;
+        g_shared->layout = 31;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

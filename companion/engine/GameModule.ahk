@@ -330,12 +330,13 @@ class GameModuleEngine {
     }
 
     ; -- the damage meter's feed (layout 29) ----------------------------------------
-    ; -> { state, seq, total: [16], hits: [16], names: [16], colours: [16] } (totals since the module started; colours:
-    ; the game's player colour, -1 none; 0: an older module)
+    ; -> { state, seq, total: [16], hits: [16], names: [16], colours: [16], local } (totals since the module started; colours:
+    ; the game's player colour, -1 none; local: your slot, -1 none; 0: an older module)
     damage() {
         if !(v := this.live()) || (lay := NumGet(v, Shm.layout, "uint")) < 29
             return 0
-        out := { state: NumGet(v, Shm.dmState, "uint"), seq: NumGet(v, Shm.dmSeq, "int"), total: [], hits: [], names: [], colours: [] }
+        out := { state: NumGet(v, Shm.dmState, "uint"), seq: NumGet(v, Shm.dmSeq, "int"), total: [], hits: [], names: [], colours: [],
+            local: lay >= 31 ? NumGet(v, Shm.dmLocal, "int") : -1 }
         loop 16 {
             i := A_Index - 1
             out.total.Push(NumGet(v, Shm.dmTotal + 8 * i, "double")), out.hits.Push(NumGet(v, Shm.dmHits + 4 * i, "uint"))
