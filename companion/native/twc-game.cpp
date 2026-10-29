@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 27
+    DWORD layout;           // 28
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -203,6 +203,13 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD qcNoTarget;       //   the game didn't want a target by the deadline
     DWORD qcNotFront;       //   it did, but the game wasn't in front
     DWORD qcCancelled;      //   the companion called it off first (a key or click during a late watch, a new press)
+    // layout 28: quickcast keys as WFE does them (KeyCast): the key's own button pressed on the game thread, then the click
+    DWORD qkOn;             // companion: 1 = handle the keys below (0: off, the chat open, the tool paused)
+    BYTE qkVk[20];          // companion: the game key (virtual key) of each slot that quickcasts, 0 = none:
+                            //   0-11 the command card row by row, 12-17 the inventory (18, 19 unused)
+    DWORD qkState;          // module: 0 off, 1 on (the window is ours), 3 refused (see the log)
+    DWORD qkPressed;        // module: buttons pressed this way
+    DWORD qkClicked;        //   and of those, clicked at the cursor (the game wanted a target)
 };
 #pragma pack(pop)
 
@@ -1064,6 +1071,7 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 
 static int RunOnGameThread(DWORD cmd);
 static void *GameUi();
+static bool KeyCast(WPARAM vk);
 static void PortraitSitesPass();
 static void FinalPass();
 static UINT g_finalMsg;
@@ -1130,6 +1138,17 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
             g_shared->cmdResult = RunOnGameThread((DWORD)cmd);
             InterlockedExchange(&g_shared->cmdDone, (LONG)wp);
         }
+        return 0;
+    }
+    // a quickcast key: its button pressed here and the click sent, the key kept from the game (KeyCast),
+    // and the character Windows makes of it too (the game reads both)
+    static bool dropChar;
+    if (m == WM_KEYDOWN || m == WM_SYSKEYDOWN) {
+        dropChar = g_shared->qkOn && KeyCast(wp);
+        if (dropChar)
+            return 0;
+    } else if ((m == WM_CHAR || m == WM_SYSCHAR) && dropChar) {
+        dropChar = false;
         return 0;
     }
     return g_wide ? CallWindowProcW(g_oldProc, w, m, wp, lp) : CallWindowProcA(g_oldProc, w, m, wp, lp);
@@ -5959,8 +5978,10 @@ static void Mouse(INPUT *in, int &n, DWORD flags) {
 }
 // A left click at the cursor. Modifiers still held from your hotkey are let go
 // around it and pressed again after (as AutoHotkey's Send does), so Ctrl+Q
-// doesn't become a Ctrl+click; Shift stays for a queued order. Letting go of
-// Alt or Win alone would open a menu, so a dummy key (vkE8) goes first.
+// doesn't become a Ctrl+click; Shift stays for a queued order (flags 1), or is
+// pressed around the click (flags 2: it was down for the key, sent with it, and
+// is up by now). Letting go of Alt or Win alone would open a menu, so a dummy
+// key (vkE8) goes first.
 static void Click(DWORD flags) {
     static const WORD MODS[] = { VK_LCONTROL, VK_RCONTROL, VK_LMENU, VK_RMENU, VK_LWIN, VK_RWIN, VK_LSHIFT, VK_RSHIFT };
     INPUT in[32];
@@ -5982,8 +6003,12 @@ static void Click(DWORD flags) {
     }
     if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
         Mouse(in, n, MOUSEEVENTF_LEFTUP);
+    if (flags & 2)
+        Key(in, n, VK_LSHIFT, false);
     Mouse(in, n, MOUSEEVENTF_LEFTDOWN);
     Mouse(in, n, MOUSEEVENTF_LEFTUP);
+    if (flags & 2)
+        Key(in, n, VK_LSHIFT, true);
     for (int i = 0; i < nl; i++)
         Key(in, n, lifted[i], false);
     SendInput(n, in, sizeof(INPUT));
@@ -6089,6 +6114,111 @@ static void FollowTargetMode() {
     checked = ok && SwapTargetEnter(true) ? 1 : 2;
 }
 
+// -- quickcast keys, as WFE does them -----------------------------------------------
+// The game's window procedure (+0x0bad40, fastcall(hwnd, msg, wParam, lParam), ret 8: the one
+// WFE hooks, its [0x1013ce14] = +0x0bad40 for build 0x1E00 at 0x1007326e) only queues input:
+// +0x0bac80 (ret 0xc) puts each event in a 16-entry ring at +0xd05010 (20 bytes each, write
+// index +0xd05150, read +0xd05154), and the game reads it once a frame. So a key opens the
+// target mode a frame later, and a click sent then lands another frame later: two frames, with
+// room for other input in between. WFE doesn't wait: in its window procedure hook, on the key,
+// it presses the slot's own button (0x10053c20: [btn+0x138] |= 2, vtable +0x6c __fastcall(btn,
+// 0, 1), +0x138 put back; the same call as the autocast toggle's, with 1 for a left click), then
+// at once, if the game waits for a target ([ui+0x1b4] == [ui+0x210], 0x10067ad2), clicks at the
+// cursor with SendInput (0x10066640). Its checks first (0x10066a86..0x10066abb): no game UI,
+// [[ui+0x3fc]+0x1dc] != 0, [[ui+0x3d0]+0x164] == 0 ([ui+0x3d0] is the UpperButtonBarFrame,
+// +0x39c471) or [ui+0x258] != 0: not now. A slot whose ability is cooling down isn't pressed
+// (0x10067a87..0x10067abd: the cooldown of [btn+0x190], WFE's 0x10023850), so the game gets
+// the key as usual. No mana check (the game says "not enough mana"). Held, the key's own
+// repeat presses again (WFE's AutoCast, "repeated until it's being held"). Here the same, in
+// our subclass of the game window: the key is kept from the game when its button was pressed
+// (the game would press it again a frame later: an instant spell or an item twice).
+static const DWORD UI_CHAT_STATE = 0x3fc, UI_UPPER_BAR = 0x3d0, UI_BUSY = 0x258;
+static bool KeyCast(WPARAM vk) {
+    Shared *s = g_shared;
+    if (!vk || vk > 0xff || !g_getUi || s->qkState != 1)
+        return false;
+    int slot = -1;
+    for (int i = 0; i < 18 && slot < 0; i++)
+        if (s->qkVk[i] == vk)
+            slot = i;
+    if (slot < 0 || (GetKeyState(VK_CONTROL) & 0x8000) || (GetKeyState(VK_MENU) & 0x8000))
+        return false;                   // not a quickcast key, or Ctrl / Alt with it: the game's
+    static int logs;
+    __try {
+        BYTE *ui = (BYTE *)GameUi();
+        if (!ui)
+            return false;
+        BYTE *a = *(BYTE **)(ui + UI_CHAT_STATE), *b = *(BYTE **)(ui + UI_UPPER_BAR);
+        if ((a && *(DWORD *)(a + 0x1dc)) || (b && !*(DWORD *)(b + 0x164)) || *(DWORD *)(ui + UI_BUSY))
+            return false;
+        BYTE *btn = nullptr;
+        if (slot < 12) {
+            BYTE *card = *(BYTE **)(ui + 0x3c8);
+            int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
+            if (rows > 0 && cols > 0 && rows <= 3 && cols <= 4 && slot / 4 < rows && slot % 4 < cols)
+                btn = GridButton(card, slot / 4, slot % 4);
+        } else
+            btn = ItemButton(ui, slot - 12);
+        if (!btn || !*(DWORD *)(btn + BTN_DATA))
+            return false;               // an empty slot: the game's
+        DWORD vt = *(DWORD *)btn;
+        BYTE *fn = InImage(vt, g_imageSize) && !PageIs((void *)vt, EXEC) ? *(BYTE **)(vt + BTN_CLICK) : nullptr;
+        if (!fn || !IsGameCode(fn)) {
+            if (logs++ < 3)
+                Log("quickcast keys: slot %d's button %p isn't a game button (vtable %08lX): the game's key", slot, btn, vt);
+            return false;
+        }
+        float left = 0, total = 0;
+        if (ButtonCooldown(btn, &left, &total) & CD_COOLING)
+            return false;               // cooling down: not pressed (as WFE), the game says so
+        DWORD flags = *(DWORD *)(btn + BTN_FLAGS);
+        *(DWORD *)(btn + BTN_FLAGS) = flags | 2;
+        ((ClickFn)fn)(btn, 0, 1);
+        *(DWORD *)(btn + BTN_FLAGS) = flags;
+        s->qkPressed++;
+        bool aim = *(DWORD *)(ui + UI_TARGET_MODE) && *(DWORD *)(ui + UI_MODE) == *(DWORD *)(ui + UI_TARGET_MODE);
+        if (aim) {
+            // Shift for a queued order: down for this key (its message's state); still down -> kept,
+            // up by now (sent with the key) -> pressed around the click
+            bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+            g_click(!shift ? 0 : (GetAsyncKeyState(VK_SHIFT) & 0x8000) ? 1 : 3);
+            s->qkClicked++;
+        }
+        static int told;
+        if (told++ < 3)
+            Log("quickcast keys: key %02X pressed slot %d's button %p (vtable +%06lX)%s", (DWORD)vk, slot, btn, vt - (DWORD)g_base,
+                aim ? ": the game wants a target, clicked" : ": no target wanted (an instant spell, an item, or the game refused)");
+        return true;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        s->qkState = 3;
+        Log("quickcast keys: pressing a button faulted: off (the key goes to the game, quickcast as before)");
+        return false;
+    }
+}
+// the worker's part: the window ours while the companion wants the keys
+static void FollowKeyCast() {
+    Shared *s = g_shared;
+    if (s->qkState == 3 || !g_getUi)
+        return;
+    if (s->qkOn && s->qkState != 1) {
+        if (!Subclass()) {
+            s->qkState = 3;
+            Log("quickcast keys: the game window couldn't be subclassed: off");
+            return;
+        }
+        s->qkState = 1;
+        int n = 0;
+        for (int i = 0; i < 18; i++)
+            n += s->qkVk[i] != 0;
+        Log("quickcast keys: on (%d slots: their buttons pressed as the key comes, as WFE)", n);
+    } else if (!s->qkOn && s->qkState == 1) {
+        s->qkState = 0;
+        static int offs;
+        if (offs++ < 5)
+            Log("quickcast keys: off");
+    }
+}
+
 // -- the loop ----------------------------------------------------------------------
 // A quickcast request is answered once: clicked when the game waits for a
 // target (and is in front), or given up at its deadline. Between requests the
@@ -6123,6 +6253,7 @@ static void SwitchesOff() {
     s->bbScale = 0, s->blOn = 0, s->utOn = 0;
     SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
     s->qcUntil = 0;
+    s->qkOn = 0, s->qkState = s->qkState == 3 ? 3 : 0;
 }
 static void RestoreAll() {
     SwapTargetEnter(false);
@@ -6321,6 +6452,7 @@ static void Run() {
         FollowTooltips();
         FollowUnitTip();
         FollowTargetMode();
+        FollowKeyCast();
         QueueDisplay();
         QueueFrames();
         LONG cseq = g_shared->cmdSeq;
@@ -6406,7 +6538,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 27;
+        g_shared->layout = 28;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

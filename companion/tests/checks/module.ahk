@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 27, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 28, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState", "utState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 27 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 27, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 28 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 28, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -229,6 +229,13 @@ TwcModuleRun() {
     r := row(ModuleCheckRows(["2026-10-29 10:00:00.000  quickcast: the target mode's Enter is ours (the click goes out as the game asks for a target)"]), "Quickcast on the game thread (target mode)")
     r2 := row(ModuleCheckRows(["2026-10-29 10:00:00.000  quickcast: vtable +AAA220 entry +24 is 12345678, not the game's Enter: left as it is (the worker clicks)"]), "Quickcast on the game thread (target mode)")
     TwcCheck(r.mark = "✓" && r2.mark = "✗", "the target mode hook's row: taken " r.mark ", someone else's entry " r2.mark)
+    ; quickcast keys as WFE (layout 28): the slots' game keys and the switch land where the module reads them
+    gameModule.pushKeys([0, 0, 0, 0, 0, 0, 0, 0, 0x51, 0x57, 0, 0, 0x67], true)
+    k1 := NumGet(v, Shm.qkVk + 8, "uchar") = 0x51 && NumGet(v, Shm.qkVk + 12, "uchar") = 0x67 && NumGet(v, Shm.qkVk + 13, "uchar") = 0 && NumGet(v, Shm.qkOn, "uint") = 1
+    r1 := gameModule.keyCastReady(), NumPut("uint", 1, v, Shm.qkState), r2 := gameModule.keyCastReady()
+    remap.pushKeys(), k2 := NumGet(v, Shm.qkOn, "uint")         ; not in a game here: off
+    NumPut("uint", 0, v, Shm.qkState)
+    TwcCheck(k1 && !r1 && r2 && k2 = 0, "quickcast keys: Q / W / Numpad 7 pushed and on; ready only once the module says so; off outside a game")
     ; quickcast's state and counts (layout 27): the Module check row, and why it isn't ready
     NumPut("uint", 1, v, Shm.qcState), NumPut("uint", 40, v, Shm.qcAsked), NumPut("uint", 30, v, Shm.qcClicked), NumPut("uint", 6, v, Shm.qcNoTarget)
     NumPut("uint", 1, v, Shm.qcNotFront), NumPut("uint", 3, v, Shm.qcCancelled)
@@ -236,7 +243,7 @@ TwcModuleRun() {
     NumPut("uint", 2, v, Shm.qcState), r2 := row(ModuleCheckRows([]), "Quickcast now")
     NumPut("uint", 2, v, Shm.probe), NumPut("uint", 1, v, Shm.qcState), why := gameModule.qcWhyNot(), r3 := row(ModuleCheckRows([]), "Quickcast now")
     NumPut("uint", 1, v, Shm.probe)
-    TwcCheck(r.mark = "✓" && r.detail = "ready · 40 asked: 30 clicked, 6 no target in time, 1 not in front, 3 called off" && r2.mark = "·" && InStr(r2.detail, "a game starting or ending")
+    TwcCheck(r.mark = "✓" && r.detail = "ready · 40 asked: 30 clicked, 6 no target in time, 1 not in front, 3 called off · keys as WFE: off, 0 pressed, 0 clicked" && r2.mark = "·" && InStr(r2.detail, "a game starting or ending")
         && InStr(why, "address check failed") && r3.mark = "✗" && gameModule.qcWhyNot() = "", "Quickcast now: " r.detail " / " r2.detail " / " r3.detail)
     ; Widescreen next to another widescreen mod (state 4): its own status line
     NumPut("uint", 4, v, Shm.wsState)

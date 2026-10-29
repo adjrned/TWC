@@ -500,6 +500,15 @@ int main() {
           && !memcmp(g_base + 0x3a8361, "\x3B\xCF\x0F\x84", 4) && !memcmp(g_base + 0x3a843c, "\xFF\x50\x24\x85\xC0\x75\x0E", 7)
           && !memcmp(g_base + 0x3a8451, "\x89\x3B", 2) && !memcmp(g_base + 0x3a8457, "\xC2\x08\x00", 3) && !memcmp(g_base + 0x3a8358, "\x8D\x9E\xB4\x01\x00\x00", 6),
           "the target mode: CTargetMode (vtable +AAA220) at [ui+0x210]; its Enter +3DD8F0 (vt+0x24, thiscall, ret 0, returns 1, one slot) runs in SetMode before [ui+0x1b4] is set (%d refs)", enterRefs);
+    // quickcast keys (KeyCast): the game's window procedure +0BAD40 (WFE's [0x1013ce14] for 0x1E00; fastcall(hwnd, msg), ret 8,
+    // msg in edi) only queues input: +0BAC80 (ret 0xc) writes an entry of the ring at +D05010 (+0BACC0), called for keys at
+    // +0BAE9D; [ui+0x3d0] is the UpperButtonBarFrame (+39C460 its name, stored at +39C471); CCommandButton's click (vt+0x6c,
+    // +13D7F0) is pinned above
+    CHECK(g_base[0x0bad3f] == 0xCC && !memcmp(g_base + 0x0bad4b, "\x8B\xD9\x57\x8B\xFA\x83\xFF\x1C", 8) && !memcmp(g_base + 0x0bacc0, "\x89\x1C\x8D", 3)
+          && *(DWORD *)(g_base + 0x0bacc3) == (DWORD)(g_base + 0xd05010) && SiteTarget(g_base + 0x0bae9d) == g_base + 0x0bac80 && !memcmp(g_base + 0x0bacf3, "\xC2\x0C\x00", 3)
+          && *(DWORD *)(g_base + 0x39c461) == (DWORD)(g_base + 0xaa9a60) && !strcmp((const char *)g_base + 0xaa9a60, "UpperButtonBarFrame")
+          && !memcmp(g_base + 0x39c471, "\x89\x87\xD0\x03\x00\x00", 6) && UI_UPPER_BAR == 0x3d0 && UI_CHAT_STATE == 0x3fc && UI_BUSY == 0x258,
+          "quickcast keys: the window procedure +0BAD40 queues input (+0BAC80, the ring at +D05010); [ui+0x3d0] is the UpperButtonBarFrame");
     Verdict();
     return g_fails;
 }

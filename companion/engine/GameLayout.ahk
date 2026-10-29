@@ -134,5 +134,10 @@ class Shm {
     static qcNoTarget := 2756
     static qcNotFront := 2760
     static qcCancelled := 2764
-    static size := 2768
+    static qkOn := 2768
+    static qkVk := 2772
+    static qkState := 2792
+    static qkPressed := 2796
+    static qkClicked := 2800
+    static size := 2804
 }

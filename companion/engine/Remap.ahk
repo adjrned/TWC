@@ -23,6 +23,7 @@ class RemapEngine {
     qcRecent := [], qcMissRun := 0      ; the last 10 quickcast hit delays (ms); misses in a row
     qcLate := 0                         ; the late-reticle watch running after a miss (lateWatch)
     qcTry := 0, qcStart := 0, qcBase := ""   ; the press being served: its try (1 = the press, 2+ = repeats while held), start, key
+    qkVks := []                         ; the game key (virtual key) of each quickcast slot for the game module (pushKeys)
 
     __New() {
         this.migrate()
@@ -168,6 +169,10 @@ class RemapEngine {
             reg.refresh()
         }
         this.registered := []
+        this.qkVks := []
+        for group in ["card", "inv"]
+            loop this.count(group)
+                this.qkVks.Push(this.qcAllowed(group, A_Index) && Integer(Ini(this.section, group "QC" A_Index, 0)) ? GetKeyVK(this.gameKey(group, A_Index)) : 0)
         used := Map()                           ; every key a slot was given
         for group in ["card", "inv", "mouse"]
             loop this.count(group)
@@ -193,11 +198,23 @@ class RemapEngine {
                     this.registered.Push(RegisterHotkey(key " up", this.released.Bind(this, HotkeyBase(key)), WarcraftIII, true))
             }
         }
+        this.pushKeys()
     }
 
     refresh() {
         for reg in this.registered
             reg.refresh()
+        this.pushKeys()
+    }
+    ; the game module's quickcast keys (1.28f, as WFE: it presses the slot's button as
+    ; the key comes): each slot's game key, on only while the companion's keys are
+    ; (in a game, not paused, chat closed), since the keys also reach it straight
+    pushKeys() {
+        global gameModule, toolEnabled, chatting, inGame
+        if !IsSet(gameModule) || !gameModule
+            return
+        on := gameModule.enabled && gameModule.quickcast && toolEnabled && !chatting && inGame && InStr(WC3WindowKey(), "reforged") != 1
+        gameModule.pushKeys(this.qkVks, on)
     }
 
     ; -- actions -------------------------------------------------------------
@@ -242,6 +259,19 @@ class RemapEngine {
             if wasReady != -1 || !inGameQc
                 DebugLog("quickcast: the game hook " (inGameQc ? "is ready again" : "isn't ready: " gameModule.qcWhyNot()))
             wasReady := inGameQc
+        }
+        ; 1.28f: the game module presses the slot's button as the key comes and clicks at once
+        ; (as WFE): only the key goes. Held, the key's own repeat presses again (WFE's AutoCast:
+        ; until it's let go), unless [Quickcast] repeat is off
+        if inGameQc && gameModule.keyCastReady() {
+            static told := 0
+            if !s.repeat && !IsWheel(base) && this.holding.Get(base, false)
+                return                          ; the key's repeat, repeat off
+            this.holding[base] := true
+            SendInput(q this.keyText(game))
+            if told++ < 3
+                DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
+            return
         }
         cal := !inGameQc && screenOn ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /

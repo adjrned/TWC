@@ -11,6 +11,7 @@
 ; [name, ok pattern, refused pattern] per feature, matched against log lines
 ModuleCheckFeatures() => [
     ["Quickcast through the game", "quickcast: clicked", ""],
+    ["Quickcast keys (as WFE)", "quickcast keys: key .* pressed slot|quickcast keys: on \(", "quickcast keys: (pressing a button faulted|the game window couldn.t be subclassed)"],
     ["Quickcast on the game thread (target mode)", "quickcast: clicked as the game opened the target mode|quickcast: the target mode.s Enter is ours", "quickcast: vtable \+AAA220 entry|quickcast: the target mode.s vtable .* isn.t where|quickcast: the target mode hook faulted"],
     ["Cooldown and buff timers", "timers: game getter at .* checks out|timers in the game: drawing", "timers: refused|frames: refused|no more frames in this session"],
     ["Cooldowns on the card", "timers in the game: the first cooldown drawn", "cooldowns: the command card .* isn't readable"],
@@ -102,7 +103,8 @@ ModuleCheckRows(log) {
         rows.Push(why != "" ? { mark: "✗", name: "Quickcast now", detail: why }
             : !s.qc ? { mark: "·", name: "Quickcast now", detail: "ready (an older module: no counts)" }
             : { mark: s.qc.state = 1 ? "✓" : "·", name: "Quickcast now", detail: GameModuleEngine.QcStateText(s.qc.state) " · " s.qc.asked " asked: "
-                . s.qc.clicked " clicked, " s.qc.noTarget " no target in time, " s.qc.notFront " not in front, " s.qc.cancelled " called off" })
+                . s.qc.clicked " clicked, " s.qc.noTarget " no target in time, " s.qc.notFront " not in front, " s.qc.cancelled " called off"
+                . (s.qk ? " · keys as WFE: " (s.qk.state = 1 ? "on" : s.qk.state = 3 ? "refused" : "off") ", " s.qk.pressed " pressed, " s.qk.clicked " clicked" : "") })
     }
     ui := find("game UI at .*vtable checks out")
     rows.Push(ui != "" ? { mark: "✓", name: "Game UI", detail: ui } : { mark: "·", name: "Game UI", detail: "not seen yet: start a game (not just the lobby)" })

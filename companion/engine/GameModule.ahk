@@ -72,6 +72,7 @@ class GameModuleEngine {
         if (v := this.view(pid)) {
             if this.dropUnloaded(pid, v)
                 return                          ; loaded again on the next round
+            try remap.pushKeys()                ; the quickcast keys (a new module starts without them)
             if NumGet(v, Shm.magic, "uint") = 0x54574331 && NumGet(v, Shm.layout, "uint") >= 13 && NumGet(v, Shm.status, "uint") = 1
                 && !NumGet(v, Shm.unload, "uint") && (st := GameModuleEngine.FileStamp(this.dir "\twc-game.dll")) && NumGet(v, Shm.stamp, "uint") != st {
                 this.swapping := pid, this.swapAt := A_TickCount
@@ -188,7 +189,7 @@ class GameModuleEngine {
     ; probe: 0 not run, 1 passed, 2 failed (probeText says why); ui: 1 once the game UI checked out; beat: ms
     ; since the module's last heartbeat; qc (layout 27, else 0): { state, asked, clicked, noTarget, notFront, cancelled }
     state() {
-        out := { loaded: 0, layout: 0, build: 0, status: -1, live: 0, targeting: 0, probe: 0, ui: 0, probeText: "", beat: 0, qc: 0 }
+        out := { loaded: 0, layout: 0, build: 0, status: -1, live: 0, targeting: 0, probe: 0, ui: 0, probeText: "", beat: 0, qc: 0, qk: 0 }
         if !(v := this.live())
             return out
         out.loaded := 1, out.layout := NumGet(v, Shm.layout, "uint")
@@ -198,6 +199,8 @@ class GameModuleEngine {
         out.targeting := NumGet(v, Shm.targeting, "uint")
         if out.layout >= 2
             out.probe := NumGet(v, Shm.probe, "uint"), out.ui := NumGet(v, Shm.ui, "uint"), out.probeText := StrGet(v + Shm.probeText, 112, "CP0")
+        out.qk := out.layout >= 28 ? { state: NumGet(v, Shm.qkState, "uint"), on: NumGet(v, Shm.qkOn, "uint"),
+            pressed: NumGet(v, Shm.qkPressed, "uint"), clicked: NumGet(v, Shm.qkClicked, "uint") } : 0
         if out.layout >= 27
             out.qc := { state: NumGet(v, Shm.qcState, "uint"), asked: NumGet(v, Shm.qcAsked, "uint"), clicked: NumGet(v, Shm.qcClicked, "uint"),
                 noTarget: NumGet(v, Shm.qcNoTarget, "uint"), notFront: NumGet(v, Shm.qcNotFront, "uint"), cancelled: NumGet(v, Shm.qcCancelled, "uint") }
@@ -218,6 +221,20 @@ class GameModuleEngine {
         s := this.state()
         return s.live && s.layout >= 2 && s.probe = 1
     }
+    ; -- quickcast keys as WFE does them (layout 28) ------------------------------
+    ; The module presses a quickcast key's own button on the game thread as the
+    ; key comes (KeyCast) and clicks at once if the game wants a target: the
+    ; companion only sends the key. vks: the game key of each slot (12 card, row
+    ; by row, then 6 inventory; 0 = not quickcast); on: 0 while chat is open etc.
+    pushKeys(vks, on) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 28
+            return
+        loop 20
+            NumPut("uchar", A_Index <= vks.Length ? vks[A_Index] : 0, v, Shm.qkVk + A_Index - 1)
+        NumPut("uint", on ? 1 : 0, v, Shm.qkOn)
+    }
+    ; the module is handling the keys (qcReady too: alive, checked)
+    keyCastReady() => this.qcReady() && (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 28 && NumGet(v, Shm.qkState, "uint") = 1
     ; why qcReady is false ("" when it's true), for the log and the Module check
     qcWhyNot() {
         if !this.enabled
