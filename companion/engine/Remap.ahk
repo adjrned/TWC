@@ -22,6 +22,7 @@ class RemapEngine {
     holding := Map()            ; quickcast key -> held (cleared by its key-up hotkey)
     qcRecent := [], qcMissRun := 0      ; the last 10 quickcast hit delays (ms); misses in a row
     qcLate := 0                         ; the late-reticle watch running after a miss (lateWatch)
+    qcTry := 0, qcStart := 0, qcBase := ""   ; the press being served: its try (1 = the press, 2+ = repeats while held), start, key
 
     __New() {
         this.migrate()
@@ -244,40 +245,71 @@ class RemapEngine {
                 : "Quickcast isn't set up for this window size (" WC3WindowName(k) "): Remap page > Screen > Options", "", 6000)
         }
         this.holding[base] := true, start := A_TickCount
+        this.qcStart := start, this.qcBase := base
+        hits := 0
         loop {
-            hit := false
+            this.qcTry := A_Index, hit := false
             if inGameQc
                 hit := this.quickModule(game, q, A_Index > 1)
             else if cal
                 hit := this.quickSmart(game, q, cal, A_Index > 1)
             else
-                SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only")
-            if !s.repeat || !this.waitHeld(base, start, hit ? Max(s.interval, s.castGap) : s.interval)
+                SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only" this.tryTag())
+            hits += hit
+            if !s.repeat {
+                why := "repeat while held is off"
+                break
+            }
+            if (why := this.waitHeld(base, start, hit ? Max(s.interval, s.castGap) : s.interval)) != ""
                 break
         }
-        this.holding[base] := false
+        ; how the press ended; a repeat logs it always, a single press only when not let go as usual
+        tries := this.qcTry
+        if tries > 1 || why != "the key was let go"
+            DebugLog("quickcast " game ": done after " tries (tries = 1 ? " try" : " tries") " (" hits " cast) in "
+                . Round((A_TickCount - start) / 1000, 1) " s: " why)
+        this.holding[base] := false, this.qcTry := 0
     }
-    ; wait ms while the key stays held (checked often, so letting go ends it at once)
+    ; wait ms while the key stays held (checked often, so letting go ends it at
+    ; once) -> "" if it still is, or why the repeat ends (heldWhy)
     waitHeld(base, start, ms) {
         endAt := A_TickCount + ms
         loop {
-            if !this.stillHeld(base, start)
-                return false
+            if (why := this.heldWhy(base, start)) != ""
+                return why
             if A_TickCount >= endAt
-                return true
+                return ""
             Sleep(Min(15, endAt - A_TickCount))
         }
     }
     released(base) {
         this.holding[base] := false
     }
-    stillHeld(base, start) {
+    ; "" while the key is held and the repeat may go on, else why not
+    heldWhy(base, start) {
         global toolEnabled, chatting, inGame
         try down := !IsWheel(base) && GetKeyState(base, "P")
         catch
             down := false
-        return this.holding.Get(base, false) && down && WinActive(WarcraftIII)
-            && toolEnabled && !chatting && inGame && A_TickCount - start < 20000
+        return !this.holding.Get(base, false) ? "the key was let go"
+            : !down ? "the key isn't down any more (its key-up never came)"
+            : !WinActive(WarcraftIII) ? "the game isn't in front"
+            : !toolEnabled ? "the tool went off"
+            : chatting ? "the chat is open"
+            : !inGame ? "not in a game"
+            : A_TickCount - start >= 20000 ? "20 s held, the most a repeat lasts"
+            : ""
+    }
+    ; for the log: which try of a held key this is (the press itself: nothing),
+    ; and whether the key was still down then, to tell a repeat from a lone press
+    tryTag() {
+        if this.qcTry <= 1
+            return ""
+        try down := GetKeyState(this.qcBase, "P")
+        catch
+            down := false
+        return " [repeat " (this.qcTry - 1) ", " Round((A_TickCount - this.qcStart) / 1000, 1) " s after the press, key "
+            . (down ? "down" : "up") (this.holding.Get(this.qcBase, false) ? "" : ", key-up seen") "]"
     }
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
@@ -298,7 +330,7 @@ class RemapEngine {
         if again && quickcast.targeting(cal) {
             SendInput(q "{Click}")
             this.qcMissRun := 0
-            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): clicked")
+            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): clicked" this.tryTag())
             return true
         }
         limit := this.lookLimit()
@@ -316,7 +348,7 @@ class RemapEngine {
                 ms := QpcMs() - t
                 this.noteHit(ms)
                 DebugLog("quickcast " game ": clicked " Round(ms, 1) " ms after the key (" checks " reads, "
-                    . (quickcast.fromWindow.Get(WC3WindowKey(), false) ? "game window" : "screen") ")")
+                    . (quickcast.fromWindow.Get(WC3WindowKey(), false) ? "game window" : "screen") ")" this.tryTag())
                 return true
             }
         }
@@ -329,7 +361,7 @@ class RemapEngine {
             quickcast.fromWindow[k] := !win, quickcast.misses := 0
             SendInput(q "{Click}")
             DebugLog("quickcast " game ": the " (win ? "game window's" : "screen's") " picture was stale, the "
-                . (win ? "screen" : "game window") " shows targeting: clicked, reading that way from now on")
+                . (win ? "screen" : "game window") " shows targeting: clicked, reading that way from now on" this.tryTag())
             this.qcMissRun := 0
             return true
         }
@@ -353,7 +385,7 @@ class RemapEngine {
                 . viaScreen " / game window " viaWindow " / window " Format("0x{:X}", hwnd) " " proc ' "' WinGetTitle(hwnd) '" at ' cx "," cy " " cw "x" ch)
         }
         DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 8) in " checks
-            . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs)
+            . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs this.tryTag())
         return false
     }
     ; how long to look for the reticle after the key (see quickSmart)
@@ -377,7 +409,7 @@ class RemapEngine {
         this.stopLate()
         if again && gameModule.qcWait(seq := gameModule.qcAsk(20, q != ""), 20) = 1 {
             this.qcMissRun := 0
-            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): the game module clicked")
+            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): the game module clicked" this.tryTag())
             return true
         }
         limit := this.lookLimit()
@@ -387,11 +419,11 @@ class RemapEngine {
         if r = 1 {
             ms := gameModule.qcMs()
             this.qcMissRun := 0, this.noteHit(ms)
-            DebugLog("quickcast " game ": the game module clicked " ms " ms after the key")
+            DebugLog("quickcast " game ": the game module clicked " ms " ms after the key" this.tryTag())
             return true
         }
         this.qcMissRun++
-        DebugLog("quickcast " game ": no click, " (r = 3 ? "the game wanted a target but wasn't in front" : "the game didn't want a target") " within " Round(limit) " ms (game module)")
+        DebugLog("quickcast " game ": no click, " (r = 3 ? "the game wanted a target but wasn't in front" : "the game didn't want a target") " within " Round(limit) " ms (game module)" this.tryTag())
         if r = 2
             this.lateWatch(game, q, 0, t)
         return false
@@ -417,7 +449,7 @@ class RemapEngine {
     ; cal = 0: through the game module (it clicks; this only ends the request early)
     lateWatch(game, q, cal, t) {
         global quickcast, gameModule
-        endAt := A_TickCount + 500, ih := InputHook("V")
+        endAt := A_TickCount + 500, ih := InputHook("V"), tag := this.tryTag()
         seq := cal ? 0 : gameModule.qcAsk(500, q != "")
         ih.MinSendLevel := 1                    ; your keys, not the companion's own
         ih.KeyOpt("{All}", "N")
@@ -437,7 +469,7 @@ class RemapEngine {
                 if r = 1 {
                     ms := QpcMs() - t
                     this.noteHit(ms), this.qcMissRun := 0
-                    DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): the game module clicked")
+                    DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): the game module clicked" tag)
                 }
                 return
             }
@@ -446,7 +478,7 @@ class RemapEngine {
                 SendInput(q "{Click}")
                 ms := QpcMs() - t
                 this.noteHit(ms), this.qcMissRun := 0
-                DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): clicked")
+                DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): clicked" tag)
             }
         }
         this.qcLate := { fn: tick, ih: ih, seq: seq }

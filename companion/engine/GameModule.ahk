@@ -18,7 +18,7 @@
 ; ============================================================================
 class GameModuleEngine {
     section := "Game"
-    tried := Map()              ; game pid -> { n, at, done, fresh }: loading tried n times (a failed one again after 10 s, 3 at most)
+    tried := Map()              ; game pid -> { n, at, done, fresh }: loading tried n times (a failed one again after 10 s; after 3, once a minute)
     views := Map()              ; game pid -> { map, view } of its shared memory
     wakes := Map()              ; game pid -> its quickcast event (0 if it has none)
     swapping := 0               ; the game pid whose module is being replaced (0 = none)
@@ -81,9 +81,11 @@ class GameModuleEngine {
             return
         }
         ; once per game, but a load that failed (files being updated, the injector) is tried again:
-        ; before, one failure left the game without its module (and 1.28f without quickcast) until a restart
+        ; before, one failure left the game without its module (and 1.28f without quickcast) until a restart.
+        ; After 3 failures in a row, once a minute (it stopped for good: quickcast went screen-only until
+        ; the companion was restarted)
         t := this.tried.Get(pid, 0)
-        if t && (t.done || t.n >= 3 || A_TickCount - t.at < 10000)
+        if t && (t.done || A_TickCount - t.at < (t.n >= 3 ? 60000 : 10000))
             return
         if !t
             this.tried[pid] := t := { n: 0, at: 0, done: false, fresh: 0 }
@@ -99,10 +101,10 @@ class GameModuleEngine {
     injectOnce(pid, t) {
         exe := this.dir "\twc-inject.exe"
         if !(dll := this.loadCopy(t.fresh)) || !FileExist(exe)
-            return DebugLog("game module: native\ files missing (try " t.n " of 3)")
+            return DebugLog("game module: native\ files missing (try " t.n ")")
         try code := this.runInjector(exe, pid, dll)
         catch as e
-            return DebugLog("game module: couldn't start twc-inject: " e.Message " (try " t.n " of 3)")
+            return DebugLog("game module: couldn't start twc-inject: " e.Message " (try " t.n ")")
         if code = 2 && !this.view(pid) {
             ; "already in", but no module answers: a retired one of this build (a live swap back to
             ; it) holds that file name, and the game would hand it back. A copy under another name loads
@@ -110,7 +112,8 @@ class GameModuleEngine {
             return DebugLog("game module: a retired module of this build is in the game: loading a fresh copy (pid " pid ")")
         }
         t.done := code = 0 || code = 2
-        DebugLog("game module: " (code = 0 ? "loaded into" : code = 2 ? "already in" : "couldn't load into") " the game (pid " pid ", code " code (t.done ? "" : ", try " t.n " of 3") ")")
+        DebugLog("game module: " (code = 0 ? "loaded into" : code = 2 ? "already in" : "couldn't load into") " the game (pid " pid ", code " code
+            . (t.done ? "" : t.n < 3 ? ", try " t.n " of 3" : ", try " t.n ": again in a minute") ")")
     }
     runInjector(exe, pid, dll) => RunWait('"' exe '" ' pid ' "' dll '"', this.dir, "Hide")
 
@@ -189,7 +192,7 @@ class GameModuleEngine {
             return out
         out.loaded := 1, out.layout := NumGet(v, Shm.layout, "uint")
         out.build := NumGet(v, Shm.build, "uint"), out.status := NumGet(v, Shm.status, "uint")
-        out.live := out.status = 1 && A_TickCount - NumGet(v, Shm.heartbeat, "uint") < 1000
+        out.live := out.status = 1 && ((A_TickCount - NumGet(v, Shm.heartbeat, "uint")) & 0xFFFFFFFF) < 1000     ; 32-bit ticks (the module's)
         out.targeting := NumGet(v, Shm.targeting, "uint")
         if out.layout >= 2
             out.probe := NumGet(v, Shm.probe, "uint"), out.ui := NumGet(v, Shm.ui, "uint"), out.probeText := StrGet(v + Shm.probeText, 112, "CP0")

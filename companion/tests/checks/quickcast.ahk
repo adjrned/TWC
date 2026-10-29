@@ -32,6 +32,17 @@ TwcQuickcastRun() {
     quickcast.noteMiss(c, 5)
     TwcCheck(c.empty[1] = c.orig[1], "the 6th near miss in a row resets to the setup")
     TwcCheck(WC3WindowName("classicwide_1920x1080") = "1.28 widescreen 1920x1080" && WC3WindowName("reforged_2560x1440") = "Reforged 2560x1440", "window names")
+    ; repeat while held: why it ends, and the tag on each repeat's log line (F24: never down here)
+    remap.holding["f24"] := false
+    w1 := remap.heldWhy("f24", A_TickCount)
+    remap.holding["f24"] := true
+    w2 := remap.heldWhy("f24", A_TickCount)
+    remap.qcTry := 1, remap.qcStart := A_TickCount - 2500, remap.qcBase := "f24"
+    t1 := remap.tryTag()
+    remap.qcTry := 4, t2 := remap.tryTag()
+    remap.holding["f24"] := false, t3 := remap.tryTag(), remap.qcTry := 0
+    TwcCheck(w1 = "the key was let go" && InStr(w2, "isn't down"), "heldWhy: let go / no key-up (" w1 " / " w2 ")")
+    TwcCheck(t1 = "" && InStr(t2, "[repeat 3, 2.5 s after the press, key up]") && InStr(t3, "key up, key-up seen]"), "tryTag: none on the press, then the repeat's number and the key (" t2 t3 ")")
     TwcCheckDone()
 }
 SetTimer(TwcQuickcastRun, -4000)
