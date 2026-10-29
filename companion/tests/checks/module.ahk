@@ -226,6 +226,9 @@ TwcModuleRun() {
     ll := ModuleCheckLines(t), l0 := ModuleCheckLines("x ---- twc-game.dll loaded into pid 2`ny probe passed`n")
     TwcCheck(ll.now.Length = 4 && SubStr(ll.now[1], 1, 1) = "f" && SubStr(ll.now[4], 1, 1) = "i" && ll.before.Length = 3 && SubStr(ll.before[1], 1, 1) = "c"
         && l0.now.Length = 2 && !l0.before.Length, "report log: from the last real load (" ll.now.Length " lines), the old module's 3 unloading lines; no swap: none")
+    r := row(ModuleCheckRows(["2026-10-29 10:00:00.000  quickcast: the target mode's Enter is ours (the click goes out as the game asks for a target)"]), "Quickcast on the game thread (target mode)")
+    r2 := row(ModuleCheckRows(["2026-10-29 10:00:00.000  quickcast: vtable +AAA220 entry +24 is 12345678, not the game's Enter: left as it is (the worker clicks)"]), "Quickcast on the game thread (target mode)")
+    TwcCheck(r.mark = "✓" && r2.mark = "✗", "the target mode hook's row: taken " r.mark ", someone else's entry " r2.mark)
     ; quickcast's state and counts (layout 27): the Module check row, and why it isn't ready
     NumPut("uint", 1, v, Shm.qcState), NumPut("uint", 40, v, Shm.qcAsked), NumPut("uint", 30, v, Shm.qcClicked), NumPut("uint", 6, v, Shm.qcNoTarget)
     NumPut("uint", 1, v, Shm.qcNotFront), NumPut("uint", 3, v, Shm.qcCancelled)

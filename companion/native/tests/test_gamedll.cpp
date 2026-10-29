@@ -484,6 +484,22 @@ int main() {
           && g_base[0x13c425] == 0xC3 && g_base[0x13c429] == 0xC3 && !memcmp(g_base + 0x13c41f, "\xB8\x01\x00\x00\x00", 5) && !memcmp(g_base + 0x13c426, "\x33\xC0", 2)
           && g_base[0x405c84] == 0xC2 && *(WORD *)(g_base + 0x405c85) == 4,
           "the name tip: CUnitTip's vtable +0x68 is the show (+13C390, ret 0, eax 1 / 0) the hover code calls (+405BE0); one tip, at +D328C4");
+    // quickcast as the game opens the target mode: [ui+0x210] is a CTargetMode (made by +39CFA0, called at +39CC47, stored at
+    // +39CC7E; the ctor writes vtable +AAA220 at +39CFCD); SetMode +3A8330 returns for the mode it's in (+3A8361 cmp / je), calls
+    // the new mode's vt+0x24 (+3A843C) and writes [ui+0x1b4] (+3A8451) only when it gave nonzero (+3A8441), ret 8; Enter
+    // +3DD8F0 is thiscall (+3DD91E mov edi, ecx), its one exit returns 1 (+3DDF07, ret +3DDF27), and only that slot holds it
+    int enterRefs = 0;
+    for (DWORD o = 0; o + 4 <= g_imageSize; o += 4)
+        enterRefs += *(DWORD *)(g_base + o) == (DWORD)(g_base + RVA_TARGETMODE_ENTER);
+    const BYTE *tm = g_base + RVA_TARGETMODE_VT;
+    CHECK(Rtti(RVA_TARGETMODE_VT, "CTargetMode") && *(DWORD *)(tm + TARGETMODE_ENTER) == (DWORD)(g_base + RVA_TARGETMODE_ENTER) && enterRefs == 1
+          && g_base[RVA_TARGETMODE_ENTER - 1] == 0xCC && !memcmp(g_base + 0x3dd91e, "\x8B\xF9", 2)
+          && !memcmp(g_base + 0x3ddf07, "\xB8\x01\x00\x00\x00", 5) && g_base[0x3ddf27] == 0xC3
+          && !memcmp(g_base + 0x39cfcd, "\xC7\x06", 2) && *(DWORD *)(g_base + 0x39cfcf) == (DWORD)tm && SiteTarget(g_base + 0x39cc47) == g_base + 0x39cfa0
+          && !memcmp(g_base + 0x39cc7e, "\x89\xB7\x10\x02\x00\x00", 6) && UI_TARGET_MODE == 0x210 && UI_MODE == 0x1b4
+          && !memcmp(g_base + 0x3a8361, "\x3B\xCF\x0F\x84", 4) && !memcmp(g_base + 0x3a843c, "\xFF\x50\x24\x85\xC0\x75\x0E", 7)
+          && !memcmp(g_base + 0x3a8451, "\x89\x3B", 2) && !memcmp(g_base + 0x3a8457, "\xC2\x08\x00", 3) && !memcmp(g_base + 0x3a8358, "\x8D\x9E\xB4\x01\x00\x00", 6),
+          "the target mode: CTargetMode (vtable +AAA220) at [ui+0x210]; its Enter +3DD8F0 (vt+0x24, thiscall, ret 0, returns 1, one slot) runs in SetMode before [ui+0x1b4] is set (%d refs)", enterRefs);
     Verdict();
     return g_fails;
 }

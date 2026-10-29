@@ -5988,6 +5988,106 @@ static void Click(DWORD flags) {
         Key(in, n, lifted[i], false);
     SendInput(n, in, sizeof(INPUT));
 }
+static void (*g_click)(DWORD) = Click;     // the tests' own (they never send clicks)
+
+// -- answering a quickcast request -------------------------------------------------
+// Each request is answered once, by whoever gets to it first: the target mode's
+// Enter on the game thread (TargetEnter) or the worker's poll (ServeQuickcast).
+static volatile LONG g_qcClaim;     // the last request claimed for an answer
+static volatile LONG g_qcSeenSeq;   // the request the worker (or the hook) saw first, and when
+static volatile DWORD g_qcSeenAt;
+static SRWLOCK g_qcLock = SRWLOCK_INIT;  // QcCount: from either thread
+static bool ClaimRequest(LONG seq) { return InterlockedExchange(&g_qcClaim, seq) != seq; }
+static void QcCount(DWORD result, bool cancelled, DWORD ms);
+static void Answer(LONG seq, DWORD result, DWORD ms) {
+    Shared *s = g_shared;
+    s->qcMs = ms;
+    s->qcResult = result;
+    InterlockedExchange(&s->qcDone, seq);
+    AcquireSRWLockExclusive(&g_qcLock);
+    QcCount(result, result == 2 && !s->qcUntil, ms);
+    ReleaseSRWLockExclusive(&g_qcLock);
+}
+
+// -- quickcast the moment the game asks for a target (as WFE: on the game thread) ----
+// WFE clicks right after the game handled the key, on the game thread, when [ui+0x1b4] ==
+// [ui+0x210] (its key dispatch hook, 0x10067ad2..af9, fire 0x10066640: SendInput LEFTDOWN /
+// LEFTUP at the cursor); no polling, no other process in between. Here the same moment is
+// taken from the target mode itself: [ui+0x210] is the game's CTargetMode (vtable +0xaaa220,
+// RTTI .?AVCTargetMode@@, made by +0x39cfa0, the only writer of that vtable: +0x39cfcd).
+// CGameUI's SetMode +0x3a8330 (thiscall(ui, mode, flag), ret 8) returns at once for the mode
+// it's in (+0x3a8361 je), else lets the old one go and calls the new one's Enter, vtable +0x24
+// (+0x3a843c), then writes [ui+0x1b4] (+0x3a8451) only if Enter gave nonzero. CTargetMode's
+// Enter is +0x3dd8f0 (thiscall, ret 0; its one exit returns 1, +0x3ddf07), held only in that
+// vtable slot (+0xaaa244). Ours calls the game's, then, with a request open (not past its
+// deadline), the game in front and the mode being the game UI's own target mode, clicks: the
+// click is queued for the game's next input pass, as WFE's. Requests nobody clicked here (the
+// entry refused, a target mode already up when the request came, self-cast) stay the worker's.
+static const DWORD RVA_TARGETMODE_VT = 0xaaa220, TARGETMODE_ENTER = 0x24, RVA_TARGETMODE_ENTER = 0x3dd8f0;
+typedef int(__fastcall *EnterFn)(void *, int);
+static bool g_tmHooked;
+static bool SelfHeld();
+static void QcOnEnter(void *mode) {
+    Shared *s = g_shared;
+    LONG seq = s->qcSeq;
+    DWORD until = s->qcUntil, now = GetTickCount();
+    if (seq == s->qcDone || seq == g_qcClaim || !until || (LONG)(now - until) >= 0 || SelfHeld() || !g_gameInFront() || !g_getUi)
+        return;
+    BYTE *ui = (BYTE *)g_getUi(0, 0);
+    if (!ui || *(DWORD *)ui != g_uiVtable || *(void **)(ui + UI_TARGET_MODE) != mode || !ClaimRequest(seq))
+        return;
+    g_click(s->qcFlags);
+    if (g_qcSeenSeq != seq)
+        g_qcSeenSeq = seq, g_qcSeenAt = now;
+    Answer(seq, 1, now - g_qcSeenAt);
+    static int clicks;
+    if (clicks++ < 3)
+        Log("quickcast: clicked as the game opened the target mode, %lu ms after the request (on the game thread)", now - g_qcSeenAt);
+}
+static int __fastcall TargetEnter(void *mode, int edx) {
+    int r = ((EnterFn)(g_base + RVA_TARGETMODE_ENTER))(mode, edx);
+    if (r) {
+        __try {
+            QcOnEnter(mode);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            static bool told;
+            if (!told)
+                told = true, Log("quickcast: the target mode hook faulted: the worker clicks instead");
+        }
+    }
+    return r;
+}
+static bool SwapTargetEnter(bool on) {
+    if (on == g_tmHooked)
+        return true;
+    DWORD *slot = (DWORD *)(g_base + RVA_TARGETMODE_VT + TARGETMODE_ENTER), game = (DWORD)(g_base + RVA_TARGETMODE_ENTER), ours = (DWORD)TargetEnter;
+    if (*slot != (on ? game : ours)) {
+        Log("quickcast: vtable +%06lX entry +%X is %08lX, not the %s: left as it is (the worker clicks)", RVA_TARGETMODE_VT, TARGETMODE_ENTER, *slot, on ? "game's Enter" : "hook");
+        if (!on)
+            g_tmHooked = false;
+        return false;
+    }
+    DWORD old;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        return false;
+    InterlockedExchange((volatile LONG *)slot, (LONG)(on ? ours : game));
+    VirtualProtect(slot, 4, old, &old);
+    g_tmHooked = on;
+    Log(on ? "quickcast: the target mode's Enter is ours (the click goes out as the game asks for a target)" : "quickcast: the target mode's Enter is the game's again");
+    return true;
+}
+// the worker's part: once the probe passed, check the vtable once and take the entry (kept until unload)
+static void FollowTargetMode() {
+    static int checked;             // 1 taken, 2 refused
+    if (!g_getUi || checked)
+        return;
+    char rtti[64] = "";
+    RttiName((DWORD)(g_base + RVA_TARGETMODE_VT), g_imageSize, rtti, sizeof(rtti));
+    bool ok = FnStart(RVA_TARGETMODE_ENTER) && GameVtable(RVA_TARGETMODE_VT, { TARGETMODE_ENTER }) && (!rtti[0] || !strcmp(rtti, ".?AVCTargetMode@@"));
+    if (!ok)
+        Log("quickcast: the target mode's vtable +%06lX isn't where 1.28f has it (RTTI '%s'): the worker clicks", RVA_TARGETMODE_VT, rtti);
+    checked = ok && SwapTargetEnter(true) ? 1 : 2;
+}
 
 // -- the loop ----------------------------------------------------------------------
 // A quickcast request is answered once: clicked when the game waits for a
@@ -6025,6 +6125,7 @@ static void SwitchesOff() {
     s->qcUntil = 0;
 }
 static void RestoreAll() {
+    SwapTargetEnter(false);
     if (g_portraitSlot)
         SwapPortrait(false);
     SwapTooltips(false);
@@ -6148,11 +6249,43 @@ static void QcCount(DWORD result, bool cancelled, DWORD ms) {
     n = clicks = none = front = off = 0;
 }
 
+// the worker's answer to an open request seq (t: this round's Targeting()); handled: the
+// last one it's done with. A request the target mode's hook already clicked is left alone
+static void ServeQuickcast(LONG seq, int t, DWORD now, LONG &handled) {
+    static int clicks;
+    if (g_qcSeenSeq != seq)
+        g_qcSeenSeq = seq, g_qcSeenAt = now;
+    DWORD askedAt = g_qcSeenAt;
+    if (g_shared->qcDone == seq || g_qcClaim == seq) {
+        handled = seq;              // answered on the game thread (or being answered)
+        return;
+    }
+    DWORD result = 0;
+    if (t == 1 && g_gameInFront() && SelfHeld() && g_shared->scState == 1)
+        result = 1;                     // self-cast takes this aim: no click at the cursor
+    else if (t == 1 && g_gameInFront())
+        result = 1;
+    else if (!g_shared->qcUntil || (LONG)(now - g_shared->qcUntil) >= 0)
+        result = t == 1 ? 3 : 2;
+    if (!result)
+        return;
+    if (!ClaimRequest(seq)) {
+        handled = seq;
+        return;
+    }
+    if (result == 1 && !(SelfHeld() && g_shared->scState == 1)) {
+        g_click(g_shared->qcFlags);
+        if (clicks++ < 3)
+            Log("quickcast: clicked %lu ms after the request", now - askedAt);
+    }
+    Answer(seq, result, now - askedAt);
+    handled = seq;
+}
+
 static void Run() {
     LONG handled = g_shared->qcDone;     // not qcSeq: a request made while probing (probe already 1) is answered too
-    DWORD askedAt = 0;
+    g_qcClaim = handled;
     bool fast = false;
-    int clicks = 0;
     DWORD timersAt = 0;
     while (!g_stop) {
         DWORD now = GetTickCount();
@@ -6170,7 +6303,7 @@ static void Run() {
         bool asked = seq != handled;
         if (asked && !fast) {
             timeBeginPeriod(1);         // 1 ms sleeps while a request is open
-            fast = true, askedAt = now;
+            fast = true;
         }
         int t = Targeting();
         g_shared->targeting = t == 1;
@@ -6187,30 +6320,14 @@ static void Run() {
         FollowPortrait();
         FollowTooltips();
         FollowUnitTip();
+        FollowTargetMode();
         QueueDisplay();
         QueueFrames();
         LONG cseq = g_shared->cmdSeq;
         if (cseq != g_shared->cmdDone)
             ServeCommand(cseq);
-        if (asked) {
-            DWORD result = 0;
-            if (t == 1 && GameInFront() && SelfHeld() && g_shared->scState == 1)
-                result = 1;                     // self-cast takes this aim: no click at the cursor
-            else if (t == 1 && GameInFront()) {
-                Click(g_shared->qcFlags);
-                result = 1;
-                if (clicks++ < 3)
-                    Log("quickcast: clicked %lu ms after the request", now - askedAt);
-            } else if (!g_shared->qcUntil || (LONG)(now - g_shared->qcUntil) >= 0)
-                result = t == 1 ? 3 : 2;
-            if (result) {
-                g_shared->qcMs = now - askedAt;
-                g_shared->qcResult = result;
-                g_shared->qcDone = seq;
-                handled = seq;
-                QcCount(result, result == 2 && !g_shared->qcUntil, now - askedAt);
-            }
-        }
+        if (asked)
+            ServeQuickcast(seq, t, now, handled);
         if (fast && seq == handled) {
             timeEndPeriod(1);
             fast = false;

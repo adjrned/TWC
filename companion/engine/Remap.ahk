@@ -420,9 +420,12 @@ class RemapEngine {
             DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): the game module clicked" this.tryTag())
             return true
         }
+        ; the request first, then the key: the module clicks as the game opens the target mode
+        ; (on the game thread), which can be before a request written after the key
         limit := this.lookLimit()
+        seq := gameModule.qcAsk(limit, q != "")
         SendInput(q this.keyText(game))
-        t := QpcMs(), seq := gameModule.qcAsk(limit, q != "")
+        t := QpcMs()
         r := gameModule.qcWait(seq, limit)
         if r = 1 {
             ms := gameModule.qcMs()
