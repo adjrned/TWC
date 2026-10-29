@@ -76,6 +76,13 @@ ModuleCheckRows(log) {
         rows.Push(s.probe = 1 ? { mark: "✓", name: "Address check", detail: "passed" }
             : s.probe = 2 ? { mark: "✗", name: "Address check", detail: s.probeText }
             : { mark: "·", name: "Address check", detail: "not run yet" })
+    if s.loaded && s.status != 2 {
+        why := gameModule.qcWhyNot()
+        rows.Push(why != "" ? { mark: "✗", name: "Quickcast now", detail: why }
+            : !s.qc ? { mark: "·", name: "Quickcast now", detail: "ready (an older module: no counts)" }
+            : { mark: s.qc.state = 1 ? "✓" : "·", name: "Quickcast now", detail: GameModuleEngine.QcStateText(s.qc.state) " · " s.qc.asked " asked: "
+                . s.qc.clicked " clicked, " s.qc.noTarget " no target in time, " s.qc.notFront " not in front, " s.qc.cancelled " called off" })
+    }
     ui := find("game UI at .*vtable checks out")
     rows.Push(ui != "" ? { mark: "✓", name: "Game UI", detail: ui } : { mark: "·", name: "Game UI", detail: "not seen yet: start a game (not just the lobby)" })
     for f in ModuleCheckFeatures() {

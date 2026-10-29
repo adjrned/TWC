@@ -184,18 +184,23 @@ class GameModuleEngine {
         return NumGet(v, Shm.magic, "uint") = 0x54574331 ? v : 0          ; 'TWC1'
     }
 
-    ; -> { loaded, layout, build, status, live, targeting, probe, ui, probeText } for the running 1.28 game
-    ; probe: 0 not run, 1 passed, 2 failed (probeText says why); ui: 1 once the game UI checked out
+    ; -> { loaded, layout, build, status, live, targeting, probe, ui, probeText, beat, qc } for the running 1.28 game
+    ; probe: 0 not run, 1 passed, 2 failed (probeText says why); ui: 1 once the game UI checked out; beat: ms
+    ; since the module's last heartbeat; qc (layout 27, else 0): { state, asked, clicked, noTarget, notFront, cancelled }
     state() {
-        out := { loaded: 0, layout: 0, build: 0, status: -1, live: 0, targeting: 0, probe: 0, ui: 0, probeText: "" }
+        out := { loaded: 0, layout: 0, build: 0, status: -1, live: 0, targeting: 0, probe: 0, ui: 0, probeText: "", beat: 0, qc: 0 }
         if !(v := this.live())
             return out
         out.loaded := 1, out.layout := NumGet(v, Shm.layout, "uint")
         out.build := NumGet(v, Shm.build, "uint"), out.status := NumGet(v, Shm.status, "uint")
-        out.live := out.status = 1 && ((A_TickCount - NumGet(v, Shm.heartbeat, "uint")) & 0xFFFFFFFF) < 1000     ; 32-bit ticks (the module's)
+        out.beat := (A_TickCount - NumGet(v, Shm.heartbeat, "uint")) & 0xFFFFFFFF      ; 32-bit ticks (the module's)
+        out.live := out.status = 1 && out.beat < 1000
         out.targeting := NumGet(v, Shm.targeting, "uint")
         if out.layout >= 2
             out.probe := NumGet(v, Shm.probe, "uint"), out.ui := NumGet(v, Shm.ui, "uint"), out.probeText := StrGet(v + Shm.probeText, 112, "CP0")
+        if out.layout >= 27
+            out.qc := { state: NumGet(v, Shm.qcState, "uint"), asked: NumGet(v, Shm.qcAsked, "uint"), clicked: NumGet(v, Shm.qcClicked, "uint"),
+                noTarget: NumGet(v, Shm.qcNoTarget, "uint"), notFront: NumGet(v, Shm.qcNotFront, "uint"), cancelled: NumGet(v, Shm.qcCancelled, "uint") }
         return out
     }
 
@@ -213,6 +218,25 @@ class GameModuleEngine {
         s := this.state()
         return s.live && s.layout >= 2 && s.probe = 1
     }
+    ; why qcReady is false ("" when it's true), for the log and the Module check
+    qcWhyNot() {
+        if !this.enabled
+            return "the game module is off"
+        if !this.quickcast
+            return "quickcast through the game is off"
+        if this.swapping
+            return "the module is being replaced (a newer one)"
+        s := this.state()
+        return !s.loaded ? "no module in this game (not loaded yet)"
+            : s.layout < 2 ? "an older module (layout " s.layout ")"
+            : s.status != 1 ? "the module's status is " s.status (s.status = 2 ? " (not 1.28f)" : s.status = 4 ? " (unloading)" : s.status = 3 ? " (unloaded)" : "")
+            : !s.live ? "the module's heartbeat is " s.beat " ms old"
+            : s.probe != 1 ? "the module's address check " (s.probe = 2 ? "failed: " s.probeText : "hasn't run yet")
+            : ""
+    }
+    ; one line for quickcast's state in the game (layout 27): the module's view
+    static QcStateText(st) => st = 1 ? "ready" : st = 0 ? "waiting: no game UI (not in a game)" : st = 2 ? "waiting: the game UI isn't there yet / any more (a game starting or ending)"
+        : st = 3 ? "waiting: reading the game UI faulted" : st = 4 ? "off: the address check failed" : "state " st
     ; ask for a click within ms (keepShift: a queued order) -> the request's number (0 = no module)
     qcAsk(ms, keepShift) {
         if !(v := this.live())

@@ -235,6 +235,14 @@ class RemapEngine {
         reforged := InStr(WC3WindowKey(), "reforged") = 1
         hookOn := !reforged && gameModule.quickcast, screenOn := QuickcastScreenOn()
         inGameQc := hookOn && gameModule.qcReady()
+        ; the game hook going (not) ready, logged when it changes, with why: a quickcast that
+        ; stops working shows here when and why it went to the screen or the key alone
+        static wasReady := -1
+        if hookOn && inGameQc != wasReady {
+            if wasReady != -1 || !inGameQc
+                DebugLog("quickcast: the game hook " (inGameQc ? "is ready again" : "isn't ready: " gameModule.qcWhyNot()))
+            wasReady := inGameQc
+        }
         cal := !inGameQc && screenOn ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /
         ; windowed switch or a resize changes it; none when both switches are off)

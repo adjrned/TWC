@@ -18,6 +18,16 @@ static int btnClicks, btnArg, btnFlagsSeen; static void *btnThis;
 static int __fastcall FakeBtnClick(void *t, int, int b) { btnClicks++, btnArg = b, btnThis = t, btnFlagsSeen = *(DWORD *)((BYTE *)t + BTN_FLAGS); return 1; }
 static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)to - (p + 5)); }
 static BYTE ui[0x400], portrait[0x100], card[0x200], btns[12][0x200], *rowBtns[3][4], rowsTab[3][16];
+static bool LogHas(const char *text) {
+    FILE *f;
+    if (fopen_s(&f, "cast.log", "rb"))
+        return false;
+    static char buf[1 << 16];
+    size_t n = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[n] = 0;
+    return strstr(buf, text) != nullptr;
+}
 static void Aim(bool on) { *(DWORD *)(ui + UI_MODE) = on ? 0x1234 : 0x99; }
 static void Rounds(int n) { for (int k = 0; k < n; k++) { WatchSelfCast(Targeting()); Sleep(40); } }
 static int Cmd(LONG seq, DWORD slot) { g_shared->cmd = 4; g_shared->cmdArg = slot; g_shared->cmdSeq = seq; ServeCommand(seq); return (int)g_shared->cmdResult; }
@@ -63,14 +73,40 @@ static DWORD WINAPI Tester(void *) {
     *(DWORD *)ui = goodVt;
     int t3 = Targeting();
     CHECK(g_getUi && g_shared->probe != 2 && t3 == 1, "300 odd reads after the game UI was seen (a teardown): no stop, works again after (%d)", t3);
-    // a getter that never gave the game UI: wrong addresses, a stop for good after 50
+    // a getter that never gave the game UI (a module loaded as a game ends): never a stop either,
+    // only a line after 50 (it was a stop for good, and reads come every 1 ms while a request is open)
     g_shared->ui = 0, *(DWORD *)ui = 0x12345678;
-    for (int k = 0; k < 49; k++)
+    for (int k = 0; k < 300; k++)
         Targeting();
-    bool notYet = g_getUi != nullptr;
-    Targeting();
-    CHECK(notYet && !g_getUi && g_shared->probe == 2, "never seen: stopped for good at 50 odd reads, not before (%s)", g_shared->probeText);
+    bool told = LogHas("never gave the game UI yet (50 odd reads");
     *(DWORD *)ui = goodVt;
+    int t4 = Targeting();
+    CHECK(told && g_getUi && g_shared->probe != 2 && t4 == 1 && g_shared->ui == 1, "never seen, 300 odd reads: logged once, no stop; the game UI then works (%d)", t4);
+    // quickcast's state: in qcState at once, a log line per change but at most one a second
+    DWORD now = 100000;
+    Targeting(); QcStateLog(now);
+    bool ready = g_shared->qcState == 1 && LogHas("quickcast: ready: the game UI checks out");
+    fakeUi = nullptr; Targeting(); QcStateLog(now += 2000);
+    bool none = g_shared->qcState == 0 && LogHas("quickcast: waiting: no game UI");
+    fakeUi = ui; *(DWORD *)ui = 0x12345678; Targeting(); QcStateLog(now += 100);
+    bool oddNow = g_shared->qcState == 2 && !LogHas("isn't the game UI (a game ending");
+    *(DWORD *)ui = goodVt; Targeting(); QcStateLog(now += 100);
+    fakeUi = nullptr; Targeting(); QcStateLog(now += 100);
+    fakeUi = ui; Targeting(); QcStateLog(now += 2000);
+    CHECK(ready && none && oddNow && g_shared->qcState == 1 && LogHas("quickcast: ready: the game UI checks out (2 brief changes since the last line)"),
+        "qcState follows at once; lines: ready, no game UI, then (within a second: none) ready with 2 brief changes");
+    g_getUi = nullptr; Targeting(); QcStateLog(now += 2000);
+    CHECK(g_shared->qcState == 4 && LogHas("quickcast: off: the address check failed"), "no getter (the check failed): state 4, logged");
+    g_getUi = FakeGetUi;
+    // the counts, and a line every 25 requests
+    for (int k = 0; k < 10; k++) QcCount(1, false, 30 + k);
+    for (int k = 0; k < 8; k++) QcCount(2, false, 200);
+    for (int k = 0; k < 4; k++) QcCount(2, true, 50);
+    bool early = !LogHas("the last 25 requests");
+    for (int k = 0; k < 3; k++) QcCount(3, false, 20);
+    CHECK(early && g_shared->qcAsked == 25 && g_shared->qcClicked == 10 && g_shared->qcNoTarget == 8 && g_shared->qcCancelled == 4 && g_shared->qcNotFront == 3
+        && LogHas("the last 25 requests (25 in all): 10 clicked (median 35 ms, slowest 39), 8 no target in time, 3 not in front, 4 called off"),
+        "counts: 25 asked = 10 clicked / 8 no target / 4 called off / 3 not in front; the summary at the 25th, not before");
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
     return 0;

@@ -128,5 +128,11 @@ class Shm {
     static blGame := 2704
     static utOn := 2736
     static utState := 2740
-    static size := 2744
+    static qcState := 2744
+    static qcAsked := 2748
+    static qcClicked := 2752
+    static qcNoTarget := 2756
+    static qcNotFront := 2760
+    static qcCancelled := 2764
+    static size := 2768
 }

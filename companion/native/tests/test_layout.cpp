@@ -17,7 +17,8 @@
     X(fpsLimit) X(fpsState) X(fpsGameLimit) X(scHeld) X(scState) X(scCount) X(cmdArg) X(latOn) X(latMs) X(latState) X(latGame) \
     X(uiHide) X(uiState) X(stState) X(itOn) X(itState) X(frCount) X(hnOn) X(hnMode) X(hnState) X(mbOn) X(mbHeight) X(mbState) \
     X(hnCount) X(mbCount) X(itemLeft) X(itemTotal) X(prOn) X(prMode) X(prState) X(mbWidth) X(unload) X(stamp) X(ulOn) X(ulState) X(ulCount) X(ttOn) X(ttState) X(fmOn) X(fmState) X(csOn) X(csSecs) X(csState) X(csGame) X(alOn) X(alState) X(pingOn) X(hover) X(pingText) X(tmMinutes) X(pingChat) X(cdSize) X(cdGold) X(cdReady) X(cdSweep) \
-    X(hrWant) X(hrHero) X(hrAlive) X(hrCount) X(hrId) X(hrLeft) X(hrTotal) X(hrFlags) X(hrName) X(bfSize) X(bfGold) X(bfOpts) X(bbScale) X(bbState) X(blOn) X(blState) X(blSeq) X(blDone) X(blAccount) X(blPassword) X(blAfter) X(blGame) X(utOn) X(utState)
+    X(hrWant) X(hrHero) X(hrAlive) X(hrCount) X(hrId) X(hrLeft) X(hrTotal) X(hrFlags) X(hrName) X(bfSize) X(bfGold) X(bfOpts) X(bbScale) X(bbState) X(blOn) X(blState) X(blSeq) X(blDone) X(blAccount) X(blPassword) X(blAfter) X(blGame) X(utOn) X(utState) \
+    X(qcState) X(qcAsked) X(qcClicked) X(qcNoTarget) X(qcNotFront) X(qcCancelled)
 
 struct Field { const char *name; size_t off, size; };
 #define ENTRY(f) { #f, offsetof(Shared, f), sizeof(((Shared *)0)->f) },

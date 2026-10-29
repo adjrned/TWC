@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 26, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 27, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState", "utState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 26 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 26, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 27 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 27, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -220,6 +220,15 @@ TwcModuleRun() {
     TwcCheck(r1.mark = "✓" && r2.mark = "✓" && r3.mark = "✓" && r4.mark = "✗", "hero buffs, cooldown sweep, buff bar size rows: " r1.mark r2.mark r3.mark r4.mark)
     r := row(ModuleCheckRows(["2026-10-26 10:00:00.000    not the buff bar (+AAD510): refusing it"]), "Hide the UI")
     TwcCheck(r.mark = "✗", "Hide the UI's buff bar refused: " r.mark " " r.detail)
+    ; quickcast's state and counts (layout 27): the Module check row, and why it isn't ready
+    NumPut("uint", 1, v, Shm.qcState), NumPut("uint", 40, v, Shm.qcAsked), NumPut("uint", 30, v, Shm.qcClicked), NumPut("uint", 6, v, Shm.qcNoTarget)
+    NumPut("uint", 1, v, Shm.qcNotFront), NumPut("uint", 3, v, Shm.qcCancelled)
+    r := row(ModuleCheckRows([]), "Quickcast now")
+    NumPut("uint", 2, v, Shm.qcState), r2 := row(ModuleCheckRows([]), "Quickcast now")
+    NumPut("uint", 2, v, Shm.probe), NumPut("uint", 1, v, Shm.qcState), why := gameModule.qcWhyNot(), r3 := row(ModuleCheckRows([]), "Quickcast now")
+    NumPut("uint", 1, v, Shm.probe)
+    TwcCheck(r.mark = "✓" && r.detail = "ready · 40 asked: 30 clicked, 6 no target in time, 1 not in front, 3 called off" && r2.mark = "·" && InStr(r2.detail, "a game starting or ending")
+        && InStr(why, "address check failed") && r3.mark = "✗" && gameModule.qcWhyNot() = "", "Quickcast now: " r.detail " / " r2.detail " / " r3.detail)
     ; Widescreen next to another widescreen mod (state 4): its own status line
     NumPut("uint", 4, v, Shm.wsState)
     TwcCheck(InStr(gameDisplay.wsStatus(), "another widescreen mod"), "widescreen, state 4: " gameDisplay.wsStatus())

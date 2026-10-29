@@ -46,7 +46,7 @@ static const DWORD BUILD_128F = 7680;
 #pragma pack(push, 4)
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
-    DWORD layout;           // 25
+    DWORD layout;           // 27
     DWORD build;            // the game's build number (7680 = 1.28f)
     DWORD status;           // 0 starting, 1 running, 2 not 1.28f (idle), 3 stopping / unloaded, 4 unloading (layout 13), 5 can't unload (see the log)
     DWORD heartbeat;        // GetTickCount() at the last update
@@ -195,6 +195,14 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 26: the name tip over the unit under the mouse hidden (WFE's [UPGRADEDUI] ISHEROOVERHEADTIP off)
     DWORD utOn;             // companion: 1 = the game never shows it
     DWORD utState;          // module: 0 off, 1 on (its show is ours), 3 refused (see the log)
+    // layout 27: quickcast's own state and counts (QcStateLog, QcCount), for the Module check
+    DWORD qcState;          // module: 0 no game UI (menus, lobby), 1 ready (the game UI checks out), 2 the getter gives
+                            //   something that isn't the game UI (a game ending or starting), 3 reading it faulted, 4 off (the address check failed)
+    DWORD qcAsked;          // module: requests answered (this module's life)
+    DWORD qcClicked;        //   clicked (or self-cast took the aim)
+    DWORD qcNoTarget;       //   the game didn't want a target by the deadline
+    DWORD qcNotFront;       //   it did, but the game wasn't in front
+    DWORD qcCancelled;      //   the companion called it off first (a key or click during a late watch, a new press)
 };
 #pragma pack(pop)
 
@@ -496,42 +504,44 @@ static void *ReadUi(DWORD *vt, DWORD *mode, DWORD *target) {
 }
 
 // 1 = waiting for a target, 0 = not, -1 = no game UI (or it can't be trusted)
+static DWORD g_qcSt;                // quickcast's state as Targeting last saw it (Shared::qcState's values)
 static int Targeting() {
     if (!g_getUi)
-        return -1;
+        return g_qcSt = 4, -1;
     DWORD vt = 0, mode = 0, target = 0;
     void *ui = ReadUi(&vt, &mode, &target);
     if (ui == (void *)-1) {
         static int faults;
         if (faults++ < 5)
             Log("reading the game UI faulted");
-        return -1;
+        return g_qcSt = 3, -1;
     }
     g_ui = nullptr;
     static int odd;                     // reads in a row whose object wasn't the game UI
     if (!ui)
-        return odd = 0, -1;
+        return odd = 0, g_qcSt = 0, -1;
     if (vt != g_uiVtable) {
-        // the getter returned something that isn't the game UI. Once the real one has been seen
-        // (g_shared->ui) the addresses are right, and this is the game UI being torn down as a game
-        // ends (a C++ destructor leaves its base classes' vtables in it meanwhile) or not built yet:
-        // never a stop. It was a stop for good after 5 reads (150 ms), and with the frames we add a
-        // teardown takes longer: quickcast died at the end of a game until WC3 was restarted (the
-        // user, 2026-10-27). Only a getter that never gave the game UI, 50 reads in a row (1.5 s),
-        // means wrong addresses for this game: then stop for good
+        // the getter returned something that isn't the game UI: the game UI being torn down as a
+        // game ends (a C++ destructor leaves its base classes' vtables in it meanwhile) or not built
+        // yet. Never a stop: until it's the game UI again, no targeting, so no click. It was a stop
+        // for good after 5 reads (150 ms): quickcast died at the end of a game until WC3 was
+        // restarted (the user, 2026-10-27); then (1fa7dca) after 50 reads if the game UI was never
+        // seen, still a stop for good (and reads come every 1 ms while a request is open). Wrong
+        // addresses for a game would only mean no targeting ever: logged once, not a stop
         if (++odd == 1)
             Log("the game UI's getter returned %p with vtable %08lX, not +%lX: watching", ui, vt, RVA_UI_VTABLE);
-        if (g_shared->ui || odd < 50)
-            return -1;
-        g_getUi = nullptr;
-        g_shared->probe = 2;
-        sprintf_s(g_shared->probeText, "the game UI at %p has vtable %08lX, not +%lX", ui, vt, RVA_UI_VTABLE);
-        Log("stopping: %s", g_shared->probeText);
-        return -1;
+        static bool told;
+        if (odd == 50 && !g_shared->ui && !told) {
+            told = true;
+            Log("the game UI's getter never gave the game UI yet (50 odd reads, vtable %08lX): quickcast waits for it "
+                "(if no 'game UI at ...' line ever follows, its addresses are wrong for this game)", vt);
+        }
+        return g_qcSt = 2, -1;
     }
     if (odd >= 5)
         Log("the game UI is back (after %d odd reads)", odd);
     odd = 0;
+    g_qcSt = 1;
     if (!g_shared->ui) {
         g_shared->ui = 1;
         Log("game UI at %p (vtable checks out); mode %08lX, target mode %08lX", ui, mode, target);
@@ -6077,6 +6087,67 @@ static bool UnloadStep(DWORD now) {
     return true;
 }
 
+// quickcast's state (Targeting's g_qcSt) into qcState, and a log line when it
+// changes: at most one a second; changes too brief for a line of their own are
+// counted into the next one
+static void QcStateLog(DWORD now) {
+    static const char *const TEXT[] = {
+        "waiting: no game UI (not in a game)",
+        "ready: the game UI checks out",
+        "waiting: the game UI's getter gives something that isn't the game UI (a game ending or starting)",
+        "waiting: reading the game UI faulted",
+        "off: the address check failed",
+    };
+    static DWORD logged = 0xFFFFFFFF, at, seen = 0xFFFFFFFF;
+    static int brief;
+    DWORD st = g_qcSt;
+    g_shared->qcState = st;
+    if (st != seen) {
+        if (seen != 0xFFFFFFFF && seen != logged)
+            brief++;                    // left before it got a line
+        seen = st;
+    }
+    if (st == logged || (logged != 0xFFFFFFFF && now - at < 1000))
+        return;
+    if (brief)
+        Log("quickcast: %s (%d brief changes since the last line)", TEXT[st < 5 ? st : 0], brief);
+    else
+        Log("quickcast: %s", TEXT[st < 5 ? st : 0]);
+    logged = st, at = now, brief = 0;
+}
+// a request answered (result: 1 clicked, 2 no target, 3 not in front; cancelled:
+// the companion called it off): the counts in Shared, and a summary line every 25
+static void QcCount(DWORD result, bool cancelled, DWORD ms) {
+    static DWORD clickMs[25];
+    static int n, clicks, none, front, off;
+    Shared *s = g_shared;
+    s->qcAsked++;
+    if (result == 1)
+        s->qcClicked++, clickMs[clicks++ % 25] = ms;
+    else if (cancelled)
+        s->qcCancelled++, off++;
+    else if (result == 3)
+        s->qcNotFront++, front++;
+    else
+        s->qcNoTarget++, none++;
+    if (++n < 25)
+        return;
+    char med[64] = "";
+    if (clicks) {
+        int k = clicks < 25 ? clicks : 25;
+        DWORD v[25];
+        memcpy(v, clickMs, k * sizeof(DWORD));
+        for (int i = 1; i < k; i++)
+            for (int j = i; j > 0 && v[j - 1] > v[j]; j--) {
+                DWORD x = v[j]; v[j] = v[j - 1]; v[j - 1] = x;
+            }
+        sprintf_s(med, " (median %lu ms, slowest %lu)", v[k / 2], v[k - 1]);
+    }
+    Log("quickcast: the last 25 requests (%lu in all): %d clicked%s, %d no target in time, %d not in front, %d called off; now %s",
+        s->qcAsked, clicks, med, none, front, off, s->qcState == 1 ? "ready" : "waiting");
+    n = clicks = none = front = off = 0;
+}
+
 static void Run() {
     LONG handled = g_shared->qcDone;     // not qcSeq: a request made while probing (probe already 1) is answered too
     DWORD askedAt = 0;
@@ -6091,6 +6162,7 @@ static void Run() {
         if (!g_getUi) {
             if (fast)
                 timeEndPeriod(1), fast = false;
+            g_qcSt = 4, QcStateLog(now);
             Sleep(50);
             continue;
         }
@@ -6102,6 +6174,7 @@ static void Run() {
         }
         int t = Targeting();
         g_shared->targeting = t == 1;
+        QcStateLog(now);
         if (g_shared->scState != 3)
             g_shared->scState = g_shared->scHeld ? 1 : 0;
         WatchSelfCast(t);
@@ -6135,6 +6208,7 @@ static void Run() {
                 g_shared->qcResult = result;
                 g_shared->qcDone = seq;
                 handled = seq;
+                QcCount(result, result == 2 && !g_shared->qcUntil, now - askedAt);
             }
         }
         if (fast && seq == handled) {
@@ -6215,7 +6289,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 26;
+        g_shared->layout = 27;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
