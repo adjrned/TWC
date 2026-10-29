@@ -232,8 +232,15 @@ int main() {
         bool still = anchors == a1;                 // nothing changed: no square moved
         sh.cdLeft[0] = 9.99f; SweepsPass(ui, true);
         bool full = wrong(0.999f, 0.04f, 0.04f) < 0.02f;
+        // between the reads (10 a second): redrawn with the time since taken off, so it moves every frame
+        sh.cdLeft[0] = 5; SweepsPass(ui, true, 2.5f);
+        bool between = count() == 1 && fabsf(W(0) - 0.02f) < 1e-5f && fabsf(H(0) - 0.02f) < 1e-4f && g_swAny;   // 2.5 of 10 left: the top left quarter
+        SweepsPass(ui, true, 9.0f);
+        bool past = count() == 0 && g_swAny;        // run past 0 before the next read: nothing drawn, still counted as showing (the read ends it)
+        if (!between || !past)
+            printf("  the sweep between reads: quarter %d, kept past 0 %d\n", between, past);
         sh.cdLeft[0] = 0; SweepsPass(ui, true);
-        bool swGone = count() == 0;
+        bool swGone = count() == 0 && !g_swAny && between && past;
         sh.cdLeft[0] = 5; SweepsPass(ui, false);
         bool off = count() == 0;
         CHECK(made && q && q2 && half && shapes && still && full && swGone && off && sweepFrames == 1 && r->made <= SWEEP_CELLS,

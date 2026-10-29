@@ -1,5 +1,9 @@
 ﻿#Requires AutoHotkey v2.0
 #SingleInstance Force
+; a held quickcast key fires its hotkey on every key repeat (~30 a second, as WFE's AutoCast):
+; AutoHotkey's default (70 in 2 s) stopped with "71 hotkeys have been received in the last
+; 2000ms" during normal play (the user, 2026-10-29)
+A_MaxHotkeysPerInterval := 2000
 ;@Ahk2Exe-SetName TW Companion
 ;@Ahk2Exe-SetDescription TW Companion
 ;@Ahk2Exe-SetCopyright By Ruzai

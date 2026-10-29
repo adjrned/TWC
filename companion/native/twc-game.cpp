@@ -1097,6 +1097,9 @@ static UINT g_framesMsg;            // "TWC_GameThreadFrames": run FramesPass on
 static UINT g_timersMsg;            // "TWC_GameThreadTimers": read the timers on the game thread (for the overlay)
 static volatile LONG g_timersQueued;
 static volatile LONG g_framesQueued;
+static UINT g_sweepMsg;             // "TWC_GameThreadSweeps": redraw the cooldown sweeps between timer reads (SweepsTick)
+static volatile LONG g_sweepQueued;
+static void SweepsTick();
 
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == g_barsMsg && g_barsMsg) {
@@ -1111,6 +1114,11 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     }
     if (m == g_selfMsg && g_selfMsg) {
         SelfCast();
+        return 0;
+    }
+    if (m == g_sweepMsg && g_sweepMsg) {
+        InterlockedExchange(&g_sweepQueued, 0);
+        SweepsTick();
         return 0;
     }
     if (m == g_framesMsg && g_framesMsg) {
@@ -1176,6 +1184,7 @@ static bool Subclass() {
     g_dispMsg = RegisterWindowMessageA("TWC_GameThreadDisplay");
     g_selfMsg = RegisterWindowMessageA("TWC_GameThreadSelfCast");
     g_framesMsg = RegisterWindowMessageA("TWC_GameThreadFrames");
+    g_sweepMsg = RegisterWindowMessageA("TWC_GameThreadSweeps");
     g_timersMsg = RegisterWindowMessageA("TWC_GameThreadTimers");
     g_prMsg = RegisterWindowMessageA("TWC_GameThreadPortrait");
     g_finalMsg = RegisterWindowMessageA("TWC_GameThreadFinal");
@@ -2431,8 +2440,16 @@ static void SweepSet(BYTE *btn, float left, float total) {
     ButtonSize(btn, &w, &h);
     SweepDraw(r, on ? min(1.0f, left / total) : 0, w, h);
 }
-// our sweeps on the command card and inventory buttons cooling down (on), else all hidden
-static void SweepsPass(BYTE *ui, bool on) {
+// The times are read 10 times a second (with the timers in the game); drawn only then, a sweep
+// moved in tenth-second steps: a 0.5 s cooldown in 5 jumps (the user, 2026-10-29: "not smooth at
+// all"). In between it's redrawn about every frame (SweepsTick, ~60 a second while one shows),
+// with the time since the read taken off (game time runs as real time; the next read corrects
+// it). The numbers stay at the reads.
+static DWORD g_tmReadAt;            // when the times were last read (TimerFramesPass)
+static bool g_swAny;                // a sweep showed at the last pass (a time left of a full time)
+// our sweeps on the command card and inventory buttons cooling down (on), else all hidden;
+// since: seconds since the times were read
+static void SweepsPass(BYTE *ui, bool on, float since = 0) {
     if (g_swBad || g_framesBad)
         return;
     __try {
@@ -2449,16 +2466,23 @@ static void SweepsPass(BYTE *ui, bool on) {
             if (!still)
                 SweepSet(g_sw[i].btn, 0, 0);
         }
+        g_swAny = false;
         if (!ui || !on)
             return;
+        // the time left now: what was read, less the time since (a hair above 0 until the next read says it's over)
+        auto now = [since](float left) { return left > 0 ? max(0.001f, left - since) : 0.0f; };
         for (int s = 0; cardOk && s < 12; s++)
             if (s / 4 < rows && s % 4 < cols)
-                if (BYTE *b = CardButton(card, s))
-                    SweepSet(b, g_shared->cdLeft[s], g_shared->cdTotal[s]);
+                if (BYTE *b = CardButton(card, s)) {
+                    SweepSet(b, now(g_shared->cdLeft[s]), g_shared->cdTotal[s]);
+                    g_swAny |= g_shared->cdLeft[s] > 0 && g_shared->cdTotal[s] > 0;
+                }
         for (int s = 0; s < 6; s++) {
             BYTE *b = ItemButton(ui, s);
-            if (b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE))
-                SweepSet(b, g_shared->itemLeft[s], g_shared->itemTotal[s]);
+            if (b && *(DWORD *)b == (DWORD)(g_base + RVA_COMMAND_BUTTON_VTABLE)) {
+                SweepSet(b, now(g_shared->itemLeft[s]), g_shared->itemTotal[s]);
+                g_swAny |= g_shared->itemLeft[s] > 0 && g_shared->itemTotal[s] > 0;
+            }
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_swBad = true;
@@ -2504,6 +2528,7 @@ static void TimerFramesPass(BYTE *ui) {
     }
     g_itReading = true;
     ReadTimers(ui);
+    g_tmReadAt = GetTickCount();
     __try {
         TimerFramesDraw(ui);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -2514,6 +2539,26 @@ static void TimerFramesPass(BYTE *ui) {
     if (!logged && g_shared->frCount)
         logged = true, Log("timers in the game: drawing (%lu text frames)", g_shared->frCount);
     g_shared->itState = g_framesBad ? 3 : 1;
+}
+
+// on the game thread, between the reads: the sweeps a frame further on
+static void SweepsTick() {
+    if (!g_swAny || !g_itReading || !SweepWanted() || !g_getUi)
+        return;
+    BYTE *ui = (BYTE *)GameUi();
+    DWORD since = GetTickCount() - g_tmReadAt;
+    if (ui && since < 1000)
+        SweepsPass(ui, true, since / 1000.0f);
+}
+// the worker's part: ask for it about every 16 ms while a sweep shows
+static void QueueSweeps() {
+    static DWORD at;
+    DWORD now = GetTickCount();
+    if (!g_swAny || now - at < 16 || !g_gameWnd || !g_sweepMsg)
+        return;
+    at = now;
+    if (!InterlockedExchange(&g_sweepQueued, 1))
+        PostMessageA(g_gameWnd, g_sweepMsg, 0, 0);
 }
 
 // -- health numbers and mana bars ------------------------------------------------------
@@ -6514,6 +6559,7 @@ static void Run() {
         FollowKeyCast(t);
         QueueDisplay();
         QueueFrames();
+        QueueSweeps();
         LONG cseq = g_shared->cmdSeq;
         if (cseq != g_shared->cmdDone)
             ServeCommand(cseq);
@@ -6530,7 +6576,7 @@ static void Run() {
         if (fast)
             Sleep(1);
         else
-            WaitForSingleObject(g_wake, 30);
+            WaitForSingleObject(g_wake, g_swAny ? 10 : 30);    // a sweep showing: redrawn about every frame (QueueSweeps)
     }
     if (fast)
         timeEndPeriod(1);
