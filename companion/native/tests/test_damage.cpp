@@ -76,10 +76,12 @@ int main() {
           "each hit after the game's own: what it dealt to the owner of the source (player 2: %.0f in %lu hits, 5: %.0f)", sh.dmTotal[2], sh.dmHits[2], sh.dmTotal[5]);
     Hit(1, 0, 100), Hit(3, 0, 100);
     CHECK(gameCalls == 6 && sh.dmTotal[2] == 75 && sh.dmSeq == 3, "its own unit, or an invulnerable one (0 dealt): not counted");
+    *(int *)(units[2] + UNIT_OWNER) = 12; Hit(0, 2, 30); *(int *)(units[2] + UNIT_OWNER) = 5;
+    CHECK(gameCalls == 7 && !sh.dmTotal[12] && sh.dmSeq == 3, "a neutral's unit (the creeps, slot 12): not counted");
     sh.dmOn = 0; FollowDamage(11000);
     CHECK(!g_dmHooked && sh.dmState == 0 && vt[UNIT_DAMAGE_SLOT / 4] == (DWORD)f, "off: the entry is the game's damage again");
     Hit(2, 0, 100);
-    CHECK(gameCalls == 7 && sh.dmTotal[2] == 75, "and nothing counted");
+    CHECK(gameCalls == 8 && sh.dmTotal[2] == 75, "and nothing counted");
     sh.dmOn = 1; vt[UNIT_DAMAGE_SLOT / 4] = (DWORD)(img + 0x100000); FollowDamage(12000);
     CHECK(!g_dmHooked && sh.dmState == 3, "an entry someone else changed: refused");
     Verdict();

@@ -3830,8 +3830,8 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
     if (!IsUnit(src) || !IsUnit(target))
         return;
     int from = *(int *)(src + UNIT_OWNER), to = *(int *)(target + UNIT_OWNER);
-    if (from < 0 || from > 15 || from == to)
-        return;
+    if (from < 0 || from > 11 || from == to)
+        return;                             // players only: 12-15 are the neutrals (the creeps' "Player 13" row, the user's screenshot)
     g_shared->dmTotal[from] += dealt;
     g_shared->dmHits[from]++;
     InterlockedIncrement(&g_shared->dmSeq);
