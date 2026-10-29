@@ -3866,6 +3866,11 @@ static bool SwapUnitDamage(bool on) {
 }
 // the players' names, as GetPlayerName reads them (every 2 s while on)
 static void DamageNames() {
+    // the first reads logged (the user's first game showed "Player N" for everyone): the names found,
+    // and for an empty slot where the chain stopped (player, its slot byte, the string, its text)
+    static int logs;
+    char b[600];
+    int o = 0;
     __try {
         BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
         int n = state ? *(int *)(state + 0x54) : 0;
@@ -3877,8 +3882,18 @@ static void DamageNames() {
                 strncpy_s(g_shared->dmName[i], name, _TRUNCATE);
             else
                 g_shared->dmName[i][0] = 0;
+            if (logs < 2 && o < (int)sizeof(b) - 80) {
+                if (g_shared->dmName[i][0])
+                    o += sprintf_s(b + o, sizeof(b) - o, " %d '%s'", i, g_shared->dmName[i]);
+                else if (pl)
+                    o += sprintf_s(b + o, sizeof(b) - o, " %d (player %p slot %u, string %p, text %p)", i, pl, pl[0x30], pl ? *(BYTE **)(pl + 0x2c) : nullptr, (void *)name);
+            }
         }
+        if (logs < 2)
+            logs++, Log("damage: player names (%d players, state %p):%s", n, state, o ? b : " none");
     } __except (EXCEPTION_EXECUTE_HANDLER) {
+        if (logs < 2)
+            logs++, Log("damage: reading the player names faulted (after:%s)", o ? b : " none");
     }
 }
 // the worker's part: check once, then follow the switch
