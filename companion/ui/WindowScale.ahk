@@ -2,8 +2,9 @@
 ; ============================================================================
 ;  WindowScale - the companion's windows resized as a whole: drag an edge or a
 ;  corner and the window and everything in it grow or shrink together (the
-;  look kept, the shape too). Kept: ini [Window] scale (the main window) and
-;  popupScale (Options, Quickcast, Module check, messages: one size for all).
+;  look kept, the shape too). Kept: ini [Window] scale (the main window),
+;  popupScale (Options, Quickcast, Module check, messages: one size for all)
+;  and <kind>Scale for a window of its own kind (meterScale: the damage meter).
 ;  Drag any empty spot to move a window.
 ;
 ;  The pages and dialogs still lay themselves out in base units (96-DPI GUI
@@ -25,10 +26,12 @@ global SCALE_MIN := 0.7, SCALE_MAX := 2.5, SCALE_STEP := 0.05
 
 UiK(g) => DPI_K * (IsObject(g) && winScale.Has(g.Hwnd) ? winScale[g.Hwnd].k : 1)
 
-; g resized as a whole from now on (before its controls are added); kind: "main" or "popup"
+; g resized as a whole from now on (before its controls are added); kind: "main", "popup" or a
+; window's own ("meter"); all but the main window move by any empty spot
+ScaleKey(kind) => kind = "main" ? "scale" : kind "Scale"
 MakeScalable(g, kind) {
     WindowScaleInit()
-    k := Ini("Window", kind = "main" ? "scale" : "popupScale", 1)
+    k := Ini("Window", ScaleKey(kind), 1)
     k := IsNumber(k) ? Max(SCALE_MIN, Min(SCALE_MAX, k + 0)) : 1
     winScale[g.Hwnd] := { k: k, kind: kind, w: 0, h: 0 }
     scHooks[g.Hwnd] := []
@@ -254,7 +257,7 @@ ScClick(hwnd) {
         SetTimer(ScResize.Bind(root, e), -1)
         return true
     }
-    if hwnd = root && winScale[root].kind = "popup" {
+    if hwnd = root && winScale[root].kind != "main" {
         PostMessage(0xA1, 2, , , "ahk_id " root)     ; WM_NCLBUTTONDOWN, HTCAPTION
         return true
     }
@@ -290,5 +293,5 @@ ScResize(hw, e) {
         Sleep(15)
     }
     if Abs(s.k - k0) >= 0.001
-        SetIni(Round(s.k, 2), "Window", s.kind = "main" ? "scale" : "popupScale")
+        SetIni(Round(s.k, 2), "Window", ScaleKey(s.kind))
 }

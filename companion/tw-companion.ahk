@@ -39,6 +39,7 @@ A_MaxHotkeysPerInterval := 2000
 #Include engine\HudCapture.ahk
 #Include ui\WindowScale.ahk
 #Include ui\TimerHud.ahk
+#Include ui\DamageMeter.ahk
 #Include ui\Wc3Page.ahk
 #Include ui\ModuleCheck.ahk
 #Include ui\OverlayPanel.ahk
@@ -103,7 +104,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture, dmgMeter
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon, sideGame := 0     ; sideGame: the sidebar's Join game box
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
@@ -174,6 +175,7 @@ healthBars := HealthBarsEngine(gameModule)
 gameDisplay := GameDisplayEngine(gameModule)
 bnetLogin := BattleNetLoginEngine(gameModule)
 hudCapture := HudCaptureEngine(quickcast, timersHud)
+dmgMeter := DamageMeter()
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()

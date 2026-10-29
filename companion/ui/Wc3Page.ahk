@@ -28,7 +28,7 @@ global wc3PageNo := Map(), wc3PagerCtls := [], wc3PagerText       ; tab + versio
 global wc3HoverCard := 0                                           ; the card under the cursor
 global WC3_COL_W := 335, WC3_CARD_H := 48, WC3_ROW := 54
 
-Wc3Tabs() => [["display", "Display"], ["timers", "Timers"], ["hosting", "Hosting"]]
+Wc3Tabs() => [["display", "Display"], ["timers", "Timers"], ["combat", "Combat"], ["hosting", "Hosting"]]
 ; the two versions: key, switch label
 Wc3Versions() => [["128", "1.28f"], ["reforged", "Reforged"]]
 Wc3VerBadge(ver) => ver = "128" ? "1.28f" : "Reforged"
@@ -44,6 +44,8 @@ Wc3PlannedText(tab, ver) {
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
         "display128", "",
         "displayreforged", "Nothing planned yet.",
+        "combat128", "Next: the damage feed from the game module (each hit's player and amount), then the map's own total.",
+        "combatreforged", "Nothing planned yet.",
         "hosting128", "",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")
     return p[tab ver]
@@ -55,7 +57,7 @@ Wc3PlannedText(tab, ver) {
 ; opts(d) (rows added to the feature's standard Options window, see Opt*)
 ; or window() (a window of its own).
 Wc3Features() {
-    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin
+    global gameModule, timersHud, quickcast, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, dmgMeter
     static list := 0
     if list
         return list
@@ -145,6 +147,16 @@ Wc3Features() {
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
             opts: (d) => (OptSlider(d, "Limit", (*) => gameDisplay.fpsLimit, (v) => gameDisplay.setFpsLimit(v), 64, 1000, 1),
                 OptNote(d, "Frames a second, 64 to 1000.")) },
+        { tab: "combat", title: "Damage meter", badge: "1.28f",
+            desc: "Damage by player over the game: total, DPS and share for each fight.",
+            on: (*) => dmgMeter.enabled, set: (v) => dmgMeter.setEnabled(v), status: (*) => dmgMeter.statusText(),
+            opts: (d) => (OptSlider(d, "Rows", (*) => dmgMeter.rowCount, (v) => dmgMeter.setRows(v), 3, 12, 1),
+                OptSlider(d, "Fight ends", (*) => dmgMeter.idleSecs, (v) => dmgMeter.setIdle(v), 1, 30, 0.5, SecsText),
+                OptNote(d, "After this long with no damage a fight is over: its numbers stay until the next one starts."),
+                OptSlider(d, "Opacity", (*) => dmgMeter.opacity, (v) => dmgMeter.setOpacity(v), 30, 100, 1),
+                OptDivider(d),
+                OptButtons(d, [["Show a sample", (*) => dmgMeter.setSample(true)], ["Hide the sample", (*) => dmgMeter.setSample(false)], ["Reset", (*) => (dmgMeter.reset(), dmgMeter.tick())]]),
+                OptNote(d, "The sample is made-up players fighting: drag the meter where you want it, an edge or corner to size it.")) },
         { tab: "hosting", title: "Lobby latency", badge: "1.28f",
             desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
