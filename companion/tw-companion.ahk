@@ -199,7 +199,7 @@ SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
 SetTimer(() => gameModule.check(), 1000)    ; the 1.28 game module, when it's on (soon after the game starts: the Battle.net login waits on it)
 SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
-SetTimer(SelfUpdateCheck, 5 * 60000)      ; on start, then every 5 minutes
+SetTimer(SelfUpdateCheck, 60 * 60000)     ; on start, then once an hour (the user's pick, 2026-10-29; was every 5 minutes)
 
 ; ============================================================================
 ;  Window construction
@@ -2505,16 +2505,22 @@ Toast(msg, kind := "", ms := 3500) {
     }
     tw := TextWidth(toastText, msg) + 54, th := 40
     toastText.Move(1, 1, tw - 2, th - 2), toastText.Text := msg
+    ; in the middle of the screen (the user's pick, 2026-10-29; it was near the top of the game, or the
+    ; bottom of the window): the game's when it's in front, else the screen the companion's window is on
     if WinActive(WarcraftIII) {
-        WinGetClientPos(&ax, &ay, &aw, , WarcraftIII)
-        tx := Round(ax + (aw - tw * DPI_K) / 2), ty := Round(ay + 80 * DPI_K)
-    } else if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
-        WinGetPos(&ax, &ay, , , mainGui)
-        tx := Round(ax + (W * UiK(mainGui) - tw * DPI_K) / 2), ty := Round(ay + H * UiK(mainGui) - (th + 30) * DPI_K)
+        WinGetClientPos(&ax, &ay, &aw, &ah, WarcraftIII)
+        l := ax, t := ay, r := ax + aw, b := ay + ah
     } else {
-        MonitorGetWorkArea(MonitorGetPrimary(), &l, &t, &r, &b)
-        tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(b - (th + 30) * DPI_K)
+        mon := MonitorGetPrimary()
+        if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
+            WinGetPos(&ax, &ay, &aw, &ah, mainGui)
+            loop MonitorGetCount()
+                if MonitorGet(A_Index, &ml, &mt, &mr, &mb) && ax + aw / 2 >= ml && ax + aw / 2 < mr && ay + ah / 2 >= mt && ay + ah / 2 < mb
+                    mon := A_Index
+        }
+        MonitorGetWorkArea(mon, &l, &t, &r, &b)
     }
+    tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(t + (b - t - th * DPI_K) / 2)
     toastGui.Show("NA x" tx " y" ty " w" tw " h" th)
     SetTimer(HideToast, ms > 0 ? -ms : 0)
 }
