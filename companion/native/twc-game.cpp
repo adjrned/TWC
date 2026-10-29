@@ -4219,7 +4219,10 @@ static void CountdownPass() {
 // +0xd0 / +0xd4, the CSimpleFrame ones +0x64 / +0x68; the minimap gets its
 // vtable +0xe4 after either (WFE does; its role isn't known). Hidden again
 // every 1.5 s (WFE re-applies too: the game may show them itself) and at each
-// game start; shown again once when you turn one off.
+// game start; shown again once when you turn one off. The 1.5 s pass leaves a
+// part that's still hidden alone (UiStillHidden) and the world frame that's
+// still over the whole screen too: each call made the game lay the screen out
+// again, and the buff bar's icons flickered every 1.5 s (the user, 2026-10-29).
 // The console's background (WFE's ISCONSOLE, 0x100890c0; study_uihide2.md):
 // the black panel under the bottom UI that stays where the parts were. Its
 // pieces are the CSimpleTextures in the console frame's region list
@@ -4251,6 +4254,11 @@ static void *g_worldUi;             // the game UI whose world frame we stretche
 static const int UI_PART_COUNT = 7;     // the 5 above, the console's background (bit 0x20) and the buff bar (0x40)
 static DWORD g_uiHidden;            // bits hidden by us in this game
 static void *g_uiHideUi;
+// still hidden, so the game's hide would do nothing (it tests the same first): a CFrame's
+// [+0xb0] bit 1 (its hide +0x11c6d0 sets it), a simple frame's shown [+0x94] 0 (+0x13b940 clears it)
+static bool UiStillHidden(BYTE *f, bool cframe) {
+    return cframe ? (*(DWORD *)(f + 0xb0) & 1) != 0 : *(DWORD *)(f + 0x94) == 0;      // 0xb0: FRAME_HIDDEN (the login's shown test)
+}
 
 // one frame: hide (or show). 1 done, 0 not there, -1 refused for good
 static int UiPartCall(BYTE *ui, int i, bool hide) {
@@ -4280,6 +4288,8 @@ static int UiPartCall(BYTE *ui, int i, bool hide) {
                 return -1;
             }
         }
+        if (hide && UiStillHidden(f, p.hide == 0xd0))
+            return 1;                   // nor the minimap's +0xe4 (it redraws it)
         ((FrameFn)fn)(f, 0);
         if (after)
             ((FrameFn)after)(f, 0);
@@ -4343,6 +4353,14 @@ static int ConsoleCall(BYTE *ui, bool hide) {
     }
     return n ? 1 : 0;
 }
+static bool HasPoint(BYTE *lay, DWORD pt, BYTE *rel, DWORD relPt, float x, float y);
+// the world frame's layout holds just the two points WorldCall gives it
+static bool WorldIsFull(BYTE *lay, BYTE *root) {
+    for (int i = 0; i < 9; i++)
+        if (i != PT_TOPRIGHT && i != PT_BOTTOMLEFT && *(BYTE **)(lay + LAYOUT_POINTS + i * 4))
+            return false;
+    return HasPoint(lay, PT_TOPRIGHT, root, PT_TOPRIGHT, 0, 0) && HasPoint(lay, PT_BOTTOMLEFT, root, PT_BOTTOMLEFT, 0, 0);
+}
 // the world frame: over the whole screen (or back where the game had it). 1 done, 0 not there, -1 refused for good
 static int WorldCall(BYTE *ui, bool full) {
     static int checked;             // 1 checked out, 2 refused
@@ -4370,6 +4388,8 @@ static int WorldCall(BYTE *ui, bool full) {
             checked = 1;
         }
         if (full) {
+            if (g_worldUi == ui && WorldIsFull(lay, root))
+                return 1;                   // so already (the 1.5 s pass)
             if (g_worldUi != ui) {          // its own anchors, before the first change in this game
                 SavedPoint pts[9] = {};
                 char b[200];
@@ -4450,7 +4470,8 @@ static int BuffBarCall(BYTE *ui, bool hide) {
             Log("hide UI: the buff bar refused, its vtable +%06lX entries aren't game code", vt - (DWORD)g_base);
             return -1;
         }
-        ((FrameFn)fn)(bar, 0);
+        if (!hide || !UiStillHidden(bar, false))
+            ((FrameFn)fn)(bar, 0);
         return 1;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         checked = 2;

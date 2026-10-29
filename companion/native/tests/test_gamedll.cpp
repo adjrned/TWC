@@ -230,6 +230,11 @@ int main() {
           "the bar's update / hide / show / dtor, a texture's +0x24 and a command button's +0x6C are those functions");
     CHECK(*(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x64) == (DWORD)(g_base + 0x13b940) && *(DWORD *)(g_base + RVA_BUFF_BAR_VT + 0x68) == (DWORD)(g_base + 0x13c390),
           "Hide the UI's buff bar: CBuffBar's +0x64 / +0x68 are the simple frame's hide / show (no stack arguments)");
+    // UiStillHidden: the hides do nothing when it's so already: the simple frame's tests [+0x94] 0 first, the
+    // CFrame's [+0xb0] bit 1 (and sets it); the time of day's own +0xd0 (+0x125800) ends in the CFrame's
+    CHECK(!memcmp(g_base + 0x13b943, "\x83\xBF\x94\x00\x00\x00\x00\x74", 8) && !memcmp(g_base + 0x13b97f, "\xC7\x87\x94\x00\x00\x00\x00\x00\x00\x00", 10)
+          && !memcmp(g_base + 0x11c6d3, "\x8B\x87\xB0\x00\x00\x00\xA8\x01\x75", 9) && SiteTarget(g_base + 0x12582f) == g_base + 0x11c6d0 && g_base[0x12582f] == 0xE9,
+          "Hide the UI's still-hidden test: a simple frame's hide returns on [+0x94] 0, a CFrame's on [+0xB0] bit 1 (the time of day's too)");
     // the start countdown: the lobby's start handler +0x324100 (its one caller +0x322458) starts timer 3 with 6.0 s at +0x324146
     float *cs = CountdownFloat();
     CHECK(cs == (float *)(g_base + RVA_COUNTDOWN_SECS) && *cs == 6.0f && SiteTarget(g_base + 0x322458) == g_base + RVA_COUNTDOWN && FnStart(RVA_TIMER_START),
