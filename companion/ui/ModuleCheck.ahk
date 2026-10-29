@@ -39,6 +39,7 @@ ModuleCheckFeatures() => [
     ["Cooldown sweep", "cooldown sweep: the first one made", "cooldown sweep: .*(no sweeps|faulted)"],
     ["Battle.net login", "battle.net login: account '.*' typed in, Logon clicked", "battle.net login: .*(faulted|not a glue)"],
     ["Bigger buff bar", "buff bar size: x[0-9.]+ \(\d+ frames resized", "buff bar size: .*(refused|faulted)"],
+    ["Damage meter feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
 ]
 
 ; this session's log lines (from the last "loaded" line), or [] if none

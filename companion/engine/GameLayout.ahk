@@ -139,5 +139,12 @@ class Shm {
     static qkState := 2792
     static qkPressed := 2796
     static qkClicked := 2800
-    static size := 2804
+    static dmOn := 2804
+    static dmState := 2808
+    static dmSeq := 2812
+    static dmPad := 2816
+    static dmTotal := 2820
+    static dmHits := 2948
+    static dmName := 3012
+    static size := 3524
 }

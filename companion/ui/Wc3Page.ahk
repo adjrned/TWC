@@ -44,7 +44,7 @@ Wc3PlannedText(tab, ver) {
         "timersreforged", "Planned: cooldown and buff timers read from the screen. To help build them: tray menu > Debug: save HUD pictures, in a game, then send the folder.",
         "display128", "",
         "displayreforged", "Nothing planned yet.",
-        "combat128", "Next: the damage feed from the game module (each hit's player and amount), then the map's own total.",
+        "combat128", "Next: the map's own total damage, read from the game (how its ability shows it: to find out).",
         "combatreforged", "Nothing planned yet.",
         "hosting128", "",
         "hostingreforged", "Nothing planned: Battle.net hosts Reforged games.")

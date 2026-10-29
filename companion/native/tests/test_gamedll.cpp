@@ -235,6 +235,19 @@ int main() {
     CHECK(!memcmp(g_base + 0x13b943, "\x83\xBF\x94\x00\x00\x00\x00\x74", 8) && !memcmp(g_base + 0x13b97f, "\xC7\x87\x94\x00\x00\x00\x00\x00\x00\x00", 10)
           && !memcmp(g_base + 0x11c6d3, "\x8B\x87\xB0\x00\x00\x00\xA8\x01\x75", 9) && SiteTarget(g_base + 0x12582f) == g_base + 0x11c6d0 && g_base[0x12582f] == 0xE9,
           "Hide the UI's still-hidden test: a simple frame's hide returns on [+0x94] 0, a CFrame's on [+0xB0] bit 1 (the time of day's too)");
+    // the damage meter's feed: CUnit's vtable +0x120 is +6CF530 (thiscall, ret 0x10), which writes what was dealt to *[ebp+8]
+    // (its invulnerable exit: 0 there, +6CF548..+6CF553); UnitDamageTarget +24AE80 makes the record with +6D6F80 (source
+    // [+0] = its 3rd argument, the amount [+0x10] = *1st) and calls vt+0x120 with (&dealt, &record, 0, 0)
+    CHECK(Rtti(RVA_UNIT_VT, "CUnit") && *(DWORD *)(g_base + RVA_UNIT_VT + UNIT_DAMAGE_SLOT) == (DWORD)(g_base + RVA_UNIT_DAMAGE)
+          && !memcmp(g_base + RVA_UNIT_DAMAGE, "\x55\x8B\xEC", 3) && !memcmp(g_base + 0x6cf558, "\xC2\x10\x00", 3)
+          && !memcmp(g_base + 0x6cf548, "\x8B\x45\x08\x8B\x0D", 5) && !memcmp(g_base + 0x6cf553, "\x89\x08", 2)
+          && SiteTarget(g_base + 0x24aeef) == g_base + 0x6d6f80 && !memcmp(g_base + 0x6d6f91, "\x8B\x45\x10\x89\x01", 5) && !memcmp(g_base + 0x6d6f83, "\x8B\x45\x08\x8B\x00\x89\x41\x10", 8)
+          && !memcmp(g_base + 0x24af01, "\x8D\x4D\xFC\x51\x8B\xCE\xFF\x92\x20\x01\x00\x00", 12),
+          "the damage feed: CUnit's +0x120 is +6CF530 (ret 0x10, *dealt written), the record's source [+0] and amount [+0x10]");
+    // the players' names: GetPlayerName +233F70 -> +29A990 (the slot byte [+0x30]), the string at +0x24 read by +98510 ([[+8]+0x1C])
+    CHECK(SiteTarget(g_base + 0x233f85) == g_base + 0x29a990 && !memcmp(g_base + 0x29a9a4, "\x8D\x4F\x24\xE8", 4) && SiteTarget(g_base + 0x29a9a7) == g_base + 0x98510
+          && !memcmp(g_base + 0x98510, "\x8B\x41\x08\x85\xC0\x74\x04\x8B\x40\x1C\xC3", 11) && !memcmp(g_base + 0x29a9ca, "\x0F\xB6\x47\x30", 4),
+          "the players' names: GetPlayerName's string at CPlayer +0x24, its text [[+8]+0x1C], the slot byte +0x30");
     // the start countdown: the lobby's start handler +0x324100 (its one caller +0x322458) starts timer 3 with 6.0 s at +0x324146
     float *cs = CountdownFloat();
     CHECK(cs == (float *)(g_base + RVA_COUNTDOWN_SECS) && *cs == 6.0f && SiteTarget(g_base + 0x322458) == g_base + RVA_COUNTDOWN && FnStart(RVA_TIMER_START),

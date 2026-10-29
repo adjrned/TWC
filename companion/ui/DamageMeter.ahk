@@ -8,8 +8,10 @@
 ;  to resize it (WindowScale, kept as ini [Window] meterScale); its place:
 ;  ini [DamageMeter] x / y. Shown while it's on and Warcraft III is up, or
 ;  with "Show a sample" (made-up players fighting, to place and size it).
-;  The hits come in through hit(player, amount): the game module's damage
-;  feed (next step). ini [DamageMeter]: on, rows (3-12), idle (s), opacity (%).
+;  The hits come in through hit(player, amount): from the game module's damage
+;  feed (layout 29: each player's total dealt to other players' units, read 4
+;  times a second, the differences are the hits), the names its players'.
+;  ini [DamageMeter]: on, rows (3-12), idle (s), opacity (%).
 ; ============================================================================
 class DamageMeter {
     section := "DamageMeter"
@@ -22,7 +24,12 @@ class DamageMeter {
     sampleFn := 0
     dirty := true
 
-    __New() {
+    gm := 0
+    seen := 0                       ; the module's totals last read (its differences are the hits)
+    feedSeq := 0, feedHits := 0
+
+    __New(gameModule := 0) {
+        this.gm := gameModule
         this.reset()
         this.names := Map()
         this.tickFn := ObjBindMethod(this, "tick")
@@ -141,7 +148,34 @@ class DamageMeter {
             return true
         return this.enabled && toolEnabled && WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1
     }
+    ; the module's feed: switched as the meter is, its new damage into hit()
+    feed() {
+        if !this.gm
+            return
+        on := this.enabled && !this.sample
+        if !this.gm.damageWanted(on) || !on {
+            this.seen := 0
+            return
+        }
+        d := this.gm.damage()
+        if !d || d.state != 1
+            return
+        if !this.sample
+            for i, n in d.names
+                if n != ""
+                    this.names[i - 1] := n
+        if this.seen && d.seq != this.feedSeq
+            for i, t in d.total
+                if (dt := t - this.seen[i]) > 0
+                    this.hit(i - 1, dt)
+        ; a new module (totals back at 0) or the first read: from here on
+        this.seen := d.total, this.feedSeq := d.seq
+        this.feedHits := 0
+        for h in d.hits
+            this.feedHits += h
+    }
     tick() {
+        try this.feed()
         if !this.wanted() {
             if this.gui
                 this.gui.Hide()
@@ -252,6 +286,12 @@ class DamageMeter {
             return "Showing a sample: drag it where you want it"
         if !this.enabled
             return "Off"
-        return "On · overlay ready; the damage feed from the game module comes next"
+        if !this.gm || !this.gm.live()
+            return "On · waiting for a 1.28f game (with the game module on)"
+        d := this.gm.damage()
+        return !d ? "On · the game module is an older one: restart Warcraft III"
+            : d.state = 3 ? "Refused: the game's damage isn't where 1.28f has it (see the log)"
+            : d.state = 1 ? "On · counting (" this.feedHits " hits seen)"
+            : "On · starting"
     }
 }

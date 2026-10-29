@@ -329,6 +329,27 @@ class GameModuleEngine {
         return out
     }
 
+    ; -- the damage meter's feed (layout 29) ----------------------------------------
+    ; -> { state, seq, total: [16], hits: [16], names: [16] } (totals since the module started; 0: an older module)
+    damage() {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 29
+            return 0
+        out := { state: NumGet(v, Shm.dmState, "uint"), seq: NumGet(v, Shm.dmSeq, "int"), total: [], hits: [], names: [] }
+        loop 16 {
+            i := A_Index - 1
+            out.total.Push(NumGet(v, Shm.dmTotal + 8 * i, "double")), out.hits.Push(NumGet(v, Shm.dmHits + 4 * i, "uint"))
+            out.names.Push(StrGet(v + Shm.dmName + 32 * i, 31, "UTF-8"))
+        }
+        return out
+    }
+    ; the switch (layout 29); false: no module, or an older one
+    damageWanted(on) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 29
+            return false
+        NumPut("uint", on ? 1 : 0, v, Shm.dmOn)
+        return true
+    }
+
     ; -- your hero's buffs (layout 22) --------------------------------------------
     ; Read from the hero unit itself, whatever is selected, with the other timers
     ; (so timersWanted must be on too): rawcode, the game's name, times.

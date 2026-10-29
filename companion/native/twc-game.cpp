@@ -210,6 +210,14 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD qkState;          // module: 0 off, 1 on (the window is ours), 3 refused (see the log)
     DWORD qkPressed;        // module: buttons pressed this way
     DWORD qkClicked;        //   and of those, clicked at the cursor (the game wanted a target)
+    // layout 29: the damage meter's feed (UnitDamage): what each player's units deal to other players' units
+    DWORD dmOn;             // companion: 1 = watch the damage
+    DWORD dmState;          // module: 0 off, 1 on (CUnit's damage entry is ours), 3 refused (see the log)
+    volatile LONG dmSeq;    // module: +1 a hit
+    DWORD dmPad;            // unused (Shared is packed to 4: the doubles needn't be 8-aligned)
+    double dmTotal[16];     // module: damage dealt by each player's units since this module started (the companion takes differences)
+    DWORD dmHits[16];       //   and their hits
+    char dmName[16][32];    // module: the players' names (UTF-8), "" for an empty slot
 };
 #pragma pack(pop)
 
@@ -3798,6 +3806,109 @@ static void FollowUnitTip() {
         g_shared->utState = g_utHooked ? 1 : 0;
 }
 
+// -- the damage meter's feed -------------------------------------------------------------
+// Every damage to a unit goes through its vtable +0x120 (CUnit's +0x6cf530, the only pointer to
+// it the slot +0xb68a34; 76 indirect callers: attacks, missiles, abilities, UnitDamageTarget
+// +0x24ae80): thiscall(target, float *dealt, record, a3, a4), ret 0x10. It writes what was
+// dealt (after armor and type; 0 to an invulnerable unit, +0x6cf553) to *dealt. The record (made
+// by +0x6d6f80): the source unit [+0], its amount before armor [+0x10], the attack type bit
+// [+0x14], flags [+0xc] (0x100 an attack), the damage type [+0x20]. Here the entry is ours (a
+// data write, as the name tip's): the game's own runs first and changes nothing; then what it
+// dealt is added to the source unit's owner, when the target is another player's. Names: each
+// CPlayer [state+0x58+4i] (the slot byte [+0x30]) has its name as GetPlayerName (+0x233f70 ->
+// +0x29a990) reads it: the string at +0x24, its text [[+0x24+8]+0x1c].
+static const DWORD RVA_UNIT_DAMAGE = 0x6cf530, UNIT_DAMAGE_SLOT = 0x120, DMG_SOURCE = 0;
+typedef void(__fastcall *UnitDamageFn)(void *, int, float *, BYTE *, DWORD, DWORD);
+static bool g_dmHooked;
+static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
+    if (!(dealt > 0 && dealt < 1e12f) || !rec)
+        return;
+    BYTE *src = *(BYTE **)(rec + DMG_SOURCE);
+    if (!IsUnit(src) || !IsUnit(target))
+        return;
+    int from = *(int *)(src + UNIT_OWNER), to = *(int *)(target + UNIT_OWNER);
+    if (from < 0 || from > 15 || from == to)
+        return;
+    g_shared->dmTotal[from] += dealt;
+    g_shared->dmHits[from]++;
+    InterlockedIncrement(&g_shared->dmSeq);
+    static int logs;
+    if (logs < 3)
+        logs++, Log("damage: player %d's unit %p dealt %.1f to player %d's %p (before armor %.1f, flags %lX)", from, src, dealt, to, target,
+                    *(float *)(rec + 0x10), *(DWORD *)(rec + 0xc));
+}
+static void __fastcall UnitDamage(void *target, int edx, float *dealt, BYTE *rec, DWORD a3, DWORD a4) {
+    ((UnitDamageFn)(g_base + RVA_UNIT_DAMAGE))(target, edx, dealt, rec, a3, a4);
+    if (g_shared->dmOn)
+        __try {
+            DamageSeen((BYTE *)target, rec, dealt ? *dealt : 0);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+}
+static bool SwapUnitDamage(bool on) {
+    if (on == g_dmHooked)
+        return true;
+    DWORD *slot = (DWORD *)(g_base + RVA_UNIT_VT + UNIT_DAMAGE_SLOT), game = (DWORD)(g_base + RVA_UNIT_DAMAGE), ours = (DWORD)UnitDamage;
+    if (*slot != (on ? game : ours)) {
+        Log("damage: vtable +%06lX entry +%X is %08lX, not the %s: left as it is", RVA_UNIT_VT, UNIT_DAMAGE_SLOT, *slot, on ? "game's damage" : "hook");
+        if (!on)
+            g_dmHooked = false;
+        return false;
+    }
+    DWORD old;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        return false;
+    InterlockedExchange((volatile LONG *)slot, (LONG)(on ? ours : game));
+    VirtualProtect(slot, 4, old, &old);
+    g_dmHooked = on;
+    Log(on ? "damage: on (CUnit's damage entry is ours: each hit is counted after the game's own)" : "damage: off (the entry is the game's again)");
+    return true;
+}
+// the players' names, as GetPlayerName reads them (every 2 s while on)
+static void DamageNames() {
+    __try {
+        BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
+        int n = state ? *(int *)(state + 0x54) : 0;
+        for (int i = 0; i < 16; i++) {
+            BYTE *pl = i < n && n <= 32 ? *(BYTE **)(state + 0x58 + 4 * i) : nullptr;
+            BYTE *str = pl && pl[0x30] == i ? *(BYTE **)(pl + 0x24 + 8) : nullptr;
+            const char *name = str ? *(const char **)(str + 0x1c) : nullptr;
+            if (name)
+                strncpy_s(g_shared->dmName[i], name, _TRUNCATE);
+            else
+                g_shared->dmName[i][0] = 0;
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+// the worker's part: check once, then follow the switch
+static void FollowDamage(DWORD now) {
+    static int checked;             // 1 checked out, 2 refused
+    static DWORD namesAt;
+    if (!g_getUi || checked == 2)
+        return;
+    bool on = g_shared->dmOn != 0;
+    if (on && !checked) {
+        char rtti[64] = "";
+        RttiName((DWORD)(g_base + RVA_UNIT_VT), g_imageSize, rtti, sizeof(rtti));
+        BYTE *f = g_base + RVA_UNIT_DAMAGE;
+        bool ok = FnStart(RVA_UNIT_DAMAGE) && GameVtable(RVA_UNIT_VT, { UNIT_DAMAGE_SLOT }) && (!rtti[0] || !strcmp(rtti, ".?AVCUnit@@"))
+            && f[0] == 0x55 && f[1] == 0x8B && f[2] == 0xEC;     // push ebp; mov ebp, esp (as 1.28f has it)
+        checked = ok ? 1 : 2;
+        if (!ok) {
+            g_shared->dmState = 3;
+            Log("damage: refused (CUnit's vtable +%06lX / its damage +%06lX aren't where 1.28f has them; RTTI '%s')", RVA_UNIT_VT, RVA_UNIT_DAMAGE, rtti);
+            return;
+        }
+    }
+    if (on && now - namesAt >= 2000)
+        namesAt = now, DamageNames();
+    if (checked && on != g_dmHooked && !SwapUnitDamage(on))
+        checked = 2, g_shared->dmState = 3;
+    else if (g_shared->dmState != 3)
+        g_shared->dmState = g_dmHooked ? 1 : 0;
+}
+
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
 // Ported from WFE's 1.28f branches (each address re-checked against WFEDll:
 // the tables at 0x10073232, 0x10035715, 0x10070429, 0x1006ff59, 0x1001fec2
@@ -6427,7 +6538,7 @@ static bool LiveModuleThere(const Shared *s) {
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
-    s->bbScale = 0, s->blOn = 0, s->utOn = 0;
+    s->bbScale = 0, s->blOn = 0, s->utOn = 0, s->dmOn = 0;
     SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
     s->qcUntil = 0;
     s->qkOn = 0, s->qkState = s->qkState == 3 ? 3 : 0;
@@ -6438,6 +6549,7 @@ static void RestoreAll() {
         SwapPortrait(false);
     SwapTooltips(false);
     SwapUnitTip(false);
+    SwapUnitDamage(false);
     FastMenuHook(false);
     if (g_prSites && g_portraitHooked)
         PointSites(false);
@@ -6628,6 +6740,7 @@ static void Run() {
         FollowPortrait();
         FollowTooltips();
         FollowUnitTip();
+        FollowDamage(t);
         FollowTargetMode();
         FollowKeyCast(t);
         QueueDisplay();
@@ -6720,7 +6833,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 28;
+        g_shared->layout = 29;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

@@ -175,7 +175,7 @@ healthBars := HealthBarsEngine(gameModule)
 gameDisplay := GameDisplayEngine(gameModule)
 bnetLogin := BattleNetLoginEngine(gameModule)
 hudCapture := HudCaptureEngine(quickcast, timersHud)
-dmgMeter := DamageMeter()
+dmgMeter := DamageMeter(gameModule)
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
