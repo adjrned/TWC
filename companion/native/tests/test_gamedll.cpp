@@ -215,7 +215,7 @@ int main() {
         { RVA_OPT_GET, 0x6c0b1, 8 }, { RVA_REGION_HIDE, 0x141cfa, 0 }, { RVA_REGION_SHOW, 0x141e9a, 0 }, { RVA_CONTROL_CLICK, 0x1407ea, 4 },
         { RVA_PROJECTION, 0x1555f1, 16 }, { RVA_MENU_ANIM, 0x33a8ae, 16 }, { RVA_PORTRAIT_UPDATE, 0x40d834, 0 }, { RVA_DAMAGE_UPDATE, 0x409056, 16 },
         { RVA_ARMOR_UPDATE, 0x4089ca, 12 }, { 0x4101c0, 0x41038f, 4 }, { 0x40ecb0, 0x40eeb1, 4 }, { 0x13b940, 0x13b9b1, 0 }, { 0x13c390, 0x13c429, 0 },
-        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 } };
+        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 }, { RVA_SPELL_EFFECT, 0x6b112e, 4 } };
     bad = 0;
     for (const auto &q : RETS) {
         const BYTE *r = g_base + q.ret;
@@ -258,6 +258,16 @@ int main() {
           && !memcmp(g_base + 0x2bb786, "\x03\xC0\x8B\x94\xC1\x98\x00\x00\x00", 9) && !memcmp(g_base + 0x2bb793, "\x8B\x84\xC1\x9C\x00\x00\x00\x8B\x44\x90\xFC", 11)
           && !memcmp(g_base + 0x2135f0, "\x83\x79\x1C\x00", 4),
           "the running trigger's event: slot 6 of the context [state+0x1C], its last entry (as GetSpellAbilityId reads it)");
+    // the boss timers' feed: the units' SPELL_EFFECT +6B0FC0 (thiscall(unit, ability), ret 4: edi the unit, the unit event
+    // 0x80323 and the player event 0x80312 asked for listeners), called from 3 places with ecx the ability's owner [+0x30]
+    // and the ability pushed; an ability's rawcode [+0x34] (GetSpellAbilityId's +6B82D9)
+    CHECK(!memcmp(g_base + RVA_SPELL_EFFECT, "\x55\x8B\xEC\x6A\xFF", 5) && !memcmp(g_base + 0x6b0feb, "\x8B\xF9", 2)
+          && !memcmp(g_base + 0x6b0ff2, "\x68\x23\x03\x08\x00", 5) && !memcmp(g_base + 0x6b1009, "\x68\x12\x03\x08\x00", 5)
+          && g_base[BC_SITES[0]] == 0xE8 && SiteTarget(g_base + BC_SITES[0]) == g_base + RVA_SPELL_EFFECT && !memcmp(g_base + 0x42cd18, "\x8B\x47\x30", 3) && !memcmp(g_base + 0x42cd24, "\x57\x8B\xC8", 3)
+          && g_base[BC_SITES[1]] == 0xE8 && SiteTarget(g_base + BC_SITES[1]) == g_base + RVA_SPELL_EFFECT && !memcmp(g_base + 0x43f491, "\x8B\x7E\x30", 3) && !memcmp(g_base + 0x43f4a1, "\x56\x8B\xCF", 3)
+          && g_base[BC_SITES[2]] == 0xE8 && SiteTarget(g_base + BC_SITES[2]) == g_base + RVA_SPELL_EFFECT && !memcmp(g_base + 0x595a65, "\x8B\x46\x30", 3) && !memcmp(g_base + 0x595a73, "\x56\x8B\xC8", 3)
+          && !memcmp(g_base + 0x6b82d9, "\x8B\x40\x34", 3) && FindCallSites(g_base + RVA_SPELL_EFFECT, nullptr, 0) == 3,
+          "SPELL_EFFECT: +6B0FC0 (the unit, the ability; events 0x80323 / 0x80312), its only 3 calls with the ability's owner and the ability; the rawcode at +0x34");
     // layout 33's hit details: the ctor's 2nd argument -> [+0x14], 4th -> [+0xc], 5th -> [+4]; UnitDamageTarget passes
     // 1 << damage type (cl = its 7th), flags 0x100 (attack) | 1 (ranged), then writes the attack type (its 6th) at [+0x20]
     CHECK(!memcmp(g_base + 0x6d6f8b, "\x8B\x45\x0C\x89\x41\x14", 6) && !memcmp(g_base + 0x6d6f96, "\x8B\x45\x18\x89\x41\x04", 6) && !memcmp(g_base + 0x6d6f9c, "\x8B\x45\x14\x89\x41\x0C", 6)

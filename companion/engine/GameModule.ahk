@@ -401,12 +401,60 @@ class GameModuleEngine {
             out.lines.Push(StrGet(v + Shm.mtText + 128 * Mod(seq - Min(seq - since, 8) + A_Index - 1, 8), 127, "UTF-8"))
         return out
     }
-    ; the switch (layout 29); false: no module, or an older one
-    damageWanted(on) {
+    ; the switch (layout 29), on while anyone wants the hits (the meter, the boss timers: who); false: no module, or an older one
+    damageWanted(on, who := "meter") {
+        static wants := Map()
+        wants[who] := on
+        any := false
+        for , w in wants
+            any := any || w
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 29
             return false
-        NumPut("uint", on ? 1 : 0, v, Shm.dmOn)
+        NumPut("uint", any ? 1 : 0, v, Shm.dmOn)
         return true
+    }
+
+    ; -- the boss timers' feed (layout 36) ----------------------------------------------
+    ; the switch; false: no module, or an older one
+    bossCastsWanted(on) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 36
+            return false
+        NumPut("uint", on ? 1 : 0, v, Shm.bcOn)
+        return true
+    }
+    ; 0 off, 1 on, 3 refused; -1 no module or an older one
+    bossCastsState() => (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 36 ? NumGet(v, Shm.bcState, "uint") : -1
+    ; the enemies' casts after `since` (the ring's count; -1 = only where it is now)
+    ; -> { seq, lost, casts: [{ at, unit, type, ability, hp, hpMax, owner }] } (at: the tick count; 0: no module, or an older one)
+    static CAST_RING := 128, CAST := 28
+    bossCasts(since) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 36
+            return 0
+        seq := NumGet(v, Shm.bcSeq, "int"), out := { seq: seq, lost: 0, casts: [] }
+        if since < 0 || seq - since <= 0
+            return out
+        n := seq - since
+        if n > GameModuleEngine.CAST_RING - 8
+            out.lost := n - (GameModuleEngine.CAST_RING - 8), n := GameModuleEngine.CAST_RING - 8
+        loop n {
+            p := v + Shm.bcRing + GameModuleEngine.CAST * Mod(seq - n + A_Index - 1, GameModuleEngine.CAST_RING)
+            out.casts.Push({ at: NumGet(p, 0, "uint"), unit: NumGet(p, 4, "uint"), type: GameModuleEngine.Rawcode(NumGet(p, 8, "uint")),
+                ability: GameModuleEngine.Rawcode(NumGet(p, 12, "uint")), hp: NumGet(p, 16, "float"), hpMax: NumGet(p, 20, "float"), owner: NumGet(p, 24, "uchar") })
+        }
+        return out
+    }
+    ; the unit to follow (0 none); false: no module, or an older one
+    bossWatch(unit) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 36
+            return false
+        NumPut("uint", unit, v, Shm.bcWatch)
+        return true
+    }
+    ; the unit followed now -> { unit, hp, max, alive } (0: no module, or an older one)
+    bossWatched() {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 36
+            return 0
+        return { unit: NumGet(v, Shm.bcWatch, "uint"), hp: NumGet(v, Shm.bcWatchHp, "float"), max: NumGet(v, Shm.bcWatchMax, "float"), alive: NumGet(v, Shm.bcWatchAlive, "uint") }
     }
 
     ; -- the buffs' map timer lengths kept for good (layout 32) ---------------------------

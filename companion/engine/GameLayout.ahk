@@ -170,5 +170,13 @@ class Shm {
     static dmTypeName2 := 67756
     static bbUp := 71852
     static bbUpState := 71856
-    static size := 71860
+    static bcOn := 71860
+    static bcState := 71864
+    static bcSeq := 71868
+    static bcRing := 71872
+    static bcWatch := 75456
+    static bcWatchHp := 75460
+    static bcWatchMax := 75464
+    static bcWatchAlive := 75468
+    static size := 75472
 }

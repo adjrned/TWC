@@ -5,6 +5,7 @@ sim-todo.txt
 # Desktop companion: generated offline site bundle + personal settings
 companion/web/
 companion/tw-companion.ini
+companion/tw-companion-bosses.ini
 companion/HiddenFiles.txt
 
 # sample saves for trying the companion Loader

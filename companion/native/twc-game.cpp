@@ -64,6 +64,16 @@ struct DmHit {
 // own hit's damage (an on-hit effect: the outer hit's ability, 0 an attack), 5 inside a hit on your unit (a reaction)
 static const BYTE DMA_NONE = 0, DMA_EVENT = 1, DMA_COOLDOWN = 2, DMA_TIMER = 3, DMA_ONHIT = 4, DMA_WHENHIT = 5;
 static const BYTE DMH_ATTACK = 1, DMH_RANGED = 2, DMH_SRC_HERO = 4, DMH_TGT_HERO = 8;
+// layout 36: an enemy's spell as the game fires its SPELL_EFFECT (the boss timers' feed)
+static const int BC_RING = 128;
+struct BcCast {
+    DWORD at;               // GetTickCount() then
+    DWORD unit;             // the caster (its address: an id while it lives)
+    DWORD unitType;         // its type ([unit+0x30])
+    DWORD ability;          // the ability's rawcode ([ability+0x34])
+    float hp, hpMax;        // the caster's HP then (0 / 0: not read)
+    BYTE owner, pad[3];
+};
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
     DWORD layout;           // 28
@@ -276,6 +286,14 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD bbUp;             // companion: 1 = the buff bar raised over the console without the Widescreen UI too
                             //   (BuffBarRaisePass; with it on, its layout raises the bar: ulOn bit 2)
     DWORD bbUpState;        // module: 0 off, 1 raised, 2 waiting for the bar (no game), 3 refused (see the log)
+    // layout 36: the boss timers' feed: the enemies' spells (BossCastHook) and the boss engaged's HP
+    DWORD bcOn;             // companion: 1 = recorded
+    DWORD bcState;          // module: 0 off, 1 on, 3 refused (see the log)
+    volatile LONG bcSeq;    // module: casts recorded; cast n is bcRing[n & (BC_RING - 1)], written before the +1
+    BcCast bcRing[BC_RING];
+    DWORD bcWatch;          // companion: a unit to follow (the boss engaged), 0 none
+    float bcWatchHp, bcWatchMax;    // module: its HP now and its maximum (each display pass)
+    DWORD bcWatchAlive;     // module: 1 alive, 0 dead, gone or none
 };
 #pragma pack(pop)
 
@@ -6872,6 +6890,97 @@ static void LoginPass();
 static const DWORD MENU_SETTLE = 300, MENU_PASS_MS = 50;
 static DWORD g_blWatchUntil;        // Battle.net login: watching the menus after Logon until then (0 = not)
 static int g_blStep;                // Battle.net login: 0 waiting for the main menu, 1 Battle.net clicked, 2 at the login screen, 9 done for this game start
+// -- the boss timers' feed (layout 36) ------------------------------------------------------
+// Every spell's effect goes through the unit's SPELL_EFFECT event (+6b0fc0, thiscall(unit, ability),
+// ret 4: the unit and the player event 0x80323 / 0x80312 checked for listeners, then fired), called from
+// the 3 places an ability takes effect (+42cd27, +43f4a4, +595a76: ecx the ability's owner [+0x30], the
+// ability pushed; its rawcode [+0x34]). Those calls are pointed at ours while the boss timers are on:
+// it notes an enemy's cast (not yours, not an ally's) with its HP, then goes on into the game's own,
+// whether a trigger listens or not. All reads.
+static const DWORD RVA_SPELL_EFFECT = 0x6b0fc0;
+static const DWORD BC_SITES[3] = { 0x42cd27, 0x43f4a4, 0x595a76 };
+typedef void(__fastcall *SpellEffectFn)(void *, int, void *);
+static bool g_bcHooked, g_bcBad;
+static void DamageType(DWORD id);
+static void BossCastSeen(BYTE *unit, BYTE *ability) {
+    if (!IsUnit(unit) || !ability)
+        return;
+    BYTE *state;
+    int local = LocalPlayer(&state), owner = *(int *)(unit + UNIT_OWNER);
+    if (local < 0 || owner < 0 || owner > 15 || owner == local || Allied(state, local, owner))
+        return;
+    DWORD id = *(DWORD *)(ability + 0x34);
+    if ((id >> 24) - 'A' >= 26 && (id >> 24) - 'a' >= 26)
+        return;                             // not a rawcode
+    float hp = 0, mx = 0;
+    UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &hp, &mx);
+    LONG n = g_shared->bcSeq;
+    BcCast &c = g_shared->bcRing[n & (BC_RING - 1)];
+    c.at = GetTickCount(), c.unit = (DWORD)unit, c.unitType = *(DWORD *)(unit + 0x30), c.ability = id;
+    c.hp = hp == hp ? hp : 0, c.hpMax = mx, c.owner = (BYTE)owner;
+    InterlockedExchange(&g_shared->bcSeq, n + 1);
+    DamageType(c.unitType), DamageType(id);         // named on the game thread, as the meter's
+    static int logs;
+    if (logs < 5) {
+        char rtti[48] = "";
+        RttiName(*(DWORD *)ability, g_imageSize, rtti, sizeof(rtti));
+        logs++, Log("boss casts: player %d's '%s' (unit %p) cast '%s' (%s) at %.0f of %.0f HP", owner, IdText(c.unitType).s, unit, IdText(id).s, rtti, hp, mx);
+    }
+}
+static void __fastcall BossCastHook(void *unit, int edx, void *ability) {
+    if (g_shared->bcOn && !g_bcBad)
+        __try {
+            BossCastSeen((BYTE *)unit, (BYTE *)ability);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            g_bcBad = true, g_shared->bcState = 3;
+            Log("boss casts: reading a cast faulted: no more");
+        }
+    ((SpellEffectFn)(g_base + RVA_SPELL_EFFECT))(unit, edx, ability);
+}
+static bool BossCastSites(bool on) {
+    const BYTE *from = on ? g_base + RVA_SPELL_EFFECT : (BYTE *)BossCastHook, *to = on ? (BYTE *)BossCastHook : g_base + RVA_SPELL_EFFECT;
+    for (DWORD rva : BC_SITES) {
+        BYTE *site = g_base + rva;
+        if (site[0] != 0xE8 || SiteTarget(site) != from && SiteTarget(site) != to) {
+            Log("boss casts: the call at +%06lX isn't the game's to its SPELL_EFFECT (+%06lX): left as it is", rva, RVA_SPELL_EFFECT);
+            return false;
+        }
+    }
+    for (DWORD rva : BC_SITES) {
+        BYTE *site = g_base + rva;
+        LONG rel = (LONG)(to - (site + 5));
+        if (SiteTarget(site) != to && !WriteCode(site + 1, (const BYTE *)&rel, 4)) {
+            Log("boss casts: writing the call at +%06lX failed", rva);
+            return false;
+        }
+    }
+    g_bcHooked = on;
+    Log(on ? "boss casts: on (the 3 calls to the units' SPELL_EFFECT are ours: enemies' spells noted)" : "boss casts: off (the calls are the game's again)");
+    return true;
+}
+// on the game thread: the calls follow the switch; the boss engaged's HP
+static void BossCastPass() {
+    bool on = g_shared->bcOn && !g_bcBad;
+    if (on != g_bcHooked && (!on || FnStart(RVA_SPELL_EFFECT)) && !BossCastSites(on))
+        g_bcBad = true;
+    if (g_shared->bcState != 3)
+        g_shared->bcState = g_bcBad ? 3 : g_bcHooked ? 1 : 0;
+    BYTE *u = (BYTE *)g_shared->bcWatch;
+    float hp = 0, mx = 0;
+    bool alive = false;
+    if (u && on)
+        __try {
+            alive = IsUnit(u) && UnitStat(u, UNIT_HP, UNIT_MAXHP_HANDLE, &hp, &mx) && hp > 0;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            alive = false;
+        }
+    g_shared->bcWatchHp = alive ? hp : 0, g_shared->bcWatchMax = alive ? mx : 0;
+    g_shared->bcWatchAlive = alive ? 1 : 0;
+    static DWORD logged;
+    if (u && (DWORD)u != logged)
+        logged = (DWORD)u, Log("boss casts: following unit %p: %s, %.0f of %.0f HP", u, alive ? "alive" : "dead or gone", hp, mx);
+}
+
 static void DisplayPass() {
     if (!g_getUi)
         return;
@@ -6881,6 +6990,7 @@ static void DisplayPass() {
     LatencyPass();
     CountdownPass();
     AlliesPass();
+    BossCastPass();
     DamageTypesPass();
     MapTextPass();
     UiHidePass();
@@ -6895,7 +7005,7 @@ static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
     bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -7758,6 +7868,8 @@ static void RestoreAll() {
     SwapUnitTip(false);
     SwapUnitDamage(false);
     SwapTimerEvent(false);
+    if (g_bcHooked)
+        BossCastSites(false);
     if (g_mtHooked)
         MapTextSites(false);
     TimerStartWatch(false);
@@ -8044,7 +8156,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 35;
+        g_shared->layout = 36;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

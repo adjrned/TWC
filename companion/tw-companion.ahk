@@ -43,6 +43,7 @@ Thread("Interrupt", 0)
 #Include ui\WindowScale.ahk
 #Include ui\TimerHud.ahk
 #Include ui\DamageMeter.ahk
+#Include ui\BossTimers.ahk
 #Include ui\Wc3Page.ahk
 #Include ui\ModuleCheck.ahk
 #Include ui\OverlayPanel.ahk
@@ -179,6 +180,7 @@ gameDisplay := GameDisplayEngine(gameModule)
 bnetLogin := BattleNetLoginEngine(gameModule)
 hudCapture := HudCaptureEngine(quickcast, timersHud)
 dmgMeter := DamageMeter(gameModule)
+bossBars := BossTimers(gameModule)
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
