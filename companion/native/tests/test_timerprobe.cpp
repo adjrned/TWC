@@ -43,10 +43,11 @@ int main() {
     Start(0.03f, 1), Start(30, 0);
     BuffAppeared(unit, 'B04Q', true, 4, 4, now);
     CHECK(starts == 3 && lastTimeout == 30 && g_tsN == 2, "each start noted and passed on to the game's own (%d starts, last %.0f s)", starts, lastTimeout);
-    BuffAppearedLog(now + 300);
-    CHECK(!LogHas("'B04Q' aura appeared"), "not logged before the 0.6 s after it is in");
-    BuffAppearedLog(now + 700);
-    CHECK(LogHas("'B04Q' aura appeared (4.0 s of 4.0)") && LogHas("30.00 s one-shot") && LogHas("0.03 s periodic"), "then logged with the timers started around it (30 s one-shot, 0.03 s periodic)");
+    BuffAppearedLog(now + 600);
+    CHECK(!LogHas("'B04Q' aura appeared"), "not logged before the 1 s after it is in");
+    BuffAppearedLog(now + 1200);
+    CHECK(LogHas("'B04Q' aura appeared (4.0 s of 4.0)") && LogHas("30.00 s one-shot") && !LogHas("0.03 s periodic") && LogHas("1 shorter left out"),
+          "then logged with the timers of 0.5 s or more started around it (30 s one-shot; the 0.03 s one left out)");
     BuffAppeared(unit, 'B04Q', true, 3.5f, 4, now + 800), BuffAppearedLog(now + 2000);
     CHECK(!g_bsNew[0].id, "the same buff seen again soon after: not a new one");
     CHECK(TimerStartWatch(false) && !g_tsHooked && !memcmp(f, body, 5), "off: the game's bytes back");

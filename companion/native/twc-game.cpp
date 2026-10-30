@@ -1039,12 +1039,14 @@ static bool BuffKeptUp(BYTE *unit, DWORD id, bool aura, float left, DWORD now) {
 // periodic, code), ret 0xc; from TimerStart +0x2492f0 and +0x272922; its countdown the agent timer at
 // +0x24, its start +0x8a520). Its first 5 bytes (push ebp; mov ebp, esp; push esi; push edi) are
 // detoured to a recorder that only notes (when, timeout, periodic) and goes on into the game's own.
-// A buff first seen on the buff bar is logged with the timers started from 0.4 s before to 0.6 s
-// after it: whether a one-shot timer of its duration comes with each buff.
+// A buff first seen on the buff bar is logged with the timers of 0.5 s or more started from 1 s before
+// to 1 s after it, the nearest first: whether a one-shot timer of its duration comes with each buff.
+// (TWRPG starts some 400 timers a second, nearly all 0.03 s one-shots: the user's first report had
+// only those, its 256 notes covering 0.6 s.)
 static const DWORD RVA_MAP_TIMER_START = 0x27c160;
 typedef void(__fastcall *TimerStartFn)(void *, int, float *, int, void *);
 struct TimerStartRec { DWORD at; float timeout; DWORD periodic; void *timer; };
-static TimerStartRec g_tsRing[256];
+static TimerStartRec g_tsRing[4096];
 static volatile LONG g_tsN;
 static BYTE *g_tsTramp;
 static bool g_tsHooked, g_tsBad;
@@ -1052,7 +1054,7 @@ static bool WriteCode(BYTE *p, const BYTE *b, int n);
 static bool FnStart(DWORD rva);
 static void __fastcall TimerStartHook(void *timer, int edx, float *timeout, int periodic, void *code) {
     __try {
-        TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 255];
+        TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 4095];
         r.at = GetTickCount(), r.timeout = timeout ? *timeout : -1, r.periodic = (DWORD)periodic, r.timer = timer;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
@@ -1122,22 +1124,40 @@ static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float tota
 }
 static void BuffAppearedLog(DWORD now) {
     for (BuffNew &n : g_bsNew) {
-        if (!n.id || now - n.at < 600)
+        if (!n.id || now - n.at < 1100)
             continue;
-        char b[700];
-        int o = 0, found = 0;
+        // the timers of 0.5 s or more within 1 s of it, the nearest first (at most 12)
+        struct Close { LONG d; float t; DWORD periodic; } closest[12];
+        int nn = 0, found = 0, tiny = 0;
         LONG last = g_tsN;
-        for (LONG k = last - 1; k >= 0 && k >= last - 256 && o < (int)sizeof(b) - 60; k--) {
-            const TimerStartRec &r = g_tsRing[k & 255];
+        for (LONG k = last - 1; k >= 0 && k >= last - 4096; k--) {
+            const TimerStartRec &r = g_tsRing[k & 4095];
             LONG d = (LONG)(r.at - n.at);
-            if (d < -400 || d > 600)
+            if (d < -1000 || d > 1000)
                 continue;
+            if (!(r.timeout >= 0.5f)) {
+                tiny++;
+                continue;
+            }
             found++;
-            o += sprintf_s(b + o, sizeof(b) - o, " %.2f s %s (%+ld ms)", r.timeout, r.periodic ? "periodic" : "one-shot", d);
+            Close x = { d, r.timeout, r.periodic };
+            int j = nn < 12 ? nn++ : 12;
+            while (j > 0 && labs(closest[j - 1].d) > labs(x.d)) {
+                if (j < 12)
+                    closest[j] = closest[j - 1];
+                j--;
+            }
+            if (j < 12)
+                closest[j] = x;
         }
+        char b[700];
+        int o = 0;
+        for (int j = 0; j < nn; j++)
+            o += sprintf_s(b + o, sizeof(b) - o, " %.2f s %s (%+ld ms)", closest[j].t, closest[j].periodic ? "periodic" : "one-shot", closest[j].d);
+        o += sprintf_s(b + o, sizeof(b) - o, "%s (%d of 0.5 s or more, %d shorter left out)", found ? "" : " none", found, tiny);
         if (g_bsLogs < 16)
-            g_bsLogs++, Log("buff timers: '%s' %s appeared (%.1f s of %.1f) on unit %p; the map's timers started around it:%s", IdText(n.id).s, n.aura ? "aura" : "buff",
-                            n.left, n.total, n.unit, found ? b : " none");
+            g_bsLogs++, Log("buff timers: '%s' %s appeared (%.1f s of %.1f) on unit %p; the map's timers started within 1 s of it, nearest first:%s", IdText(n.id).s,
+                            n.aura ? "aura" : "buff", n.left, n.total, n.unit, b);
         n.id = 0;
     }
 }
@@ -4053,7 +4073,7 @@ static void DamageNames() {
                     o += sprintf_s(b + o, sizeof(b) - o, " %d (empty: player %p slot %u, string %p, text %p '%s')", i, pl, pl[0x30], *(BYTE **)(pl + 0x2c), (void *)name, raw);
             }
         }
-        if (logs < 2 && state && n > 0)         // in a game only (at the menu there's no game state: those said nothing)
+        if (logs < 2 && state && n > 0 && GameUi())     // in a game only (at the menu and in the lobby the names said nothing)
             logs++, Log("damage: player names (%d players, state %p, you %d):%s", n, state, g_shared->dmLocal, o ? b : " none");
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         if (logs < 2)
