@@ -62,7 +62,7 @@ class TimerHud {
     }
     pingActive(*) {
         global toolEnabled, chatting
-        if !this.cooldowns || !this.pings || !toolEnabled || chatting || !WinActive(WarcraftIII)
+        if !this.pings || !toolEnabled || chatting || !WinActive(WarcraftIII)
             return false
         v := this.gm.live()
         return v && NumGet(v, Shm.layout, "uint") >= 18 && NumGet(v, Shm.hover, "uint") = 1
@@ -186,8 +186,9 @@ class TimerHud {
         if (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 11
             NumPut("uint", this.gm.enabled ? (this.cooldowns ? 1 : 0) | (this.buffs ? 2 : 0) : 0, v, Shm.itOn)
         if v && NumGet(v, Shm.layout, "uint") >= 18 {
-            NumPut("uint", this.gm.enabled && this.cooldowns && this.allies ? 1 | (this.alliesEnemies ? 2 : 0) : 0, v, Shm.alOn)
-            NumPut("uint", this.gm.enabled && this.cooldowns && this.pings ? 1 : 0, v, Shm.pingOn)
+            ; their own cards since 2026-10-30 (no longer needing the cooldowns on)
+            NumPut("uint", this.gm.enabled && this.allies ? 1 | (this.alliesEnemies ? 2 : 0) : 0, v, Shm.alOn)
+            NumPut("uint", this.gm.enabled && this.pings ? 1 : 0, v, Shm.pingOn)
         }
         if v && NumGet(v, Shm.layout, "uint") >= 19
             NumPut("uint", (this.cdMinutes ? 1 : 0) | (this.buffMinutes ? 2 : 0), v, Shm.tmMinutes)
@@ -214,13 +215,23 @@ class TimerHud {
         return p.Length = 3 ? { x: p[1] + 0, y: p[2] + 0, dx: p[3] + 0 } : 0
     }
 
-    cooldownStatus() {
-        st := this.statusOf(this.cooldowns, "on the command card and items")
-        if st = "Off" || !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 18
-            return st
+    cooldownStatus() => this.statusOf(this.cooldowns, "on the command card and items")
+    alliesStatus() {
+        if !this.allies
+            return "Off"
+        if !this.gm.enabled
+            return "On · needs the game module (top of this page)"
+        if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 18
+            return "On · starts with a 1.28f game"
         al := NumGet(v, Shm.alState, "uint")
-        return st (this.allies ? al = 3 ? " · allies' abilities refused (see the log)" : al = 1 ? this.alliesEnemies ? " · allies' and enemies' too" : " · allies' too" : "" : "")
-            . (this.pings ? " · Alt + click pings" : "")
+        return al = 3 ? "Refused by the module's checks (see the log)" : al = 1 ? (this.alliesEnemies ? "On · allies' and enemies'" : "On · allies'") : "On · starting"
+    }
+    pingStatus() {
+        if !this.pings
+            return "Off"
+        if !this.gm.enabled
+            return "On · needs the game module (top of this page)"
+        return this.gm.live() ? "On · Alt + click in the game" : "On · starts with a 1.28f game"
     }
     buffStatus() => this.statusOf(this.buffs, "under the buff icons")
     statusOf(on, where) {

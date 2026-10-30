@@ -7,11 +7,12 @@
 ;  its row is only on the 1.28f side); Reforged ones only read the screen.
 ;  Three tabs set where every feature goes, now and later (quickcast is on
 ;  the Remap page, with its keys: a switch and Options per version):
-;    Timers    what's ready and what's running out: cooldowns, buff timers,
-;              buff alerts
-;    Display   how the game looks: health bars (size, colours, numbers, mana
-;              bars), game keys, hiding the UI, widescreen, the widescreen UI,
-;              fast menu, detailed tooltips, FPS unlock
+;    Timers    what's ready and what's running out: timers in the game
+;              (cooldowns, buff seconds), buff alerts
+;    Display   how the game looks: health & mana bars (size, colours, numbers,
+;              mana bars, the portrait), game keys, hiding the UI, widescreen
+;              (world and UI), the buff bar, fast menu, detailed tooltips, FPS
+;    Combat    the damage meter, allies' and bosses' cards, pings
 ;    Hosting   games you host: lobby latency, the start countdown; logging in
 ;              to Battle.net (eurobattle.net) by itself
 ;  Each feature is one entry in Wc3Features(): a compact card (two columns)
@@ -62,54 +63,42 @@ Wc3Features() {
     if list
         return list
     list := [
-        { tab: "timers", title: "Cooldowns", badge: "1.28f",
-            desc: "Seconds left on abilities and items, drawn on their buttons in the game.",
-            on: (*) => timersHud.cooldowns, set: (v) => timersHud.setCooldowns(v), status: (*) => timersHud.cooldownStatus(),
-            opts: (d) => (OptSlider(d, "Size", (*) => timersHud.cdSize, (v) => timersHud.setCdSize(v), 0.75, 1.5, 0.05, BarSizeText),
-                OptSlider(d, "Gold from", (*) => timersHud.cdGold, (v) => timersHud.setCdGold(v), 0, 30, 1),
-                OptNote(d, "Seconds left when the number turns gold (0 = always white). Every number has a black outline."),
+        ; Cooldowns and buff seconds in one card (the user's cleanup, 2026-10-30): a switch each, one look for both
+        { tab: "timers", title: "Timers in the game", badge: "1.28f",
+            desc: "Seconds left on abilities, items and buffs, on their buttons and buff icons.",
+            status: (*) => Wc3Both([[timersHud.cooldowns, "Cooldowns", (*) => timersHud.cooldownStatus()], [timersHud.buffs, "Buffs", (*) => timersHud.buffStatus()]]),
+            opts: (d) => (OptCheck(d, "Cooldowns on the command card and items", timersHud.cooldowns, (v) => timersHud.setCooldowns(v)),
+                OptCheck(d, "Buff seconds under the buff icons", timersHud.buffs, (v) => timersHud.setBuffs(v)),
+                OptDivider(d), OptHeader(d, "HOW THEY LOOK"),
+                OptSlider(d, "Size", (*) => timersHud.cdSize, (v) => (timersHud.setCdSize(v), timersHud.setBfSize(v)), 0.75, 1.5, 0.05, BarSizeText),
+                OptSlider(d, "Turns gold at", (*) => timersHud.cdGold, (v) => (timersHud.setCdGold(v), timersHud.setBfGold(v)), 0, 30, 1),
+                OptNote(d, "A warning: the number turns gold with this many seconds left or fewer (0: always white)."),
+                OptCheck(d, "Minutes as m:ss (1:35 rather than 95)", timersHud.cdMinutes, (v) => (timersHud.setMinutes("cdMinutes", v), timersHud.setMinutes("buffMinutes", v))),
                 OptCheck(d, "'Ready' in green for a moment when a cooldown is over", timersHud.cdReady, (v) => timersHud.setCdReady(v)),
                 OptCheck(d, "Our own cooldown sweep", timersHud.cdSweep, (v) => timersHud.setCdSweep(v)),
                 OptNote(d, "The game's clock redrawn as the plain dark sweep, without TWRPG's clock badge and timer."),
-                OptCheck(d, "Minutes as m:ss", timersHud.cdMinutes, (v) => timersHud.setMinutes("cdMinutes", v)),
-                OptNote(d, "1:35 rather than 95 from a minute up."),
-                OptDivider(d),
-                OptCheck(d, "Allied units' abilities and cooldowns too", timersHud.allies, (v) => timersHud.setAllies(v)),
-                OptNote(d, "As WFE's ally ability bar: select an ally's unit to see its command card. Clicking its buttons does nothing."),
-                OptCheck(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
-                OptNote(d, "Select a boss to see its abilities and their cooldowns, as an observer sees them. Needs the switch above."),
-                OptCheck(d, "Alt + click an ability, item, buff, stat or the portrait: tell your allies", timersHud.pings, (v) => timersHud.setPings(v)),
-                OptNote(d, "As WFE's ping: 'Paladin >> Holy Light | Cooldown: 7', '| Ready!' or '| Not enough mana!' to your allies (who gets it: the game's Chat dialog). A buff: 'Paladin >> Inner Fire | 12 s left' or '| active'. The portrait: HP and mana (and a hero's level); the damage, armor and hero icons: their numbers. Allies' and enemies' too.")) },
-        { tab: "timers", title: "Buff timers", badge: "1.28f",
-            desc: "Seconds left on buffs, drawn under their icons in the game's buff bar.",
-            on: (*) => timersHud.buffs, set: (v) => timersHud.setBuffs(v), status: (*) => timersHud.buffStatus(),
-            opts: (d) => (OptSlider(d, "Size", (*) => timersHud.bfSize, (v) => timersHud.setBfSize(v), 0.75, 1.5, 0.05, BarSizeText),
-                OptSlider(d, "Gold from", (*) => timersHud.bfGold, (v) => timersHud.setBfGold(v), 0, 30, 1),
-                OptNote(d, "Seconds left when the number turns gold (0 = always white). Every number has a black outline."),
                 OptCheck(d, "Seconds on auras too", timersHud.bfAuras, (v) => timersHud.setBfAuras(v)),
-                OptNote(d, "Once you're out of an aura's range: the seconds before it wears off (in range it's kept up: no number). Buffs the map gives again on a beat get none while it does."),
-                OptCheck(d, "Minutes as m:ss", timersHud.buffMinutes, (v) => timersHud.setMinutes("buffMinutes", v)),
-                OptNote(d, "1:35 rather than 95 from a minute up.")) },
+                OptNote(d, "Once you're out of an aura's range: the seconds before it wears off (in range it's kept up: no number).")) },
         { tab: "timers", title: "Buff alerts", badge: "Both",
             desc: "A line over the game when a buff on your hero is missing or running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
             window: (*) => BuffWatchDialog() },
-        { tab: "display", title: "Health bar size", badge: "1.28f",
-            desc: "Bigger health bars (and mana bars) on every unit. Width is experimental.",
-            on: (*) => healthBars.enabled, set: (v) => healthBars.setEnabled(v), status: (*) => healthBars.statusText(),
-            window: (*) => BarSizeDialog() },
-        { tab: "display", title: "Health bar colours", badge: "1.28f",
-            desc: "By owner (your colour or each player's own) or by health left.",
-            on: (*) => healthBars.colours, set: (v) => healthBars.setColours(v), status: (*) => healthBars.colourStatus(),
-            window: (*) => BarColoursDialog() },
-        { tab: "display", title: "Health numbers", badge: "1.28f",
-            desc: "A number over every health bar: current, current / max or percent (Storm.dll).",
-            on: (*) => healthBars.numbers, set: (v) => healthBars.setNumbers(v), status: (*) => healthBars.numberStatus(),
-            opts: (d) => OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)) },
-        { tab: "display", title: "Mana bars", badge: "1.28f",
-            desc: "A mana bar under the health bar of every unit with mana (Storm.dll).",
-            on: (*) => healthBars.mana, set: (v) => healthBars.setMana(v), status: (*) => healthBars.manaStatus(),
-            window: (*) => BarSizeDialog() },
+        ; the bars in one card: size, colours, numbers, mana bars and the portrait's HP / mana lines
+        { tab: "display", title: "Health and mana bars", badge: "1.28f",
+            desc: "Bar size and colours, numbers over them, mana bars, the portrait's HP and mana.",
+            status: (*) => Wc3Both([[healthBars.enabled, "Size", (*) => healthBars.statusText()], [healthBars.colours, "Colours", (*) => healthBars.colourStatus()],
+                [healthBars.numbers, "Numbers", (*) => healthBars.numberStatus()], [healthBars.mana, "Mana bars", (*) => healthBars.manaStatus()], [healthBars.portrait, "Portrait", 0]]),
+            opts: (d) => (OptCheck(d, "Bigger health and mana bars", healthBars.enabled, (v) => healthBars.setEnabled(v)),
+                OptCheck(d, "Health bar colours", healthBars.colours, (v) => healthBars.setColours(v)),
+                OptButtons(d, [["Size…", (*) => BarSizeDialog()], ["Colours…", (*) => BarColoursDialog()]]),
+                OptDivider(d),
+                OptCheck(d, "A number over every health bar", healthBars.numbers, (v) => healthBars.setNumbers(v)),
+                OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
+                OptCheck(d, "Mana bars under the health bars", healthBars.mana, (v) => healthBars.setMana(v)),
+                OptNote(d, "Mana bars' size: under Size… (numbers and mana bars use the game's Storm.dll)."),
+                OptDivider(d),
+                OptCheck(d, "Portrait: HP and mana with their regen per second", healthBars.portrait, (v) => healthBars.setPortrait(v)),
+                OptCheck(d, "and the percent", healthBars.portraitPercent, (v) => healthBars.setPortraitPercent(v), 22)) },
         { tab: "display", title: "Game keys", badge: "1.28f",
             desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
@@ -119,13 +108,14 @@ Wc3Features() {
             desc: "As WFE: the black console goes, the world shows through; the minimap and buffs stay.",
             on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
             opts: (d) => OptCheck(d, "Hide the upper menu bar's buttons too", gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(v)) },
+        ; the world and the UI in one card (as WFE's widescreen and Upgraded UI)
         { tab: "display", title: "Widescreen", badge: "1.28f",
-            desc: "As WFE's: the world isn't stretched. Steps aside for a widescreen mix file.",
-            on: (*) => gameDisplay.widescreen, set: (v) => gameDisplay.setWidescreen(v), status: (*) => gameDisplay.wsStatus() },
-        { tab: "display", title: "Widescreen UI", badge: "1.28f",
-            desc: "As WFE's Upgraded UI: on a wide window the UI isn't stretched.",
-            on: (*) => gameDisplay.wideUi, set: (v) => gameDisplay.setWideUi(v), status: (*) => gameDisplay.wideUiStatus(),
-            opts: (d) => OptNote(d, "The buff bar's place (raised over the console or not) is on the Buff bar card.") },
+            desc: "As WFE's: on a wide window neither the world nor the UI is stretched.",
+            status: (*) => Wc3Both([[gameDisplay.widescreen, "World", (*) => gameDisplay.wsStatus()], [gameDisplay.wideUi, "UI", (*) => gameDisplay.wideUiStatus()]]),
+            opts: (d) => (OptCheck(d, "The world isn't stretched", gameDisplay.widescreen, (v) => gameDisplay.setWidescreen(v)),
+                OptNote(d, "Steps aside for a widescreen mix file (RenderEdge's) that already does it."),
+                OptCheck(d, "The UI isn't stretched (WFE's Upgraded UI)", gameDisplay.wideUi, (v) => gameDisplay.setWideUi(v)),
+                OptNote(d, "The command card, inventory, minimap and info panel laid out for the wide window. The buff bar's place is on the Buff bar card.")) },
         ; the buff bar's own settings in one place (the user's ask, 2026-10-30: the raise sat in the Widescreen UI's
         ; Options): the switch is the bigger size; the raise is on its own (the module's, or the Widescreen UI's layout when that's on)
         { tab: "display", title: "Buff bar", badge: "1.28f",
@@ -144,15 +134,22 @@ Wc3Features() {
             on: (*) => gameDisplay.fastMenu, set: (v) => gameDisplay.setFastMenu(v), status: (*) => gameDisplay.fastMenuStatus() },
         { tab: "display", title: "Detailed tooltips", badge: "1.28f",
             desc: "As WFE's: the damage and armor tooltips show cooldown, attacks a second, speed.",
-            on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus(),
-            opts: (d) => (OptCheck(d, "Portrait: HP and mana with their regen per second", healthBars.portrait, (v) => healthBars.setPortrait(v)),
-                OptCheck(d, "and the percent", healthBars.portraitPercent, (v) => healthBars.setPortraitPercent(v), 22),
-                OptNote(d, "The portrait lines go with this switch.")) },
+            on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus() },
         { tab: "display", title: "FPS unlock", badge: "1.28f",
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
             opts: (d) => (OptSlider(d, "Limit", (*) => gameDisplay.fpsLimit, (v) => gameDisplay.setFpsLimit(v), 64, 1000, 1),
                 OptNote(d, "Frames a second, 64 to 1000.")) },
+        ; out of the Cooldowns' Options (the user's cleanup): cards of their own, on the Combat tab
+        { tab: "combat", title: "Allies' and bosses' cards", badge: "1.28f",
+            desc: "An ally's or a boss's unit selected: its abilities and cooldowns on the card.",
+            on: (*) => timersHud.allies, set: (v) => timersHud.setAllies(v), status: (*) => timersHud.alliesStatus(),
+            opts: (d) => (OptCheck(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
+                OptNote(d, "As WFE's ally ability bar, as an observer sees it. Clicking their buttons does nothing. A boss TWRPG holds paused until it's engaged shows an empty card till then.")) },
+        { tab: "combat", title: "Pings", badge: "1.28f",
+            desc: "Alt + click an ability, item, buff, stat or the portrait: your allies are told.",
+            on: (*) => timersHud.pings, set: (v) => timersHud.setPings(v), status: (*) => timersHud.pingStatus(),
+            opts: (d) => OptNote(d, "As WFE's ping, to your allies (who gets it: the game's Chat dialog):`n'Paladin >> Holy Light | Cooldown: 7', '| Ready!' or '| Not enough mana!'`na buff: 'Paladin >> Inner Fire | 12 s left' or '| active'`nthe portrait: HP and mana (and a hero's level); the damage, armor and hero icons: their numbers.`nYour units', allies' and enemies'.") },
         { tab: "combat", title: "Damage meter", badge: "1.28f",
             desc: "Damage dealt and taken per player, fight and game; click a row for its sources.",
             on: (*) => dmgMeter.enabled, set: (v) => dmgMeter.setEnabled(v), status: (*) => dmgMeter.statusText(),
@@ -180,6 +177,23 @@ Wc3Features() {
             window: (*) => BattleNetLoginDialog() },
     ]
     return list
+}
+
+; a card of several switches: "Cooldowns, Buffs" (each part's own status when only it is on), "Off" when none
+; parts: [[on, name, status fn or 0]]
+Wc3Both(parts) {
+    on := []
+    for p in parts
+        if p[1]
+            on.Push(p)
+    if !on.Length
+        return "Off"
+    if on.Length = 1 && on[1][3]
+        return on[1][2] ": " (on[1][3])()
+    s := ""
+    for p in on
+        s .= (s = "" ? "" : ", ") p[2]
+    return "On · " s
 }
 
 Wc3ScreenQcStatus(*) {
@@ -578,7 +592,7 @@ BarSizeDialog(*) {
     static g := 0
     if g
         try g.Destroy()
-    d := Wc3Dialog("Health and mana bar size", "Health bars: times the game's own size (Health bar size switch). Mana bars: times their health bar's.", 460)
+    d := Wc3Dialog("Health and mana bar size", "Health bars: times the game's own size (with Bigger health and mana bars on). Mana bars: times their health bar's.", 460)
     g := d.g
     for sec in [["HEALTH BARS", [["height", "Height"], ["width", "Width"]]], ["MANA BARS", [["manaHeight", "Height"], ["manaWidth", "Width"]]]] {
         if sec[1] = "MANA BARS"
@@ -588,7 +602,7 @@ BarSizeDialog(*) {
             lim := HealthBarsEngine.SIZES[r[1]]
             OptSlider(d, r[2], ((k, *) => healthBars.size(k)).Bind(r[1]), ((k, v) => healthBars.setSize(k, v)).Bind(r[1]), lim[2], lim[3], 0.01, BarSizeText)
         }
-        OptNote(d, sec[1] = "HEALTH BARS" ? "×0.25 to ×4; ×1 is the game's own. The width is experimental." : "×0.25 to ×2 of the health bar; shown with the Mana bars switch.")
+        OptNote(d, sec[1] = "HEALTH BARS" ? "×0.25 to ×4; ×1 is the game's own. The width is experimental." : "×0.25 to ×2 of the health bar; shown with Mana bars on.")
     }
     Wc3DialogShow(d)
     return g

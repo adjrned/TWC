@@ -155,8 +155,7 @@ class HealthBarsEngine {
         NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, Shm.hnOn)
         NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, Shm.mbOn)
         NumPut("uint", this.portraitPercent, v, Shm.prMode)
-        global gameDisplay
-        NumPut("uint", this.portrait && IsSet(gameDisplay) && gameDisplay.tooltips && this.gm.enabled ? 1 : 0, v, Shm.prOn)
+        NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, Shm.prOn)     ; on its own since 2026-10-30 (was with Detailed tooltips)
         if NumGet(v, Shm.layout, "uint") >= 12
             NumPut("float", this.size("manaWidth"), v, Shm.mbWidth)
     }
