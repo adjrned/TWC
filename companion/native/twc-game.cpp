@@ -297,30 +297,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // layout 37: the effect probe (FxProbePass): the map's ground effects near your hero, logged
     DWORD fxOn;             // companion: 1 = on
     DWORD fxState;          // module: 0 off, 1 on, 3 refused (see the log)
-    // layout 38: the dash combo (OrbComboTick; only the private companion part turns it on): your hero's
-    // dash ability cast, then a move order to each of your orb units in turn (the nearest, the next as
-    // soon as it's gone), then to a point south of where it started
-    DWORD ocOn;             // companion: 1 = on (your own right clicks' order arguments watched, the casts seen)
-    volatile LONG ocGo;     // companion: +1 = run it now
-    DWORD ocDash;           // companion: the dash ability ('A107')
-    DWORD ocOrb;            // companion: the orb unit type ('e05P')
-    float ocSouth;          // companion: how far south of the start it ends
-    DWORD ocState;          // module: 0 idle, 1 casting, 2 collecting, 3 refused (see the log)
-    DWORD ocRuns, ocTaken;  // module: runs done; orbs taken in the last one
-    // layout 39
-    float ocReach;          // companion: on to the next orb once the hero is this close to one (its pickup ~200)
-    // layout 40
-    DWORD ocKey;            // companion: the combo's key, read by the module in the game's own window (no companion
-                            //   hotkey: in the 11:16 / 11:28 tests the companion's never ran it): its virtual key,
-                            //   0x100 Ctrl, 0x200 Alt, 0x400 Shift; 0 none
-    // layout 41: the star through the boss (the 12:06 report: the shortest path went round the edge, never
-    // through the boss); ocReach from here on: 0 = on from an orb only once it's gone (taken)
-    float ocThrough;        // companion: how close to the boss (the orbs' centre) each pass comes before the next orb
-    float ocFirst;          // companion: the first orb's direction from the boss, degrees (0 right, 90 top; 225 bottom left)
-    // layout 42: the 13:13 report: the dash moves your hero in jumps of 125 every ~62 ms (each orb taken
-    // exactly 125 or 250 from the boss, each pass exactly on it), so the time is the jumps: 18 a run
-    DWORD ocDirect;         // companion: 1 = from an orb straight to the next when that line passes within ocThrough
-                            //   of the boss (no jump back onto it first)
+    // layouts 38-42: reserved for a local part (not in git; see the end of this file): 13 words, its own
+    DWORD pvData[13];
 };
 #pragma pack(pop)
 
@@ -1580,17 +1558,19 @@ static UINT g_sweepMsg;             // "TWC_GameThreadSweeps": redraw the cooldo
 static volatile LONG g_sweepQueued;
 static void SweepsTick();
 
-static void OrbComboTick();
-static bool OrbComboKey(WPARAM vk, LPARAM lp);
+// the local part's hooks (the end of the file; without it they do nothing)
+static bool PvWants();
+static bool PvTimer(HWND w, WPARAM id);
+static bool PvKey(WPARAM vk, LPARAM lp);
+static void PvCast(BYTE *unit, BYTE *ability);
+static void PvUnitMade(BYTE *u, DWORD type);
+static void PvUnitGone(BYTE *u);
+static void PvHit(BYTE *src, BYTE *target, float dealt, DWORD ability, bool attack);
+static void PvPass();
+static void PvOff();
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
-    if (m == WM_TIMER && wp == 0x7743) {   // the dash combo's 10 ms tick (OC_TIMER)
-        __try {
-            OrbComboTick();
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-            KillTimer(w, 0x7743);
-        }
+    if (m == WM_TIMER && PvTimer(w, wp))
         return 0;
-    }
     if (m == g_barsMsg && g_barsMsg) {
         InterlockedExchange(&g_barsQueued, 0);
         BarsPass();
@@ -1649,8 +1629,8 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     // and the character Windows makes of it too (the game reads both)
     static bool dropChar;
     if (m == WM_KEYDOWN || m == WM_SYSKEYDOWN) {
-        if (g_shared->ocOn && g_shared->ocKey && OrbComboKey(wp, lp)) {
-            dropChar = true;                   // the dash combo's key: run here, kept from the game
+        if (PvKey(wp, lp)) {
+            dropChar = true;                   // the local part's key: kept from the game
             return 0;
         }
         dropChar = g_shared->qkOn && KeyCast(wp);
@@ -4715,7 +4695,6 @@ static void NoCauseLog(BYTE *src, const DmCause &c, DWORD now) {
     Log("damage: a spell hit with no cause of its own (%s '%s'): trigger event %lu, %s, %d hits deep; %s", (*(DWORD *)(src + 0x30) >> 24) - 'A' < 26 ? "hero" : "unit",
         IdText(*(DWORD *)(src + 0x30)).s, EventNow(), tm, g_dmDepth, c.how == DMA_COOLDOWN ? "guessed by the last cooldown" : "nothing cooling down either");
 }
-static void OrbHit(BYTE *src, BYTE *target, float dealt, DWORD ability, bool attack);
 static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     if (!(dealt > 0 && dealt < 1e12f) || !rec)
         return;
@@ -4743,7 +4722,7 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     DWORD ab = spell ? c.ab : 0;
     h.how = spell ? c.how : DMA_NONE;
     g_shared->dmRingAbility[n & (DM_RING - 1)] = ab;
-    OrbHit(src, target, dealt, spell ? c.ab : 0, (fl & 0x100) != 0);    // the dash combo: your hits during a run
+    PvHit(src, target, dealt, spell ? c.ab : 0, (fl & 0x100) != 0);
     InterlockedExchange(&g_shared->dmRingSeq, n + 1);
     DamageType(st), DamageType(tt), DamageType(ab);
     static int abLogs[6];
@@ -6946,7 +6925,6 @@ typedef void(__fastcall *SpellEffectFn)(void *, int, void *);
 static bool g_bcHooked, g_bcBad;
 static void DamageType(DWORD id);
 static void FxHeroCast(BYTE *unit, BYTE *ability);
-static void OrbComboCast(BYTE *unit, BYTE *ability);
 static void BossCastSeen(BYTE *unit, BYTE *ability) {
     if (!IsUnit(unit) || !ability)
         return;
@@ -6954,8 +6932,8 @@ static void BossCastSeen(BYTE *unit, BYTE *ability) {
     int local = LocalPlayer(&state), owner = *(int *)(unit + UNIT_OWNER);
     if (owner == local && g_shared->fxOn)
         FxHeroCast(unit, ability);          // the effect probe: your hero's casts
-    if (owner == local && g_shared->ocOn)
-        OrbComboCast(unit, ability);        // the dash combo: its dash gone off
+    if (owner == local)
+        PvCast(unit, ability);
     if (local < 0 || owner < 0 || owner > 15 || owner == local || Allied(state, local, owner))
         return;
     DWORD id = *(DWORD *)(ability + 0x34);
@@ -6977,7 +6955,7 @@ static void BossCastSeen(BYTE *unit, BYTE *ability) {
     }
 }
 static void __fastcall BossCastHook(void *unit, int edx, void *ability) {
-    if ((g_shared->bcOn || g_shared->fxOn || g_shared->ocOn) && !g_bcBad)
+    if ((g_shared->bcOn || g_shared->fxOn || PvWants()) && !g_bcBad)
         __try {
             BossCastSeen((BYTE *)unit, (BYTE *)ability);
         } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -7009,7 +6987,7 @@ static bool BossCastSites(bool on) {
 }
 // on the game thread: the calls follow the switch; the boss engaged's HP
 static void BossCastPass() {
-    bool on = (g_shared->bcOn || g_shared->fxOn || g_shared->ocOn) && !g_bcBad;    // (the effect probe and the dash combo need your hero's casts too)
+    bool on = (g_shared->bcOn || g_shared->fxOn || PvWants()) && !g_bcBad;    // (the effect probe and the local part need your hero's casts too)
     if (on != g_bcHooked && (!on || FnStart(RVA_SPELL_EFFECT)) && !BossCastSites(on))
         g_bcBad = true;
     if (g_shared->bcState != 3)
@@ -7030,12 +7008,12 @@ static void BossCastPass() {
         logged = (DWORD)u, Log("boss casts: following unit %p: %s, %.0f of %.0f HP", u, alive ? "alive" : "dead or gone", hp, mx);
 }
 
-// -- the effect probe (layout 37; the user's orb combo, 2026-10-30: the orbs are effects on the ground,
-// taken by dashing over them) -------------------------------------------------------------
+// -- the effect probe (layout 37, 2026-10-30: what the map's spells make near your hero: ground effects,
+// attached effects, units) -------------------------------------------------------------
 // The first report (10:44): only effects made and destroyed at once (BoltImpact_Orange rings, 0 ms),
 // the 120 lines used up by them. So: an effect that goes within 50 ms is only counted (a line every
-// 2 s); one that stays is logged once it's lived 300 ms and when it goes. Orbs may also be units (a
-// dummy with an orb model, or an effect attached to one), so units made near your hero are noted too.
+// 2 s); one that stays is logged once it's lived 300 ms and when it goes. A spell's pieces may also be units
+// (a dummy with a model, or an effect attached to one), so units made near your hero are noted too.
 // Detoured while fxOn (all reads):
 //  - +229e60 the map's ground effects (cdecl(model, float *x, float *y), the handle back: AddSpecialEffect
 //    +22a490 jumps there, AddSpecialEffectLoc / AddSpellEffectById call it); +229ec0 attached ones
@@ -7220,15 +7198,10 @@ static void __cdecl EffectDestroyHook(DWORD h) {
         }
     ((EffectDestroyFn)g_fxDel.tramp)(h);
 }
-static void OrbSeen(BYTE *u, DWORD type);
-static void OrbGone(BYTE *u);
 static BYTE *__fastcall UnitCreateHook(int slot, DWORD type, float *x, float *y, float *facing) {
     BYTE *u = ((UnitCreateFn)g_fxUnit.tramp)(slot, type, x, y, facing);
-    if (g_shared->ocOn && !g_fxBad)
-        __try {
-            OrbSeen(u, type);                   // the dash combo's orbs
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-        }
+    if (!g_fxBad)
+        PvUnitMade(u, type);
     if (g_shared->fxOn && !g_fxBad)
         __try {
             float ux, uy;
@@ -7265,14 +7238,13 @@ static void FxUnitGone(FxUnitRec &e, const char *how) {
 }
 static void FxUnitHandle(DWORD h, const char *how) {
     BYTE *u = (BYTE *)GameCall(g_base + RVA_HANDLE_UNIT, h, 0, 0, nullptr);
-    if (g_shared->ocOn)
-        OrbGone(u);
+    PvUnitGone(u);
     for (FxUnitRec &e : g_fxUnits)
         if (e.unit && e.unit == u)
             return FxUnitGone(e, how);
 }
 static void __cdecl RemoveUnitHook(DWORD h) {
-    if ((g_shared->fxOn || g_shared->ocOn) && !g_fxBad)
+    if ((g_shared->fxOn || PvWants()) && !g_fxBad)
         __try {
             FxUnitHandle(h, "removed");
         } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -7281,7 +7253,7 @@ static void __cdecl RemoveUnitHook(DWORD h) {
     ((UnitHandleFn)g_fxRemove.tramp)(h);
 }
 static void __cdecl KillUnitHook(DWORD h) {
-    if ((g_shared->fxOn || g_shared->ocOn) && !g_fxBad)
+    if ((g_shared->fxOn || PvWants()) && !g_fxBad)
         __try {
             FxUnitHandle(h, "killed");
         } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -7293,7 +7265,7 @@ static void __cdecl KillUnitHook(DWORD h) {
 static void FxProbePass() {
     g_fxAdd.hook = (void *)EffectAddHook, g_fxDel.hook = (void *)EffectDestroyHook, g_fxAttach.hook = (void *)EffectAttachHook;
     g_fxUnit.hook = (void *)UnitCreateHook, g_fxRemove.hook = (void *)RemoveUnitHook, g_fxKill.hook = (void *)KillUnitHook;
-    bool on = (g_shared->fxOn || g_shared->ocOn) && !g_fxBad, all = true;    // (the dash combo's orbs come through them too)
+    bool on = (g_shared->fxOn || PvWants()) && !g_fxBad, all = true;    // (the local part's units come through them too)
     for (CodeDetour *d : FX_DETOURS)
         all = all && d->on;
     if (on != all) {
@@ -7312,7 +7284,7 @@ static void FxProbePass() {
             }
         } else
             Log(on ? "effect probe: on (the units the game makes followed%s)" : "effect probe: off",
-                g_shared->fxOn ? "; ground and attached effects, units made near your hero and your hero's casts logged" : ", for the dash combo's orbs");
+                g_shared->fxOn ? "; ground and attached effects, units made near your hero and your hero's casts logged" : ", for the local part");
     }
     g_shared->fxState = g_fxBad ? 3 : g_fxAdd.on ? 1 : 0;
     if (!g_fxAdd.on || !g_shared->fxOn)
@@ -7345,9 +7317,6 @@ static void FxProbePass() {
     }
 }
 
-static bool g_ocHooked, g_ocBad;     // the dash combo (its code at the end of the file)
-static void OrbComboPass();
-static bool OrbSites(bool on);
 
 static void DisplayPass() {
     if (!g_getUi)
@@ -7360,7 +7329,7 @@ static void DisplayPass() {
     AlliesPass();
     BossCastPass();
     FxProbePass();
-    OrbComboPass();
+    PvPass();
     DamageTypesPass();
     MapTextPass();
     UiHidePass();
@@ -7375,7 +7344,7 @@ static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
     bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !g_shared->fxOn && !g_fxAdd.on && !g_fxUnit.on && !g_shared->ocOn && !g_ocHooked && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !g_shared->fxOn && !g_fxAdd.on && !g_fxUnit.on && !PvWants() && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -8242,8 +8211,7 @@ static void RestoreAll() {
         BossCastSites(false);
     for (CodeDetour *d : FX_DETOURS)
         DetourSet(*d, false);
-    if (g_ocHooked)
-        OrbSites(false);
+    PvOff();
     if (g_mtHooked)
         MapTextSites(false);
     TimerStartWatch(false);
@@ -8557,457 +8525,18 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     return TRUE;
 }
 
-// -- the dash combo (layout 38; the user's LM orb combo, 2026-10-30; private: only the private companion
-// part sets ocOn) ---------------------------------------------------------------------------
-// The 10:56 report: Lightning Strike makes 5 'e05P' Lightning Orb units (yours) ~430 around the hero
-// 2 s later; Discharge ('A107') is a dash; an orb is taken (RemoveUnit) with the hero ~180-220 from it.
-// Run (ocGo): the dash's button on the command card pressed (as quickcast keys do), and once its
-// SPELL_EFFECT has come, the star through the boss (layout 41; the 12:06 report's shortest path went round
-// the edge, so the dash hit the boss once): the boss is the orbs' centre (Lightning Strike makes them
-// round it); the first orb the one nearest ocFirst (bottom left), then each next the one most across the
-// boss (5: every second one, bottom left > top right > top left > bottom right > top). To an orb until
-// it's gone (taken: the dash's hit reset, out there off the boss), then back to the boss until within
-// ocThrough (or past it, or held up), then the next orb: the leg from an orb never crosses another (the
-// orb-to-orb lines passed ~300 from the one between, the map's pickup ~265). With none left (or after
-// 4 s), to ocSouth below the boss. Your right click stops it.
-// The orders go out as your right click on the ground does (the world frame's +3c890d): the UI's point
-// order with a target +3ffe80 (stdcall(order, agent, x, y, target, flags a, flags b), ret 0x1c -> +6f17a0,
-// the network's action 0xa0012 for your selection), the smart order [+b6883c] 0xd0003, no agent or target,
-// flags a 6. The 11:58 test sent them through +3ffd60 (an ability's point, action 0xa0011): the hero
-// didn't move. Its 6 calls are watched while ocOn (read only): your own right click on the ground gives
-// the flags it's sent with.
-static const DWORD RVA_POINT_ORDER = 0x3ffe80, ORDER_SMART = 0xd0003, OC_TIMER = 0x7743;
-static const DWORD OC_SITES[6] = { 0x3c890d, 0x3f6557, 0x3f7d8f, 0x3f7ead, 0x3f861e, 0x3f8791 };
-typedef void(__stdcall *PointOrderFn)(DWORD, void *, float, float, void *, DWORD, DWORD);
-static DWORD g_ocOrder = ORDER_SMART, g_ocFlagA = 6, g_ocFlagB;    // as your last right click on the ground had them (+3c890d: 6, ...)
-static bool g_ocSeen;
-static struct OcRun {
-    int state; DWORD at, castAt, orderAt; float sx, sy, tx, ty; BYTE *target; bool rb, ended;
-    BYTE *path[8]; float px[8], py[8]; int n, i; DWORD takenAt[8];     // the orbs in the order planned, the one gone for
-    float cx, cy;                       // the boss (the orbs' centre)
-    int leg;                            // 0 to orb i, 1 back through the boss (orb i - 1 taken)
-    float best, legFrom; DWORD bestAt;  // the pass: the closest to the boss yet, when; how far it started
-    float takenD[8], passD[8]; DWORD passAt[8], earlyAt[8]; char how[8], passHow[8];   // per orb: the hero from the boss as it went, the pass after it
-    int stN, ordN, hitN;                // the run's trace: your hero's moves, the orders, your hits
-    short stX[64], stY[64]; WORD stMs[64], ordMs[24];
-    float lastX, lastY;
-    WORD hitMs[32]; float hitAmt[32], hitD[32]; DWORD hitAb[32]; bool hitAttack[32];
-} g_oc;
-static void __stdcall PointOrderSpy(DWORD order, void *agent, float x, float y, void *target, DWORD a, DWORD b) {
-    if (!agent && !target && order == ORDER_SMART && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // your plain right click on the ground
-        static int logs;
-        if (logs < 3 || !g_ocSeen)
-            logs++, Log("dash combo: your right click's order %08lX at (%.0f, %.0f), flags %08lX / %08lX", order, x, y, a, b);
-        g_ocOrder = order, g_ocFlagA = a, g_ocFlagB = b, g_ocSeen = true;
-    }
-    ((PointOrderFn)(g_base + RVA_POINT_ORDER))(order, agent, x, y, target, a, b);
-}
-static bool OrbSites(bool on) {
-    const BYTE *from = on ? g_base + RVA_POINT_ORDER : (BYTE *)PointOrderSpy, *to = on ? (BYTE *)PointOrderSpy : g_base + RVA_POINT_ORDER;
-    for (DWORD rva : OC_SITES)
-        if (g_base[rva] != 0xE8 || SiteTarget(g_base + rva) != from && SiteTarget(g_base + rva) != to) {
-            Log("dash combo: the call at +%06lX isn't the game's to its point order (+%06lX): left as it is", rva, RVA_POINT_ORDER);
-            return false;
-        }
-    for (DWORD rva : OC_SITES) {
-        LONG rel = (LONG)(to - (g_base + rva + 5));
-        if (SiteTarget(g_base + rva) != to && !WriteCode(g_base + rva + 1, (const BYTE *)&rel, 4))
-            return false;
-    }
-    g_ocHooked = on;
-    Log(on ? "dash combo: on (your point orders' arguments watched)" : "dash combo: off");
-    return true;
-}
-static void OrbComboCast(BYTE *unit, BYTE *ability) {
-    if (g_oc.state == 1 && *(DWORD *)(ability + 0x34) == g_shared->ocDash && unit == FindMyHero())
-        g_oc.castAt = GetTickCount();
-}
-static void OrbOrder(float x, float y) {
-    ((PointOrderFn)(g_base + RVA_POINT_ORDER))(g_ocOrder, nullptr, x, y, nullptr, g_ocFlagA, g_ocFlagB);
-    g_oc.orderAt = GetTickCount(), g_oc.tx = x, g_oc.ty = y;
-    if (g_oc.state == 2 && g_oc.ordN < 24)
-        g_oc.ordMs[g_oc.ordN++] = (WORD)(g_oc.orderAt - g_oc.castAt);
-}
-// your units' hits during a run (DamageSeen, the damage meter's; with it off none): when, how much, your hero from the boss
-static void OrbHit(BYTE *src, BYTE *target, float dealt, DWORD ability, bool attack) {
-    BYTE *state;
-    if (g_oc.state != 2 || g_oc.hitN >= 32 || *(int *)(src + UNIT_OWNER) != LocalPlayer(&state) || *(int *)(target + UNIT_OWNER) == *(int *)(src + UNIT_OWNER))
-        return;
-    int k = g_oc.hitN++;
-    g_oc.hitMs[k] = (WORD)(GetTickCount() - g_oc.castAt), g_oc.hitAmt[k] = dealt, g_oc.hitAb[k] = ability, g_oc.hitAttack[k] = attack;
-    g_oc.hitD[k] = sqrtf((g_oc.lastX - g_oc.cx) * (g_oc.lastX - g_oc.cx) + (g_oc.lastY - g_oc.cy) * (g_oc.lastY - g_oc.cy));
-}
-static const char *OrbSide(float dx, float dy);
-static void OrbEnd(const char *why, bool final) {
-    if (g_oc.state == 2 && g_oc.n) {        // each orb as it went, and the pass through the boss after it (for tuning)
-        char b[1024];
-        int o = 0;
-        for (int k = 0; k < g_oc.n && k < 8; k++) {
-            char h = g_oc.how[k], p = g_oc.passHow[k];
-            o += sprintf_s(b + o, sizeof(b) - o, "%s%s ", k ? "; " : "", OrbSide(g_oc.px[k] - g_oc.cx, g_oc.py[k] - g_oc.cy));
-            if (h == 't' || h == 's' || h == 'r')
-                o += sprintf_s(b + o, sizeof(b) - o, "%s %lu (%.0f from the boss)", h == 't' ? "taken" : h == 's' ? "stopped at it, still there," : "in reach",
-                               g_oc.takenAt[k], g_oc.takenD[k]);
-            else
-                o += g_oc.earlyAt[k] ? sprintf_s(b + o, sizeof(b) - o, "taken early %lu", g_oc.earlyAt[k]) : sprintf_s(b + o, sizeof(b) - o, "not reached");
-            if (p)
-                o += sprintf_s(b + o, sizeof(b) - o, ", through %lu (%s %.0f)", g_oc.passAt[k], p == 'w' ? "within" : p == 'p' ? "passed, closest" : p == 'd' ? "straight on, its line" : "held up at", g_oc.passD[k]);
-        }
-        Log("dash combo: each orb (ms after the dash): %s", b);
-        o = 0, b[0] = 0;
-        for (int k = 0; k < g_oc.stN && o < 900; k++)
-            o += sprintf_s(b + o, sizeof(b) - o, "%s%u: %d, %d", k ? " | " : "", g_oc.stMs[k], g_oc.stX[k], g_oc.stY[k]);
-        Log("dash combo: your hero's moves (ms after the dash: x, y from the boss): %s", b);
-        o = 0, b[0] = 0;
-        for (int k = 0; k < g_oc.ordN; k++)
-            o += sprintf_s(b + o, sizeof(b) - o, " %u", g_oc.ordMs[k]);
-        Log("dash combo: orders out at (ms after the dash):%s", b);
-        o = 0, b[0] = 0;
-        for (int k = 0; k < g_oc.hitN && o < 900; k++)
-            o += sprintf_s(b + o, sizeof(b) - o, "%s%u: %.0f %s (%.0f from the boss)", k ? " | " : "", g_oc.hitMs[k], g_oc.hitAmt[k],
-                           g_oc.hitAttack[k] ? "attack" : g_oc.hitAb[k] ? IdText(g_oc.hitAb[k]).s : "spell", g_oc.hitD[k]);
-        Log("dash combo: your hits in the run (ms after the dash: damage, its cause, your hero then): %s", g_oc.hitN ? b : "none (or the damage meter off)");
-    }
-    if (final)
-        OrbOrder(g_oc.cx, g_oc.cy - g_shared->ocSouth);
-    if (g_gameWnd)
-        KillTimer(g_gameWnd, OC_TIMER);
-    g_shared->ocState = 0, g_shared->ocRuns++;
-    Log("dash combo: done in %lu ms, %lu orbs taken (%s)%s", GetTickCount() - g_oc.at, g_shared->ocTaken, why, final ? "; then to the end point" : "");
-    g_oc.state = 0;
-}
-// the dash's button on the command card (its ability [[btn+0x190]+0x6d4], id +0x34), pressed as quickcast keys do
-static bool OrbPressDash(BYTE *ui) {
-    BYTE *card = *(BYTE **)(ui + 0x3c8);
-    int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
-    for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
-        for (int c = 0; c < cols; c++) {
-            BYTE *btn = GridButton(card, r, c), *data, *ab;
-            if (!btn || !(data = *(BYTE **)(btn + BTN_DATA)) || !(ab = *(BYTE **)(data + 0x6d4)) || *(DWORD *)(ab + 0x34) != g_shared->ocDash)
-                continue;
-            float left = 0, total = 0;
-            DWORD vt = *(DWORD *)btn;
-            BYTE *fn = InImage(vt, g_imageSize) && !PageIs((void *)vt, EXEC) ? *(BYTE **)(vt + BTN_CLICK) : nullptr;
-            if (!fn || (!IsGameCode(fn) && fn != (BYTE *)AllyClickHook) || (ButtonCooldown(btn, &left, &total) & CD_COOLING))
-                return false;
-            *(DWORD *)(btn + BTN_FLAGS) |= 2;
-            ((ClickFn)fn)(btn, 0, 1);
-            return true;
-        }
-    return false;
-}
-static BYTE *OrbNearest(float x, float y, float *ox, float *oy, int *count);
-static void OrbComboStart() {
-    BYTE *ui = (BYTE *)GameUi(), *hero = FindMyHero(), *state;
-    int local = LocalPlayer(&state), n = 0;
-    BYTE *player = local >= 0 ? *(BYTE **)(state + 0x58 + 4 * local) : nullptr, *sel = player ? *(BYTE **)(player + SEL_PLAYER_SELECTION) : nullptr;
-    float ox, oy;
-    if (!ui || !hero || !sel || *(BYTE **)(sel + SEL_ACTIVE) != hero || !UnitXY(hero, &g_oc.sx, &g_oc.sy)) {
-        Log("dash combo: not run: your hero isn't the unit selected");
-        return;
-    }
-    if (!OrbNearest(g_oc.sx, g_oc.sy, &ox, &oy, &n)) {
-        Log("dash combo: not run: no '%s' orbs of yours near your hero", IdText(g_shared->ocOrb).s);
-        return;
-    }
-    g_oc.state = 1, g_oc.at = GetTickCount(), g_oc.castAt = 0, g_oc.target = nullptr, g_oc.rb = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
-    if (!OrbPressDash(ui)) {                // (the state first: its cast may come before the press returns)
-        g_oc.state = 0;
-        Log("dash combo: not run: '%s' isn't on the command card, or it's cooling down", IdText(g_shared->ocDash).s);
-        return;
-    }
-    g_shared->ocState = 1, g_shared->ocTaken = 0;
-    SetTimer(g_gameWnd, OC_TIMER, 10, nullptr);
-    Log("dash combo: '%s' pressed with %d orbs near (from (%.0f, %.0f); order %08lX, flags %08lX / %08lX%s)", IdText(g_shared->ocDash).s, n, g_oc.sx, g_oc.sy,
-        g_ocOrder, g_ocFlagA, g_ocFlagB, g_ocSeen ? ", as your right click's" : ": no right click of yours seen yet, the ground right click's own");
-}
-// your orbs as the game made them (UnitCreateHook: the orb units aren't in the game's unit list, the
-// 11:51 test's 'no orbs near' with 5 there), each gone at RemoveUnit / KillUnit or after 10 s
-static struct OrbUnit { BYTE *unit; DWORD at; float x, y; } g_ocOrbs[16];
-static void OrbSeen(BYTE *u, DWORD type) {
-    BYTE *state;
-    float x, y;
-    if (type != g_shared->ocOrb || !IsUnit(u) || *(int *)(u + UNIT_OWNER) != LocalPlayer(&state) || !UnitXY(u, &x, &y))
-        return;
-    OrbUnit *r = &g_ocOrbs[0];
-    for (OrbUnit &o : g_ocOrbs)
-        if (!o.unit || (LONG)(o.at - r->at) < 0)
-            r = &o;
-    for (OrbUnit &o : g_ocOrbs)
-        if (o.unit == u)
-            r = &o;                         // (noted already: its slot)
-    *r = { u, GetTickCount(), x, y };
-    static int logs;
-    if (logs++ < 5)
-        Log("dash combo: orb '%s' noted at (%.0f, %.0f)", IdText(type).s, x, y);
-}
-static void OrbGone(BYTE *u) {
-    for (OrbUnit &o : g_ocOrbs)
-        if (u && o.unit == u)
-            o.unit = nullptr;
-}
-static bool OrbAlive(BYTE *u) {
-    DWORD now = GetTickCount();
-    for (OrbUnit &o : g_ocOrbs) {
-        if (o.unit && now - o.at > 10000)
-            o.unit = nullptr;               // (an orb lasts 8 s)
-        if (o.unit && o.unit == u)
-            return true;
-    }
-    return false;
-}
-// your orbs alive now: the nearest to (x, y) within 1500, how many
-static BYTE *OrbNearest(float x, float y, float *ox, float *oy, int *count) {
-    BYTE *best = nullptr;
-    float bd = 1e18f;
-    *count = 0;
-    for (OrbUnit &o : g_ocOrbs) {
-        if (!o.unit || !OrbAlive(o.unit))
-            continue;
-        float d = (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y);
-        if (d > 1500.f * 1500.f)
-            continue;
-        ++*count;
-        if (d < bd)
-            bd = d, best = o.unit, *ox = o.x, *oy = o.y;
-    }
-    return best;
-}
-// the boss: the centre of your latest orbs (those made within 0.5 s of the newest, taken ones too: their
-// spots stay noted), 3 at least within 1500 of (x, y); else (x, y)
-static void OrbCentre(float x, float y, float *cx, float *cy) {
-    DWORD newest = 0;
-    for (OrbUnit &o : g_ocOrbs)
-        if (o.at && (!newest || (LONG)(o.at - newest) > 0))
-            newest = o.at;
-    float sx = 0, sy = 0;
-    int n = 0;
-    for (OrbUnit &o : g_ocOrbs)
-        if (o.at && newest - o.at <= 500 && (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y) <= 1500.f * 1500.f)
-            sx += o.x, sy += o.y, n++;
-    *cx = n >= 3 ? sx / n : x, *cy = n >= 3 ? sy / n : y;
-}
-static const float OC_DEG = 57.29578f;
-static float OrbThrough() { return g_shared->ocThrough > 0 ? g_shared->ocThrough : 60.f; }
-// degrees apart (0..180)
-static float OrbApart(float a, float b) {
-    float d = fmodf(a - b + 720.f, 360.f);
-    return d > 180.f ? 360.f - d : d;
-}
-// where an orb is round the boss, in 5 slices of 72 degrees (the star's: top at 90, top left 162, bottom left
-// 234, bottom right 306, top right 18; the 12:06 orbs at 88, 165, 236, 309, 17)
-static const char *OrbSide(float dx, float dy) {
-    static const char *side[5] = { "top right", "top", "top left", "bottom left", "bottom right" };
-    return side[(int)floorf(fmodf(atan2f(dy, dx) * OC_DEG + 360.f + 18.f, 360.f) / 72.f) % 5];
-}
-// the orbs near the hero, round the boss: the first the one nearest ocFirst, then the order that goes most
-// across the boss each time (the least turn there; 5 orbs: every second one); of the orders within 15
-// degrees of the best, the first going anticlockwise (bottom left > top right > top left > bottom right > top:
-// the 12:06 orbs' straight best went clockwise by 7 degrees)
-static void OrbPlan(float x, float y) {
-    int n = 0;
-    float ox[8], oy[8], ang[8], key[8];
-    BYTE *orb[8];
-    OrbCentre(x, y, &g_oc.cx, &g_oc.cy);
-    for (OrbUnit &o : g_ocOrbs)
-        if (n < 8 && o.unit && OrbAlive(o.unit) && (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y) <= 1500.f * 1500.f)
-            orb[n] = o.unit, ox[n] = o.x, oy[n] = o.y, n++;
-    int f = 0, idx[8], perm[8], best[8];
-    for (int k = 0; k < n; k++) {
-        ang[k] = atan2f(oy[k] - g_oc.cy, ox[k] - g_oc.cx) * OC_DEG;
-        if (OrbApart(ang[k], g_shared->ocFirst) < OrbApart(ang[f], g_shared->ocFirst))
-            f = k;
-    }
-    for (int k = 0, m = 0; k < n; k++) {      // the first, then the rest anticlockwise from it
-        key[k] = k == f ? -1.f : fmodf(ang[k] - ang[f] + 720.f, 360.f);
-        int j = m++;
-        for (; j > 0 && key[idx[j - 1]] > key[k]; j--)
-            idx[j] = idx[j - 1];
-        idx[j] = k;
-    }
-    for (int k = 0; k < n; k++)
-        perm[k] = best[k] = k;
-    auto turn = [&]() {
-        float t = 0;
-        for (int k = 1; k < n; k++)
-            t += 180.f - OrbApart(ang[idx[perm[k - 1]]], ang[idx[perm[k]]]);
-        return t;
-    };
-    float least = 1e30f;
-    if (n > 1) {
-        do least = (std::min)(least, turn());
-        while (std::next_permutation(perm + 1, perm + n));
-        do if (turn() <= least + 15.f) {        // (back in the first order: the first within 15 of the least)
-            memcpy(best, perm, sizeof(perm));
-            break;
-        } while (std::next_permutation(perm + 1, perm + n));
-    }
-    char order[160];
-    int o = 0;
-    order[0] = 0;
-    for (int k = 0; k < n; k++) {
-        int j = idx[best[k]];
-        g_oc.path[k] = orb[j], g_oc.px[k] = ox[j], g_oc.py[k] = oy[j];
-        o += sprintf_s(order + o, sizeof(order) - o, "%s%s", k ? ", " : "", OrbSide(ox[j] - g_oc.cx, oy[j] - g_oc.cy));
-    }
-    memset(g_oc.takenAt, 0, sizeof(g_oc.takenAt)), memset(g_oc.earlyAt, 0, sizeof(g_oc.earlyAt)), memset(g_oc.passAt, 0, sizeof(g_oc.passAt));
-    memset(g_oc.how, 0, sizeof(g_oc.how)), memset(g_oc.passHow, 0, sizeof(g_oc.passHow));
-    g_oc.n = n, g_oc.i = 0, g_oc.leg = 0, g_oc.stN = g_oc.ordN = g_oc.hitN = 0, g_oc.lastX = x, g_oc.lastY = y;
-    Log("dash combo: %d orbs round the boss at (%.0f, %.0f) (their centre; your hero %.0f from it), in the order: %s; back through it after each (within %.0f)",
-        n, g_oc.cx, g_oc.cy, sqrtf((x - g_oc.cx) * (x - g_oc.cx) + (y - g_oc.cy) * (y - g_oc.cy)), order, OrbThrough());
-    if (g_shared->ocDirect)
-        Log("dash combo: straight from an orb to the next when that line passes within %.0f of the boss", OrbThrough());
-}
-// to the next orb still there from g_oc.i on (those taken early skipped); false: none left
-static bool OrbNext() {
-    while (g_oc.i < g_oc.n && !OrbAlive(g_oc.path[g_oc.i]))
-        g_oc.how[g_oc.i++] = 'e';
-    if (g_oc.i >= g_oc.n)
-        return false;
-    g_oc.leg = 0;
-    OrbOrder(g_oc.px[g_oc.i], g_oc.py[g_oc.i]);
-    return true;
-}
-static void OrbToBoss(float d) {
-    g_oc.leg = 1, g_oc.best = g_oc.legFrom = d, g_oc.bestAt = GetTickCount();
-    OrbOrder(g_oc.cx, g_oc.cy);
-}
-// ocDirect: the line from your hero to the next orb still there passes within ocThrough of the boss: that
-// pass counted ('d', how near the line comes) and straight on to it; false: not (or none left, or off)
-static bool OrbDirect(float hx, float hy, DWORD now) {
-    int j = g_oc.i;
-    while (j < g_oc.n && !OrbAlive(g_oc.path[j]))
-        j++;
-    if (!g_shared->ocDirect || j >= g_oc.n || g_oc.i < 1)
-        return false;
-    float dx = g_oc.px[j] - hx, dy = g_oc.py[j] - hy, L2 = dx * dx + dy * dy;
-    float t = L2 > 0 ? ((g_oc.cx - hx) * dx + (g_oc.cy - hy) * dy) / L2 : 0;
-    t = t < 0 ? 0 : t > 1 ? 1 : t;
-    float ex = hx + t * dx - g_oc.cx, ey = hy + t * dy - g_oc.cy, d = sqrtf(ex * ex + ey * ey);
-    if (d > OrbThrough())
-        return false;
-    int k = g_oc.i - 1;
-    g_oc.passAt[k] = now - g_oc.castAt, g_oc.passD[k] = d, g_oc.passHow[k] = 'd';
-    return OrbNext();
-}
-// orbs later in the path gone already: one dashed over on the way (its reset spent before its pass)
-static void OrbEarly(DWORD now, float hx, float hy) {
-    for (int k = g_oc.leg ? g_oc.i : g_oc.i + 1; k < g_oc.n; k++)
-        if (!g_oc.earlyAt[k] && !OrbAlive(g_oc.path[k])) {
-            g_oc.earlyAt[k] = (now - g_oc.castAt) | 1, g_shared->ocTaken++;
-            Log("dash combo: the %s orb taken early, %lu ms after the dash (going %s; your hero %.0f from it)", OrbSide(g_oc.px[k] - g_oc.cx, g_oc.py[k] - g_oc.cy),
-                now - g_oc.castAt, g_oc.leg ? "back through the boss" : "for another orb", sqrtf((g_oc.px[k] - hx) * (g_oc.px[k] - hx) + (g_oc.py[k] - hy) * (g_oc.py[k] - hy)));
-        }
-}
-// on the game thread, every 10 ms while a run is on
-static void OrbComboTick() {
-    if (!g_oc.state)
-        return;
-    DWORD now = GetTickCount();
-    bool rb = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
-    if (rb && !g_oc.rb)
-        return OrbEnd("stopped by your right click", false);
-    g_oc.rb = rb;
-    BYTE *hero = FindMyHero();
-    float hx, hy;
-    if (!hero || !UnitXY(hero, &hx, &hy))
-        return OrbEnd("your hero is gone", false);
-    if (g_oc.state == 1) {
-        if (!g_oc.castAt) {
-            if (now - g_oc.at > 800)
-                OrbEnd("the dash didn't go off", false);
-            return;
-        }
-        g_oc.state = 2, g_shared->ocState = 2;
-        OrbPlan(hx, hy);
-        if (!OrbNext())
-            return OrbEnd("no orbs left", true);
-        return;
-    }
-    if (now - g_oc.at > 4000)
-        return OrbEnd("4 s up", true);
-    float bx = hx - g_oc.cx, by = hy - g_oc.cy, boss = sqrtf(bx * bx + by * by);
-    if ((hx != g_oc.lastX || hy != g_oc.lastY) && g_oc.stN < 64)      // a move (the dash's jumps)
-        g_oc.stMs[g_oc.stN] = (WORD)(now - g_oc.castAt), g_oc.stX[g_oc.stN] = (short)bx, g_oc.stY[g_oc.stN++] = (short)by;
-    g_oc.lastX = hx, g_oc.lastY = hy;
-    OrbEarly(now, hx, hy);
-    if (g_oc.leg == 0) {
-        // to the orb until it's gone (taken: the map's pickup, 150-265 off); or in ocReach of it (if set); or the
-        // hero stopped at it (the move's end) with it still there
-        int i = g_oc.i;
-        float dx = g_oc.px[i] - hx, dy = g_oc.py[i] - hy, d = sqrtf(dx * dx + dy * dy), reach = g_shared->ocReach;
-        bool gone = !OrbAlive(g_oc.path[i]);
-        if (!gone && !(reach > 0 && d <= reach) && d > 40)
-            return;
-        g_oc.how[i] = gone ? 't' : d <= 40 ? 's' : 'r';
-        g_oc.takenAt[i] = now - g_oc.castAt, g_oc.takenD[i] = boss, g_oc.i++;
-        if (gone)
-            g_shared->ocTaken++;
-        if (!OrbDirect(hx, hy, now))
-            OrbToBoss(boss);
-        return;
-    }
-    if (OrbDirect(hx, hy, now))
-        return;
-    // back through the boss: the next orb once within ocThrough of it, or past it (20 farther than its closest,
-    // having come 60 nearer), or held up (no nearer in 250 ms: the boss in the way)
-    if (boss < g_oc.best) {
-        if (boss < g_oc.best - 5)
-            g_oc.bestAt = now;
-        g_oc.best = boss;
-    }
-    bool within = boss <= OrbThrough(), past = g_oc.best < g_oc.legFrom - 60 && boss > g_oc.best + 20, held = now - g_oc.bestAt > 250;
-    if (!within && !past && !held)
-        return;
-    int k = g_oc.i - 1;
-    g_oc.passAt[k] = now - g_oc.castAt, g_oc.passD[k] = g_oc.best, g_oc.passHow[k] = within ? 'w' : past ? 'p' : 'h';
-    if (!OrbNext())
-        return OrbEnd(g_shared->ocTaken >= (DWORD)g_oc.n ? "every orb taken" : "no orbs left", true);
-}
-
-// on the game thread: the watched calls follow the switch; a run when asked
-static void OrbComboPass() {
-    bool on = g_shared->ocOn && !g_ocBad;
-    if (on != g_ocHooked && (!on || FnStart(RVA_POINT_ORDER)) && !OrbSites(on))
-        g_ocBad = true, g_shared->ocState = 3;
-    static LONG go;
-    LONG want = g_shared->ocGo;
-    if (want != go) {
-        go = want;
-        if (on && g_ocHooked && !g_oc.state)
-            __try {
-                OrbComboStart();
-            } __except (EXCEPTION_EXECUTE_HANDLER) {
-                Log("dash combo: starting faulted");
-            }
-    }
-}
-
-// the combo's key in the game's own window (the game thread): a run, the key kept from the game; not while
-// the chat is open; the key held (its repeats) doesn't start another
-static bool OrbComboKey(WPARAM vk, LPARAM lp) {
-    DWORD k = g_shared->ocKey;
-    if (vk != (k & 0xff))
-        return false;
-    // the keyboard's own state (not the window's: a Ctrl kept from the game by another program's hook still counts)
-    bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0, alt = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0, shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-    if (ctrl != ((k & 0x100) != 0) || alt != ((k & 0x200) != 0) || shift != ((k & 0x400) != 0)) {
-        static int odd;
-        if (odd++ < 3)
-            Log("dash combo: its key %02lX came with Ctrl %d Alt %d Shift %d (it wants %d %d %d): the game's", (DWORD)vk, ctrl, alt, shift, (k & 0x100) != 0, (k & 0x200) != 0, (k & 0x400) != 0);
-        return false;
-    }
-    __try {
-        BYTE *ui = (BYTE *)GameUi(), *chat = ui ? *(BYTE **)(ui + UI_CHAT_STATE) : nullptr;
-        if (!ui || (chat && *(DWORD *)(chat + 0x1dc)))
-            return false;                       // typing in the chat: the game's
-        static int logs;
-        if (logs++ < 5)
-            Log("dash combo: its key %02lX in the game", (DWORD)vk);
-        if (!(lp & 0x40000000) && !g_oc.state && g_ocHooked)
-            OrbComboStart();
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        Log("dash combo: its key faulted");
-    }
-    return true;
-}
+// -- the local part (not in git): companion\private\native\twc-private.inc, built into twc-game-local.dll
+// (build.bat); the shipped twc-game.dll is built without it (TWC_PUBLIC): its hooks do nothing
+#if !defined(TWC_PUBLIC) && __has_include("../private/native/twc-private.inc")
+#include "../private/native/twc-private.inc"
+#else
+static bool PvWants() { return false; }
+static bool PvTimer(HWND, WPARAM) { return false; }
+static bool PvKey(WPARAM, LPARAM) { return false; }
+static void PvCast(BYTE *, BYTE *) {}
+static void PvUnitMade(BYTE *, DWORD) {}
+static void PvUnitGone(BYTE *) {}
+static void PvHit(BYTE *, BYTE *, float, DWORD, bool) {}
+static void PvPass() {}
+static void PvOff() {}
+#endif

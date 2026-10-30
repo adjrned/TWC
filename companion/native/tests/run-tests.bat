@@ -1,7 +1,8 @@
 @echo off
 rem Builds and runs the game module's tests (32-bit, MSVC), each against a
 rem fake game image: no Warcraft III needed. Each test prints a line per
-rem check and returns its failures; this adds them up.
+rem check and returns its failures; this adds them up. The local part's own
+rem (..\..\private\native\tests, not in git) run too where they are.
 rem   run-tests.bat           all of them
 rem   run-tests.bat display   one (test_display.cpp)
 setlocal enabledelayedexpansion
@@ -13,13 +14,13 @@ cd /d "%~dp0"
 if not exist obj mkdir obj
 set FAILED=0
 set "ONLY=%~1"
-for %%f in (test_*.cpp) do (
+for %%f in (test_*.cpp ..\..\private\native\tests\test_*.cpp) do (
     set "NAME=%%~nf"
     if "!ONLY!"=="" (set RUN=1) else (if /i "!NAME!"=="test_!ONLY!" (set RUN=1) else (set RUN=0))
     if !RUN!==1 (
         echo.
         echo == !NAME!
-        cl /nologo /O2 /EHsc /MT /W3 /Foobj\ /Feobj\!NAME!.exe %%f >obj\!NAME!.build.txt 2>&1
+        cl /nologo /O2 /EHsc /MT /W3 /Foobj\ /Feobj\!NAME!.exe "%%f" >obj\!NAME!.build.txt 2>&1
         if errorlevel 1 (
             echo   BUILD FAILED, see obj\!NAME!.build.txt
             set /a FAILED+=1

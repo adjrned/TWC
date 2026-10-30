@@ -291,15 +291,6 @@ int main() {
           && !memcmp(g_base + RVA_KILL_UNIT, "\x55\x8B\xEC\x8B\x4D\x08", 6) && SiteTarget(g_base + 0x23ff06) == g_base + RVA_HANDLE_UNIT
           && SiteTarget(g_base + 0x2368e9) == g_base + RVA_HANDLE_UNIT,
           "attached effects +229EC0, units made +682770 (5 calls), RemoveUnit / KillUnit (the unit by +2217A0, as GetUnitX finds it)");
-    // the dash combo's orders, as the ground right click (+3C890D) sends them: +3FFE80 (stdcall(order, agent, x, y, target, flags a,
-    // flags b), ret 0x1C) -> +6F17A0, the network's action 0xA0012; the smart order [+B6883C] = 0xD0003 pushed last, flags a 6; its 6 calls
-    bool sites6 = FindCallSites(g_base + RVA_POINT_ORDER, nullptr, 0) == 6;
-    for (DWORD rva : OC_SITES)
-        sites6 = sites6 && g_base[rva] == 0xE8 && SiteTarget(g_base + rva) == g_base + RVA_POINT_ORDER;
-    CHECK(sites6 && !memcmp(g_base + RVA_POINT_ORDER, "\x55\x8B\xEC\x8B\x55\x20", 6) && SiteTarget(g_base + 0x3fff02) == g_base + 0x6f17a0
-          && !memcmp(g_base + 0x6f17cc, "\xC7\x45\xC4\x12\x00\x0A\x00", 7) && !memcmp(g_base + 0x3c8907, "\xFF\x35\x3C\x88\xB6\x6F", 6)
-          && *(DWORD *)(g_base + 0xb6883c) == ORDER_SMART && !memcmp(g_base + 0x3c88ee, "\x6A\x06\x6A\x00", 4) && !memcmp(g_base + 0x3c8905, "\x6A\x00", 2),
-          "the ground right click's order: +3FFE80 (its 6 calls; +3C890D pushes the smart order 0xD0003, no agent or target, flags 6) -> +6F17A0, action 0xA0012");
     // layout 33's hit details: the ctor's 2nd argument -> [+0x14], 4th -> [+0xc], 5th -> [+4]; UnitDamageTarget passes
     // 1 << damage type (cl = its 7th), flags 0x100 (attack) | 1 (ranged), then writes the attack type (its 6th) at [+0x20]
     CHECK(!memcmp(g_base + 0x6d6f8b, "\x8B\x45\x0C\x89\x41\x14", 6) && !memcmp(g_base + 0x6d6f96, "\x8B\x45\x18\x89\x41\x04", 6) && !memcmp(g_base + 0x6d6f9c, "\x8B\x45\x14\x89\x41\x0C", 6)

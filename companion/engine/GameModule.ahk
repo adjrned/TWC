@@ -43,11 +43,13 @@ class GameModuleEngine {
         }
         return 0
     }
+    ; the module to load: a local build (twc-game-local.dll, native\build.bat makes it; not in git) over the shipped one
+    dllFile => FileExist(this.dir "\twc-game-local.dll") ? this.dir "\twc-game-local.dll" : this.dir "\twc-game.dll"
     ; the copy of twc-game.dll the game loads (made if missing; other copies not in use go).
     ; fresh n: a copy under another name (twc-game.<stamp>-n.dll), for a game that holds a
     ; retired module of this very build: the game would hand that one back for the same name
     loadCopy(fresh := 0) {
-        dll := this.dir "\twc-game.dll"
+        dll := this.dllFile
         if !(st := GameModuleEngine.FileStamp(dll))
             return ""
         copy := this.dir "\twc-game." Format("{:08x}", st) (fresh ? "-" fresh : "") ".dll"
@@ -74,7 +76,7 @@ class GameModuleEngine {
                 return                          ; loaded again on the next round
             try remap.pushKeys()                ; the quickcast keys (a new module starts without them)
             if NumGet(v, Shm.magic, "uint") = 0x54574331 && NumGet(v, Shm.layout, "uint") >= 13 && NumGet(v, Shm.status, "uint") = 1
-                && !NumGet(v, Shm.unload, "uint") && (st := GameModuleEngine.FileStamp(this.dir "\twc-game.dll")) && NumGet(v, Shm.stamp, "uint") != st {
+                && !NumGet(v, Shm.unload, "uint") && (st := GameModuleEngine.FileStamp(this.dllFile)) && NumGet(v, Shm.stamp, "uint") != st {
                 this.swapping := pid, this.swapAt := A_TickCount
                 NumPut("uint", 1, v, Shm.unload)
                 DebugLog("game module: a newer one is here: asking the game's to unload (pid " pid ")")
@@ -450,33 +452,7 @@ class GameModuleEngine {
         NumPut("uint", on ? 1 : 0, v, Shm.fxOn)
         return true
     }
-    ; the dash combo (layout 38): on, its dash ability and orb unit type (rawcodes 'A107' / 'e05P'), how far south it
-    ; ends, how close to an orb before the next (layout 39; 0: once it's gone), how close each pass through the boss
-    ; comes and the first orb's direction from it in degrees (layout 41), straight from an orb to the next when
-    ; that line passes that close (layout 42); false: no module, or an older one
-    dashCombo(on, dash, orb, south, reach := 0, key := 0, through := 80, first := 225, direct := 1) {
-        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 38
-            return false
-        if NumGet(v, Shm.layout, "uint") >= 41
-            NumPut("float", through, v, Shm.ocThrough), NumPut("float", first, v, Shm.ocFirst)
-        if NumGet(v, Shm.layout, "uint") >= 42
-            NumPut("uint", direct ? 1 : 0, v, Shm.ocDirect)
-        if NumGet(v, Shm.layout, "uint") >= 40          ; its key, read in the game (vk | 0x100 Ctrl | 0x200 Alt | 0x400 Shift)
-            NumPut("uint", key, v, Shm.ocKey)
-        if NumGet(v, Shm.layout, "uint") >= 39
-            NumPut("float", reach, v, Shm.ocReach)
-        NumPut("uint", GameModuleEngine.Id(dash), v, Shm.ocDash), NumPut("uint", GameModuleEngine.Id(orb), v, Shm.ocOrb)
-        NumPut("float", south, v, Shm.ocSouth), NumPut("uint", on ? 1 : 0, v, Shm.ocOn)
-        return true
-    }
-    ; a run now; false: no module, an older one, or it's off
-    dashComboGo() {
-        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 38 || !NumGet(v, Shm.ocOn, "uint")
-            return false
-        NumPut("int", NumGet(v, Shm.ocGo, "int") + 1, v, Shm.ocGo)
-        return true
-    }
-    ; 'A107' -> its number (0: not 4 characters)
+    ; a rawcode ('A107') -> its number (0: not 4 characters)
     static Id(code) => StrLen(code) = 4 ? Ord(SubStr(code, 1, 1)) << 24 | Ord(SubStr(code, 2, 1)) << 16 | Ord(SubStr(code, 3, 1)) << 8 | Ord(SubStr(code, 4, 1)) : 0
     ; the unit to follow (0 none); false: no module, or an older one
     bossWatch(unit) {

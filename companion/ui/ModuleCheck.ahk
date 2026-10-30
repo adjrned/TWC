@@ -54,12 +54,18 @@ ModuleCheckFeatures() => [
     ["Damage: spell names", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
     ["Damage: spells' timers", "damage: a spell hit's ability: '....' \(the map timer", "damage: the map timers' (entry|vtable)"],
     ["Damage: on-hit effects", "damage: a hit dealt while another's damage ran", ""],
-    ["Dash combo (orbs)", "dash combo: (done in|'....' pressed)", "dash combo: (the call at .* isn.t|starting faulted)"],
-    ["Effect probe (orbs)", "effect probe: ('.*' still there|unit '.*' made|made and gone at once|your hero cast)", "effect probe: (refused|reading .* faulted)"],
+    ["Effect probe", "effect probe: ('.*' still there|unit '.*' made|made and gone at once|your hero cast)", "effect probe: (refused|reading .* faulted)"],
     ["Boss timers: enemies' spells", "boss casts: player \d+'s '....' .* cast '....'", "boss casts: (the call at .* isn.t|writing the call|reading a cast faulted)"],
     ["Map text lines (probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
     ["Damage meter names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
 ]
+
+; more rows, and a feature being tried now, from parts loaded besides (none in the shipped companion)
+class ModuleCheckExt {
+    static rows := []           ; [name, ok pattern, refused pattern] each, as ModuleCheckFeatures'
+    static latest := ""         ; a log line pattern: its latest 15 lines go first in the report
+    static latestName := ""     ; what they're about ("the dash combo")
+}
 
 ; the companion's log lines from its last start about quickcast, the damage meter and the game module (60 at most)
 ModuleCheckCompanionLines() {
@@ -152,7 +158,9 @@ ModuleCheckRows(log) {
     }
     ui := find("game UI at .*vtable checks out")
     rows.Push(ui != "" ? { mark: "✓", name: "Game UI", detail: ui } : { mark: "·", name: "Game UI", detail: "not seen yet: start a game (not just the lobby)" })
-    for f in ModuleCheckFeatures() {
+    feats := ModuleCheckFeatures()
+    feats.Push(ModuleCheckExt.rows*)
+    for f in feats {
         bad := find(f[3]), ok := find(f[2])
         rows.Push(bad != "" ? { mark: "✗", name: f[1], detail: bad }
             : ok != "" ? { mark: "✓", name: f[1], detail: ok }
@@ -176,10 +184,10 @@ ModuleCheckReport(rows, log) {
     ; they were: the user's 11:48 report)
     latest := []
     for l in log
-        if RegExMatch(l, "dash combo: ")
+        if ModuleCheckExt.latest != "" && RegExMatch(l, ModuleCheckExt.latest)
             latest.Push(l)
     if latest.Length {
-        r .= "`nLatest (the module's log, the last " Min(15, latest.Length) " about the dash combo):`n"
+        r .= "`nLatest (the module's log, the last " Min(15, latest.Length) " about " ModuleCheckExt.latestName "):`n"
         loop Min(15, latest.Length)
             r .= latest[latest.Length - Min(15, latest.Length) + A_Index] "`n"
     }
