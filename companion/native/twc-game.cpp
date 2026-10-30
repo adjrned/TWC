@@ -6806,7 +6806,7 @@ static void Run() {
         FollowPortrait();
         FollowTooltips();
         FollowUnitTip();
-        FollowDamage(t);
+        FollowDamage(GetTickCount());           // (not t: that's Targeting()'s, which kept the names from being read again)
         FollowTargetMode();
         FollowKeyCast(t);
         QueueDisplay();

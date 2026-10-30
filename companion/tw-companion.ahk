@@ -2506,8 +2506,9 @@ Toast(msg, kind := "", ms := 3500) {
     }
     tw := TextWidth(toastText, msg) + 54, th := 40
     toastText.Move(1, 1, tw - 2, th - 2), toastText.Text := msg
-    ; in the middle of the screen (the user's pick, 2026-10-29; it was near the top of the game, or the
-    ; bottom of the window): the game's when it's in front, else the screen the companion's window is on
+    ; across the middle of the screen, a little under it (the user's pick, 2026-10-29: first the middle,
+    ; then "a little lower"; it was near the top of the game, or the bottom of the window): the game's
+    ; when it's in front, else the screen the companion's window is on
     if WinActive(WarcraftIII) {
         WinGetClientPos(&ax, &ay, &aw, &ah, WarcraftIII)
         l := ax, t := ay, r := ax + aw, b := ay + ah
@@ -2521,7 +2522,7 @@ Toast(msg, kind := "", ms := 3500) {
         }
         MonitorGetWorkArea(mon, &l, &t, &r, &b)
     }
-    tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(t + (b - t - th * DPI_K) / 2)
+    tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(t + (b - t) * 0.65 - th * DPI_K / 2)     ; its middle at 65% down
     toastGui.Show("NA x" tx " y" ty " w" tw " h" th)
     SetTimer(HideToast, ms > 0 ? -ms : 0)
 }
