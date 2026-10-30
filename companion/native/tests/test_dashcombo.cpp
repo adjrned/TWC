@@ -1,5 +1,5 @@
-// The dash combo (layout 38), against a fake game image: while ocOn the UI's 4 calls to its point order
-// (+3ffd60) are watched (your right click's order and flags noted, then the game's own); a run (ocGo): the
+// The dash combo (layout 40), against a fake game image: while ocOn the UI's 6 calls to its point order with
+// a target (+3ffe80, the ground right click's) are watched (your right click's order and flags noted, then the game's own); a run (ocGo): the
 // dash's button pressed, once its SPELL_EFFECT came a move order (as your right click's) to the nearest of
 // your orbs (from the game's unit list), the next one as each goes, then to the point south of the start;
 // not run without your hero selected or orbs near; off: the calls are the game's again.
@@ -16,7 +16,7 @@ static void __fastcall FakeEffect(void *, int, void *) {}
 struct Order { DWORD order; void *target; float x, y; DWORD a, b; };
 static Order orders[16];
 static int nOrders;
-static void __stdcall FakeOrder(DWORD order, void *target, float x, float y, DWORD a, DWORD b) { orders[nOrders++ & 15] = { order, target, x, y, a, b }; }
+static void __stdcall FakeOrder(DWORD order, void *agent, float x, float y, void *target, DWORD a, DWORD b) { orders[nOrders++ & 15] = { order, target, x, y, a, b }; }
 static BYTE units[5][0x300];            // 0 your hero, 1-3 your orbs, 4 someone else's orb
 static BYTE *hero = units[0];
 static BYTE dashAbility[0x100];
@@ -96,13 +96,13 @@ int main() {
     bool ours = g_ocHooked && g_bcHooked;
     for (DWORD rva : OC_SITES)
         ours = ours && SiteTarget(img + rva) == (BYTE *)PointOrderSpy;
-    CHECK(ours, "on: the UI's 4 calls to its point order are watched (and the SPELL_EFFECT calls, for the dash)");
+    CHECK(ours, "on: the UI's 6 calls to its point order with a target (+3FFE80, the ground right click's) are watched (and the SPELL_EFFECT calls, for the dash)");
     // your own right click on the ground: its order and flags noted, then the game's own; an ability's point order (a
     // quickcast's Lightning Bolt, 11:16) passed on, not taken
-    ((PointOrderFn)SiteTarget(img + OC_SITES[1]))(0xd0278, nullptr, 1, 2, 0x2, 0x4);
+    ((PointOrderFn)SiteTarget(img + OC_SITES[1]))(0xd0278, nullptr, 1, 2, nullptr, 0x2, 0x4);
     bool notAbility = !g_ocSeen;
-    ((PointOrderFn)SiteTarget(img + OC_SITES[1]))(0xd0003, nullptr, 10, 20, 0x5, 0x40);
-    CHECK(nOrders == 2 && notAbility && orders[1].a == 0x5 && g_ocSeen && g_ocFlagA == 0x5 && g_ocFlagB == 0x40 && LogHas("your point order 000D0003 at (10, 20), flags 00000005 / 00000040"),
+    ((PointOrderFn)SiteTarget(img + OC_SITES[0]))(0xd0003, nullptr, 10, 20, nullptr, 0x5, 0x40);
+    CHECK(nOrders == 2 && notAbility && orders[1].a == 0x5 && g_ocSeen && g_ocFlagA == 0x5 && g_ocFlagB == 0x40 && LogHas("your right click's order 000D0003 at (10, 20), flags 00000005 / 00000040"),
           "your right click: passed on, its order and flags noted (0x5 / 0x40); an ability's point order passed on, not taken");
     // a run: orbs at (400, 0), (300, 300), (-400, 100) from the hero at (0, 0)
     sh.ocGo++; OrbComboPass();

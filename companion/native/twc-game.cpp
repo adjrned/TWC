@@ -8554,27 +8554,29 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
 // Run (ocGo): the dash's button on the command card pressed (as quickcast keys do), and once its
 // SPELL_EFFECT has come, a move order to the nearest orb; the moment it's gone, to the next nearest;
 // with none left (or after 4 s), to ocSouth below the start. Your right click stops it.
-// The orders go out as your right click's do: the UI's point order +3ffd60 (stdcall(order, target,
-// x, y, flags a, flags b), ret 0x18 -> +6f15c0, the network's point order 0xa0011 for your selection),
-// called from 4 places (+3f2b0e, +3f6535, +3f7e7e, +3f8766). Those calls are watched while ocOn
-// (read only): your own right click on the ground gives the order and both flags it's sent with.
-static const DWORD RVA_POINT_ORDER = 0x3ffd60, ORDER_SMART = 0xd0003, OC_TIMER = 0x7743;
-static const DWORD OC_SITES[4] = { 0x3f2b0e, 0x3f6535, 0x3f7e7e, 0x3f8766 };
-typedef void(__stdcall *PointOrderFn)(DWORD, void *, float, float, DWORD, DWORD);
-static DWORD g_ocOrder = ORDER_SMART, g_ocFlagA, g_ocFlagB;    // as your last right click on the ground had them
+// The orders go out as your right click on the ground does (the world frame's +3c890d): the UI's point
+// order with a target +3ffe80 (stdcall(order, agent, x, y, target, flags a, flags b), ret 0x1c -> +6f17a0,
+// the network's action 0xa0012 for your selection), the smart order [+b6883c] 0xd0003, no agent or target,
+// flags a 6. The 11:58 test sent them through +3ffd60 (an ability's point, action 0xa0011): the hero
+// didn't move. Its 6 calls are watched while ocOn (read only): your own right click on the ground gives
+// the flags it's sent with.
+static const DWORD RVA_POINT_ORDER = 0x3ffe80, ORDER_SMART = 0xd0003, OC_TIMER = 0x7743;
+static const DWORD OC_SITES[6] = { 0x3c890d, 0x3f6557, 0x3f7d8f, 0x3f7ead, 0x3f861e, 0x3f8791 };
+typedef void(__stdcall *PointOrderFn)(DWORD, void *, float, float, void *, DWORD, DWORD);
+static DWORD g_ocOrder = ORDER_SMART, g_ocFlagA = 6, g_ocFlagB;    // as your last right click on the ground had them (+3c890d: 6, ...)
 static bool g_ocSeen;
 static struct OcRun {
     int state; DWORD at, castAt, orderAt; float sx, sy, tx, ty; BYTE *target; bool rb, ended;
     BYTE *path[8]; float px[8], py[8]; int n, i; DWORD takenAt[8];     // the orbs in the order planned, the one gone for
 } g_oc;
-static void __stdcall PointOrderSpy(DWORD order, void *target, float x, float y, DWORD a, DWORD b) {
-    if (!target && order == ORDER_SMART && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // your plain right click on the ground (not an ability's point: 11:16)
+static void __stdcall PointOrderSpy(DWORD order, void *agent, float x, float y, void *target, DWORD a, DWORD b) {
+    if (!agent && !target && order == ORDER_SMART && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // your plain right click on the ground
         static int logs;
         if (logs < 3 || !g_ocSeen)
-            logs++, Log("dash combo: your point order %08lX at (%.0f, %.0f), flags %08lX / %08lX", order, x, y, a, b);
+            logs++, Log("dash combo: your right click's order %08lX at (%.0f, %.0f), flags %08lX / %08lX", order, x, y, a, b);
         g_ocOrder = order, g_ocFlagA = a, g_ocFlagB = b, g_ocSeen = true;
     }
-    ((PointOrderFn)(g_base + RVA_POINT_ORDER))(order, target, x, y, a, b);
+    ((PointOrderFn)(g_base + RVA_POINT_ORDER))(order, agent, x, y, target, a, b);
 }
 static bool OrbSites(bool on) {
     const BYTE *from = on ? g_base + RVA_POINT_ORDER : (BYTE *)PointOrderSpy, *to = on ? (BYTE *)PointOrderSpy : g_base + RVA_POINT_ORDER;
@@ -8597,7 +8599,7 @@ static void OrbComboCast(BYTE *unit, BYTE *ability) {
         g_oc.castAt = GetTickCount();
 }
 static void OrbOrder(float x, float y) {
-    ((PointOrderFn)(g_base + RVA_POINT_ORDER))(g_ocOrder, nullptr, x, y, g_ocFlagA, g_ocFlagB);
+    ((PointOrderFn)(g_base + RVA_POINT_ORDER))(g_ocOrder, nullptr, x, y, nullptr, g_ocFlagA, g_ocFlagB);
     g_oc.orderAt = GetTickCount(), g_oc.tx = x, g_oc.ty = y;
 }
 static void OrbEnd(const char *why, bool final) {
@@ -8652,7 +8654,7 @@ static void OrbComboStart() {
     g_shared->ocState = 1, g_shared->ocTaken = 0;
     SetTimer(g_gameWnd, OC_TIMER, 10, nullptr);
     Log("dash combo: '%s' pressed with %d orbs near (from (%.0f, %.0f); order %08lX, flags %08lX / %08lX%s)", IdText(g_shared->ocDash).s, n, g_oc.sx, g_oc.sy,
-        g_ocOrder, g_ocFlagA, g_ocFlagB, g_ocSeen ? ", as your right click's" : ": no right click of yours seen yet, the plain ones");
+        g_ocOrder, g_ocFlagA, g_ocFlagB, g_ocSeen ? ", as your right click's" : ": no right click of yours seen yet, the ground right click's own");
 }
 // your orbs as the game made them (UnitCreateHook: the orb units aren't in the game's unit list, the
 // 11:51 test's 'no orbs near' with 5 there), each gone at RemoveUnit / KillUnit or after 10 s
