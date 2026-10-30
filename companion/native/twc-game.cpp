@@ -3809,8 +3809,31 @@ static int __fastcall AllyAbilityMakeHook(void *unit, void *card) {
                 Log("allies' abilities: the first buttons made for unit %p (owner %d)", unit, *(int *)((BYTE *)unit + UNIT_OWNER));
             BYTE *st;
             int local, owner = *(int *)((BYTE *)unit + UNIT_OWNER);
-            if (enemyLogs < 2 && (local = LocalPlayer(&st)) >= 0 && owner != local && !Allied(st, local, owner))
+            bool enemy = (local = LocalPlayer(&st)) >= 0 && owner != local && !Allied(st, local, owner);
+            if (enemyLogs < 2 && enemy)
                 enemyLogs++, Log("allies' abilities: an enemy's buttons made (unit %p, owner %d)", unit, owner);
+            // the unit's abilities as the button code reads them (the user, 2026-10-30: a boss's card has 0 buttons
+            // with an ability, an ally's fills): +0x6b2696 skips one with [+0x3c] > 0 and [+0x40] > 0, the add
+            // +0x429cd6 one with [+0x40] > 0 (hidden / disabled counts?); [+0x20] its flags. Once for an ally, once for an enemy
+            static bool told[2];
+            if (!told[enemy]) {
+                told[enemy] = true;
+                char b[900];
+                int o = 0, n = 0;
+                const DWORD *pair = (DWORD *)((BYTE *)unit + UNIT_ABILITIES);
+                for (int k = 0; pair && k < 40 && o < (int)sizeof(b) - 60; k++) {
+                    BYTE *a = PairObject(pair);
+                    if (!a || *(DWORD *)a < (DWORD)g_base || *(DWORD *)a - (DWORD)g_base >= g_imageSize)
+                        break;
+                    pair = (DWORD *)(a + ABILITY_NEXT);
+                    char rtti[40] = "";
+                    RttiName(*(DWORD *)a, g_imageSize, rtti, sizeof(rtti));
+                    n++, o += sprintf_s(b + o, sizeof(b) - o, " '%s' %s fl %lX 3c %d 40 %d;", IdText(*(DWORD *)(a + 0x34)).s, rtti + (strncmp(rtti, ".?AV", 4) ? 0 : 4),
+                                        *(DWORD *)(a + 0x20), *(int *)(a + 0x3c), *(int *)(a + 0x40));
+                }
+                Log("allies' abilities: %s unit %p '%s' (owner %d, unit flags +248 %lX) has %d abilities:%s", enemy ? "an enemy's" : "an ally's", unit,
+                    IdText(*(DWORD *)((BYTE *)unit + 0x30)).s, owner, *(DWORD *)((BYTE *)unit + 0x248), n, o ? b : " none");
+            }
             g_alMadeFor = (BYTE *)unit;
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
