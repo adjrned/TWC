@@ -13,7 +13,7 @@ global twcShmBuf := Buffer(Shm.size, 0)
 
 TwcModuleFill() {
     v := twcShmBuf.Ptr
-    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 31, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
+    NumPut("uint", 0x54574331, v, Shm.magic), NumPut("uint", 32, v, Shm.layout), NumPut("uint", 7680, v, Shm.build)
     NumPut("uint", 1, v, Shm.status), NumPut("uint", 1, v, Shm.probe), NumPut("uint", 1, v, Shm.ui)
     for f in ["hbState", "hcState", "wsState", "fpsState", "latState", "stState", "itState", "hnState", "mbState", "prState", "ulState", "ttState", "fmState", "csState", "alState", "bbState", "utState"]
         NumPut("uint", 1, v, Shm.%f%)
@@ -35,7 +35,7 @@ TwcModuleRun() {
     gameModule.DefineProp("live", { call: (*) => (NumPut("uint", A_TickCount, twcShmBuf, Shm.heartbeat), twcShmBuf.Ptr) })
     TwcModuleFill()
     s := gameModule.state()
-    TwcCheck(s.loaded && s.layout = 31 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 31, live, probe passed")
+    TwcCheck(s.loaded && s.layout = 32 && s.live && s.probe = 1 && s.build = 7680, "state: loaded, layout 32, live, probe passed")
     TwcCheck(InStr(gameModule.statusText(), "check passed"), "module: " gameModule.statusText())
     t := gameModule.timers()
     hb := gameModule.heroBuffs()
@@ -275,9 +275,24 @@ TwcModuleRun() {
     gameModule.setEnabled(false), RefreshWc3(), gameModule.setEnabled(true), RefreshWc3()
     TwcCheck(true, "the game module's own switch")
     TwcModuleDamage()
+    TwcModuleBuffTimers()
     TwcModuleSwap()
     fake.Destroy()
     TwcCheckDone()
+}
+; the buffs' map timer lengths kept for good (layout 32): learned ones saved, the table handed back
+TwcModuleBuffTimers() {
+    global timersHud
+    v := twcShmBuf.Ptr
+    IniWrite(10, iniFile, "BuffTimers", "B04Q")
+    timersHud.btSeq := -1, timersHud.syncBuffTimers()
+    n1 := NumGet(v, Shm.btKnownN, "uint"), id1 := GameModuleEngine.IdText(NumGet(v, Shm.btKnownId, "uint")), l1 := NumGet(v, Shm.btKnownLen, "float")
+    s := NumGet(v, Shm.btNewSeq, "int")
+    NumPut("uint", GameModuleEngine.IdValue("B0NW"), v, Shm.btNewId + 4 * Mod(s, 16)), NumPut("float", 12, v, Shm.btNewLen + 4 * Mod(s, 16)), NumPut("int", s + 1, v, Shm.btNewSeq)
+    timersHud.syncBuffTimers()
+    kept := IniRead(iniFile, "BuffTimers", "B0NW", "")
+    TwcCheck(n1 = 1 && id1 = "B04Q" && l1 = 10 && kept = 12 && NumGet(v, Shm.btKnownN, "uint") = 2,
+        "buff timers kept: the ini's B04Q 10 s handed to the module; B0NW 12 s it learned, saved and handed back (" n1 " / " kept " / " NumGet(v, Shm.btKnownN, "uint") ")")
 }
 ; the damage meter's feed (layout 29): the switch pushed, the names, the totals' differences as hits
 TwcModuleDamage() {

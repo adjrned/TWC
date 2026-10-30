@@ -224,6 +224,15 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     int dmColour[16];       // module: each player's colour as GetPlayerColor gives it (0 red ... 11 brown; -1 none)
     // layout 31
     int dmLocal;            // module: your own slot (the game state's local player, -1 none)
+    // layout 32: the buffs' map timer lengths kept for good (BuffMatchTimer): the companion's table (ini
+    // [BuffTimers]) and the ones the module learns (a buff matched alone, or the last left of several)
+    volatile LONG btKnownSeq;  // companion: +1 once the table below is written
+    DWORD btKnownN;         // companion: entries in use (64 at most)
+    DWORD btKnownId[64];    //   a buff's rawcode
+    float btKnownLen[64];   //   its map timer's length (s)
+    volatile LONG btNewSeq; // module: +1 a buff's length learned (written first, at [seq & 15])
+    DWORD btNewId[16];
+    float btNewLen[16];
 };
 #pragma pack(pop)
 
@@ -1134,12 +1143,38 @@ static bool CooldownLike(float t) {
             return true;
     return false;
 }
-static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
+// a buff's length as the companion keeps it (ini [BuffTimers], layout 32), 0 if none
+static float SavedLen(DWORD id) {
+    DWORD n = g_shared->layout >= 32 ? min(g_shared->btKnownN, 64u) : 0;
+    for (DWORD i = 0; i < n; i++)
+        if (g_shared->btKnownId[i] == id)
+            return g_shared->btKnownLen[i];
+    return 0;
+}
+// learned: kept here with its callback, and handed to the companion to keep for good (a new length)
+static void Learn(const BuffTimerKnown *known, DWORD id, void *code, float len) {
+    BuffTimerKnown *k = (BuffTimerKnown *)known;
+    for (BuffTimerKnown &e : g_btk)
+        if (!k && !e.id)
+            k = &e;
+    if (k)
+        *k = { id, code, len };
+    if (fabsf(SavedLen(id) - len) >= 0.05f) {
+        LONG seq = g_shared->btNewSeq;
+        g_shared->btNewId[seq & 15] = id, g_shared->btNewLen[seq & 15] = len;
+        InterlockedIncrement(&g_shared->btNewSeq);
+    }
+}
+// several lengths and none known yet: tried again over the next reads, once the others started with it
+// have taken theirs (the last one left is its, by elimination)
+static struct BuffPending { BYTE *unit; DWORD id, at; int tries; } g_bpend[8];
+static bool BuffMatchTimer(BYTE *unit, DWORD id, DWORD now, bool retry = false) {
     BYTE *pick = nullptr, *byCode = nullptr, *byLen = nullptr;
-    void *code = nullptr;
+    void *code = nullptr, *pickCode = nullptr;
     float len = 0, codeLen = 0, lenLen = 0;
     int lengths = 0, cds = 0, taken = 0;
     const BuffTimerKnown *known = KnownTimer(id);
+    float kLen = known ? known->len : SavedLen(id);
     LONG last = g_tsN;
     for (LONG k = last - 1; k >= 0 && k >= last - 4096; k--) {
         const TimerStartRec &r = g_tsRing[k & 4095];
@@ -1158,26 +1193,23 @@ static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
         }
         if (known && !byCode && r.code == known->code)
             byCode = (BYTE *)r.timer, codeLen = r.timeout;
-        if (known && !byLen && fabsf(r.timeout - known->len) < 0.05f)
-            byLen = (BYTE *)r.timer, lenLen = r.timeout;
+        if (kLen > 0 && !byLen && fabsf(r.timeout - kLen) < 0.05f)
+            byLen = (BYTE *)r.timer, lenLen = r.timeout, code = r.code;
         if (!pick || fabsf(r.timeout - len) > 0.05f)
             lengths += !pick || fabsf(r.timeout - len) > 0.05f;
         if (!pick)
-            pick = (BYTE *)r.timer, len = r.timeout, code = r.code;
+            pick = (BYTE *)r.timer, len = r.timeout, pickCode = r.code;
     }
-    const char *how = "alone";
+    const char *how = retry ? "the last one left" : "alone";
     if (lengths != 1)
         pick = nullptr;
-    else if (!known || known->code != code) {   // matched alone: remembered (its callback and length)
-        BuffTimerKnown *k = known ? (BuffTimerKnown *)known : nullptr;
-        for (BuffTimerKnown &e : g_btk)
-            if (!k && !e.id)
-                k = &e;
-        if (k)
-            *k = { id, code, len };
-    }
-    if (!pick && (byCode || byLen))         // several: its own callback, else its length
+    else if (!known || known->code != pickCode)  // the only one: learned (its callback and length)
+        Learn(known, id, pickCode, len);
+    if (!pick && (byCode || byLen)) {       // several: its own callback, else its length
         pick = byCode ? byCode : byLen, len = byCode ? codeLen : lenLen, how = byCode ? "by its callback" : "by its length";
+        if (!byCode && !known)
+            Learn(nullptr, id, code, len);  // its callback learned too, from the length kept
+    }
     if (pick) {
         BuffMapTimer *slot = &g_bmt[0];
         for (BuffMapTimer &m : g_bmt)
@@ -1186,15 +1218,27 @@ static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
                 break;
             }
         *slot = { unit, id, pick, len };
-    }
-    if (g_bmtLogs < 12) {
+    } else if (!retry && lengths > 1)
+        for (BuffPending &p : g_bpend)
+            if (!p.id) {
+                p = { unit, id, now, 0 };
+                break;
+            }
+    if (g_bmtLogs < 24 && (pick || !retry)) {
         g_bmtLogs++;
         if (pick)
             Log("buff timers: '%s' goes with the map's %.2f s timer %p (%s; %d cooldown-long, %d another buff's left out)", IdText(id).s, len, pick, how, cds, taken);
         else
-            Log("buff timers: '%s': no map timer of its own (%d lengths, %d cooldown-long, %d another buff's left out; %s)", IdText(id).s, lengths, cds, taken,
-                known ? "its own callback / length not among them" : "not seen alone yet");
+            Log("buff timers: '%s': no map timer of its own yet (%d lengths, %d cooldown-long, %d another buff's left out; %s)", IdText(id).s, lengths, cds, taken,
+                kLen > 0 ? "its own callback / length not among them" : lengths > 1 ? "tried again once the others have theirs" : "not seen alone yet");
     }
+    return pick != nullptr;
+}
+// each read: the pending ones again (3 reads at most)
+static void BuffPendingRetry() {
+    for (BuffPending &p : g_bpend)
+        if (p.id && (BuffMatchTimer(p.unit, p.id, p.at, true) || ++p.tries >= 3))
+            p.id = 0;
 }
 // the time left of a buff's map timer, or false (none, or it's run out / gone)
 static bool BuffMapLeft(BYTE *unit, DWORD id, float *left, float *total) {
@@ -1314,6 +1358,7 @@ static void ReadBuffs(BYTE *ui) {
         }
     g_shared->buffCount = rows * cols;
     g_shared->tmFlags |= 2;
+    BuffPendingRetry();
     BuffAppearedLog(GetTickCount());
 }
 
@@ -7174,7 +7219,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 31;
+        g_shared->layout = 32;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

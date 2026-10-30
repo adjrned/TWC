@@ -148,5 +148,12 @@ class Shm {
     static dmName := 3012
     static dmColour := 3524
     static dmLocal := 3588
-    static size := 3592
+    static btKnownSeq := 3592
+    static btKnownN := 3596
+    static btKnownId := 3600
+    static btKnownLen := 3856
+    static btNewSeq := 4112
+    static btNewId := 4116
+    static btNewLen := 4180
+    static size := 4244
 }

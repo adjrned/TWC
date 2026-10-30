@@ -6,7 +6,7 @@
 #include "../twc-game.cpp"
 #include "check.h"
 #include <stddef.h>
-static_assert(offsetof(Shared, alOn) == 848 && offsetof(Shared, pingText) == 864 && offsetof(Shared, tmMinutes) == 992 && offsetof(Shared, cdSize) == 1000 && offsetof(Shared, hrWant) == 1016 && offsetof(Shared, hrName) == 1416 && offsetof(Shared, bbScale) == 2580 && offsetof(Shared, blAccount) == 2604 && offsetof(Shared, blGame) == 2704 && offsetof(Shared, utOn) == 2736 && offsetof(Shared, qcState) == 2744 && offsetof(Shared, qkOn) == 2768 && offsetof(Shared, dmOn) == 2804 && offsetof(Shared, dmColour) == 3524 && offsetof(Shared, dmLocal) == 3588 && sizeof(Shared) == 3592, "layout 31");
+static_assert(offsetof(Shared, alOn) == 848 && offsetof(Shared, pingText) == 864 && offsetof(Shared, tmMinutes) == 992 && offsetof(Shared, cdSize) == 1000 && offsetof(Shared, hrWant) == 1016 && offsetof(Shared, hrName) == 1416 && offsetof(Shared, bbScale) == 2580 && offsetof(Shared, blAccount) == 2604 && offsetof(Shared, blGame) == 2704 && offsetof(Shared, utOn) == 2736 && offsetof(Shared, qcState) == 2744 && offsetof(Shared, qkOn) == 2768 && offsetof(Shared, dmOn) == 2804 && offsetof(Shared, dmColour) == 3524 && offsetof(Shared, dmLocal) == 3588 && offsetof(Shared, btKnownSeq) == 3592 && sizeof(Shared) == 4244, "layout 32");
 
 static BYTE *img;
 static int displays, clicks;

@@ -147,7 +147,36 @@ class TimerHud {
         this.pushGame()
     }
     ; the switches to the module (layout 11): bit 1 cooldowns (command card, items), bit 2 buffs
+    ; the buffs' map timer lengths kept for good (ini [BuffTimers] Bxxx=seconds; layout 32): handed to the
+    ; module, which learns new ones as buffs are seen (alone, or the last one left of several)
+    btSeq := -1                     ; the module's learned seq taken so far (-1: none yet, a new module)
+    btPushed := 0                   ; the module memory the table was last handed to
+    buffTimers() {
+        out := Map()
+        try for line in StrSplit(IniRead(iniFile, "BuffTimers"), "`n", "`r")
+            if RegExMatch(line, "^(\w{4})=([0-9.]+)$", &m)
+                out[m[1]] := m[2] + 0
+        return out
+    }
+    syncBuffTimers() {
+        if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 32
+            return
+        if this.btPushed != v || this.btSeq = -1 {
+            this.gm.pushBuffTimers(this.buffTimers()), this.btPushed := v
+            this.btSeq := NumGet(v, Shm.btNewSeq, "int") - 16 < 0 ? 0 : NumGet(v, Shm.btNewSeq, "int") - 16
+        }
+        if !(l := this.gm.learnedBuffTimers(this.btSeq))
+            return
+        this.btSeq := l.seq
+        if !l.list.Length
+            return
+        for e in l.list
+            if RegExMatch(e.id, "^\w{4}$") && e.len >= 1.5 && e.len < 3600
+                SetIni(Round(e.len, 2), "BuffTimers", e.id), DebugLog("buff timers: '" e.id "' kept for good: " Round(e.len, 2) " s")
+        this.gm.pushBuffTimers(this.buffTimers())
+    }
     pushGame() {
+        try this.syncBuffTimers()
         if (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 11
             NumPut("uint", this.gm.enabled ? (this.cooldowns ? 1 : 0) | (this.buffs ? 2 : 0) : 0, v, Shm.itOn)
         if v && NumGet(v, Shm.layout, "uint") >= 18 {

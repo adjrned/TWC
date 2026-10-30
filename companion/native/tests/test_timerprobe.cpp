@@ -74,7 +74,7 @@ int main() {
     DWORD t2 = t1 + 5000;
     Note(12, timer10, t2 - 30), Note(20, timer30, t2 - 30);
     BuffAppeared(unit, 'B0XX', true, 4, 4, t2);
-    CHECK(!BuffMapLeft(unit, 'B0XX', &ml, &mt) && LogHas("'B0XX': no map timer of its own (2 lengths"), "two lengths started with it: no guess");
+    CHECK(!BuffMapLeft(unit, 'B0XX', &ml, &mt) && LogHas("'B0XX': no map timer of its own yet (2 lengths"), "two lengths started with it: no guess");
     // two items at once: B04Q (seen alone: callback 0x111, 10 s) and B0YY (seen alone: 0x222, 20 s), their timers started together
     static BYTE timerA[0x40], timerB[0x40];
     *(DWORD *)(timerA + 0x24) = *(DWORD *)(timerB + 0x24) = (DWORD)(img + RVA_AGENT_TIMER_VT[0]);
@@ -96,7 +96,27 @@ int main() {
     DWORD t5 = t4 + 5000;
     Note(20, timerB, t5 - 30, (void *)0x333), Note(10, timerA, t5 - 30, (void *)0x444);
     BuffAppeared(unit, 'B0ZZ', true, 4, 4, t5);
-    CHECK(!BuffMapLeft(unit, 'B0ZZ', &la, &ta) && LogHas("'B0ZZ': no map timer of its own (2 lengths") && LogHas("not seen alone yet"), "one never seen alone, among two: no guess");
+    CHECK(!BuffMapLeft(unit, 'B0ZZ', &la, &ta) && LogHas("'B0ZZ': no map timer of its own yet (2 lengths") && LogHas("tried again once the others have theirs"), "one never seen alone, among two: no guess yet");
+    BuffPendingRetry(), BuffPendingRetry(), BuffPendingRetry();
+    CHECK(!BuffMapLeft(unit, 'B0ZZ', &la, &ta) && !g_bpend[0].id, "nothing else took one: still none, dropped after 3 reads");
+    // elimination: B0YY (known, 20 s) and a new one start together: B0YY takes its own, the new one the last left, and it's learned
+    for (BuffMapTimer &m : g_bmt) m.id = 0;
+    DWORD t7 = t5 + 3000;
+    Note(20, timerB, t7 - 30, (void *)0x222), Note(12, timerA, t7 - 30, (void *)0x666);
+    LONG learned0 = sh.btNewSeq;
+    BuffAppeared(unit, 'B0NW', true, 4, 4, t7), BuffAppeared(unit, 'B0YY', true, 4, 4, t7);
+    bool before = BuffMapLeft(unit, 'B0NW', &la, &ta);
+    BuffPendingRetry();
+    bool after = BuffMapLeft(unit, 'B0NW', &la, &ta);
+    CHECK(!before && after && ta == 12 && LogHas("(the last one left;"), "the last one left: the new buff's, once the known one took its own (%.0f s)", ta);
+    CHECK(sh.btNewSeq > learned0 && sh.btNewId[(sh.btNewSeq - 1) & 15] == 'B0NW' && sh.btNewLen[(sh.btNewSeq - 1) & 15] == 12, "and learned for the companion to keep (B0NW 12 s)");
+    // a length the companion kept (layout 32): matched by it from the start, no single use needed
+    for (BuffMapTimer &m : g_bmt) m.id = 0;
+    sh.layout = 32, sh.btKnownN = 1, sh.btKnownId[0] = 'B0KP', sh.btKnownLen[0] = 15;
+    DWORD t8 = t7 + 3000;
+    Note(15, timerA, t8 - 30, (void *)0x777), Note(9, timerB, t8 - 30, (void *)0x888);
+    BuffAppeared(unit, 'B0KP', true, 4, 4, t8);
+    CHECK(BuffMapLeft(unit, 'B0KP', &la, &ta) && ta == 15 && LogHas("'B0KP' goes with the map's 15.00 s timer") && LogHas("by its length"), "a length the companion kept: its timer among two from the first time (%.0f s)", ta);
     DWORD t6 = t5 + 5000;
     Note(8, timerA, t6 - 30, (void *)0x555);
     BuffAppeared(unit, 'B0BU', false, 0, 9999, t6);

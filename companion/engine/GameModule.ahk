@@ -353,6 +353,41 @@ class GameModuleEngine {
         return true
     }
 
+    ; -- the buffs' map timer lengths kept for good (layout 32) ---------------------------
+    ; the table to the module: Map(rawcode -> seconds); false: no module, or an older one
+    pushBuffTimers(known) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 32
+            return false
+        n := 0
+        for id, len in known {
+            if n >= 64
+                break
+            NumPut("uint", GameModuleEngine.IdValue(id), v, Shm.btKnownId + 4 * n), NumPut("float", len, v, Shm.btKnownLen + 4 * n), n++
+        }
+        NumPut("uint", n, v, Shm.btKnownN)
+        NumPut("int", NumGet(v, Shm.btKnownSeq, "int") + 1, v, Shm.btKnownSeq)
+        return true
+    }
+    ; -> { seq, list: [{ id, len }] } of what the module learned after seq (16 at most), or 0
+    learnedBuffTimers(seq) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 32
+            return 0
+        now := NumGet(v, Shm.btNewSeq, "int"), out := { seq: now, list: [] }
+        from := Max(seq, now - 16)
+        loop now - from {
+            i := Mod(from + A_Index - 1, 16)
+            out.list.Push({ id: GameModuleEngine.IdText(NumGet(v, Shm.btNewId + 4 * i, "uint")), len: NumGet(v, Shm.btNewLen + 4 * i, "float") })
+        }
+        return out
+    }
+    ; 'Binf' -> its value as the game holds it
+    static IdValue(id) {
+        v := 0
+        loop Min(4, StrLen(id))
+            v := (v << 8) | Ord(SubStr(id, A_Index, 1))
+        return v
+    }
+
     ; -- your hero's buffs (layout 22) --------------------------------------------
     ; Read from the hero unit itself, whatever is selected, with the other timers
     ; (so timersWanted must be on too): rawcode, the game's name, times.
