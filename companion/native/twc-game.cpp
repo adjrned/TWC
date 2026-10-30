@@ -3752,6 +3752,7 @@ typedef int(__fastcall *AbilityCbFn)(void *, void *);
 typedef void(__fastcall *ButtonClickFn)(void *, int, DWORD);
 static BYTE *g_alTramp;             // the 7 bytes and a jmp back (stays allocated, as Fast menu's)
 static bool g_alHooked, g_alBad, g_alClickHooked;
+static BYTE *g_alMadeFor;           // the last unit the card's buttons were made for by us (the selection log)
 
 static const DWORD AL_ENEMIES = 2;
 // a unit whose card this feature shows: yours or an ally's (a CUnit: owner [+0x58], the alliance
@@ -3803,9 +3804,14 @@ static int __fastcall AllyAbilityMakeHook(void *unit, void *card) {
             BYTE *e = *(BYTE **)((BYTE *)card + 0x1bc);                 // as the game's: [+0x1bc] > 0 ? [[+0x1bc]+8] : [+0xb68800]
             DWORD arg = (LONG)(DWORD)e > 0 ? *(DWORD *)(e + 8) : *(DWORD *)(g_base + DATA_ABILITY_DEFAULT);
             GameCall(g_base + RVA_ABILITY_MAKE, (DWORD)unit, 0, 1, &arg);
-            static int logs;
+            static int logs, enemyLogs;
             if (!logs++)
                 Log("allies' abilities: the first buttons made for unit %p (owner %d)", unit, *(int *)((BYTE *)unit + UNIT_OWNER));
+            BYTE *st;
+            int local, owner = *(int *)((BYTE *)unit + UNIT_OWNER);
+            if (enemyLogs < 2 && (local = LocalPlayer(&st)) >= 0 && owner != local && !Allied(st, local, owner))
+                enemyLogs++, Log("allies' abilities: an enemy's buttons made (unit %p, owner %d)", unit, owner);
+            g_alMadeFor = (BYTE *)unit;
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_alBad = true, g_shared->alState = 3;
@@ -3937,6 +3943,41 @@ static bool AlliesHook(bool on) {
     Log("allies' abilities: off (the game's own again)");
     return true;
 }
+// a newly selected unit only this feature shows, logged once a quarter second after (the card filled by
+// then): whose, an enemy's or not, whether we made its buttons, how many of the card's have an ability
+// (the user, 2026-10-30: allies' cards show, a boss's not at all)
+static void AlliesSelectionLog() {
+    static BYTE *last;
+    static int logs;
+    static DWORD at;
+    if (logs >= 8)
+        return;
+    BYTE *state;
+    int local = LocalPlayer(&state);
+    BYTE *player = local >= 0 ? *(BYTE **)(state + 0x58 + 4 * local) : nullptr, *sel = player ? *(BYTE **)(player + PLAYER_SELECTION) : nullptr;
+    BYTE *unit = sel ? *(BYTE **)(sel + SELECTION_ACTIVE) : nullptr;
+    if (!IsUnit(unit) || !CardShown(unit) || Controls(unit)) {
+        last = nullptr;
+        return;
+    }
+    DWORD now = GetTickCount();
+    if (unit != last)
+        last = unit, at = now;
+    if (!at || now - at < 250)
+        return;
+    at = 0;
+    BYTE *ui = (BYTE *)GameUi(), *card = ui ? *(BYTE **)(ui + 0x3c8) : nullptr;
+    int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0, withData = 0;
+    for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
+        for (int c = 0; c < cols; c++) {
+            BYTE *b = GridButton(card, r, c);
+            withData += b && *(DWORD *)(b + 0x190) != 0;
+        }
+    int owner = *(int *)(unit + UNIT_OWNER);
+    logs++, Log("allies' abilities: selected unit %p '%s' (owner %d, %s): %s; the card %p has %d of %d buttons with an ability, shown %lu", unit, IdText(*(DWORD *)(unit + 0x30)).s,
+                owner, Allied(state, local, owner) ? "an ally" : "an enemy", g_alMadeFor == unit ? "its buttons made by us" : "its buttons NOT made (the card's fill didn't come for it)",
+                card, withData, rows * cols, card ? *(DWORD *)(card + 0x90) : 0);
+}
 // on the game thread
 static void AlliesPass() {
     bool on = g_shared->alOn && !g_alBad;
@@ -3944,6 +3985,11 @@ static void AlliesPass() {
         g_shared->alState = 3;
     if (g_shared->alState != 3)
         g_shared->alState = g_alHooked ? 1 : 0;
+    if (g_alHooked && !g_alBad)
+        __try {
+            AlliesSelectionLog();
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
 }
 
 // -- the cooldown ping (WFE's Alt + click on an ability or item) ---------------------------
