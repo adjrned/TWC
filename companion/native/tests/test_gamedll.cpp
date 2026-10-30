@@ -215,7 +215,7 @@ int main() {
         { RVA_OPT_GET, 0x6c0b1, 8 }, { RVA_REGION_HIDE, 0x141cfa, 0 }, { RVA_REGION_SHOW, 0x141e9a, 0 }, { RVA_CONTROL_CLICK, 0x1407ea, 4 },
         { RVA_PROJECTION, 0x1555f1, 16 }, { RVA_MENU_ANIM, 0x33a8ae, 16 }, { RVA_PORTRAIT_UPDATE, 0x40d834, 0 }, { RVA_DAMAGE_UPDATE, 0x409056, 16 },
         { RVA_ARMOR_UPDATE, 0x4089ca, 12 }, { 0x4101c0, 0x41038f, 4 }, { 0x40ecb0, 0x40eeb1, 4 }, { 0x13b940, 0x13b9b1, 0 }, { 0x13c390, 0x13c429, 0 },
-        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 }, { RVA_SPELL_EFFECT, 0x6b112e, 4 }, { RVA_UNIT_POSITION, 0x082485, 4 }, { RVA_UNIT_CREATE, 0x6827a9, 12 } };
+        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 }, { RVA_SPELL_EFFECT, 0x6b112e, 4 }, { RVA_UNIT_POSITION, 0x082485, 4 }, { RVA_UNIT_CREATE, 0x6827a9, 12 }, { RVA_POINT_ORDER, 0x3ffde6, 0x18 } };
     bad = 0;
     for (const auto &q : RETS) {
         const BYTE *r = g_base + q.ret;
@@ -291,6 +291,14 @@ int main() {
           && !memcmp(g_base + RVA_KILL_UNIT, "\x55\x8B\xEC\x8B\x4D\x08", 6) && SiteTarget(g_base + 0x23ff06) == g_base + RVA_HANDLE_UNIT
           && SiteTarget(g_base + 0x2368e9) == g_base + RVA_HANDLE_UNIT,
           "attached effects +229EC0, units made +682770 (5 calls), RemoveUnit / KillUnit (the unit by +2217A0, as GetUnitX finds it)");
+    // the dash combo's orders: the UI's point order +3FFD60 (stdcall(order, target, x, y, flags a, flags b), ret 0x18) calls
+    // +6F15C0 (the network's point order: action 0xA0011, ret 0xC) with &x, &y; its only 4 calls push the order [edi+0x10] last
+    bool sites4 = FindCallSites(g_base + RVA_POINT_ORDER, nullptr, 0) == 4;
+    for (DWORD rva : OC_SITES)
+        sites4 = sites4 && g_base[rva] == 0xE8 && SiteTarget(g_base + rva) == g_base + RVA_POINT_ORDER && !memcmp(g_base + rva - 3, "\xFF\x77\x10", 3);
+    CHECK(sites4 && !memcmp(g_base + RVA_POINT_ORDER, "\x55\x8B\xEC\x8B\x55\x1C", 6) && SiteTarget(g_base + 0x3ffddf) == g_base + 0x6f15c0
+          && !memcmp(g_base + 0x3ffdce, "\x8D\x45\x14\x8B\x4D\x08", 6) && !memcmp(g_base + 0x6f15ec, "\xC7\x45\xCC\x11\x00\x0A\x00", 7) && !memcmp(g_base + 0x6f167f, "\xC2\x0C\x00", 3),
+          "the point order: +3FFD60 (its 4 calls, the order pushed last) -> +6F15C0, the network's action 0xA0011");
     // layout 33's hit details: the ctor's 2nd argument -> [+0x14], 4th -> [+0xc], 5th -> [+4]; UnitDamageTarget passes
     // 1 << damage type (cl = its 7th), flags 0x100 (attack) | 1 (ranged), then writes the attack type (its 6th) at [+0x20]
     CHECK(!memcmp(g_base + 0x6d6f8b, "\x8B\x45\x0C\x89\x41\x14", 6) && !memcmp(g_base + 0x6d6f96, "\x8B\x45\x18\x89\x41\x04", 6) && !memcmp(g_base + 0x6d6f9c, "\x8B\x45\x14\x89\x41\x0C", 6)

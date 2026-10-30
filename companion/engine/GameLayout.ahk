@@ -180,5 +180,13 @@ class Shm {
     static bcWatchAlive := 75468
     static fxOn := 75472
     static fxState := 75476
-    static size := 75480
+    static ocOn := 75480
+    static ocGo := 75484
+    static ocDash := 75488
+    static ocOrb := 75492
+    static ocSouth := 75496
+    static ocState := 75500
+    static ocRuns := 75504
+    static ocTaken := 75508
+    static size := 75512
 }

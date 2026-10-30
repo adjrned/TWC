@@ -450,6 +450,24 @@ class GameModuleEngine {
         NumPut("uint", on ? 1 : 0, v, Shm.fxOn)
         return true
     }
+    ; the dash combo (layout 38): on, its dash ability and orb unit type (rawcodes 'A107' / 'e05P'), how far south it
+    ; ends; false: no module, or an older one
+    dashCombo(on, dash, orb, south) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 38
+            return false
+        NumPut("uint", GameModuleEngine.Id(dash), v, Shm.ocDash), NumPut("uint", GameModuleEngine.Id(orb), v, Shm.ocOrb)
+        NumPut("float", south, v, Shm.ocSouth), NumPut("uint", on ? 1 : 0, v, Shm.ocOn)
+        return true
+    }
+    ; a run now; false: no module, an older one, or it's off
+    dashComboGo() {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 38 || !NumGet(v, Shm.ocOn, "uint")
+            return false
+        NumPut("int", NumGet(v, Shm.ocGo, "int") + 1, v, Shm.ocGo)
+        return true
+    }
+    ; 'A107' -> its number (0: not 4 characters)
+    static Id(code) => StrLen(code) = 4 ? Ord(SubStr(code, 1, 1)) << 24 | Ord(SubStr(code, 2, 1)) << 16 | Ord(SubStr(code, 3, 1)) << 8 | Ord(SubStr(code, 4, 1)) : 0
     ; the unit to follow (0 none); false: no module, or an older one
     bossWatch(unit) {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 36

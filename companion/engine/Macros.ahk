@@ -154,5 +154,7 @@ class MacrosEngine {
     refresh() {
         for _, reg in this.registered
             reg.refresh()
+        if MacrosEngine.ext && MacrosEngine.ext.HasMethod("refresh")
+            MacrosEngine.ext.refresh()
     }
 }

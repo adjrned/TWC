@@ -54,6 +54,7 @@ ModuleCheckFeatures() => [
     ["Damage: spell names", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
     ["Damage: spells' timers", "damage: a spell hit's ability: '....' \(the map timer", "damage: the map timers' (entry|vtable)"],
     ["Damage: on-hit effects", "damage: a hit dealt while another's damage ran", ""],
+    ["Dash combo (orbs)", "dash combo: (done in|'....' pressed)", "dash combo: (the call at .* isn.t|starting faulted)"],
     ["Effect probe (orbs)", "effect probe: ('.*' still there|unit '.*' made|made and gone at once|your hero cast)", "effect probe: (refused|reading .* faulted)"],
     ["Boss timers: enemies' spells", "boss casts: player \d+'s '....' .* cast '....'", "boss casts: (the call at .* isn.t|writing the call|reading a cast faulted)"],
     ["Map text lines (probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
