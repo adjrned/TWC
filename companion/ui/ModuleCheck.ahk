@@ -40,6 +40,7 @@ ModuleCheckFeatures() => [
     ["Battle.net login", "battle.net login: account '.*' typed in, Logon clicked", "battle.net login: .*(faulted|not a glue)"],
     ["Bigger buff bar", "buff bar size: x[0-9.]+ \(\d+ frames resized", "buff bar size: .*(refused|faulted)"],
     ["Damage meter feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
+    ["Hide the UI, again (1.5 s pass)", "hide UI: the .* (hidden again|anchored again)", ""],
     ["Buff durations (probe)", "buff timers: '[^']+' .* appeared", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
     ["Damage meter names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
 ]

@@ -4775,6 +4775,9 @@ static int UiPartCall(BYTE *ui, int i, bool hide) {
         }
         if (hide && UiStillHidden(f, p.hide == 0xd0))
             return 1;                   // nor the minimap's +0xe4 (it redraws it)
+        static int again[5];
+        if (hide && checked[i] == 1 && again[i] < 3 && (g_uiHidden & (1u << i)))
+            again[i]++, Log("hide UI: the %s hidden again (the game showed it: [+0xB0] %08lX, [+0x94] %lu)", p.name, *(DWORD *)(f + 0xb0), *(DWORD *)(f + 0x94));
         ((FrameFn)fn)(f, 0);
         if (after)
             ((FrameFn)after)(f, 0);
@@ -4875,6 +4878,21 @@ static int WorldCall(BYTE *ui, bool full) {
         if (full) {
             if (g_worldUi == ui && WorldIsFull(lay, root))
                 return 1;                   // so already (the 1.5 s pass)
+            // anchored again in the same game: logged (the first 5), with the points it had, to see what
+            // the "so already" test missed (the user's buff bar still flickered on a beat, 2026-10-29)
+            static int again;
+            if (g_worldUi == ui && again < 5) {
+                again++;
+                char b[300];
+                int o = 0;
+                for (int i = 0; i < 9; i++) {
+                    BYTE *pt = *(BYTE **)(lay + LAYOUT_POINTS + i * 4);
+                    if (pt)
+                        o += sprintf_s(b + o, sizeof(b) - o, " %d:vt+%06lX rel %p pt %u %.4f,%.4f", i, *(DWORD *)pt - (DWORD)g_base, *(void **)(pt + 4), pt[8],
+                                       *(float *)(pt + 0xc), *(float *)(pt + 0x10));
+                }
+                Log("hide UI: the world frame anchored again (it wasn't over the whole screen as we left it; root %p):%s", root, o ? b : " no points");
+            }
             if (g_worldUi != ui) {          // its own anchors, before the first change in this game
                 SavedPoint pts[9] = {};
                 char b[200];
