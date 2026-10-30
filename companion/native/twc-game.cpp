@@ -1011,6 +1011,12 @@ static BYTE *BuffTimeOf(BYTE *buff, bool aura, float *left, float *total) {
 // one cast again by hand isn't a beat.
 struct BuffTrack { BYTE *unit; DWORD id, refreshAt, seenAt, beat; float last; int refreshes; };
 static BuffTrack g_bt[48];
+static BuffTrack *TrackOf(BYTE *unit, DWORD id) {
+    for (BuffTrack &b : g_bt)
+        if (b.id == id && b.unit == unit)
+            return &b;
+    return nullptr;
+}
 static const DWORD BT_GRACE = 400, BT_FIRST = 2500, BT_BEAT_MAX = 5000, BT_LOST = 1000;
 static bool BuffKeptUp(BYTE *unit, DWORD id, bool aura, float left, DWORD now) {
     BuffTrack *t = nullptr, *free = &g_bt[0];
@@ -1168,11 +1174,19 @@ static void Learn(const BuffTimerKnown *known, DWORD id, void *code, float len) 
 // several lengths and none known yet: tried again over the next reads, once the others started with it
 // have taken theirs (the last one left is its, by elimination)
 static struct BuffPending { BYTE *unit; DWORD id, at; int tries; } g_bpend[8];
+// Still none (an item gives two buffs at once, two new timers: B0D0 and B0CY with 5 s and 6 s, the user's
+// game of 2026-10-29): told by when it ends. An aura is refreshed on its beat while the map's timer runs
+// (BuffKeptUp); once its refreshes stop, its timer ended after the last refresh (it still ran then; 0.1 s
+// slack, the reads' step) and within a beat of it: the one timer that did is its own, learned and kept
+// (the next time it's matched by its length). None or two: not learned.
+struct BuffAmbigCand { DWORD start; float len; void *code; };
+static struct BuffAmbig { BYTE *unit; DWORD id, at; int n; BuffAmbigCand c[4]; } g_bamb[8];
 static bool BuffMatchTimer(BYTE *unit, DWORD id, DWORD now, bool retry = false) {
     BYTE *pick = nullptr, *byCode = nullptr, *byLen = nullptr;
     void *code = nullptr, *pickCode = nullptr;
     float len = 0, codeLen = 0, lenLen = 0;
-    int lengths = 0, cds = 0, taken = 0;
+    int lengths = 0, cds = 0, taken = 0, nc = 0;
+    BuffAmbigCand cands[4];
     const BuffTimerKnown *known = KnownTimer(id);
     float kLen = known ? known->len : SavedLen(id);
     LONG last = g_tsN;
@@ -1191,6 +1205,8 @@ static bool BuffMatchTimer(BYTE *unit, DWORD id, DWORD now, bool retry = false) 
             taken++;
             continue;                       // another buff's (started with it)
         }
+        if (nc < 4)
+            cands[nc++] = { r.at, r.timeout, r.code };
         if (known && !byCode && r.code == known->code)
             byCode = (BYTE *)r.timer, codeLen = r.timeout;
         if (kLen > 0 && !byLen && fabsf(r.timeout - kLen) < 0.05f)
@@ -1211,6 +1227,9 @@ static bool BuffMatchTimer(BYTE *unit, DWORD id, DWORD now, bool retry = false) 
             Learn(nullptr, id, code, len);  // its callback learned too, from the length kept
     }
     if (pick) {
+        for (BuffAmbig &e : g_bamb)
+            if (e.id == id && e.unit == unit)
+                e.id = 0;
         BuffMapTimer *slot = &g_bmt[0];
         for (BuffMapTimer &m : g_bmt)
             if (!m.id || (m.id == id && m.unit == unit)) {
@@ -1218,12 +1237,21 @@ static bool BuffMatchTimer(BYTE *unit, DWORD id, DWORD now, bool retry = false) 
                 break;
             }
         *slot = { unit, id, pick, len };
-    } else if (!retry && lengths > 1)
+    } else if (!retry && lengths > 1) {
         for (BuffPending &p : g_bpend)
             if (!p.id) {
                 p = { unit, id, now, 0 };
                 break;
             }
+        BuffAmbig *a = nullptr;
+        for (BuffAmbig &e : g_bamb)
+            if (!a && (!e.id || (e.id == id && e.unit == unit)))
+                a = &e;
+        if (a && kLen <= 0) {
+            *a = { unit, id, now, nc };
+            memcpy(a->c, cands, sizeof(cands));
+        }
+    }
     if (g_bmtLogs < 24 && (pick || !retry)) {
         g_bmtLogs++;
         if (pick)
@@ -1233,6 +1261,35 @@ static bool BuffMatchTimer(BYTE *unit, DWORD id, DWORD now, bool retry = false) 
                 kLen > 0 ? "its own callback / length not among them" : lengths > 1 ? "tried again once the others have theirs" : "not seen alone yet");
     }
     return pick != nullptr;
+}
+static BuffTrack *TrackOf(BYTE *unit, DWORD id);
+// each read: an ambiguous one whose refreshes have stopped, told by which timer ended then
+static void BuffAmbigResolve(DWORD now) {
+    for (BuffAmbig &a : g_bamb) {
+        if (!a.id)
+            continue;
+        if (now - a.at > 300000) {
+            a.id = 0;                       // 5 minutes: let go
+            continue;
+        }
+        BuffTrack *t = TrackOf(a.unit, a.id);
+        if (!t || !t->beat || (LONG)(t->refreshAt - a.at) < 500 || now - t->refreshAt <= t->beat + BT_GRACE)
+            continue;                       // still kept up (or not refreshed since it came)
+        DWORD last = t->refreshAt;
+        int hits = 0, hit = -1;
+        for (int i = 0; i < a.n; i++) {
+            LONG d = (LONG)((a.c[i].start + (DWORD)(a.c[i].len * 1000)) - last);   // its end after the last refresh
+            if (d >= -100 && d <= (LONG)t->beat + 300)
+                hits++, hit = i;
+        }
+        if (hits == 1) {
+            Learn(KnownTimer(a.id), a.id, a.c[hit].code, a.c[hit].len);
+            if (g_bmtLogs < 24)
+                g_bmtLogs++, Log("buff timers: '%s' learned by when it ended: the map's %.2f s timer (of %d started with it)", IdText(a.id).s, a.c[hit].len, a.n);
+        } else if (g_bmtLogs < 24)
+            g_bmtLogs++, Log("buff timers: '%s' ended, but %d of its %d timers ended then: not learned", IdText(a.id).s, hits, a.n);
+        a.id = 0;
+    }
 }
 // each read: the pending ones again (3 reads at most)
 static void BuffPendingRetry() {
@@ -1359,6 +1416,7 @@ static void ReadBuffs(BYTE *ui) {
     g_shared->buffCount = rows * cols;
     g_shared->tmFlags |= 2;
     BuffPendingRetry();
+    BuffAmbigResolve(GetTickCount());
     BuffAppearedLog(GetTickCount());
 }
 

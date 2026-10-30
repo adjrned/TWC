@@ -121,6 +121,31 @@ int main() {
     Note(8, timerA, t6 - 30, (void *)0x555);
     BuffAppeared(unit, 'B0BU', false, 0, 9999, t6);
     CHECK(!BuffMapLeft(unit, 'B0BU', &la, &ta), "a buff (not an aura: its own time, a 9999 s passive): no map timer");
+    // one item, two buffs, two new timers (B0D0 6 s and B0CY 5 s): neither known; told by when each ends
+    for (BuffMapTimer &m : g_bmt) m.id = 0;
+    for (BuffPending &p : g_bpend) p.id = 0;
+    static BYTE timerC[0x40], timerD[0x40];
+    DWORD t9 = GetTickCount() + 60000;
+    Note(6, timerC, t9 - 125, (void *)0x901), Note(5, timerD, t9 - 94, (void *)0x902);
+    BuffAppeared(unit, 'B0D0', true, 4, 4, t9), BuffAppeared(unit, 'B0CY', true, 4, 4, t9);
+    CHECK(!BuffMapLeft(unit, 'B0D0', &la, &ta) && !BuffMapLeft(unit, 'B0CY', &la, &ta), "one item's two new buffs: no guess at first");
+    // the auras refreshed on their beat (every second, from +0.5 s) while each map timer runs (B0CY's 5 s
+    // ends at +4.906, B0D0's 6 s at +5.875), then not: each counts down from its last refresh and goes
+    auto aura = [&](DWORD id, DWORD endAt, DWORD t) {
+        DWORD lastRef = t9;
+        for (DWORD r = t9 + 500; r <= t && r <= endAt; r += 1000)
+            lastRef = r;
+        float l = 4 - (t - lastRef) / 1000.0f;
+        if (l > 0)
+            BuffKeptUp(unit, id, true, l, t);
+    };
+    for (DWORD t = t9; t < t9 + 11000; t += 100) {
+        aura('B0D0', t9 - 125 + 6000, t), aura('B0CY', t9 - 94 + 5000, t);
+        BuffAmbigResolve(t);
+    }
+    BuffTimerKnown *k0 = KnownTimer('B0D0'), *k1 = KnownTimer('B0CY');
+    CHECK(k0 && k0->len == 6 && k1 && k1->len == 5 && LogHas("'B0D0' learned by when it ended: the map's 6.00 s timer") && LogHas("'B0CY' learned by when it ended: the map's 5.00 s timer"),
+          "each learned by when its refreshes stopped: B0D0 %.0f s, B0CY %.0f s", k0 ? k0->len : 0, k1 ? k1->len : 0);
     CHECK(BuffSlotDrawn(1 | 2 | 4 | 8) && !BuffSlotDrawn(1 | 2 | 4) && BuffSlotDrawn(1), "drawn with its map timer even as an aura kept up; not without it");
     CHECK(TimerStartWatch(false) && !g_tsHooked && !memcmp(f, body, 5), "off: the game's bytes back");
     LONG noted = g_tsN;
