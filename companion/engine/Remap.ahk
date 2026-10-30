@@ -261,16 +261,26 @@ class RemapEngine {
             wasReady := inGameQc
         }
         ; 1.28f: the game module presses the slot's button as the key comes and clicks at once
-        ; (as WFE): only the key goes. Held, the key's own repeat presses again (WFE's AutoCast:
-        ; until it's let go), unless [Quickcast] repeat is off
+        ; (as WFE): only the key goes. Held, it goes again every [Quickcast] interval (40 ms) until
+        ; let go (WFE's AutoCast repeats as long), unless repeat is off. Paced here, not by the
+        ; key's own repeat: Windows waits its repeat delay (a quarter to half a second) before the
+        ; first one, the pause after the first press a user felt on an item key (2026-10-29)
         if inGameQc && gameModule.keyCastReady() {
             static told := 0
-            if !s.repeat && !IsWheel(base) && this.holding.Get(base, false)
-                return                          ; the key's repeat, repeat off
-            this.holding[base] := true
-            SendInput(q this.keyText(game))
-            if told++ < 3
-                DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
+            if !IsWheel(base) && this.holding.Get(base, false)
+                return                          ; the key's own repeat: this thread presses again itself
+            this.holding[base] := true, start := A_TickCount, presses := 0
+            loop {
+                SendInput(q this.keyText(game)), presses++
+                if told++ < 3
+                    DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
+                ; (the time from now each wait: no 20 s cap here, as WFE's, until it's let go)
+                if !s.repeat || IsWheel(base) || this.waitHeld(base, A_TickCount, s.interval) != ""
+                    break
+            }
+            if presses > 1
+                DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " s.interval " ms)")
+            this.holding[base] := false
             return
         }
         cal := !inGameQc && screenOn ? quickcast.current() : 0
