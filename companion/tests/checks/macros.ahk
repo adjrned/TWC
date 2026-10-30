@@ -73,6 +73,27 @@ TwcMacrosRun() {
     macros.mouseFn := (kind, mx, my) => (log.Push([A_TickCount, kind]), log.Length = 2 ? macros.cancel() : 0)
     try macros.sendKeys(["move@1,1", "move@2,2", "wait:500", "move@3,3", "q"])
     TwcCheck(log.Length = 2 && !macros.running && macros.cancelled, "a right click mid-way (cancel): the steps after it don't run (" log.Length " done)")
+    ; the speed (the user: far slower than the same steps alone): a 50-step combo while a timer that takes
+    ; 40 ms runs every 30 ms (as the companion's): critical, it isn't stretched (its waits' own time only)
+    combo := StrSplit("e wait:75 move@-29,26 wait:3 move@-57,53 wait:3 move@-85,80 wait:3 rclick@-85,80 rclick@-83,80 wait:85 move@-17,36 wait:3 move@51,-7 wait:3 move@120,-50 wait:3 rclick@120,-50 rclick@122,-50 wait:155 move@38,-38 wait:3 move@-44,-26 wait:3 move@-126,-14 wait:3 rclick@-126,-14 rclick@-124,-14 wait:155 move@-54,24 wait:3 move@18,62 wait:3 move@90,100 wait:3 rclick@90,100 rclick@92,100 wait:155 move@60,25 wait:3 move@30,-50 wait:3 move@0,-125 wait:3 rclick@0,-125 rclick@2,-125 wait:135 move@0,0 wait:100 rclick@0,0", " ")
+    budget := 0, n3 := 0
+    for t in combo
+        if (ms := MacrosEngine.WaitStep(t)) >= 0
+            budget += ms, n3 += ms <= 20
+    macros.mouseFn := (kind, mx, my) => 0
+    busy := { n: 0 }
+    hog() {
+        busy.n++
+        hogFrom := A_TickCount              ; (its own name: a nested function shares the outer's variables)
+        while A_TickCount - hogFrom < 40
+            continue
+    }
+    SetTimer(hog, 30), Sleep(100), before := busy.n
+    t0 := A_TickCount
+    macros.sendKeys(combo)
+    took := A_TickCount - t0, during := busy.n - before
+    SetTimer(hog, 0)
+    TwcCheck(took <= budget + n3 * 16 + 80 && during <= 1, "the combo took " took " ms with a busy timer every 30 ms (its waits " budget " ms, " n3 " short ones; the timer ran " during " times meanwhile)")
     macros.sendFn := keepSend, macros.mouseFn := 0
     ; Edit as text's Save: valid text becomes the macro's steps; a bad one is named and nothing changes
     macroSel := 0, macroKind := "keys", macroKeys := []

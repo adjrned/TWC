@@ -11,7 +11,9 @@
 ;          where the mouse was when the macro started: "move@-28,27" moves it there,
 ;          "click@-85,80" / "rclick@..." clicks there (and leaves it there). Mouse
 ;          steps have no gap before them; a macro with these steps runs in SendEvent
-;          mode, and your own right click stops it (its own clicks don't)
+;          mode as a critical thread (the companion's timers can't stretch its waits),
+;          and your own right click stops it (the button's physical state: its own
+;          clicks don't)
 ; ============================================================================
 class MacrosEngine {
     section := "Macros"
@@ -21,7 +23,7 @@ class MacrosEngine {
     clickFn := 0                    ;   window clicks are relative to (checks swap them: never real input)
     win := WarcraftIII
     mouseFn := 0                    ; mouseFn(kind, x, y) how mouse-relative steps are done (0: MouseMove / Click)
-    running := false, cancelled := false
+    running := false, cancelled := false, rbDown := false, at := [0, 0]
 
     __New() {
         this.reload()
@@ -245,11 +247,19 @@ class MacrosEngine {
                 send := SendEvent
             MouseGetPos(&ax, &ay)
             this.running := true, this.cancelled := false
-            this.cancelWatch(true)
+            ; the user (2026-10-30): far slower than the same steps as a script of its own. Its waits let the
+            ; companion's timers run (the chat box's screen check, the meter, the module's reads), each a wait
+            ; stretched by theirs: critical, they wait until it's done. A hotkey can't run then either, so
+            ; your right click is the button's physical state (the mouse hook's: sent clicks don't count)
+            Critical("On")
+            if !this.mouseFn
+                InstallMouseHook()
+            this.rbDown := !this.mouseFn && GetKeyState("RButton", "P")
+            this.at := [ax, ay]
         }
         try {
             for t in keys {
-                if rel && this.cancelled {
+                if rel && this.stopped() {
                     DebugLog("macros: stopped by your right click")
                     break
                 }
@@ -272,36 +282,36 @@ class MacrosEngine {
             }
         } finally {
             if rel
-                this.running := false, this.cancelWatch(false)
+                this.running := false, Critical("Off")
         }
+    }
+    ; your right click since the last look (pressed down again: one held from before doesn't count)
+    stopped() {
+        if !this.cancelled && !this.mouseFn {
+            down := GetKeyState("RButton", "P")
+            if down && !this.rbDown
+                this.cancelled := true
+            this.rbDown := down
+        }
+        return this.cancelled
     }
     ; a delay; in a macro that can be stopped, in short sleeps so a right click stops it at once
     wait(ms, rel) {
         if !rel || ms <= 20
             return Sleep(ms)
         endAt := A_TickCount + ms
-        while !this.cancelled && A_TickCount < endAt
-            Sleep(Min(10, endAt - A_TickCount))
+        while !this.stopped() && A_TickCount < endAt
+            Sleep(Min(15, endAt - A_TickCount))
     }
+    ; a mouse step; a click where the mouse already is doesn't move it first (Event mode's mouse delay each move)
     mouse(kind, x, y) {
         if this.mouseFn
             return (this.mouseFn)(kind, x, y)
-        MouseMove(x, y, 0)
+        if kind = "move" || x != this.at[1] || y != this.at[2]
+            MouseMove(x, y, 0)
+        this.at := [x, y]
         if kind != "move"
             Click(kind = "rclick" ? "Right" : "Left")
-    }
-    ; your right click while a macro with mouse steps runs stops it (~: it still goes to the game; the
-    ; macro's own clicks are sent input, which hotkeys don't see). Its own HotIf variant: no other
-    ; right-button hotkey is touched
-    cancelWatch(on) {
-        if this.mouseFn
-            return
-        static fn := 0, cond := 0
-        if !fn
-            fn := ObjBindMethod(this, "cancel"), cond := (*) => this.running
-        HotIf(cond)
-        try Hotkey("~*RButton", fn, on ? "On" : "Off")
-        HotIf()
     }
     cancel(*) {
         if this.running
