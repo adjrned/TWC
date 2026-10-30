@@ -5,7 +5,7 @@
 // not run without your hero selected or orbs near; off: the calls are the game's again.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, ocReach) == offsetof(Shared, ocTaken) + 4, "layout 39");
+static_assert(offsetof(Shared, ocKey) == offsetof(Shared, ocReach) + 4, "layout 40");
 
 static BYTE *img;
 static BYTE *objs[16];
@@ -125,6 +125,21 @@ int main() {
     bool notSel = !g_oc.state && LogHas("not run: your hero isn't the unit selected");
     *(BYTE **)(sel + SEL_ACTIVE) = hero; sh.ocGo++; OrbComboPass();
     CHECK(notSel && !g_oc.state && pressed == 1 && LogHas("not run: no 'e05P' orbs of yours near your hero"), "not run without your hero selected, or without orbs: nothing pressed");
+    // its key in the game's window (the module reads it: no companion hotkey): a run, the key kept from the game;
+    // another key, or its repeat while held: not; the chat open: the game's
+    List({ hero, units[1], units[2], units[3], units[4] }), At(hero, 0, 0);
+    sh.ocKey = 'J';                             // (no Ctrl / Alt / Shift: the check's own keyboard has none down)
+    bool other = !OrbComboKey('K', 0);
+    int before = pressed;
+    bool took = OrbComboKey('J', 0) && g_oc.state && pressed == before + 1 && LogHas("its key 4A in the game");
+    OrbComboKey('J', 0x40000000);               // its repeat
+    bool once = pressed == before + 1;
+    OrbEnd("the check", false);
+    static BYTE chat[0x200];
+    *(BYTE **)(ui + UI_CHAT_STATE) = chat, *(DWORD *)(chat + 0x1dc) = 1;
+    bool typing = !OrbComboKey('J', 0) && pressed == before + 1;
+    *(BYTE **)(ui + UI_CHAT_STATE) = nullptr;
+    CHECK(other && took && once && typing, "its key in the game: a run (the key kept from the game); another key or its repeat: no new run; the chat open: the game's");
     sh.ocOn = 0; OrbComboPass();
     bool back = !g_ocHooked;
     for (DWORD rva : OC_SITES)

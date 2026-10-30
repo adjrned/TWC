@@ -309,6 +309,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD ocRuns, ocTaken;  // module: runs done; orbs taken in the last one
     // layout 39
     float ocReach;          // companion: on to the next orb once the hero is this close to one (its pickup ~200)
+    // layout 40
+    DWORD ocKey;            // companion: the combo's key, read by the module in the game's own window (no companion
+                            //   hotkey: in the 11:16 / 11:28 tests the companion's never ran it): its virtual key,
+                            //   0x100 Ctrl, 0x200 Alt, 0x400 Shift; 0 none
 };
 #pragma pack(pop)
 
@@ -1569,6 +1573,7 @@ static volatile LONG g_sweepQueued;
 static void SweepsTick();
 
 static void OrbComboTick();
+static bool OrbComboKey(WPARAM vk, LPARAM lp);
 static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == WM_TIMER && wp == 0x7743) {   // the dash combo's 10 ms tick (OC_TIMER)
         __try {
@@ -1636,6 +1641,10 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     // and the character Windows makes of it too (the game reads both)
     static bool dropChar;
     if (m == WM_KEYDOWN || m == WM_SYSKEYDOWN) {
+        if (g_shared->ocOn && g_shared->ocKey && OrbComboKey(wp, lp)) {
+            dropChar = true;                   // the dash combo's key: run here, kept from the game
+            return 0;
+        }
         dropChar = g_shared->qkOn && KeyCast(wp);
         if (dropChar) {
             KeyQueueTime(GetTickCount() - (DWORD)GetMessageTime());
@@ -8501,7 +8510,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 39;
+        g_shared->layout = 40;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -8777,3 +8786,24 @@ static void OrbComboPass() {
     }
 }
 
+// the combo's key in the game's own window (the game thread): a run, the key kept from the game; not while
+// the chat is open; the key held (its repeats) doesn't start another
+static bool OrbComboKey(WPARAM vk, LPARAM lp) {
+    DWORD k = g_shared->ocKey;
+    if (vk != (k & 0xff) || ((GetKeyState(VK_CONTROL) & 0x8000) != 0) != ((k & 0x100) != 0) || ((GetKeyState(VK_MENU) & 0x8000) != 0) != ((k & 0x200) != 0)
+        || ((GetKeyState(VK_SHIFT) & 0x8000) != 0) != ((k & 0x400) != 0))
+        return false;
+    __try {
+        BYTE *ui = (BYTE *)GameUi(), *chat = ui ? *(BYTE **)(ui + UI_CHAT_STATE) : nullptr;
+        if (!ui || (chat && *(DWORD *)(chat + 0x1dc)))
+            return false;                       // typing in the chat: the game's
+        static int logs;
+        if (logs++ < 5)
+            Log("dash combo: its key %02lX in the game", (DWORD)vk);
+        if (!(lp & 0x40000000) && !g_oc.state && g_ocHooked)
+            OrbComboStart();
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("dash combo: its key faulted");
+    }
+    return true;
+}

@@ -189,5 +189,6 @@ class Shm {
     static ocRuns := 75504
     static ocTaken := 75508
     static ocReach := 75512
-    static size := 75516
+    static ocKey := 75516
+    static size := 75520
 }
