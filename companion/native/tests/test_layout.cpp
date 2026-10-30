@@ -21,7 +21,7 @@
     X(qcState) X(qcAsked) X(qcClicked) X(qcNoTarget) X(qcNotFront) X(qcCancelled) X(qkOn) X(qkVk) X(qkState) X(qkPressed) X(qkClicked) \
     X(dmOn) X(dmState) X(dmSeq) X(dmPad) X(dmTotal) X(dmHits) X(dmName) X(dmColour) X(dmLocal) \
     X(btKnownSeq) X(btKnownN) X(btKnownId) X(btKnownLen) X(btNewSeq) X(btNewId) X(btNewLen) \
-    X(dmRingSeq) X(dmRing) X(dmSelUnit) X(dmSelType) X(dmSelOwner) X(dmTypeN) X(dmTypeId) X(dmTypeName) X(mtSeq) X(mtText) X(dmRingAbility) X(dmTypeId2) X(dmTypeName2) X(bbUp) X(bbUpState) X(bcOn) X(bcState) X(bcSeq) X(bcRing) X(bcWatch) X(bcWatchHp) X(bcWatchMax) X(bcWatchAlive)
+    X(dmRingSeq) X(dmRing) X(dmSelUnit) X(dmSelType) X(dmSelOwner) X(dmTypeN) X(dmTypeId) X(dmTypeName) X(mtSeq) X(mtText) X(dmRingAbility) X(dmTypeId2) X(dmTypeName2) X(bbUp) X(bbUpState) X(bcOn) X(bcState) X(bcSeq) X(bcRing) X(bcWatch) X(bcWatchHp) X(bcWatchMax) X(bcWatchAlive) X(fxOn) X(fxState)
 
 struct Field { const char *name; size_t off, size; };
 #define ENTRY(f) { #f, offsetof(Shared, f), sizeof(((Shared *)0)->f) },

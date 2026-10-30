@@ -443,6 +443,13 @@ class GameModuleEngine {
         }
         return out
     }
+    ; the effect probe (layout 37): the map's ground effects near your hero logged; false: no module, or an older one
+    effectProbe(on) {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 37
+            return false
+        NumPut("uint", on ? 1 : 0, v, Shm.fxOn)
+        return true
+    }
     ; the unit to follow (0 none); false: no module, or an older one
     bossWatch(unit) {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 36

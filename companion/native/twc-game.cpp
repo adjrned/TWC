@@ -294,6 +294,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD bcWatch;          // companion: a unit to follow (the boss engaged), 0 none
     float bcWatchHp, bcWatchMax;    // module: its HP now and its maximum (each display pass)
     DWORD bcWatchAlive;     // module: 1 alive, 0 dead, gone or none
+    // layout 37: the effect probe (FxProbePass): the map's ground effects near your hero, logged
+    DWORD fxOn;             // companion: 1 = on
+    DWORD fxState;          // module: 0 off, 1 on, 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -6902,11 +6905,14 @@ static const DWORD BC_SITES[3] = { 0x42cd27, 0x43f4a4, 0x595a76 };
 typedef void(__fastcall *SpellEffectFn)(void *, int, void *);
 static bool g_bcHooked, g_bcBad;
 static void DamageType(DWORD id);
+static void FxHeroCast(BYTE *unit, BYTE *ability);
 static void BossCastSeen(BYTE *unit, BYTE *ability) {
     if (!IsUnit(unit) || !ability)
         return;
     BYTE *state;
     int local = LocalPlayer(&state), owner = *(int *)(unit + UNIT_OWNER);
+    if (owner == local && g_shared->fxOn)
+        FxHeroCast(unit, ability);          // the effect probe: your hero's casts
     if (local < 0 || owner < 0 || owner > 15 || owner == local || Allied(state, local, owner))
         return;
     DWORD id = *(DWORD *)(ability + 0x34);
@@ -6928,7 +6934,7 @@ static void BossCastSeen(BYTE *unit, BYTE *ability) {
     }
 }
 static void __fastcall BossCastHook(void *unit, int edx, void *ability) {
-    if (g_shared->bcOn && !g_bcBad)
+    if ((g_shared->bcOn || g_shared->fxOn) && !g_bcBad)
         __try {
             BossCastSeen((BYTE *)unit, (BYTE *)ability);
         } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -6960,7 +6966,7 @@ static bool BossCastSites(bool on) {
 }
 // on the game thread: the calls follow the switch; the boss engaged's HP
 static void BossCastPass() {
-    bool on = g_shared->bcOn && !g_bcBad;
+    bool on = (g_shared->bcOn || g_shared->fxOn) && !g_bcBad;    // (the effect probe needs your hero's casts too)
     if (on != g_bcHooked && (!on || FnStart(RVA_SPELL_EFFECT)) && !BossCastSites(on))
         g_bcBad = true;
     if (g_shared->bcState != 3)
@@ -6981,6 +6987,141 @@ static void BossCastPass() {
         logged = (DWORD)u, Log("boss casts: following unit %p: %s, %.0f of %.0f HP", u, alive ? "alive" : "dead or gone", hp, mx);
 }
 
+// -- the effect probe (layout 37; the user's orb combo, 2026-10-30: the orbs are effects on the ground,
+// taken by dashing over them) -------------------------------------------------------------
+// Every ground effect a map makes goes through +229e60 (cdecl(model, float *x, float *y), returns the
+// effect's handle; AddSpecialEffect +22a490 jumps there, AddSpecialEffectLoc and AddSpellEffectById
+// call it), each one taken away by DestroyEffect (+22f800, cdecl(handle)). Both entries are detoured
+// while fxOn, to note those within 1000 of your hero: the model, where from the hero, how long after
+// its last cast; and when one goes, where the hero was then. A unit's place as GetUnitX reads it:
+// +082460 thiscall([unit+0x164], float *xyz), ret 4. All reads.
+static const DWORD RVA_EFFECT_ADD = 0x229e60, RVA_EFFECT_DESTROY = 0x22f800, RVA_UNIT_POSITION = 0x082460, UNIT_POSITION = 0x164;
+typedef DWORD(__cdecl *EffectAddFn)(const char *, float *, float *);
+typedef void(__cdecl *EffectDestroyFn)(DWORD);
+struct CodeDetour { DWORD rva; BYTE pro[8]; int n; void *hook; BYTE *tramp; bool on; };
+static CodeDetour g_fxAdd = { RVA_EFFECT_ADD, { 0x55, 0x8B, 0xEC, 0x8B, 0x55, 0x10 }, 6 };          // push ebp; mov ebp, esp; mov edx, [ebp+0x10]
+static CodeDetour g_fxDel = { RVA_EFFECT_DESTROY, { 0x55, 0x8B, 0xEC, 0x8B, 0x4D, 0x08 }, 6 };     // push ebp; mov ebp, esp; mov ecx, [ebp+8]
+static bool g_fxBad;
+// on the game thread: a function's first whole instructions to a trampoline, a jmp to the hook over them
+static bool DetourSet(CodeDetour &d, bool on) {
+    if (on == d.on)
+        return true;
+    BYTE *f = g_base + d.rva;
+    if (on) {
+        if (!FnStart(d.rva) || memcmp(f, d.pro, d.n))
+            return false;
+        if (!d.tramp && (d.tramp = (BYTE *)VirtualAlloc(nullptr, 32, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)) != nullptr) {
+            memcpy(d.tramp, f, d.n);
+            d.tramp[d.n] = 0xE9, *(LONG *)(d.tramp + d.n + 1) = (LONG)((f + d.n) - (d.tramp + d.n + 5));
+            FlushInstructionCache(GetCurrentProcess(), d.tramp, 32);
+        }
+        BYTE jmp[8] = { 0xE9 };
+        *(LONG *)(jmp + 1) = (LONG)((BYTE *)d.hook - (f + 5));
+        memset(jmp + 5, 0x90, d.n - 5);
+        if (!d.tramp || !WriteCode(f, jmp, d.n))
+            return false;
+        d.on = true;
+        return true;
+    }
+    if (f[0] == 0xE9 && f + 5 + *(LONG *)(f + 1) == (BYTE *)d.hook)
+        WriteCode(f, d.pro, d.n);
+    d.on = false;
+    return true;
+}
+// a unit's place (x, y) as GetUnitX / GetUnitY read it
+static bool UnitXY(BYTE *u, float *x, float *y) {
+    float v[3] = {};
+    DWORD a = (DWORD)v;
+    if (!IsUnit(u))
+        return false;
+    GameCall(g_base + RVA_UNIT_POSITION, (DWORD)(u + UNIT_POSITION), 0, 1, &a);
+    *x = v[0], *y = v[1];
+    return v[0] == v[0] && v[1] == v[1];
+}
+struct FxRec { DWORD handle, at; float x, y; char model[64]; };
+static FxRec g_fx[64];
+static DWORD g_fxCastAt, g_fxCastId;
+static int g_fxLogs;
+static char g_fxNote[64];
+static void FxHeroCast(BYTE *unit, BYTE *ability) {
+    if (unit != FindMyHero())
+        return;
+    g_fxCastAt = GetTickCount(), g_fxCastId = *(DWORD *)(ability + 0x34);
+    float x, y;
+    static int logs;
+    if (logs < 20 && UnitXY(unit, &x, &y))
+        logs++, Log("effect probe: your hero cast '%s' at (%.0f, %.0f)", IdText(g_fxCastId).s, x, y);
+}
+static void FxSeen(DWORD h, const char *model, float x, float y) {
+    BYTE *hero = FindMyHero();
+    float hx, hy;
+    if (!h || !hero || !UnitXY(hero, &hx, &hy))
+        return;
+    float dx = x - hx, dy = y - hy;
+    if (dx * dx + dy * dy > 1000.f * 1000.f)
+        return;
+    FxRec *r = &g_fx[0];
+    for (FxRec &e : g_fx)
+        if (!e.handle || (LONG)(e.at - r->at) < 0)
+            r = &e;
+    r->handle = h, r->at = GetTickCount(), r->x = x, r->y = y;
+    const char *base = model ? strrchr(model, '\\') : nullptr;
+    strncpy_s(r->model, base ? base + 1 : model ? model : "", _TRUNCATE);
+    DWORD since = r->at - g_fxCastAt;
+    if (g_fxLogs < 120)
+        g_fxLogs++, Log("effect probe: '%s' made %+.0f, %+.0f from your hero (handle %lu; %s)", r->model, dx, dy, h,
+                        g_fxCastAt && since < 10000 ? (sprintf_s(g_fxNote, "%lu ms after its '%s'", since, IdText(g_fxCastId).s), g_fxNote) : "no cast of its just before");
+}
+static void FxGone(DWORD h) {
+    for (FxRec &e : g_fx) {
+        if (e.handle != h)
+            continue;
+        e.handle = 0;
+        BYTE *hero = FindMyHero();
+        float hx, hy;
+        if (g_fxLogs < 120 && hero && UnitXY(hero, &hx, &hy))
+            g_fxLogs++, Log("effect probe: '%s' (handle %lu) gone after %lu ms; your hero %.0f from it (%+.0f, %+.0f)", e.model, h, GetTickCount() - e.at,
+                            sqrtf((hx - e.x) * (hx - e.x) + (hy - e.y) * (hy - e.y)), hx - e.x, hy - e.y);
+        return;
+    }
+}
+static DWORD __cdecl EffectAddHook(const char *model, float *x, float *y) {
+    DWORD h = ((EffectAddFn)g_fxAdd.tramp)(model, x, y);
+    if (g_shared->fxOn && !g_fxBad)
+        __try {
+            FxSeen(h, model, x ? *x : 0, y ? *y : 0);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            g_fxBad = true;
+            Log("effect probe: reading a new effect faulted: no more");
+        }
+    return h;
+}
+static void __cdecl EffectDestroyHook(DWORD h) {
+    if (g_shared->fxOn && !g_fxBad)
+        __try {
+            FxGone(h);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            g_fxBad = true;
+        }
+    ((EffectDestroyFn)g_fxDel.tramp)(h);
+}
+// on the game thread: the two entries follow the switch
+static void FxProbePass() {
+    g_fxAdd.hook = (void *)EffectAddHook, g_fxDel.hook = (void *)EffectDestroyHook;
+    bool on = g_shared->fxOn && !g_fxBad;
+    if (on != (g_fxAdd.on && g_fxDel.on)) {
+        bool ok = DetourSet(g_fxAdd, on) && DetourSet(g_fxDel, on);
+        if (!ok) {
+            DetourSet(g_fxAdd, false), DetourSet(g_fxDel, false);
+            g_fxBad = true;
+            Log("effect probe: refused (+%06lX / +%06lX don't start as 1.28f's do)", RVA_EFFECT_ADD, RVA_EFFECT_DESTROY);
+            LogBytes("  +229E60", g_base + RVA_EFFECT_ADD), LogBytes("  +22F800", g_base + RVA_EFFECT_DESTROY);
+        } else
+            Log(on ? "effect probe: on (the map's ground effects near your hero are logged, and your hero's casts)" : "effect probe: off");
+    }
+    g_shared->fxState = g_fxBad ? 3 : g_fxAdd.on ? 1 : 0;
+}
+
 static void DisplayPass() {
     if (!g_getUi)
         return;
@@ -6991,6 +7132,7 @@ static void DisplayPass() {
     CountdownPass();
     AlliesPass();
     BossCastPass();
+    FxProbePass();
     DamageTypesPass();
     MapTextPass();
     UiHidePass();
@@ -7005,7 +7147,7 @@ static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
     bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !g_shared->fxOn && !g_fxAdd.on && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -7870,6 +8012,7 @@ static void RestoreAll() {
     SwapTimerEvent(false);
     if (g_bcHooked)
         BossCastSites(false);
+    DetourSet(g_fxAdd, false), DetourSet(g_fxDel, false);
     if (g_mtHooked)
         MapTextSites(false);
     TimerStartWatch(false);
@@ -8156,7 +8299,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 36;
+        g_shared->layout = 37;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
