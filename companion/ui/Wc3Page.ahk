@@ -127,15 +127,15 @@ Wc3Features() {
             on: (*) => gameDisplay.wideUi, set: (v) => gameDisplay.setWideUi(v), status: (*) => gameDisplay.wideUiStatus(),
             opts: (d) => OptNote(d, "The buff bar's place (raised over the console or not) is on the Buff bar card.") },
         ; the buff bar's own settings in one place (the user's ask, 2026-10-30: the raise sat in the Widescreen UI's
-        ; Options): the switch is the bigger size, the raise works with the Widescreen UI (its layout places the bar)
+        ; Options): the switch is the bigger size; the raise is on its own (the module's, or the Widescreen UI's layout when that's on)
         { tab: "display", title: "Buff bar", badge: "1.28f",
-            desc: "The buff bar bigger (x1 to x2), and raised over the console with the Widescreen UI.",
+            desc: "The buff bar bigger (x1 to x2), and raised over the console.",
             on: (*) => gameDisplay.buffBar, set: (v) => gameDisplay.setBuffBar(v), status: (*) => gameDisplay.buffBarStatus(),
             opts: (d) => (OptSlider(d, "Size", (*) => gameDisplay.buffBarScale, (v) => gameDisplay.setBuffBarScale(v), 1, 2, 0.05, BarSizeText),
                 OptNote(d, "Times the game's own size (the card's switch). Still 8 buffs at most: the game has 8 buff icons. With the Widescreen UI on, it grows to the right instead."),
                 OptDivider(d),
                 OptCheck(d, "Raise the buff bar over the console", gameDisplay.buffBarUp, (v) => gameDisplay.setBuffBarUp(v)),
-                OptNote(d, "As WFE's upgraded buff bar: it floats above the command card, without its label. Works with the Widescreen UI on (whatever this card's switch is).")) },
+                OptNote(d, "As WFE's upgraded buff bar: it floats above the command card, without its label. With or without the Widescreen UI, whatever this card's switch is.")) },
         { tab: "display", title: "Hide hover names", badge: "1.28f",
             desc: "As WFE's Hero Overhead Tip off: no name over the unit under the mouse.",
             on: (*) => gameDisplay.unitNames, set: (v) => gameDisplay.setUnitNames(v), status: (*) => gameDisplay.unitNamesStatus() },

@@ -270,6 +270,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD dmRingAbility[DM_RING];
     DWORD dmTypeId2[DM_TYPES];
     char dmTypeName2[DM_TYPES][32];
+    // layout 35
+    DWORD bbUp;             // companion: 1 = the buff bar raised over the console without the Widescreen UI too
+                            //   (BuffBarRaisePass; with it on, its layout raises the bar: ulOn bit 2)
+    DWORD bbUpState;        // module: 0 off, 1 raised, 2 waiting for the bar (no game), 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -5643,6 +5647,7 @@ static BYTE *LayOf(BYTE *f) {
     return nullptr;
 }
 
+static bool LayoutCapture(BYTE *f, BYTE *lay, bool raw, LaySave &s);
 // a frame's own anchors and size, once per game (nullptr: refused, or no layout part)
 static LaySave *UlSave(BYTE *f, bool raw = false) {
     if (!V(f))
@@ -5659,6 +5664,22 @@ static LaySave *UlSave(BYTE *f, bool raw = false) {
         return nullptr;
     }
     LaySave &s = g_ul[g_ulN];
+    if (!LayoutCapture(f, lay, raw, s))
+        return nullptr;
+    g_ulN++;
+    if (g_ulLogSaves > 0) {             // the first frames of a handler, the first time: their own anchors
+        g_ulLogSaves--;
+        char b[240];
+        int o = 0;
+        for (int i = 0; i < 9; i++)
+            if (s.pts[i].kind)
+                o += sprintf_s(b + o, sizeof(b) - o, " %d:%s %.4f,%.4f", i, s.pts[i].kind == 2 ? "rel" : "abs", s.pts[i].x, s.pts[i].y);
+        Log("  frame %p (layout +%lX): %.4f x %.4f, points%s", f, (DWORD)(s.lay - f), s.w, s.h, o ? b : " none");
+    }
+    return &s;
+}
+// a frame's anchors and size into s (false: a point of neither kind, logged)
+static bool LayoutCapture(BYTE *f, BYTE *lay, bool raw, LaySave &s) {
     s.frame = f, s.lay = lay, s.raw = raw, s.cleared = false;
     for (int i = 0; i < 9; i++) {
         BYTE *pt = *(BYTE **)(s.lay + LAYOUT_POINTS + i * 4);
@@ -5673,21 +5694,11 @@ static LaySave *UlSave(BYTE *f, bool raw = false) {
         else {
             Log("UI layout: frame %p's point %d has vtable %08lX, neither kind: stopping (it couldn't be put back)", f, i, vt);
             g_ulBad = true;
-            return nullptr;
+            return false;
         }
     }
     s.w = *(float *)(s.lay + 0x58), s.h = *(float *)(s.lay + 0x5c);
-    g_ulN++;
-    if (g_ulLogSaves > 0) {             // the first frames of a handler, the first time: their own anchors
-        g_ulLogSaves--;
-        char b[240];
-        int o = 0;
-        for (int i = 0; i < 9; i++)
-            if (s.pts[i].kind)
-                o += sprintf_s(b + o, sizeof(b) - o, " %d:%s %.4f,%.4f", i, s.pts[i].kind == 2 ? "rel" : "abs", s.pts[i].x, s.pts[i].y);
-        Log("  frame %p (layout +%lX): %.4f x %.4f, points%s", f, (DWORD)(s.lay - f), s.w, s.h, o ? b : " none");
-    }
-    return &s;
+    return true;
 }
 static void UlRestore(LaySave &s) {
     Game(RVA_CLEAR_POINTS, s.lay, { 1 });
@@ -6113,6 +6124,83 @@ static void BuffBarSizePass() {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         bad = true, g_shared->bbState = 3;
         Log("buff bar size: resizing faulted: left to the game");
+    }
+}
+
+// The buff bar raised over the console without the Widescreen UI (bbUp, layout 35; the user's ask
+// 2026-10-30): as the Widescreen UI's UlBuffs does it for WFE's ISUPGRADEDBUFFBAR, its bottom right on
+// the game UI's at the bar's height + 0.13 (the console's top, 0x100fa7e8), its right edge where the
+// game put it (its laid-out rect +0x50 against the UI's 0.8 width), and its label off at x -1. The
+// bar's and the label's own anchors are saved first and put back when off or on unload; set again
+// when the game anchors the bar anew (the info panel's +0x3e8126); forgotten with the game UI.
+static LaySave g_bbUpBar, g_bbUpLabel;
+static bool g_bbUpApplied, g_bbUpHasLabel;
+static BYTE *g_bbUpUi;
+static float g_bbUpX;
+static void BuffBarRaiseBack() {
+    if (!g_bbUpApplied)
+        return;
+    g_bbUpApplied = false;
+    __try {
+        UlRestore(g_bbUpBar);
+        if (g_bbUpHasLabel)
+            UlRestore(g_bbUpLabel);
+        Log("buff bar raise: off (the bar's own anchors back)");
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("buff bar raise: putting the bar back faulted");
+    }
+}
+static void BuffBarRaisePass() {
+    static bool bad;
+    BYTE *ui = (BYTE *)GameUi();
+    if (ui != g_bbUpUi)
+        g_bbUpApplied = false, g_bbUpUi = ui;   // a new game UI: its frames aren't the saved ones
+    bool want = g_shared->bbUp && !g_shared->ulOn && !bad;
+    if (!want) {
+        BuffBarRaiseBack();
+        if (!bad)
+            g_shared->bbUpState = 0;
+        return;
+    }
+    int rows, cols;
+    BYTE *bar = BuffBarOf(ui, &rows, &cols);
+    if (!bar) {
+        g_shared->bbUpState = 2;
+        return;
+    }
+    __try {
+        if (*(DWORD *)bar != (DWORD)(g_base + RVA_BUFF_BAR_VT)) {
+            bad = true, g_shared->bbUpState = 3;
+            Log("buff bar raise: the bar %p has vtable +%06lX, not CBuffBar's: refused", bar, *(DWORD *)bar - (DWORD)g_base);
+            return;
+        }
+        BYTE *root = ui + FRAME_LAYOUT, *label = P(bar, 0x15c);
+        bool hasLabel = label && *(DWORD *)label == (DWORD)(g_base + RVA_FONTSTRING_VTABLE);
+        if (!g_bbUpApplied) {
+            float right = ((float *)(bar + LAYOUT_RECT))[3];
+            if (!(right > 0.05f && right <= 0.8f))
+                return;                         // not laid out yet
+            if (!LayoutCapture(bar, bar, true, g_bbUpBar) || hasLabel && !LayoutCapture(label, label, true, g_bbUpLabel)) {
+                bad = true, g_shared->bbUpState = 3;
+                Log("buff bar raise: the bar's anchors couldn't be saved: refused");
+                return;
+            }
+            g_bbUpHasLabel = hasLabel, g_bbUpX = right - 0.8f, g_bbUpApplied = true;
+            Game(RVA_CLEAR_POINTS, bar, { 1 });
+        }
+        float y = *(float *)(bar + LAYOUT_HEIGHT) + 0.13f;
+        static int logs;
+        if (!HasPoint(bar, 8, root, 8, g_bbUpX, y)) {
+            Game(RVA_SET_POINT, bar, { 8, (DWORD)root, 8, F(g_bbUpX), F(y), 1 });
+            if (logs++ < 3)
+                Log("buff bar raise: the bar %p over the console (its bottom right at %.4f, %.4f from the screen's)", bar, g_bbUpX, y);
+        }
+        if (g_bbUpHasLabel && hasLabel && !HasPoint(label, 5, bar, 3, -1.0f, 0))
+            Game(RVA_SET_POINT, label, { 5, (DWORD)bar, 3, F(-1.0f), F(0.0f), 1 });
+        g_shared->bbUpState = 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        bad = true, g_shared->bbUpState = 3;
+        Log("buff bar raise: faulted: left to the game");
     }
 }
 
@@ -6617,6 +6705,7 @@ static void DisplayPass() {
     UiHidePass();
     UiLayoutPass();
     BuffBarSizePass();
+    BuffBarRaisePass();
     LoginPass();
 }
 
@@ -6625,7 +6714,7 @@ static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
     bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -7475,7 +7564,7 @@ static bool LiveModuleThere(const Shared *s) {
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
-    s->bbScale = 0, s->blOn = 0, s->utOn = 0, s->dmOn = 0;
+    s->bbScale = 0, s->blOn = 0, s->utOn = 0, s->dmOn = 0, s->bbUp = 0;
     SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
     s->qcUntil = 0;
     s->qkOn = 0, s->qkState = s->qkState == 3 ? 3 : 0;
@@ -7773,7 +7862,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 34;
+        g_shared->layout = 35;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

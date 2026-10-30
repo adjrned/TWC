@@ -263,6 +263,8 @@ class GameDisplayEngine {
             NumPut("float", this.buffBar && this.gm.enabled ? this.buffBarScale : 0, v, Shm.bbScale)
         if NumGet(v, Shm.layout, "uint") >= 26
             NumPut("uint", this.unitNames && this.gm.enabled ? 1 : 0, v, Shm.utOn)
+        if NumGet(v, Shm.layout, "uint") >= 35          ; the raise without the Widescreen UI too (with it, ulOn bit 2)
+            NumPut("uint", this.buffBarUp && this.gm.enabled ? 1 : 0, v, Shm.bbUp)
     }
 
     ; the common part of both status lines ("" = the module is there to ask)

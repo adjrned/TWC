@@ -35,7 +35,8 @@ static void *__fastcall FakeTextCtor(BYTE *mem, int, void *parent, DWORD layer, 
 static void __fastcall FakeFlags(BYTE *, int, DWORD) { flagCalls++; }
 static void __fastcall FakeSetText(BYTE *t, int, const char *s) { setTexts++; strcpy_s(lastText, s); strcpy_s((char *)t + 0x100, 32, s); }
 static int __fastcall FakeSetFont(BYTE *, int, const char *path, float h, DWORD) { fonts++; strcpy_s(lastFont, path); lastFontH = h; return 1; }
-static int refreshes;
+static int refreshes, clears;
+static void __fastcall FakeClearPoints(BYTE *, int, int) { clears++; }
 static void __fastcall FakeRefresh(BYTE *, int, int) { refreshes++; }
 static void __fastcall FakeSetPoint(BYTE *l, int, int pt, void *rel, int, float x, float y, int) {
     anchors++; lastRel = rel; lastX = x; lastY = y;
@@ -410,6 +411,20 @@ int main() {
         sh.bbScale = 2, sh.ulOn = 1; BuffBarSizePass();
         CHECK(fabsf(*(float *)(buffBar + LAYOUT_WIDTH) - 0.12f) < 1e-6f && sh.bbState == 1, "with the widescreen UI on: left to its layout (UlBuffs)");
         sh.bbScale = 0, sh.ulOn = 0; BuffBarSizePass();
+        // raised over the console without the widescreen UI (layout 35): its bottom right at the bar's height + 0.13
+        // from the screen's, its right edge where the game laid it out (0.5 of the UI's 0.8); back when off
+        Stub(RVA_CLEAR_POINTS, FakeClearPoints);
+        ((float *)(buffBar + LAYOUT_RECT))[3] = 0.5f;
+        int a0 = anchors, c0 = clears;
+        sh.bbUp = 1; BuffBarRaisePass();
+        bool raised = g_bbUpApplied && sh.bbUpState == 1 && anchors == a0 + 1 && clears == c0 + 1 && lastRel == ui + FRAME_LAYOUT
+            && fabsf(lastX - -0.3f) < 1e-6f && fabsf(lastY - (0.015f + 0.13f)) < 1e-6f;
+        sh.ulOn = 1; BuffBarRaisePass();
+        bool toWide = !g_bbUpApplied && sh.bbUpState == 0 && clears == c0 + 2;          // put back (UlRestore clears, sets the saved ones)
+        sh.ulOn = 0; BuffBarRaisePass();
+        bool again = g_bbUpApplied;
+        sh.bbUp = 0; BuffBarRaisePass();
+        CHECK(raised && toWide && again && !g_bbUpApplied && sh.bbUpState == 0, "buff bar raised without the widescreen UI: at -0.30, 0.145 from the screen's bottom right; given back with the widescreen UI on (its layout raises it) and off");
         *(DWORD *)buffBar = 0; BuffBarSizePass();
     }
     // a new game while bars are still listed: they're forgotten, not touched

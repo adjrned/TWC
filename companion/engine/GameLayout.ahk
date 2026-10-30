@@ -168,5 +168,7 @@ class Shm {
     static dmRingAbility := 59052
     static dmTypeId2 := 67244
     static dmTypeName2 := 67756
-    static size := 71852
+    static bbUp := 71852
+    static bbUpState := 71856
+    static size := 71860
 }
