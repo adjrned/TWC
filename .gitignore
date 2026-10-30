@@ -6,6 +6,8 @@ sim-todo.txt
 companion/web/
 companion/tw-companion.ini
 companion/tw-companion-bosses.ini
+# the private build's parts (never in the public release)
+companion/private/
 companion/HiddenFiles.txt
 
 # sample saves for trying the companion Loader

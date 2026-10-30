@@ -23,7 +23,10 @@ if ($only -eq '' -or $only -eq 'validate') {
     if ($v.ExitCode -eq 0) { "  ok    tw-companion.ahk" } else { Get-Content "$env:TEMP\twc-val.txt" | ForEach-Object { "  FAIL  $_" }; $failed++ }
 }
 
-foreach ($f in Get-ChildItem "$here\checks\*.ahk") {
+# (and the private build's own, ..\private\checks: not in git, there only where it is)
+$private = Join-Path $companion "private\checks"
+$all = @(Get-ChildItem "$here\checks\*.ahk") + @(if (Test-Path $private) { Get-ChildItem "$private\*.ahk" })
+foreach ($f in $all) {
     $name = $f.BaseName
     if ($only -ne '' -and $only -ne $name) { continue }
     "== $name"

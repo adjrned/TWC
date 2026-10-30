@@ -24,6 +24,7 @@ Thread("Interrupt", 0)
 #Include lib\Common.ahk
 #Include engine\Loader.ahk
 #Include engine\Macros.ahk
+#Include *i private\Private.ahk          ; local-only parts, when there (not in git)
 #Include engine\Quickcast.ahk
 #Include engine\ChatBox.ahk
 #Include engine\InGame.ahk
@@ -121,10 +122,8 @@ global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, exp
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
 global macroNewBtn, macroHelpBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
-global macroLblMsg, macroKindLink, macroSeqText, macroItemBtns := [], macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn
-global macroClickBtn, macroDelayBtn, macroDelayEdit, macroDelayMs     ; keys macros: a click, a delay (ms) between steps
-global macroMoveBtn, macroRelCb, macroTextBtn, macroAnchor := ""        ; a mouse move, clicks from the mouse, the steps as text; the start picked
-global macroKeyCtrls := [], macroKind := "chat", macroKeys := []     ; the editor: chat or keys, and the keys being edited
+global macroLblMsg
+global macroKind := "chat"      ; the editor's kind: chat, or an extension's (MacrosEngine.ext)
 global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
 global macroSel := -1, macroOffset := 0, macroDraftHK := ""     ; macroSel 0 = a new macro being made
 global MACRO_ROWS := 6, MACRO_ROW_H := 36
@@ -1029,33 +1028,6 @@ BuildMacrosPage() {
     UISetFont(macroMsgEdit, "s10")
     macroMsgEdit.OnEvent("Change", (*) => SetTimer(MacroCommit, -400))
     ApplyDark(macroMsgEdit.Hwnd)
-    ; keys macros: the keys in order, quick buttons for the six items, any key
-    macroSeqText := mainGui.AddEdit("x40 y160 w500 h60 Multi ReadOnly -VScroll +Background" C.well " c" C.text, "")
-    UISetFont(macroSeqText, "s10")
-    macroKeyCtrls := [macroSeqText]
-    loop 6 {
-        local b := MkButton("Item " A_Index, 40, 160, 60, 26, C.chip, C.text, MacroAddKeys.Bind([RemapEngine.INV_TARGETS[A_Index]]))
-        macroItemBtns.Push(b), macroKeyCtrls.Push(b)
-    }
-    macroAllItemsBtn := MkButton("All 6", 40, 160, 64, 26, C.chip, C.accent, MacroAddKeys.Bind(RemapEngine.INV_TARGETS))
-    macroAddKeyBtn := MkButton("+  Add key", 40, 160, 110, 26, C.chip, C.accent, (*) => MacroCaptureKey())
-    macroUndoKeyBtn := MkButton("Remove last", 40, 160, 104, 26, C.chip, C.muted, (*) => MacroRemoveKey(false))
-    macroClearKeysBtn := MkButton("Clear", 40, 160, 64, 26, C.chip, C.muted, (*) => MacroRemoveKey(true))
-    macroKeyCtrls.Push(macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn)
-    ; clicks and delays: a spot clicked (left or right; in the game window it's kept relative to it), a wait in ms
-    macroClickBtn := MkButton("+  Click", 40, 160, 110, 26, C.chip, C.accent, (*) => MacroCaptureClick())
-    macroDelayBtn := MkButton("+  Delay", 40, 160, 90, 26, C.chip, C.accent, (*) => MacroAddDelay())
-    macroDelayEdit := mainGui.AddEdit("x40 y160 w60 h26 Number Limit5 Center +Background" C.well " c" C.text, Ini("MacroEditor", "delay", 250))
-    UISetFont(macroDelayEdit, "s10"), ApplyDark(macroDelayEdit.Hwnd)
-    macroDelayMs := mainGui.AddText("x40 y160 w24 h26 0x200 +Background" C.panel " c" C.muted, "ms")
-    UISetFont(macroDelayMs, "s9")
-    macroKeyCtrls.Push(macroClickBtn, macroDelayBtn, macroDelayEdit, macroDelayMs)
-    ; from the mouse: steps measured from where it is when the macro starts (the start picked once per macro)
-    macroMoveBtn := MkButton("+  Move", 40, 160, 90, 26, C.chip, C.accent, (*) => MacroCaptureClick(true))
-    macroRelCb := mainGui.AddCheckbox("x40 y160 w100 h26 +Background" C.panel " c" C.text, " From mouse")
-    UISetFont(macroRelCb, "s9")
-    macroTextBtn := MkButton("Edit as text", 40, 160, 110, 26, C.chip, C.text, (*) => MacroEditText())
-    macroKeyCtrls.Push(macroMoveBtn, macroRelCb, macroTextBtn)
     ; right: the hotkey, like Remap's detail
     macroLblKey := mainGui.AddText("x40 y160 w160 h18 +Background" C.panel " c" C.muted, "Hotkey")
     macroKeyText := mainGui.AddText("x40 y160 w160 h30 0x200 +Background" C.panel " c" C.text, "")
@@ -1067,12 +1039,10 @@ BuildMacrosPage() {
     macroPasteCb := mainGui.AddCheckbox("x40 y160 w160 h22 +Background" C.panel " c" C.text (ChatPasteOn() ? " Checked" : ""), " Paste chat lines")
     UISetFont(macroPasteCb, "s9")
     macroPasteCb.OnEvent("Click", (src, *) => SetIni(src.Value, "Chat", "paste"))
-    ; chat <-> keys: an invisible spot (text in the background colour), so
-    ; only people who know it's there switch
-    macroKindLink := mainGui.AddText("x40 y160 w48 h24 +Background" C.panel " c" C.panel, "keys")
-    macroKindLink.OnEvent("Click", (*) => MacroKindSet(macroKind = "chat" ? "keys" : "chat"))
-    AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit, macroKeyCtrls*)
-    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroKindLink, macroPasteCb)
+    AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit)
+    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroPasteCb)
+    if MacrosEngine.ext                         ; an extension's editor parts
+        MacrosEngine.ext.build()
     AddPopover("macros", macroHelpBtn, [
         ["Macros", ""],
         ["What", "One key that types chat lines in Warcraft III: each row is sent as its own line, in order. Empty rows are skipped."],
@@ -1090,27 +1060,14 @@ LayoutMacros() {
     macroLblMsg.Move(CX, ey)
     macroSummary.Move(CX + 260, ey)
     macroMsgEdit.Move(CX, ey + 22, 500, 132)
-    macroSeqText.Move(CX, ey + 22, 500, 62)
-    for i, b in macroItemBtns
-        b.Move(CX + (i - 1) * 66, ey + 92, 60, 26)
-    macroAllItemsBtn.Move(CX + 396, ey + 92, 64, 26)
-    macroAddKeyBtn.Move(CX, ey + 128, 110, 26)
-    macroUndoKeyBtn.Move(CX + 116, ey + 128, 104, 26)
-    macroClearKeysBtn.Move(CX + 226, ey + 128, 64, 26)
-    macroTextBtn.Move(CX + 390, ey + 128, 110, 26)
-    macroClickBtn.Move(CX, ey + 162, 90, 26)
-    macroMoveBtn.Move(CX + 96, ey + 162, 84, 26)
-    macroRelCb.Move(CX + 186, ey + 162)
-    macroDelayBtn.Move(CX + 290, ey + 162, 86, 26)
-    macroDelayEdit.Move(CX + 382, ey + 162, 56, 26)
-    macroDelayMs.Move(CX + 442, ey + 162)
     macroLblKey.Move(rx, ey)
     macroKeyText.Move(rx, ey + 20)
     macroCapBtn.Move(rx, ey + 56, 77, 26)
     macroClearBtn.Move(rx + 83, ey + 56, 77, 26)
     macroHint.Move(rx, ey + 94)
     macroPasteCb.Move(rx, ey + 132)
-    macroKindLink.Move(W - 56, H - 30)              ; invisible, in the window's bottom-right corner
+    if MacrosEngine.ext
+        MacrosEngine.ext.layout(ey)
 }
 BuildMacroList() {
     global
@@ -1179,11 +1136,10 @@ RenderMacroRows() {
         if !has
             continue
         local m := list[idx], bg := idx = macroSel ? C.navOn : C.card
-        local n := m.kind = "keys" ? MacrosEngine.Keys(m.text).Length : MacroLines(m.text).Length
+        local n := MacroLines(m.text).Length
         row.key.Text := m.label != "" ? m.label : "no key"
         row.msg.Text := m.summary
-        local steps := m.kind = "keys" && MacrosEngine.HasSteps(MacrosEngine.Keys(m.text))
-        row.lines.Text := m.kind = "keys" ? n (steps ? (n = 1 ? " step" : " steps") : n = 1 ? " key" : " keys") : n > 1 ? n " lines" : ""
+        row.lines.Text := m.kind != "chat" ? (MacrosEngine.ext ? MacrosEngine.ext.countText(m) : "") : n > 1 ? n " lines" : ""
         row.del.Text := Chr(0xE711)                         ; ✕ (Segoe Fluent "Cancel")
         row.pad.Opt("+Background" bg)
         row.key.Opt("+Background" bg " +c" (m.label != "" ? C.accent : C.dim))
@@ -1219,7 +1175,8 @@ LoadMacroEditor() {
     local m := macroSel ? macros.list()[macroSel] : 0
     if m {
         macroKind := m.kind
-        macroKeys := m.kind = "keys" ? MacrosEngine.Keys(m.text) : []
+        if MacrosEngine.ext
+            MacrosEngine.ext.load(m)
         macroMsgEdit.Value := m.kind = "chat" ? m.text : ""
     }
     ShowMacroEditor()
@@ -1228,33 +1185,31 @@ LoadMacroEditor() {
 ShowMacroEditor() {
     global
     local m := macroSel ? macros.list()[macroSel] : 0
-    local hk := m ? m.hotkey : macroDraftHK, keys := macroKind = "keys"
+    local hk := m ? m.hotkey : macroDraftHK, other := macroKind != "chat", ext := MacrosEngine.ext
     macroKeyText.Text := hk ? ReadableHotkey(hk) : "None"
     macroKeyText.Opt("+c" (hk ? C.accent : C.dim)), macroKeyText.Redraw()
-    macroLblMsg.Text := keys ? "Keys  ·  pressed in order" : "Chat lines  ·  one per row"
-    SetShown(macroMsgEdit, !keys)
-    for keyCtl in macroKeyCtrls
-        SetShown(keyCtl, keys)
-    local labels := []
-    for t in macroKeys
-        labels.Push(MacrosEngine.KeyLabel(t))
-    macroSeqText.Value := labels.Length ? Join("   ›   ", labels*) : "No keys yet. Add them in the order they're pressed."
-    macroSeqText.Opt("+c" (labels.Length ? C.text : C.dim)), macroSeqText.Redraw()
+    macroLblMsg.Text := !other ? "Chat lines  ·  one per row" : ext ? ext.title() : "Not available in this version"
+    SetShown(macroMsgEdit, !other)
+    if ext
+        ext.show(other)
     macroHint.Text := !hk ? "No hotkey: Bind Key to use it."
-        : (keys ? "Pressed" : "Sent") " in a game with chat closed, while the tool is On."
+        : (other ? "Pressed" : "Sent") " in a game with chat closed, while the tool is On."
     macroSummary.Text := MacroStatus()
 }
 MacroStatus() {
     global
     local m := macroSel ? macros.list()[macroSel] : 0
-    local n := macroKind = "chat" ? MacroLines(macroMsgEdit.Value).Length : macroKeys.Length
-    local what := macroKind = "chat" ? "a line" : "a key to press"
+    local ext := macroKind != "chat" ? MacrosEngine.ext : 0
+    if macroKind != "chat" && !ext
+        return "not available in this version"
+    local n := ext ? ext.count() : MacroLines(macroMsgEdit.Value).Length
+    local what := ext ? "a key to press" : "a line"
     if !m
         return "new macro: add " what
     if m.kind != macroKind && !n
         return "add " what " to switch it"
-    if macroKind = "keys"
-        return MacrosEngine.HasSteps(macroKeys) ? (n = 1 ? "1 step" : n " steps, in order") : n = 1 ? "1 key" : n " keys, pressed at once"
+    if ext
+        return ext.status(n)
     return !n ? "empty: not saved, ✕ deletes it" : n = 1 ? "1 line" : n " lines, sent in order"
 }
 
@@ -1264,8 +1219,11 @@ MacroCommit() {
     global
     SetTimer(MacroCommit, 0)
     local list := macros.list(), m := macroSel ? list[macroSel] : 0, hk := m ? m.hotkey : macroDraftHK
-    local text := macroKind = "keys" ? Join(" ", macroKeys*) : RegExReplace(StrReplace(macroMsgEdit.Value, "`r"), "\n+$")
-    local n := macroKind = "keys" ? macroKeys.Length : MacroLines(text).Length
+    local ext := macroKind != "chat" ? MacrosEngine.ext : 0
+    if macroKind != "chat" && !ext
+        return                                  ; another kind, no extension: left as it is
+    local text := ext ? ext.text() : RegExReplace(StrReplace(macroMsgEdit.Value, "`r"), "\n+$")
+    local n := ext ? ext.count() : MacroLines(text).Length
     if n && !(m && m.text == text && m.kind = macroKind) {
         local args := Map("hotkey", hk, "text", text, "kind", macroKind)
         if m
@@ -1279,174 +1237,14 @@ MacroCommit() {
     }
     macroSummary.Text := MacroStatus()
 }
-MacroKindSet(kind, *) {
-    global
-    if kind = macroKind
-        return
-    MacroCommit()
-    macroKind := kind
-    local m := macroSel ? macros.list()[macroSel] : 0
-    if kind = "keys"
-        macroKeys := m && m.kind = "keys" ? MacrosEngine.Keys(m.text) : []
-    else
-        macroMsgEdit.Value := m && m.kind = "chat" ? m.text : ""
-    Freeze()
-    try ShowMacroEditor()
-    Thaw()
-}
-MacroAddKeys(keys, *) {
-    global
-    for k in keys
-        macroKeys.Push(k)
-    MacroCommit()
-    ShowMacroEditor()
-}
-; any key or combo for a keys macro; one of your Remap keys becomes the game
-; key it stands for (sent keys don't go through the companion's remaps)
-MacroCaptureKey() {
-    global
-    macroAddKeyBtn.Text := "press a key…"
-    local combo := KeyWaitCombo()
-    macroAddKeyBtn.Text := "+  Add key"
-    if combo == "Escape" || combo = ""
-        return
-    local k := Norm(combo)
-    for g in ["card", "inv"]
-        loop remap.count(g)
-            if (o := remap.yourKey(g, A_Index)) && Norm(o) = k {
-                combo := remap.gameKey(g, A_Index)
-                break 2
-            }
-    MacroAddKeys([combo])
-}
-; a click for a keys macro: the next left or right click (swallowed: it doesn't act), kept relative
-; to the Warcraft III window when it's in it, else as a screen position; Esc or 15 s cancels.
-; From mouse (and + Move, always): measured from a start spot (where the mouse will be when the
-; macro's key is pressed), picked by a click first, once for this macro
-MacroCaptureClick(move := false) {
-    global
-    local rel := move || macroRelCb.Value, btn := move ? macroMoveBtn : macroClickBtn, label := btn.Text
-    if rel && macroAnchor = "" {
-        btn.Text := "click the start…"
-        local a := WaitClickAt()
-        if !a
-            return (btn.Text := label)
-        macroAnchor := a
-    }
-    btn.Text := move ? "click the spot…" : "click it…"
-    local got := WaitClickAt()
-    btn.Text := label
-    if !got
-        return
-    local step := rel ? (move ? "move" : got.right ? "rclick" : "click") "@" (got.x - macroAnchor.x) "," (got.y - macroAnchor.y)
-        : ClickStepFor(got.right, got.x, got.y)
-    DebugLog("macros: step '" step "' added")
-    MacroAddKeys([step])
-}
-WaitClickStep(timeoutMs := 15000) {
-    got := WaitClickAt(timeoutMs)
-    return got ? ClickStepFor(got.right, got.x, got.y) : ""
-}
-; the next click -> { right, x, y } on the screen (0: Esc or the time ran out); swallowed while picking
-WaitClickAt(timeoutMs := 15000) {
-    KeyWait("LButton")                      ; (the press on the button itself)
-    box := { got: 0 }
-    grab(right, *) {
-        CoordMode("Mouse", "Screen")
-        MouseGetPos(&mx, &my)
-        box.got := { right: right, x: mx, y: my }
-    }
-    Hotkey("*LButton", grab.Bind(0), "On"), Hotkey("*RButton", grab.Bind(1), "On")
-    try {
-        start := A_TickCount
-        while !box.got && A_TickCount - start < timeoutMs && !GetKeyState("Escape", "P")
-            Sleep(15)
-    } finally
-        Hotkey("*LButton", "Off"), Hotkey("*RButton", "Off")
-    return box.got
-}
-; the step for a click at screen x, y: in the game window's client area as fractions, else screen pixels
-ClickStepFor(right, x, y, win := "") {
-    if WinExist(win != "" ? win : WarcraftIII) {
-        WinGetClientPos(&gx, &gy, &gw, &gh)
-        if gw > 0 && gh > 0 && x >= gx && y >= gy && x < gx + gw && y < gy + gh
-            return (right ? "rclick:" : "click:") Format("{:.4f}", (x - gx) / gw) "," Format("{:.4f}", (y - gy) / gh)
-    }
-    return (right ? "srclick:" : "sclick:") x "," y
-}
-; a delay for a keys macro: the ms in its box (1 to 60000), kept for next time
-MacroAddDelay() {
-    global
-    local ms := IsNumber(macroDelayEdit.Value) ? Max(1, Min(60000, Integer(macroDelayEdit.Value))) : 250
-    macroDelayEdit.Value := ms
-    SetIni(ms, "MacroEditor", "delay")
-    MacroAddKeys(["wait:" ms])
-}
-; the keys macro's steps as text, to paste or fix by hand: one per line (or space separated)
-MacroEditText() {
-    global C, mainGui, macroKeys, macroKind
-    d := Wc3Dialog("Steps as text", "One step per line (or space separated). Keys: q, Numpad7, ^1 (Ctrl), +q (Shift). wait:250 a delay (ms). "
-        . "click:0.51,0.73 / rclick: a spot of the game window; sclick:1024,768 / srclick: of the screen. "
-        . "From where the mouse is when the macro starts: move@-28,27, click@-85,80, rclick@-85,80 (a right click of yours stops these).", 480)
-    g := d.g
-    ed := g.AddEdit("x" d.x " y" d.y " w" d.tw " h200 Multi -Wrap +VScroll +Background" C.well " c" C.text, Join("`n", macroKeys*))
-    UISetFont(ed, "s10")
-    err := g.AddText("x" d.x " y" (d.y + 208) " w" d.tw " h34 +Background" C.card " c" "E5484D", "")
-    UISetFont(err, "s9")
-    y := d.y + 248, w := d.w
-    save := g.AddText("x" (w - d.x - 214) " y" y " w104 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Save")
-    cancel := g.AddText("x" (w - d.x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Cancel")
-    for b in [save, cancel]
-        UISetFont(b, "s9 w600"), Box.Round(b, 104, 34, 4)
-    cancel.OnEvent("Click", (*) => g.Destroy())
-    save.OnEvent("Click", (*) => MacroTextSave(g, ed, err))
-    g.OnEvent("Escape", (*) => g.Destroy())
-    h := y + 34 + 24
-    d.card.Move(, , , h - 2)
-    DialogStyle(g)
-    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
-    DialogRepaint(g)
-    return g
-}
-; the text's steps, all of them valid, become the macro's (else the ones that aren't are named)
-MacroTextSave(g, ed, err) {
-    global macroKeys
-    steps := MacroTextSteps(ed.Value, &bad)
-    if bad.Length
-        return (err.Text := "Not a key or step: " Join(", ", bad*))
-    if !steps.Length
-        return (err.Text := "No steps: add at least one.")
-    macroKeys := steps
-    MacroCommit()
-    ShowMacroEditor()
-    g.Destroy()
-}
-MacroTextSteps(text, &bad) {
-    steps := [], bad := []
-    for t in StrSplit(RegExReplace(Trim(text), "\s+", " "), " ")
-        if t != ""
-            (MacrosEngine.ValidStep(t) ? steps : bad).Push(t)
-    return steps
-}
-MacroRemoveKey(all) {
-    global
-    if !macroKeys.Length
-        return
-    if all
-        macroKeys := []
-    else
-        macroKeys.Pop()
-    if macroKeys.Length
-        MacroCommit()
-    ShowMacroEditor()
-}
 MacroSelect(idx) {
     global
     if idx > macros.list().Length || idx = macroSel
         return
     MacroCommit()
-    macroSel := idx, macroAnchor := ""      ; (another macro: its start is picked again)
+    macroSel := idx
+    if MacrosEngine.ext
+        MacrosEngine.ext.reset()
     LoadMacroEditor()
     RenderMacros()
 }
@@ -1500,14 +1298,16 @@ MacroRowDelete(i, *) {
     else if macroSel > idx
         macroSel--
     if !macroSel
-        macroMsgEdit.Value := "", macroKeys := [], macroKind := "chat"
+        macroMsgEdit.Value := "", macroKind := "chat", MacrosEngine.ext ? MacrosEngine.ext.reset() : 0
     LoadMacroEditor()
     RenderMacros()
 }
 MacroNew() {
     global
     MacroCommit()
-    macroSel := 0, macroDraftHK := "", macroKind := "chat", macroKeys := [], macroAnchor := ""
+    macroSel := 0, macroDraftHK := "", macroKind := "chat"
+    if MacrosEngine.ext
+        MacrosEngine.ext.reset()
     macroMsgEdit.Value := ""
     ShowMacroEditor()
     RenderMacros()
