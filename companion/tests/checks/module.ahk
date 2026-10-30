@@ -98,7 +98,7 @@ TwcModuleRun() {
     TwcCheck(NumGet(v, Shm.itOn, "uint") = 3, "pushed itOn: cooldowns (1) and buffs (2)")
     for f in ["hnOn", "mbOn", "prOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn", "alOn", "pingOn", "utOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = (f = "ulOn" ? 3 : 1), "pushed " f)    ; ulOn 3: the buff bar raised by default
-    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x7D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
+    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     gameDisplay.toggleHideMenu()
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x79, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")

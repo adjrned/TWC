@@ -114,7 +114,7 @@ Wc3Features() {
             opts: (d) => (OptKey(d, "Clear messages", "clearMessages"), OptKey(d, "Clear chat", "clearChat"), OptKey(d, "Multiboard", "multiboard"),
                 OptNote(d, "Esc while setting one: no key.")) },
         { tab: "display", title: "Hide the UI", badge: "1.28f",
-            desc: "As WFE: the black console goes, the world shows through; the minimap stays.",
+            desc: "As WFE: the black console goes, the world shows through; the minimap and buffs stay.",
             on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
             opts: (d) => OptCheck(d, "Hide the upper menu bar's buttons too", gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(v)) },
         { tab: "display", title: "Widescreen", badge: "1.28f",

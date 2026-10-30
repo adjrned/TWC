@@ -30,9 +30,11 @@ class GameDisplayEngine {
     section := "Display"
     static LIMITS := [120, 144, 165, 200, 240, 300]
     static LATENCIES := [25, 50, 75, 100, 150, 200]
-    ; the module's uiHide bits, in order; HIDE: the ones the switch hides (all but the minimap)
+    ; the module's uiHide bits, in order; HIDE: the ones the switch hides (all but the minimap and the
+    ; buff bar: WFE hides the bar with its UI, but the game shows it again by itself as it refreshes it,
+    ; so every 1.5 s pass hid it again and the buffs flickered on a beat; the user, 2026-10-29)
     static PARTS := ["Time of day", "Minimap", "Upper menu bar", "Resource bar", "Idle workers", "The console's background", "Buff bar"]
-    static HIDE := 0x7D
+    static HIDE := 0x3D
 
     __New(gameModule) {
         this.gm := gameModule
