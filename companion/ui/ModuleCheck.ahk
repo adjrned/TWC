@@ -153,12 +153,25 @@ ModuleCheckReport(rows, log) {
     return r
 }
 
-ModuleCheckDialog() {
+; collapsed (the default, the user's ask 2026-10-30: even two columns didn't fit their screen): the
+; counts and the refused rows only, "Show all" opens the full list
+ModuleCheckDialog(expanded := false) {
     global C, mainGui, UI_FONT
     static g := 0
     if g
         try g.Destroy()
-    log := ModuleCheckLog(), rows := ModuleCheckRows(log)
+    log := ModuleCheckLog(), all := ModuleCheckRows(log)
+    rows := all, ok := 0, seen := 0
+    if !expanded {
+        rows := []
+        for row in all
+            if row.mark = "✗"
+                rows.Push(row)
+            else if row.mark = "✓"
+                ok++
+            else
+                seen++
+    }
     ; the rows in two columns once there are many, and the buttons in the title row: with 45-odd rows the
     ; window ran off the screen and Copy report couldn't be reached (the user, 2026-10-29)
     cols := rows.Length > 16 ? 2 : 1
@@ -173,9 +186,10 @@ ModuleCheckDialog() {
     close := g.AddText("x" (w - x - 104) " y18 w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
     for b in [copy, close]
         UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
-    copy.OnEvent("Click", (*) => (A_Clipboard := ModuleCheckReport(rows, log), Toast("Report copied: paste it in your message", "", 2500)))
+    copy.OnEvent("Click", (*) => (A_Clipboard := ModuleCheckReport(all, log), Toast("Report copied: paste it in your message", "", 2500)))
     close.OnEvent("Click", (*) => g.Destroy())
-    intro := "What the game module saw in this game: ✓ worked, ✗ refused (it says why), · not seen yet. Try each feature once, then Copy report."
+    intro := expanded ? "What the game module saw in this game: ✓ worked, ✗ refused (it says why), · not seen yet. Try each feature once, then Copy report."
+        : "In this game: " ok " ✓ worked, " rows.Length " ✗ refused" (rows.Length ? " (below)" : "") ", " seen " · not seen yet. Copy report has all of it."
     it := g.AddText("x" x " y60 w" tw " +Background" C.card " c" C.dim, intro)
     UISetFont(it, "s9")
     y0 := 60 + TextHeight(it, intro, tw) + 14
@@ -192,7 +206,11 @@ ModuleCheckDialog() {
         d := g.AddText("x" (cx + 196) " y" (y + 2) " w" (colW - 196) " h18 +Background" C.card " c" C.muted, row.detail)
         UISetFont(d, "s8")
     }
-    h := y0 + perCol * rowH + 24
+    h := y0 + (rows.Length ? perCol * rowH : 0) + 24
+    more := g.AddText("x" x " y" (h - 6) " w200 h20 +Background" C.card " c" C.accent, expanded ? "‹ Show less" : "Show all " all.Length " ›")
+    UISetFont(more, "s9 w600")
+    more.OnEvent("Click", (*) => SetTimer(() => ModuleCheckDialog(!expanded), -1))
+    h += 26
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
     DialogStyle(g)
