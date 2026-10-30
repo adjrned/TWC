@@ -172,6 +172,17 @@ ModuleCheckReport(rows, log) {
     r := "TW Companion " version " · module layout " s.layout " · game build " s.build " · " FormatTime(, "yyyy-MM-dd HH:mm") "`n`n"
     for row in rows
         r .= row.mark " " row.name ": " row.detail "`n"
+    ; the features being tried now: their latest lines first (a long paste got cut off before the log's end, where
+    ; they were: the user's 11:48 report)
+    latest := []
+    for l in log
+        if RegExMatch(l, "dash combo: ")
+            latest.Push(l)
+    if latest.Length {
+        r .= "`nLatest (the module's log, the last " Min(15, latest.Length) " about the dash combo):`n"
+        loop Min(15, latest.Length)
+            r .= latest[latest.Length - Min(15, latest.Length) + A_Index] "`n"
+    }
     if (swap := ModuleCheckSwap()).Length {
         r .= "`nThe module before (swapped live for this one), its unloading:`n"
         for l in swap

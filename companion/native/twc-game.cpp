@@ -8792,7 +8792,8 @@ static bool OrbComboKey(WPARAM vk, LPARAM lp) {
     DWORD k = g_shared->ocKey;
     if (vk != (k & 0xff))
         return false;
-    bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0, alt = (GetKeyState(VK_MENU) & 0x8000) != 0, shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+    // the keyboard's own state (not the window's: a Ctrl kept from the game by another program's hook still counts)
+    bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0, alt = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0, shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
     if (ctrl != ((k & 0x100) != 0) || alt != ((k & 0x200) != 0) || shift != ((k & 0x400) != 0)) {
         static int odd;
         if (odd++ < 3)
