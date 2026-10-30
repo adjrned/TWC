@@ -251,6 +251,11 @@ int main() {
     // why the first name is kept: SetPlayerName +246550 writes that same string (lea ecx, [esi+0x24]); GetPlayerColor +233ED0 reads [+0x264]
     CHECK(!memcmp(g_base + 0x24656b, "\x8D\x4E\x24\xE8", 4) && SiteTarget(g_base + 0x24656e) == g_base + 0x98130 && !memcmp(g_base + 0x233ee1, "\x8B\x80\x64\x02\x00\x00", 6) && PLAYER_COLOUR == 0x264,
           "SetPlayerName rewrites CPlayer +0x24 (the map's renames), GetPlayerColor reads +0x264");
+    // the buff timers' probe: TimerStart +2492F0 calls CTimerWar3's start +27C160 (timer, &timeout, periodic, code), ret 0xC, 5-byte prologue
+    CHECK(SiteTarget(g_base + 0x24930a) == g_base + RVA_MAP_TIMER_START && SiteTarget(g_base + 0x272922) == g_base + RVA_MAP_TIMER_START
+          && !memcmp(g_base + RVA_MAP_TIMER_START, "\x55\x8B\xEC\x56\x57", 5) && !memcmp(g_base + 0x27c1ab, "\xC2\x0C\x00", 3)
+          && !memcmp(g_base + 0x2492ff, "\xFF\x75\x14\x8B\xC8\xFF\x75\x10\xFF\x75\x0C", 11),
+          "the map's timer start: +27C160 (from TimerStart and +272922), its 5-byte prologue, ret 0xC, (&timeout, periodic, code)");
     // the start countdown: the lobby's start handler +0x324100 (its one caller +0x322458) starts timer 3 with 6.0 s at +0x324146
     float *cs = CountdownFloat();
     CHECK(cs == (float *)(g_base + RVA_COUNTDOWN_SECS) && *cs == 6.0f && SiteTarget(g_base + 0x322458) == g_base + RVA_COUNTDOWN && FnStart(RVA_TIMER_START),

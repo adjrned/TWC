@@ -1032,6 +1032,116 @@ static bool BuffKeptUp(BYTE *unit, DWORD id, bool aura, float left, DWORD now) {
     return (aura || t->refreshes >= 3) && t->beat <= BT_BEAT_MAX && since <= t->beat + BT_GRACE;
 }
 
+// -- the map's timers next to new buffs (a probe: logged only) -----------------------------------
+// TWRPG's skill and item buffs are auras (their 4 s restarts all the time; the user, 2026-10-29): a
+// map gives the aura and takes it away with a timer of its own. If so, that timer starts as the buff
+// comes. Every map timer starts through CTimerWar3's start +0x27c160 (thiscall(timer, float *timeout,
+// periodic, code), ret 0xc; from TimerStart +0x2492f0 and +0x272922; its countdown the agent timer at
+// +0x24, its start +0x8a520). Its first 5 bytes (push ebp; mov ebp, esp; push esi; push edi) are
+// detoured to a recorder that only notes (when, timeout, periodic) and goes on into the game's own.
+// A buff first seen on the buff bar is logged with the timers started from 0.4 s before to 0.6 s
+// after it: whether a one-shot timer of its duration comes with each buff.
+static const DWORD RVA_MAP_TIMER_START = 0x27c160;
+typedef void(__fastcall *TimerStartFn)(void *, int, float *, int, void *);
+struct TimerStartRec { DWORD at; float timeout; DWORD periodic; void *timer; };
+static TimerStartRec g_tsRing[256];
+static volatile LONG g_tsN;
+static BYTE *g_tsTramp;
+static bool g_tsHooked, g_tsBad;
+static bool WriteCode(BYTE *p, const BYTE *b, int n);
+static bool FnStart(DWORD rva);
+static void __fastcall TimerStartHook(void *timer, int edx, float *timeout, int periodic, void *code) {
+    __try {
+        TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 255];
+        r.at = GetTickCount(), r.timeout = timeout ? *timeout : -1, r.periodic = (DWORD)periodic, r.timer = timer;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+    ((TimerStartFn)g_tsTramp)(timer, edx, timeout, periodic, code);
+}
+// on the game thread: the detour in or out. false: refused (logged)
+static bool TimerStartWatch(bool on) {
+    if (on == g_tsHooked || (on && g_tsBad))
+        return on == g_tsHooked;
+    BYTE *f = g_base + RVA_MAP_TIMER_START;
+    static const BYTE PROLOGUE[5] = { 0x55, 0x8B, 0xEC, 0x56, 0x57 };
+    if (on) {
+        if (!FnStart(RVA_MAP_TIMER_START) || memcmp(f, PROLOGUE, 5)) {
+            g_tsBad = true;
+            Log("buff timers: the map's timer start +%06lX isn't as 1.28f has it (another mod?): no probe", RVA_MAP_TIMER_START);
+            LogBytes("  +27C160", f);
+            return false;
+        }
+        if (!g_tsTramp && (g_tsTramp = (BYTE *)VirtualAlloc(nullptr, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)) != nullptr) {
+            memcpy(g_tsTramp, f, 5);
+            g_tsTramp[5] = 0xE9, *(LONG *)(g_tsTramp + 6) = (LONG)((f + 5) - (g_tsTramp + 10));
+            FlushInstructionCache(GetCurrentProcess(), g_tsTramp, 16);
+        }
+        BYTE jmp[5] = { 0xE9 };
+        *(LONG *)(jmp + 1) = (LONG)((BYTE *)TimerStartHook - (f + 5));
+        if (!g_tsTramp || !WriteCode(f, jmp, 5)) {
+            g_tsBad = true;
+            Log("buff timers: writing the timer probe failed");
+            return false;
+        }
+        g_tsHooked = true;
+        Log("buff timers: the map's timers are watched (+%06lX detoured: when each starts, how long; logged next to new buffs)", RVA_MAP_TIMER_START);
+        return true;
+    }
+    if (f[0] == 0xE9 && f + 5 + *(LONG *)(f + 1) == (BYTE *)TimerStartHook)
+        WriteCode(f, PROLOGUE, 5);
+    else
+        Log("buff timers: +%06lX was changed by someone else: left as it is", RVA_MAP_TIMER_START);
+    g_tsHooked = false;
+    return true;
+}
+// buffs first seen (by unit and rawcode, not seen for 2 s before), logged once the 0.6 s after them is in
+struct BuffSeen { BYTE *unit; DWORD id, at; };
+static BuffSeen g_bsSeen[64];
+static struct BuffNew { BYTE *unit; DWORD id, at; bool aura; float left, total; } g_bsNew[8];
+static int g_bsLogs;
+static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float total, DWORD now) {
+    BuffSeen *s = nullptr, *old = &g_bsSeen[0];
+    for (BuffSeen &b : g_bsSeen) {
+        if (b.id == id && b.unit == unit) {
+            s = &b;
+            break;
+        }
+        if ((LONG)(b.at - old->at) < 0)
+            old = &b;
+    }
+    bool fresh = !s || now - s->at > 2000;
+    s = s ? s : old;
+    s->unit = unit, s->id = id, s->at = now;
+    if (!fresh || !g_tsHooked || g_bsLogs >= 16)
+        return;
+    for (BuffNew &n : g_bsNew)
+        if (!n.id) {
+            n = { unit, id, now, aura, left, total };
+            return;
+        }
+}
+static void BuffAppearedLog(DWORD now) {
+    for (BuffNew &n : g_bsNew) {
+        if (!n.id || now - n.at < 600)
+            continue;
+        char b[700];
+        int o = 0, found = 0;
+        LONG last = g_tsN;
+        for (LONG k = last - 1; k >= 0 && k >= last - 256 && o < (int)sizeof(b) - 60; k--) {
+            const TimerStartRec &r = g_tsRing[k & 255];
+            LONG d = (LONG)(r.at - n.at);
+            if (d < -400 || d > 600)
+                continue;
+            found++;
+            o += sprintf_s(b + o, sizeof(b) - o, " %.2f s %s (%+ld ms)", r.timeout, r.periodic ? "periodic" : "one-shot", d);
+        }
+        if (g_bsLogs < 16)
+            g_bsLogs++, Log("buff timers: '%s' %s appeared (%.1f s of %.1f) on unit %p; the map's timers started around it:%s", IdText(n.id).s, n.aura ? "aura" : "buff",
+                            n.left, n.total, n.unit, found ? b : " none");
+        n.id = 0;
+    }
+}
+
 static void ReadBuffs(BYTE *ui) {
     BYTE *p = *(BYTE **)(ui + 0x3c4);
     if (!p || !(p = *(BYTE **)(p + 0x130)) || !(p = *(BYTE **)(p + 0x16c)))
@@ -1052,6 +1162,7 @@ static void ReadBuffs(BYTE *ui) {
             BYTE *t = BuffTimeOf(buff, aura, &left, &total);
             if (left > 0 && BuffKeptUp(AgentOwner(buff), *(DWORD *)(buff + BUFF_ID), aura, left, GetTickCount()))
                 g_shared->buffFlags[i] |= 4;
+            BuffAppeared(AgentOwner(buff), *(DWORD *)(buff + BUFF_ID), aura, left, total, GetTickCount());
             g_shared->buffLeft[i] = left;
             g_shared->buffTotal[i] = total;
             static int logs;
@@ -1060,6 +1171,7 @@ static void ReadBuffs(BYTE *ui) {
         }
     g_shared->buffCount = rows * cols;
     g_shared->tmFlags |= 2;
+    BuffAppearedLog(GetTickCount());
 }
 
 static void ReadHeroBuffs();
@@ -2562,6 +2674,7 @@ static bool SweepWanted() {
 
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
+    TimerStartWatch((g_shared->itOn & 2) != 0);     // the buff timers' probe: the map's timers next to new buffs
     bool sweep = SweepWanted();
     ClockHidePass(ui, sweep);
     if (!g_shared->itOn) {
@@ -6616,6 +6729,7 @@ static void RestoreAll() {
     SwapTooltips(false);
     SwapUnitTip(false);
     SwapUnitDamage(false);
+    TimerStartWatch(false);
     FastMenuHook(false);
     if (g_prSites && g_portraitHooked)
         PointSites(false);
