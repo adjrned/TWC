@@ -357,12 +357,12 @@ class GameModuleEngine {
         if since < 0 || seq - since <= 0
             return out
         n := seq - since
-        if n > GameModule.RING - 64                 ; the module writes on while this reads: the oldest are gone
-            out.lost := n - (GameModule.RING - 64), n := GameModule.RING - 64
+        if n > GameModuleEngine.RING - 64                 ; the module writes on while this reads: the oldest are gone
+            out.lost := n - (GameModuleEngine.RING - 64), n := GameModuleEngine.RING - 64
         loop n {
-            p := v + Shm.dmRing + GameModule.HIT * Mod(seq - n + A_Index - 1, GameModule.RING)
+            p := v + Shm.dmRing + GameModuleEngine.HIT * Mod(seq - n + A_Index - 1, GameModuleEngine.RING)
             f := NumGet(p, 18, "uchar")
-            out.hits.Push({ amount: NumGet(p, 0, "float"), src: GameModule.Rawcode(NumGet(p, 4, "uint")), tgt: GameModule.Rawcode(NumGet(p, 8, "uint")),
+            out.hits.Push({ amount: NumGet(p, 0, "float"), src: GameModuleEngine.Rawcode(NumGet(p, 4, "uint")), tgt: GameModuleEngine.Rawcode(NumGet(p, 8, "uint")),
                 target: NumGet(p, 12, "uint"), from: NumGet(p, 16, "uchar"), to: NumGet(p, 17, "uchar"),
                 attack: f & 1, ranged: f & 2 ? 1 : 0, srcHero: f & 4 ? 1 : 0, tgtHero: f & 8 ? 1 : 0,
                 dmgType: NumGet(p, 19, "uchar"), atkType: NumGet(p, 20, "uchar") })
@@ -378,7 +378,7 @@ class GameModuleEngine {
         n := Min(NumGet(v, Shm.dmTypeN, "int"), 128), out := { n: n, names: Map() }
         loop Max(0, n - have) {
             i := have + A_Index - 1
-            out.names[GameModule.Rawcode(NumGet(v, Shm.dmTypeId + 4 * i, "uint"))] := StrGet(v + Shm.dmTypeName + 32 * i, 31, "UTF-8")
+            out.names[GameModuleEngine.Rawcode(NumGet(v, Shm.dmTypeId + 4 * i, "uint"))] := StrGet(v + Shm.dmTypeName + 32 * i, 31, "UTF-8")
         }
         return out
     }
@@ -386,7 +386,7 @@ class GameModuleEngine {
     damageSelection() {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 33
             return 0
-        return { unit: NumGet(v, Shm.dmSelUnit, "uint"), type: GameModule.Rawcode(NumGet(v, Shm.dmSelType, "uint")), owner: NumGet(v, Shm.dmSelOwner, "int") }
+        return { unit: NumGet(v, Shm.dmSelUnit, "uint"), type: GameModuleEngine.Rawcode(NumGet(v, Shm.dmSelType, "uint")), owner: NumGet(v, Shm.dmSelOwner, "int") }
     }
     ; the map's text lines after `since` (layout 33) -> { seq, lines: [] } (the last 8 at most; 0: older module)
     mapText(since) {

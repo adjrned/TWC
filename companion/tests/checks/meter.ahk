@@ -45,7 +45,37 @@ TwcMeterRun() {
         "a second fight: this one 9000, the one before kept (4000), the whole game adds them (" (whole.Length ? whole[1].dmg : "") "), pages game / before / now")
     m.stepPage(-1), p1 := m.page, m.stepPage(-1), p2 := m.page, m.stepPage(-1), p3 := m.page, m.stepPage(1), m.stepPage(1), m.stepPage(1)
     TwcCheck(p1 = 1 && p2 = -1 && p3 = -1 && m.page = 0, "‹ goes to the fight before, then the whole game (and stops); › back to now")
-    m.reset()
+    ; the feed end to end: the real GameModuleEngine readers over a stand-in layout-33 memory (the ring's
+    ; reader once threw on every read, swallowed by tick's try: the meter showed nothing)
+    mem := Buffer(Shm.size, 0)
+    NumPut("uint", 0x54574331, mem, Shm.magic), NumPut("uint", 33, mem, Shm.layout), NumPut("uint", 1, mem, Shm.dmState)
+    StrPut("Ruzai", mem.Ptr + Shm.dmName, 32, "UTF-8"), NumPut("int", 0, mem, Shm.dmColour)
+    PutHit(i, amt, from, to, src, tgt, flags, dt) {
+        p := mem.Ptr + Shm.dmRing + 24 * i
+        NumPut("float", amt, p, 0), NumPut("uint", src, p, 4), NumPut("uint", tgt, p, 8), NumPut("uint", 0x1234, p, 12)
+        NumPut("uchar", from, p, 16), NumPut("uchar", to, p, 17), NumPut("uchar", flags, p, 18), NumPut("uchar", dt, p, 19)
+    }
+    fake := { base: GameModuleEngine.Prototype }
+    fake.DefineProp("live", { call: (*) => mem.Ptr })
+    m.reset(), m.names := Map(), m.typeNames := Map(), m.typeN := 0, m.ringSeq := -1, m.lost := 0
+    keepGm := m.gm, keepOn := Ini("DamageMeter", "on", 0), m.gm := fake
+    IniWrite(1, iniFile, "DamageMeter", "on")
+    err := ""
+    try {
+        m.feed()                                        ; the first read: from where the ring is
+        PutHit(0, 1500, 0, 12, 0x4870616C, 0x6E6F676C, 1 | 4, 4)            ; 'Hpal' attacks 'nogl'
+        PutHit(1, 700, 12, 0, 0x6E6F676C, 0x4870616C, 1 | 8, 4)             ; and takes a hit back
+        NumPut("int", 2, mem, Shm.dmRingSeq)
+        NumPut("uint", 0x4870616C, mem, Shm.dmTypeId), StrPut("Paladin", mem.Ptr + Shm.dmTypeName, 32, "UTF-8"), NumPut("int", 1, mem, Shm.dmTypeN)
+        m.feed()
+    } catch as e
+        err := e.Message
+    s := m.standings(), m.mode := "taken", tk := m.standings(), m.mode := "dealt"
+    b := s.Length ? m.breakdown(0, "src") : []
+    TwcCheck(err = "" && s.Length = 1 && s[1].name = "Ruzai" && s[1].dmg = 1500 && tk.Length = 1 && tk[1].dmg = 700 && b.Length && b[1].name = "Attack · Paladin",
+        "the feed through the real readers: dealt 1500 by 'Ruzai', taken 700, 'Attack · Paladin'" (err != "" ? " (error: " err ")" : ""))
+    m.gm := keepGm, IniWrite(keepOn, iniFile, "DamageMeter", "on")
+    m.reset(), m.ringSeq := -1
     m.setSample(true)
     Sleep(1200)
     m.tick()

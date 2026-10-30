@@ -443,6 +443,11 @@ class DamageMeter {
     }
     tick() {
         try this.feed()
+        catch as e {                        ; logged once per message: a silent failure here left the meter empty
+            static said := Map()
+            if !said.Has(e.Message) && said.Count < 10
+                said[e.Message] := 1, DebugLog("damage meter: reading the game module failed: " e.Message " (" e.What ", line " e.Line ")")
+        }
         if !this.wanted() {
             if this.gui
                 this.gui.Hide()
