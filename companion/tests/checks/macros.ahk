@@ -49,6 +49,42 @@ TwcMacrosRun() {
         && InStr(MacroStatus(), "steps, in order"), "+ Delay: 'wait:300' added and saved ('" (saved ? saved.text : "") "'), status '" MacroStatus() "'" (err != "" ? " (error: " err ")" : ""))
     if saved
         macros.delete(Map("index", list.Length))
+    ; from the mouse: the steps read, labelled, checked
+    TwcCheck(MacrosEngine.RelStep("rclick@-85,80", &k, &dx, &dy) && k = "rclick" && dx = -85 && dy = 80 && MacrosEngine.KeyLabel("move@-28,27") = "Move mouse -28, 27"
+        && MacrosEngine.ValidStep("^1") && MacrosEngine.ValidStep("Numpad7") && MacrosEngine.ValidStep("wait:3") && !MacrosEngine.ValidStep("bogus") && !MacrosEngine.ValidStep("click@x,1"),
+        "from the mouse: 'rclick@-85,80' read, 'Move mouse -28, 27'; ^1, Numpad7, wait:3 are steps, 'bogus' and 'click@x,1' aren't")
+    steps := MacroTextSteps("e wait:75`n move@-28,27  rclick@-85,80`nbogus", &bad)
+    TwcCheck(steps.Length = 4 && steps[3] = "move@-28,27" && bad.Length = 1 && bad[1] = "bogus", "text: 4 steps (lines or spaces), 'bogus' named as not a step")
+    ; the sequence from the mouse (moves and clicks swapped): measured from where it is, no gap before mouse steps, a cancel
+    log := [], keepSend := macros.sendFn
+    macros.sendFn := (t) => log.Push([A_TickCount, "key " t])
+    macros.mouseFn := (kind, mx, my) => log.Push([A_TickCount, kind " " mx "," my])
+    try macros.sendKeys(["e", "wait:30", "move@-28,27", "rclick@-85,80", "rclick@-83,80", "wait:40", "q"])
+    got := ""
+    for e in log
+        got .= (got = "" ? "" : " | ") e[2]
+    ax := 0, ay := 0                ; where the mouse was as it started (the first move is 28 left, 27 down of it)
+    if log.Length >= 2 && RegExMatch(log[2][2], "(-?\d+),(-?\d+)", &mm)
+        ax := mm[1] + 28, ay := mm[2] - 27
+    want := "key {e} | move " (ax - 28) "," (ay + 27) " | rclick " (ax - 85) "," (ay + 80) " | rclick " (ax - 83) "," (ay + 80) " | key {q}"
+    tight := log.Length = 5 ? log[4][1] - log[3][1] : 999
+    TwcCheck(got = want && tight < 10 && !macros.running, "from the mouse: " got " (the two clicks " tight " ms apart: no gap)")
+    log := []
+    macros.mouseFn := (kind, mx, my) => (log.Push([A_TickCount, kind]), log.Length = 2 ? macros.cancel() : 0)
+    try macros.sendKeys(["move@1,1", "move@2,2", "wait:500", "move@3,3", "q"])
+    TwcCheck(log.Length = 2 && !macros.running && macros.cancelled, "a right click mid-way (cancel): the steps after it don't run (" log.Length " done)")
+    macros.sendFn := keepSend, macros.mouseFn := 0
+    ; Edit as text's Save: valid text becomes the macro's steps; a bad one is named and nothing changes
+    macroSel := 0, macroKind := "keys", macroKeys := []
+    gone := { n: 0 }
+    fakeG := { Destroy: (*) => gone.n++ }, ed := { Value: "e wait:75 move@-28,27 rclick@-85,80" }, errBox := { Text: "" }
+    MacroTextSave(fakeG, ed, errBox)
+    okSave := macroKeys.Length = 4 && macroKeys[4] = "rclick@-85,80" && gone.n = 1 && errBox.Text = ""
+    ed.Value := "e nope", MacroTextSave(fakeG, ed, errBox)
+    TwcCheck(okSave && InStr(errBox.Text, "nope") && macroKeys.Length = 4 && gone.n = 1, "Edit as text: saved as 4 steps; 'nope' refused ('" errBox.Text "')")
+    list := macros.list()
+    if list.Length && list[list.Length].text = "e wait:75 move@-28,27 rclick@-85,80"
+        macros.delete(Map("index", list.Length))
     macroSel := keepSel, macroKind := keepKind, macroKeys := keepKeys
     TwcCheckDone()
 }

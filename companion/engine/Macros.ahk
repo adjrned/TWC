@@ -7,7 +7,11 @@
 ;          "click:0.5120,0.7330" / "rclick:..." a left / right click at that spot of
 ;          the Warcraft III window (its client area, as fractions: the window may
 ;          move or change size), "sclick:1024,768" / "srclick:..." at a screen
-;          position, "wait:250" a delay in ms (instead of the usual gap)
+;          position, "wait:250" a delay in ms (instead of the usual gap); and from
+;          where the mouse was when the macro started: "move@-28,27" moves it there,
+;          "click@-85,80" / "rclick@..." clicks there (and leaves it there). Mouse
+;          steps have no gap before them; a macro with these steps runs in SendEvent
+;          mode, and your own right click stops it (its own clicks don't)
 ; ============================================================================
 class MacrosEngine {
     section := "Macros"
@@ -16,6 +20,8 @@ class MacrosEngine {
     sendFn := SendInput             ; how keys are sent, clickFn(right, x, y) how clicks are (0: Click); win the game
     clickFn := 0                    ;   window clicks are relative to (checks swap them: never real input)
     win := WarcraftIII
+    mouseFn := 0                    ; mouseFn(kind, x, y) how mouse-relative steps are done (0: MouseMove / Click)
+    running := false, cancelled := false
 
     __New() {
         this.reload()
@@ -91,12 +97,31 @@ class MacrosEngine {
         screen := m[1] != "", right := m[2] != "", x := m[3] + 0, y := m[4] + 0
         return true
     }
+    ; a step from where the mouse was when the macro started -> true, with kind ("move" | "click" | "rclick") and the offset
+    static RelStep(t, &kind := "", &dx := 0, &dy := 0) {
+        if !RegExMatch(t, "i)^(move|click|rclick)@(-?\d+),(-?\d+)$", &m)
+            return false
+        kind := StrLower(m[1]), dx := Integer(m[2]), dy := Integer(m[3])
+        return true
+    }
+    static HasRelative(keys) {
+        for t in keys
+            if MacrosEngine.RelStep(t)
+                return true
+        return false
+    }
+    ; a step the editor takes: a key (with ^ ! + # in front), a click, a mouse step or a delay
+    static ValidStep(t) {
+        if MacrosEngine.ClickStep(t) || MacrosEngine.RelStep(t) || MacrosEngine.WaitStep(t) >= 0
+            return true
+        return RegExMatch(t, "^[\^!+#]*(.+)$", &m) && GetKeyVK(m[1]) != 0
+    }
     ; a delay step -> its ms (at most a minute), else -1
     static WaitStep(t) => RegExMatch(t, "i)^wait:(\d+)$", &m) ? Min(60000, Integer(m[1])) : -1
     ; a sequence with clicks or delays (not only keys)
     static HasSteps(keys) {
         for t in keys
-            if MacrosEngine.ClickStep(t) || MacrosEngine.WaitStep(t) >= 0
+            if MacrosEngine.ClickStep(t) || MacrosEngine.RelStep(t) || MacrosEngine.WaitStep(t) >= 0
                 return true
         return false
     }
@@ -104,6 +129,8 @@ class MacrosEngine {
     static KeyLabel(t) {
         if (ms := MacrosEngine.WaitStep(t)) >= 0
             return "Wait " ms " ms"
+        if MacrosEngine.RelStep(t, &kind, &dx, &dy)
+            return (kind = "move" ? "Move" : kind = "rclick" ? "Right-click" : "Click") " mouse " dx ", " dy
         if MacrosEngine.ClickStep(t, &right, &x, &y, &screen)
             return (right ? "Right-click " : "Click ") (screen ? Round(x) ", " Round(y) : Round(x * 100) "%, " Round(y * 100) "%")
         for i, k in RemapEngine.INV_TARGETS
@@ -209,19 +236,76 @@ class MacrosEngine {
     ; instead of the gap; a click step clicks there and puts the mouse back.
     sendKeys(keys) {
         gap := Integer(Ini(this.section, "keyGap", 15)), waited := true
-        for t in keys {
-            if (ms := MacrosEngine.WaitStep(t)) >= 0 {
-                Sleep(ms), waited := true
-                continue
-            }
-            if !waited && gap > 0
-                Sleep(gap)
-            waited := false
-            if MacrosEngine.ClickStep(t, &right, &x, &y, &screen)
-                MacrosEngine.ClickAt(right, x, y, screen, this.clickFn, this.win)
-            else
-                (this.sendFn)(MacrosEngine.KeyInput(t))
+        rel := MacrosEngine.HasRelative(keys), send := this.sendFn
+        if rel {
+            if this.running
+                return                              ; one at a time (its own key again while it runs)
+            SendMode("Event"), CoordMode("Mouse", "Screen")
+            if send = SendInput
+                send := SendEvent
+            MouseGetPos(&ax, &ay)
+            this.running := true, this.cancelled := false
+            this.cancelWatch(true)
         }
+        try {
+            for t in keys {
+                if rel && this.cancelled {
+                    DebugLog("macros: stopped by your right click")
+                    break
+                }
+                if (ms := MacrosEngine.WaitStep(t)) >= 0 {
+                    this.wait(ms, rel), waited := true
+                    continue
+                }
+                if MacrosEngine.RelStep(t, &kind, &dx, &dy) {   ; mouse steps: no gap before them
+                    this.mouse(kind, ax + dx, ay + dy), waited := false
+                    continue
+                }
+                if MacrosEngine.ClickStep(t, &right, &x, &y, &screen) {
+                    MacrosEngine.ClickAt(right, x, y, screen, this.clickFn, this.win), waited := false
+                    continue
+                }
+                if !waited && gap > 0
+                    Sleep(gap)
+                waited := false
+                send(MacrosEngine.KeyInput(t))
+            }
+        } finally {
+            if rel
+                this.running := false, this.cancelWatch(false)
+        }
+    }
+    ; a delay; in a macro that can be stopped, in short sleeps so a right click stops it at once
+    wait(ms, rel) {
+        if !rel || ms <= 20
+            return Sleep(ms)
+        endAt := A_TickCount + ms
+        while !this.cancelled && A_TickCount < endAt
+            Sleep(Min(10, endAt - A_TickCount))
+    }
+    mouse(kind, x, y) {
+        if this.mouseFn
+            return (this.mouseFn)(kind, x, y)
+        MouseMove(x, y, 0)
+        if kind != "move"
+            Click(kind = "rclick" ? "Right" : "Left")
+    }
+    ; your right click while a macro with mouse steps runs stops it (~: it still goes to the game; the
+    ; macro's own clicks are sent input, which hotkeys don't see). Its own HotIf variant: no other
+    ; right-button hotkey is touched
+    cancelWatch(on) {
+        if this.mouseFn
+            return
+        static fn := 0, cond := 0
+        if !fn
+            fn := ObjBindMethod(this, "cancel"), cond := (*) => this.running
+        HotIf(cond)
+        try Hotkey("~*RButton", fn, on ? "On" : "Off")
+        HotIf()
+    }
+    cancel(*) {
+        if this.running
+            this.cancelled := true
     }
     ; a click at a spot of the game window (fractions of its client area) or of the screen; false: no game window
     static ClickAt(right, x, y, screen, clickFn := 0, win := "") {

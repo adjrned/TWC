@@ -123,6 +123,7 @@ global SAVE_ROWS := 10, SAVE_ROW_H := 34
 global macroNewBtn, macroHelpBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
 global macroLblMsg, macroKindLink, macroSeqText, macroItemBtns := [], macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn
 global macroClickBtn, macroDelayBtn, macroDelayEdit, macroDelayMs     ; keys macros: a click, a delay (ms) between steps
+global macroMoveBtn, macroRelCb, macroTextBtn, macroAnchor := ""        ; a mouse move, clicks from the mouse, the steps as text; the start picked
 global macroKeyCtrls := [], macroKind := "chat", macroKeys := []     ; the editor: chat or keys, and the keys being edited
 global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
 global macroSel := -1, macroOffset := 0, macroDraftHK := ""     ; macroSel 0 = a new macro being made
@@ -1049,6 +1050,12 @@ BuildMacrosPage() {
     macroDelayMs := mainGui.AddText("x40 y160 w24 h26 0x200 +Background" C.panel " c" C.muted, "ms")
     UISetFont(macroDelayMs, "s9")
     macroKeyCtrls.Push(macroClickBtn, macroDelayBtn, macroDelayEdit, macroDelayMs)
+    ; from the mouse: steps measured from where it is when the macro starts (the start picked once per macro)
+    macroMoveBtn := MkButton("+  Move", 40, 160, 90, 26, C.chip, C.accent, (*) => MacroCaptureClick(true))
+    macroRelCb := mainGui.AddCheckbox("x40 y160 w100 h26 +Background" C.panel " c" C.text, " From mouse")
+    UISetFont(macroRelCb, "s9")
+    macroTextBtn := MkButton("Edit as text", 40, 160, 110, 26, C.chip, C.text, (*) => MacroEditText())
+    macroKeyCtrls.Push(macroMoveBtn, macroRelCb, macroTextBtn)
     ; right: the hotkey, like Remap's detail
     macroLblKey := mainGui.AddText("x40 y160 w160 h18 +Background" C.panel " c" C.muted, "Hotkey")
     macroKeyText := mainGui.AddText("x40 y160 w160 h30 0x200 +Background" C.panel " c" C.text, "")
@@ -1090,10 +1097,13 @@ LayoutMacros() {
     macroAddKeyBtn.Move(CX, ey + 128, 110, 26)
     macroUndoKeyBtn.Move(CX + 116, ey + 128, 104, 26)
     macroClearKeysBtn.Move(CX + 226, ey + 128, 64, 26)
-    macroClickBtn.Move(CX, ey + 162, 110, 26)
-    macroDelayBtn.Move(CX + 116, ey + 162, 90, 26)
-    macroDelayEdit.Move(CX + 212, ey + 162, 60, 26)
-    macroDelayMs.Move(CX + 278, ey + 162)
+    macroTextBtn.Move(CX + 390, ey + 128, 110, 26)
+    macroClickBtn.Move(CX, ey + 162, 90, 26)
+    macroMoveBtn.Move(CX + 96, ey + 162, 84, 26)
+    macroRelCb.Move(CX + 186, ey + 162)
+    macroDelayBtn.Move(CX + 290, ey + 162, 86, 26)
+    macroDelayEdit.Move(CX + 382, ey + 162, 56, 26)
+    macroDelayMs.Move(CX + 442, ey + 162)
     macroLblKey.Move(rx, ey)
     macroKeyText.Move(rx, ey + 20)
     macroCapBtn.Move(rx, ey + 56, 77, 26)
@@ -1310,18 +1320,35 @@ MacroCaptureKey() {
     MacroAddKeys([combo])
 }
 ; a click for a keys macro: the next left or right click (swallowed: it doesn't act), kept relative
-; to the Warcraft III window when it's in it, else as a screen position; Esc or 15 s cancels
-MacroCaptureClick() {
+; to the Warcraft III window when it's in it, else as a screen position; Esc or 15 s cancels.
+; From mouse (and + Move, always): measured from a start spot (where the mouse will be when the
+; macro's key is pressed), picked by a click first, once for this macro
+MacroCaptureClick(move := false) {
     global
-    macroClickBtn.Text := "click the spot…"
-    local step := WaitClickStep()
-    macroClickBtn.Text := "+  Click"
-    if step = ""
+    local rel := move || macroRelCb.Value, btn := move ? macroMoveBtn : macroClickBtn, label := btn.Text
+    if rel && macroAnchor = "" {
+        btn.Text := "click the start…"
+        local a := WaitClickAt()
+        if !a
+            return (btn.Text := label)
+        macroAnchor := a
+    }
+    btn.Text := move ? "click the spot…" : "click it…"
+    local got := WaitClickAt()
+    btn.Text := label
+    if !got
         return
-    DebugLog("macros: click step '" step "' added")
+    local step := rel ? (move ? "move" : got.right ? "rclick" : "click") "@" (got.x - macroAnchor.x) "," (got.y - macroAnchor.y)
+        : ClickStepFor(got.right, got.x, got.y)
+    DebugLog("macros: step '" step "' added")
     MacroAddKeys([step])
 }
 WaitClickStep(timeoutMs := 15000) {
+    got := WaitClickAt(timeoutMs)
+    return got ? ClickStepFor(got.right, got.x, got.y) : ""
+}
+; the next click -> { right, x, y } on the screen (0: Esc or the time ran out); swallowed while picking
+WaitClickAt(timeoutMs := 15000) {
     KeyWait("LButton")                      ; (the press on the button itself)
     box := { got: 0 }
     grab(right, *) {
@@ -1336,7 +1363,7 @@ WaitClickStep(timeoutMs := 15000) {
             Sleep(15)
     } finally
         Hotkey("*LButton", "Off"), Hotkey("*RButton", "Off")
-    return box.got ? ClickStepFor(box.got.right, box.got.x, box.got.y) : ""
+    return box.got
 }
 ; the step for a click at screen x, y: in the game window's client area as fractions, else screen pixels
 ClickStepFor(right, x, y, win := "") {
@@ -1355,6 +1382,53 @@ MacroAddDelay() {
     SetIni(ms, "MacroEditor", "delay")
     MacroAddKeys(["wait:" ms])
 }
+; the keys macro's steps as text, to paste or fix by hand: one per line (or space separated)
+MacroEditText() {
+    global C, mainGui, macroKeys, macroKind
+    d := Wc3Dialog("Steps as text", "One step per line (or space separated). Keys: q, Numpad7, ^1 (Ctrl), +q (Shift). wait:250 a delay (ms). "
+        . "click:0.51,0.73 / rclick: a spot of the game window; sclick:1024,768 / srclick: of the screen. "
+        . "From where the mouse is when the macro starts: move@-28,27, click@-85,80, rclick@-85,80 (a right click of yours stops these).", 480)
+    g := d.g
+    ed := g.AddEdit("x" d.x " y" d.y " w" d.tw " h200 Multi -Wrap +VScroll +Background" C.well " c" C.text, Join("`n", macroKeys*))
+    UISetFont(ed, "s10")
+    err := g.AddText("x" d.x " y" (d.y + 208) " w" d.tw " h34 +Background" C.card " c" "E5484D", "")
+    UISetFont(err, "s9")
+    y := d.y + 248, w := d.w
+    save := g.AddText("x" (w - d.x - 214) " y" y " w104 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Save")
+    cancel := g.AddText("x" (w - d.x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Cancel")
+    for b in [save, cancel]
+        UISetFont(b, "s9 w600"), Box.Round(b, 104, 34, 4)
+    cancel.OnEvent("Click", (*) => g.Destroy())
+    save.OnEvent("Click", (*) => MacroTextSave(g, ed, err))
+    g.OnEvent("Escape", (*) => g.Destroy())
+    h := y + 34 + 24
+    d.card.Move(, , , h - 2)
+    DialogStyle(g)
+    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
+    DialogRepaint(g)
+    return g
+}
+; the text's steps, all of them valid, become the macro's (else the ones that aren't are named)
+MacroTextSave(g, ed, err) {
+    global macroKeys
+    steps := MacroTextSteps(ed.Value, &bad)
+    if bad.Length
+        return (err.Text := "Not a key or step: " Join(", ", bad*))
+    if !steps.Length
+        return (err.Text := "No steps: add at least one.")
+    macroKeys := steps
+    MacroCommit()
+    ShowMacroEditor()
+    g.Destroy()
+}
+MacroTextSteps(text, &bad) {
+    steps := [], bad := []
+    for t in StrSplit(RegExReplace(Trim(text), "\s+", " "), " ")
+        if t != ""
+            (MacrosEngine.ValidStep(t) ? steps : bad).Push(t)
+    return steps
+}
 MacroRemoveKey(all) {
     global
     if !macroKeys.Length
@@ -1372,7 +1446,7 @@ MacroSelect(idx) {
     if idx > macros.list().Length || idx = macroSel
         return
     MacroCommit()
-    macroSel := idx
+    macroSel := idx, macroAnchor := ""      ; (another macro: its start is picked again)
     LoadMacroEditor()
     RenderMacros()
 }
@@ -1433,7 +1507,7 @@ MacroRowDelete(i, *) {
 MacroNew() {
     global
     MacroCommit()
-    macroSel := 0, macroDraftHK := "", macroKind := "chat", macroKeys := []
+    macroSel := 0, macroDraftHK := "", macroKind := "chat", macroKeys := [], macroAnchor := ""
     macroMsgEdit.Value := ""
     ShowMacroEditor()
     RenderMacros()
