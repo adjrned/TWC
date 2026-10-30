@@ -178,8 +178,6 @@ class Shm {
     static bcWatchHp := 75460
     static bcWatchMax := 75464
     static bcWatchAlive := 75468
-    static fxOn := 75472
-    static fxState := 75476
-    static pvData := 75480
+    static pvData := 75472
     static size := 75532
 }

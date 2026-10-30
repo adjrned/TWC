@@ -445,13 +445,6 @@ class GameModuleEngine {
         }
         return out
     }
-    ; the effect probe (layout 37): the map's ground effects near your hero logged; false: no module, or an older one
-    effectProbe(on) {
-        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 37
-            return false
-        NumPut("uint", on ? 1 : 0, v, Shm.fxOn)
-        return true
-    }
     ; a rawcode ('A107') -> its number (0: not 4 characters)
     static Id(code) => StrLen(code) = 4 ? Ord(SubStr(code, 1, 1)) << 24 | Ord(SubStr(code, 2, 1)) << 16 | Ord(SubStr(code, 3, 1)) << 8 | Ord(SubStr(code, 4, 1)) : 0
     ; the unit to follow (0 none); false: no module, or an older one

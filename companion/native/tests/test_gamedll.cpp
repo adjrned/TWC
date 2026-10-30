@@ -215,7 +215,7 @@ int main() {
         { RVA_OPT_GET, 0x6c0b1, 8 }, { RVA_REGION_HIDE, 0x141cfa, 0 }, { RVA_REGION_SHOW, 0x141e9a, 0 }, { RVA_CONTROL_CLICK, 0x1407ea, 4 },
         { RVA_PROJECTION, 0x1555f1, 16 }, { RVA_MENU_ANIM, 0x33a8ae, 16 }, { RVA_PORTRAIT_UPDATE, 0x40d834, 0 }, { RVA_DAMAGE_UPDATE, 0x409056, 16 },
         { RVA_ARMOR_UPDATE, 0x4089ca, 12 }, { 0x4101c0, 0x41038f, 4 }, { 0x40ecb0, 0x40eeb1, 4 }, { 0x13b940, 0x13b9b1, 0 }, { 0x13c390, 0x13c429, 0 },
-        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 }, { RVA_SPELL_EFFECT, 0x6b112e, 4 }, { RVA_UNIT_POSITION, 0x082485, 4 }, { RVA_UNIT_CREATE, 0x6827a9, 12 }, { RVA_POINT_ORDER, 0x3fff09, 0x1c } };
+        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 }, { RVA_SPELL_EFFECT, 0x6b112e, 4 }, };
     bad = 0;
     for (const auto &q : RETS) {
         const BYTE *r = g_base + q.ret;
@@ -268,29 +268,6 @@ int main() {
           && g_base[BC_SITES[2]] == 0xE8 && SiteTarget(g_base + BC_SITES[2]) == g_base + RVA_SPELL_EFFECT && !memcmp(g_base + 0x595a65, "\x8B\x46\x30", 3) && !memcmp(g_base + 0x595a73, "\x56\x8B\xC8", 3)
           && !memcmp(g_base + 0x6b82d9, "\x8B\x40\x34", 3) && FindCallSites(g_base + RVA_SPELL_EFFECT, nullptr, 0) == 3,
           "SPELL_EFFECT: +6B0FC0 (the unit, the ability; events 0x80323 / 0x80312), its only 3 calls with the ability's owner and the ability; the rawcode at +0x34");
-    // the effect probe: the map's ground effects go through +229E60 (cdecl(model, x *, y *): AddSpecialEffect +22A490 jumps there
-    // after its string, AddSpellEffectById's +22A560 calls it; the effect +70BD50 (fastcall(x *, y *, model, 0), ret 8), its handle
-    // made at +229EAF), DestroyEffect +22F800 (cdecl(handle): the effect +21F4A0, its vt+0x9C); a unit's place: GetUnitX +2368E0
-    // calls the unit's vt+0xB8 (+6BA660: lea eax, [ecx+0x164]) then +082460 (thiscall(that, xyz *), ret 4)
-    CHECK(!memcmp(g_base + RVA_EFFECT_ADD, "\x55\x8B\xEC\x8B\x55\x10", 6) && !memcmp(g_base + RVA_EFFECT_DESTROY, "\x55\x8B\xEC\x8B\x4D\x08", 6)
-          && g_base[0x22a49f] == 0xE9 && SiteTarget(g_base + 0x22a49f) == g_base + RVA_EFFECT_ADD && SiteTarget(g_base + 0x22a496) == g_base + 0x098510
-          && g_base[0x22a560] == 0xE8 && SiteTarget(g_base + 0x22a560) == g_base + RVA_EFFECT_ADD && SiteTarget(g_base + 0x229e6f) == g_base + 0x70bd50
-          && !memcmp(g_base + 0x70bda0, "\xC2\x08\x00", 3) && SiteTarget(g_base + 0x229eaf) == g_base + 0x2b52e0 && !memcmp(g_base + 0x229eb6, "\xC3", 1)
-          && SiteTarget(g_base + 0x22f806) == g_base + 0x21f4a0 && !memcmp(g_base + 0x22f814, "\xFF\xA2\x9C\x00\x00\x00", 6) && !memcmp(g_base + 0x22f81b, "\xC3", 1)
-          && !memcmp(g_base + 0x236903, "\xFF\x90\xB8\x00\x00\x00", 6) && SiteTarget(g_base + 0x23690b) == g_base + RVA_UNIT_POSITION
-          && *(DWORD *)(g_base + RVA_UNIT_VT + 0xb8) == (DWORD)(g_base + 0x6ba660) && !memcmp(g_base + 0x6ba660, "\x8D\x81\x64\x01\x00\x00\xC3", 7),
-          "ground effects: +229E60 (AddSpecialEffect / AddSpellEffectById's, cdecl, the handle back), DestroyEffect +22F800; a unit's place [unit+0x164] through +082460");
-    // the effect probe's v2 entries: attached effects +229EC0 (AddSpecialEffectTarget +22A4F0 jumps there after the widget check
-    // +221A20), units made +682770 (fastcall(slot, type, x *, y *, facing *), ret 0xC; CreateUnit +22F17E and the other 3 natives
-    // call it), RemoveUnit +243290 / KillUnit +23FF00 (cdecl(handle): the unit +2217A0, as GetUnitX's)
-    CHECK(!memcmp(g_base + RVA_EFFECT_ATTACH, "\x55\x8B\xEC\x6A\xFF", 5) && g_base[0x22a50d] == 0xE9 && SiteTarget(g_base + 0x22a50d) == g_base + RVA_EFFECT_ATTACH
-          && SiteTarget(g_base + 0x22a4f6) == g_base + RVA_HANDLE_WIDGET
-          && !memcmp(g_base + RVA_UNIT_CREATE, "\x55\x8B\xEC\x56\x6A\xFF", 6) && SiteTarget(g_base + 0x22f17e) == g_base + RVA_UNIT_CREATE
-          && FindCallSites(g_base + RVA_UNIT_CREATE, nullptr, 0) == 5
-          && !memcmp(g_base + RVA_REMOVE_UNIT, "\x55\x8B\xEC\x8B\x4D\x08", 6) && SiteTarget(g_base + 0x243297) == g_base + RVA_HANDLE_UNIT
-          && !memcmp(g_base + RVA_KILL_UNIT, "\x55\x8B\xEC\x8B\x4D\x08", 6) && SiteTarget(g_base + 0x23ff06) == g_base + RVA_HANDLE_UNIT
-          && SiteTarget(g_base + 0x2368e9) == g_base + RVA_HANDLE_UNIT,
-          "attached effects +229EC0, units made +682770 (5 calls), RemoveUnit / KillUnit (the unit by +2217A0, as GetUnitX finds it)");
     // layout 33's hit details: the ctor's 2nd argument -> [+0x14], 4th -> [+0xc], 5th -> [+4]; UnitDamageTarget passes
     // 1 << damage type (cl = its 7th), flags 0x100 (attack) | 1 (ranged), then writes the attack type (its 6th) at [+0x20]
     CHECK(!memcmp(g_base + 0x6d6f8b, "\x8B\x45\x0C\x89\x41\x14", 6) && !memcmp(g_base + 0x6d6f96, "\x8B\x45\x18\x89\x41\x04", 6) && !memcmp(g_base + 0x6d6f9c, "\x8B\x45\x14\x89\x41\x0C", 6)
