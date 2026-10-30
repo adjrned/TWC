@@ -346,11 +346,12 @@ class GameModuleEngine {
         return out
     }
     ; the hits one by one (layout 33): those after `since` (the ring's count, -1 = only where it is now)
-    ; -> { seq, lost, hits: [{ amount, src, tgt, target, from, to, attack, ranged, srcHero, tgtHero, dmgType, atkType }] }
-    ; (src / tgt: unit type rawcodes 'Hpal'; dmgType 255 none); 0: no module, or an older one
+    ; -> { seq, lost, hits: [{ amount, src, tgt, target, from, to, attack, ranged, srcHero, tgtHero, dmgType, atkType, ability, how }] }
+    ; (src / tgt: unit type rawcodes 'Hpal'; dmgType 255 none; layout 34: ability a spell hit's rawcode, "" none, how 1 the
+    ; spell event it was dealt in, 2 the source's last cooldown); 0: no module, or an older one
     static RING := 2048, HIT := 24
     damageHits(since) {
-        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 33
+        if !(v := this.live()) || (lay := NumGet(v, Shm.layout, "uint")) < 33
             return 0
         seq := NumGet(v, Shm.dmRingSeq, "int")
         out := { seq: seq, lost: 0, hits: [] }
@@ -360,12 +361,13 @@ class GameModuleEngine {
         if n > GameModuleEngine.RING - 64                 ; the module writes on while this reads: the oldest are gone
             out.lost := n - (GameModuleEngine.RING - 64), n := GameModuleEngine.RING - 64
         loop n {
-            p := v + Shm.dmRing + GameModuleEngine.HIT * Mod(seq - n + A_Index - 1, GameModuleEngine.RING)
-            f := NumGet(p, 18, "uchar")
+            k := Mod(seq - n + A_Index - 1, GameModuleEngine.RING), p := v + Shm.dmRing + GameModuleEngine.HIT * k
+            f := NumGet(p, 18, "uchar"), ab := lay >= 34 ? NumGet(v, Shm.dmRingAbility + 4 * k, "uint") : 0
             out.hits.Push({ amount: NumGet(p, 0, "float"), src: GameModuleEngine.Rawcode(NumGet(p, 4, "uint")), tgt: GameModuleEngine.Rawcode(NumGet(p, 8, "uint")),
                 target: NumGet(p, 12, "uint"), from: NumGet(p, 16, "uchar"), to: NumGet(p, 17, "uchar"),
                 attack: f & 1, ranged: f & 2 ? 1 : 0, srcHero: f & 4 ? 1 : 0, tgtHero: f & 8 ? 1 : 0,
-                dmgType: NumGet(p, 19, "uchar"), atkType: NumGet(p, 20, "uchar") })
+                dmgType: NumGet(p, 19, "uchar"), atkType: NumGet(p, 20, "uchar"),
+                ability: GameModuleEngine.Rawcode(ab), how: ab ? NumGet(p, 22, "uchar") : 0 })
         }
         return out
     }
@@ -375,10 +377,11 @@ class GameModuleEngine {
     damageTypes(have) {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 33
             return 0
-        n := Min(NumGet(v, Shm.dmTypeN, "int"), 128), out := { n: n, names: Map() }
-        loop Max(0, n - have) {
-            i := have + A_Index - 1
-            out.names[GameModuleEngine.Rawcode(NumGet(v, Shm.dmTypeId + 4 * i, "uint"))] := StrGet(v + Shm.dmTypeName + 32 * i, 31, "UTF-8")
+        lay := NumGet(v, Shm.layout, "uint")
+        n := Min(NumGet(v, Shm.dmTypeN, "int"), lay >= 34 ? 256 : 128), out := { n: n, names: Map() }
+        loop Max(0, n - have) {                     ; (layout 34: 128 on in the second table)
+            i := have + A_Index - 1, j := Mod(i, 128), id := i < 128 ? Shm.dmTypeId : Shm.dmTypeId2, nm := i < 128 ? Shm.dmTypeName : Shm.dmTypeName2
+            out.names[GameModuleEngine.Rawcode(NumGet(v, id + 4 * j, "uint"))] := StrGet(v + nm + 32 * j, 31, "UTF-8")
         }
         return out
     }

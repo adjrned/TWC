@@ -14,6 +14,17 @@ static void __fastcall FakeDamage(BYTE *target, int, float *dealt, BYTE *rec, DW
     *dealt = *(DWORD *)(target + 0x5c) & 0x100 ? 0 : *(float *)(rec + 0x10) / 2;
 }
 static void *__fastcall FakeGetUi(int, int) { return (void *)1; }
+// layout 34: GetSpellAbilityId (+235000) gives this; the handle lookup gives handles[id1]
+static DWORD g_fakeSpell;
+static DWORD __cdecl FakeSpellId() { return g_fakeSpell; }
+static BYTE handles[4][0x100];
+static void *__fastcall FakeLookup(DWORD a, DWORD) { return a < 4 ? handles[a] : nullptr; }
+// a timer getter: mov eax, [esp+4]; mov dword [eax], f; ret 4 (passes the decoder)
+static void FloatGetter(BYTE *p, float f) {
+    BYTE b[] = { 0x8B, 0x44, 0x24, 0x04, 0xC7, 0x00, 0, 0, 0, 0, 0xC2, 0x04, 0x00 };
+    p[-1] = 0xCC, memcpy(b + 6, &f, 4), memcpy(p, b, sizeof(b));
+}
+static void Jmp(BYTE *at, const void *to) { at[-1] = 0xCC, at[0] = 0xE9, *(LONG *)(at + 1) = (LONG)((BYTE *)to - (at + 5)); }
 static BYTE units[4][0x200];
 static void Hit(int target, int source, float amount) {
     BYTE rec[0x24] = {};
@@ -87,12 +98,48 @@ int main() {
     CHECK(sh.dmRingSeq == r0 + 1 && h.amount == 20 && h.from == 2 && h.to == 5 && h.srcType == 'Hpal' && h.tgtType == 'nogr' && h.target == (DWORD)units[2]
           && h.flags == (DMH_ATTACK | DMH_RANGED | DMH_SRC_HERO) && h.dmgType == 14 && h.atkType == 6 && h.weapon == 3,
           "the ring: 20 from player 2's 'Hpal' to 5's 'nogr', a ranged attack by a hero, damage type 14, attack type 6, weapon 3");
+    CHECK(sh.dmRingAbility[r0 & (DM_RING - 1)] == 0 && h.how == DMA_NONE, "an attack: no ability");
+    // a spell hit's ability: the spell event it's dealt in (the trigger context there), else the source's last cooldown
+    Jmp(img + RVA_SPELL_ABILITY_ID, FakeSpellId), Jmp(img + RVA_HANDLE_LOOKUP, FakeLookup);
+    *(DWORD *)(state + STATE_TRIGGER_CTX) = 1, g_fakeSpell = 'A0FB';
+    LONG r1 = sh.dmRingSeq;
+    Hit(2, 0, 100);
+    bool byEvent = sh.dmRingAbility[r1 & (DM_RING - 1)] == 'A0FB' && sh.dmRing[r1 & (DM_RING - 1)].how == DMA_EVENT;
+    static BYTE abl[2][0x200];
+    BYTE *tv[2] = { img + 0xa71000, img + 0xa71100 };       // the cooldown timers' vtables (in the image)
+    FloatGetter(img + 0x602000, 5), FloatGetter(img + 0x602100, 10), FloatGetter(img + 0x602200, 9);
+    *(DWORD *)(tv[0] + 0x18) = (DWORD)(img + 0x602000), *(DWORD *)(tv[0] + 0x10) = (DWORD)(img + 0x602100);     // 5 of 10 left: cast 5 s ago
+    *(DWORD *)(tv[1] + 0x18) = (DWORD)(img + 0x602200), *(DWORD *)(tv[1] + 0x10) = (DWORD)(img + 0x602100);     // 9 of 10: 1 s ago
+    for (int i = 0; i < 2; i++) {
+        *(DWORD *)abl[i] = (DWORD)(img + 0xa72000), *(DWORD *)(abl[i] + 0x20) = 0x200, *(DWORD *)(abl[i] + 0x34) = i ? 'A002' : 'A001';
+        *(DWORD *)(abl[i] + 0xd0) = (DWORD)tv[i];
+        *(BYTE **)(handles[i + 1] + 0x54) = abl[i];
+    }
+    ((DWORD *)(units[0] + UNIT_ABILITIES))[0] = ((DWORD *)(units[0] + UNIT_ABILITIES))[1] = 1;
+    ((DWORD *)(abl[0] + ABILITY_NEXT))[0] = ((DWORD *)(abl[0] + ABILITY_NEXT))[1] = 2;
+    ((DWORD *)(abl[1] + ABILITY_NEXT))[0] = ((DWORD *)(abl[1] + ABILITY_NEXT))[1] = 0xFFFFFFFF;
+    g_fakeSpell = 0;
+    Sleep(120);                                             // (its 100 ms per unit)
+    Hit(2, 0, 100);
+    bool byCd = sh.dmRingAbility[(r1 + 1) & (DM_RING - 1)] == 'A002' && sh.dmRing[(r1 + 1) & (DM_RING - 1)].how == DMA_COOLDOWN;
+    *(DWORD *)(abl[1] + 0x20) = 0x600, Sleep(120);          // 0x400: not cooling any more
+    Hit(2, 0, 100);
+    bool cd2 = sh.dmRingAbility[(r1 + 2) & (DM_RING - 1)] == 'A001';
+    *(DWORD *)(abl[0] + 0x20) = 0, Sleep(120);
+    Hit(2, 0, 100);
+    bool none = sh.dmRingAbility[(r1 + 3) & (DM_RING - 1)] == 0 && sh.dmRing[(r1 + 3) & (DM_RING - 1)].how == DMA_NONE;
+    *(DWORD *)(state + STATE_TRIGGER_CTX) = 0, g_fakeSpell = 'A0FB';
+    Hit(2, 0, 100);
+    bool noCtx = sh.dmRingAbility[(r1 + 4) & (DM_RING - 1)] == 0;
+    g_fakeSpell = 0, ((DWORD *)(units[0] + UNIT_ABILITIES))[0] = ((DWORD *)(units[0] + UNIT_ABILITIES))[1] = 0xFFFFFFFF;
+    CHECK(byEvent && byCd && cd2 && none && noCtx, "a spell hit's ability: the spell event's ('A0FB'), else the cooldown started last ('A002' 1 s ago over 'A001' 5 s), a finished one skipped, none: 0; no trigger context: not asked");
     *(int *)(units[2] + UNIT_OWNER) = 12; Hit(0, 2, 30);
-    h = sh.dmRing[(r0 + 1) & (DM_RING - 1)];
-    bool neutralHit = sh.dmRingSeq == r0 + 2 && h.from == 12 && h.to == 2 && h.amount == 15 && h.dmgType == 0xff;
+    h = sh.dmRing[sh.dmRingSeq - 1 & (DM_RING - 1)];
+    LONG r2 = sh.dmRingSeq;
+    bool neutralHit = h.from == 12 && h.to == 2 && h.amount == 15 && h.dmgType == 0xff;
     *(int *)(units[3] + UNIT_OWNER) = 13; *(DWORD *)(units[3] + 0x5c) = 0; Hit(3, 2, 30);
     *(int *)(units[2] + UNIT_OWNER) = 5, *(int *)(units[3] + UNIT_OWNER) = 5, *(DWORD *)(units[3] + 0x5c) = 0x100;
-    CHECK(neutralHit && sh.dmRingSeq == r0 + 2 && !sh.dmTotal[12], "a neutral's hit on a player's unit: in the ring (taken), not dealt; neutral on neutral: not at all");
+    CHECK(neutralHit && sh.dmRingSeq == r2 && !sh.dmTotal[12], "a neutral's hit on a player's unit: in the ring (taken), not dealt; neutral on neutral: not at all");
     // the types named on the game thread, as GetUnitName (+3782B0 stubbed)
     struct Names { static const char *__fastcall Of(DWORD id, DWORD) { return id == 'Hpal' ? "|cffffcc00Paladin|r" : "Default string"; } };
     img[RVA_OBJECT_NAME - 1] = 0xCC, img[RVA_OBJECT_NAME] = 0xE9, *(LONG *)(img + RVA_OBJECT_NAME + 1) = (LONG)((BYTE *)Names::Of - (img + RVA_OBJECT_NAME + 5));

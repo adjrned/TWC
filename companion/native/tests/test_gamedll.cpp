@@ -255,6 +255,15 @@ int main() {
           && !memcmp(g_base + RVA_OBJECT_NAME, "\x56\x8B\xF2\xBA", 4) && !strcmp(*(const char **)(g_base + RVA_OBJECT_NAME + 4), "name")
           && g_base[0x3782d6] == 0xB8 && !strcmp(*(const char **)(g_base + 0x3782d7), "Default string"),
           "unit type names: GetUnitName's lookup +3782B0 (the 'name' field, 'Default string' without one)");
+    // a spell hit's ability (layout 34): GetSpellAbilityId +235000 (registered at +23AFC7) asks the event id (+235FC0: the game
+    // state's trigger context +2135F0 = [state+0x1c], made when 0; slot 6 of its stack +2BB780: [ctx + slot*16 + 0x98] entries at
+    // [+0x9c]); a spell event is 272 + 0..0x15; cdecl, ret 0
+    CHECK(!memcmp(g_base + 0x23afc7, "\xB9", 1) && *(DWORD *)(g_base + 0x23afc8) == (DWORD)(g_base + RVA_SPELL_ABILITY_ID) && FnStart(RVA_SPELL_ABILITY_ID)
+          && SiteTarget(g_base + RVA_SPELL_ABILITY_ID) == g_base + 0x235fc0 && !memcmp(g_base + 0x235005, "\x05\xF0\xFE\xFF\xFF\x83\xF8\x15", 8)
+          && !memcmp(g_base + 0x235fc0, "\x8B\x0D", 2) && *(DWORD *)(g_base + 0x235fc2) == (DWORD)(g_base + RVA_PLAYERS) && SiteTarget(g_base + 0x235fc6) == g_base + 0x2135f0
+          && !memcmp(g_base + 0x235fcb, "\x6A\x06", 2) && SiteTarget(g_base + 0x235fcf) == g_base + 0x2bb780
+          && !memcmp(g_base + 0x2135f0, "\x83\x79\x1C\x00", 4) && !memcmp(g_base + 0x2bb788, "\x8B\x94\xC1\x98\x00\x00\x00", 7) && g_base[0x235041] == 0xC3,
+          "GetSpellAbilityId +235000: the event id from the trigger context [state+0x1c]'s stack, spell events 272-293, cdecl");
     // the map's text lines: the 3 DisplayText natives call the game UI's +3A8EB0 (thiscall, 5 arguments, ret 0x14)
     bool mtSites = true;
     for (DWORD rva : MT_SITES)

@@ -117,7 +117,8 @@ class DamageMeter {
     }
     static Entry(m, k, h := 0) {
         if !m.Has(k)
-            m[k] := { dmg: 0, hits: 0, max: 0, attack: h ? h.attack : 0, dmgType: h ? h.dmgType : 255, src: h ? h.src : "" }
+            m[k] := { dmg: 0, hits: 0, max: 0, attack: h ? h.attack : 0, dmgType: h ? h.dmgType : 255, src: h ? h.src : "",
+                ability: h && h.HasOwnProp("ability") ? h.ability : "", guessed: 0 }
         return m[k]
     }
     static PlayerOf(m, p) {
@@ -135,7 +136,11 @@ class DamageMeter {
             p := DamageMeter.Count(DamageMeter.PlayerOf(f.%side[1]%, side[2]), h.amount)
             if !detailed
                 continue
-            DamageMeter.Count(DamageMeter.Entry(p.by, (h.attack ? "a" : "s" h.dmgType) "|" h.src, h), h.amount)
+            ; a spell with its ability (layout 34): one row per ability, whoever's unit dealt it
+            ab := !h.attack && h.HasOwnProp("ability") && h.ability != "" ? h.ability : ""
+            e := DamageMeter.Count(DamageMeter.Entry(p.by, ab != "" ? "b" ab : (h.attack ? "a" : "s" h.dmgType) "|" h.src, h), h.amount)
+            if ab != "" && h.how = 2
+                e.guessed += h.amount                   ; credited by the source's last cooldown, not the spell event
             if h.tgt != ""
                 DamageMeter.Count(DamageMeter.Entry(p.on, h.tgt), h.amount)
             if h.src != ""
@@ -224,8 +229,11 @@ class DamageMeter {
         }
     }
     typeName(code) => code = "" ? "?" : this.typeNames.Has(code) && this.typeNames[code] != "" ? this.typeNames[code] : code
-    ; "Attack · Paladin", "Magic spell · Paladin", "Spell · Dummy"
+    ; "Attack · Paladin", "Magic spell · Paladin", "Spell · Dummy"; a spell's ability: "Chain Lightning",
+    ; "~Chain Lightning" when most of it was credited by the last cooldown (a guess)
     sourceName(e) {
+        if e.ability != ""
+            return (e.guessed * 2 > e.dmg ? "~" : "") this.typeName(e.ability)
         kind := e.attack ? "Attack" : DamageMeter.DMG_TYPES.Has(e.dmgType) ? DamageMeter.DMG_TYPES[e.dmgType] " spell" : "Spell"
         return kind (e.src != "" ? " · " this.typeName(e.src) : "")
     }
@@ -351,7 +359,8 @@ class DamageMeter {
             for i, n in ["Ruzai", "Kaelith", "Morrow", "Sunbeam", "Tyrael", "Oxide"]
                 this.names[i - 1] := n
             for k, n in Map("Hpal", "Paladin", "Hblm", "Blood Mage", "Obla", "Blademaster", "Ewar", "Warden", "Hmkg", "Mountain King",
-                    "Ofar", "Far Seer", "osw1", "Spirit Wolf", "nogl", "Ogre Lord", "ngh1", "Ghoul")
+                    "Ofar", "Far Seer", "osw1", "Spirit Wolf", "nogl", "Ogre Lord", "ngh1", "Ghoul",
+                    "AHtb", "Storm Bolt", "AHfs", "Flame Strike", "AOcl", "Chain Lightning")
                 this.typeNames[k] := n
             this.sampleFn := this.sampleFn ? this.sampleFn : ObjBindMethod(this, "sampleHits")
             SetTimer(this.sampleFn, 200)
@@ -363,13 +372,14 @@ class DamageMeter {
         this.tick()
     }
     sampleHits() {
-        static weight := [1.6, 1.25, 1.0, 0.8, 0.55, 0.3], heroes := ["Hpal", "Hblm", "Obla", "Ewar", "Hmkg", "Ofar"], spells := [14, 8, 10]
+        static weight := [1.6, 1.25, 1.0, 0.8, 0.55, 0.3], heroes := ["Hpal", "Hblm", "Obla", "Ewar", "Hmkg", "Ofar"], abilities := ["AHtb", "AHfs", "AOcl"]
         for i, w in weight {
             if !Random(0, 3)
                 continue
             attack := Random(0, 2) = 0, src := i = 6 && Random(0, 1) ? "osw1" : heroes[i]
+            k := Random(1, 3)
             this.addHit({ amount: Round(Random(800, 2400) * w), from: i - 1, to: 12, src: src, tgt: Random(0, 2) ? "nogl" : "ngh1",
-                attack: attack, dmgType: attack ? 4 : spells[Random(1, 3)] })
+                attack: attack, dmgType: attack ? 4 : 26, ability: attack ? "" : abilities[k], how: k = 3 ? 2 : 1 })
             if !Random(0, 4)
                 this.addHit({ amount: Random(300, 900), from: 12, to: i - 1, src: "nogl", tgt: heroes[i], attack: 1, dmgType: 4 })
         }

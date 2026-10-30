@@ -165,5 +165,8 @@ class Shm {
     static dmTypeName := 53928
     static mtSeq := 58024
     static mtText := 58028
-    static size := 59052
+    static dmRingAbility := 59052
+    static dmTypeId2 := 67244
+    static dmTypeName2 := 67756
+    static size := 71852
 }

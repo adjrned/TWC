@@ -48,12 +48,13 @@ TwcMeterRun() {
     ; the feed end to end: the real GameModuleEngine readers over a stand-in layout-33 memory (the ring's
     ; reader once threw on every read, swallowed by tick's try: the meter showed nothing)
     mem := Buffer(Shm.size, 0)
-    NumPut("uint", 0x54574331, mem, Shm.magic), NumPut("uint", 33, mem, Shm.layout), NumPut("uint", 1, mem, Shm.dmState)
+    NumPut("uint", 0x54574331, mem, Shm.magic), NumPut("uint", 34, mem, Shm.layout), NumPut("uint", 1, mem, Shm.dmState)
     StrPut("Ruzai", mem.Ptr + Shm.dmName, 32, "UTF-8"), NumPut("int", 0, mem, Shm.dmColour)
-    PutHit(i, amt, from, to, src, tgt, flags, dt) {
+    PutHit(i, amt, from, to, src, tgt, flags, dt, ab := 0, how := 0) {
         p := mem.Ptr + Shm.dmRing + 24 * i
         NumPut("float", amt, p, 0), NumPut("uint", src, p, 4), NumPut("uint", tgt, p, 8), NumPut("uint", 0x1234, p, 12)
-        NumPut("uchar", from, p, 16), NumPut("uchar", to, p, 17), NumPut("uchar", flags, p, 18), NumPut("uchar", dt, p, 19)
+        NumPut("uchar", from, p, 16), NumPut("uchar", to, p, 17), NumPut("uchar", flags, p, 18), NumPut("uchar", dt, p, 19), NumPut("uchar", how, p, 22)
+        NumPut("uint", ab, mem, Shm.dmRingAbility + 4 * i)
     }
     fake := { base: GameModuleEngine.Prototype }
     fake.DefineProp("live", { call: (*) => mem.Ptr })
@@ -65,15 +66,26 @@ TwcMeterRun() {
         m.feed()                                        ; the first read: from where the ring is
         PutHit(0, 1500, 0, 12, 0x4870616C, 0x6E6F676C, 1 | 4, 4)            ; 'Hpal' attacks 'nogl'
         PutHit(1, 700, 12, 0, 0x6E6F676C, 0x4870616C, 1 | 8, 4)             ; and takes a hit back
-        NumPut("int", 2, mem, Shm.dmRingSeq)
-        NumPut("uint", 0x4870616C, mem, Shm.dmTypeId), StrPut("Paladin", mem.Ptr + Shm.dmTypeName, 32, "UTF-8"), NumPut("int", 1, mem, Shm.dmTypeN)
+        PutHit(2, 900, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41484662, 1)    ; 'AHfb' by its spell event
+        PutHit(3, 400, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41484662, 2)    ;   and once by the last cooldown
+        PutHit(4, 2000, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41303031, 2)   ; 'A001' only guessed
+        NumPut("int", 5, mem, Shm.dmRingSeq)
+        NumPut("uint", 0x4870616C, mem, Shm.dmTypeId), StrPut("Paladin", mem.Ptr + Shm.dmTypeName, 32, "UTF-8")
+        NumPut("uint", 0x41484662, mem, Shm.dmTypeId + 4), StrPut("Fire Bolt", mem.Ptr + Shm.dmTypeName + 32, 32, "UTF-8")
+        NumPut("uint", 0x41303031, mem, Shm.dmTypeId2), StrPut("Nova", mem.Ptr + Shm.dmTypeName2, 32, "UTF-8")
+        NumPut("int", 129, mem, Shm.dmTypeN)
+        loop 126
+            NumPut("uint", 0x58000000 + A_Index, mem, Shm.dmTypeId + 4 * (A_Index + 1))
         m.feed()
     } catch as e
         err := e.Message
     s := m.standings(), m.mode := "taken", tk := m.standings(), m.mode := "dealt"
     b := s.Length ? m.breakdown(0, "src") : []
-    TwcCheck(err = "" && s.Length = 1 && s[1].name = "Ruzai" && s[1].dmg = 1500 && tk.Length = 1 && tk[1].dmg = 700 && b.Length && b[1].name = "Attack · Paladin",
-        "the feed through the real readers: dealt 1500 by 'Ruzai', taken 700, 'Attack · Paladin'" (err != "" ? " (error: " err ")" : ""))
+    bn := ""
+    for r in b
+        bn .= (bn = "" ? "" : ", ") r.name " " Round(r.dmg)
+    TwcCheck(err = "" && s.Length = 1 && s[1].name = "Ruzai" && s[1].dmg = 4800 && tk.Length = 1 && tk[1].dmg = 700 && bn = "~Nova 2000, Attack · Paladin 1500, Fire Bolt 1300",
+        "the feed through the real readers: dealt 4800 by 'Ruzai', taken 700; by skill: " bn " (a name from the second table; ~ = only guessed)" (err != "" ? " (error: " err ")" : ""))
     m.gm := keepGm, IniWrite(keepOn, iniFile, "DamageMeter", "on")
     m.reset(), m.ringSeq := -1
     m.setSample(true)

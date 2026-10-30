@@ -45,7 +45,7 @@ static const DWORD BUILD_128F = 7680;
 
 #pragma pack(push, 4)
 // layout 33: one hit of the damage meter's feed (UnitDamage), as the record and the units have it
-static const int DM_RING = 2048, DM_TYPES = 128;
+static const int DM_RING = 2048, DM_TYPES = 128, DM_NAMES = 2 * DM_TYPES;
 struct DmHit {
     float amount;           // what was dealt (after armor and type)
     DWORD srcType, tgtType; // the source's and the target's unit type ([unit+0x30], 'Hpal')
@@ -55,8 +55,11 @@ struct DmHit {
     BYTE dmgType;           // the damage type (DAMAGE_TYPE_*: the bit set in the record's +0x14), 0xff none
     BYTE atkType;           // the attack type (ATTACK_TYPE_*: the record's +0x20)
     BYTE weapon;            // the weapon type (the record's +4)
-    BYTE pad[2];
+    BYTE how;               // layout 34: how dmRingAbility's ability was found: DMA_* (was padding: 0)
+    BYTE pad;
 };
+// layout 34: a spell hit's ability: the map's spell event it was dealt in, or the source's last cooldown
+static const BYTE DMA_NONE = 0, DMA_EVENT = 1, DMA_COOLDOWN = 2;
 static const BYTE DMH_ATTACK = 1, DMH_RANGED = 2, DMH_SRC_HERO = 4, DMH_TGT_HERO = 8;
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
@@ -260,6 +263,12 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     char dmTypeName[DM_TYPES][32];  // the type's name as GetUnitName gives it (UTF-8, the codes out)
     volatile LONG mtSeq;    // module: the map's text lines shown to you; line n is mtText[n & 7], written before the +1
     char mtText[8][128];    //   the codes out
+    // layout 34: each ring hit's ability (dmRingAbility[n & (DM_RING - 1)], written with the hit, 0 none:
+    // an attack or not found; DmHit.how says how), and names 128-255 (dmTypeN counts both tables;
+    // abilities are named there too: their rawcodes don't clash with units')
+    DWORD dmRingAbility[DM_RING];
+    DWORD dmTypeId2[DM_TYPES];
+    char dmTypeName2[DM_TYPES][32];
 };
 #pragma pack(pop)
 
@@ -4229,18 +4238,62 @@ static void PlainName(const char *s, char *out, int n);
 static bool g_dmHooked;
 static DWORD g_dmPend[32];              // types seen, not named yet (the game thread's: the hook and the pass both run there)
 static int g_dmPendN;
+// name entry i: the first table, then the second (layout 34)
+static DWORD &NameId(LONG i) { return i < DM_TYPES ? g_shared->dmTypeId[i] : g_shared->dmTypeId2[i - DM_TYPES]; }
+static char *NameText(LONG i) { return i < DM_TYPES ? g_shared->dmTypeName[i] : g_shared->dmTypeName2[i - DM_TYPES]; }
 static void DamageType(DWORD id) {
     if (!id)
         return;
     LONG n = g_shared->dmTypeN;
-    for (LONG i = 0; i < n && i < DM_TYPES; i++)
-        if (g_shared->dmTypeId[i] == id)
+    for (LONG i = 0; i < n && i < DM_NAMES; i++)
+        if (NameId(i) == id)
             return;
     for (int i = 0; i < g_dmPendN; i++)
         if (g_dmPend[i] == id)
             return;
-    if (n + g_dmPendN < DM_TYPES && g_dmPendN < 32)
+    if (n + g_dmPendN < DM_NAMES && g_dmPendN < 32)
         g_dmPend[g_dmPendN++] = id;
+}
+// The ability a spell hit came from (layout 34). TWRPG's skills are the map's triggers: UnitDamageTarget
+// with the hero as the source and damage type universal for all, so the record can't tell them apart.
+//  1. The spell event it's dealt in: GetSpellAbilityId (+0x235000, cdecl, no arguments) reads the
+//     running trigger's event from the game state's trigger context [state+0x1c] (+0x2135f0 makes it
+//     when it's 0: not asked then): its stack slot 6 the event id (+0x235fc0: [ctx + 6*16 + 0x98]
+//     entries at [+0x9c]), a spell event's (272-276, 289-293) data -> the ability's rawcode; else 0.
+//  2. Else (a timer's or a missile's damage later on): the source's ability whose cooldown started
+//     last, within 30 s: its ability chain ([unit+0x1dc], next [+0x24], as the hero buffs walk it),
+//     cooling = flags [+0x20] 0x200 without 0x400, the timer at +0xd0 (left vt+0x18, full vt+0x10),
+//     as the cooldowns read them. Kept for 100 ms per unit (a burst of hits). All reads.
+static const DWORD RVA_SPELL_ABILITY_ID = 0x235000, STATE_TRIGGER_CTX = 0x1c;
+static const float LAST_CAST_SECS = 30;
+static DWORD SpellNow() {
+    BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
+    if (!state || !*(DWORD *)(state + STATE_TRIGGER_CTX))
+        return 0;
+    return GameCall(g_base + RVA_SPELL_ABILITY_ID, 0, 0, 0, nullptr);
+}
+static DWORD LastCast(BYTE *u) {
+    static BYTE *unit;
+    static DWORD at, id;
+    DWORD now = GetTickCount();
+    if (u == unit && now - at < 100)
+        return id;
+    unit = u, at = now, id = 0;
+    float best = LAST_CAST_SECS;
+    const DWORD *pair = (DWORD *)(u + UNIT_ABILITIES);
+    for (int k = 0; pair && k < 64; k++) {
+        BYTE *a = PairObject(pair);
+        if (!a || *(DWORD *)a < (DWORD)g_base || *(DWORD *)a - (DWORD)g_base >= g_imageSize)
+            break;
+        pair = (DWORD *)(a + ABILITY_NEXT);
+        DWORD fl = *(DWORD *)(a + 0x20), aid = *(DWORD *)(a + 0x34);
+        if (!(fl & 0x200) || (fl & 0x400) || (aid >> 24) == 'B')
+            continue;                           // not cooling down, or a buff (the same chain)
+        float left = TimerValue(a + 0xd0, 0x18), total = TimerValue(a + 0xd0, 0x10), ran = total - left;
+        if (total > 0 && ran >= 0 && ran < best)
+            best = ran, id = aid;
+    }
+    return id;
 }
 static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
     if (!(dealt > 0 && dealt < 1e12f) || !rec)
@@ -4265,8 +4318,25 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
     unsigned long bit;
     h.dmgType = dm && !(dm & (dm - 1)) && _BitScanForward(&bit, dm) ? (BYTE)bit : 0xff;
     h.atkType = (BYTE)*(DWORD *)(rec + REC_ATK_TYPE), h.weapon = (BYTE)*(DWORD *)(rec + REC_WEAPON);
+    DWORD ab = 0;
+    h.how = DMA_NONE;
+    if (!(fl & 0x100) && from <= 11) {          // a player's spell (the creeps' are just their unit's)
+        __try {
+            if ((ab = SpellNow()) != 0)
+                h.how = DMA_EVENT;
+            else if ((ab = LastCast(src)) != 0)
+                h.how = DMA_COOLDOWN;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            ab = 0, h.how = DMA_NONE;
+        }
+    }
+    g_shared->dmRingAbility[n & (DM_RING - 1)] = ab;
     InterlockedExchange(&g_shared->dmRingSeq, n + 1);
-    DamageType(st), DamageType(tt);
+    DamageType(st), DamageType(tt), DamageType(ab);
+    static int abLogs[3];
+    if (abLogs[h.how] < 3)
+        abLogs[h.how]++, Log("damage: a spell hit's ability: '%s' (%s), from player %d's '%s'", ab ? IdText(ab).s : "", h.how == DMA_EVENT ? "the spell event it was dealt in"
+            : h.how == DMA_COOLDOWN ? "the source's last cooldown" : fl & 0x100 ? "an attack" : "not found", from, IdText(st).s);
     static int logs;
     if (logs < 3)
         logs++, Log("damage: player %d's unit %p dealt %.1f to player %d's %p (before armor %.1f, flags %lX, damage type %u, attack type %u, weapon %u)", from, src, dealt, to, target,
@@ -4278,7 +4348,7 @@ static void DamageTypesPass() {
     while (g_dmPendN > 0) {
         DWORD id = g_dmPend[--g_dmPendN];
         LONG n = g_shared->dmTypeN;
-        if (n >= DM_TYPES)
+        if (n >= DM_NAMES)
             break;
         char name[32] = "";
         __try {
@@ -4288,11 +4358,11 @@ static void DamageTypesPass() {
         } __except (EXCEPTION_EXECUTE_HANDLER) {
             name[0] = 0;
         }
-        g_shared->dmTypeId[n] = id;
-        memcpy(g_shared->dmTypeName[n], name, sizeof(name));
+        NameId(n) = id;
+        memcpy(NameText(n), name, sizeof(name));
         InterlockedExchange(&g_shared->dmTypeN, n + 1);
-        if (logs < 6)
-            logs++, Log("damage: unit type '%c%c%c%c' is named '%s'", (char)(id >> 24), (char)(id >> 16), (char)(id >> 8), (char)id, name);
+        if (logs < 10)
+            logs++, Log("damage: '%s' (a unit type or an ability) is named '%s'", IdText(id).s, name);
     }
 }
 static void __fastcall UnitDamage(void *target, int edx, float *dealt, BYTE *rec, DWORD a3, DWORD a4) {
@@ -7452,7 +7522,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 33;
+        g_shared->layout = 34;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
