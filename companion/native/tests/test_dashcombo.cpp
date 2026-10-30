@@ -1,11 +1,11 @@
-// The dash combo (layout 40), against a fake game image: while ocOn the UI's 6 calls to its point order with
+// The dash combo (layout 41), against a fake game image: while ocOn the UI's 6 calls to its point order with
 // a target (+3ffe80, the ground right click's) are watched (your right click's order and flags noted, then the game's own); a run (ocGo): the
-// dash's button pressed, once its SPELL_EFFECT came a move order (as your right click's) to the nearest of
-// your orbs (from the game's unit list), the next one as each goes, then to the point south of the start;
+// dash's button pressed, once its SPELL_EFFECT came the star round the boss (the orbs' centre): move orders
+// (as your right click's) to each orb until it's gone, back through the boss between them, then to the point south of it;
 // not run without your hero selected or orbs near; off: the calls are the game's again.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, ocKey) == offsetof(Shared, ocReach) + 4, "layout 40");
+static_assert(offsetof(Shared, ocKey) == offsetof(Shared, ocReach) + 4 && offsetof(Shared, ocFirst) == offsetof(Shared, ocThrough) + 4, "layout 41");
 
 static BYTE *img;
 static BYTE *objs[16];
@@ -17,7 +17,7 @@ struct Order { DWORD order; void *target; float x, y; DWORD a, b; };
 static Order orders[16];
 static int nOrders;
 static void __stdcall FakeOrder(DWORD order, void *agent, float x, float y, void *target, DWORD a, DWORD b) { orders[nOrders++ & 15] = { order, target, x, y, a, b }; }
-static BYTE units[5][0x300];            // 0 your hero, 1-3 your orbs, 4 someone else's orb
+static BYTE units[7][0x300];            // 0 your hero, 1-5 your orbs (top, top left, bottom left, bottom right, top right), 6 someone else's orb
 static BYTE *hero = units[0];
 static BYTE dashAbility[0x100];
 static int pressed;
@@ -30,7 +30,7 @@ static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC, img[rva] = 0x
 static BYTE *list[8];
 // the orbs as the game makes them (the combo notes them from the unit creation: they're not in its unit list)
 static void Orbs() {
-    for (int i = 1; i < 5; i++)
+    for (int i = 1; i < 6; i++)
         OrbSeen(units[i], *(DWORD *)(units[i] + 0x30));
 }
 static void List(std::initializer_list<BYTE *> us) {
@@ -69,16 +69,16 @@ int main() {
     for (int i = 0; i < 16; i++)
         *(BYTE **)(state + 0x58 + i * 4) = players[i];
     *(BYTE **)(players[1] + SEL_PLAYER_SELECTION) = sel, *(BYTE **)(sel + SEL_ACTIVE) = hero;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         BYTE *u = units[i];
-        *(DWORD *)u = (DWORD)(img + RVA_UNIT_VT), *(float *)(u + UNIT_HP) = 100, *(int *)(u + UNIT_OWNER) = i == 4 ? 3 : 1;
+        *(DWORD *)u = (DWORD)(img + RVA_UNIT_VT), *(float *)(u + UNIT_HP) = 100, *(int *)(u + UNIT_OWNER) = i == 6 ? 3 : 1;
         *(DWORD *)(u + 0x30) = i ? 'e05P' : 'Hlm1';
         ((DWORD *)(u + UNIT_MAXHP_HANDLE))[0] = ((DWORD *)(u + UNIT_MAXHP_HANDLE))[1] = 2;
     }
     objs[2] = maxObj, *(float *)(maxObj + 0x84) = 100;
     ((DWORD *)(hero + AGENT_HANDLE))[0] = ((DWORD *)(hero + AGENT_HANDLE))[1] = 3;
     objs[3] = handle, *(BYTE **)(handle + HANDLE_OBJ) = hero, *(DWORD *)(handle + HANDLE_TAG) = '+agl';
-    At(hero, 0, 0), At(units[1], 400, 0), At(units[2], 300, 300), At(units[3], -400, 100), At(units[4], 50, 0);
+    At(hero, 0, 0), At(units[1], 15, 410), At(units[2], -387, 103), At(units[3], -239, -356), At(units[4], 254, -315), At(units[5], 392, 121), At(units[6], 50, 0);
     *(DWORD *)(dashAbility + 0x34) = 'A107';
     static BYTE btn[0x200];
     DWORD *bvt = (DWORD *)(img + 0xa79000);
@@ -89,7 +89,7 @@ int main() {
     *(int *)(card + 0x124) = 1, *(int *)(card + 0x128) = 1, *(BYTE **)(card + 0x154) = rowsArr;
     *(BYTE **)(ui + 0x3c8) = card;
     g_getUi = [](int, int) -> void * { return ui; };
-    sh.ocDash = 'A107', sh.ocOrb = 'e05P', sh.ocSouth = 150, sh.ocReach = 190;
+    sh.ocDash = 'A107', sh.ocOrb = 'e05P', sh.ocSouth = 150, sh.ocReach = 0, sh.ocThrough = 60, sh.ocFirst = 225;
     List({ hero }), Orbs();                     // (only the hero in the game's unit list: the orbs never are)
 
     sh.ocOn = 1; OrbComboPass(); BossCastPass();
@@ -104,32 +104,62 @@ int main() {
     ((PointOrderFn)SiteTarget(img + OC_SITES[0]))(0xd0003, nullptr, 10, 20, nullptr, 0x5, 0x40);
     CHECK(nOrders == 2 && notAbility && orders[1].a == 0x5 && g_ocSeen && g_ocFlagA == 0x5 && g_ocFlagB == 0x40 && LogHas("your right click's order 000D0003 at (10, 20), flags 00000005 / 00000040"),
           "your right click: passed on, its order and flags noted (0x5 / 0x40); an ability's point order passed on, not taken");
-    // a run: orbs at (400, 0), (300, 300), (-400, 100) from the hero at (0, 0)
+    // a run: the 12:06 report's 5 orbs round the hero at (0, 0) (their centre (7, -7.4): the boss)
     sh.ocGo++; OrbComboPass();
-    CHECK(pressed == 1 && g_oc.state == 1 && g_oc.castAt && LogHas("'A107' pressed with 3 orbs near"), "a run: the dash's button pressed (3 orbs near: someone else's not counted), its cast seen");
+    CHECK(pressed == 1 && g_oc.state == 1 && g_oc.castAt && LogHas("'A107' pressed with 5 orbs near"), "a run: the dash's button pressed (5 orbs near: someone else's not counted), its cast seen");
     OrbComboTick();
     Order o = orders[(nOrders - 1) & 15];
-    CHECK(nOrders == 3 && g_oc.state == 2 && g_oc.n == 3 && g_oc.path[0] == units[3] && g_oc.path[1] == units[1] && g_oc.path[2] == units[2]
-          && o.order == 0xd0003 && !o.target && o.x == -400 && o.y == 100 && o.a == 0x5 && o.b == 0x40 && LogHas("3 orbs, the path planned 757 long"),
-          "the path planned through all 3: the shortest ((-400, 100), (400, 0), (300, 300): 757, nearest first would be 789), the first order out as your right click's");
+    BYTE *T = units[1], *TL = units[2], *BL = units[3], *BR = units[4], *TR = units[5];
+    float cx = g_oc.cx, cy = g_oc.cy;
+    auto last = [&](float x, float y) { o = orders[(nOrders - 1) & 15]; return o.x == x && o.y == y; };
+    CHECK(nOrders == 3 && g_oc.state == 2 && g_oc.n == 5 && g_oc.path[0] == BL && g_oc.path[1] == TR && g_oc.path[2] == TL && g_oc.path[3] == BR && g_oc.path[4] == T
+          && fabsf(cx - 7) < 0.01f && fabsf(cy + 7.4f) < 0.01f && o.order == 0xd0003 && !o.target && o.x == -239 && o.y == -356 && o.a == 0x5 && o.b == 0x40
+          && LogHas("5 orbs round the boss at (7, -7) (their centre; your hero 10 from it), in the order: bottom left, top right, top left, bottom right, top; back through it after each (within 60)"),
+          "the star round the boss (the orbs' centre): bottom left first, then every second one anticlockwise (the clockwise one's 7 degrees straighter: within 15, the first kept); the first order out as your right click's");
     OrbComboTick();
-    CHECK(nOrders == 3, "not in reach yet: no new order");
-    At(hero, -260, 90); OrbComboTick();
-    o = orders[(nOrders - 1) & 15];
-    CHECK(nOrders == 4 && sh.ocTaken == 1 && o.x == 400 && o.y == 0, "in reach of the first (140 from it, the orb still there): on to the next at once");
-    OrbGone(units[1]); OrbComboTick();          // the second taken by the map (RemoveUnit) before it came in reach
-    o = orders[(nOrders - 1) & 15];
-    CHECK(nOrders == 5 && sh.ocTaken == 2 && o.x == 300 && o.y == 300, "one gone before it was reached: on to the next");
-    At(hero, 250, 250); OrbComboTick();
-    o = orders[(nOrders - 1) & 15];
-    CHECK(sh.ocTaken == 3 && !g_oc.state && sh.ocState == 0 && sh.ocRuns == 1 && o.x == 0 && o.y == -150 && LogHas("each orb reached (ms after the dash):") && LogHas("(every orb reached); then to the end point"),
-          "every orb reached: to 150 south of the start (0, -150), the run over, each orb's time logged");
-    OrbGone(units[2]), OrbGone(units[3]);       // (only someone else's orb left)
+    At(hero, -150, -220); OrbComboTick();
+    CHECK(nOrders == 3, "the orb still there (163 from it: in the map's pickup, not taken yet): no new order (no ocReach)");
+    OrbGone(BL); OrbComboTick();
+    CHECK(nOrders == 4 && sh.ocTaken == 1 && last(cx, cy), "the first taken (RemoveUnit): back to the boss");
+    At(hero, -100, -150); OrbComboTick();
+    bool notYet = nOrders == 4;
+    At(hero, -20, -30); OrbComboTick();
+    CHECK(notYet && nOrders == 5 && last(392, 121), "within 60 of the boss (not at 160): on to the top right one");
+    OrbGone(T); OrbComboTick();
+    CHECK(nOrders == 5 && sh.ocTaken == 2 && LogHas("the top orb taken early"), "another orb gone on the way: logged, no new order");
+    At(hero, 300, 90), OrbGone(TR); OrbComboTick();
+    At(hero, 0, 0); OrbComboTick();
+    CHECK(nOrders == 7 && sh.ocTaken == 3 && last(-387, 103), "the top right taken, through the boss: on to the top left");
+    At(hero, -360, 100); OrbComboTick();
+    CHECK(nOrders == 8 && sh.ocTaken == 3 && last(cx, cy), "stopped at the top left (27 from it) with it still there: back to the boss (not counted taken)");
+    At(hero, -200, 50); OrbComboTick();
+    At(hero, -75, 15); OrbComboTick();
+    bool coming = nOrders == 8;
+    At(hero, 130, -60); OrbComboTick();
+    CHECK(coming && nOrders == 9 && last(254, -315), "never within 60 but past the boss (85 at its closest, now 134): on to the bottom right");
+    At(hero, 200, -250), OrbGone(BR); OrbComboTick();
+    At(hero, 10, -10); OrbComboTick();
+    CHECK(nOrders == 11 && last(cx, cy - 150) && sh.ocTaken == 4 && !g_oc.state && sh.ocState == 0 && sh.ocRuns == 1
+          && LogHas("each orb (ms after the dash): bottom left taken ") && LogHas("; top left stopped at it, still there, ") && LogHas("(passed, closest 85)")
+          && LogHas("; top taken early ") && LogHas("(no orbs left); then to the end point"),
+          "the top one gone early: none left after the bottom right's pass, to 150 below the boss; each orb and pass logged");
+    OrbGone(TL);
+    // held up at the boss (no nearer in 250 ms): on anyway
+    Orbs(), At(hero, 0, 0);
+    sh.ocGo++; OrbComboPass(); OrbComboTick();
+    At(hero, -60, -90), OrbGone(BL); OrbComboTick();
+    int held = nOrders;
+    OrbComboTick();
+    Sleep(300); OrbComboTick();
+    CHECK(nOrders == held + 1 && last(392, 121), "held up 106 from the boss (no nearer in 250 ms): on to the next");
+    OrbEnd("the check", false);
+    for (int i = 1; i < 6; i++)
+        OrbGone(units[i]);                      // (only someone else's orb left)
     // not run: your hero not the one selected; no orbs of yours near
     *(BYTE **)(sel + SEL_ACTIVE) = units[1]; sh.ocGo++; OrbComboPass();
     bool notSel = !g_oc.state && LogHas("not run: your hero isn't the unit selected");
     *(BYTE **)(sel + SEL_ACTIVE) = hero; sh.ocGo++; OrbComboPass();
-    CHECK(notSel && !g_oc.state && pressed == 1 && LogHas("not run: no 'e05P' orbs of yours near your hero"), "not run without your hero selected, or without orbs: nothing pressed");
+    CHECK(notSel && !g_oc.state && pressed == 2 && LogHas("not run: no 'e05P' orbs of yours near your hero"), "not run without your hero selected, or without orbs: nothing pressed");
     // its key in the game's window (the module reads it: no companion hotkey): a run, the key kept from the game;
     // another key, or its repeat while held: not; the chat open: the game's
     Orbs(), At(hero, 0, 0);

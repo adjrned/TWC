@@ -313,6 +313,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD ocKey;            // companion: the combo's key, read by the module in the game's own window (no companion
                             //   hotkey: in the 11:16 / 11:28 tests the companion's never ran it): its virtual key,
                             //   0x100 Ctrl, 0x200 Alt, 0x400 Shift; 0 none
+    // layout 41: the star through the boss (the 12:06 report: the shortest path went round the edge, never
+    // through the boss); ocReach from here on: 0 = on from an orb only once it's gone (taken)
+    float ocThrough;        // companion: how close to the boss (the orbs' centre) each pass comes before the next orb
+    float ocFirst;          // companion: the first orb's direction from the boss, degrees (0 right, 90 top; 225 bottom left)
 };
 #pragma pack(pop)
 
@@ -8520,7 +8524,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 40;
+        g_shared->layout = 41;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -8552,8 +8556,14 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
 // The 10:56 report: Lightning Strike makes 5 'e05P' Lightning Orb units (yours) ~430 around the hero
 // 2 s later; Discharge ('A107') is a dash; an orb is taken (RemoveUnit) with the hero ~180-220 from it.
 // Run (ocGo): the dash's button on the command card pressed (as quickcast keys do), and once its
-// SPELL_EFFECT has come, a move order to the nearest orb; the moment it's gone, to the next nearest;
-// with none left (or after 4 s), to ocSouth below the start. Your right click stops it.
+// SPELL_EFFECT has come, the star through the boss (layout 41; the 12:06 report's shortest path went round
+// the edge, so the dash hit the boss once): the boss is the orbs' centre (Lightning Strike makes them
+// round it); the first orb the one nearest ocFirst (bottom left), then each next the one most across the
+// boss (5: every second one, bottom left > top right > top left > bottom right > top). To an orb until
+// it's gone (taken: the dash's hit reset, out there off the boss), then back to the boss until within
+// ocThrough (or past it, or held up), then the next orb: the leg from an orb never crosses another (the
+// orb-to-orb lines passed ~300 from the one between, the map's pickup ~265). With none left (or after
+// 4 s), to ocSouth below the boss. Your right click stops it.
 // The orders go out as your right click on the ground does (the world frame's +3c890d): the UI's point
 // order with a target +3ffe80 (stdcall(order, agent, x, y, target, flags a, flags b), ret 0x1c -> +6f17a0,
 // the network's action 0xa0012 for your selection), the smart order [+b6883c] 0xd0003, no agent or target,
@@ -8568,6 +8578,10 @@ static bool g_ocSeen;
 static struct OcRun {
     int state; DWORD at, castAt, orderAt; float sx, sy, tx, ty; BYTE *target; bool rb, ended;
     BYTE *path[8]; float px[8], py[8]; int n, i; DWORD takenAt[8];     // the orbs in the order planned, the one gone for
+    float cx, cy;                       // the boss (the orbs' centre)
+    int leg;                            // 0 to orb i, 1 back through the boss (orb i - 1 taken)
+    float best, legFrom; DWORD bestAt;  // the pass: the closest to the boss yet, when; how far it started
+    float takenD[8], passD[8]; DWORD passAt[8], earlyAt[8]; char how[8], passHow[8];   // per orb: the hero from the boss as it went, the pass after it
 } g_oc;
 static void __stdcall PointOrderSpy(DWORD order, void *agent, float x, float y, void *target, DWORD a, DWORD b) {
     if (!agent && !target && order == ORDER_SMART && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // your plain right click on the ground
@@ -8602,9 +8616,26 @@ static void OrbOrder(float x, float y) {
     ((PointOrderFn)(g_base + RVA_POINT_ORDER))(g_ocOrder, nullptr, x, y, nullptr, g_ocFlagA, g_ocFlagB);
     g_oc.orderAt = GetTickCount(), g_oc.tx = x, g_oc.ty = y;
 }
+static const char *OrbSide(float dx, float dy);
 static void OrbEnd(const char *why, bool final) {
+    if (g_oc.state == 2 && g_oc.n) {        // each orb as it went, and the pass through the boss after it (for tuning)
+        char b[1024];
+        int o = 0;
+        for (int k = 0; k < g_oc.n && k < 8; k++) {
+            char h = g_oc.how[k], p = g_oc.passHow[k];
+            o += sprintf_s(b + o, sizeof(b) - o, "%s%s ", k ? "; " : "", OrbSide(g_oc.px[k] - g_oc.cx, g_oc.py[k] - g_oc.cy));
+            if (h == 't' || h == 's' || h == 'r')
+                o += sprintf_s(b + o, sizeof(b) - o, "%s %lu (%.0f from the boss)", h == 't' ? "taken" : h == 's' ? "stopped at it, still there," : "in reach",
+                               g_oc.takenAt[k], g_oc.takenD[k]);
+            else
+                o += g_oc.earlyAt[k] ? sprintf_s(b + o, sizeof(b) - o, "taken early %lu", g_oc.earlyAt[k]) : sprintf_s(b + o, sizeof(b) - o, "not reached");
+            if (p)
+                o += sprintf_s(b + o, sizeof(b) - o, ", through %lu (%s %.0f)", g_oc.passAt[k], p == 'w' ? "within" : p == 'p' ? "passed, closest" : "held up at", g_oc.passD[k]);
+        }
+        Log("dash combo: each orb (ms after the dash): %s", b);
+    }
     if (final)
-        OrbOrder(g_oc.sx, g_oc.sy - g_shared->ocSouth);
+        OrbOrder(g_oc.cx, g_oc.cy - g_shared->ocSouth);
     if (g_gameWnd)
         KillTimer(g_gameWnd, OC_TIMER);
     g_shared->ocState = 0, g_shared->ocRuns++;
@@ -8705,48 +8736,111 @@ static BYTE *OrbNearest(float x, float y, float *ox, float *oy, int *count) {
     }
     return best;
 }
-// the orbs near the hero, in the order that makes the shortest path through them all from (x, y)
-// (every order tried: 8 at most, 40320); each leg ends ocReach short of its orb (the dash only has to
-// come that close), so the path cuts its corners
+// the boss: the centre of your latest orbs (those made within 0.5 s of the newest, taken ones too: their
+// spots stay noted), 3 at least within 1500 of (x, y); else (x, y)
+static void OrbCentre(float x, float y, float *cx, float *cy) {
+    DWORD newest = 0;
+    for (OrbUnit &o : g_ocOrbs)
+        if (o.at && (!newest || (LONG)(o.at - newest) > 0))
+            newest = o.at;
+    float sx = 0, sy = 0;
+    int n = 0;
+    for (OrbUnit &o : g_ocOrbs)
+        if (o.at && newest - o.at <= 500 && (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y) <= 1500.f * 1500.f)
+            sx += o.x, sy += o.y, n++;
+    *cx = n >= 3 ? sx / n : x, *cy = n >= 3 ? sy / n : y;
+}
+static const float OC_DEG = 57.29578f;
+static float OrbThrough() { return g_shared->ocThrough > 0 ? g_shared->ocThrough : 60.f; }
+// degrees apart (0..180)
+static float OrbApart(float a, float b) {
+    float d = fmodf(a - b + 720.f, 360.f);
+    return d > 180.f ? 360.f - d : d;
+}
+// where an orb is round the boss, in 5 slices of 72 degrees (the star's: top at 90, top left 162, bottom left
+// 234, bottom right 306, top right 18; the 12:06 orbs at 88, 165, 236, 309, 17)
+static const char *OrbSide(float dx, float dy) {
+    static const char *side[5] = { "top right", "top", "top left", "bottom left", "bottom right" };
+    return side[(int)floorf(fmodf(atan2f(dy, dx) * OC_DEG + 360.f + 18.f, 360.f) / 72.f) % 5];
+}
+// the orbs near the hero, round the boss: the first the one nearest ocFirst, then the order that goes most
+// across the boss each time (the least turn there; 5 orbs: every second one); of the orders within 15
+// degrees of the best, the first going anticlockwise (bottom left > top right > top left > bottom right > top:
+// the 12:06 orbs' straight best went clockwise by 7 degrees)
 static void OrbPlan(float x, float y) {
     int n = 0;
-    float ox[8], oy[8];
+    float ox[8], oy[8], ang[8], key[8];
     BYTE *orb[8];
+    OrbCentre(x, y, &g_oc.cx, &g_oc.cy);
     for (OrbUnit &o : g_ocOrbs)
         if (n < 8 && o.unit && OrbAlive(o.unit) && (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y) <= 1500.f * 1500.f)
             orb[n] = o.unit, ox[n] = o.x, oy[n] = o.y, n++;
-    int perm[8], best[8];
-    for (int i = 0; i < n; i++)
-        perm[i] = best[i] = i;
-    float bestLen = 1e30f, reach = g_shared->ocReach > 0 ? g_shared->ocReach : 0;
-    auto len = [&]() {
-        float L = 0, cx = x, cy = y;
-        for (int k = 0; k < n; k++) {
-            float dx = ox[perm[k]] - cx, dy = oy[perm[k]] - cy, d = sqrtf(dx * dx + dy * dy);
-            L += d > reach ? d - reach : 0;
-            if (d > reach)                          // where the hero is when it's in reach of this one
-                cx += dx * (d - reach) / d, cy += dy * (d - reach) / d;
-        }
-        return L;
-    };
-    do {
-        float L = len();
-        if (L < bestLen)
-            bestLen = L, memcpy(best, perm, sizeof(perm));
-    } while (std::next_permutation(perm, perm + n));
+    int f = 0, idx[8], perm[8], best[8];
+    for (int k = 0; k < n; k++) {
+        ang[k] = atan2f(oy[k] - g_oc.cy, ox[k] - g_oc.cx) * OC_DEG;
+        if (OrbApart(ang[k], g_shared->ocFirst) < OrbApart(ang[f], g_shared->ocFirst))
+            f = k;
+    }
+    for (int k = 0, m = 0; k < n; k++) {      // the first, then the rest anticlockwise from it
+        key[k] = k == f ? -1.f : fmodf(ang[k] - ang[f] + 720.f, 360.f);
+        int j = m++;
+        for (; j > 0 && key[idx[j - 1]] > key[k]; j--)
+            idx[j] = idx[j - 1];
+        idx[j] = k;
+    }
     for (int k = 0; k < n; k++)
-        g_oc.path[k] = orb[best[k]], g_oc.px[k] = ox[best[k]], g_oc.py[k] = oy[best[k]], g_oc.takenAt[k] = 0;
-    g_oc.n = n, g_oc.i = 0;
-    Log("dash combo: %d orbs, the path planned %.0f long (in reach %.0f of each)", n, bestLen, reach);
+        perm[k] = best[k] = k;
+    auto turn = [&]() {
+        float t = 0;
+        for (int k = 1; k < n; k++)
+            t += 180.f - OrbApart(ang[idx[perm[k - 1]]], ang[idx[perm[k]]]);
+        return t;
+    };
+    float least = 1e30f;
+    if (n > 1) {
+        do least = (std::min)(least, turn());
+        while (std::next_permutation(perm + 1, perm + n));
+        do if (turn() <= least + 15.f) {        // (back in the first order: the first within 15 of the least)
+            memcpy(best, perm, sizeof(perm));
+            break;
+        } while (std::next_permutation(perm + 1, perm + n));
+    }
+    char order[160];
+    int o = 0;
+    order[0] = 0;
+    for (int k = 0; k < n; k++) {
+        int j = idx[best[k]];
+        g_oc.path[k] = orb[j], g_oc.px[k] = ox[j], g_oc.py[k] = oy[j];
+        o += sprintf_s(order + o, sizeof(order) - o, "%s%s", k ? ", " : "", OrbSide(ox[j] - g_oc.cx, oy[j] - g_oc.cy));
+    }
+    memset(g_oc.takenAt, 0, sizeof(g_oc.takenAt)), memset(g_oc.earlyAt, 0, sizeof(g_oc.earlyAt)), memset(g_oc.passAt, 0, sizeof(g_oc.passAt));
+    memset(g_oc.how, 0, sizeof(g_oc.how)), memset(g_oc.passHow, 0, sizeof(g_oc.passHow));
+    g_oc.n = n, g_oc.i = 0, g_oc.leg = 0;
+    Log("dash combo: %d orbs round the boss at (%.0f, %.0f) (their centre; your hero %.0f from it), in the order: %s; back through it after each (within %.0f)",
+        n, g_oc.cx, g_oc.cy, sqrtf((x - g_oc.cx) * (x - g_oc.cx) + (y - g_oc.cy) * (y - g_oc.cy)), order, OrbThrough());
 }
-// the next orb still to take from g_oc.i on (gone ones skipped), its order out; false: none left
+// to the next orb still there from g_oc.i on (those taken early skipped); false: none left
 static bool OrbNext() {
     while (g_oc.i < g_oc.n && !OrbAlive(g_oc.path[g_oc.i]))
-        g_oc.takenAt[g_oc.i++] = GetTickCount() - g_oc.castAt, g_shared->ocTaken++;
+        g_oc.how[g_oc.i++] = 'e';
     if (g_oc.i >= g_oc.n)
         return false;
+    g_oc.leg = 0;
     OrbOrder(g_oc.px[g_oc.i], g_oc.py[g_oc.i]);
     return true;
+}
+static void OrbToBoss(float d) {
+    g_oc.leg = 1, g_oc.best = g_oc.legFrom = d, g_oc.bestAt = GetTickCount();
+    OrbOrder(g_oc.cx, g_oc.cy);
+}
+// orbs later in the path gone already: one dashed over on the way (its reset spent before its pass)
+static void OrbEarly(DWORD now, float hx, float hy) {
+    for (int k = g_oc.leg ? g_oc.i : g_oc.i + 1; k < g_oc.n; k++)
+        if (!g_oc.earlyAt[k] && !OrbAlive(g_oc.path[k])) {
+            g_oc.earlyAt[k] = (now - g_oc.castAt) | 1, g_shared->ocTaken++;
+            Log("dash combo: the %s orb taken early, %lu ms after the dash (going %s; your hero %.0f from it)", OrbSide(g_oc.px[k] - g_oc.cx, g_oc.py[k] - g_oc.cy),
+                now - g_oc.castAt, g_oc.leg ? "back through the boss" : "for another orb", sqrtf((g_oc.px[k] - hx) * (g_oc.px[k] - hx) + (g_oc.py[k] - hy) * (g_oc.py[k] - hy)));
+        }
 }
 // on the game thread, every 10 ms while a run is on
 static void OrbComboTick() {
@@ -8775,21 +8869,36 @@ static void OrbComboTick() {
     }
     if (now - g_oc.at > 4000)
         return OrbEnd("4 s up", true);
-    // in reach of the one gone for (or it's gone): on to the next at once
-    float dx = g_oc.px[g_oc.i] - hx, dy = g_oc.py[g_oc.i] - hy;
-    bool reached = dx * dx + dy * dy <= g_shared->ocReach * g_shared->ocReach;
-    if (reached || !OrbAlive(g_oc.path[g_oc.i])) {
-        if (reached)
-            g_oc.takenAt[g_oc.i++] = now - g_oc.castAt, g_shared->ocTaken++;
-        if (!OrbNext()) {
-            char b[96];
-            int o = 0;
-            for (int k = 0; k < g_oc.n; k++)
-                o += sprintf_s(b + o, sizeof(b) - o, " %lu", g_oc.takenAt[k]);
-            Log("dash combo: each orb reached (ms after the dash):%s", b);
-            return OrbEnd("every orb reached", true);
-        }
+    float bx = hx - g_oc.cx, by = hy - g_oc.cy, boss = sqrtf(bx * bx + by * by);
+    OrbEarly(now, hx, hy);
+    if (g_oc.leg == 0) {
+        // to the orb until it's gone (taken: the map's pickup, 150-265 off); or in ocReach of it (if set); or the
+        // hero stopped at it (the move's end) with it still there
+        int i = g_oc.i;
+        float dx = g_oc.px[i] - hx, dy = g_oc.py[i] - hy, d = sqrtf(dx * dx + dy * dy), reach = g_shared->ocReach;
+        bool gone = !OrbAlive(g_oc.path[i]);
+        if (!gone && !(reach > 0 && d <= reach) && d > 40)
+            return;
+        g_oc.how[i] = gone ? 't' : d <= 40 ? 's' : 'r';
+        g_oc.takenAt[i] = now - g_oc.castAt, g_oc.takenD[i] = boss, g_oc.i++;
+        if (gone)
+            g_shared->ocTaken++;
+        return OrbToBoss(boss);
     }
+    // back through the boss: the next orb once within ocThrough of it, or past it (20 farther than its closest,
+    // having come 60 nearer), or held up (no nearer in 250 ms: the boss in the way)
+    if (boss < g_oc.best) {
+        if (boss < g_oc.best - 5)
+            g_oc.bestAt = now;
+        g_oc.best = boss;
+    }
+    bool within = boss <= OrbThrough(), past = g_oc.best < g_oc.legFrom - 60 && boss > g_oc.best + 20, held = now - g_oc.bestAt > 250;
+    if (!within && !past && !held)
+        return;
+    int k = g_oc.i - 1;
+    g_oc.passAt[k] = now - g_oc.castAt, g_oc.passD[k] = g_oc.best, g_oc.passHow[k] = within ? 'w' : past ? 'p' : 'h';
+    if (!OrbNext())
+        return OrbEnd(g_shared->ocTaken >= (DWORD)g_oc.n ? "every orb taken" : "no orbs left", true);
 }
 
 // on the game thread: the watched calls follow the switch; a run when asked
