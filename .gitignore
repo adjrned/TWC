@@ -6,8 +6,9 @@ sim-todo.txt
 companion/web/
 companion/tw-companion.ini
 companion/tw-companion-bosses.ini
-# the private build's parts (never in the public release)
-companion/private/
+# companion/private/: the local-only parts. Tracked on beta for now (the user, 2026-10-30: the test PC
+# self-updates from it, builds go to a few people); to make them private, uncomment:
+# companion/private/
 companion/HiddenFiles.txt
 
 # sample saves for trying the companion Loader
