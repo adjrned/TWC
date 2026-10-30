@@ -33,8 +33,8 @@ TwcMeterRun() {
     s := m.standings(t + 2000)
     TwcCheck(s.Length = 1 && s[1].player = 1 && s[1].dmg = 500, "the pin on Ghoul: only Kaelith's 500 on it")
     m.filter := "nogl", m.filterName := "Ogre Lord"
-    rt := m.reportText(t + 2000)
-    TwcCheck(rt = "Damage on Ogre Lord (fight 0:02): 1. Ruzai 4K 100%", "the chat line: '" rt "'")
+    rl := m.reportLines(t + 2000)
+    TwcCheck(rl.Length = 2 && rl[1] = "Damage on Ogre Lord (fight 0:02):" && rl[2] = "1. Ruzai 4K (100%, 2K/s)", "the chat lines: '" (rl.Length ? rl[1] : "") "' / '" (rl.Length > 1 ? rl[2] : "") "'")
     m.filter := "", m.filterName := ""
     H(1, 12, 9000, "Hblm", "nogl", 0, 8, t + 2000 + m.idleSecs * 1000 + 1)          ; a new fight
     s := m.standings(t + 30000)
@@ -99,6 +99,7 @@ TwcMeterRun() {
     TwcCheck(vis && shown >= 5 && WinGetExStyle(hw) & 0x08000000 && winScale.Has(hw) && winScale[hw].kind = "meter",
         "the sample: the window shows (never takes the focus, scalable as 'meter'), " shown " rows")
     ; a click on the 3rd row's name opens that player's breakdown (it opened row 1's: the binding took the inner loop's index)
+    SetTimer(m.sampleFn, 0)                         ; no new hits meanwhile (the rows reordered between the read and the click)
     m.paint(), want := m.shown.Length >= 3 ? m.shown[3].player : -9
     PostMessage(0x201, 1, 0x00050005, m.rows[3].name), PostMessage(0x202, 0, 0x00050005, m.rows[3].name)     ; a click, no focus taken
     Sleep(300)
@@ -107,7 +108,7 @@ TwcMeterRun() {
     PostMessage(0x201, 1, 0x00050005, m.rows[2].dmg), PostMessage(0x202, 0, 0x00050005, m.rows[2].dmg)
     Sleep(300)
     TwcCheck(want >= 0 && got3 = want && m.detail >= 0 && m.detail != want, "a row clicked: its own player's breakdown (row 3 -> player " got3 ", wanted " want "; row 2's damage -> player " m.detail ")")
-    m.closeDetail()
+    m.closeDetail(), SetTimer(m.sampleFn, 200)
     WinGetPos(, , , &h1, m.gui)
     m.setRows(10), m.tick()
     WinGetPos(, , , &h2, m.gui)

@@ -20,7 +20,7 @@
 ;     biggest hit. ‹ or the player's name goes back.
 ;   - the pin: only the selected unit's type (a boss): damage dealt to it, or
 ;     taken from it. Again: all.
-;   - the speech bubble: the top 3 (or the breakdown's) into the chat (Enter
+;   - the speech bubble: the top 5 (or the breakdown's), a line each, into the chat (Enter
 ;     opens it to your allies, as the cooldown ping).
 ;  The hits come from the game module (layout 33: each hit with the units'
 ;  types and the record's attack / damage type, read 4 times a second); an
@@ -315,11 +315,14 @@ class DamageMeter {
     }
 
     ; -- report to chat ---------------------------------------------------------------------
-    ; "Damage on Ogre Lord (fight 1:23): 1. Ruzai 1.2M 45%, 2. Kaelith 800K 30%, 3. Morrow 400K 15%"
-    reportText(now := A_TickCount) {
+    ; A line each (the user's ask, 2026-10-30: one long line was hard to read):
+    ;   "Damage on Ogre Lord (fight 1:23):"
+    ;   "1. Ruzai 1.2M (45%, 14.5K/s)"   ... the top REPORT_ROWS
+    static REPORT_ROWS := 5
+    reportLines(now := A_TickCount) {
         f := this.viewFight()
         if !f
-            return ""
+            return []
         when := (this.page = -1 ? "game " : "fight ") DamageMeter.Clock(this.fightSecs(now, f))
         if this.detail >= 0 {
             list := this.breakdown(this.detail, , now)
@@ -330,25 +333,32 @@ class DamageMeter {
             head := (this.mode = "dealt" ? "Damage" : "Damage taken") (this.filter != "" ? (this.mode = "dealt" ? " on " : " from ") this.filterName : "")
         }
         if !list.Length
-            return ""
-        s := ""
+            return []
+        out := [head " (" when "):"]
         for i, r in list {
-            if i > 3
+            if i > DamageMeter.REPORT_ROWS
                 break
-            s .= (i > 1 ? ", " : "") i ". " StrReplace(r.name, " · ", " ") " " DamageMeter.Short(r.dmg) " " Round(r.share * 100) "%"
+            out.Push(i ". " StrReplace(r.name, " · ", " ") " " DamageMeter.Short(r.dmg) " (" Round(r.share * 100) "%, " DamageMeter.Short(r.dps) "/s)")
         }
-        return StrReplace(head " (" when "): " s, "|", "/")     ; a | starts the game's colour codes
+        for i, l in out
+            out[i] := StrReplace(l, "|", "/")       ; a | starts the game's colour codes
+        return out
     }
     chatFn := wc3Chat
+    sleepFn := Sleep
     report() {
         global chatting
-        text := this.reportText()
-        if text = ""
+        lines := this.reportLines()
+        if !lines.Length
             return this.say("nothing to report")
-        if !WinActive(WarcraftIII) || IsSet(chatting) && chatting
-            return this.say("not now: the game isn't in front")
-        DebugLog("damage meter: reported: " text)
-        (this.chatFn)(text)
+        for i, l in lines {
+            if !WinActive(WarcraftIII) || IsSet(chatting) && chatting
+                return this.say(i = 1 ? "not now: the game isn't in front" : "report cut short: the game left the front")
+            if i > 1
+                (this.sleepFn)(120)                 ; the chat box closes before it opens again
+            (this.chatFn)(l)
+        }
+        DebugLog("damage meter: reported " lines.Length " lines: " lines[1])
     }
 
     ; -- the sample: made-up players fighting --------------------------------------------

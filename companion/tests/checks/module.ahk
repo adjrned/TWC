@@ -308,6 +308,7 @@ TwcModuleBuffTimers() {
 TwcModuleDamage() {
     global dmgMeter
     v := twcShmBuf.Ptr, m := dmgMeter
+    SetTimer(m.tickFn, 0)                       ; only this check reads the feed (the meter's own 4-a-second read took the hits first now and then)
     IniWrite(1, iniFile, "DamageMeter", "on"), m.reset(), m.names := Map()
     NumPut("uint", 1, v, Shm.dmState), StrPut("Ruzai", v + Shm.dmName + 32 * 3, 32, "UTF-8")
     loop 16
@@ -329,6 +330,7 @@ TwcModuleDamage() {
     TwcCheck(m.standings()[1].dmg = 800, "a new module's totals (back at 0): nothing taken off, then counted on (" m.standings()[1].dmg ")")
     IniWrite(0, iniFile, "DamageMeter", "on"), m.feed()
     TwcCheck(NumGet(v, Shm.dmOn, "uint") = 0, "the meter off: the feed switched off")
+    SetTimer(m.tickFn, 250)
 }
 ; swapping the module live: the copy the game loads, and the hand-over (no game, no injector)
 TwcModuleSwap() {

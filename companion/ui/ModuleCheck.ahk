@@ -54,6 +54,30 @@ ModuleCheckFeatures() => [
     ["Damage meter names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
 ]
 
+; the companion's log lines from its last start about quickcast, the damage meter and the game module (60 at most)
+ModuleCheckCompanionLines() {
+    path := A_ScriptDir "\companion-debug.log", out := []
+    if !FileExist(path)
+        return out
+    try text := FileRead(path, "UTF-8")
+    catch
+        return out
+    lines := StrSplit(text, "`n", "`r")
+    start := 1
+    loop lines.Length
+        if InStr(lines[lines.Length - A_Index + 1], "---- companion ") {
+            start := lines.Length - A_Index + 1
+            break
+        }
+    loop lines.Length - start + 1 {
+        l := lines[start + A_Index - 1]
+        if l != "" && RegExMatch(l, "i)quickcast|damage meter|game module")
+            out.Push(l)
+    }
+    while out.Length > 60
+        out.RemoveAt(1)
+    return out
+}
 ; this session's log lines (from the last "loaded" line), or [] if none
 ModuleCheckLog() => ModuleCheckLines(ModuleCheckLogText()).now
 ; the module before it, when it was swapped live for this one: its lines from
@@ -144,6 +168,14 @@ ModuleCheckReport(rows, log) {
     if (swap := ModuleCheckSwap()).Length {
         r .= "`nThe module before (swapped live for this one), its unloading:`n"
         for l in swap
+            r .= l "`n"
+    }
+    ; the companion's own side (companion-debug.log, this run): quickcast's timing and the other lines a report
+    ; needs that the module can't see (the user pasted the module's log twice looking for them, 2026-10-30)
+    own := ModuleCheckCompanionLines()
+    if own.Length {
+        r .= "`nThe companion (companion-debug.log, this run: quickcast, damage meter, game module; the last " own.Length "):`n"
+        for l in own
             r .= l "`n"
     }
     r .= "`nLog (this session, " log.Length " lines):`n"
