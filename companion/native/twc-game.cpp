@@ -70,7 +70,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD buffCount;        // buff bar slots read (<= 16)
     float buffLeft[16];     // buff bar, left to right: seconds left (0 = none or no timer)
     float buffTotal[16];    //   and its full duration (0 = unknown)
-    DWORD buffFlags[16];    //   1 a buff is shown, 2 it's an aura, 4 kept up (refreshed on a beat: its seconds mean nothing; BuffKeptUp)
+    DWORD buffFlags[16];    //   1 a buff is shown, 2 it's an aura, 4 kept up (refreshed on a beat: its seconds mean nothing; BuffKeptUp),
+                            //   8 its time is the map's own timer's (BuffMapTimer: the left / total are that timer's)
     DWORD buffId[16];       //   its type id ('Bxxx', 0 = unknown)
     // layout 4: commands run on the game's thread (RunCommand)
     volatile LONG cmdSeq;   // companion: +1 per command (written last)
@@ -1096,6 +1097,83 @@ static bool TimerStartWatch(bool on) {
     g_tsHooked = false;
     return true;
 }
+// The map's timer of a buff (the user's game of 2026-10-29: an item's B04Q, an aura whose own 4 s
+// restarts, came 32 ms after a 10 s one-shot timer and the two items' cooldown timers, 30 s and 75 s,
+// as their buttons showed). When a buff is first seen: the one-shot map timers of 1.5 s or more started
+// in the 0.25 s before, less those as long as a cooldown on the command card or the inventory (within
+// 0.1 s); exactly one left (one length): that's its timer, and its time left is the buff's while the
+// timer runs (its agent timer at +0x24, CAgentTimer's vtable checked). None or more than one: nothing.
+static const DWORD RVA_AGENT_TIMER_VT[2] = { 0xa6f780, 0xa6fcd0 };   // CAgentTimer, CAgentTimerExtended
+struct BuffMapTimer { BYTE *unit; DWORD id; BYTE *timer; float timeout; };
+static BuffMapTimer g_bmt[16];
+static int g_bmtLogs;
+static bool CooldownLike(float t) {
+    for (int i = 0; i < 12; i++)
+        if (fabsf(g_shared->cdTotal[i] - t) < 0.1f)
+            return true;
+    for (int i = 0; i < 6; i++)
+        if (fabsf(g_shared->itemTotal[i] - t) < 0.1f)
+            return true;
+    return false;
+}
+static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
+    BYTE *pick = nullptr;
+    float len = 0;
+    int lengths = 0, cds = 0;
+    LONG last = g_tsN;
+    for (LONG k = last - 1; k >= 0 && k >= last - 4096; k--) {
+        const TimerStartRec &r = g_tsRing[k & 4095];
+        LONG d = (LONG)(r.at - now);
+        if (d < -250)
+            break;                          // the notes are in order: the rest are older
+        if (d > 0 || r.periodic || !(r.timeout >= 1.5f))
+            continue;
+        if (CooldownLike(r.timeout)) {
+            cds++;
+            continue;
+        }
+        if (!pick || fabsf(r.timeout - len) > 0.05f)
+            lengths += !pick || fabsf(r.timeout - len) > 0.05f;
+        if (!pick)
+            pick = (BYTE *)r.timer, len = r.timeout;
+    }
+    if (lengths != 1)
+        pick = nullptr;
+    if (pick) {
+        BuffMapTimer *slot = &g_bmt[0];
+        for (BuffMapTimer &m : g_bmt)
+            if (!m.id || (m.id == id && m.unit == unit)) {
+                slot = &m;
+                break;
+            }
+        *slot = { unit, id, pick, len };
+    }
+    if (g_bmtLogs < 12) {
+        g_bmtLogs++;
+        if (pick)
+            Log("buff timers: '%s' goes with the map's %.2f s timer %p (%d cooldown-long ones left out)", IdText(id).s, len, pick, cds);
+        else
+            Log("buff timers: '%s': no map timer of its own (%d lengths, %d cooldown-long ones left out)", IdText(id).s, lengths, cds);
+    }
+}
+// the time left of a buff's map timer, or false (none, or it's run out / gone)
+static bool BuffMapLeft(BYTE *unit, DWORD id, float *left, float *total) {
+    for (BuffMapTimer &m : g_bmt) {
+        if (!m.id || m.id != id || m.unit != unit)
+            continue;
+        BYTE *at = m.timer + 0x24;
+        DWORD vt = *(DWORD *)at - (DWORD)g_base;
+        float l = vt == RVA_AGENT_TIMER_VT[0] || vt == RVA_AGENT_TIMER_VT[1] ? TimerValue(at, 0x18) : -1;
+        if (!(l > 0.05f && l <= m.timeout + 0.5f)) {
+            m.id = 0;                       // run out, or not that timer any more
+            return false;
+        }
+        *left = l, *total = m.timeout;
+        return true;
+    }
+    return false;
+}
+
 // buffs first seen (by unit and rawcode, not seen for 2 s before), logged once the 0.6 s after them is in
 struct BuffSeen { BYTE *unit; DWORD id, at; };
 static BuffSeen g_bsSeen[64];
@@ -1114,6 +1192,8 @@ static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float tota
     bool fresh = !s || now - s->at > 2000;
     s = s ? s : old;
     s->unit = unit, s->id = id, s->at = now;
+    if (fresh && g_tsHooked)
+        BuffMatchTimer(unit, id, now);
     if (!fresh || !g_tsHooked || g_bsLogs >= 16)
         return;
     for (BuffNew &n : g_bsNew)
@@ -1183,6 +1263,9 @@ static void ReadBuffs(BYTE *ui) {
             if (left > 0 && BuffKeptUp(AgentOwner(buff), *(DWORD *)(buff + BUFF_ID), aura, left, GetTickCount()))
                 g_shared->buffFlags[i] |= 4;
             BuffAppeared(AgentOwner(buff), *(DWORD *)(buff + BUFF_ID), aura, left, total, GetTickCount());
+            float ml, mt;
+            if (BuffMapLeft(AgentOwner(buff), *(DWORD *)(buff + BUFF_ID), &ml, &mt))
+                left = ml, total = mt, g_shared->buffFlags[i] = (g_shared->buffFlags[i] & ~4u) | 8;   // the map's timer: drawn, aura or not
             g_shared->buffLeft[i] = left;
             g_shared->buffTotal[i] = total;
             static int logs;
@@ -1202,11 +1285,11 @@ static void ReadTimersGuarded(BYTE *ui) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
     __try {
-        ReadBuffs(ui);
+        ReadItems(ui);                      // before the buffs: their map timers leave the items' cooldowns out
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
     __try {
-        ReadItems(ui);
+        ReadBuffs(ui);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
     if (g_shared->hrWant)
@@ -2221,7 +2304,7 @@ static float BuffTextHeight() {
 // its 0x1007f774..0x1007f785 takes the aura switch for auras, the duration switch for the rest);
 // not while it's kept up (buffFlags 4: an aura in range, a buff given again on a beat)
 static const DWORD BF_AURAS = 1;       // bit 2 (our ring round buffs) is retired: never set
-static bool BuffSlotDrawn(DWORD flags) { return (flags & 1) && !(flags & 4) && (!(flags & 2) || (g_shared->bfOpts & BF_AURAS)); }
+static bool BuffSlotDrawn(DWORD flags) { return (flags & 1) && ((flags & 8) || !(flags & 4) && (!(flags & 2) || (g_shared->bfOpts & BF_AURAS))); }
 // the cooldowns' size (cdSize, 0.75-1.5 times 0.014)
 static float CdTextHeight() {
     float k = g_shared->cdSize;

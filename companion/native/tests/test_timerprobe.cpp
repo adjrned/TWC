@@ -50,9 +50,36 @@ int main() {
           "then logged with the timers of 0.5 s or more started around it (30 s one-shot; the 0.03 s one left out)");
     BuffAppeared(unit, 'B04Q', true, 3.5f, 4, now + 800), BuffAppearedLog(now + 2000);
     CHECK(!g_bsNew[0].id, "the same buff seen again soon after: not a new one");
+    // the map's timer of a buff: a 10 s one-shot started with it, the 30 s one a cooldown on the card, a 0.5 s one too short
+    static BYTE timer10[0x40], timer30[0x40];
+    static BYTE fakeTimerVt[0x40];
+    *(DWORD *)(timer10 + 0x24) = (DWORD)(img + RVA_AGENT_TIMER_VT[0]);
+    *(DWORD *)(img + RVA_AGENT_TIMER_VT[0] + 0x18) = (DWORD)(img + 0x200000);
+    static float remain = 7.5f;
+    // the agent timer's time left getter, thiscall(timer, float *out), ret 4 (as TimerValue calls it)
+    BYTE *g = img + 0x200000; g[-1] = 0xCC;
+    BYTE code[] = { 0x8B, 0x44, 0x24, 0x04, 0x8B, 0x15, 0, 0, 0, 0, 0x89, 0x10, 0xC2, 0x04, 0x00 };   // mov eax, [esp+4]; mov edx, [&remain]; mov [eax], edx; ret 4
+    *(DWORD *)(code + 6) = (DWORD)&remain;
+    memcpy(g, code, sizeof(code));
+    sh.cdTotal[3] = 30;
+    DWORD t1 = GetTickCount() + 5000;
+    auto Note = [&](float t, void *tm, DWORD at) { TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 4095]; r = { at, t, 0, tm }; };
+    Note(30, timer30, t1 - 40), Note(10, timer10, t1 - 32), Note(0.5f, timer30, t1 - 20);
+    BuffAppeared(unit, 'B04Q', true, 4, 4, t1);
+    float ml = 0, mt = 0;
+    bool got = BuffMapLeft(unit, 'B04Q', &ml, &mt);
+    CHECK(got && mt == 10 && ml == 7.5f && LogHas("'B04Q' goes with the map's 10.00 s timer"), "a buff's map timer: the 10 s one (the 30 s one as long as a cooldown, the 0.5 s one too short): %.1f of %.0f s left", ml, mt);
+    remain = 0;
+    CHECK(!BuffMapLeft(unit, 'B04Q', &ml, &mt), "its timer run out: none");
+    DWORD t2 = t1 + 5000;
+    Note(12, timer10, t2 - 30), Note(20, timer30, t2 - 30);
+    BuffAppeared(unit, 'B0XX', false, 5, 5, t2);
+    CHECK(!BuffMapLeft(unit, 'B0XX', &ml, &mt) && LogHas("'B0XX': no map timer of its own (2 lengths"), "two lengths started with it: no guess");
+    CHECK(BuffSlotDrawn(1 | 2 | 4 | 8) && !BuffSlotDrawn(1 | 2 | 4) && BuffSlotDrawn(1), "drawn with its map timer even as an aura kept up; not without it");
     CHECK(TimerStartWatch(false) && !g_tsHooked && !memcmp(f, body, 5), "off: the game's bytes back");
+    LONG noted = g_tsN;
     Start(5, 0);
-    CHECK(starts == 4 && g_tsN == 2, "and nothing noted");
+    CHECK(starts == 4 && g_tsN == noted, "and nothing noted");
     f[0] = 0xE9; g_tsBad = false;
     CHECK(!TimerStartWatch(true) && !g_tsHooked && g_tsBad, "another mod's bytes there: refused");
     Verdict();
