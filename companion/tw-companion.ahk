@@ -122,6 +122,7 @@ global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
 global macroNewBtn, macroHelpBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
 global macroLblMsg, macroKindLink, macroSeqText, macroItemBtns := [], macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn
+global macroClickBtn, macroDelayBtn, macroDelayEdit, macroDelayMs     ; keys macros: a click, a delay (ms) between steps
 global macroKeyCtrls := [], macroKind := "chat", macroKeys := []     ; the editor: chat or keys, and the keys being edited
 global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
 global macroSel := -1, macroOffset := 0, macroDraftHK := ""     ; macroSel 0 = a new macro being made
@@ -1040,6 +1041,14 @@ BuildMacrosPage() {
     macroUndoKeyBtn := MkButton("Remove last", 40, 160, 104, 26, C.chip, C.muted, (*) => MacroRemoveKey(false))
     macroClearKeysBtn := MkButton("Clear", 40, 160, 64, 26, C.chip, C.muted, (*) => MacroRemoveKey(true))
     macroKeyCtrls.Push(macroAllItemsBtn, macroAddKeyBtn, macroUndoKeyBtn, macroClearKeysBtn)
+    ; clicks and delays: a spot clicked (left or right; in the game window it's kept relative to it), a wait in ms
+    macroClickBtn := MkButton("+  Click", 40, 160, 110, 26, C.chip, C.accent, (*) => MacroCaptureClick())
+    macroDelayBtn := MkButton("+  Delay", 40, 160, 90, 26, C.chip, C.accent, (*) => MacroAddDelay())
+    macroDelayEdit := mainGui.AddEdit("x40 y160 w60 h26 Number Limit5 Center +Background" C.well " c" C.text, Ini("MacroEditor", "delay", 250))
+    UISetFont(macroDelayEdit, "s10"), ApplyDark(macroDelayEdit.Hwnd)
+    macroDelayMs := mainGui.AddText("x40 y160 w24 h26 0x200 +Background" C.panel " c" C.muted, "ms")
+    UISetFont(macroDelayMs, "s9")
+    macroKeyCtrls.Push(macroClickBtn, macroDelayBtn, macroDelayEdit, macroDelayMs)
     ; right: the hotkey, like Remap's detail
     macroLblKey := mainGui.AddText("x40 y160 w160 h18 +Background" C.panel " c" C.muted, "Hotkey")
     macroKeyText := mainGui.AddText("x40 y160 w160 h30 0x200 +Background" C.panel " c" C.text, "")
@@ -1081,6 +1090,10 @@ LayoutMacros() {
     macroAddKeyBtn.Move(CX, ey + 128, 110, 26)
     macroUndoKeyBtn.Move(CX + 116, ey + 128, 104, 26)
     macroClearKeysBtn.Move(CX + 226, ey + 128, 64, 26)
+    macroClickBtn.Move(CX, ey + 162, 110, 26)
+    macroDelayBtn.Move(CX + 116, ey + 162, 90, 26)
+    macroDelayEdit.Move(CX + 212, ey + 162, 60, 26)
+    macroDelayMs.Move(CX + 278, ey + 162)
     macroLblKey.Move(rx, ey)
     macroKeyText.Move(rx, ey + 20)
     macroCapBtn.Move(rx, ey + 56, 77, 26)
@@ -1159,7 +1172,8 @@ RenderMacroRows() {
         local n := m.kind = "keys" ? MacrosEngine.Keys(m.text).Length : MacroLines(m.text).Length
         row.key.Text := m.label != "" ? m.label : "no key"
         row.msg.Text := m.summary
-        row.lines.Text := m.kind = "keys" ? n (n = 1 ? " key" : " keys") : n > 1 ? n " lines" : ""
+        local steps := m.kind = "keys" && MacrosEngine.HasSteps(MacrosEngine.Keys(m.text))
+        row.lines.Text := m.kind = "keys" ? n (steps ? (n = 1 ? " step" : " steps") : n = 1 ? " key" : " keys") : n > 1 ? n " lines" : ""
         row.del.Text := Chr(0xE711)                         ; ✕ (Segoe Fluent "Cancel")
         row.pad.Opt("+Background" bg)
         row.key.Opt("+Background" bg " +c" (m.label != "" ? C.accent : C.dim))
@@ -1230,7 +1244,7 @@ MacroStatus() {
     if m.kind != macroKind && !n
         return "add " what " to switch it"
     if macroKind = "keys"
-        return n = 1 ? "1 key" : n " keys, pressed at once"
+        return MacrosEngine.HasSteps(macroKeys) ? (n = 1 ? "1 step" : n " steps, in order") : n = 1 ? "1 key" : n " keys, pressed at once"
     return !n ? "empty: not saved, ✕ deletes it" : n = 1 ? "1 line" : n " lines, sent in order"
 }
 
@@ -1294,6 +1308,52 @@ MacroCaptureKey() {
                 break 2
             }
     MacroAddKeys([combo])
+}
+; a click for a keys macro: the next left or right click (swallowed: it doesn't act), kept relative
+; to the Warcraft III window when it's in it, else as a screen position; Esc or 15 s cancels
+MacroCaptureClick() {
+    global
+    macroClickBtn.Text := "click the spot…"
+    local step := WaitClickStep()
+    macroClickBtn.Text := "+  Click"
+    if step = ""
+        return
+    DebugLog("macros: click step '" step "' added")
+    MacroAddKeys([step])
+}
+WaitClickStep(timeoutMs := 15000) {
+    KeyWait("LButton")                      ; (the press on the button itself)
+    box := { got: 0 }
+    grab(right, *) {
+        CoordMode("Mouse", "Screen")
+        MouseGetPos(&mx, &my)
+        box.got := { right: right, x: mx, y: my }
+    }
+    Hotkey("*LButton", grab.Bind(0), "On"), Hotkey("*RButton", grab.Bind(1), "On")
+    try {
+        start := A_TickCount
+        while !box.got && A_TickCount - start < timeoutMs && !GetKeyState("Escape", "P")
+            Sleep(15)
+    } finally
+        Hotkey("*LButton", "Off"), Hotkey("*RButton", "Off")
+    return box.got ? ClickStepFor(box.got.right, box.got.x, box.got.y) : ""
+}
+; the step for a click at screen x, y: in the game window's client area as fractions, else screen pixels
+ClickStepFor(right, x, y, win := "") {
+    if WinExist(win != "" ? win : WarcraftIII) {
+        WinGetClientPos(&gx, &gy, &gw, &gh)
+        if gw > 0 && gh > 0 && x >= gx && y >= gy && x < gx + gw && y < gy + gh
+            return (right ? "rclick:" : "click:") Format("{:.4f}", (x - gx) / gw) "," Format("{:.4f}", (y - gy) / gh)
+    }
+    return (right ? "srclick:" : "sclick:") x "," y
+}
+; a delay for a keys macro: the ms in its box (1 to 60000), kept for next time
+MacroAddDelay() {
+    global
+    local ms := IsNumber(macroDelayEdit.Value) ? Max(1, Min(60000, Integer(macroDelayEdit.Value))) : 250
+    macroDelayEdit.Value := ms
+    SetIni(ms, "MacroEditor", "delay")
+    MacroAddKeys(["wait:" ms])
 }
 MacroRemoveKey(all) {
     global

@@ -3,12 +3,19 @@
 ;  MacrosEngine - configurable hotkey macros, of two kinds:
 ;    chat  types chat lines in Warcraft III (one per row of its text)
 ;    keys  presses game keys in a row, e.g. items 1-5 at once (its text is the
-;          keys, space separated: "Numpad7 Numpad8 q ^1")
+;          keys, space separated: "Numpad7 Numpad8 q ^1"); also clicks and delays:
+;          "click:0.5120,0.7330" / "rclick:..." a left / right click at that spot of
+;          the Warcraft III window (its client area, as fractions: the window may
+;          move or change size), "sclick:1024,768" / "srclick:..." at a screen
+;          position, "wait:250" a delay in ms (instead of the usual gap)
 ; ============================================================================
 class MacrosEngine {
     section := "Macros"
     macros := []             ; [{hotkey, text, kind}]
     registered := Map()
+    sendFn := SendInput             ; how keys are sent, clickFn(right, x, y) how clicks are (0: Click); win the game
+    clickFn := 0                    ;   window clicks are relative to (checks swap them: never real input)
+    win := WarcraftIII
 
     __New() {
         this.reload()
@@ -77,8 +84,28 @@ class MacrosEngine {
                 out.Push(t)
         return out
     }
-    ; "Numpad7" -> "Item 1", "q" -> "Skill Q", "^1" -> "Ctrl+1"
+    ; a click step -> true, with right (0 / 1), x, y and screen (0: fractions of the game window, 1: screen pixels)
+    static ClickStep(t, &right := 0, &x := 0, &y := 0, &screen := 0) {
+        if !RegExMatch(t, "i)^(s?)(r?)click:(-?[\d.]+),(-?[\d.]+)$", &m)
+            return false
+        screen := m[1] != "", right := m[2] != "", x := m[3] + 0, y := m[4] + 0
+        return true
+    }
+    ; a delay step -> its ms (at most a minute), else -1
+    static WaitStep(t) => RegExMatch(t, "i)^wait:(\d+)$", &m) ? Min(60000, Integer(m[1])) : -1
+    ; a sequence with clicks or delays (not only keys)
+    static HasSteps(keys) {
+        for t in keys
+            if MacrosEngine.ClickStep(t) || MacrosEngine.WaitStep(t) >= 0
+                return true
+        return false
+    }
+    ; "Numpad7" -> "Item 1", "q" -> "Skill Q", "^1" -> "Ctrl+1", "Click 51%, 73%", "Wait 250 ms"
     static KeyLabel(t) {
+        if (ms := MacrosEngine.WaitStep(t)) >= 0
+            return "Wait " ms " ms"
+        if MacrosEngine.ClickStep(t, &right, &x, &y, &screen)
+            return (right ? "Right-click " : "Click ") (screen ? Round(x) ", " Round(y) : Round(x * 100) "%, " Round(y * 100) "%")
         for i, k in RemapEngine.INV_TARGETS
             if t = k
                 return "Item " i
@@ -178,14 +205,41 @@ class MacrosEngine {
 
     ; the keys one after another, a few ms apart so the game sees each one
     ; (keyGap in [Macros], default 15). Sent keys never trigger the companion's
-    ; own hotkeys, so these are game keys.
+    ; own hotkeys, so these are game keys. A delay step waits its own time
+    ; instead of the gap; a click step clicks there and puts the mouse back.
     sendKeys(keys) {
-        gap := Integer(Ini(this.section, "keyGap", 15))
-        for i, t in keys {
-            if i > 1 && gap > 0
+        gap := Integer(Ini(this.section, "keyGap", 15)), waited := true
+        for t in keys {
+            if (ms := MacrosEngine.WaitStep(t)) >= 0 {
+                Sleep(ms), waited := true
+                continue
+            }
+            if !waited && gap > 0
                 Sleep(gap)
-            SendInput(MacrosEngine.KeyInput(t))
+            waited := false
+            if MacrosEngine.ClickStep(t, &right, &x, &y, &screen)
+                MacrosEngine.ClickAt(right, x, y, screen, this.clickFn, this.win)
+            else
+                (this.sendFn)(MacrosEngine.KeyInput(t))
         }
+    }
+    ; a click at a spot of the game window (fractions of its client area) or of the screen; false: no game window
+    static ClickAt(right, x, y, screen, clickFn := 0, win := "") {
+        CoordMode("Mouse", "Screen")
+        if !screen {
+            if !WinExist(win != "" ? win : WarcraftIII)
+                return false
+            WinGetClientPos(&gx, &gy, &gw, &gh)
+            x := gx + Round(x * gw), y := gy + Round(y * gh)
+        }
+        MouseGetPos(&ox, &oy)
+        if clickFn
+            clickFn(right, Round(x), Round(y))
+        else {
+            Click(Round(x) " " Round(y) (right ? " Right" : ""))
+            MouseMove(ox, oy, 0)
+        }
+        return true
     }
 
     refresh() {
