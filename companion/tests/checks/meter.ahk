@@ -69,7 +69,10 @@ TwcMeterRun() {
         PutHit(2, 900, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41484662, 1)    ; 'AHfb' by its spell event
         PutHit(3, 400, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41484662, 2)    ;   and once by the last cooldown
         PutHit(4, 2000, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41303031, 2)   ; 'A001' only guessed
-        NumPut("int", 5, mem, Shm.dmRingSeq)
+        PutHit(5, 300, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0x41484662, 3)    ; 'AHfb' by the map timer it started
+        PutHit(6, 250, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0, 4)             ; inside its attack: on hit
+        PutHit(7, 150, 0, 12, 0x4870616C, 0x6E6F676C, 4, 26, 0, 5)             ; inside a hit on it: when hit
+        NumPut("int", 8, mem, Shm.dmRingSeq)
         NumPut("uint", 0x4870616C, mem, Shm.dmTypeId), StrPut("Paladin", mem.Ptr + Shm.dmTypeName, 32, "UTF-8")
         NumPut("uint", 0x41484662, mem, Shm.dmTypeId + 4), StrPut("Fire Bolt", mem.Ptr + Shm.dmTypeName + 32, 32, "UTF-8")
         NumPut("uint", 0x41303031, mem, Shm.dmTypeId2), StrPut("Nova", mem.Ptr + Shm.dmTypeName2, 32, "UTF-8")
@@ -84,8 +87,9 @@ TwcMeterRun() {
     bn := ""
     for r in b
         bn .= (bn = "" ? "" : ", ") r.name " " Round(r.dmg)
-    TwcCheck(err = "" && s.Length = 1 && s[1].name = "Ruzai" && s[1].dmg = 4800 && tk.Length = 1 && tk[1].dmg = 700 && bn = "~Nova 2000, Attack · Paladin 1500, Fire Bolt 1300",
-        "the feed through the real readers: dealt 4800 by 'Ruzai', taken 700; by skill: " bn " (a name from the second table; ~ = only guessed)" (err != "" ? " (error: " err ")" : ""))
+    TwcCheck(err = "" && s.Length = 1 && s[1].name = "Ruzai" && s[1].dmg = 5500 && tk.Length = 1 && tk[1].dmg = 700
+        && bn = "~Nova 2000, Fire Bolt 1600, Attack · Paladin 1500, On-hit effects · Paladin 250, When-hit effects · Paladin 150",
+        "the feed through the real readers: dealt 5500 by 'Ruzai', taken 700; by skill: " bn " (a name from the second table; ~ = only guessed; a timer's hit exact; on-hit / when-hit rows)" (err != "" ? " (error: " err ")" : ""))
     m.gm := keepGm, IniWrite(keepOn, iniFile, "DamageMeter", "on")
     m.reset(), m.ringSeq := -1
     m.setSample(true)

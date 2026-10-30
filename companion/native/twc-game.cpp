@@ -59,8 +59,10 @@ struct DmHit {
     BYTE how;               // layout 34: how dmRingAbility's ability was found: DMA_* (was padding: 0)
     BYTE pad;
 };
-// layout 34: a spell hit's ability: the map's spell event it was dealt in, or the source's last cooldown
-static const BYTE DMA_NONE = 0, DMA_EVENT = 1, DMA_COOLDOWN = 2;
+// layout 34: a spell hit's ability: the map's spell event it was dealt in, or the source's last cooldown;
+// since then (no new fields): 3 the map timer it was dealt in (started in that spell), 4 dealt inside your
+// own hit's damage (an on-hit effect: the outer hit's ability, 0 an attack), 5 inside a hit on your unit (a reaction)
+static const BYTE DMA_NONE = 0, DMA_EVENT = 1, DMA_COOLDOWN = 2, DMA_TIMER = 3, DMA_ONHIT = 4, DMA_WHENHIT = 5;
 static const BYTE DMH_ATTACK = 1, DMH_RANGED = 2, DMH_SRC_HERO = 4, DMH_TGT_HERO = 8;
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
@@ -1109,10 +1111,13 @@ static BYTE *g_tsTramp;
 static bool g_tsHooked, g_tsBad;
 static bool WriteCode(BYTE *p, const BYTE *b, int n);
 static bool FnStart(DWORD rva);
+static void DamageTimerStarted(void *timer, float timeout, int periodic, DWORD now);
 static void __fastcall TimerStartHook(void *timer, int edx, float *timeout, int periodic, void *code) {
     __try {
         TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 4095];
         r.at = GetTickCount(), r.timeout = timeout ? *timeout : -1, r.periodic = (DWORD)periodic, r.timer = timer, r.code = code;
+        if (g_shared->dmOn)
+            DamageTimerStarted(timer, r.timeout, periodic, r.at);      // the damage meter: the spell it was started in
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
     ((TimerStartFn)g_tsTramp)(timer, edx, timeout, periodic, code);
@@ -1373,9 +1378,10 @@ static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float tota
     bool fresh = !s || now - s->at > 2000;
     s = s ? s : old;
     s->unit = unit, s->id = id, s->at = now;
-    if (fresh && g_tsHooked && aura)        // auras only: a buff has its own time (B0BU, a 9999 s passive, took an 8 s timer)
+    bool watched = g_tsHooked && (g_shared->itOn & 2);     // (the damage meter watches the timers too)
+    if (fresh && watched && aura)           // auras only: a buff has its own time (B0BU, a 9999 s passive, took an 8 s timer)
         BuffMatchTimer(unit, id, now);
-    if (fresh && g_tsHooked && g_bsLogs < 16)
+    if (fresh && watched && g_bsLogs < 16)
         g_bsLogs++, Log("buff timers: new '%s' %s (%.1f s of %.1f)", IdText(id).s, aura ? "aura" : "buff", left, total);
 }
 
@@ -2934,7 +2940,7 @@ static bool SweepWanted() {
 
 // on the game thread
 static void TimerFramesPass(BYTE *ui) {
-    TimerStartWatch((g_shared->itOn & 2) != 0);     // the buff timers' probe: the map's timers next to new buffs
+    TimerStartWatch((g_shared->itOn & 2) || g_shared->dmOn);    // the map's timers: next to new buffs, and the spells they were started in
     bool sweep = SweepWanted();
     ClockHidePass(ui, sweep);
     if (!g_shared->itOn) {
@@ -4514,7 +4520,143 @@ static DWORD LastCast(BYTE *u) {
     }
     return id;
 }
-static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
+// What a hit is credited to beyond the spell event (DMA_TIMER / ONHIT / WHENHIT; all reads, the game thread's):
+//  - a hit dealt while another's damage runs (+6cf530 for the outer hit: the map's damage triggers run inside
+//    it): your own hit's -> on hit, with the outer's ability (an attack's: 0); someone else's on you -> a reaction
+//  - a map timer's callback: CTimerWar3's event entry (vtable +a8efb4 slot +0xc = +2727e0, thiscall(timer, event)
+//    ret 4; 0x80204 its expiry, 0x80272 too: both run +272860, which fires the timer's trigger [+0x40]) is ours,
+//    noting the timer running. A timer started (+27c160) where a cause is known (a spell event, a hit being
+//    dealt, a timer of its own) keeps it, so its callbacks' hits (a damage over time, a missile) are that spell's;
+//    one started with none forgets what it had (TimerUtils' recycled timers). Restarted from its own callback: kept.
+struct DmCause { DWORD ab; BYTE how, attack, from, hit; };      // hit: an outer hit's cause (resolved per hit)
+struct DmTimer { void *timer; DWORD at; float timeout; DmCause cause; BYTE known, periodic; };
+static const int DM_TIMERS = 4096, DM_DEPTH = 8;
+static DmTimer g_dmTimers[DM_TIMERS];
+static void *g_dmRunTimer;              // the map timer whose callback runs (0 none)
+static DmCause g_dmStack[DM_DEPTH];     // the hits being dealt, outermost first
+static int g_dmDepth;
+static DmTimer *DmTimerOf(void *timer, bool make) {
+    if (!timer)
+        return nullptr;
+    DWORD h = ((DWORD)timer >> 3) * 2654435761u >> 20;         // 12 bits
+    DmTimer *free = nullptr, *old = nullptr, *oldBare = nullptr;
+    for (int k = 0; k < 16; k++) {
+        DmTimer &t = g_dmTimers[(h + k) & (DM_TIMERS - 1)];
+        if (t.timer == timer)
+            return &t;
+        if (!t.timer && !free)
+            free = &t;
+        if (!old || (LONG)(t.at - old->at) < 0)
+            old = &t;
+        if (!t.known && (!oldBare || (LONG)(t.at - oldBare->at) < 0))
+            oldBare = &t;
+    }
+    if (!make)
+        return nullptr;
+    DmTimer *t = free ? free : oldBare ? oldBare : old;         // a timer with no cause goes first
+    *t = {};
+    t->timer = timer;
+    return t;
+}
+// an outer hit's cause for a hit of player `from` dealt inside it
+static bool FromHit(const DmCause &o, int from, DmCause *c) {
+    if (o.from == from) {
+        if (!o.attack && !o.ab)
+            return false;                       // inside your own hit of no known cause: no help
+        c->ab = o.attack ? 0 : o.ab, c->how = o.how == DMA_COOLDOWN ? DMA_COOLDOWN : DMA_ONHIT;
+        return true;
+    }
+    if (o.from > 15)
+        return false;
+    c->ab = 0, c->how = DMA_WHENHIT;
+    return true;
+}
+// the cause the running timer was started with
+static bool TimerCause(int from, DmCause *c) {
+    DmTimer *t = DmTimerOf(g_dmRunTimer, false);
+    if (!t || !t->known)
+        return false;
+    if (t->cause.hit)
+        return FromHit(t->cause, from, c);
+    c->ab = t->cause.ab, c->how = t->cause.how == DMA_COOLDOWN ? DMA_COOLDOWN : DMA_TIMER;
+    return true;
+}
+// a hit's cause, before the game deals it (what runs inside sees it as the hit being dealt)
+static DmCause HitCause(BYTE *rec) {
+    DmCause c = { 0, DMA_NONE, 0, 0xff, 0 };
+    BYTE *src = rec ? *(BYTE **)(rec + DMG_SOURCE) : nullptr;
+    if (!IsUnit(src))
+        return c;
+    int from = *(int *)(src + UNIT_OWNER);
+    c.from = from >= 0 && from <= 15 ? (BYTE)from : 0xff;
+    if (*(DWORD *)(rec + REC_FLAGS) & 0x100) {
+        c.attack = 1;
+        return c;
+    }
+    if (from < 0 || from > 11)
+        return c;                               // the creeps' spells are just their unit's
+    __try {
+        if ((c.ab = SpellNow()) != 0)
+            c.how = DMA_EVENT;
+        else if (g_dmDepth > 0 && FromHit(g_dmStack[min(g_dmDepth, DM_DEPTH) - 1], from, &c))
+            ;
+        else if (TimerCause(from, &c))
+            ;
+        else if ((c.ab = LastCast(src)) != 0)
+            c.how = DMA_COOLDOWN;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        c.ab = 0, c.how = DMA_NONE;
+    }
+    return c;
+}
+// a map timer (re)started: the cause known now, else the running timer's (TimerStartHook, the game thread)
+static void DamageTimerStarted(void *timer, float timeout, int periodic, DWORD now) {
+    DmTimer *t = DmTimerOf(timer, true);
+    if (!t)
+        return;
+    DWORD ab = SpellNow();
+    DmTimer *run = timer != g_dmRunTimer ? DmTimerOf(g_dmRunTimer, false) : nullptr;
+    if (ab)
+        t->cause = { ab, DMA_EVENT, 0, 0xff, 0 }, t->known = 1;
+    else if (g_dmDepth > 0)
+        t->cause = g_dmStack[min(g_dmDepth, DM_DEPTH) - 1], t->cause.hit = 1, t->known = 1;
+    else if (run && run->known)
+        t->cause = run->cause, t->known = 1;
+    else if (timer != g_dmRunTimer)
+        t->known = 0;                           // (restarted from its own callback: it keeps its own)
+    t->at = now, t->timeout = timeout, t->periodic = periodic ? 1 : 0;
+    static int logs;
+    if (t->known && logs < 3)
+        logs++, Log("damage: a %.2f s %s map timer started %s: its hits go to '%s'", timeout, periodic ? "periodic" : "one-shot",
+                    ab ? "in a spell event" : g_dmDepth > 0 ? "while a hit was dealt" : "from another such timer", t->cause.ab ? IdText(t->cause.ab).s : "(an attack)");
+}
+// the running trigger's event id (the trigger context's slot 6 top, as +2bb780 reads it), 0 none
+static DWORD EventNow() {
+    BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS), *ctx = state ? *(BYTE **)(state + STATE_TRIGGER_CTX) : nullptr;
+    if (!ctx)
+        return 0;
+    int n = *(int *)(ctx + 6 * 16 + 0x98);
+    DWORD *a = *(DWORD **)(ctx + 6 * 16 + 0x9c);
+    return n > 0 && n < 256 && a ? a[n - 1] : 0;
+}
+// the first spell hits no cause was found for: where they were dealt (what to follow next)
+static void NoCauseLog(BYTE *src, const DmCause &c, DWORD now) {
+    static int logs;
+    if (logs >= 6)
+        return;
+    logs++;
+    char tm[160] = "no map timer running";
+    if (g_dmRunTimer) {
+        DmTimer *t = DmTimerOf(g_dmRunTimer, false);
+        if (t)
+            sprintf_s(tm, "in a %.2f s %s map timer started %.1f s before with no spell", t->timeout, t->periodic ? "periodic" : "one-shot", (now - t->at) / 1000.0);
+        else
+            sprintf_s(tm, "in a map timer started before the meter was on (or not by +27C160)");
+    }
+    Log("damage: a spell hit with no cause of its own (%s '%s'): trigger event %lu, %s, %d hits deep; %s", (*(DWORD *)(src + 0x30) >> 24) - 'A' < 26 ? "hero" : "unit",
+        IdText(*(DWORD *)(src + 0x30)).s, EventNow(), tm, g_dmDepth, c.how == DMA_COOLDOWN ? "guessed by the last cooldown" : "nothing cooling down either");
+}
+static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     if (!(dealt > 0 && dealt < 1e12f) || !rec)
         return;
     BYTE *src = *(BYTE **)(rec + DMG_SOURCE);
@@ -4537,25 +4679,22 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
     unsigned long bit;
     h.dmgType = dm && !(dm & (dm - 1)) && _BitScanForward(&bit, dm) ? (BYTE)bit : 0xff;
     h.atkType = (BYTE)*(DWORD *)(rec + REC_ATK_TYPE), h.weapon = (BYTE)*(DWORD *)(rec + REC_WEAPON);
-    DWORD ab = 0;
-    h.how = DMA_NONE;
-    if (!(fl & 0x100) && from <= 11) {          // a player's spell (the creeps' are just their unit's)
-        __try {
-            if ((ab = SpellNow()) != 0)
-                h.how = DMA_EVENT;
-            else if ((ab = LastCast(src)) != 0)
-                h.how = DMA_COOLDOWN;
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-            ab = 0, h.how = DMA_NONE;
-        }
-    }
+    bool spell = !(fl & 0x100) && from <= 11;   // a player's spell (the creeps' are just their unit's)
+    DWORD ab = spell ? c.ab : 0;
+    h.how = spell ? c.how : DMA_NONE;
     g_shared->dmRingAbility[n & (DM_RING - 1)] = ab;
     InterlockedExchange(&g_shared->dmRingSeq, n + 1);
     DamageType(st), DamageType(tt), DamageType(ab);
-    static int abLogs[3];
-    if (abLogs[h.how] < 3)
-        abLogs[h.how]++, Log("damage: a spell hit's ability: '%s' (%s), from player %d's '%s'", ab ? IdText(ab).s : "", h.how == DMA_EVENT ? "the spell event it was dealt in"
-            : h.how == DMA_COOLDOWN ? "the source's last cooldown" : fl & 0x100 ? "an attack" : "not found", from, IdText(st).s);
+    static int abLogs[6];
+    static const char *const HOW[6] = { "not found", "the spell event it was dealt in", "the source's last cooldown", "the map timer it was dealt in, started in that spell",
+                                        "dealt inside your own hit's damage: an on-hit effect", "dealt inside a hit on your unit: a reaction" };
+    if (h.how < 6 && abLogs[h.how] < 3)
+        abLogs[h.how]++, Log("damage: a spell hit's ability: '%s' (%s), from player %d's '%s'", ab ? IdText(ab).s : "", fl & 0x100 ? "an attack" : HOW[h.how], from, IdText(st).s);
+    if (spell && (h.how == DMA_COOLDOWN || h.how == DMA_NONE))
+        NoCauseLog(src, c, GetTickCount());
+    static bool deep;
+    if (!deep && g_dmDepth > 0)
+        deep = true, Log("damage: a hit dealt while another's damage ran (%d deep): the map's damage triggers run inside it", g_dmDepth);
     static int logs;
     if (logs < 3)
         logs++, Log("damage: player %d's unit %p dealt %.1f to player %d's %p (before armor %.1f, flags %lX, damage type %u, attack type %u, weapon %u)", from, src, dealt, to, target,
@@ -4585,12 +4724,55 @@ static void DamageTypesPass() {
     }
 }
 static void __fastcall UnitDamage(void *target, int edx, float *dealt, BYTE *rec, DWORD a3, DWORD a4) {
-    ((UnitDamageFn)(g_base + RVA_UNIT_DAMAGE))(target, edx, dealt, rec, a3, a4);
+    DmCause c = { 0, DMA_NONE, 0, 0xff, 0 };
+    bool pushed = false;
     if (g_shared->dmOn)
         __try {
-            DamageSeen((BYTE *)target, rec, dealt ? *dealt : 0);
+            c = HitCause(rec);
+            if (g_dmDepth < DM_DEPTH)
+                g_dmStack[g_dmDepth] = c;
+            g_dmDepth++, pushed = true;         // what the game runs inside (its damage triggers) sees this hit
         } __except (EXCEPTION_EXECUTE_HANDLER) {
         }
+    ((UnitDamageFn)(g_base + RVA_UNIT_DAMAGE))(target, edx, dealt, rec, a3, a4);
+    if (pushed)
+        g_dmDepth--;
+    if (g_shared->dmOn)
+        __try {
+            DamageSeen((BYTE *)target, rec, dealt ? *dealt : 0, c);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+}
+// CTimerWar3's event entry: the game's, with the timer noted as running (its callback's hits, timers)
+static const DWORD RVA_TIMER_VT = 0xa8efb4, TIMER_EVENT_SLOT = 0x0c, RVA_TIMER_EVENT = 0x2727e0;
+typedef int(__fastcall *AgentEventFn)(void *, int, void *);
+static bool g_dmTmHooked;
+static int __fastcall TimerEvent(void *timer, int edx, void *ev) {
+    void *was = g_dmRunTimer;
+    g_dmRunTimer = timer;
+    int r = ((AgentEventFn)(g_base + RVA_TIMER_EVENT))(timer, edx, ev);
+    g_dmRunTimer = was;
+    return r;
+}
+static bool SwapTimerEvent(bool on) {
+    if (on == g_dmTmHooked)
+        return true;
+    DWORD *slot = (DWORD *)(g_base + RVA_TIMER_VT + TIMER_EVENT_SLOT), game = (DWORD)(g_base + RVA_TIMER_EVENT), ours = (DWORD)TimerEvent;
+    if (*slot != (on ? game : ours)) {
+        Log("damage: the map timers' vtable +%06lX entry +%X is %08lX, not the %s: left as it is", RVA_TIMER_VT, TIMER_EVENT_SLOT, *slot, on ? "game's" : "hook");
+        if (!on)
+            g_dmTmHooked = false;
+        return false;
+    }
+    DWORD old;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old))
+        return false;
+    InterlockedExchange((volatile LONG *)slot, (LONG)(on ? ours : game));
+    VirtualProtect(slot, 4, old, &old);
+    g_dmTmHooked = on;
+    Log(on ? "damage: map timers followed (CTimerWar3's event entry is ours: a timer started in a spell gives its hits that spell)"
+           : "damage: map timers no longer followed (the entry is the game's again)");
+    return true;
 }
 static bool SwapUnitDamage(bool on) {
     if (on == g_dmHooked)
@@ -4792,6 +4974,19 @@ static void FollowDamage(DWORD now) {
         checked = 2, g_shared->dmState = 3;
     else if (g_shared->dmState != 3)
         g_shared->dmState = g_dmHooked ? 1 : 0;
+    // the map timers (the spells they were started in): refused, the meter goes on without them
+    static int timers;              // 1 checked out, 2 refused
+    if (checked == 1 && on && !timers) {
+        char rtti[64] = "";
+        RttiName((DWORD)(g_base + RVA_TIMER_VT), g_imageSize, rtti, sizeof(rtti));
+        BYTE *f = g_base + RVA_TIMER_EVENT;
+        timers = FnStart(RVA_TIMER_EVENT) && GameVtable(RVA_TIMER_VT, { TIMER_EVENT_SLOT }) && (!rtti[0] || !strcmp(rtti, ".?AVCTimerWar3@@"))
+            && !memcmp(f, "\x55\x8B\xEC\x56\x8B\xF1", 6) ? 1 : 2;     // push ebp; mov ebp, esp; push esi; mov esi, ecx
+        if (timers == 2)
+            Log("damage: the map timers' entry (+%06lX in vtable +%06lX) isn't as 1.28f has it (RTTI '%s'): spells' timers not followed", RVA_TIMER_EVENT, RVA_TIMER_VT, rtti);
+    }
+    if (timers == 1 && on != g_dmTmHooked && !SwapTimerEvent(on))
+        timers = 2;
 }
 
 // -- widescreen, FPS unlock, the multiboard ----------------------------------------
@@ -7562,6 +7757,7 @@ static void RestoreAll() {
     SwapTooltips(false);
     SwapUnitTip(false);
     SwapUnitDamage(false);
+    SwapTimerEvent(false);
     if (g_mtHooked)
         MapTextSites(false);
     TimerStartWatch(false);

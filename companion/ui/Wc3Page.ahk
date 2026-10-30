@@ -157,7 +157,7 @@ Wc3Features() {
                 OptSlider(d, "Fight ends", (*) => dmgMeter.idleSecs, (v) => dmgMeter.setIdle(v), 1, 30, 0.5, SecsText),
                 OptNote(d, "After this long with no damage a fight is over: its numbers stay until the next one starts."),
                 OptSlider(d, "Opacity", (*) => dmgMeter.opacity, (v) => dmgMeter.setOpacity(v), 30, 100, 1),
-                OptNote(d, "On the meter: Dealt | Taken; ‹ › the last 5 fights and the whole game; a row clicked: its sources (attacks, each skill by name: ~ when it was a guess from the last cooldown) or targets; the pin: only the selected unit (a boss); the bubble: the top 3 into the chat."),
+                OptNote(d, "On the meter: Dealt | Taken; ‹ › the last 5 fights and the whole game; a row clicked: its sources (attacks, each skill by name, its timers' hits too: ~ when it was a guess from the last cooldown; on-hit and when-hit effects) or targets; the pin: only the selected unit (a boss); the bubble: the top 3 into the chat."),
                 OptDivider(d),
                 OptButtons(d, [["Show the meter", (*) => (dmgMeter.setHidden(false), RefreshWc3())], ["Show a sample", (*) => dmgMeter.setSample(true)], ["Hide the sample", (*) => dmgMeter.setSample(false)], ["Reset", (*) => (dmgMeter.reset(), dmgMeter.tick())]]),
                 OptNote(d, "Its ✕ hides it (it keeps counting); Show the meter brings it back. The sample is made-up players fighting: drag the meter where you want it, an edge or corner to size it.")) },

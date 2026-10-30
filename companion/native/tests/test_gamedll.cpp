@@ -215,7 +215,7 @@ int main() {
         { RVA_OPT_GET, 0x6c0b1, 8 }, { RVA_REGION_HIDE, 0x141cfa, 0 }, { RVA_REGION_SHOW, 0x141e9a, 0 }, { RVA_CONTROL_CLICK, 0x1407ea, 4 },
         { RVA_PROJECTION, 0x1555f1, 16 }, { RVA_MENU_ANIM, 0x33a8ae, 16 }, { RVA_PORTRAIT_UPDATE, 0x40d834, 0 }, { RVA_DAMAGE_UPDATE, 0x409056, 16 },
         { RVA_ARMOR_UPDATE, 0x4089ca, 12 }, { 0x4101c0, 0x41038f, 4 }, { 0x40ecb0, 0x40eeb1, 4 }, { 0x13b940, 0x13b9b1, 0 }, { 0x13c390, 0x13c429, 0 },
-        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 } };
+        { 0x3dcb80, 0x3dcbfb, 4 }, { 0x141d00, 0x141d81, 0 }, { 0x13d7f0, 0x13d85f, 4 }, { RVA_TIMER_EVENT, 0x2727fc, 4 } };
     bad = 0;
     for (const auto &q : RETS) {
         const BYTE *r = g_base + q.ret;
@@ -244,6 +244,20 @@ int main() {
           && SiteTarget(g_base + 0x24aeef) == g_base + 0x6d6f80 && !memcmp(g_base + 0x6d6f91, "\x8B\x45\x10\x89\x01", 5) && !memcmp(g_base + 0x6d6f83, "\x8B\x45\x08\x8B\x00\x89\x41\x10", 8)
           && !memcmp(g_base + 0x24af01, "\x8D\x4D\xFC\x51\x8B\xCE\xFF\x92\x20\x01\x00\x00", 12),
           "the damage feed: CUnit's +0x120 is +6CF530 (ret 0x10, *dealt written), the record's source [+0] and amount [+0x10]");
+    // the damage meter's causes: CTimerWar3's event entry (vtable +A8EFB4 slot +0xC, its only pointer) is +2727E0: 0x80204 (the
+    // expiry its agent timer posts, +27C19D) and 0x80272 both run +272860, which fires the timer's trigger [+0x40] (+22ABF0);
+    // GetSpellAbilityId reads the trigger context's slot 6 (+235FC0 -> +2BB780: [ctx + 16 * slot + 0x98] entries at [+0x9C], the
+    // last one), the context [state+0x1C] (+2135F0)
+    CHECK(Rtti(RVA_TIMER_VT, "CTimerWar3") && *(DWORD *)(g_base + RVA_TIMER_VT + TIMER_EVENT_SLOT) == (DWORD)(g_base + RVA_TIMER_EVENT)
+          && !memcmp(g_base + RVA_TIMER_EVENT, "\x55\x8B\xEC\x56\x8B\xF1", 6) && !memcmp(g_base + 0x2727ec, "\x2D\x04\x02\x08\x00", 5) && !memcmp(g_base + 0x2727f3, "\x83\xE8\x6E", 3)
+          && SiteTarget(g_base + 0x272802) == g_base + 0x272860 && SiteTarget(g_base + 0x27281b) == g_base + 0x272860
+          && !memcmp(g_base + 0x2728b0, "\x8B\x4E\x40", 3) && SiteTarget(g_base + 0x2728c5) == g_base + 0x22abf0
+          && !memcmp(g_base + 0x27c19d, "\x68\x04\x02\x08\x00", 5) && SiteTarget(g_base + 0x27c1a3) == g_base + 0x08a520,
+          "map timers: CTimerWar3's +0xC is +2727E0 (its expiry 0x80204 / 0x80272 -> +272860, the trigger at [+0x40]), posted by the start +27C160");
+    CHECK(SiteTarget(g_base + RVA_SPELL_ABILITY_ID) == g_base + 0x235fc0 && !memcmp(g_base + 0x235fcb, "\x6A\x06", 2) && SiteTarget(g_base + 0x235fcf) == g_base + 0x2bb780
+          && !memcmp(g_base + 0x2bb786, "\x03\xC0\x8B\x94\xC1\x98\x00\x00\x00", 9) && !memcmp(g_base + 0x2bb793, "\x8B\x84\xC1\x9C\x00\x00\x00\x8B\x44\x90\xFC", 11)
+          && !memcmp(g_base + 0x2135f0, "\x83\x79\x1C\x00", 4),
+          "the running trigger's event: slot 6 of the context [state+0x1C], its last entry (as GetSpellAbilityId reads it)");
     // layout 33's hit details: the ctor's 2nd argument -> [+0x14], 4th -> [+0xc], 5th -> [+4]; UnitDamageTarget passes
     // 1 << damage type (cl = its 7th), flags 0x100 (attack) | 1 (ranged), then writes the attack type (its 6th) at [+0x20]
     CHECK(!memcmp(g_base + 0x6d6f8b, "\x8B\x45\x0C\x89\x41\x14", 6) && !memcmp(g_base + 0x6d6f96, "\x8B\x45\x18\x89\x41\x04", 6) && !memcmp(g_base + 0x6d6f9c, "\x8B\x45\x14\x89\x41\x0C", 6)

@@ -52,6 +52,8 @@ ModuleCheckFeatures() => [
     ["Buff durations", "buff timers: new '[^']+'", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
     ["Damage: taken, sources", "damage: unit type '....' is named|damage: '....' \(a unit type or an ability\) is named", ""],
     ["Damage: spell names", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
+    ["Damage: spells' timers", "damage: a spell hit's ability: '....' \(the map timer", "damage: the map timers' (entry|vtable)"],
+    ["Damage: on-hit effects", "damage: a hit dealt while another's damage ran", ""],
     ["Map text lines (probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
     ["Damage meter names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
 ]

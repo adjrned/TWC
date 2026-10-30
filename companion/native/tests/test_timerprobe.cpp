@@ -32,6 +32,7 @@ static bool LogHas(const char *s) { return LogCount(s) > 0; }
 int main() {
     strcpy_s(g_logPath, "timerprobe.log"); DeleteFileA("timerprobe.log");
     static Shared sh; g_shared = &sh;
+    sh.itOn = 2;                                    // Buff timers on (the damage meter watches the timers too, learning none)
     img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     g_base = img; g_imageSize = 0x1000000;
     BYTE *f = img + RVA_MAP_TIMER_START;

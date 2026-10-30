@@ -8,14 +8,34 @@ static_assert(offsetof(Shared, dmOn) == offsetof(Shared, qkClicked) + 4, "layout
 
 static BYTE *img;
 static int gameCalls;
+static void Hit(int target, int source, float amount, DWORD flags = 0);
+static DWORD g_fakeSpell;
+// a hit the map's damage trigger deals inside the game's damage (its own trigger: no spell event then)
+static int g_nestTarget = -1, g_nestSource;
 // the game's damage: half the record's amount gets through, nothing to a unit flagged invulnerable ([+0x5c] 0x100)
 static void __fastcall FakeDamage(BYTE *target, int, float *dealt, BYTE *rec, DWORD, DWORD) {
     gameCalls++;
     *dealt = *(DWORD *)(target + 0x5c) & 0x100 ? 0 : *(float *)(rec + 0x10) / 2;
+    if (g_nestTarget >= 0) {
+        int t = g_nestTarget;
+        DWORD spell = g_fakeSpell;
+        g_nestTarget = -1, g_fakeSpell = 0;
+        Hit(t, g_nestSource, 10);
+        g_fakeSpell = spell;
+    }
+}
+// a map timer's expiry (CTimerWar3's +2727E0 after its prologue): its callback deals a hit, maybe starts a timer
+static void *g_startInCallback;
+static int g_expiries;
+static int __fastcall FakeTimerEvent(void *timer, int, void *ev) {
+    g_expiries++;
+    Hit(2, 0, 10);
+    if (g_startInCallback)
+        DamageTimerStarted(g_startInCallback, 2, 0, GetTickCount());
+    return 1;
 }
 static void *__fastcall FakeGetUi(int, int) { return (void *)1; }
 // layout 34: GetSpellAbilityId (+235000) gives this; the handle lookup gives handles[id1]
-static DWORD g_fakeSpell;
 static DWORD __cdecl FakeSpellId() { return g_fakeSpell; }
 static BYTE handles[4][0x100];
 static void *__fastcall FakeLookup(DWORD a, DWORD) { return a < 4 ? handles[a] : nullptr; }
@@ -26,9 +46,9 @@ static void FloatGetter(BYTE *p, float f) {
 }
 static void Jmp(BYTE *at, const void *to) { at[-1] = 0xCC, at[0] = 0xE9, *(LONG *)(at + 1) = (LONG)((BYTE *)to - (at + 5)); }
 static BYTE units[4][0x200];
-static void Hit(int target, int source, float amount) {
+static void Hit(int target, int source, float amount, DWORD flags) {
     BYTE rec[0x24] = {};
-    *(BYTE **)rec = units[source], *(float *)(rec + 0x10) = amount;
+    *(BYTE **)rec = units[source], *(float *)(rec + 0x10) = amount, *(DWORD *)(rec + REC_FLAGS) = flags;
     float dealt = -1;
     BYTE *t = units[target];
     ((UnitDamageFn)((*(DWORD **)t)[UNIT_DAMAGE_SLOT / 4]))(t, 0, &dealt, rec, 0, 0);
@@ -53,6 +73,15 @@ int main() {
     for (int i = 0; i < 4; i++)
         *(DWORD *)units[i] = (DWORD)vt, *(int *)(units[i] + UNIT_OWNER) = owners[i];
     *(DWORD *)(units[3] + 0x5c) = 0x100;
+    // the map timers' class: CTimerWar3's vtable (data) with its event entry +2727E0 (push ebp; mov ebp, esp; push esi;
+    // mov esi, ecx as 1.28f starts it, then pop esi / ebp and on to the fake)
+    BYTE *te = img + RVA_TIMER_EVENT;
+    static const BYTE teBody[] = { 0x55, 0x8B, 0xEC, 0x56, 0x8B, 0xF1, 0x5E, 0x5D, 0xE9 };
+    te[-1] = 0xCC, memcpy(te, teBody, sizeof(teBody)), *(LONG *)(te + 9) = (LONG)((BYTE *)FakeTimerEvent - (te + 13));
+    DWORD *tvt = (DWORD *)(img + RVA_TIMER_VT);
+    for (int i = 0; i < 0x18; i++) tvt[i] = (DWORD)(img + 0x100000);
+    tvt[TIMER_EVENT_SLOT / 4] = (DWORD)te;
+    VirtualProtect(img + (RVA_TIMER_VT & ~0xfff), 0x2000, PAGE_READWRITE, &old);
     // players: the game state's list, CPlayer's slot byte +0x30 and its name string +0x24 (text [[+8]+0x1c])
     static BYTE state[0x100], pl[3][0x300], str[3][0x20];
     const char *names[3] = { "|cff540081Ruzai|r", "", "||Kaelith|n|CFF1CE6B9x" };
@@ -70,6 +99,7 @@ int main() {
     CHECK(gameCalls == 1 && sh.dmSeq == 0, "off: the game's damage, nothing counted");
     sh.dmOn = 1; FollowDamage(10000);
     CHECK(g_dmHooked && sh.dmState == 1 && vt[UNIT_DAMAGE_SLOT / 4] == (DWORD)UnitDamage, "on: CUnit's vtable +0x120 is ours");
+    CHECK(g_dmTmHooked && tvt[TIMER_EVENT_SLOT / 4] == (DWORD)TimerEvent, "and CTimerWar3's event entry +0xC (the map timers followed)");
     CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[5], "|Kaelith x") && !sh.dmName[3][0] && !sh.dmName[0][0], "names as GetPlayerName reads them, the codes out: slot 1 '%s', 5 '%s', empty ones ''", sh.dmName[1], sh.dmName[5]);
     CHECK(sh.dmColour[1] == 3 && sh.dmColour[5] == 5 && sh.dmColour[0] == -1 && sh.dmLocal == 5, "colours as GetPlayerColor gives them (slot 1: %d, 5: %d, none: %d); you: slot %d", sh.dmColour[1], sh.dmColour[5], sh.dmColour[0], sh.dmLocal);
     // the map renames player 1 (its -convert: a save's owner's name, SetPlayerName): the meter follows the game
@@ -133,6 +163,41 @@ int main() {
     bool noCtx = sh.dmRingAbility[(r1 + 4) & (DM_RING - 1)] == 0;
     g_fakeSpell = 0, ((DWORD *)(units[0] + UNIT_ABILITIES))[0] = ((DWORD *)(units[0] + UNIT_ABILITIES))[1] = 0xFFFFFFFF;
     CHECK(byEvent && byCd && cd2 && none && noCtx, "a spell hit's ability: the spell event's ('A0FB'), else the cooldown started last ('A002' 1 s ago over 'A001' 5 s), a finished one skipped, none: 0; no trigger context: not asked");
+    // a hit dealt inside another's damage (the map's damage triggers run there): units 0 / 1 player 2's, 2 player 5's
+    *(DWORD *)(state + STATE_TRIGGER_CTX) = 1;
+    auto at = [&](LONG k) -> DmHit & { return sh.dmRing[k & (DM_RING - 1)]; };
+    auto abAt = [&](LONG k) { return sh.dmRingAbility[k & (DM_RING - 1)]; };
+    LONG r3 = sh.dmRingSeq;
+    g_nestTarget = 2, g_nestSource = 1, Hit(2, 0, 100, 0x100);           // your attack, your unit's trigger hit inside it
+    bool onAttack = sh.dmRingSeq == r3 + 2 && at(r3).how == DMA_ONHIT && !abAt(r3) && !(at(r3).flags & DMH_ATTACK) && (at(r3 + 1).flags & DMH_ATTACK);
+    g_fakeSpell = 'A0FB', g_nestTarget = 2, g_nestSource = 1, Hit(2, 0, 100);      // your spell's hit, a trigger hit inside it
+    g_fakeSpell = 0;
+    bool onSpell = at(r3 + 2).how == DMA_ONHIT && abAt(r3 + 2) == 'A0FB' && at(r3 + 3).how == DMA_EVENT && abAt(r3 + 3) == 'A0FB';
+    g_nestTarget = 2, g_nestSource = 1, Hit(0, 2, 100, 0x100);           // player 5's attack on your unit, your trigger hits back
+    bool whenHit = at(r3 + 4).how == DMA_WHENHIT && !abAt(r3 + 4) && at(r3 + 4).from == 2 && g_dmDepth == 0;
+    CHECK(onAttack && onSpell && whenHit, "a hit inside your attack: on hit (no ability); inside your spell's hit: that spell ('A0FB'); inside a hit on you: a reaction");
+    // a map timer started in a spell event: its callbacks' hits are that spell's, and so are a timer's it starts there
+    static BYTE tmr[2][0x60], ev[0x10];
+    g_fakeSpell = 'A0FB', DamageTimerStarted(tmr[0], 3, 1, GetTickCount()), g_fakeSpell = 0;
+    LONG r4 = sh.dmRingSeq;
+    g_startInCallback = tmr[1];
+    ((AgentEventFn)tvt[TIMER_EVENT_SLOT / 4])(tmr[0], 0, ev);
+    g_startInCallback = nullptr;
+    bool byTimer = g_expiries == 1 && at(r4).how == DMA_TIMER && abAt(r4) == 'A0FB' && !g_dmRunTimer;
+    ((AgentEventFn)tvt[TIMER_EVENT_SLOT / 4])(tmr[1], 0, ev);
+    bool chained = at(r4 + 1).how == DMA_TIMER && abAt(r4 + 1) == 'A0FB';
+    g_startInCallback = tmr[0];                                         // restarted from its own callback: it keeps its spell
+    ((AgentEventFn)tvt[TIMER_EVENT_SLOT / 4])(tmr[0], 0, ev);
+    g_startInCallback = nullptr;
+    ((AgentEventFn)tvt[TIMER_EVENT_SLOT / 4])(tmr[0], 0, ev);
+    bool kept = abAt(r4 + 3) == 'A0FB';
+    DamageTimerStarted(tmr[0], 0.03f, 0, GetTickCount());              // started again with no spell (a recycled timer): forgotten
+    ((AgentEventFn)tvt[TIMER_EVENT_SLOT / 4])(tmr[0], 0, ev);
+    bool forgot = !abAt(r4 + 4) && at(r4 + 4).how == DMA_NONE;
+    CHECK(byTimer && chained && kept && forgot, "a timer started in a spell event: its callback's hits are that spell's (DMA_TIMER), a timer started there too; restarted in its own callback: kept; started with none: forgotten");
+    DamageTimerStarted(tmr[1], 1, 0, GetTickCount());
+    CHECK(!DmTimerOf(tmr[1], false)->known, "a timer started outside any spell, hit or timer: no cause");
+    *(DWORD *)(state + STATE_TRIGGER_CTX) = 0;
     *(int *)(units[2] + UNIT_OWNER) = 12; Hit(0, 2, 30);
     h = sh.dmRing[sh.dmRingSeq - 1 & (DM_RING - 1)];
     LONG r2 = sh.dmRingSeq;

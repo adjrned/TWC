@@ -118,7 +118,7 @@ class DamageMeter {
     static Entry(m, k, h := 0) {
         if !m.Has(k)
             m[k] := { dmg: 0, hits: 0, max: 0, attack: h ? h.attack : 0, dmgType: h ? h.dmgType : 255, src: h ? h.src : "",
-                ability: h && h.HasOwnProp("ability") ? h.ability : "", guessed: 0 }
+                ability: h && h.HasOwnProp("ability") ? h.ability : "", how: h && h.HasOwnProp("how") ? h.how : 0, guessed: 0 }
         return m[k]
     }
     static PlayerOf(m, p) {
@@ -136,9 +136,11 @@ class DamageMeter {
             p := DamageMeter.Count(DamageMeter.PlayerOf(f.%side[1]%, side[2]), h.amount)
             if !detailed
                 continue
-            ; a spell with its ability (layout 34): one row per ability, whoever's unit dealt it
+            ; a spell with its ability (layout 34): one row per ability, whoever's unit dealt it; with none, an on-hit
+            ; effect (how 4: dealt inside your attack) and a when-hit one (5: inside a hit on you) have their own rows
             ab := !h.attack && h.HasOwnProp("ability") && h.ability != "" ? h.ability : ""
-            e := DamageMeter.Count(DamageMeter.Entry(p.by, ab != "" ? "b" ab : (h.attack ? "a" : "s" h.dmgType) "|" h.src, h), h.amount)
+            how := !h.attack && h.HasOwnProp("how") ? h.how : 0
+            e := DamageMeter.Count(DamageMeter.Entry(p.by, ab != "" ? "b" ab : (h.attack ? "a" : how = 4 ? "o" : how = 5 ? "w" : "s" h.dmgType) "|" h.src, h), h.amount)
             if ab != "" && h.how = 2
                 e.guessed += h.amount                   ; credited by the source's last cooldown, not the spell event
             if h.tgt != ""
@@ -230,11 +232,13 @@ class DamageMeter {
     }
     typeName(code) => code = "" ? "?" : this.typeNames.Has(code) && this.typeNames[code] != "" ? this.typeNames[code] : code
     ; "Attack · Paladin", "Magic spell · Paladin", "Spell · Dummy"; a spell's ability: "Chain Lightning",
-    ; "~Chain Lightning" when most of it was credited by the last cooldown (a guess)
+    ; "~Chain Lightning" when most of it was credited by the last cooldown (a guess); "On-hit effects · Paladin"
+    ; (dealt by the map inside your attacks), "When-hit effects · Paladin" (inside hits on you: thorns)
     sourceName(e) {
         if e.ability != ""
             return (e.guessed * 2 > e.dmg ? "~" : "") this.typeName(e.ability)
-        kind := e.attack ? "Attack" : DamageMeter.DMG_TYPES.Has(e.dmgType) ? DamageMeter.DMG_TYPES[e.dmgType] " spell" : "Spell"
+        kind := e.attack ? "Attack" : e.how = 4 ? "On-hit effects" : e.how = 5 ? "When-hit effects"
+            : DamageMeter.DMG_TYPES.Has(e.dmgType) ? DamageMeter.DMG_TYPES[e.dmgType] " spell" : "Spell"
         return kind (e.src != "" ? " · " this.typeName(e.src) : "")
     }
     playerName(p) => this.names.Has(p) ? this.names[p] : "Player " (p + 1)

@@ -348,7 +348,8 @@ class GameModuleEngine {
     ; the hits one by one (layout 33): those after `since` (the ring's count, -1 = only where it is now)
     ; -> { seq, lost, hits: [{ amount, src, tgt, target, from, to, attack, ranged, srcHero, tgtHero, dmgType, atkType, ability, how }] }
     ; (src / tgt: unit type rawcodes 'Hpal'; dmgType 255 none; layout 34: ability a spell hit's rawcode, "" none, how 1 the
-    ; spell event it was dealt in, 2 the source's last cooldown); 0: no module, or an older one
+    ; spell event it was dealt in, 2 the source's last cooldown, 3 the map timer it was dealt in (started in that spell),
+    ; 4 inside your own hit's damage (an on-hit effect: "" after an attack), 5 inside a hit on your unit); 0: no module, or an older one
     static RING := 2048, HIT := 24
     damageHits(since) {
         if !(v := this.live()) || (lay := NumGet(v, Shm.layout, "uint")) < 33
@@ -367,7 +368,7 @@ class GameModuleEngine {
                 target: NumGet(p, 12, "uint"), from: NumGet(p, 16, "uchar"), to: NumGet(p, 17, "uchar"),
                 attack: f & 1, ranged: f & 2 ? 1 : 0, srcHero: f & 4 ? 1 : 0, tgtHero: f & 8 ? 1 : 0,
                 dmgType: NumGet(p, 19, "uchar"), atkType: NumGet(p, 20, "uchar"),
-                ability: GameModuleEngine.Rawcode(ab), how: ab ? NumGet(p, 22, "uchar") : 0 })
+                ability: GameModuleEngine.Rawcode(ab), how: lay >= 34 ? NumGet(p, 22, "uchar") : 0 })
         }
         return out
     }
