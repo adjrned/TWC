@@ -141,6 +141,8 @@ class MacrosEngine {
                 continue                            ; another kind, no extension: kept, off
             fn := m.kind != "chat" ? MacrosEngine.ext.hotkeyFn(m)
                 : this.sendLines.Bind(this, StrSplit(StrReplace(m.text, "`r", ""), "`n"))
+            if !fn
+                continue                            ; its extension keeps the key for something else
             this.registered.Set(m.hotkey, RegisterHotkey(m.hotkey, fn, WarcraftIII, true))
         }
     }

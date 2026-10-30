@@ -451,10 +451,12 @@ class GameModuleEngine {
         return true
     }
     ; the dash combo (layout 38): on, its dash ability and orb unit type (rawcodes 'A107' / 'e05P'), how far south it
-    ; ends; false: no module, or an older one
-    dashCombo(on, dash, orb, south) {
+    ; ends, how close to an orb before the next (layout 39); false: no module, or an older one
+    dashCombo(on, dash, orb, south, reach := 190) {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 38
             return false
+        if NumGet(v, Shm.layout, "uint") >= 39
+            NumPut("float", reach, v, Shm.ocReach)
         NumPut("uint", GameModuleEngine.Id(dash), v, Shm.ocDash), NumPut("uint", GameModuleEngine.Id(orb), v, Shm.ocOrb)
         NumPut("float", south, v, Shm.ocSouth), NumPut("uint", on ? 1 : 0, v, Shm.ocOn)
         return true

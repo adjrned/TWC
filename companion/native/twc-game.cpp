@@ -307,6 +307,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     float ocSouth;          // companion: how far south of the start it ends
     DWORD ocState;          // module: 0 idle, 1 casting, 2 collecting, 3 refused (see the log)
     DWORD ocRuns, ocTaken;  // module: runs done; orbs taken in the last one
+    // layout 39
+    float ocReach;          // companion: on to the next orb once the hero is this close to one (its pickup ~200)
 };
 #pragma pack(pop)
 
@@ -8499,7 +8501,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 38;
+        g_shared->layout = 39;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -8542,9 +8544,12 @@ static const DWORD OC_SITES[4] = { 0x3f2b0e, 0x3f6535, 0x3f7e7e, 0x3f8766 };
 typedef void(__stdcall *PointOrderFn)(DWORD, void *, float, float, DWORD, DWORD);
 static DWORD g_ocOrder = ORDER_SMART, g_ocFlagA, g_ocFlagB;    // as your last right click on the ground had them
 static bool g_ocSeen;
-static struct OcRun { int state; DWORD at, castAt, orderAt; float sx, sy, tx, ty; BYTE *target; bool rb, ended; } g_oc;
+static struct OcRun {
+    int state; DWORD at, castAt, orderAt; float sx, sy, tx, ty; BYTE *target; bool rb, ended;
+    BYTE *path[8]; float px[8], py[8]; int n, i; DWORD takenAt[8];     // the orbs in the order planned, the one gone for
+} g_oc;
 static void __stdcall PointOrderSpy(DWORD order, void *target, float x, float y, DWORD a, DWORD b) {
-    if (!target && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // a plain point order: yours, on the ground
+    if (!target && order == ORDER_SMART && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // your plain right click on the ground (not an ability's point: 11:16)
         static int logs;
         if (logs < 3 || !g_ocSeen)
             logs++, Log("dash combo: your point order %08lX at (%.0f, %.0f), flags %08lX / %08lX", order, x, y, a, b);
@@ -8652,6 +8657,64 @@ static void OrbComboStart() {
     Log("dash combo: '%s' pressed with %d orbs near (from (%.0f, %.0f); order %08lX, flags %08lX / %08lX%s)", IdText(g_shared->ocDash).s, n, g_oc.sx, g_oc.sy,
         g_ocOrder, g_ocFlagA, g_ocFlagB, g_ocSeen ? ", as your right click's" : ": no right click of yours seen yet, the plain ones");
 }
+// is u still in the game's unit list (only live units are)
+static bool OrbAlive(BYTE *u) {
+    BYTE *list = g_base + RVA_UNIT_LIST;
+    DWORD c = *(DWORD *)(list + 4);
+    BYTE **units = *(BYTE ***)(list + 8);
+    for (DWORD i = 0; units && i < c && i < 8192; i++)
+        if (units[i] == u)
+            return true;
+    return false;
+}
+// the orbs near the hero, in the order that makes the shortest path through them all from (x, y)
+// (every order tried: 8 at most, 40320); each leg ends ocReach short of its orb (the dash only has to
+// come that close), so the path cuts its corners
+static void OrbPlan(float x, float y) {
+    BYTE *state;
+    int local = LocalPlayer(&state), n = 0;
+    BYTE *list = g_base + RVA_UNIT_LIST, *u;
+    DWORD c = *(DWORD *)(list + 4);
+    BYTE **units = *(BYTE ***)(list + 8);
+    float ox[8], oy[8];
+    BYTE *orb[8];
+    for (DWORD i = 0; units && i < c && i < 8192 && n < 8; i++)
+        if (IsUnit(u = units[i]) && *(DWORD *)(u + 0x30) == g_shared->ocOrb && *(int *)(u + UNIT_OWNER) == local && UnitXY(u, &ox[n], &oy[n])
+            && (ox[n] - x) * (ox[n] - x) + (oy[n] - y) * (oy[n] - y) <= 1500.f * 1500.f)
+            orb[n++] = u;
+    int perm[8], best[8];
+    for (int i = 0; i < n; i++)
+        perm[i] = best[i] = i;
+    float bestLen = 1e30f, reach = g_shared->ocReach > 0 ? g_shared->ocReach : 0;
+    auto len = [&]() {
+        float L = 0, cx = x, cy = y;
+        for (int k = 0; k < n; k++) {
+            float dx = ox[perm[k]] - cx, dy = oy[perm[k]] - cy, d = sqrtf(dx * dx + dy * dy);
+            L += d > reach ? d - reach : 0;
+            if (d > reach)                          // where the hero is when it's in reach of this one
+                cx += dx * (d - reach) / d, cy += dy * (d - reach) / d;
+        }
+        return L;
+    };
+    do {
+        float L = len();
+        if (L < bestLen)
+            bestLen = L, memcpy(best, perm, sizeof(perm));
+    } while (std::next_permutation(perm, perm + n));
+    for (int k = 0; k < n; k++)
+        g_oc.path[k] = orb[best[k]], g_oc.px[k] = ox[best[k]], g_oc.py[k] = oy[best[k]], g_oc.takenAt[k] = 0;
+    g_oc.n = n, g_oc.i = 0;
+    Log("dash combo: %d orbs, the path planned %.0f long (in reach %.0f of each)", n, bestLen, reach);
+}
+// the next orb still to take from g_oc.i on (gone ones skipped), its order out; false: none left
+static bool OrbNext() {
+    while (g_oc.i < g_oc.n && !OrbAlive(g_oc.path[g_oc.i]))
+        g_oc.takenAt[g_oc.i++] = GetTickCount() - g_oc.castAt, g_shared->ocTaken++;
+    if (g_oc.i >= g_oc.n)
+        return false;
+    OrbOrder(g_oc.px[g_oc.i], g_oc.py[g_oc.i]);
+    return true;
+}
 // on the game thread, every 10 ms while a run is on
 static void OrbComboTick() {
     if (!g_oc.state)
@@ -8662,8 +8725,7 @@ static void OrbComboTick() {
         return OrbEnd("stopped by your right click", false);
     g_oc.rb = rb;
     BYTE *hero = FindMyHero();
-    float hx, hy, ox, oy;
-    int n = 0;
+    float hx, hy;
     if (!hero || !UnitXY(hero, &hx, &hy))
         return OrbEnd("your hero is gone", false);
     if (g_oc.state == 1) {
@@ -8673,27 +8735,30 @@ static void OrbComboTick() {
             return;
         }
         g_oc.state = 2, g_shared->ocState = 2;
-    }
-    BYTE *next = OrbNearest(hx, hy, &ox, &oy, &n);
-    if (g_oc.target && g_oc.target != next) {
-        bool still = false;                  // the one we went for: still there?
-        BYTE *list = g_base + RVA_UNIT_LIST;
-        DWORD c = *(DWORD *)(list + 4);
-        BYTE **units = *(BYTE ***)(list + 8);
-        for (DWORD i = 0; units && i < c && i < 8192 && !still; i++)
-            still = units[i] == g_oc.target;
-        if (!still)
-            g_shared->ocTaken++, g_oc.target = nullptr;
+        OrbPlan(hx, hy);
+        if (!OrbNext())
+            return OrbEnd("no orbs left", true);
+        return;
     }
     if (now - g_oc.at > 4000)
         return OrbEnd("4 s up", true);
-    if (!next)
-        return OrbEnd("every orb taken", true);
-    if (!g_oc.target) {
-        g_oc.target = next;
-        OrbOrder(ox, oy);
+    // in reach of the one gone for (or it's gone): on to the next at once
+    float dx = g_oc.px[g_oc.i] - hx, dy = g_oc.py[g_oc.i] - hy;
+    bool reached = dx * dx + dy * dy <= g_shared->ocReach * g_shared->ocReach;
+    if (reached || !OrbAlive(g_oc.path[g_oc.i])) {
+        if (reached)
+            g_oc.takenAt[g_oc.i++] = now - g_oc.castAt, g_shared->ocTaken++;
+        if (!OrbNext()) {
+            char b[96];
+            int o = 0;
+            for (int k = 0; k < g_oc.n; k++)
+                o += sprintf_s(b + o, sizeof(b) - o, " %lu", g_oc.takenAt[k]);
+            Log("dash combo: each orb reached (ms after the dash):%s", b);
+            return OrbEnd("every orb reached", true);
+        }
     }
 }
+
 // on the game thread: the watched calls follow the switch; a run when asked
 static void OrbComboPass() {
     bool on = g_shared->ocOn && !g_ocBad;

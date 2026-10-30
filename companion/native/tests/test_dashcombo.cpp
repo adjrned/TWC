@@ -5,7 +5,7 @@
 // not run without your hero selected or orbs near; off: the calls are the game's again.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, ocOn) == offsetof(Shared, fxState) + 4, "layout 38");
+static_assert(offsetof(Shared, ocReach) == offsetof(Shared, ocTaken) + 4, "layout 39");
 
 static BYTE *img;
 static BYTE *objs[16];
@@ -84,7 +84,7 @@ int main() {
     *(int *)(card + 0x124) = 1, *(int *)(card + 0x128) = 1, *(BYTE **)(card + 0x154) = rowsArr;
     *(BYTE **)(ui + 0x3c8) = card;
     g_getUi = [](int, int) -> void * { return ui; };
-    sh.ocDash = 'A107', sh.ocOrb = 'e05P', sh.ocSouth = 150;
+    sh.ocDash = 'A107', sh.ocOrb = 'e05P', sh.ocSouth = 150, sh.ocReach = 190;
     List({ hero, units[1], units[2], units[3], units[4] });
 
     sh.ocOn = 1; OrbComboPass(); BossCastPass();
@@ -92,27 +92,34 @@ int main() {
     for (DWORD rva : OC_SITES)
         ours = ours && SiteTarget(img + rva) == (BYTE *)PointOrderSpy;
     CHECK(ours, "on: the UI's 4 calls to its point order are watched (and the SPELL_EFFECT calls, for the dash)");
-    // your own right click on the ground: its order and flags noted, then the game's own
+    // your own right click on the ground: its order and flags noted, then the game's own; an ability's point order (a
+    // quickcast's Lightning Bolt, 11:16) passed on, not taken
+    ((PointOrderFn)SiteTarget(img + OC_SITES[1]))(0xd0278, nullptr, 1, 2, 0x2, 0x4);
+    bool notAbility = !g_ocSeen;
     ((PointOrderFn)SiteTarget(img + OC_SITES[1]))(0xd0003, nullptr, 10, 20, 0x5, 0x40);
-    CHECK(nOrders == 1 && orders[0].a == 0x5 && orders[0].b == 0x40 && g_ocSeen && g_ocFlagA == 0x5 && g_ocFlagB == 0x40 && LogHas("your point order 000D0003 at (10, 20), flags 00000005 / 00000040"),
-          "your right click: passed on, its order and flags noted (0x5 / 0x40)");
-    // a run
+    CHECK(nOrders == 2 && notAbility && orders[1].a == 0x5 && g_ocSeen && g_ocFlagA == 0x5 && g_ocFlagB == 0x40 && LogHas("your point order 000D0003 at (10, 20), flags 00000005 / 00000040"),
+          "your right click: passed on, its order and flags noted (0x5 / 0x40); an ability's point order passed on, not taken");
+    // a run: orbs at (400, 0), (300, 300), (-400, 100) from the hero at (0, 0)
     sh.ocGo++; OrbComboPass();
     CHECK(pressed == 1 && g_oc.state == 1 && g_oc.castAt && LogHas("'A107' pressed with 3 orbs near"), "a run: the dash's button pressed (3 orbs near: someone else's not counted), its cast seen");
     OrbComboTick();
     Order o = orders[(nOrders - 1) & 15];
-    CHECK(nOrders == 2 && g_oc.state == 2 && o.order == 0xd0003 && !o.target && o.x == 400 && o.y == 0 && o.a == 0x5 && o.b == 0x40,
-          "then a move order to the nearest orb (400, 0), as your right click's");
+    CHECK(nOrders == 3 && g_oc.state == 2 && g_oc.n == 3 && g_oc.path[0] == units[3] && g_oc.path[1] == units[1] && g_oc.path[2] == units[2]
+          && o.order == 0xd0003 && !o.target && o.x == -400 && o.y == 100 && o.a == 0x5 && o.b == 0x40 && LogHas("3 orbs, the path planned 757 long"),
+          "the path planned through all 3: the shortest ((-400, 100), (400, 0), (300, 300): 757, nearest first would be 789), the first order out as your right click's");
     OrbComboTick();
-    CHECK(nOrders == 2, "the same orb still there: no new order");
-    At(hero, 350, 0), List({ hero, units[2], units[3], units[4] }); OrbComboTick();
+    CHECK(nOrders == 3, "not in reach yet: no new order");
+    At(hero, -260, 90); OrbComboTick();
     o = orders[(nOrders - 1) & 15];
-    CHECK(nOrders == 3 && sh.ocTaken == 1 && o.x == 300 && o.y == 300, "the orb gone (taken): at once to the next nearest from the hero (300, 300)");
-    At(hero, 300, 250), List({ hero, units[3], units[4] }); OrbComboTick();
-    At(hero, -350, 100), List({ hero, units[4] }); OrbComboTick();
+    CHECK(nOrders == 4 && sh.ocTaken == 1 && o.x == 400 && o.y == 0, "in reach of the first (140 from it, the orb still there): on to the next at once");
+    List({ hero, units[2], units[3], units[4] }); OrbComboTick();      // the second taken by the map before it came in reach
     o = orders[(nOrders - 1) & 15];
-    CHECK(sh.ocTaken == 3 && !g_oc.state && sh.ocState == 0 && sh.ocRuns == 1 && o.x == 0 && o.y == -150 && LogHas("3 orbs taken (every orb taken); then to the end point"),
-          "every orb taken: to 150 south of the start (0, -150), the run over");
+    CHECK(nOrders == 5 && sh.ocTaken == 2 && o.x == 300 && o.y == 300, "one gone before it was reached: on to the next");
+    At(hero, 250, 250); OrbComboTick();
+    o = orders[(nOrders - 1) & 15];
+    CHECK(sh.ocTaken == 3 && !g_oc.state && sh.ocState == 0 && sh.ocRuns == 1 && o.x == 0 && o.y == -150 && LogHas("each orb reached (ms after the dash):") && LogHas("(every orb reached); then to the end point"),
+          "every orb reached: to 150 south of the start (0, -150), the run over, each orb's time logged");
+    List({ hero, units[4] });                   // (only someone else's orb left)
     // not run: your hero not the one selected; no orbs of yours near
     *(BYTE **)(sel + SEL_ACTIVE) = units[1]; sh.ocGo++; OrbComboPass();
     bool notSel = !g_oc.state && LogHas("not run: your hero isn't the unit selected");
