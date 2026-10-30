@@ -549,8 +549,10 @@ class DamageMeter {
             UISetFont(row.share, "s8")
             row.bar := g.AddText("x18 y" (y + 18) " w1 h2 +Background" C.card)
             row.color := ""
+            ri := A_Index                   ; (the for loop below has its own A_Index: every row's name opened row 1)
             for ctl in [row.name, row.dmg, row.dps, row.share]
-                ctl.OnEvent("Click", ((i, *) => this.openDetail(i)).Bind(A_Index))
+                ctl.OnEvent("Click", ((i, *) => this.openDetail(i)).Bind(ri))
+            row.index := ri
             this.rows.Push(row)
         }
         this.empty := g.AddText("x18 y" (DamageMeter.HEAD + 2) " w" (w - 36) " h16 +Background" C.card " c" C.dim, "No damage yet")

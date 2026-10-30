@@ -98,6 +98,16 @@ TwcMeterRun() {
         shown += r.name.Visible
     TwcCheck(vis && shown >= 5 && WinGetExStyle(hw) & 0x08000000 && winScale.Has(hw) && winScale[hw].kind = "meter",
         "the sample: the window shows (never takes the focus, scalable as 'meter'), " shown " rows")
+    ; a click on the 3rd row's name opens that player's breakdown (it opened row 1's: the binding took the inner loop's index)
+    m.paint(), want := m.shown.Length >= 3 ? m.shown[3].player : -9
+    PostMessage(0x201, 1, 0x00050005, m.rows[3].name), PostMessage(0x202, 0, 0x00050005, m.rows[3].name)     ; a click, no focus taken
+    Sleep(300)
+    got3 := m.detail
+    m.closeDetail()
+    PostMessage(0x201, 1, 0x00050005, m.rows[2].dmg), PostMessage(0x202, 0, 0x00050005, m.rows[2].dmg)
+    Sleep(300)
+    TwcCheck(want >= 0 && got3 = want && m.detail >= 0 && m.detail != want, "a row clicked: its own player's breakdown (row 3 -> player " got3 ", wanted " want "; row 2's damage -> player " m.detail ")")
+    m.closeDetail()
     WinGetPos(, , , &h1, m.gui)
     m.setRows(10), m.tick()
     WinGetPos(, , , &h2, m.gui)
