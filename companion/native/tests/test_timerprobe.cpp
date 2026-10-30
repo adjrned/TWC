@@ -14,16 +14,20 @@ static void Start(float secs, int periodic) {
     float t = secs;
     ((TimerStartFn)(g_base + RVA_MAP_TIMER_START))((void *)0x1234, 0, &t, periodic, nullptr);
 }
-static bool LogHas(const char *s) {
+static int LogCount(const char *s) {
     FILE *f;
     if (fopen_s(&f, "timerprobe.log", "rb"))
-        return false;
+        return 0;
     static char buf[1 << 16];
     size_t n = fread(buf, 1, sizeof(buf) - 1, f);
     fclose(f);
     buf[n] = 0;
-    return strstr(buf, s) != nullptr;
+    int k = 0;
+    for (const char *q = buf; (q = strstr(q, s)); q++)
+        k++;
+    return k;
 }
+static bool LogHas(const char *s) { return LogCount(s) > 0; }
 
 int main() {
     strcpy_s(g_logPath, "timerprobe.log"); DeleteFileA("timerprobe.log");
@@ -43,13 +47,9 @@ int main() {
     Start(0.03f, 1), Start(30, 0);
     BuffAppeared(unit, 'B04Q', true, 4, 4, now);
     CHECK(starts == 3 && lastTimeout == 30 && g_tsN == 2, "each start noted and passed on to the game's own (%d starts, last %.0f s)", starts, lastTimeout);
-    BuffAppearedLog(now + 600);
-    CHECK(!LogHas("'B04Q' aura appeared"), "not logged before the 1 s after it is in");
-    BuffAppearedLog(now + 1200);
-    CHECK(LogHas("'B04Q' aura appeared (4.0 s of 4.0)") && LogHas("30.00 s one-shot") && !LogHas("0.03 s periodic") && LogHas("1 shorter left out"),
-          "then logged with the timers of 0.5 s or more started around it (30 s one-shot; the 0.03 s one left out)");
-    BuffAppeared(unit, 'B04Q', true, 3.5f, 4, now + 800), BuffAppearedLog(now + 2000);
-    CHECK(!g_bsNew[0].id, "the same buff seen again soon after: not a new one");
+    CHECK(LogHas("buff timers: new 'B04Q' aura (4.0 s of 4.0)") && !LogHas("one-shot"), "a short line for the new buff, no timer list");
+    BuffAppeared(unit, 'B04Q', true, 3.5f, 4, now + 800);
+    CHECK(LogCount("new 'B04Q'") == 1, "the same buff seen again soon after: not a new one");
     // the map's timer of a buff: a 10 s one-shot started with it, the 30 s one a cooldown on the card, a 0.5 s one too short
     static BYTE timer10[0x40], timer30[0x40];
     static BYTE fakeTimerVt[0x40];

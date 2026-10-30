@@ -201,7 +201,7 @@ SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
 SetTimer(() => gameModule.check(), 1000)    ; the 1.28 game module, when it's on (soon after the game starts: the Battle.net login waits on it)
-SetTimer(SelfUpdateCheck, -4000)          ; source copies follow the beta branch:
+SetTimer(StartUpdateCheck, -4000)         ; source copies follow the beta branch:
 SetTimer(SelfUpdateCheck, 60 * 60000)     ; on start, then once an hour (the user's pick, 2026-10-29; was every 5 minutes)
 
 ; ============================================================================
@@ -2664,6 +2664,17 @@ RefreshUpdateLabel() {
         . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
 }
 UpdateButton() => SelfUpdateCheck(true)
+; on start: when the last check was under an hour ago (the user's ask, 2026-10-30), not now but once that hour is up
+StartUpdateCheck() {
+    global selfUpdate
+    m := 60
+    try m := DateDiff(A_Now, Ini(selfUpdate.section, "lastCheck", ""), "Minutes")
+    if m >= 0 && m < 60 {
+        DebugLog("update: the start's check skipped (the last was " m " min ago), the next in " (60 - m) " min")
+        return SetTimer(() => SelfUpdateCheck(), -(60 - m) * 60000)   ; its own timer: SelfUpdateCheck's is the hourly one
+    }
+    SelfUpdateCheck()
+}
 ; The installed exe follows the beta-latest release (rebuilt by GitHub on every
 ; push to beta): a build from another commit is downloaded and installed with
 ; its Setup (silently: it keeps the settings and starts the new version). In the

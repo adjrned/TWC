@@ -49,7 +49,7 @@ ModuleCheckFeatures() => [
     ["Bigger buff bar", "buff bar size: x[0-9.]+ \(\d+ frames resized", "buff bar size: .*(refused|faulted)"],
     ["Damage meter feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
     ["Hide the UI, again (1.5 s pass)", "hide UI: the .* (hidden again|anchored again)", ""],
-    ["Buff durations (probe)", "buff timers: '[^']+' .* appeared", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
+    ["Buff durations", "buff timers: new '[^']+'", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
     ["Damage: taken, sources", "damage: unit type '....' is named|damage: '....' \(a unit type or an ability\) is named", ""],
     ["Damage: spell names", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
     ["Map text lines (probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],

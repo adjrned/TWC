@@ -1143,7 +1143,7 @@ static bool TimerStartWatch(bool on) {
             return false;
         }
         g_tsHooked = true;
-        Log("buff timers: the map's timers are watched (+%06lX detoured: when each starts, how long; logged next to new buffs)", RVA_MAP_TIMER_START);
+        Log("buff timers: the map's timers are watched (+%06lX detoured: when each starts, how long)", RVA_MAP_TIMER_START);
         return true;
     }
     if (f[0] == 0xE9 && f + 5 + *(LONG *)(f + 1) == (BYTE *)TimerStartHook)
@@ -1356,10 +1356,9 @@ static bool BuffMapLeft(BYTE *unit, DWORD id, float *left, float *total) {
     return false;
 }
 
-// buffs first seen (by unit and rawcode, not seen for 2 s before), logged once the 0.6 s after them is in
+// buffs first seen (by unit and rawcode, not seen for 2 s before), a short line each (the first 16)
 struct BuffSeen { BYTE *unit; DWORD id, at; };
 static BuffSeen g_bsSeen[64];
-static struct BuffNew { BYTE *unit; DWORD id, at; bool aura; float left, total; } g_bsNew[8];
 static int g_bsLogs;
 static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float total, DWORD now) {
     BuffSeen *s = nullptr, *old = &g_bsSeen[0];
@@ -1376,52 +1375,8 @@ static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float tota
     s->unit = unit, s->id = id, s->at = now;
     if (fresh && g_tsHooked && aura)        // auras only: a buff has its own time (B0BU, a 9999 s passive, took an 8 s timer)
         BuffMatchTimer(unit, id, now);
-    if (!fresh || !g_tsHooked || g_bsLogs >= 16)
-        return;
-    for (BuffNew &n : g_bsNew)
-        if (!n.id) {
-            n = { unit, id, now, aura, left, total };
-            return;
-        }
-}
-static void BuffAppearedLog(DWORD now) {
-    for (BuffNew &n : g_bsNew) {
-        if (!n.id || now - n.at < 1100)
-            continue;
-        // the timers of 0.5 s or more within 1 s of it, the nearest first (at most 12)
-        struct Close { LONG d; float t; DWORD periodic; } closest[12];
-        int nn = 0, found = 0, tiny = 0;
-        LONG last = g_tsN;
-        for (LONG k = last - 1; k >= 0 && k >= last - 4096; k--) {
-            const TimerStartRec &r = g_tsRing[k & 4095];
-            LONG d = (LONG)(r.at - n.at);
-            if (d < -1000 || d > 1000)
-                continue;
-            if (!(r.timeout >= 0.5f)) {
-                tiny++;
-                continue;
-            }
-            found++;
-            Close x = { d, r.timeout, r.periodic };
-            int j = nn < 12 ? nn++ : 12;
-            while (j > 0 && labs(closest[j - 1].d) > labs(x.d)) {
-                if (j < 12)
-                    closest[j] = closest[j - 1];
-                j--;
-            }
-            if (j < 12)
-                closest[j] = x;
-        }
-        char b[700];
-        int o = 0;
-        for (int j = 0; j < nn; j++)
-            o += sprintf_s(b + o, sizeof(b) - o, " %.2f s %s (%+ld ms)", closest[j].t, closest[j].periodic ? "periodic" : "one-shot", closest[j].d);
-        o += sprintf_s(b + o, sizeof(b) - o, "%s (%d of 0.5 s or more, %d shorter left out)", found ? "" : " none", found, tiny);
-        if (g_bsLogs < 16)
-            g_bsLogs++, Log("buff timers: '%s' %s appeared (%.1f s of %.1f) on unit %p; the map's timers started within 1 s of it, nearest first:%s", IdText(n.id).s,
-                            n.aura ? "aura" : "buff", n.left, n.total, n.unit, b);
-        n.id = 0;
-    }
+    if (fresh && g_tsHooked && g_bsLogs < 16)
+        g_bsLogs++, Log("buff timers: new '%s' %s (%.1f s of %.1f)", IdText(id).s, aura ? "aura" : "buff", left, total);
 }
 
 static void ReadBuffs(BYTE *ui) {
@@ -1458,7 +1413,6 @@ static void ReadBuffs(BYTE *ui) {
     g_shared->tmFlags |= 2;
     BuffPendingRetry();
     BuffAmbigResolve(GetTickCount());
-    BuffAppearedLog(GetTickCount());
 }
 
 static void ReadHeroBuffs();
@@ -3756,7 +3710,6 @@ typedef int(__fastcall *AbilityCbFn)(void *, void *);
 typedef void(__fastcall *ButtonClickFn)(void *, int, DWORD);
 static BYTE *g_alTramp;             // the 7 bytes and a jmp back (stays allocated, as Fast menu's)
 static bool g_alHooked, g_alBad, g_alClickHooked;
-static BYTE *g_alMadeFor;           // the last unit the card's buttons were made for by us (the selection log)
 
 static const DWORD AL_ENEMIES = 2;
 // a unit whose card this feature shows: yours or an ally's (a CUnit: owner [+0x58], the alliance
@@ -3779,19 +3732,7 @@ static int __fastcall AllySeesHook(void *unit, int edx) {
     if (r || !g_shared->alOn || g_alBad)
         return r;
     __try {
-        int yes = CardShown((BYTE *)unit) ? 1 : 0;
-        // the first answers logged: which of the game's 24 callers asks, for whose unit (the card not showing
-        // in the user's game, 2026-10-29: does the game ask at all for an ally's or a boss's unit?)
-        static int logs;
-        static DWORD callers[8];
-        DWORD from = (DWORD)_ReturnAddress() - (DWORD)g_base;
-        bool known = false;
-        for (int i = 0; i < logs && i < 8; i++)
-            known |= callers[i] == from;
-        if (!known && logs < 8)
-            callers[logs++] = from, Log("allies' abilities: the game asks whether you see unit %p's commands (owner %d) from +%06lX: %s", unit,
-                IsUnit((BYTE *)unit) ? *(int *)((BYTE *)unit + UNIT_OWNER) : -1, from - 5, yes ? "yes (ours)" : "no");
-        return yes;
+        return CardShown((BYTE *)unit) ? 1 : 0;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_alBad = true;
         return 0;
@@ -3816,29 +3757,6 @@ static int __fastcall AllyAbilityMakeHook(void *unit, void *card) {
             bool enemy = (local = LocalPlayer(&st)) >= 0 && owner != local && !Allied(st, local, owner);
             if (enemyLogs < 2 && enemy)
                 enemyLogs++, Log("allies' abilities: an enemy's buttons made (unit %p, owner %d)", unit, owner);
-            // the unit's abilities as the button code reads them (the user, 2026-10-30: a boss's card has 0 buttons
-            // with an ability, an ally's fills): +0x6b2696 skips one with [+0x3c] > 0 and [+0x40] > 0, the add
-            // +0x429cd6 one with [+0x40] > 0 (hidden / disabled counts?); [+0x20] its flags. Once for an ally, once for an enemy
-            static bool told[2];
-            if (!told[enemy]) {
-                told[enemy] = true;
-                char b[900];
-                int o = 0, n = 0;
-                const DWORD *pair = (DWORD *)((BYTE *)unit + UNIT_ABILITIES);
-                for (int k = 0; pair && k < 40 && o < (int)sizeof(b) - 60; k++) {
-                    BYTE *a = PairObject(pair);
-                    if (!a || *(DWORD *)a < (DWORD)g_base || *(DWORD *)a - (DWORD)g_base >= g_imageSize)
-                        break;
-                    pair = (DWORD *)(a + ABILITY_NEXT);
-                    char rtti[40] = "";
-                    RttiName(*(DWORD *)a, g_imageSize, rtti, sizeof(rtti));
-                    n++, o += sprintf_s(b + o, sizeof(b) - o, " '%s' %s fl %lX 3c %d 40 %d;", IdText(*(DWORD *)(a + 0x34)).s, rtti + (strncmp(rtti, ".?AV", 4) ? 0 : 4),
-                                        *(DWORD *)(a + 0x20), *(int *)(a + 0x3c), *(int *)(a + 0x40));
-                }
-                Log("allies' abilities: %s unit %p '%s' (owner %d, unit flags +248 %lX) has %d abilities:%s", enemy ? "an enemy's" : "an ally's", unit,
-                    IdText(*(DWORD *)((BYTE *)unit + 0x30)).s, owner, *(DWORD *)((BYTE *)unit + 0x248), n, o ? b : " none");
-            }
-            g_alMadeFor = (BYTE *)unit;
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_alBad = true, g_shared->alState = 3;
@@ -3970,41 +3888,6 @@ static bool AlliesHook(bool on) {
     Log("allies' abilities: off (the game's own again)");
     return true;
 }
-// a newly selected unit only this feature shows, logged once a quarter second after (the card filled by
-// then): whose, an enemy's or not, whether we made its buttons, how many of the card's have an ability
-// (the user, 2026-10-30: allies' cards show, a boss's not at all)
-static void AlliesSelectionLog() {
-    static BYTE *last;
-    static int logs;
-    static DWORD at;
-    if (logs >= 8)
-        return;
-    BYTE *state;
-    int local = LocalPlayer(&state);
-    BYTE *player = local >= 0 ? *(BYTE **)(state + 0x58 + 4 * local) : nullptr, *sel = player ? *(BYTE **)(player + PLAYER_SELECTION) : nullptr;
-    BYTE *unit = sel ? *(BYTE **)(sel + SELECTION_ACTIVE) : nullptr;
-    if (!IsUnit(unit) || !CardShown(unit) || Controls(unit)) {
-        last = nullptr;
-        return;
-    }
-    DWORD now = GetTickCount();
-    if (unit != last)
-        last = unit, at = now;
-    if (!at || now - at < 250)
-        return;
-    at = 0;
-    BYTE *ui = (BYTE *)GameUi(), *card = ui ? *(BYTE **)(ui + 0x3c8) : nullptr;
-    int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0, withData = 0;
-    for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
-        for (int c = 0; c < cols; c++) {
-            BYTE *b = GridButton(card, r, c);
-            withData += b && *(DWORD *)(b + 0x190) != 0;
-        }
-    int owner = *(int *)(unit + UNIT_OWNER);
-    logs++, Log("allies' abilities: selected unit %p '%s' (owner %d, %s): %s; the card %p has %d of %d buttons with an ability, shown %lu", unit, IdText(*(DWORD *)(unit + 0x30)).s,
-                owner, Allied(state, local, owner) ? "an ally" : "an enemy", g_alMadeFor == unit ? "its buttons made by us" : "its buttons NOT made (the card's fill didn't come for it)",
-                card, withData, rows * cols, card ? *(DWORD *)(card + 0x90) : 0);
-}
 // on the game thread
 static void AlliesPass() {
     bool on = g_shared->alOn && !g_alBad;
@@ -4012,11 +3895,6 @@ static void AlliesPass() {
         g_shared->alState = 3;
     if (g_shared->alState != 3)
         g_shared->alState = g_alHooked ? 1 : 0;
-    if (g_alHooked && !g_alBad)
-        __try {
-            AlliesSelectionLog();
-        } __except (EXCEPTION_EXECUTE_HANDLER) {
-        }
 }
 
 // -- the cooldown ping (WFE's Alt + click on an ability or item) ---------------------------
