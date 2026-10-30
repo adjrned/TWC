@@ -243,6 +243,16 @@ TwcModuleRun() {
     k1 := NumGet(v, Shm.qkVk + 8, "uchar") = 0x51 && NumGet(v, Shm.qkVk + 12, "uchar") = 0x67 && NumGet(v, Shm.qkVk + 13, "uchar") = 0 && NumGet(v, Shm.qkOn, "uint") = 1
     r1 := gameModule.keyCastReady(), NumPut("uint", 1, v, Shm.qkState), r2 := gameModule.keyCastReady()
     remap.pushKeys(), k2 := NumGet(v, Shm.qkOn, "uint")         ; not in a game here: off
+    ; a quickcast key with the module's keys ready: the key goes out first, once (not held), through sendFn (no real keys)
+    NumPut("uint", 1, v, Shm.qkState)
+    sent := [], keepSend := remap.sendFn, remap.sendFn := (t) => sent.Push(t)
+    err := ""
+    try remap.castQuick("q", "$q")
+    catch as e
+        err := e.Message
+    remap.sendFn := keepSend
+    TwcCheck(err = "" && sent.Length = 1 && sent[1] = "{q}" && !remap.holding.Get("q", false),
+        "a quickcast key, the module's keys ready: sent once at once (" (sent.Length ? sent[1] : "nothing") ")" (err != "" ? " error: " err : ""))
     NumPut("uint", 0, v, Shm.qkState)
     TwcCheck(k1 && !r1 && r2 && k2 = 0, "quickcast keys: Q / W / Numpad 7 pushed and on; ready only once the module says so; off outside a game")
     ; quickcast's state and counts (layout 27): the Module check row, and why it isn't ready

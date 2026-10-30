@@ -20,6 +20,7 @@ class RemapEngine {
     static NO_QC := Map(2, 1, 3, 1)        ; Stop and Hold never take a target
     registered := []
     holding := Map()            ; quickcast key -> held (cleared by its key-up hotkey)
+    sendFn := SendInput         ; how keyCastHeld sends (a check swaps it: never real keys)
     qcRecent := [], qcMissRun := 0      ; the last 10 quickcast hit delays (ms); misses in a row
     qcLate := 0                         ; the late-reticle watch running after a miss (lateWatch)
     qcTry := 0, qcStart := 0, qcBase := ""   ; the press being served: its try (1 = the press, 2+ = repeats while held), start, key
@@ -226,6 +227,70 @@ class RemapEngine {
     ; Shift held on a key that doesn't use Shift itself = WC3's queue (shift-queue)
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
+    ; the module takes quickcast keys now (cached 250 ms): 0, or the repeat settings { repeat, interval }
+    keyCastNow() {
+        global quickcast, gameModule
+        static at := -1000, kc := 0, was := -1
+        if A_TickCount - at < 250
+            return kc
+        at := A_TickCount
+        ok := InStr(WC3WindowKey(), "reforged") != 1 && gameModule.qcReady() && gameModule.keyCastReady()
+        if ok != was && was != -1
+            DebugLog("quickcast: the game module's keys " (ok ? "are ready again" : "aren't ready: " gameModule.qcWhyNot()))
+        was := ok
+        s := ok ? quickcast.get() : 0
+        kc := ok ? { repeat: s.repeat, interval: s.interval } : 0
+        return kc
+    }
+    ; The key to the game module, which presses its button and clicks (as WFE). Held, it goes again every
+    ; [Quickcast] interval (40 ms) until let go (WFE's AutoCast repeats as long), unless repeat is off.
+    ; Paced here, not by the key's own repeat: Windows waits its repeat delay (a quarter to half a second)
+    ; before the first one, the pause after the first press a user felt on an item key (2026-10-29).
+    ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left it
+    ; "down" and the loop pressed on by itself (a user's report, 2026-10-29). A key that isn't the one sent
+    ; (F1 -> an item slot) is asked of Windows too (GetAsyncKeyState can't miss a key-up), and goes until
+    ; let go as WFE's; one sent as itself (its own key quickcasts) can't be told apart from what's sent, so
+    ; it keeps the 20 s most a repeat lasts. t0: when the hotkey's thread started (QpcMs), for the timing line.
+    keyCastHeld(game, yourKey, base, kc, t0) {
+        static told := 0
+        q := this.queued(yourKey)
+        (this.sendFn)(q this.keyText(game))
+        this.keyTiming(QpcMs() - t0)
+        this.holding[base] := true, start := A_TickCount, presses := 1
+        if told++ < 3
+            DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
+        same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
+        vk := GetKeyVK(base), why := ""
+        while kc.repeat && !IsWheel(base) {
+            if (why := this.waitHeld(base, same ? start : A_TickCount, kc.interval)) != ""
+                break
+            if !same && vk && !(DllCall("GetAsyncKeyState", "int", vk, "short") & 0x8000) {
+                why := "the key isn't down (Windows says; its key-up never came)"
+                break
+            }
+            (this.sendFn)(q this.keyText(game)), presses++
+        }
+        if presses > 1
+            DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " kc.interval " ms): " why)
+        this.holding[base] := false
+    }
+    ; how long a press took from its hotkey to the key sent: every 25, the median and the slowest
+    keyTiming(ms) {
+        static list := []
+        list.Push(ms)
+        if list.Length < 25
+            return
+        sorted := list.Clone(), n := sorted.Length
+        loop n - 1 {                            ; insertion sort (25)
+            i := A_Index + 1, v := sorted[i], j := i - 1
+            while j >= 1 && sorted[j] > v
+                sorted[j + 1] := sorted[j], j--
+            sorted[j + 1] := v
+        }
+        DebugLog("quickcast keys: the last 25 presses: sent " Round(sorted[13], 1) " ms after the hotkey (median), slowest " Round(sorted[n], 1) " ms")
+        list := []
+    }
+
     castPlain(game, yourKey) {
         SendInput(this.queued(yourKey) this.keyText(game))
         DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
@@ -248,6 +313,15 @@ class RemapEngine {
     castQuick(game, yourKey) {
         global quickcast, gameModule
         static hinted := Map()          ; window keys already hinted about
+        t0 := QpcMs()
+        ; the module's keys (as WFE), decided at most every 250 ms: the key goes out first, before anything is
+        ; read (each press read ~10 ini settings and the game's state first: a delay a user felt, 2026-10-29)
+        if (kc := this.keyCastNow()) {
+            base := HotkeyBase(yourKey)
+            if !IsWheel(base) && this.holding.Get(base, false)
+                return                          ; the key's own repeat: this thread presses again itself
+            return this.keyCastHeld(game, yourKey, base, kc, t0)
+        }
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
         reforged := InStr(WC3WindowKey(), "reforged") = 1
         hookOn := !reforged && gameModule.quickcast, screenOn := QuickcastScreenOn()
@@ -266,34 +340,9 @@ class RemapEngine {
         ; key's own repeat: Windows waits its repeat delay (a quarter to half a second) before the
         ; first one, the pause after the first press a user felt on an item key (2026-10-29)
         if inGameQc && gameModule.keyCastReady() {
-            static told := 0
             if !IsWheel(base) && this.holding.Get(base, false)
-                return                          ; the key's own repeat: this thread presses again itself
-            this.holding[base] := true, start := A_TickCount, presses := 0
-            ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left
-            ; it "down" and the loop pressed on by itself (a user's report, 2026-10-29). A key that isn't the
-            ; one sent (F1 -> an item slot) is asked of Windows too (GetAsyncKeyState can't miss a key-up), and
-            ; goes until let go as WFE's; one sent as itself (its own key quickcasts) can't be told apart from
-            ; what's sent, so it keeps the 20 s most a repeat lasts
-            same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
-            vk := GetKeyVK(base), why := ""
-            loop {
-                SendInput(q this.keyText(game)), presses++
-                if told++ < 3
-                    DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
-                if !s.repeat || IsWheel(base)
-                    break
-                if (why := this.waitHeld(base, same ? start : A_TickCount, s.interval)) != ""
-                    break
-                if !same && vk && !(DllCall("GetAsyncKeyState", "int", vk, "short") & 0x8000) {
-                    why := "the key isn't down (Windows says; its key-up never came)"
-                    break
-                }
-            }
-            if presses > 1
-                DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " s.interval " ms): " why)
-            this.holding[base] := false
-            return
+                return
+            return this.keyCastHeld(game, yourKey, base, { repeat: s.repeat, interval: s.interval }, t0)
         }
         cal := !inGameQc && screenOn ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /

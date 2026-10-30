@@ -4,6 +4,9 @@
 ; AutoHotkey's default (70 in 2 s) stopped with "71 hotkeys have been received in the last
 ; 2000ms" during normal play (the user, 2026-10-29)
 A_MaxHotkeysPerInterval := 2000
+; a hotkey (a quickcast key) may interrupt a running timer at once, not after its first 15 ms
+; (AHK's default): the meter's and the timers' ticks held keys back (2026-10-29, a delay before casting)
+Thread("Interrupt", 0)
 ;@Ahk2Exe-SetName TW Companion
 ;@Ahk2Exe-SetDescription TW Companion
 ;@Ahk2Exe-SetCopyright By Ruzai

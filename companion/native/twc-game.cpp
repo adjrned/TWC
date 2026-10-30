@@ -30,6 +30,7 @@
 //  Build: native\build.bat (32-bit, MSVC). Tests: native\tests\run-tests.bat.
 // ============================================================================
 #include <windows.h>
+#include <algorithm>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -1524,6 +1525,23 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 static int RunOnGameThread(DWORD cmd);
 static void *GameUi();
 static bool KeyCast(WPARAM vk);
+// how long a quickcast key waited in the game's message queue before its window got it (the message's
+// time to now; both GetTickCount, ~16 ms steps): every 25, the median and the slowest, logged
+static void KeyQueueTime(DWORD ms) {
+    static DWORD list[25];
+    static int n, logs;
+    if (ms > 5000)
+        return;                         // a key sent long ago (or the clock wrapped): not one to count
+    list[n++] = ms;
+    if (n < 25)
+        return;
+    n = 0;
+    DWORD s[25];
+    memcpy(s, list, sizeof(s));
+    std::sort(s, s + 25);
+    if (logs++ < 40)
+        Log("quickcast keys: the last 25 presses waited %lu ms in the game's queue (median; slowest %lu; in ~16 ms steps)", s[12], s[24]);
+}
 static void PortraitSitesPass();
 static void FinalPass();
 static UINT g_finalMsg;
@@ -1613,8 +1631,10 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     static bool dropChar;
     if (m == WM_KEYDOWN || m == WM_SYSKEYDOWN) {
         dropChar = g_shared->qkOn && KeyCast(wp);
-        if (dropChar)
+        if (dropChar) {
+            KeyQueueTime(GetTickCount() - (DWORD)GetMessageTime());
             return 0;
+        }
     } else if ((m == WM_CHAR || m == WM_SYSCHAR) && dropChar) {
         dropChar = false;
         return 0;

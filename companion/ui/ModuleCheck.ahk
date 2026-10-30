@@ -12,6 +12,7 @@
 ModuleCheckFeatures() => [
     ["Quickcast through the game", "quickcast: clicked", ""],
     ["Quickcast keys (as WFE)", "quickcast keys: key .* pressed slot|quickcast keys: on \(", "quickcast keys: (pressing a button faulted|the game window couldn.t be subclassed|slot \d+.s button .* isn.t a game button)"],
+    ["Quickcast keys: the game's queue (timing)", "quickcast keys: the last 25 presses waited", ""],
     ["Quickcast on the game thread (target mode)", "quickcast: clicked as the game opened the target mode|quickcast: the target mode.s Enter is ours", "quickcast: vtable \+AAA220 entry|quickcast: the target mode.s vtable .* isn.t where|quickcast: the target mode hook faulted"],
     ["Cooldown and buff timers", "timers: game getter at .* checks out|timers in the game: drawing", "timers: refused|frames: refused|no more frames in this session"],
     ["Cooldowns on the card", "timers in the game: the first cooldown drawn", "cooldowns: the command card .* isn't readable"],
