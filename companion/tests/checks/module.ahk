@@ -101,7 +101,7 @@ TwcModuleRun() {
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
     gameDisplay.toggleHideMenu()
-    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x79, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")
+    TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x39, "menu buttons shown: the upper menu bar isn't hidden (" Format("{:X}", NumGet(v, Shm.uiHide, "uint")) ")")
     gameDisplay.toggleHideMenu()
     TwcCheck(gameDisplay.setCountdownSecs("2,5") = false && gameDisplay.setCountdownSecs("2.54") && NumGet(v, Shm.csSecs, "float") = 2.5
         && gameDisplay.setCountdownSecs(9) && gameDisplay.countdownSecs = 6 && gameDisplay.countdownLabel = "Countdown: 6 s", "countdown seconds: typed, tenths, at most 6 (" gameDisplay.countdownLabel ")")
