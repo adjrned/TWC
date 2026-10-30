@@ -1046,7 +1046,7 @@ static bool BuffKeptUp(BYTE *unit, DWORD id, bool aura, float left, DWORD now) {
 // only those, its 256 notes covering 0.6 s.)
 static const DWORD RVA_MAP_TIMER_START = 0x27c160;
 typedef void(__fastcall *TimerStartFn)(void *, int, float *, int, void *);
-struct TimerStartRec { DWORD at; float timeout; DWORD periodic; void *timer; };
+struct TimerStartRec { DWORD at; float timeout; DWORD periodic; void *timer; void *code; };
 static TimerStartRec g_tsRing[4096];
 static volatile LONG g_tsN;
 static BYTE *g_tsTramp;
@@ -1056,7 +1056,7 @@ static bool FnStart(DWORD rva);
 static void __fastcall TimerStartHook(void *timer, int edx, float *timeout, int periodic, void *code) {
     __try {
         TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 4095];
-        r.at = GetTickCount(), r.timeout = timeout ? *timeout : -1, r.periodic = (DWORD)periodic, r.timer = timer;
+        r.at = GetTickCount(), r.timeout = timeout ? *timeout : -1, r.periodic = (DWORD)periodic, r.timer = timer, r.code = code;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
     ((TimerStartFn)g_tsTramp)(timer, edx, timeout, periodic, code);
@@ -1103,9 +1103,27 @@ static bool TimerStartWatch(bool on) {
 // in the 0.25 s before, less those as long as a cooldown on the command card or the inventory (within
 // 0.1 s); exactly one left (one length): that's its timer, and its time left is the buff's while the
 // timer runs (its agent timer at +0x24, CAgentTimer's vtable checked). None or more than one: nothing.
+// Several at once (two items used together, the user, 2026-10-29: neither got its time): each buff
+// that once matched alone is remembered with its timer's callback (the code the map's TimerStart
+// gives it, the item's own function) and length; among several, a buff takes the one with its own
+// callback (else its length), and a timer another buff has taken isn't taken twice.
 static const DWORD RVA_AGENT_TIMER_VT[2] = { 0xa6f780, 0xa6fcd0 };   // CAgentTimer, CAgentTimerExtended
 struct BuffMapTimer { BYTE *unit; DWORD id; BYTE *timer; float timeout; };
 static BuffMapTimer g_bmt[16];
+struct BuffTimerKnown { DWORD id; void *code; float len; };
+static BuffTimerKnown g_btk[32];          // learned from buffs that matched one timer alone
+static BuffTimerKnown *KnownTimer(DWORD id) {
+    for (BuffTimerKnown &k : g_btk)
+        if (k.id == id)
+            return &k;
+    return nullptr;
+}
+static bool TimerTaken(BYTE *timer) {
+    for (BuffMapTimer &m : g_bmt)
+        if (m.id && m.timer == timer)
+            return true;
+    return false;
+}
 static int g_bmtLogs;
 static bool CooldownLike(float t) {
     for (int i = 0; i < 12; i++)
@@ -1117,9 +1135,11 @@ static bool CooldownLike(float t) {
     return false;
 }
 static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
-    BYTE *pick = nullptr;
-    float len = 0;
-    int lengths = 0, cds = 0;
+    BYTE *pick = nullptr, *byCode = nullptr, *byLen = nullptr;
+    void *code = nullptr;
+    float len = 0, codeLen = 0, lenLen = 0;
+    int lengths = 0, cds = 0, taken = 0;
+    const BuffTimerKnown *known = KnownTimer(id);
     LONG last = g_tsN;
     for (LONG k = last - 1; k >= 0 && k >= last - 4096; k--) {
         const TimerStartRec &r = g_tsRing[k & 4095];
@@ -1132,13 +1152,32 @@ static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
             cds++;
             continue;
         }
+        if (TimerTaken((BYTE *)r.timer)) {
+            taken++;
+            continue;                       // another buff's (started with it)
+        }
+        if (known && !byCode && r.code == known->code)
+            byCode = (BYTE *)r.timer, codeLen = r.timeout;
+        if (known && !byLen && fabsf(r.timeout - known->len) < 0.05f)
+            byLen = (BYTE *)r.timer, lenLen = r.timeout;
         if (!pick || fabsf(r.timeout - len) > 0.05f)
             lengths += !pick || fabsf(r.timeout - len) > 0.05f;
         if (!pick)
-            pick = (BYTE *)r.timer, len = r.timeout;
+            pick = (BYTE *)r.timer, len = r.timeout, code = r.code;
     }
+    const char *how = "alone";
     if (lengths != 1)
         pick = nullptr;
+    else if (!known || known->code != code) {   // matched alone: remembered (its callback and length)
+        BuffTimerKnown *k = known ? (BuffTimerKnown *)known : nullptr;
+        for (BuffTimerKnown &e : g_btk)
+            if (!k && !e.id)
+                k = &e;
+        if (k)
+            *k = { id, code, len };
+    }
+    if (!pick && (byCode || byLen))         // several: its own callback, else its length
+        pick = byCode ? byCode : byLen, len = byCode ? codeLen : lenLen, how = byCode ? "by its callback" : "by its length";
     if (pick) {
         BuffMapTimer *slot = &g_bmt[0];
         for (BuffMapTimer &m : g_bmt)
@@ -1151,9 +1190,10 @@ static void BuffMatchTimer(BYTE *unit, DWORD id, DWORD now) {
     if (g_bmtLogs < 12) {
         g_bmtLogs++;
         if (pick)
-            Log("buff timers: '%s' goes with the map's %.2f s timer %p (%d cooldown-long ones left out)", IdText(id).s, len, pick, cds);
+            Log("buff timers: '%s' goes with the map's %.2f s timer %p (%s; %d cooldown-long, %d another buff's left out)", IdText(id).s, len, pick, how, cds, taken);
         else
-            Log("buff timers: '%s': no map timer of its own (%d lengths, %d cooldown-long ones left out)", IdText(id).s, lengths, cds);
+            Log("buff timers: '%s': no map timer of its own (%d lengths, %d cooldown-long, %d another buff's left out; %s)", IdText(id).s, lengths, cds, taken,
+                known ? "its own callback / length not among them" : "not seen alone yet");
     }
 }
 // the time left of a buff's map timer, or false (none, or it's run out / gone)
