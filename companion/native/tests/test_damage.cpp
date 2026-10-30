@@ -73,10 +73,70 @@ int main() {
     CHECK(gameCalls == 6 && sh.dmTotal[2] == 75 && sh.dmSeq == 3, "its own unit, or an invulnerable one (0 dealt): not counted");
     *(int *)(units[2] + UNIT_OWNER) = 12; Hit(0, 2, 30); *(int *)(units[2] + UNIT_OWNER) = 5;
     CHECK(gameCalls == 7 && !sh.dmTotal[12] && sh.dmSeq == 3, "a neutral's unit (the creeps, slot 12): not counted");
+    // layout 33: every hit in the ring (a neutral's on a player's too), with the record's details and the types
+    LONG r0 = sh.dmRingSeq;
+    *(DWORD *)(units[0] + 0x30) = 'Hpal', *(DWORD *)(units[2] + 0x30) = 'nogr';
+    {
+        BYTE rec[0x24] = {};
+        *(BYTE **)rec = units[0], *(float *)(rec + REC_AMOUNT) = 40, *(DWORD *)(rec + REC_FLAGS) = 0x101;
+        *(DWORD *)(rec + REC_DMG_TYPE) = 1u << 14, *(DWORD *)(rec + REC_ATK_TYPE) = 6, *(DWORD *)(rec + REC_WEAPON) = 3;
+        float dealt;
+        ((UnitDamageFn)vt[UNIT_DAMAGE_SLOT / 4])(units[2], 0, &dealt, rec, 0, 0);
+    }
+    DmHit h = sh.dmRing[r0 & (DM_RING - 1)];
+    CHECK(sh.dmRingSeq == r0 + 1 && h.amount == 20 && h.from == 2 && h.to == 5 && h.srcType == 'Hpal' && h.tgtType == 'nogr' && h.target == (DWORD)units[2]
+          && h.flags == (DMH_ATTACK | DMH_RANGED | DMH_SRC_HERO) && h.dmgType == 14 && h.atkType == 6 && h.weapon == 3,
+          "the ring: 20 from player 2's 'Hpal' to 5's 'nogr', a ranged attack by a hero, damage type 14, attack type 6, weapon 3");
+    *(int *)(units[2] + UNIT_OWNER) = 12; Hit(0, 2, 30);
+    h = sh.dmRing[(r0 + 1) & (DM_RING - 1)];
+    bool neutralHit = sh.dmRingSeq == r0 + 2 && h.from == 12 && h.to == 2 && h.amount == 15 && h.dmgType == 0xff;
+    *(int *)(units[3] + UNIT_OWNER) = 13; *(DWORD *)(units[3] + 0x5c) = 0; Hit(3, 2, 30);
+    *(int *)(units[2] + UNIT_OWNER) = 5, *(int *)(units[3] + UNIT_OWNER) = 5, *(DWORD *)(units[3] + 0x5c) = 0x100;
+    CHECK(neutralHit && sh.dmRingSeq == r0 + 2 && !sh.dmTotal[12], "a neutral's hit on a player's unit: in the ring (taken), not dealt; neutral on neutral: not at all");
+    // the types named on the game thread, as GetUnitName (+3782B0 stubbed)
+    struct Names { static const char *__fastcall Of(DWORD id, DWORD) { return id == 'Hpal' ? "|cffffcc00Paladin|r" : "Default string"; } };
+    img[RVA_OBJECT_NAME - 1] = 0xCC, img[RVA_OBJECT_NAME] = 0xE9, *(LONG *)(img + RVA_OBJECT_NAME + 1) = (LONG)((BYTE *)Names::Of - (img + RVA_OBJECT_NAME + 5));
+    DamageTypesPass();
+    int pal = -1, ogr = -1;
+    for (int i = 0; i < sh.dmTypeN; i++)
+        (sh.dmTypeId[i] == 'Hpal' ? pal : sh.dmTypeId[i] == 'nogr' ? ogr : i) = i;
+    CHECK(pal >= 0 && ogr >= 0 && !strcmp(sh.dmTypeName[pal], "Paladin") && !sh.dmTypeName[ogr][0] && !g_dmPendN,
+          "unit types named once each: 'Hpal' -> 'Paladin' (codes out), no name -> ''");
+    LONG tn = sh.dmTypeN; Hit(2, 0, 10); DamageTypesPass();
+    CHECK(sh.dmTypeN == tn, "a type already named isn't asked again");
+    // your selection's active unit
+    static BYTE selObj[0x200];
+    *(BYTE **)(pl[2] + SEL_PLAYER_SELECTION) = selObj, *(BYTE **)(selObj + SEL_ACTIVE) = units[0];
+    FollowDamage(13000);
+    CHECK(sh.dmSelUnit == (DWORD)units[0] && sh.dmSelType == 'Hpal' && sh.dmSelOwner == 2, "your selection: the unit, its type and owner");
+    *(BYTE **)(selObj + SEL_ACTIVE) = nullptr; FollowDamage(13100);
+    CHECK(!sh.dmSelUnit && sh.dmSelOwner == -1, "nothing selected: 0");
+    // the map's text lines: the 3 DisplayText calls to the game UI's +3A8EB0 pointed at ours while on
+    struct Text { static void __fastcall Line(void *, int, float, float, const char *, float, DWORD) { gameCalls += 100; } };
+    BYTE *ut = img + RVA_UI_TEXT; ut[-1] = 0xCC, ut[0] = 0xE9, *(LONG *)(ut + 1) = (LONG)((BYTE *)Text::Line - (ut + 5));
+    for (DWORD rva : MT_SITES)
+        img[rva] = 0xE8, *(LONG *)(img + rva + 1) = (LONG)(ut - (img + rva + 5));
+    MapTextPass();
+    bool allOurs = g_mtHooked;
+    for (DWORD rva : MT_SITES)
+        allOurs = allOurs && SiteTarget(img + rva) == (BYTE *)MapTextHook;
+    int gc = gameCalls;
+    ((UiTextFn)SiteTarget(img + MT_SITES[2]))((void *)1, 0, 0, 0, "|cffff0000Total damage:|r 1,234,567", 5, 0xFFFFFFFF);
+    CHECK(allOurs && gameCalls == gc + 100 && sh.mtSeq == 1 && !strcmp(sh.mtText[0], "Total damage: 1,234,567"),
+          "map text: the 3 calls are ours, the game's line shown first, kept without codes ('%s')", sh.mtText[0]);
+    sh.dmOn = 0; MapTextPass();
+    bool mtBack = !g_mtHooked;
+    for (DWORD rva : MT_SITES)
+        mtBack = mtBack && SiteTarget(img + rva) == ut;
+    CHECK(mtBack, "map text off: the calls go to the game's again");
+    sh.dmOn = 1; MapTextPass(); RestoreAll();
+    CHECK(!g_mtHooked && SiteTarget(img + MT_SITES[0]) == ut, "and on unload");
+    g_dmHooked = true, vt[UNIT_DAMAGE_SLOT / 4] = (DWORD)UnitDamage;     // (RestoreAll gave it back; on again as before)
     sh.dmOn = 0; FollowDamage(11000);
     CHECK(!g_dmHooked && sh.dmState == 0 && vt[UNIT_DAMAGE_SLOT / 4] == (DWORD)f, "off: the entry is the game's damage again");
+    double t2 = sh.dmTotal[2]; int gOff = gameCalls;
     Hit(2, 0, 100);
-    CHECK(gameCalls == 8 && sh.dmTotal[2] == 75, "and nothing counted");
+    CHECK(gameCalls == gOff + 1 && sh.dmTotal[2] == t2, "and nothing counted");
     sh.dmOn = 1; vt[UNIT_DAMAGE_SLOT / 4] = (DWORD)(img + 0x100000); FollowDamage(12000);
     CHECK(!g_dmHooked && sh.dmState == 3, "an entry someone else changed: refused");
     Verdict();

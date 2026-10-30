@@ -20,7 +20,8 @@
     X(hrWant) X(hrHero) X(hrAlive) X(hrCount) X(hrId) X(hrLeft) X(hrTotal) X(hrFlags) X(hrName) X(bfSize) X(bfGold) X(bfOpts) X(bbScale) X(bbState) X(blOn) X(blState) X(blSeq) X(blDone) X(blAccount) X(blPassword) X(blAfter) X(blGame) X(utOn) X(utState) \
     X(qcState) X(qcAsked) X(qcClicked) X(qcNoTarget) X(qcNotFront) X(qcCancelled) X(qkOn) X(qkVk) X(qkState) X(qkPressed) X(qkClicked) \
     X(dmOn) X(dmState) X(dmSeq) X(dmPad) X(dmTotal) X(dmHits) X(dmName) X(dmColour) X(dmLocal) \
-    X(btKnownSeq) X(btKnownN) X(btKnownId) X(btKnownLen) X(btNewSeq) X(btNewId) X(btNewLen)
+    X(btKnownSeq) X(btKnownN) X(btKnownId) X(btKnownLen) X(btNewSeq) X(btNewId) X(btNewLen) \
+    X(dmRingSeq) X(dmRing) X(dmSelUnit) X(dmSelType) X(dmSelOwner) X(dmTypeN) X(dmTypeId) X(dmTypeName) X(mtSeq) X(mtText)
 
 struct Field { const char *name; size_t off, size; };
 #define ENTRY(f) { #f, offsetof(Shared, f), sizeof(((Shared *)0)->f) },

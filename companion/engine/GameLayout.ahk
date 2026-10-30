@@ -155,5 +155,15 @@ class Shm {
     static btNewSeq := 4112
     static btNewId := 4116
     static btNewLen := 4180
-    static size := 4244
+    static dmRingSeq := 4244
+    static dmRing := 4248
+    static dmSelUnit := 53400
+    static dmSelType := 53404
+    static dmSelOwner := 53408
+    static dmTypeN := 53412
+    static dmTypeId := 53416
+    static dmTypeName := 53928
+    static mtSeq := 58024
+    static mtText := 58028
+    static size := 59052
 }

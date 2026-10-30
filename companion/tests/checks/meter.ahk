@@ -14,6 +14,38 @@ TwcMeterRun() {
     m.hit(3, 100, t + 4000 + m.idleSecs * 1000 + 1)
     s := m.standings(t + 20000)
     TwcCheck(s.Length = 1 && s[1].player = 3 && s[1].name = "Player 4", "a hit after the idle time starts a new fight (" s.Length " rows, '" s[1].name "')")
+    ; layout 33's hits: dealt and taken, the breakdown, the history, the whole game, the pin, the chat line
+    m.reset(), m.names := Map(0, "Ruzai", 1, "Kaelith"), m.typeNames := Map("Hpal", "Paladin", "nogl", "Ogre Lord", "ngh1", "Ghoul")
+    t := 2000000
+    H(from, to, amt, src, tgt, attack, dt, at) => m.addHit({ amount: amt, from: from, to: to, src: src, tgt: tgt, attack: attack, dmgType: dt }, at)
+    H(0, 12, 1000, "Hpal", "nogl", 1, 4, t), H(0, 12, 3000, "Hpal", "nogl", 0, 14, t + 1000), H(1, 12, 500, "Hblm", "ngh1", 0, 8, t + 1000)
+    H(12, 0, 700, "nogl", "Hpal", 1, 4, t + 2000)
+    s := m.standings(t + 2000)
+    b := m.breakdown(0, "src", t + 2000), bt := m.breakdown(0, "tgt", t + 2000)
+    TwcCheck(s.Length = 2 && s[1].dmg = 4000 && s[1].hits = 2 && s[1].max = 3000 && b.Length = 2 && b[1].name = "Magic spell · Paladin" && b[1].dmg = 3000
+        && b[2].name = "Attack · Paladin" && Abs(b[1].share - 0.75) < 0.001 && bt.Length = 1 && bt[1].name = "Ogre Lord",
+        "dealt: Ruzai 4000 in 2 hits (top 3000); sources '" (b.Length ? b[1].name : "") "' 75%, 'Attack · Paladin'; targets: Ogre Lord")
+    m.mode := "taken"
+    s := m.standings(t + 2000)
+    TwcCheck(s.Length = 1 && s[1].player = 0 && s[1].dmg = 700 && m.breakdown(0, "src", t + 2000)[1].name = "Attack · Ogre Lord",
+        "taken: Ruzai took 700, from 'Attack · Ogre Lord' (the creeps' hits on players)")
+    m.mode := "dealt", m.filter := "ngh1", m.filterName := "Ghoul"
+    s := m.standings(t + 2000)
+    TwcCheck(s.Length = 1 && s[1].player = 1 && s[1].dmg = 500, "the pin on Ghoul: only Kaelith's 500 on it")
+    m.filter := "nogl", m.filterName := "Ogre Lord"
+    rt := m.reportText(t + 2000)
+    TwcCheck(rt = "Damage on Ogre Lord (fight 0:02): 1. Ruzai 4K 100%", "the chat line: '" rt "'")
+    m.filter := "", m.filterName := ""
+    H(1, 12, 9000, "Hblm", "nogl", 0, 8, t + 2000 + m.idleSecs * 1000 + 1)          ; a new fight
+    s := m.standings(t + 30000)
+    old := (m.page := 1, m.standings(t + 30000)), whole := (m.page := -1, m.standings(t + 30000))
+    m.page := 0
+    TwcCheck(m.fights.Length = 1 && s.Length = 1 && s[1].dmg = 9000 && old.Length = 2 && old[1].dmg = 4000 && whole[1].player = 1 && whole[1].dmg = 9500
+        && whole[2].dmg = 4000 && m.pages().Length = 3 && InStr(m.pageLabel(t + 30000), "Last fight"),
+        "a second fight: this one 9000, the one before kept (4000), the whole game adds them (" (whole.Length ? whole[1].dmg : "") "), pages game / before / now")
+    m.stepPage(-1), p1 := m.page, m.stepPage(-1), p2 := m.page, m.stepPage(-1), p3 := m.page, m.stepPage(1), m.stepPage(1), m.stepPage(1)
+    TwcCheck(p1 = 1 && p2 = -1 && p3 = -1 && m.page = 0, "‹ goes to the fight before, then the whole game (and stops); › back to now")
+    m.reset()
     m.setSample(true)
     Sleep(1200)
     m.tick()

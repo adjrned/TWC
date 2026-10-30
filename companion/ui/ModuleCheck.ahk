@@ -43,6 +43,8 @@ ModuleCheckFeatures() => [
     ["Damage meter feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
     ["Hide the UI, again (1.5 s pass)", "hide UI: the .* (hidden again|anchored again)", ""],
     ["Buff durations (probe)", "buff timers: '[^']+' .* appeared", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
+    ["Damage meter hits (taken, sources)", "damage: unit type '....' is named", ""],
+    ["Map text lines (the map's damage total, probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
     ["Damage meter names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
 ]
 

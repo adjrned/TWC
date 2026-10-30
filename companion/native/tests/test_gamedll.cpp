@@ -244,6 +244,24 @@ int main() {
           && SiteTarget(g_base + 0x24aeef) == g_base + 0x6d6f80 && !memcmp(g_base + 0x6d6f91, "\x8B\x45\x10\x89\x01", 5) && !memcmp(g_base + 0x6d6f83, "\x8B\x45\x08\x8B\x00\x89\x41\x10", 8)
           && !memcmp(g_base + 0x24af01, "\x8D\x4D\xFC\x51\x8B\xCE\xFF\x92\x20\x01\x00\x00", 12),
           "the damage feed: CUnit's +0x120 is +6CF530 (ret 0x10, *dealt written), the record's source [+0] and amount [+0x10]");
+    // layout 33's hit details: the ctor's 2nd argument -> [+0x14], 4th -> [+0xc], 5th -> [+4]; UnitDamageTarget passes
+    // 1 << damage type (cl = its 7th), flags 0x100 (attack) | 1 (ranged), then writes the attack type (its 6th) at [+0x20]
+    CHECK(!memcmp(g_base + 0x6d6f8b, "\x8B\x45\x0C\x89\x41\x14", 6) && !memcmp(g_base + 0x6d6f96, "\x8B\x45\x18\x89\x41\x04", 6) && !memcmp(g_base + 0x6d6f9c, "\x8B\x45\x14\x89\x41\x0C", 6)
+          && !memcmp(g_base + 0x24aea9, "\x8B\x4D\x20", 3) && !memcmp(g_base + 0x24aee1, "\xB8\x01\x00\x00\x00\xD3\xE0", 7) && !memcmp(g_base + 0x24aeca, "\xC7\x45\xFC\x00\x01\x00\x00", 7)
+          && !memcmp(g_base + 0x24aeb5, "\x8B\x5D\x1C", 3) && !memcmp(g_base + 0x24aee8, "\x8D\x4D\xD8", 3) && !memcmp(g_base + 0x24aefb, "\x89\x5D\xF8", 3),
+          "the record: [+0x14] 1 << damage type, [+0xc] attack / ranged, [+4] weapon, [+0x20] attack type (record at ebp-0x28, written at ebp-8)");
+    // the unit types' names: GetUnitName +236570 -> +3782B0 fastcall([unit+0x30], 0), field "name", else "Default string"
+    CHECK(!memcmp(g_base + 0x236581, "\x8B\x48\x30\x33\xD2\xE8", 6) && SiteTarget(g_base + 0x236586) == g_base + RVA_OBJECT_NAME && FnStart(RVA_OBJECT_NAME)
+          && !memcmp(g_base + RVA_OBJECT_NAME, "\x56\x8B\xF2\xBA", 4) && !strcmp(*(const char **)(g_base + RVA_OBJECT_NAME + 4), "name")
+          && g_base[0x3782d6] == 0xB8 && !strcmp(*(const char **)(g_base + 0x3782d7), "Default string"),
+          "unit type names: GetUnitName's lookup +3782B0 (the 'name' field, 'Default string' without one)");
+    // the map's text lines: the 3 DisplayText natives call the game UI's +3A8EB0 (thiscall, 5 arguments, ret 0x14)
+    bool mtSites = true;
+    for (DWORD rva : MT_SITES)
+        mtSites = mtSites && g_base[rva] == 0xE8 && SiteTarget(g_base + rva) == g_base + RVA_UI_TEXT;
+    CHECK(mtSites && FnStart(RVA_UI_TEXT) && !memcmp(g_base + 0x3a8ef8, "\xC2\x14\x00", 3) && SiteTarget(g_base + 0x22ffcc) == g_base + RVA_GET_UI
+          && SiteTarget(g_base + 0x23011c) == g_base + RVA_GET_UI && SiteTarget(g_base + 0x230096) == g_base + RVA_GET_UI,
+          "map text: +22FFD3, +23009D, +230123 call +3A8EB0 (ret 0x14) on the game UI");
     // the players' names: GetPlayerName +233F70 -> +29A990 (the slot byte [+0x30]), the string at +0x24 read by +98510 ([[+8]+0x1C])
     CHECK(SiteTarget(g_base + 0x233f85) == g_base + 0x29a990 && !memcmp(g_base + 0x29a9a4, "\x8D\x4F\x24\xE8", 4) && SiteTarget(g_base + 0x29a9a7) == g_base + 0x98510
           && !memcmp(g_base + 0x98510, "\x8B\x41\x08\x85\xC0\x74\x04\x8B\x40\x1C\xC3", 11) && !memcmp(g_base + 0x29a9ca, "\x0F\xB6\x47\x30", 4),

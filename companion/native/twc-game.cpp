@@ -44,6 +44,20 @@
 static const DWORD BUILD_128F = 7680;
 
 #pragma pack(push, 4)
+// layout 33: one hit of the damage meter's feed (UnitDamage), as the record and the units have it
+static const int DM_RING = 2048, DM_TYPES = 128;
+struct DmHit {
+    float amount;           // what was dealt (after armor and type)
+    DWORD srcType, tgtType; // the source's and the target's unit type ([unit+0x30], 'Hpal')
+    DWORD target;           // the target unit (its address: an id while it lives)
+    BYTE from, to;          // their owners (0-15: 12-15 the neutrals)
+    BYTE flags;             // DMH_*: an attack, ranged, the source a hero, the target a hero
+    BYTE dmgType;           // the damage type (DAMAGE_TYPE_*: the bit set in the record's +0x14), 0xff none
+    BYTE atkType;           // the attack type (ATTACK_TYPE_*: the record's +0x20)
+    BYTE weapon;            // the weapon type (the record's +4)
+    BYTE pad[2];
+};
+static const BYTE DMH_ATTACK = 1, DMH_RANGED = 2, DMH_SRC_HERO = 4, DMH_TGT_HERO = 8;
 struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD magic;            // 'TWC1'
     DWORD layout;           // 28
@@ -234,6 +248,18 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     volatile LONG btNewSeq; // module: +1 a buff's length learned (written first, at [seq & 15])
     DWORD btNewId[16];
     float btNewLen[16];
+    // layout 33: the damage meter's hits one by one (players' units against anyone's, the neutrals' against
+    // players'), the unit types' names, your selection; the map's text lines (DisplayTextToPlayer & co)
+    volatile LONG dmRingSeq; // module: hits written in all; hit n is dmRing[n & (DM_RING - 1)], written before the +1
+    DmHit dmRing[DM_RING];
+    DWORD dmSelUnit;        // module: your selection's active unit (its address: an id), 0 none
+    DWORD dmSelType;        //   its type
+    int dmSelOwner;         //   its owner
+    volatile LONG dmTypeN;  // module: unit types named below (each written before the +1; DM_TYPES at most)
+    DWORD dmTypeId[DM_TYPES];
+    char dmTypeName[DM_TYPES][32];  // the type's name as GetUnitName gives it (UTF-8, the codes out)
+    volatile LONG mtSeq;    // module: the map's text lines shown to you; line n is mtText[n & 7], written before the +1
+    char mtText[8][128];    //   the codes out
 };
 #pragma pack(pop)
 
@@ -4192,7 +4218,30 @@ static void FollowUnitTip() {
 // +0x29a990) reads it: the string at +0x24, its text [[+0x24+8]+0x1c].
 static const DWORD RVA_UNIT_DAMAGE = 0x6cf530, UNIT_DAMAGE_SLOT = 0x120, DMG_SOURCE = 0;
 typedef void(__fastcall *UnitDamageFn)(void *, int, float *, BYTE *, DWORD, DWORD);
+// The record as UnitDamageTarget (+0x24ae80) fills it through its ctor +0x6d6f80: [+4] the weapon type,
+// [+0xc] 0x100 an attack | 1 ranged, [+0x14] 1 << the damage type, [+0x20] the attack type (written after).
+// Each hit also goes into dmRing (layout 33) with the units' types; a type's name is looked up later on
+// the game thread (DamageTypesPass), as GetUnitName (+0x236570) does it: +0x3782b0 fastcall(type, 0),
+// the object data's "name" ("Default string" when it has none).
+static const DWORD REC_WEAPON = 4, REC_FLAGS = 0xc, REC_AMOUNT = 0x10, REC_DMG_TYPE = 0x14, REC_ATK_TYPE = 0x20, RVA_OBJECT_NAME = 0x3782b0;
+typedef const char *(__fastcall *ObjectNameFn)(DWORD, DWORD);
+static void PlainName(const char *s, char *out, int n);
 static bool g_dmHooked;
+static DWORD g_dmPend[32];              // types seen, not named yet (the game thread's: the hook and the pass both run there)
+static int g_dmPendN;
+static void DamageType(DWORD id) {
+    if (!id)
+        return;
+    LONG n = g_shared->dmTypeN;
+    for (LONG i = 0; i < n && i < DM_TYPES; i++)
+        if (g_shared->dmTypeId[i] == id)
+            return;
+    for (int i = 0; i < g_dmPendN; i++)
+        if (g_dmPend[i] == id)
+            return;
+    if (n + g_dmPendN < DM_TYPES && g_dmPendN < 32)
+        g_dmPend[g_dmPendN++] = id;
+}
 static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
     if (!(dealt > 0 && dealt < 1e12f) || !rec)
         return;
@@ -4200,15 +4249,51 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt) {
     if (!IsUnit(src) || !IsUnit(target))
         return;
     int from = *(int *)(src + UNIT_OWNER), to = *(int *)(target + UNIT_OWNER);
-    if (from < 0 || from > 11 || from == to)
-        return;                             // players only: 12-15 are the neutrals (the creeps' "Player 13" row, the user's screenshot)
-    g_shared->dmTotal[from] += dealt;
-    g_shared->dmHits[from]++;
-    InterlockedIncrement(&g_shared->dmSeq);
+    if (from < 0 || from > 15 || to < 0 || to > 15 || from == to || from > 11 && to > 11)
+        return;                             // one side a player: 12-15 are the neutrals (the creeps among themselves aren't anyone's)
+    if (from <= 11) {                       // dealt: players only (the creeps' "Player 13" row, the user's screenshot)
+        g_shared->dmTotal[from] += dealt;
+        g_shared->dmHits[from]++;
+        InterlockedIncrement(&g_shared->dmSeq);
+    }
+    LONG n = g_shared->dmRingSeq;
+    DmHit &h = g_shared->dmRing[n & (DM_RING - 1)];
+    DWORD st = *(DWORD *)(src + 0x30), tt = *(DWORD *)(target + 0x30), fl = *(DWORD *)(rec + REC_FLAGS), dm = *(DWORD *)(rec + REC_DMG_TYPE);
+    h.amount = dealt, h.srcType = st, h.tgtType = tt, h.target = (DWORD)target;
+    h.from = (BYTE)from, h.to = (BYTE)to;
+    h.flags = (fl & 0x100 ? DMH_ATTACK : 0) | (fl & 1 ? DMH_RANGED : 0) | ((st >> 24) - 'A' < 26 ? DMH_SRC_HERO : 0) | ((tt >> 24) - 'A' < 26 ? DMH_TGT_HERO : 0);
+    unsigned long bit;
+    h.dmgType = dm && !(dm & (dm - 1)) && _BitScanForward(&bit, dm) ? (BYTE)bit : 0xff;
+    h.atkType = (BYTE)*(DWORD *)(rec + REC_ATK_TYPE), h.weapon = (BYTE)*(DWORD *)(rec + REC_WEAPON);
+    InterlockedExchange(&g_shared->dmRingSeq, n + 1);
+    DamageType(st), DamageType(tt);
     static int logs;
     if (logs < 3)
-        logs++, Log("damage: player %d's unit %p dealt %.1f to player %d's %p (before armor %.1f, flags %lX)", from, src, dealt, to, target,
-                    *(float *)(rec + 0x10), *(DWORD *)(rec + 0xc));
+        logs++, Log("damage: player %d's unit %p dealt %.1f to player %d's %p (before armor %.1f, flags %lX, damage type %u, attack type %u, weapon %u)", from, src, dealt, to, target,
+                    *(float *)(rec + REC_AMOUNT), fl, h.dmgType, h.atkType, h.weapon);
+}
+// on the game thread: the types seen since, named (GetUnitName's lookup)
+static void DamageTypesPass() {
+    static int logs;
+    while (g_dmPendN > 0) {
+        DWORD id = g_dmPend[--g_dmPendN];
+        LONG n = g_shared->dmTypeN;
+        if (n >= DM_TYPES)
+            break;
+        char name[32] = "";
+        __try {
+            const char *s = ((ObjectNameFn)(g_base + RVA_OBJECT_NAME))(id, 0);
+            if (s && strcmp(s, "Default string"))
+                PlainName(s, name, sizeof(name));
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            name[0] = 0;
+        }
+        g_shared->dmTypeId[n] = id;
+        memcpy(g_shared->dmTypeName[n], name, sizeof(name));
+        InterlockedExchange(&g_shared->dmTypeN, n + 1);
+        if (logs < 6)
+            logs++, Log("damage: unit type '%c%c%c%c' is named '%s'", (char)(id >> 24), (char)(id >> 16), (char)(id >> 8), (char)id, name);
+    }
 }
 static void __fastcall UnitDamage(void *target, int edx, float *dealt, BYTE *rec, DWORD a3, DWORD a4) {
     ((UnitDamageFn)(g_base + RVA_UNIT_DAMAGE))(target, edx, dealt, rec, a3, a4);
@@ -4315,6 +4400,81 @@ static void DamageNames() {
             logs++, Log("damage: reading the player names faulted (after:%s)", o ? b : " none");
     }
 }
+// your selection's active unit (for the meter's "this target" filter), read by the worker
+static void DamageSelection() {
+    BYTE *unit = nullptr;
+    __try {
+        BYTE *state;
+        int local = LocalPlayer(&state);
+        BYTE *player = local >= 0 ? *(BYTE **)(state + 0x58 + 4 * local) : nullptr, *sel = player ? *(BYTE **)(player + SEL_PLAYER_SELECTION) : nullptr;
+        unit = sel ? *(BYTE **)(sel + SEL_ACTIVE) : nullptr;
+        if (!IsUnit(unit))
+            unit = nullptr;
+        g_shared->dmSelType = unit ? *(DWORD *)(unit + 0x30) : 0, g_shared->dmSelOwner = unit ? *(int *)(unit + UNIT_OWNER) : -1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        unit = nullptr;
+    }
+    g_shared->dmSelUnit = (DWORD)unit;
+}
+
+// -- the map's text lines (the damage meter's cross-check with the map's own total) -----------
+// DisplayTextToPlayer (+0x22ff30), DisplayTimedTextFromPlayer (+0x22ffe0) and DisplayTimedTextToPlayer
+// (+0x2300c0) check the player is you (+0x299400), then each calls the game UI's text line +0x3a8eb0
+// thiscall(ui, float x, float y, const char *text, float secs, DWORD colour), ret 0x14 (its only 3
+// callers: +0x22ffd3, +0x23009d, +0x230123). While the meter is on those calls are pointed at
+// MapTextHook: the game's own first, then the line is kept in mtText (the codes out) and the first
+// ones logged, so the map's damage line can be found (TWRPG's damage ability: "text shown in the
+// game, not the chat", the user's word). Rewritten on the game thread, put back off and on unload.
+static const DWORD RVA_UI_TEXT = 0x3a8eb0, MT_SITES[3] = { 0x22ffd3, 0x23009d, 0x230123 };
+typedef void(__fastcall *UiTextFn)(void *, int, float, float, const char *, float, DWORD);
+static bool g_mtHooked, g_mtBad;
+static void __fastcall MapTextHook(void *ui, int edx, float x, float y, const char *text, float secs, DWORD colour) {
+    ((UiTextFn)(g_base + RVA_UI_TEXT))(ui, edx, x, y, text, secs, colour);
+    __try {
+        if (!text || !text[0])
+            return;
+        LONG n = g_shared->mtSeq;
+        char *line = g_shared->mtText[n & 7];
+        PlainName(text, line, 128);
+        InterlockedExchange(&g_shared->mtSeq, n + 1);
+        // logged: the first 20, and up to 40 that say damage (the map's total, to find its form)
+        static int logs, dmgLogs;
+        char low[128];
+        strcpy_s(low, line), _strlwr_s(low);
+        bool dmg = strstr(low, "damage") || strstr(low, "dmg") || strstr(low, "dps");
+        if (dmg ? dmgLogs++ < 40 : logs++ < 20)
+            Log("map text: '%s' (%.1f s)", line, secs);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+static bool MapTextSites(bool on) {
+    const BYTE *from = on ? g_base + RVA_UI_TEXT : (BYTE *)MapTextHook, *to = on ? (BYTE *)MapTextHook : g_base + RVA_UI_TEXT;
+    for (DWORD rva : MT_SITES) {
+        BYTE *site = g_base + rva;
+        if (site[0] != 0xE8 || SiteTarget(site) != from && SiteTarget(site) != to) {
+            Log("map text: the call at +%06lX isn't the game's to its text line (+%06lX): left as it is", rva, RVA_UI_TEXT);
+            return false;
+        }
+    }
+    for (DWORD rva : MT_SITES) {
+        BYTE *site = g_base + rva;
+        LONG rel = (LONG)(to - (site + 5));
+        if (SiteTarget(site) != to && !WriteCode(site + 1, (const BYTE *)&rel, 4)) {
+            Log("map text: writing the call at +%06lX failed", rva);
+            return false;
+        }
+    }
+    g_mtHooked = on;
+    Log(on ? "map text: on (the 3 DisplayText natives' lines are read)" : "map text: off (the calls are the game's again)");
+    return true;
+}
+// on the game thread: with the damage meter
+static void MapTextPass() {
+    bool on = g_shared->dmOn && !g_mtBad;
+    if (on != g_mtHooked && (!on || FnStart(RVA_UI_TEXT)) && !MapTextSites(on))
+        g_mtBad = true;
+}
+
 // the worker's part: check once, then follow the switch
 static void FollowDamage(DWORD now) {
     static int checked;             // 1 checked out, 2 refused
@@ -4337,6 +4497,8 @@ static void FollowDamage(DWORD now) {
     }
     if (on && now - namesAt >= 2000)
         namesAt = now, DamageNames();
+    if (on)
+        DamageSelection();
     if (checked && on != g_dmHooked && !SwapUnitDamage(on))
         checked = 2, g_shared->dmState = 3;
     else if (g_shared->dmState != 3)
@@ -6151,6 +6313,8 @@ static void DisplayPass() {
     LatencyPass();
     CountdownPass();
     AlliesPass();
+    DamageTypesPass();
+    MapTextPass();
     UiHidePass();
     UiLayoutPass();
     BuffBarSizePass();
@@ -6162,7 +6326,7 @@ static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
     bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && BuffBarScale() == 1 && !g_bbApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -7002,6 +7166,8 @@ static void RestoreAll() {
     SwapTooltips(false);
     SwapUnitTip(false);
     SwapUnitDamage(false);
+    if (g_mtHooked)
+        MapTextSites(false);
     TimerStartWatch(false);
     FastMenuHook(false);
     if (g_prSites && g_portraitHooked)
@@ -7286,7 +7452,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 32;
+        g_shared->layout = 33;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -7297,7 +7463,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters, the allies hooks
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false), g_mtHooked && MapTextSites(false);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters, the allies hooks
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;
