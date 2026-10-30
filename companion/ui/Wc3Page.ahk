@@ -76,6 +76,8 @@ Wc3Features() {
                 OptDivider(d),
                 OptCheck(d, "Allied units' abilities and cooldowns too", timersHud.allies, (v) => timersHud.setAllies(v)),
                 OptNote(d, "As WFE's ally ability bar: select an ally's unit to see its command card. Clicking its buttons does nothing."),
+                OptCheck(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
+                OptNote(d, "Select a boss to see its abilities and their cooldowns, as an observer sees them. Needs the switch above."),
                 OptCheck(d, "Alt + click an ability or item: tell your allies its cooldown", timersHud.pings, (v) => timersHud.setPings(v)),
                 OptNote(d, "As WFE's ping: 'Paladin >> Holy Light | Cooldown: 7', '| Ready!' or '| Not enough mana!' to your allies (who gets it: the game's Chat dialog).")) },
         { tab: "timers", title: "Buff timers", badge: "1.28f",

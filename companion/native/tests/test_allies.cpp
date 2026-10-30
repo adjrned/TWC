@@ -85,6 +85,15 @@ int main() {
     *(BYTE **)(sel + SELECTION_ACTIVE) = nullptr; click(nullptr, 0, 1); int c4 = clicks;
     CHECK(cvt[0x6c / 4] == (DWORD)AllyClickHook && c1 == 0 && c2 == 1 && c3 == 2 && c4 == 3,
           "clicks: an ally's card dropped; yours, an enemy's, none: the game's click (%d %d %d %d)", c1, c2, c3, c4);
+    // enemies too (alOn | AL_ENEMIES): an enemy's commands seen, its ability shown, a click on its card dropped
+    sh.alOn = 1 | AL_ENEMIES;
+    int e1 = sees2(enemy, 0), de0 = displays;
+    AllyAbilityHook(enemy, ability);
+    *(BYTE **)(sel + SELECTION_ACTIVE) = enemy; click(nullptr, 0, 1); int c5 = clicks;
+    *(BYTE **)(sel + SELECTION_ACTIVE) = mine; click(nullptr, 0, 1); int c6 = clicks;
+    AllyAbilityHook(mine, ability);
+    CHECK(e1 == 1 && displays == de0 + 1 && c5 == 3 && c6 == 4, "enemies too: an enemy's commands seen, its ability shown, its card's click dropped; yours still the game's");
+    sh.alOn = 1;
     sh.alOn = 0; AlliesPass();
     CHECK(!g_alHooked && !memcmp(f, sees, 7) && *(DWORD *)(push + 1) == (DWORD)(img + RVA_ABILITY_CB) && cvt[0x6c / 4] == (DWORD)(img + RVA_BUTTON_CLICK),
           "off: the start's 7 bytes, the push and the button's click entry are the game's again");

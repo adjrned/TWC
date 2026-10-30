@@ -6,7 +6,7 @@
 ;  after a few seconds with none (its numbers stay until the next one starts).
 ;  Never takes the focus from the game; drag it to move it, an edge or corner
 ;  to resize it (WindowScale, kept as ini [Window] meterScale); its place:
-;  ini [DamageMeter] x / y. Shown while it's on and Warcraft III is up, or
+;  ini [DamageMeter] x / y. Shown while it's on and Warcraft III is the active window, or
 ;  with "Show a sample" (made-up players fighting, to place and size it).
 ;  The hits come in through hit(player, amount): from the game module's damage
 ;  feed (layout 29: each player's total dealt to other players' units, read 4
@@ -154,7 +154,7 @@ class DamageMeter {
         global toolEnabled
         if this.sample
             return true
-        return this.enabled && !this.hidden && toolEnabled && WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1
+        return this.enabled && !this.hidden && toolEnabled && WinActive(WarcraftIII)      ; only over the game in front (the user's ask)
     }
     ; the module's feed: switched as the meter is, its new damage into hit()
     feed() {

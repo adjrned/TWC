@@ -152,7 +152,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD csState;          // module: 0 the game's own, 1 set, 3 refused (see the log)
     float csGame;           // module: the game's own countdown, as read (0 = not read)
     // layout 18: allies' abilities on the command card, and cooldown pings
-    DWORD alOn;             // companion: 1 = allied units' abilities and cooldowns on the command card (WFE's ISALLYABILITYBAR)
+    DWORD alOn;             // companion: 1 = allied units' abilities and cooldowns on the command card (WFE's ISALLYABILITYBAR);
+                            //   | 2 = enemies' too (bosses, creeps: AL_ENEMIES, a bit so older modules just see it on)
     DWORD alState;          // module: 0 off, 1 on, 3 refused (see the log)
     DWORD pingOn;           // companion: 1 = keep `hover` up to date (the ping key is on)
     DWORD hover;            // module: 1 the cursor is on a command card or inventory button
@@ -3679,6 +3680,7 @@ static void FollowPortrait() {
 // orders [+0xb68840..+0xb68858]), so the click is dropped here too (AllyClickHook, a swap of
 // CCommandButton's vtable entry +0x6c, as the bar and tooltip hooks) while the card shows a
 // unit only this feature shows: an ally's you don't control, when you aren't an observer.
+// With alOn's bit 2 the same goes for enemies' units (bosses, creeps): the card an observer sees.
 // All on the game thread, put back when off and on unload.
 static const DWORD RVA_SEES_ALL = 0x6bffd0, RVA_ABILITY_CB = 0x3e4060, RVA_ABILITY_CB_PUSH = 0x3fae1a,
     RVA_CONTROLS = 0x6a2d90, RVA_ABILITY_DISPLAY = 0x6b2700, DATA_ABILITY_DEFAULT = 0xb68800,
@@ -3689,8 +3691,10 @@ typedef void(__fastcall *ButtonClickFn)(void *, int, DWORD);
 static BYTE *g_alTramp;             // the 7 bytes and a jmp back (stays allocated, as Fast menu's)
 static bool g_alHooked, g_alBad, g_alClickHooked;
 
-// a unit of yours or an ally's (a CUnit: owner [+0x58], the alliance test of the colours)
-static bool MineOrAllied(BYTE *unit) {
+static const DWORD AL_ENEMIES = 2;
+// a unit whose card this feature shows: yours or an ally's (a CUnit: owner [+0x58], the alliance
+// test of the colours), with AL_ENEMIES anyone's
+static bool CardShown(BYTE *unit) {
     if (!unit || (DWORD)(unit - (BYTE *)0x10000) > 0x7ffeffff || *(DWORD *)unit != (DWORD)(g_base + RVA_UNIT_VT))
         return false;
     BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
@@ -3699,7 +3703,7 @@ static bool MineOrAllied(BYTE *unit) {
     int owner = *(int *)(unit + UNIT_OWNER), local = *(short *)(state + 0x28);
     if (owner < 0 || owner > 15 || local < 0 || local > 15)
         return false;
-    return owner == local || Allied(state, local, owner);
+    return owner == local || Allied(state, local, owner) || (g_shared->alOn & AL_ENEMIES);
 }
 // the game's own: does the local player control this unit
 static bool Controls(BYTE *unit) { return GameCall(g_base + RVA_CONTROLS, (DWORD)unit, 0, 0, nullptr) != 0; }
@@ -3708,7 +3712,7 @@ static int __fastcall AllySeesHook(void *unit, int edx) {
     if (r || !g_shared->alOn || g_alBad)
         return r;
     __try {
-        return MineOrAllied((BYTE *)unit) ? 1 : 0;
+        return CardShown((BYTE *)unit) ? 1 : 0;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_alBad = true;
         return 0;
@@ -3719,13 +3723,18 @@ static int __fastcall AllyAbilityHook(void *unit, void *ability) {
     if (!g_shared->alOn || g_alBad || !ability || !unit)
         return r;
     __try {
-        if (MineOrAllied((BYTE *)unit) && !Controls((BYTE *)unit)) {    // the game's own did the ones you control
+        if (CardShown((BYTE *)unit) && !Controls((BYTE *)unit)) {    // the game's own did the ones you control
             BYTE *a = (BYTE *)ability, *e = *(BYTE **)(a + 0x1bc);     // as the game's: [+0x1bc] > 0 ? [[+0x1bc]+8] : [+0xb68800]
             DWORD arg = (LONG)(DWORD)e > 0 ? *(DWORD *)(e + 8) : *(DWORD *)(g_base + DATA_ABILITY_DEFAULT);
             GameCall(g_base + RVA_ABILITY_DISPLAY, (DWORD)unit, 0, 1, &arg);
             static int logs;
             if (!logs++)
                 Log("allies' abilities: the first ability shown for unit %p (owner %d)", unit, *(int *)((BYTE *)unit + UNIT_OWNER));
+            static int enemyLogs;
+            BYTE *st;
+            int local, owner = *(int *)((BYTE *)unit + UNIT_OWNER);
+            if (!enemyLogs && (g_shared->alOn & AL_ENEMIES) && (local = LocalPlayer(&st)) >= 0 && owner != local && !Allied(st, local, owner))
+                enemyLogs++, Log("allies' abilities: the first enemy's ability shown (unit %p, owner %d)", unit, owner);
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_alBad = true, g_shared->alState = 3;
@@ -3741,7 +3750,7 @@ static bool ClickOnAlly() {
         return false;
     BYTE *player = *(BYTE **)(state + 0x58 + 4 * local), *sel = player ? *(BYTE **)(player + PLAYER_SELECTION) : nullptr;
     BYTE *unit = sel ? *(BYTE **)(sel + SELECTION_ACTIVE) : nullptr;
-    return MineOrAllied(unit) && !Controls(unit) && !((SeesFn)g_alTramp)(unit, 0);
+    return CardShown(unit) && !Controls(unit) && !((SeesFn)g_alTramp)(unit, 0);
 }
 static void __fastcall AllyClickHook(void *btn, int edx, DWORD mouse) {
     if (g_alHooked && !g_alBad && g_alTramp) {
@@ -3811,8 +3820,8 @@ static bool AlliesHook(bool on) {
         }
         g_alHooked = true;
         bool clicks = SwapAllyClick(true);
-        Log("allies' abilities: on (+%06lX detoured, the callback at +%06lX is ours; clicks on allies' cards %s)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH,
-            clicks ? "dropped" : "left to the game's own control test");
+        Log("allies' abilities: on (+%06lX detoured, the callback at +%06lX is ours; clicks on allies' cards %s; enemies' %s)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH,
+            clicks ? "dropped" : "left to the game's own control test", g_shared->alOn & AL_ENEMIES ? "too" : "not");
         return true;
     }
     SwapAllyClick(false);

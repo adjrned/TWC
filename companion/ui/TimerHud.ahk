@@ -45,9 +45,15 @@ class TimerHud {
         HotIf()
     }
     allies => Integer(Ini(this.section, "allies", 0))
+    ; enemies' units too (bosses, creeps): alOn bit 2, the card an observer sees
+    alliesEnemies => Integer(Ini(this.section, "alliesEnemies", 0))
     pings => Integer(Ini(this.section, "ping", 1))
     setAllies(on) {
         SetIni(on ? 1 : 0, this.section, "allies")
+        this.pushGame()
+    }
+    setAlliesEnemies(on) {
+        SetIni(on ? 1 : 0, this.section, "alliesEnemies")
         this.pushGame()
     }
     setPings(on) {
@@ -180,7 +186,7 @@ class TimerHud {
         if (v := this.gm.live()) && NumGet(v, Shm.layout, "uint") >= 11
             NumPut("uint", this.gm.enabled ? (this.cooldowns ? 1 : 0) | (this.buffs ? 2 : 0) : 0, v, Shm.itOn)
         if v && NumGet(v, Shm.layout, "uint") >= 18 {
-            NumPut("uint", this.gm.enabled && this.cooldowns && this.allies ? 1 : 0, v, Shm.alOn)
+            NumPut("uint", this.gm.enabled && this.cooldowns && this.allies ? 1 | (this.alliesEnemies ? 2 : 0) : 0, v, Shm.alOn)
             NumPut("uint", this.gm.enabled && this.cooldowns && this.pings ? 1 : 0, v, Shm.pingOn)
         }
         if v && NumGet(v, Shm.layout, "uint") >= 19
@@ -213,7 +219,7 @@ class TimerHud {
         if st = "Off" || !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 18
             return st
         al := NumGet(v, Shm.alState, "uint")
-        return st (this.allies ? al = 3 ? " · allies' abilities refused (see the log)" : al = 1 ? " · allies' too" : "" : "")
+        return st (this.allies ? al = 3 ? " · allies' abilities refused (see the log)" : al = 1 ? this.alliesEnemies ? " · allies' and enemies' too" : " · allies' too" : "" : "")
             . (this.pings ? " · Alt + click pings" : "")
     }
     buffStatus() => this.statusOf(this.buffs, "under the buff icons")
