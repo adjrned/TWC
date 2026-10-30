@@ -270,16 +270,28 @@ class RemapEngine {
             if !IsWheel(base) && this.holding.Get(base, false)
                 return                          ; the key's own repeat: this thread presses again itself
             this.holding[base] := true, start := A_TickCount, presses := 0
+            ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left
+            ; it "down" and the loop pressed on by itself (a user's report, 2026-10-29). A key that isn't the
+            ; one sent (F1 -> an item slot) is asked of Windows too (GetAsyncKeyState can't miss a key-up), and
+            ; goes until let go as WFE's; one sent as itself (its own key quickcasts) can't be told apart from
+            ; what's sent, so it keeps the 20 s most a repeat lasts
+            same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
+            vk := GetKeyVK(base), why := ""
             loop {
                 SendInput(q this.keyText(game)), presses++
                 if told++ < 3
                     DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
-                ; (the time from now each wait: no 20 s cap here, as WFE's, until it's let go)
-                if !s.repeat || IsWheel(base) || this.waitHeld(base, A_TickCount, s.interval) != ""
+                if !s.repeat || IsWheel(base)
                     break
+                if (why := this.waitHeld(base, same ? start : A_TickCount, s.interval)) != ""
+                    break
+                if !same && vk && !(DllCall("GetAsyncKeyState", "int", vk, "short") & 0x8000) {
+                    why := "the key isn't down (Windows says; its key-up never came)"
+                    break
+                }
             }
             if presses > 1
-                DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " s.interval " ms)")
+                DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " s.interval " ms): " why)
             this.holding[base] := false
             return
         }
