@@ -255,6 +255,13 @@ int main() {
           && !memcmp(g_base + RVA_OBJECT_NAME, "\x56\x8B\xF2\xBA", 4) && !strcmp(*(const char **)(g_base + RVA_OBJECT_NAME + 4), "name")
           && g_base[0x3782d6] == 0xB8 && !strcmp(*(const char **)(g_base + 0x3782d7), "Default string"),
           "unit type names: GetUnitName's lookup +3782B0 (the 'name' field, 'Default string' without one)");
+    // allies' cards: the card fill +3FAD60 pushes +3E4020 (makes the buttons: +6B2650, ret 4) at +3FAE04 and +3E4060 (updates: +6B2700)
+    // at +3FAE1A; both test control (+6A2D90) first
+    CHECK(g_base[RVA_ABILITY_MAKE_PUSH] == 0x68 && *(DWORD *)(g_base + RVA_ABILITY_MAKE_PUSH + 1) == (DWORD)(g_base + RVA_ABILITY_MAKE_CB)
+          && SiteTarget(g_base + 0x3e4041) == g_base + RVA_CONTROLS && SiteTarget(g_base + 0x3e404d) == g_base + RVA_ABILITY_MAKE
+          && SiteTarget(g_base + 0x3e4081) == g_base + RVA_CONTROLS && SiteTarget(g_base + 0x3e408d) == g_base + RVA_ABILITY_DISPLAY
+          && FnStart(RVA_ABILITY_MAKE) && !memcmp(g_base + 0x6b26ca, "\xC2\x04\x00", 3) && !memcmp(g_base + 0x6b26a8, "\xFF\x90\xC0\x01\x00\x00", 6),
+          "the card's two callbacks: +3E4020 (pushed at +3FAE04) makes the buttons through +6B2650 (vt+0x1C0), +3E4060 updates (+6B2700), each after the control test");
     // a spell hit's ability (layout 34): GetSpellAbilityId +235000 (registered at +23AFC7) asks the event id (+235FC0: the game
     // state's trigger context +2135F0 = [state+0x1c], made when 0; slot 6 of its stack +2BB780: [ctx + slot*16 + 0x98] entries at
     // [+0x9c]); a spell event is 272 + 0..0x15; cdecl, ret 0

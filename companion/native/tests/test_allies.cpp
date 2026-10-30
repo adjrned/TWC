@@ -14,6 +14,9 @@ static BYTE *controlled;                // the unit the local player controls (+
 static int __fastcall FakeControls(BYTE *unit, int) { return unit && unit == controlled; }
 static void __fastcall FakeClick(BYTE *, int, DWORD) { clicks++; }
 static void __fastcall FakeDisplay(BYTE *, int, DWORD) { displays++; }
+static int makes;
+static void __fastcall FakeMake(BYTE *, int, DWORD) { makes++; }
+static int __fastcall FakeMakeCallback(BYTE *, BYTE *) { return 5; }
 static int __fastcall FakeCallback(BYTE *, BYTE *) { return 7; }
 // a unit state (+0x81b30): the fake keeps the value itself at the state's place
 static void __fastcall FakeStat(BYTE *at, int, float *out) { *out = *(float *)at; }
@@ -44,6 +47,8 @@ int main() {
     BYTE *callee = img + 0x500000; callee[-1] = 0xCC, callee[0] = 0x33, callee[1] = 0xC0, callee[2] = 0xC3;   // xor eax, eax; ret
     *(LONG *)(f + 8) = (LONG)(callee - (f + 12));
     Stub(RVA_ABILITY_CB, FakeCallback), Stub(RVA_CONTROLS, FakeControls), Stub(RVA_ABILITY_DISPLAY, FakeDisplay), Stub(RVA_BUTTON_CLICK, FakeClick);
+    Stub(RVA_ABILITY_MAKE_CB, FakeMakeCallback), Stub(RVA_ABILITY_MAKE, FakeMake);
+    BYTE *pushMake = img + RVA_ABILITY_MAKE_PUSH; pushMake[0] = 0x68, *(DWORD *)(pushMake + 1) = (DWORD)(img + RVA_ABILITY_MAKE_CB);
     *(DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE + 0x6c) = (DWORD)(img + RVA_BUTTON_CLICK);
     BYTE *push = img + RVA_ABILITY_CB_PUSH; push[0] = 0x68, *(DWORD *)(push + 1) = (DWORD)(img + RVA_ABILITY_CB);
     // players: local 1, allied with 2 (the colours' Allied: [p+0x38]+0x40 pair -> flags +0x78)
@@ -73,6 +78,12 @@ int main() {
     AllyAbilityHook(mine, ability); int d3 = displays;
     CHECK(r1 == 7 && d1 == 1 && r2 == 7 && d2 == 1 && d3 == 1,
           "the callback: the game's runs (returns 7), then an ally's ability display is updated, an enemy's not; yours: left to the game (it controls them)");
+    // the card's first callback (+3E4020, its push at +3FAE04): an ally's buttons made too (the card was empty without it)
+    int m1 = AllyAbilityMakeHook(ally, ability), mk1 = makes;
+    AllyAbilityMakeHook(enemy, ability); int mk2 = makes;
+    AllyAbilityMakeHook(mine, ability); int mk3 = makes;
+    CHECK(*(DWORD *)(pushMake + 1) == (DWORD)AllyAbilityMakeHook && m1 == 5 && mk1 == 1 && mk2 == 1 && mk3 == 1,
+          "the card's first callback is ours too: the game's runs (5), an ally's buttons made, an enemy's not, yours the game's");
     // a click on the command card: dropped while the selection's active unit is an ally's you don't control
     DWORD *cvt = (DWORD *)(img + RVA_COMMAND_BUTTON_VTABLE);
     *(int *)(state + 0x54) = 16;
@@ -95,8 +106,9 @@ int main() {
     CHECK(e1 == 1 && displays == de0 + 1 && c5 == 3 && c6 == 4, "enemies too: an enemy's commands seen, its ability shown, its card's click dropped; yours still the game's");
     sh.alOn = 1;
     sh.alOn = 0; AlliesPass();
-    CHECK(!g_alHooked && !memcmp(f, sees, 7) && *(DWORD *)(push + 1) == (DWORD)(img + RVA_ABILITY_CB) && cvt[0x6c / 4] == (DWORD)(img + RVA_BUTTON_CLICK),
-          "off: the start's 7 bytes, the push and the button's click entry are the game's again");
+    CHECK(!g_alHooked && !memcmp(f, sees, 7) && *(DWORD *)(push + 1) == (DWORD)(img + RVA_ABILITY_CB) && cvt[0x6c / 4] == (DWORD)(img + RVA_BUTTON_CLICK)
+          && *(DWORD *)(pushMake + 1) == (DWORD)(img + RVA_ABILITY_MAKE_CB),
+          "off: the start's 7 bytes, both pushes and the button's click entry are the game's again");
     sh.alOn = 1; AlliesPass(); RestoreAll();
     CHECK(!g_alHooked && !memcmp(f, sees, 7) && cvt[0x6c / 4] == (DWORD)(img + RVA_BUTTON_CLICK), "RestoreAll (unload) puts them back too");
 

@@ -3737,6 +3737,13 @@ static void FollowPortrait() {
 // unit only this feature shows: an ally's you don't control, when you aren't an observer.
 // With alOn's bit 2 the same goes for enemies' units (bosses, creeps): the card an observer sees.
 // All on the game thread, put back when off and on unload.
+// The card's fill (+0x3fad60) runs two callbacks over the selection: +0x3e4020 first (pushed at +0x3fae04,
+// its only reference; the enumerator +0x2c2250 or +0x2c2380), which makes each ability's buttons
+// (+0x6b2650, ret 4: the abilities' vt+0x1c0), then +0x3e4060, which updates them (+0x6b2700: vt+0x1c4).
+// Both only for units you control (+0x6a2d90). WFE (and this until 2026-10-30) took only the second: an
+// ally's or a boss's buttons were updated but never made, and the card stayed empty (the user's report:
+// every ask answered yes, 'the first ability shown', the card empty). Now both pushes are ours.
+static const DWORD RVA_ABILITY_MAKE_CB = 0x3e4020, RVA_ABILITY_MAKE_PUSH = 0x3fae04, RVA_ABILITY_MAKE = 0x6b2650;
 static const DWORD RVA_SEES_ALL = 0x6bffd0, RVA_ABILITY_CB = 0x3e4060, RVA_ABILITY_CB_PUSH = 0x3fae1a,
     RVA_CONTROLS = 0x6a2d90, RVA_ABILITY_DISPLAY = 0x6b2700, DATA_ABILITY_DEFAULT = 0xb68800,
     RVA_BUTTON_CLICK = 0x13d7f0, PLAYER_SELECTION = 0x34, SELECTION_ACTIVE = 0x1e0;
@@ -3784,6 +3791,27 @@ static int __fastcall AllySeesHook(void *unit, int edx) {
         g_alBad = true;
         return 0;
     }
+}
+// the card's first callback (+0x3e4020): the game's, then for a unit only this feature shows the
+// abilities' buttons made (+0x6b2650) as the game does for yours
+static int __fastcall AllyAbilityMakeHook(void *unit, void *card) {
+    int r = ((AbilityCbFn)(g_base + RVA_ABILITY_MAKE_CB))(unit, card);
+    if (!g_shared->alOn || g_alBad || !card || !unit)
+        return r;
+    __try {
+        if (CardShown((BYTE *)unit) && !Controls((BYTE *)unit)) {
+            BYTE *e = *(BYTE **)((BYTE *)card + 0x1bc);                 // as the game's: [+0x1bc] > 0 ? [[+0x1bc]+8] : [+0xb68800]
+            DWORD arg = (LONG)(DWORD)e > 0 ? *(DWORD *)(e + 8) : *(DWORD *)(g_base + DATA_ABILITY_DEFAULT);
+            GameCall(g_base + RVA_ABILITY_MAKE, (DWORD)unit, 0, 1, &arg);
+            static int logs;
+            if (!logs++)
+                Log("allies' abilities: the first buttons made for unit %p (owner %d)", unit, *(int *)((BYTE *)unit + UNIT_OWNER));
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_alBad = true, g_shared->alState = 3;
+        Log("allies' abilities: making the buttons faulted: stopping");
+    }
+    return r;
 }
 static int __fastcall AllyAbilityHook(void *unit, void *ability) {
     int r = ((AbilityCbFn)(g_base + RVA_ABILITY_CB))(unit, ability);
@@ -3860,7 +3888,9 @@ static bool AlliesPatchable() {
     BYTE *f = g_base + RVA_SEES_ALL, *push = g_base + RVA_ABILITY_CB_PUSH;
     return FnStart(RVA_SEES_ALL) && f[0] == 0x56 && f[1] == 0x8B && f[2] == 0x35 && *(DWORD *)(f + 3) == (DWORD)(g_base + RVA_PLAYERS)
         && f[7] == 0xE8 && FnStart(RVA_ABILITY_CB) && FnStart(RVA_CONTROLS) && FnStart(RVA_ABILITY_DISPLAY) && FnStart(RVA_BUTTON_CLICK)
-        && PageIs(push, EXEC) && push[0] == 0x68 && *(DWORD *)(push + 1) == (DWORD)(g_base + RVA_ABILITY_CB);
+        && PageIs(push, EXEC) && push[0] == 0x68 && *(DWORD *)(push + 1) == (DWORD)(g_base + RVA_ABILITY_CB)
+        && FnStart(RVA_ABILITY_MAKE_CB) && FnStart(RVA_ABILITY_MAKE) && g_base[RVA_ABILITY_MAKE_PUSH] == 0x68
+        && *(DWORD *)(g_base + RVA_ABILITY_MAKE_PUSH + 1) == (DWORD)(g_base + RVA_ABILITY_MAKE_CB);
 }
 // on the game thread (and on unload): both in or out. false = refused (logged)
 static bool AlliesHook(bool on) {
@@ -3880,14 +3910,15 @@ static bool AlliesHook(bool on) {
         }
         BYTE jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
         *(LONG *)(jmp + 1) = (LONG)((BYTE *)AllySeesHook - (f + 5));
-        DWORD to = (DWORD)AllyAbilityHook;
-        if (!g_alTramp || !WriteCode(f, jmp, 7) || !WriteCode(push + 1, (const BYTE *)&to, 4)) {
+        DWORD to = (DWORD)AllyAbilityHook, toMake = (DWORD)AllyAbilityMakeHook;
+        if (!g_alTramp || !WriteCode(f, jmp, 7) || !WriteCode(push + 1, (const BYTE *)&to, 4)
+            || !WriteCode(g_base + RVA_ABILITY_MAKE_PUSH + 1, (const BYTE *)&toMake, 4)) {
             Log("allies' abilities: writing the hooks failed");
             return false;
         }
         g_alHooked = true;
         bool clicks = SwapAllyClick(true);
-        Log("allies' abilities: on (+%06lX detoured, the callback at +%06lX is ours; clicks on allies' cards %s; enemies' %s)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH,
+        Log("allies' abilities: on (+%06lX detoured, the callbacks at +3FAE04 / +%06lX are ours; clicks on allies' cards %s; enemies' %s)", RVA_SEES_ALL, RVA_ABILITY_CB_PUSH,
             clicks ? "dropped" : "left to the game's own control test", g_shared->alOn & AL_ENEMIES ? "too" : "not");
         return true;
     }
@@ -3896,9 +3927,12 @@ static bool AlliesHook(bool on) {
         WriteCode(f, g_alTramp, 7);
     else
         Log("allies' abilities: +%06lX was changed by someone else: left as it is", RVA_SEES_ALL);
-    DWORD game = (DWORD)(g_base + RVA_ABILITY_CB);
+    DWORD game = (DWORD)(g_base + RVA_ABILITY_CB), gameMake = (DWORD)(g_base + RVA_ABILITY_MAKE_CB);
     if (push[0] == 0x68 && *(DWORD *)(push + 1) == (DWORD)AllyAbilityHook)
         WriteCode(push + 1, (const BYTE *)&game, 4);
+    BYTE *pushMake = g_base + RVA_ABILITY_MAKE_PUSH;
+    if (pushMake[0] == 0x68 && *(DWORD *)(pushMake + 1) == (DWORD)AllyAbilityMakeHook)
+        WriteCode(pushMake + 1, (const BYTE *)&gameMake, 4);
     g_alHooked = false;
     Log("allies' abilities: off (the game's own again)");
     return true;
