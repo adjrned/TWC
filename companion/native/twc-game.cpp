@@ -317,6 +317,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     // through the boss); ocReach from here on: 0 = on from an orb only once it's gone (taken)
     float ocThrough;        // companion: how close to the boss (the orbs' centre) each pass comes before the next orb
     float ocFirst;          // companion: the first orb's direction from the boss, degrees (0 right, 90 top; 225 bottom left)
+    // layout 42: the 13:13 report: the dash moves your hero in jumps of 125 every ~62 ms (each orb taken
+    // exactly 125 or 250 from the boss, each pass exactly on it), so the time is the jumps: 18 a run
+    DWORD ocDirect;         // companion: 1 = from an orb straight to the next when that line passes within ocThrough
+                            //   of the boss (no jump back onto it first)
 };
 #pragma pack(pop)
 
@@ -4711,6 +4715,7 @@ static void NoCauseLog(BYTE *src, const DmCause &c, DWORD now) {
     Log("damage: a spell hit with no cause of its own (%s '%s'): trigger event %lu, %s, %d hits deep; %s", (*(DWORD *)(src + 0x30) >> 24) - 'A' < 26 ? "hero" : "unit",
         IdText(*(DWORD *)(src + 0x30)).s, EventNow(), tm, g_dmDepth, c.how == DMA_COOLDOWN ? "guessed by the last cooldown" : "nothing cooling down either");
 }
+static void OrbHit(BYTE *src, BYTE *target, float dealt, DWORD ability, bool attack);
 static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     if (!(dealt > 0 && dealt < 1e12f) || !rec)
         return;
@@ -4738,6 +4743,7 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     DWORD ab = spell ? c.ab : 0;
     h.how = spell ? c.how : DMA_NONE;
     g_shared->dmRingAbility[n & (DM_RING - 1)] = ab;
+    OrbHit(src, target, dealt, spell ? c.ab : 0, (fl & 0x100) != 0);    // the dash combo: your hits during a run
     InterlockedExchange(&g_shared->dmRingSeq, n + 1);
     DamageType(st), DamageType(tt), DamageType(ab);
     static int abLogs[6];
@@ -8524,7 +8530,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 41;
+        g_shared->layout = 42;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
@@ -8582,6 +8588,10 @@ static struct OcRun {
     int leg;                            // 0 to orb i, 1 back through the boss (orb i - 1 taken)
     float best, legFrom; DWORD bestAt;  // the pass: the closest to the boss yet, when; how far it started
     float takenD[8], passD[8]; DWORD passAt[8], earlyAt[8]; char how[8], passHow[8];   // per orb: the hero from the boss as it went, the pass after it
+    int stN, ordN, hitN;                // the run's trace: your hero's moves, the orders, your hits
+    short stX[64], stY[64]; WORD stMs[64], ordMs[24];
+    float lastX, lastY;
+    WORD hitMs[32]; float hitAmt[32], hitD[32]; DWORD hitAb[32]; bool hitAttack[32];
 } g_oc;
 static void __stdcall PointOrderSpy(DWORD order, void *agent, float x, float y, void *target, DWORD a, DWORD b) {
     if (!agent && !target && order == ORDER_SMART && !(GetKeyState(VK_SHIFT) & 0x8000)) {     // your plain right click on the ground
@@ -8615,6 +8625,17 @@ static void OrbComboCast(BYTE *unit, BYTE *ability) {
 static void OrbOrder(float x, float y) {
     ((PointOrderFn)(g_base + RVA_POINT_ORDER))(g_ocOrder, nullptr, x, y, nullptr, g_ocFlagA, g_ocFlagB);
     g_oc.orderAt = GetTickCount(), g_oc.tx = x, g_oc.ty = y;
+    if (g_oc.state == 2 && g_oc.ordN < 24)
+        g_oc.ordMs[g_oc.ordN++] = (WORD)(g_oc.orderAt - g_oc.castAt);
+}
+// your units' hits during a run (DamageSeen, the damage meter's; with it off none): when, how much, your hero from the boss
+static void OrbHit(BYTE *src, BYTE *target, float dealt, DWORD ability, bool attack) {
+    BYTE *state;
+    if (g_oc.state != 2 || g_oc.hitN >= 32 || *(int *)(src + UNIT_OWNER) != LocalPlayer(&state) || *(int *)(target + UNIT_OWNER) == *(int *)(src + UNIT_OWNER))
+        return;
+    int k = g_oc.hitN++;
+    g_oc.hitMs[k] = (WORD)(GetTickCount() - g_oc.castAt), g_oc.hitAmt[k] = dealt, g_oc.hitAb[k] = ability, g_oc.hitAttack[k] = attack;
+    g_oc.hitD[k] = sqrtf((g_oc.lastX - g_oc.cx) * (g_oc.lastX - g_oc.cx) + (g_oc.lastY - g_oc.cy) * (g_oc.lastY - g_oc.cy));
 }
 static const char *OrbSide(float dx, float dy);
 static void OrbEnd(const char *why, bool final) {
@@ -8630,9 +8651,22 @@ static void OrbEnd(const char *why, bool final) {
             else
                 o += g_oc.earlyAt[k] ? sprintf_s(b + o, sizeof(b) - o, "taken early %lu", g_oc.earlyAt[k]) : sprintf_s(b + o, sizeof(b) - o, "not reached");
             if (p)
-                o += sprintf_s(b + o, sizeof(b) - o, ", through %lu (%s %.0f)", g_oc.passAt[k], p == 'w' ? "within" : p == 'p' ? "passed, closest" : "held up at", g_oc.passD[k]);
+                o += sprintf_s(b + o, sizeof(b) - o, ", through %lu (%s %.0f)", g_oc.passAt[k], p == 'w' ? "within" : p == 'p' ? "passed, closest" : p == 'd' ? "straight on, its line" : "held up at", g_oc.passD[k]);
         }
         Log("dash combo: each orb (ms after the dash): %s", b);
+        o = 0, b[0] = 0;
+        for (int k = 0; k < g_oc.stN && o < 900; k++)
+            o += sprintf_s(b + o, sizeof(b) - o, "%s%u: %d, %d", k ? " | " : "", g_oc.stMs[k], g_oc.stX[k], g_oc.stY[k]);
+        Log("dash combo: your hero's moves (ms after the dash: x, y from the boss): %s", b);
+        o = 0, b[0] = 0;
+        for (int k = 0; k < g_oc.ordN; k++)
+            o += sprintf_s(b + o, sizeof(b) - o, " %u", g_oc.ordMs[k]);
+        Log("dash combo: orders out at (ms after the dash):%s", b);
+        o = 0, b[0] = 0;
+        for (int k = 0; k < g_oc.hitN && o < 900; k++)
+            o += sprintf_s(b + o, sizeof(b) - o, "%s%u: %.0f %s (%.0f from the boss)", k ? " | " : "", g_oc.hitMs[k], g_oc.hitAmt[k],
+                           g_oc.hitAttack[k] ? "attack" : g_oc.hitAb[k] ? IdText(g_oc.hitAb[k]).s : "spell", g_oc.hitD[k]);
+        Log("dash combo: your hits in the run (ms after the dash: damage, its cause, your hero then): %s", g_oc.hitN ? b : "none (or the damage meter off)");
     }
     if (final)
         OrbOrder(g_oc.cx, g_oc.cy - g_shared->ocSouth);
@@ -8699,6 +8733,9 @@ static void OrbSeen(BYTE *u, DWORD type) {
     for (OrbUnit &o : g_ocOrbs)
         if (!o.unit || (LONG)(o.at - r->at) < 0)
             r = &o;
+    for (OrbUnit &o : g_ocOrbs)
+        if (o.unit == u)
+            r = &o;                         // (noted already: its slot)
     *r = { u, GetTickCount(), x, y };
     static int logs;
     if (logs++ < 5)
@@ -8815,9 +8852,11 @@ static void OrbPlan(float x, float y) {
     }
     memset(g_oc.takenAt, 0, sizeof(g_oc.takenAt)), memset(g_oc.earlyAt, 0, sizeof(g_oc.earlyAt)), memset(g_oc.passAt, 0, sizeof(g_oc.passAt));
     memset(g_oc.how, 0, sizeof(g_oc.how)), memset(g_oc.passHow, 0, sizeof(g_oc.passHow));
-    g_oc.n = n, g_oc.i = 0, g_oc.leg = 0;
+    g_oc.n = n, g_oc.i = 0, g_oc.leg = 0, g_oc.stN = g_oc.ordN = g_oc.hitN = 0, g_oc.lastX = x, g_oc.lastY = y;
     Log("dash combo: %d orbs round the boss at (%.0f, %.0f) (their centre; your hero %.0f from it), in the order: %s; back through it after each (within %.0f)",
         n, g_oc.cx, g_oc.cy, sqrtf((x - g_oc.cx) * (x - g_oc.cx) + (y - g_oc.cy) * (y - g_oc.cy)), order, OrbThrough());
+    if (g_shared->ocDirect)
+        Log("dash combo: straight from an orb to the next when that line passes within %.0f of the boss", OrbThrough());
 }
 // to the next orb still there from g_oc.i on (those taken early skipped); false: none left
 static bool OrbNext() {
@@ -8832,6 +8871,24 @@ static bool OrbNext() {
 static void OrbToBoss(float d) {
     g_oc.leg = 1, g_oc.best = g_oc.legFrom = d, g_oc.bestAt = GetTickCount();
     OrbOrder(g_oc.cx, g_oc.cy);
+}
+// ocDirect: the line from your hero to the next orb still there passes within ocThrough of the boss: that
+// pass counted ('d', how near the line comes) and straight on to it; false: not (or none left, or off)
+static bool OrbDirect(float hx, float hy, DWORD now) {
+    int j = g_oc.i;
+    while (j < g_oc.n && !OrbAlive(g_oc.path[j]))
+        j++;
+    if (!g_shared->ocDirect || j >= g_oc.n || g_oc.i < 1)
+        return false;
+    float dx = g_oc.px[j] - hx, dy = g_oc.py[j] - hy, L2 = dx * dx + dy * dy;
+    float t = L2 > 0 ? ((g_oc.cx - hx) * dx + (g_oc.cy - hy) * dy) / L2 : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    float ex = hx + t * dx - g_oc.cx, ey = hy + t * dy - g_oc.cy, d = sqrtf(ex * ex + ey * ey);
+    if (d > OrbThrough())
+        return false;
+    int k = g_oc.i - 1;
+    g_oc.passAt[k] = now - g_oc.castAt, g_oc.passD[k] = d, g_oc.passHow[k] = 'd';
+    return OrbNext();
 }
 // orbs later in the path gone already: one dashed over on the way (its reset spent before its pass)
 static void OrbEarly(DWORD now, float hx, float hy) {
@@ -8870,6 +8927,9 @@ static void OrbComboTick() {
     if (now - g_oc.at > 4000)
         return OrbEnd("4 s up", true);
     float bx = hx - g_oc.cx, by = hy - g_oc.cy, boss = sqrtf(bx * bx + by * by);
+    if ((hx != g_oc.lastX || hy != g_oc.lastY) && g_oc.stN < 64)      // a move (the dash's jumps)
+        g_oc.stMs[g_oc.stN] = (WORD)(now - g_oc.castAt), g_oc.stX[g_oc.stN] = (short)bx, g_oc.stY[g_oc.stN++] = (short)by;
+    g_oc.lastX = hx, g_oc.lastY = hy;
     OrbEarly(now, hx, hy);
     if (g_oc.leg == 0) {
         // to the orb until it's gone (taken: the map's pickup, 150-265 off); or in ocReach of it (if set); or the
@@ -8883,8 +8943,12 @@ static void OrbComboTick() {
         g_oc.takenAt[i] = now - g_oc.castAt, g_oc.takenD[i] = boss, g_oc.i++;
         if (gone)
             g_shared->ocTaken++;
-        return OrbToBoss(boss);
+        if (!OrbDirect(hx, hy, now))
+            OrbToBoss(boss);
+        return;
     }
+    if (OrbDirect(hx, hy, now))
+        return;
     // back through the boss: the next orb once within ocThrough of it, or past it (20 farther than its closest,
     // having come 60 nearer), or held up (no nearer in 250 ms: the boss in the way)
     if (boss < g_oc.best) {

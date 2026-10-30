@@ -5,7 +5,7 @@
 // not run without your hero selected or orbs near; off: the calls are the game's again.
 #include "../twc-game.cpp"
 #include "check.h"
-static_assert(offsetof(Shared, ocKey) == offsetof(Shared, ocReach) + 4 && offsetof(Shared, ocFirst) == offsetof(Shared, ocThrough) + 4, "layout 41");
+static_assert(offsetof(Shared, ocKey) == offsetof(Shared, ocReach) + 4 && offsetof(Shared, ocFirst) == offsetof(Shared, ocThrough) + 4 && offsetof(Shared, ocDirect) == offsetof(Shared, ocFirst) + 4, "layout 42");
 
 static BYTE *img;
 static BYTE *objs[16];
@@ -153,13 +153,26 @@ int main() {
     Sleep(300); OrbComboTick();
     CHECK(nOrders == held + 1 && last(392, 121), "held up 106 from the boss (no nearer in 250 ms): on to the next");
     OrbEnd("the check", false);
+    // ocDirect (layout 42): the bottom left taken one jump (125) out: the line from there to the top right passes
+    // 59 from the boss: within 80, straight on (no jump back onto the boss first); your hits logged
+    OrbGone(TR), Orbs(), At(hero, 0, 0);
+    sh.ocDirect = 1, sh.ocThrough = 80;
+    sh.ocGo++; OrbComboPass(); OrbComboTick();
+    At(hero, -65.1f, -109.5f), OrbGone(BL); OrbComboTick();
+    bool straight = last(392, 121) && g_oc.passHow[0] == 'd' && g_oc.leg == 0 && LogHas("straight from an orb to the next when that line passes within 80");
+    OrbHit(hero, units[6], 500, 'A107', false);
+    OrbEnd("the check", false);
+    CHECK(straight && LogHas(" (125 from the boss), through ") && LogHas("(straight on, its line 59); top right not reached; top left") && LogHas(": -72, -102")
+          && LogHas(": 500 A107 (125 from the boss)") && LogHas("dash combo: orders out at (ms after the dash):"),
+          "ocDirect: taken 125 out, the line on to the next 59 from the boss (within 80): straight to it; the moves, orders and hits logged");
+    sh.ocDirect = 0, sh.ocThrough = 60;
     for (int i = 1; i < 6; i++)
         OrbGone(units[i]);                      // (only someone else's orb left)
     // not run: your hero not the one selected; no orbs of yours near
     *(BYTE **)(sel + SEL_ACTIVE) = units[1]; sh.ocGo++; OrbComboPass();
     bool notSel = !g_oc.state && LogHas("not run: your hero isn't the unit selected");
     *(BYTE **)(sel + SEL_ACTIVE) = hero; sh.ocGo++; OrbComboPass();
-    CHECK(notSel && !g_oc.state && pressed == 2 && LogHas("not run: no 'e05P' orbs of yours near your hero"), "not run without your hero selected, or without orbs: nothing pressed");
+    CHECK(notSel && !g_oc.state && pressed == 3 && LogHas("not run: no 'e05P' orbs of yours near your hero"), "not run without your hero selected, or without orbs: nothing pressed");
     // its key in the game's window (the module reads it: no companion hotkey): a run, the key kept from the game;
     // another key, or its repeat while held: not; the chat open: the game's
     Orbs(), At(hero, 0, 0);

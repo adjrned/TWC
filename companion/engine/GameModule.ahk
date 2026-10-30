@@ -452,12 +452,15 @@ class GameModuleEngine {
     }
     ; the dash combo (layout 38): on, its dash ability and orb unit type (rawcodes 'A107' / 'e05P'), how far south it
     ; ends, how close to an orb before the next (layout 39; 0: once it's gone), how close each pass through the boss
-    ; comes and the first orb's direction from it in degrees (layout 41); false: no module, or an older one
-    dashCombo(on, dash, orb, south, reach := 0, key := 0, through := 60, first := 225) {
+    ; comes and the first orb's direction from it in degrees (layout 41), straight from an orb to the next when
+    ; that line passes that close (layout 42); false: no module, or an older one
+    dashCombo(on, dash, orb, south, reach := 0, key := 0, through := 80, first := 225, direct := 1) {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 38
             return false
         if NumGet(v, Shm.layout, "uint") >= 41
             NumPut("float", through, v, Shm.ocThrough), NumPut("float", first, v, Shm.ocFirst)
+        if NumGet(v, Shm.layout, "uint") >= 42
+            NumPut("uint", direct ? 1 : 0, v, Shm.ocDirect)
         if NumGet(v, Shm.layout, "uint") >= 40          ; its key, read in the game (vk | 0x100 Ctrl | 0x200 Alt | 0x400 Shift)
             NumPut("uint", key, v, Shm.ocKey)
         if NumGet(v, Shm.layout, "uint") >= 39
