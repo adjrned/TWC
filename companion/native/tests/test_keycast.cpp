@@ -26,12 +26,12 @@ static int __fastcall FakePress(BYTE *b, int, int arg) {
 static int __fastcall FaultPress(BYTE *, int, int) { return *(volatile int *)8; }
 static int clicks; static DWORD clickFlags;
 static void FakeClick(DWORD f) { clicks++, clickFlags = f; }
-static int gameKeys, gameChars;
+static int gameKeys, gameChars, gameEsc;
 static DWORD fakeNow;
 static DWORD WINAPI FakeNow() { return fakeNow; }
 static LRESULT CALLBACK GameProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     if (m == WM_KEYDOWN)
-        gameKeys++;
+        gameKeys++, gameEsc += wp == VK_ESCAPE;
     if (m == WM_CHAR)
         gameChars++;
     return DefWindowProcA(w, m, wp, lp);
@@ -133,9 +133,23 @@ int main() {
     KeyCastHeld();
     CHECK(heldBack && stillHeld && presses == p1 + 2 && pressThis == items[0] && !g_kcHeldVk, "Numpad 7 meanwhile: held back while the reticle is up, pressed once it ends");
     KeyCast('Q'); fakeNow += 300;
-    int p2 = presses, k2 = clicks;
-    KeyCast('Q');
-    CHECK(presses == p2 + 1 && clicks == k2 + 1, "the reticle still up 300 ms after our click (it missed): the repeat aims and clicks again");
+    int p2 = presses, k2 = clicks, e0 = gameEsc;
+    bool took = KeyCast('Q');
+    bool cancelled = took && presses == p2 && gameEsc == e0 + 1 && g_kcHeldVk == 'Q';
+    fakeNow += 40; KeyCast('Q');                    // its repeat before the game read the Esc: no second Esc
+    bool oneEsc = gameEsc == e0 + 1;
+    FollowKeyCast(1);                               // still aiming: not posted
+    Idle(); fakeNow += 16; KeyCastHeld();            // the game read the Esc: the target mode over
+    CHECK(cancelled && oneEsc && presses == p2 + 1 && clicks == k2 + 1 && !g_kcHeldVk && !g_kcCancelAt,
+          "the reticle still up 300 ms after our click (it missed): cancelled with one Esc, then Q aims and clicks again");
+    // another ability's reticle up (waiting for a target), then a quickcast key: cancelled, then that key's ability
+    Idle(); g_kcFiredAt = 0; fakeNow += 1000;
+    *(DWORD *)(ui + UI_MODE) = *(DWORD *)(ui + UI_TARGET_MODE);
+    int p4 = presses, e1 = gameEsc;
+    took = KeyCast(VK_NUMPAD7);
+    bool c4 = took && presses == p4 && gameEsc == e1 + 1;
+    Idle(); KeyCastHeld();
+    CHECK(c4 && presses == p4 + 1 && pressThis == items[0], "a reticle already up (another ability's), then Numpad 7: Esc to the game, then the item pressed");
     Idle(); KeyCast('Q'); fakeNow += 30; KeyCast('W'); fakeNow += 600; Idle();
     int p3 = presses; KeyCastHeld();
     CHECK(presses == p3 && !g_kcHeldVk, "a key held back over 500 ms: dropped, not pressed late");

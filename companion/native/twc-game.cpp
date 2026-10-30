@@ -7086,7 +7086,13 @@ static void FollowTargetMode() {
 // another quickcast key is held back and done as soon as that target mode ends (the worker posts
 // g_kcMsg), within 500 ms, so a quick Q then W still casts both.
 static const DWORD UI_CHAT_STATE = 0x3fc, UI_UPPER_BAR = 0x3d0, UI_BUSY = 0x258;
-static const DWORD KC_CLICK_OUT = 250, KC_HOLD_MAX = 500;
+// A reticle already up when a quickcast key comes (another ability's waiting for a target, or one whose
+// click missed): the card shows only Cancel then, so the slot's button is empty and the key did nothing
+// (the user, 2026-10-29: "it should still press the ability"). Now the target mode is cancelled as Esc
+// does it (Esc straight to the game's own window procedure: queued like any key, read next frame) and
+// the key is held back as above, pressed once the target mode has ended. One Esc per 150 ms.
+static const DWORD KC_CLICK_OUT = 250, KC_HOLD_MAX = 500, KC_CANCEL_GAP = 150;
+static volatile DWORD g_kcCancelAt;  // when our last Esc went to the game (0 = none pending)
 static volatile DWORD g_kcFiredAt;  // when our last click went out (0 = none out)
 static volatile LONG g_kcFiredVk;
 static DWORD (WINAPI *g_kcNow)() = GetTickCount;    // the tests' clock
@@ -7139,6 +7145,21 @@ static bool KeyCast(WPARAM vk) {
         float left = 0, total = 0;
         if (ButtonCooldown(btn, &left, &total) & CD_COOLING)
             return false;               // cooling down: not pressed (as WFE), the game says so
+        if (Aiming(ui) && !ClickOut(ui) && g_oldProc && g_gameWnd) {
+            DWORD now = g_kcNow();
+            if (!g_kcHeldVk || g_kcHeldVk != (LONG)vk)
+                g_kcHeldVk = (LONG)vk, g_kcHeldAt = now;
+            if (!g_kcCancelAt || now - g_kcCancelAt >= KC_CANCEL_GAP) {
+                g_kcCancelAt = now ? now : 1;
+                auto call = g_wide ? CallWindowProcW : CallWindowProcA;
+                call(g_oldProc, g_gameWnd, WM_KEYDOWN, VK_ESCAPE, 0x00010001);
+                call(g_oldProc, g_gameWnd, WM_KEYUP, VK_ESCAPE, 0xC0010001);
+                static int cancels;
+                if (cancels++ < 3)
+                    Log("quickcast keys: key %02X with a reticle already up: cancelled it (Esc), the key's ability once it's gone", (DWORD)vk);
+            }
+            return true;
+        }
         if (ClickOut(ui)) {
             if ((LONG)vk != g_kcFiredVk)
                 g_kcHeldVk = (LONG)vk, g_kcHeldAt = g_kcNow();    // another key: once the target mode ends
@@ -7178,6 +7199,7 @@ static bool KeyCast(WPARAM vk) {
 // on the game thread (g_kcMsg): a key held back while our click was out, now that it's read
 static void KeyCastHeld() {
     LONG vk = InterlockedExchange(&g_kcHeldVk, 0);
+    g_kcCancelAt = 0;
     if (vk && g_kcNow() - g_kcHeldAt <= KC_HOLD_MAX && g_shared->qkOn)
         KeyCast((WPARAM)vk);
 }
@@ -7187,8 +7209,8 @@ static void FollowKeyCast(int t) {
     if (g_kcHeldVk && g_gameWnd && g_kcMsg) {
         DWORD now = g_kcNow();
         if (now - g_kcHeldAt > KC_HOLD_MAX)
-            g_kcHeldVk = 0;
-        else if (t != 1 || now - g_kcFiredAt >= KC_CLICK_OUT)
+            g_kcHeldVk = 0, g_kcCancelAt = 0;
+        else if (t != 1 || !g_kcCancelAt && now - g_kcFiredAt >= KC_CLICK_OUT)      // after our Esc: once the target mode is gone
             PostMessageA(g_gameWnd, g_kcMsg, 0, 0);
     }
     Shared *s = g_shared;
