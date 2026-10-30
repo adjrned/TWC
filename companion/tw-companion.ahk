@@ -2652,7 +2652,7 @@ RefreshUpdateLabel() {
     if A_IsCompiled {
         global buildCommit
         updLabel.Text := "Updates: beta  ·  " version (buildCommit ? " (" SubStr(buildCommit, 1, 7) ")" : "")
-            . (ago ? "  ·  checked " ago : "") "  ·  automatic every 5 min"
+            . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
         return
     }
     if FileExist(A_ScriptDir "\.no-self-update") {
@@ -2661,7 +2661,7 @@ RefreshUpdateLabel() {
     }
     c := selfUpdate.commit
     updLabel.Text := "Updates: " selfUpdate.branch "  ·  " (c ? SubStr(c, 1, 7) : "not checked yet")
-        . (ago ? "  ·  checked " ago : "") "  ·  automatic every 5 min"
+        . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
 }
 UpdateButton() => SelfUpdateCheck(true)
 ; The installed exe follows the beta-latest release (rebuilt by GitHub on every
