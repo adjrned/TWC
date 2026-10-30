@@ -174,7 +174,7 @@ Wc3Features() {
                 OptDivider(d),
                 OptButtons(d, [["Show the timers", (*) => (bossBars.setHidden(false), RefreshWc3())], ["Show a sample", (*) => bossBars.setSample(true)], ["Hide the sample", (*) => bossBars.setSample(false)],
                     ["Forget all", (*) => (MsgBox("Forget what the boss timers learned about every boss?", "TW Companion", "YesNo 0x40000") = "Yes" ? (bossBars.forget(), RefreshWc3()) : 0)]]),
-                OptNote(d, "Its ✕ hides it; Show the timers brings it back. The sample is a made-up boss: drag the window where you want it.")) },
+                OptNote(d, "It comes up by itself when you hit a boss or it casts. Its ✕ hides it until the next attempt; Show the timers brings it back now. The sample is a made-up boss: drag the window where you want it.")) },
         { tab: "hosting", title: "Lobby latency", badge: "1.28f",
             desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),

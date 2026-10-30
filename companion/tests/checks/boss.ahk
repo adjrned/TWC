@@ -84,6 +84,34 @@ TwcBossRun() {
         "the feed through the real readers: casts and hits on, the boss engaged from the hit on it, 'A0MT' noted, the boss followed" (err != "" ? " (error: " err ")" : ""))
     NumPut("uint", 0, mem, Shm.bcWatchAlive), b.feed()
     TwcCheck(!b.fight && b.storeOf("Nlk1").kills = 2 && NumGet(mem, Shm.bcWatch, "uint") = 0, "the boss followed dies: a kill, learned, no longer followed")
+    ; hitting enemies that haven't cast: the one hit last followed for its HP; a small one ruled out, a boss's
+    ; attempt starts from the hits (the window comes up by itself); the ✕ hides it for that attempt only
+    b.hitsOn := Map(), b.notBoss := Map(), b.candidate := 0
+    Hit(k, unit, type) {
+        p := mem.Ptr + Shm.dmRing + GameModuleEngine.HIT * k
+        NumPut("float", 300, p, 0), NumPut("uint", 0x4870616C, p, 4), NumPut("uint", type, p, 8), NumPut("uint", unit, p, 12)
+        NumPut("uchar", 0, p, 16), NumPut("uchar", 12, p, 17), NumPut("int", k + 1, mem, Shm.dmRingSeq)
+    }
+    Watch(hp, mx, alive) => (NumPut("float", hp, mem, Shm.bcWatchHp), NumPut("float", mx, mem, Shm.bcWatchMax), NumPut("uint", alive, mem, Shm.bcWatchAlive))
+    err := ""
+    try {
+        Hit(1, 0x9000, 0x6E303031), Watch(800, 1000, 1), b.feed()           ; a small enemy ('n001', 1000 HP)
+        small := b.candidate && b.candidate.unit = 0x9000 && NumGet(mem, Shm.bcWatch, "uint") = 0x9000
+        b.candidate.at -= 500, b.feed()
+        ruled := !b.fight && b.notBoss.Has(0x9000)
+        Hit(2, 0x8000, 0x4E626F73), b.feed()                                ; the boss ('Nbos'), no cast yet
+        early := !b.fight && b.candidate && b.candidate.unit = 0x8000       ; (the watch's HP still the last unit's: not trusted yet)
+        Watch(90000, 120000, 1), b.candidate.at -= 500, b.feed()
+    } catch as e
+        err := e.Message
+    f := b.fight
+    TwcCheck(err = "" && small && ruled && early && f && f.unit = 0x8000 && f.type = "Nbos" && f.engaged && f.hpMax = 120000 && f.casts.Count = 0,
+        "hits, no cast: the small enemy (1000 HP) ruled out; the boss (120000 HP) engaged from the hits on it, before any cast" (err != "" ? " (error: " err ")" : ""))
+    b.setHidden(true)
+    hid := b.dismissed = 0x8000 && InStr(b.statusText(), "hidden for this attempt")
+    b.endFight("reset"), b.startFight({ unit: 0x8000, type: "Nbos", hp: 120000, hpMax: 120000 }, A_TickCount)
+    TwcCheck(hid && !b.dismissed, "the ✕: hidden for that attempt ('" b.statusText() "'), shown again at the next")
+    b.endFight("reset")
     IniWrite(0, iniFile, "BossTimers", "on"), b.feed()
     TwcCheck(NumGet(mem, Shm.bcOn, "uint") = 0, "off: the module's casts off")
     b.gm := keepGm, IniWrite(keepOn, iniFile, "BossTimers", "on")

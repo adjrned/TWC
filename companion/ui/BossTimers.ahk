@@ -2,7 +2,9 @@
 ;  The game module notes every enemy's spell as the game fires its SPELL_EFFECT (the caster, its type,
 ;  the ability, its HP then). An attempt: the enemy caster with the most HP (at least "Bosses from" HP,
 ;  or the meter's pinned type), from the players' first hit on it (the meter's hits; else its first
-;  cast) until it dies (a kill) or 30 s pass without a hit on it or a cast of its (a reset).
+;  cast) until it dies (a kill) or 30 s pass without a hit on it or a cast of its (a reset). Hitting such
+;  an enemy starts one too, before it casts (its HP read through the module's watch): the window comes
+;  up by itself as you engage. Its ✕ hides it for that attempt only.
 ;  What each ability did is learned per boss type, in tw-companion-bosses.ini next to the settings:
 ;  when it first came (seconds from the pull, and the boss's HP then) and the gaps between its casts.
 ;  The bars: each ability's next cast. After a cast: the last one + the median gap. Before the first:
@@ -16,7 +18,10 @@ class BossTimers {
     gm := 0
     castSeq := -1, hitSeq := -1
     typeNames := Map(), typeN := 0
-    hitsOn := Map()                 ; unit (address) -> { first, last }: the players' hits on it (tick counts)
+    hitsOn := Map()                 ; unit (address) -> { first, last, type }: the players' hits on it (tick counts)
+    candidate := 0                  ; no attempt: the enemy hit last, its HP being read { unit, type, at }
+    notBoss := Map()                ; units ruled out (less HP than "Bosses from", or dead) -> when
+    dismissed := 0                  ; the unit whose attempt the ✕ hid
     fight := 0                      ; the attempt on: { unit, type, start, engaged, last, casts: Map(ability -> [secs]), hpAt: Map(), hp, hpMax, seenAlive, logged }
     learned := Map()                ; boss type -> { name, attempts, kills, abilities: Map(ability -> { first: [], hp: [], gap: [] }) }
     sample := false
@@ -29,13 +34,13 @@ class BossTimers {
         SetTimer(this.tickFn, 250)
     }
     enabled => Integer(Ini(this.section, "on", 0))
-    hidden => Integer(Ini(this.section, "hidden", 0))
     rowCount => Max(3, Min(BossTimers.MAX_ROWS, Integer(Ini(this.section, "rows", 5))))
     warnSecs => Max(0, Min(10, Ini(this.section, "warn", 3) + 0))
     minHp => Max(0, Integer(Ini(this.section, "minHp", 5000)))
     opacity => Max(30, Min(100, Integer(Ini(this.section, "opacity", 92))))
     setEnabled(on) => (SetIni(on ? 1 : 0, this.section, "on"), this.tick())
-    setHidden(on) => (SetIni(on ? 1 : 0, this.section, "hidden"), this.tick())
+    ; the ✕: hidden until the next attempt; false: shown again now
+    setHidden(on) => (this.dismissed := on && this.fight ? this.fight.unit : 0, this.tick())
     setNumber(key, v, lo, hi, rebuild := false) {
         if !IsNumber(v)
             return false
@@ -159,8 +164,9 @@ class BossTimers {
             DebugLog("boss timers: '" this.typeName(f.type) "' cast '" this.typeName(x.ability) "' (" x.ability ") at " Format("{:.1f}", secs) " s, "
                 (x.hpMax > 0 ? Round(100 * x.hp / x.hpMax) "% HP" : "HP not read"))
     }
-    startFight(x, at) {
+    startFight(x, at, how := "cast") {
         h := this.hitsOn.Has(x.unit) ? this.hitsOn[x.unit] : 0
+        this.candidate := 0, this.dismissed := 0
         engaged := h && at - h.last < BossTimers.IDLE
         this.fight := { unit: x.unit, type: x.type, start: engaged ? Min(h.first, at) : at, engaged: engaged, last: at, casts: Map(), hpAt: Map(),
             hp: x.hp, hpMax: x.hpMax, seenAlive: false, logged: 0 }
@@ -170,7 +176,8 @@ class BossTimers {
         if st.name = "" && this.typeName(x.type) != x.type
             st.name := this.typeName(x.type)
         DebugLog("boss timers: engaged '" this.typeName(x.type) "' (" x.type ", unit " Format("{:X}", x.unit) ", " Round(x.hpMax) " HP): attempt " (st.attempts + 1)
-            ", " st.abilities.Count " abilities known; timed from " (engaged ? "the first hit on it, " Format("{:.1f}", (at - h.first) / 1000) " s before its first cast" : "its first cast (no hit on it seen)"))
+            ", " st.abilities.Count " abilities known; timed from " (engaged ? "the first hit on it, " Format("{:.1f}", (at - h.first) / 1000) " s before "
+            (how = "hits" ? "it was found (by the hits on it, its HP read)" : "its first cast") : "its first cast (no hit on it seen)"))
     }
     ; the attempt over: what it showed learned (why: "kill", "reset", ...)
     endFight(why) {
@@ -229,7 +236,7 @@ class BossTimers {
                 for hit in r.hits {
                     if hit.from <= 11 && hit.to > 11 {
                         if !this.hitsOn.Has(hit.target)
-                            this.hitsOn[hit.target] := { first: now, last: now }
+                            this.hitsOn[hit.target] := { first: now, last: now, type: hit.tgt }
                         this.hitsOn[hit.target].last := now
                         if this.fight && hit.target = this.fight.unit
                             this.fight.last := now
@@ -253,9 +260,38 @@ class BossTimers {
         }
         if this.fight && now - this.fight.last > BossTimers.IDLE
             this.endFight("reset: 30 s without a hit on it or a cast")
+        if !this.fight
+            this.findByHits(now)
         for u, hs in this.hitsOn.Clone()
             if now - hs.last > 60000
                 this.hitsOn.Delete(u)
+        for u, at in this.notBoss.Clone()
+            if now - at > 60000
+                this.notBoss.Delete(u)
+    }
+    ; no attempt: the enemy the players hit last (in the last 5 s, not ruled out) is followed by the module's
+    ; watch for its HP; a boss (at least "Bosses from" HP, or the meter's pinned type) starts the attempt, timed
+    ; from the first hit on it (a boss that hadn't cast yet never brought the window up)
+    findByHits(now) {
+        if (c := this.candidate) {
+            w := this.gm.bossWatched()
+            if w && w.unit = c.unit && w.max > 0 && now - c.at >= 400 {     ; (its own HP: the module had a pass on it since)
+                this.candidate := 0
+                if w.alive && (c.type = this.pinned || w.max >= this.minHp)
+                    return this.startFight({ unit: c.unit, type: c.type, hp: w.hp, hpMax: w.max }, now, "hits")
+                this.notBoss[c.unit] := now
+                this.gm.bossWatch(0)
+            } else if now - c.at < 1500
+                return                          ; (its HP not read yet: the module's display pass, 4 a second)
+            else
+                this.candidate := 0, this.notBoss[c.unit] := now, this.gm.bossWatch(0)
+        }
+        best := 0
+        for u, hs in this.hitsOn
+            if !this.notBoss.Has(u) && now - hs.last < 5000 && (!best || hs.last > this.hitsOn[best].last)
+                best := u
+        if best
+            this.candidate := { unit: best, type: this.hitsOn[best].type, at: now }, this.gm.bossWatch(best)
     }
 
     ; -- the bars: each ability's next cast ---------------------------------------------
@@ -322,7 +358,7 @@ class BossTimers {
         global toolEnabled
         if this.sample
             return true
-        return this.enabled && !this.hidden && toolEnabled && this.fight && WinActive(WarcraftIII)
+        return this.enabled && toolEnabled && this.fight && this.fight.unit != this.dismissed && WinActive(WarcraftIII)
     }
     tick() {
         try this.feed()
@@ -476,7 +512,7 @@ class BossTimers {
             return "Refused: the game's spell calls aren't where 1.28f has them (see the log)"
         n := this.learnedCount()
         if (f := this.fight)
-            return "On · " this.typeName(f.type) ": attempt " (this.storeOf(f.type).attempts + 1) (this.hidden ? " (hidden: Options > Show the timers)" : "")
+            return "On · " this.typeName(f.type) ": attempt " (this.storeOf(f.type).attempts + 1) (f.unit = this.dismissed ? " (hidden for this attempt: Options > Show the timers)" : "")
         return "On · waiting for a boss" (n ? " (" n " learned)" : "")
     }
 }
