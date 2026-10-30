@@ -25,6 +25,8 @@ ModuleCheckFeatures() => [
     ["Allies' abilities", "allies' abilities: on|allies' abilities: the first ability shown", "allies' abilities: refused|allies' abilities: writing the hooks failed|allies' abilities: .* faulted"],
     ["Allies' cards: buttons made", "allies' abilities: the first buttons made", "allies' abilities: making the buttons faulted"],
     ["Enemies' abilities (bosses)", "allies' abilities: the first enemy's ability shown|allies' abilities: on .*enemies' too", "allies' abilities: refused|allies' abilities: .* faulted"],
+    ["Buff ping", "ping: .+\| (.+ left|active). \(buff", ""],
+    ["Ping by the cursor (allies', bosses')", "ping: a (button|buff) .* found by the cursor", ""],
     ["Cooldown ping", "ping: .+\| (Cooldown|Ready|Not enough mana)", "ping: reading the button faulted"],
     ["Lobby latency", "latency: \d+ ms", "latency: refused|writing the patch failed|latency: a getter was changed"],
     ["Start countdown", "start countdown: [0-9.]+ s in games you host", "start countdown: refused|start countdown: writing it failed|start countdown: .* changed by someone else"],

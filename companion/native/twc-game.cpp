@@ -3986,23 +3986,77 @@ static DWORD ChatRecipient(BYTE *ui) {
     }
     return 0;
 }
-// the command card or inventory button under the cursor (nullptr: none)
-static BYTE *HoveredButton(BYTE *ui) {
-    BYTE *top = *(BYTE **)(g_base + RVA_SIMPLE_TOP);
-    if (!top || (DWORD)(top - (BYTE *)0x10000) > 0x7ffeffff || *(DWORD *)top != (DWORD)(g_base + RVA_SIMPLE_TOP_VT))
-        return nullptr;
-    BYTE *f = *(BYTE **)(top + TOP_HOVER), *card = *(BYTE **)(ui + 0x3c8);
-    if (!f)
-        return nullptr;
+// What's under the cursor for the ping: a command card or inventory button (HOVER_BUTTON), or a buff
+// bar icon (HOVER_BUFF, layout 34 on: Alt + click a buff, the user's ask 2026-10-30). The game's own
+// pick first (CSimpleTop +0x16c); its hit test (+0x13a2f0: the frames in [top+0x8ac], vt+0x38) only
+// walks frames that take the mouse, and an ally's or a boss's buttons (Allies' abilities) don't: Alt +
+// click on a boss's ability pinged nothing (the user). So then the cursor against each one's laid-out
+// rect (+0x44: bottom, left, top, right; UI units over the client area, 0.8 x 0.6 from the bottom
+// left): checked against the game's pick while both have one (logged, the first few).
+static const int HOVER_NONE = 0, HOVER_BUTTON = 1, HOVER_BUFF = 2;
+static const DWORD IND_SHOWN = 0x90, IND_VISIBLE = 0x94, IND_BUFF = 0x978;
+static bool CursorUi(float *x, float *y) {
+    POINT p;
+    RECT rc;
+    if (!g_gameWnd || !GetCursorPos(&p) || !ScreenToClient(g_gameWnd, &p) || !GetClientRect(g_gameWnd, &rc) || rc.right <= 0 || rc.bottom <= 0)
+        return false;
+    *x = p.x * 0.8f / rc.right, *y = (1 - (float)p.y / rc.bottom) * 0.6f;
+    return true;
+}
+static bool (*g_cursorUi)(float *, float *) = CursorUi;     // the tests' cursor
+static bool InRect(BYTE *f, float x, float y) {
+    float *rc = (float *)(f + LAYOUT_RECT);
+    return rc[3] > rc[1] && rc[2] > rc[0] && x >= rc[1] && x <= rc[3] && y >= rc[0] && y <= rc[2];
+}
+static BYTE *BuffBar(BYTE *ui) { return P(P(P(ui, 0x3c4), 0x130), 0x16c); }
+// f: the game's pick (nullptr: by the cursor). -> the frame, *kind
+static BYTE *HoverFind(BYTE *ui, BYTE *f, bool byCursor, float x, float y, int *kind) {
+    BYTE *card = *(BYTE **)(ui + 0x3c8);
     int rows = card ? *(int *)(card + 0x124) : 0, cols = card ? *(int *)(card + 0x128) : 0;
     for (int r = 0; rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows; r++)
-        for (int c = 0; c < cols; c++)
-            if (GridButton(card, r, c) == f)
-                return f;
-    for (int i = 0; i < 6; i++)
-        if (ItemButton(ui, i) == f)
-            return f;
-    return nullptr;
+        for (int c = 0; c < cols; c++) {
+            BYTE *b = GridButton(card, r, c);
+            if (b && (f ? b == f : byCursor && *(DWORD *)(b + 0x190) && InRect(b, x, y)))
+                return *kind = HOVER_BUTTON, b;
+        }
+    for (int i = 0; i < 6; i++) {
+        BYTE *b = ItemButton(ui, i);
+        if (b && (f ? b == f : byCursor && *(DWORD *)(b + 0x190) && InRect(b, x, y)))
+            return *kind = HOVER_BUTTON, b;
+    }
+    BYTE *bar = BuffBar(ui);
+    rows = bar ? *(int *)(bar + 0x124) : 0, cols = bar ? *(int *)(bar + 0x128) : 0;
+    for (int r = 0; rows > 0 && cols > 0 && rows * cols <= 16 && r < rows; r++)
+        for (int c = 0; c < cols; c++) {
+            BYTE *b = GridButton(bar, r, c);
+            if (!b || !*(DWORD *)(b + IND_SHOWN) || !*(DWORD *)(b + IND_VISIBLE) || !V(*(BYTE **)(b + IND_BUFF)))
+                continue;
+            if (f ? b == f : byCursor && InRect(b, x, y))
+                return *kind = HOVER_BUFF, b;
+        }
+    return *kind = HOVER_NONE, nullptr;
+}
+static BYTE *Hovered(BYTE *ui, int *kind) {
+    *kind = HOVER_NONE;
+    BYTE *top = *(BYTE **)(g_base + RVA_SIMPLE_TOP), *f = nullptr;
+    if (top && (DWORD)(top - (BYTE *)0x10000) <= 0x7ffeffff && *(DWORD *)top == (DWORD)(g_base + RVA_SIMPLE_TOP_VT))
+        f = *(BYTE **)(top + TOP_HOVER);
+    float x = 0, y = 0;
+    bool cur = g_cursorUi(&x, &y);
+    BYTE *got = f ? HoverFind(ui, f, false, 0, 0, kind) : nullptr;
+    static int agree;
+    if (got && cur && agree < 3)
+        agree++, Log("ping: the game's hover %p (%s), the cursor at %.4f, %.4f in the UI: %s its rect %.4f..%.4f x %.4f..%.4f", got, *kind == HOVER_BUFF ? "a buff" : "a button",
+                     x, y, InRect(got, x, y) ? "inside" : "NOT inside", ((float *)(got + LAYOUT_RECT))[1], ((float *)(got + LAYOUT_RECT))[3], ((float *)(got + LAYOUT_RECT))[0], ((float *)(got + LAYOUT_RECT))[2]);
+    if (got)
+        return got;
+    if (!cur)
+        return nullptr;
+    got = HoverFind(ui, nullptr, true, x, y, kind);
+    static int byCursor;
+    if (got && byCursor < 3)
+        byCursor++, Log("ping: %s %p found by the cursor (%.4f, %.4f; the game's hover: %p)", *kind == HOVER_BUFF ? "a buff" : "a button", got, x, y, f);
+    return got;
 }
 // a game string without its colour codes (|cAARRGGBB, |r), at most n - 1 characters
 static void PlainText(const char *src, char *out, size_t n) {
@@ -4020,25 +4074,65 @@ static void PlainText(const char *src, char *out, size_t n) {
 // on the game thread, 10 times a second while the ping key is on
 static void HoverPass(BYTE *ui) {
     __try {
-        g_shared->hover = ui && HoveredButton(ui) ? 1 : 0;
+        int kind;
+        g_shared->hover = ui && Hovered(ui, &kind) ? 1 : 0;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_shared->hover = 0;
     }
+}
+// the selected unit's name, as the info panel shows it ("" none)
+static void PanelName(BYTE *ui, char *who, size_t n) {
+    who[0] = 0;
+    BYTE *name = P(P(P(ui, 0x3c4), 0x130), 0x128);
+    if (name && *(DWORD *)name == (DWORD)(g_base + RVA_FONTSTRING_VTABLE) && PageIs(*(BYTE **)(name + FS_TEXT), READ))
+        PlainText(*(const char **)(name + FS_TEXT), who, n);
+}
+// a buff bar icon's ping: "<unit> >> <buff> | 12 s left" (the map's timer when it has one, as the
+// buff timers draw it), "| active" for an aura or a buff kept up / with no end
+static int PingBuff(BYTE *ui, BYTE *ind) {
+    BYTE *buff = V(*(BYTE **)(ind + IND_BUFF));
+    if (!buff)
+        return 2;
+    DWORD id = *(DWORD *)(buff + BUFF_ID);
+    char name[64], who[64], t[12] = "", state[40];
+    if (!BuffName(id, name, sizeof(name)) || !name[0])
+        strcpy_s(name, IdText(id).s);
+    PanelName(ui, who, sizeof(who));
+    bool aura = VirtualInt(buff, 0x1e8) != 0;
+    float left = 0, total = 0, ml, mt;
+    BuffTimeOf(buff, aura, &left, &total);
+    BYTE *unit = AgentOwner(buff);
+    bool mapTimer = BuffMapLeft(unit, id, &ml, &mt);
+    if (mapTimer)
+        left = ml, total = mt;
+    bool kept = !mapTimer && left > 0 && BuffKeptUp(unit, id, aura, left, GetTickCount());
+    if (left > 0 && left < 3600 && !kept && (!aura || mapTimer))
+        TimeText(left, t, sizeof(t), (g_shared->tmMinutes & MIN_BUFFS) != 0);
+    sprintf_s(state, t[0] ? "%s s left" : "active", t);
+    if (t[0] && strchr(t, ':'))
+        sprintf_s(state, "%s left", t);
+    sprintf_s(g_shared->pingText, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, name, state);
+    g_shared->pingChat = ChatRecipient(ui);
+    static int logs;
+    if (logs++ < 3)
+        Log("ping: \"%s\" (buff '%s' %p%s)", g_shared->pingText, IdText(id).s, buff, mapTimer ? ", the map's timer" : "");
+    return 1;
 }
 // command 5, on the game thread: 1 pingText written, 2 nothing to ping
 static int PingCommand(BYTE *ui) {
     g_shared->pingText[0] = 0, g_shared->pingChat = 0;
     __try {
-        BYTE *btn = HoveredButton(ui), *data = btn ? *(BYTE **)(btn + 0x190) : nullptr;
+        int kind;
+        BYTE *btn = Hovered(ui, &kind), *data = btn && kind == HOVER_BUTTON ? *(BYTE **)(btn + 0x190) : nullptr;
+        if (btn && kind == HOVER_BUFF)
+            return PingBuff(ui, btn);
         if (!data || !PageIs(data + DATA_NAME, READ))
             return 2;
         char ability[64], who[64] = "", t[12];
         PlainText((const char *)(data + DATA_NAME), ability, sizeof(ability));
         if (!ability[0])
             return 2;
-        BYTE *name = P(P(P(ui, 0x3c4), 0x130), 0x128);
-        if (name && *(DWORD *)name == (DWORD)(g_base + RVA_FONTSTRING_VTABLE) && PageIs(*(BYTE **)(name + FS_TEXT), READ))
-            PlainText(*(const char **)(name + FS_TEXT), who, sizeof(who));
+        PanelName(ui, who, sizeof(who));
         float left = 0, total = 0;
         ButtonCooldown(btn, &left, &total);
         TimeText(left, t, sizeof(t), (g_shared->tmMinutes & MIN_COOLDOWNS) != 0);

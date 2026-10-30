@@ -233,6 +233,22 @@ int main() {
     float gt2 = sh.buffTotal[1], gl2 = sh.buffLeft[1];
     *(int *)(buff[1] + BUFF_PAUSED) = 0, *(float *)(buff[1] + BUFF_RAN) = 0, *(BYTE **)(buff[1] + BUFF_UNIT) = unit[1];
     CHECK(gt1 == 33 && gt2 == 9 && gl2 == 6, "no unit: the game's total, the timer's + [+0xa4] (%.0f); paused: [+0xac] %.0f left of %.0f", gt1, gl2, gt2);
+    // Alt + click a buff (layout 34): the buff bar icon under the cursor (the game's pick) pings its buff
+    *(BYTE **)(top + TOP_HOVER) = inds[0];
+    *(DWORD *)bar = (DWORD)(img + 0xab0000);                              // a frame (the game's have their vtable)
+    *(const char **)(nameFs + FS_TEXT) = "Paladin";
+    int pb = PingCommand(ui);
+    CHECK(pb == 1 && !strncmp(sh.pingText, "Paladin >> Binf | ", 18) && strstr(sh.pingText, "s left"), "a buff icon: \"%s\"", sh.pingText);
+    // no pick from the game (an ally's or a boss's buttons don't take the mouse): the cursor against the button's rect
+    struct Cur { static bool __cdecl At(float *x, float *y) { *x = 0.52f, *y = 0.03f; return true; } };
+    g_cursorUi = Cur::At;
+    float *rc = (float *)(btn + LAYOUT_RECT); rc[0] = 0.01f, rc[1] = 0.50f, rc[2] = 0.05f, rc[3] = 0.54f;
+    *(BYTE **)(top + TOP_HOVER) = nullptr;
+    int kind = 0;
+    BYTE *hv = Hovered(ui, &kind);
+    rc[1] = 0.60f, rc[3] = 0.64f;
+    BYTE *hv2 = Hovered(ui, &kind);
+    CHECK(hv == btn && hv2 == nullptr, "no hover from the game: the button under the cursor by its rect; elsewhere: none");
     Verdict();
     return g_fails;
 }
