@@ -12,8 +12,8 @@
 ModuleCheckFeatures() => [
     ["Quickcast through the game", "quickcast: clicked", ""],
     ["Quickcast keys (as WFE)", "quickcast keys: key .* pressed slot|quickcast keys: on \(", "quickcast keys: (pressing a button faulted|the game window couldn.t be subclassed|slot \d+.s button .* isn.t a game button)"],
-    ["Quickcast keys: a reticle already up (cancelled, then cast)", "quickcast keys: key .. with a reticle already up", ""],
-    ["Quickcast keys: the game's queue (timing)", "quickcast keys: the last 25 presses waited", ""],
+    ["Quickcast: reticle already up", "quickcast keys: key .. with a reticle already up", ""],
+    ["Quickcast keys: timing", "quickcast keys: the last 25 presses waited", ""],
     ["Quickcast on the game thread (target mode)", "quickcast: clicked as the game opened the target mode|quickcast: the target mode.s Enter is ours", "quickcast: vtable \+AAA220 entry|quickcast: the target mode.s vtable .* isn.t where|quickcast: the target mode hook faulted"],
     ["Cooldown and buff timers", "timers: game getter at .* checks out|timers in the game: drawing", "timers: refused|frames: refused|no more frames in this session"],
     ["Cooldowns on the card", "timers in the game: the first cooldown drawn", "cooldowns: the command card .* isn't readable"],
@@ -45,9 +45,9 @@ ModuleCheckFeatures() => [
     ["Damage meter feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
     ["Hide the UI, again (1.5 s pass)", "hide UI: the .* (hidden again|anchored again)", ""],
     ["Buff durations (probe)", "buff timers: '[^']+' .* appeared", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
-    ["Damage meter hits (taken, sources)", "damage: unit type '....' is named|damage: '....' \(a unit type or an ability\) is named", ""],
-    ["Damage meter spells (ability per hit)", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
-    ["Map text lines (the map's damage total, probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
+    ["Damage: taken, sources", "damage: unit type '....' is named|damage: '....' \(a unit type or an ability\) is named", ""],
+    ["Damage: spell names", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
+    ["Map text lines (probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
     ["Damage meter names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
 ]
 
@@ -159,39 +159,45 @@ ModuleCheckDialog() {
     if g
         try g.Destroy()
     log := ModuleCheckLog(), rows := ModuleCheckRows(log)
-    w := 640, x := 26, tw := w - 52
+    ; the rows in two columns once there are many, and the buttons in the title row: with 45-odd rows the
+    ; window ran off the screen and Copy report couldn't be reached (the user, 2026-10-29)
+    cols := rows.Length > 16 ? 2 : 1
+    w := cols = 2 ? 1080 : 640, x := 26, tw := w - 52, gap := 20, colW := (tw - (cols - 1) * gap) // cols
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
     card := DialogCard(g, w)
-    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, "Module check")
+    t := g.AddText("x" x " y22 w300 h28 +Background" C.card " c" C.text, "Module check")
     t.SetFont("s13 w700 q4", "Cinzel")
-    intro := "What the game module saw in this game: ✓ worked, ✗ refused (it says why), · not seen yet. Try each feature once, then Copy report."
-    it := g.AddText("x" x " y56 w" tw " +Background" C.card " c" C.dim, intro)
-    UISetFont(it, "s9")
-    y := 56 + TextHeight(it, intro, tw) + 14
-    it.Move(, , , y - 70)
-    for row in rows {
-        m := g.AddText("x" x " y" y " w18 h20 +Background" C.card " c" (row.mark = "✓" ? C.accent : row.mark = "✗" ? "E5534B" : C.dim), row.mark)
-        UISetFont(m, "s10 w700")
-        n := g.AddText("x" (x + 22) " y" (y + 1) " w170 h20 +Background" C.card " c" C.text, row.name)
-        UISetFont(n, "s9 w600")
-        d := g.AddText("x" (x + 196) " y" (y + 2) " w" (tw - 196) " h18 +Background" C.card " c" C.muted, row.detail)
-        UISetFont(d, "s8")
-        y += 24
-    }
-    y += 16
-    copy := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Copy report")
-    close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    copy := g.AddText("x" (w - x - 104 - 8 - 150) " y18 w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Copy report")
+    close := g.AddText("x" (w - x - 104) " y18 w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
     for b in [copy, close]
         UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
     copy.OnEvent("Click", (*) => (A_Clipboard := ModuleCheckReport(rows, log), Toast("Report copied: paste it in your message", "", 2500)))
     close.OnEvent("Click", (*) => g.Destroy())
-    h := y + 34 + 24
+    intro := "What the game module saw in this game: ✓ worked, ✗ refused (it says why), · not seen yet. Try each feature once, then Copy report."
+    it := g.AddText("x" x " y60 w" tw " +Background" C.card " c" C.dim, intro)
+    UISetFont(it, "s9")
+    y0 := 60 + TextHeight(it, intro, tw) + 14
+    it.Move(, , , y0 - 74)
+    ; rows as tall as fit on the screen (24 at most, 18 at least)
+    perCol := Ceil(rows.Length / cols), room := A_ScreenHeight / UiK(g) - 60 - y0 - 24
+    rowH := Max(18, Min(24, Floor(room / Max(1, perCol))))
+    for i, row in rows {
+        col := (i - 1) // perCol, cx := x + col * (colW + gap), y := y0 + Mod(i - 1, perCol) * rowH
+        m := g.AddText("x" cx " y" y " w18 h20 +Background" C.card " c" (row.mark = "✓" ? C.accent : row.mark = "✗" ? "E5534B" : C.dim), row.mark)
+        UISetFont(m, "s10 w700")
+        n := g.AddText("x" (cx + 22) " y" (y + 1) " w170 h20 +Background" C.card " c" C.text, row.name)
+        UISetFont(n, "s9 w600")
+        d := g.AddText("x" (cx + 196) " y" (y + 2) " w" (colW - 196) " h18 +Background" C.card " c" C.muted, row.detail)
+        UISetFont(d, "s8")
+    }
+    h := y0 + perCol * rowH + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
     DialogStyle(g)
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(Max(0, oy + (oh - h * UiK(g)) / 2)) " w" w " h" h)
+    g.Show("x" Round(Max(0, ox + (ow - w * UiK(g)) / 2)) " y" Round(Max(0, Min(oy + (oh - h * UiK(g)) / 2, A_ScreenHeight - h * UiK(g)))) " w" w " h" h)
     DialogRepaint(g)
+    return g
 }
