@@ -7210,8 +7210,15 @@ static void __cdecl EffectDestroyHook(DWORD h) {
         }
     ((EffectDestroyFn)g_fxDel.tramp)(h);
 }
+static void OrbSeen(BYTE *u, DWORD type);
+static void OrbGone(BYTE *u);
 static BYTE *__fastcall UnitCreateHook(int slot, DWORD type, float *x, float *y, float *facing) {
     BYTE *u = ((UnitCreateFn)g_fxUnit.tramp)(slot, type, x, y, facing);
+    if (g_shared->ocOn && !g_fxBad)
+        __try {
+            OrbSeen(u, type);                   // the dash combo's orbs
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
     if (g_shared->fxOn && !g_fxBad)
         __try {
             float ux, uy;
@@ -7248,12 +7255,14 @@ static void FxUnitGone(FxUnitRec &e, const char *how) {
 }
 static void FxUnitHandle(DWORD h, const char *how) {
     BYTE *u = (BYTE *)GameCall(g_base + RVA_HANDLE_UNIT, h, 0, 0, nullptr);
+    if (g_shared->ocOn)
+        OrbGone(u);
     for (FxUnitRec &e : g_fxUnits)
         if (e.unit && e.unit == u)
             return FxUnitGone(e, how);
 }
 static void __cdecl RemoveUnitHook(DWORD h) {
-    if (g_shared->fxOn && !g_fxBad)
+    if ((g_shared->fxOn || g_shared->ocOn) && !g_fxBad)
         __try {
             FxUnitHandle(h, "removed");
         } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -7262,7 +7271,7 @@ static void __cdecl RemoveUnitHook(DWORD h) {
     ((UnitHandleFn)g_fxRemove.tramp)(h);
 }
 static void __cdecl KillUnitHook(DWORD h) {
-    if (g_shared->fxOn && !g_fxBad)
+    if ((g_shared->fxOn || g_shared->ocOn) && !g_fxBad)
         __try {
             FxUnitHandle(h, "killed");
         } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -7274,7 +7283,7 @@ static void __cdecl KillUnitHook(DWORD h) {
 static void FxProbePass() {
     g_fxAdd.hook = (void *)EffectAddHook, g_fxDel.hook = (void *)EffectDestroyHook, g_fxAttach.hook = (void *)EffectAttachHook;
     g_fxUnit.hook = (void *)UnitCreateHook, g_fxRemove.hook = (void *)RemoveUnitHook, g_fxKill.hook = (void *)KillUnitHook;
-    bool on = g_shared->fxOn && !g_fxBad, all = true;
+    bool on = (g_shared->fxOn || g_shared->ocOn) && !g_fxBad, all = true;    // (the dash combo's orbs come through them too)
     for (CodeDetour *d : FX_DETOURS)
         all = all && d->on;
     if (on != all) {
@@ -7292,10 +7301,11 @@ static void FxProbePass() {
                 LogBytes(at, g_base + d->rva);
             }
         } else
-            Log(on ? "effect probe: on (ground and attached effects, units made near your hero and your hero's casts are logged)" : "effect probe: off");
+            Log(on ? "effect probe: on (the units the game makes followed%s)" : "effect probe: off",
+                g_shared->fxOn ? "; ground and attached effects, units made near your hero and your hero's casts logged" : ", for the dash combo's orbs");
     }
     g_shared->fxState = g_fxBad ? 3 : g_fxAdd.on ? 1 : 0;
-    if (!g_fxAdd.on)
+    if (!g_fxAdd.on || !g_shared->fxOn)
         return;
     DWORD now = GetTickCount();
     __try {
@@ -8586,29 +8596,6 @@ static void OrbComboCast(BYTE *unit, BYTE *ability) {
     if (g_oc.state == 1 && *(DWORD *)(ability + 0x34) == g_shared->ocDash && unit == FindMyHero())
         g_oc.castAt = GetTickCount();
 }
-// your orbs alive now, from the game's unit list (only live ones are in it): the nearest to (x, y)
-static BYTE *OrbNearest(float x, float y, float *ox, float *oy, int *count) {
-    BYTE *state;
-    int local = LocalPlayer(&state);
-    BYTE *list = g_base + RVA_UNIT_LIST, *best = nullptr;
-    DWORD n = *(DWORD *)(list + 4);
-    BYTE **units = *(BYTE ***)(list + 8);
-    float bd = 1e18f;
-    *count = 0;
-    for (DWORD i = 0; units && i < n && i < 8192; i++) {
-        BYTE *u = units[i];
-        float ux, uy;
-        if (!IsUnit(u) || *(DWORD *)(u + 0x30) != g_shared->ocOrb || *(int *)(u + UNIT_OWNER) != local || !UnitXY(u, &ux, &uy))
-            continue;
-        float d = (ux - x) * (ux - x) + (uy - y) * (uy - y);
-        if (d > 1500.f * 1500.f)
-            continue;
-        ++*count;
-        if (d < bd)
-            bd = d, best = u, *ox = ux, *oy = uy;
-    }
-    return best;
-}
 static void OrbOrder(float x, float y) {
     ((PointOrderFn)(g_base + RVA_POINT_ORDER))(g_ocOrder, nullptr, x, y, g_ocFlagA, g_ocFlagB);
     g_oc.orderAt = GetTickCount(), g_oc.tx = x, g_oc.ty = y;
@@ -8642,6 +8629,7 @@ static bool OrbPressDash(BYTE *ui) {
         }
     return false;
 }
+static BYTE *OrbNearest(float x, float y, float *ox, float *oy, int *count);
 static void OrbComboStart() {
     BYTE *ui = (BYTE *)GameUi(), *hero = FindMyHero(), *state;
     int local = LocalPlayer(&state), n = 0;
@@ -8666,31 +8654,65 @@ static void OrbComboStart() {
     Log("dash combo: '%s' pressed with %d orbs near (from (%.0f, %.0f); order %08lX, flags %08lX / %08lX%s)", IdText(g_shared->ocDash).s, n, g_oc.sx, g_oc.sy,
         g_ocOrder, g_ocFlagA, g_ocFlagB, g_ocSeen ? ", as your right click's" : ": no right click of yours seen yet, the plain ones");
 }
-// is u still in the game's unit list (only live units are)
+// your orbs as the game made them (UnitCreateHook: the orb units aren't in the game's unit list, the
+// 11:51 test's 'no orbs near' with 5 there), each gone at RemoveUnit / KillUnit or after 10 s
+static struct OrbUnit { BYTE *unit; DWORD at; float x, y; } g_ocOrbs[16];
+static void OrbSeen(BYTE *u, DWORD type) {
+    BYTE *state;
+    float x, y;
+    if (type != g_shared->ocOrb || !IsUnit(u) || *(int *)(u + UNIT_OWNER) != LocalPlayer(&state) || !UnitXY(u, &x, &y))
+        return;
+    OrbUnit *r = &g_ocOrbs[0];
+    for (OrbUnit &o : g_ocOrbs)
+        if (!o.unit || (LONG)(o.at - r->at) < 0)
+            r = &o;
+    *r = { u, GetTickCount(), x, y };
+    static int logs;
+    if (logs++ < 5)
+        Log("dash combo: orb '%s' noted at (%.0f, %.0f)", IdText(type).s, x, y);
+}
+static void OrbGone(BYTE *u) {
+    for (OrbUnit &o : g_ocOrbs)
+        if (u && o.unit == u)
+            o.unit = nullptr;
+}
 static bool OrbAlive(BYTE *u) {
-    BYTE *list = g_base + RVA_UNIT_LIST;
-    DWORD c = *(DWORD *)(list + 4);
-    BYTE **units = *(BYTE ***)(list + 8);
-    for (DWORD i = 0; units && i < c && i < 8192; i++)
-        if (units[i] == u)
+    DWORD now = GetTickCount();
+    for (OrbUnit &o : g_ocOrbs) {
+        if (o.unit && now - o.at > 10000)
+            o.unit = nullptr;               // (an orb lasts 8 s)
+        if (o.unit && o.unit == u)
             return true;
+    }
     return false;
+}
+// your orbs alive now: the nearest to (x, y) within 1500, how many
+static BYTE *OrbNearest(float x, float y, float *ox, float *oy, int *count) {
+    BYTE *best = nullptr;
+    float bd = 1e18f;
+    *count = 0;
+    for (OrbUnit &o : g_ocOrbs) {
+        if (!o.unit || !OrbAlive(o.unit))
+            continue;
+        float d = (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y);
+        if (d > 1500.f * 1500.f)
+            continue;
+        ++*count;
+        if (d < bd)
+            bd = d, best = o.unit, *ox = o.x, *oy = o.y;
+    }
+    return best;
 }
 // the orbs near the hero, in the order that makes the shortest path through them all from (x, y)
 // (every order tried: 8 at most, 40320); each leg ends ocReach short of its orb (the dash only has to
 // come that close), so the path cuts its corners
 static void OrbPlan(float x, float y) {
-    BYTE *state;
-    int local = LocalPlayer(&state), n = 0;
-    BYTE *list = g_base + RVA_UNIT_LIST, *u;
-    DWORD c = *(DWORD *)(list + 4);
-    BYTE **units = *(BYTE ***)(list + 8);
+    int n = 0;
     float ox[8], oy[8];
     BYTE *orb[8];
-    for (DWORD i = 0; units && i < c && i < 8192 && n < 8; i++)
-        if (IsUnit(u = units[i]) && *(DWORD *)(u + 0x30) == g_shared->ocOrb && *(int *)(u + UNIT_OWNER) == local && UnitXY(u, &ox[n], &oy[n])
-            && (ox[n] - x) * (ox[n] - x) + (oy[n] - y) * (oy[n] - y) <= 1500.f * 1500.f)
-            orb[n++] = u;
+    for (OrbUnit &o : g_ocOrbs)
+        if (n < 8 && o.unit && OrbAlive(o.unit) && (o.x - x) * (o.x - x) + (o.y - y) * (o.y - y) <= 1500.f * 1500.f)
+            orb[n] = o.unit, ox[n] = o.x, oy[n] = o.y, n++;
     int perm[8], best[8];
     for (int i = 0; i < n; i++)
         perm[i] = best[i] = i;

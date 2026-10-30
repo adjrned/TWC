@@ -28,6 +28,11 @@ static void __fastcall FakeClick(BYTE *btn, int, int) {
 }
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC, img[rva] = 0xE9, *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }
 static BYTE *list[8];
+// the orbs as the game makes them (the combo notes them from the unit creation: they're not in its unit list)
+static void Orbs() {
+    for (int i = 1; i < 5; i++)
+        OrbSeen(units[i], *(DWORD *)(units[i] + 0x30));
+}
 static void List(std::initializer_list<BYTE *> us) {
     int n = 0;
     for (BYTE *u : us)
@@ -85,7 +90,7 @@ int main() {
     *(BYTE **)(ui + 0x3c8) = card;
     g_getUi = [](int, int) -> void * { return ui; };
     sh.ocDash = 'A107', sh.ocOrb = 'e05P', sh.ocSouth = 150, sh.ocReach = 190;
-    List({ hero, units[1], units[2], units[3], units[4] });
+    List({ hero }), Orbs();                     // (only the hero in the game's unit list: the orbs never are)
 
     sh.ocOn = 1; OrbComboPass(); BossCastPass();
     bool ours = g_ocHooked && g_bcHooked;
@@ -112,14 +117,14 @@ int main() {
     At(hero, -260, 90); OrbComboTick();
     o = orders[(nOrders - 1) & 15];
     CHECK(nOrders == 4 && sh.ocTaken == 1 && o.x == 400 && o.y == 0, "in reach of the first (140 from it, the orb still there): on to the next at once");
-    List({ hero, units[2], units[3], units[4] }); OrbComboTick();      // the second taken by the map before it came in reach
+    OrbGone(units[1]); OrbComboTick();          // the second taken by the map (RemoveUnit) before it came in reach
     o = orders[(nOrders - 1) & 15];
     CHECK(nOrders == 5 && sh.ocTaken == 2 && o.x == 300 && o.y == 300, "one gone before it was reached: on to the next");
     At(hero, 250, 250); OrbComboTick();
     o = orders[(nOrders - 1) & 15];
     CHECK(sh.ocTaken == 3 && !g_oc.state && sh.ocState == 0 && sh.ocRuns == 1 && o.x == 0 && o.y == -150 && LogHas("each orb reached (ms after the dash):") && LogHas("(every orb reached); then to the end point"),
           "every orb reached: to 150 south of the start (0, -150), the run over, each orb's time logged");
-    List({ hero, units[4] });                   // (only someone else's orb left)
+    OrbGone(units[2]), OrbGone(units[3]);       // (only someone else's orb left)
     // not run: your hero not the one selected; no orbs of yours near
     *(BYTE **)(sel + SEL_ACTIVE) = units[1]; sh.ocGo++; OrbComboPass();
     bool notSel = !g_oc.state && LogHas("not run: your hero isn't the unit selected");
@@ -127,7 +132,7 @@ int main() {
     CHECK(notSel && !g_oc.state && pressed == 1 && LogHas("not run: no 'e05P' orbs of yours near your hero"), "not run without your hero selected, or without orbs: nothing pressed");
     // its key in the game's window (the module reads it: no companion hotkey): a run, the key kept from the game;
     // another key, or its repeat while held: not; the chat open: the game's
-    List({ hero, units[1], units[2], units[3], units[4] }), At(hero, 0, 0);
+    Orbs(), At(hero, 0, 0);
     sh.ocKey = 'J';                             // (no Ctrl / Alt / Shift: the check's own keyboard has none down)
     bool other = !OrbComboKey('K', 0);
     int before = pressed;
