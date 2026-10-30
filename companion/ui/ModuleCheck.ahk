@@ -26,6 +26,7 @@ ModuleCheckFeatures() => [
     ["Allies' cards: buttons made", "allies' abilities: the first buttons made", "allies' abilities: making the buttons faulted"],
     ["Enemies' abilities (bosses)", "allies' abilities: the first enemy's ability shown|allies' abilities: on .*enemies' too", "allies' abilities: refused|allies' abilities: .* faulted"],
     ["Buff bar raised (no Widescreen UI)", "buff bar raise: the bar .* over the console", "buff bar raise: .*(refused|faulted)"],
+    ["Stats / HP ping", "ping: .* \(the (portrait|hero icon|damage icon|armor icon), unit", ""],
     ["Buff ping", "ping: .+\| (.+ left|active). \(buff", ""],
     ["Ping by the cursor (allies', bosses')", "ping: a (button|buff) .* found by the cursor", ""],
     ["Cooldown ping", "ping: .+\| (Cooldown|Ready|Not enough mana)", "ping: reading the button faulted"],

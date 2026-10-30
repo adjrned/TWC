@@ -4066,7 +4066,15 @@ static DWORD ChatRecipient(BYTE *ui) {
 // click on a boss's ability pinged nothing (the user). So then the cursor against each one's laid-out
 // rect (+0x44: bottom, left, top, right; UI units over the client area, 0.8 x 0.6 from the bottom
 // left): checked against the game's pick while both have one (logged, the first few).
-static const int HOVER_NONE = 0, HOVER_BUTTON = 1, HOVER_BUFF = 2;
+static const int HOVER_NONE = 0, HOVER_BUTTON = 1, HOVER_BUFF = 2, HOVER_DAMAGE = 3, HOVER_ARMOR = 4, HOVER_HERO = 5, HOVER_PORTRAIT = 6;
+// The info panel's icons and the portrait (the user's ask, 2026-10-30: stats, HP, mana and the hero's level
+// pingable, allies' and enemies'). The icons are found among the info panel's pointers by their class
+// (CInfoPanelIconDamage +0xaaf5a8, CInfoPanelIconArmor +0xaaf61c, CInfoPanelIconHero +0xaaf7ec; shown
+// [+0x94], as their updates +0x4089d0 / +0x4083a0 / +0x409290 test it), their numbers the font strings
+// those updates write (+0x40c6e0 sets [fs+0x9c]): damage / armor [+0x130] and the bonus [+0x134]; the
+// hero's strength, agility and intelligence [+0x12c] / [+0x130] / [+0x134]. The portrait [ui+0x3f4].
+static const DWORD RVA_ICON_DAMAGE_VT = 0xaaf5a8, RVA_ICON_ARMOR_VT = 0xaaf61c, RVA_ICON_HERO_VT = 0xaaf7ec, ICON_SHOWN = 0x94;
+static BYTE *LayOf(BYTE *f);
 static const DWORD IND_SHOWN = 0x90, IND_VISIBLE = 0x94, IND_BUFF = 0x978;
 static bool CursorUi(float *x, float *y) {
     POINT p;
@@ -4078,7 +4086,8 @@ static bool CursorUi(float *x, float *y) {
 }
 static bool (*g_cursorUi)(float *, float *) = CursorUi;     // the tests' cursor
 static bool InRect(BYTE *f, float x, float y) {
-    float *rc = (float *)(f + LAYOUT_RECT);
+    BYTE *lay = LayOf(f);
+    float *rc = (float *)((lay ? lay : f) + LAYOUT_RECT);
     return rc[3] > rc[1] && rc[2] > rc[0] && x >= rc[1] && x <= rc[3] && y >= rc[0] && y <= rc[2];
 }
 static BYTE *BuffBar(BYTE *ui) { return P(P(P(ui, 0x3c4), 0x130), 0x16c); }
@@ -4107,6 +4116,24 @@ static BYTE *HoverFind(BYTE *ui, BYTE *f, bool byCursor, float x, float y, int *
             if (f ? b == f : byCursor && InRect(b, x, y))
                 return *kind = HOVER_BUFF, b;
         }
+    BYTE *panel = P(P(ui, 0x3c4), 0x130);
+    static int iconLogs;
+    for (DWORD o = 0x100; panel && o < 0x300; o += 4) {
+        BYTE *ic = V(*(BYTE **)(panel + o));
+        if (!ic)
+            continue;
+        DWORD vt = *(DWORD *)ic - (DWORD)g_base;
+        int k = vt == RVA_ICON_DAMAGE_VT ? HOVER_DAMAGE : vt == RVA_ICON_ARMOR_VT ? HOVER_ARMOR : vt == RVA_ICON_HERO_VT ? HOVER_HERO : HOVER_NONE;
+        if (!k || !*(DWORD *)(ic + ICON_SHOWN))
+            continue;
+        if (iconLogs < 3)
+            iconLogs++, Log("ping: the info panel's %s icon %p at +%lX", k == HOVER_DAMAGE ? "damage" : k == HOVER_ARMOR ? "armor" : "hero", ic, o);
+        if (f ? ic == f : byCursor && InRect(ic, x, y))
+            return *kind = k, ic;
+    }
+    BYTE *portrait = P(ui, 0x3f4);
+    if (portrait && (f ? portrait == f : byCursor && InRect(portrait, x, y)))
+        return *kind = HOVER_PORTRAIT, portrait;
     return *kind = HOVER_NONE, nullptr;
 }
 static BYTE *Hovered(BYTE *ui, int *kind) {
@@ -4191,6 +4218,85 @@ static int PingBuff(BYTE *ui, BYTE *ind) {
         Log("ping: \"%s\" (buff '%s' %p%s)", g_shared->pingText, IdText(id).s, buff, mapTimer ? ", the map's timer" : "");
     return 1;
 }
+// a hero's level as GetHeroLevel (+0x232aa0 -> +0x6b92e0) reads it: [unit+0x1f0]'s counter at +0x6c (its
+// handle pair at +8 / +0xc, the object's [+0x78]) + 1; 0 for a unit that isn't a hero
+static int HeroLevel(BYTE *unit) {
+    BYTE *h = IsHero(unit) ? *(BYTE **)(unit + 0x1f0) : nullptr;
+    if (!h)
+        return 0;
+    BYTE *o = (BYTE *)((LookupFn)(g_base + RVA_HANDLE_LOOKUP))(*(DWORD *)(h + 0x6c + 8), *(DWORD *)(h + 0x6c + 0xc));
+    int lv = o ? *(int *)(o + 0x78) + 1 : 0;
+    return lv > 0 && lv < 10000 ? lv : 0;
+}
+// a font string's text without its codes ("" none)
+static void FsText(BYTE *fs, char *out, size_t n) {
+    out[0] = 0;
+    if (fs && *(DWORD *)fs == (DWORD)(g_base + RVA_FONTSTRING_VTABLE) && PageIs(*(BYTE **)(fs + FS_TEXT), READ))
+        PlainText(*(const char **)(fs + FS_TEXT), out, n);
+    size_t l = strlen(out);
+    while (l && out[l - 1] == ' ')
+        out[--l] = 0;
+}
+// "1234567" -> "1,234,567"
+static void Thousands(float v, char *out, size_t n) {
+    char d[24];
+    sprintf_s(d, "%.0f", v);
+    size_t len = strlen(d), o = 0;
+    for (size_t i = 0; i < len && o + 2 < n; i++) {
+        if (i && (len - i) % 3 == 0 && d[i - 1] != '-')
+            out[o++] = ',';
+        out[o++] = d[i];
+    }
+    out[o] = 0;
+}
+// the info panel icons' and the portrait's pings: "<unit> (Level 12) >> HP 12,345 / 20,000 (62%) | Mana ...",
+// ">> Damage 300 - 350 +50", ">> Armor 25 +5", ">> Str 120 | Agi 80 | Int 60" (the selection's unit, as the panel shows it)
+static int PingStats(BYTE *ui, BYTE *f, int kind) {
+    char who[64], head[96], body[96] = "", a[32], b[32], c[32];
+    PanelName(ui, who, sizeof(who));
+    BYTE *state;
+    int local = LocalPlayer(&state);
+    BYTE *player = local >= 0 ? *(BYTE **)(state + 0x58 + 4 * local) : nullptr, *sel = player ? *(BYTE **)(player + SEL_PLAYER_SELECTION) : nullptr;
+    BYTE *unit = sel ? *(BYTE **)(sel + SEL_ACTIVE) : nullptr;
+    if (!IsUnit(unit))
+        unit = nullptr;
+    int lv = unit ? HeroLevel(unit) : 0;
+    if (lv && who[0])
+        sprintf_s(head, "%s (Level %d)", who, lv);
+    else if (lv)
+        sprintf_s(head, "Level %d", lv);
+    else
+        strcpy_s(head, who);
+    if (kind == HOVER_PORTRAIT) {
+        if (!unit)
+            return 2;
+        float hp = 0, maxHp = 0, mp = -1, maxMp = 0;
+        UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &hp, &maxHp);
+        UnitStat(unit, UNIT_MANA, UNIT_MAXMANA_HANDLE, &mp, &maxMp);
+        char h1[24], h2[24], m1[24], m2[24];
+        Thousands(hp, h1, sizeof(h1)), Thousands(maxHp, h2, sizeof(h2));
+        int o = sprintf_s(body, "HP %s / %s (%d%%)", h1, h2, maxHp > 0 ? (int)(hp * 100 / maxHp + 0.5f) : 0);
+        if (maxMp > 0)
+            Thousands(mp, m1, sizeof(m1)), Thousands(maxMp, m2, sizeof(m2)),
+            sprintf_s(body + o, sizeof(body) - o, " | Mana %s / %s (%d%%)", m1, m2, (int)(mp * 100 / maxMp + 0.5f));
+    } else if (kind == HOVER_HERO) {
+        FsText(*(BYTE **)(f + 0x12c), a, sizeof(a)), FsText(*(BYTE **)(f + 0x130), b, sizeof(b)), FsText(*(BYTE **)(f + 0x134), c, sizeof(c));
+        if (!a[0] && !b[0] && !c[0])
+            return 2;
+        sprintf_s(body, "Str %s | Agi %s | Int %s", a, b, c);
+    } else {
+        FsText(*(BYTE **)(f + 0x130), a, sizeof(a)), FsText(*(BYTE **)(f + 0x134), b, sizeof(b));
+        if (!a[0])
+            return 2;
+        sprintf_s(body, b[0] ? "%s %s %s" : "%s %s", kind == HOVER_DAMAGE ? "Damage" : "Armor", a, b);
+    }
+    sprintf_s(g_shared->pingText, head[0] ? "%s >> %s" : "%s%s", head, body);
+    g_shared->pingChat = ChatRecipient(ui);
+    static int logs;
+    if (logs++ < 4)
+        Log("ping: \"%s\" (%s, unit %p)", g_shared->pingText, kind == HOVER_PORTRAIT ? "the portrait" : kind == HOVER_HERO ? "the hero icon" : kind == HOVER_DAMAGE ? "the damage icon" : "the armor icon", unit);
+    return 1;
+}
 // command 5, on the game thread: 1 pingText written, 2 nothing to ping
 static int PingCommand(BYTE *ui) {
     g_shared->pingText[0] = 0, g_shared->pingChat = 0;
@@ -4199,6 +4305,8 @@ static int PingCommand(BYTE *ui) {
         BYTE *btn = Hovered(ui, &kind), *data = btn && kind == HOVER_BUTTON ? *(BYTE **)(btn + 0x190) : nullptr;
         if (btn && kind == HOVER_BUFF)
             return PingBuff(ui, btn);
+        if (btn && kind >= HOVER_DAMAGE)
+            return PingStats(ui, btn, kind);
         if (!data || !PageIs(data + DATA_NAME, READ))
             return 2;
         char ability[64], who[64] = "", t[12];

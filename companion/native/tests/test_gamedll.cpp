@@ -262,6 +262,20 @@ int main() {
           && SiteTarget(g_base + 0x3e4081) == g_base + RVA_CONTROLS && SiteTarget(g_base + 0x3e408d) == g_base + RVA_ABILITY_DISPLAY
           && FnStart(RVA_ABILITY_MAKE) && !memcmp(g_base + 0x6b26ca, "\xC2\x04\x00", 3) && !memcmp(g_base + 0x6b26a8, "\xFF\x90\xC0\x01\x00\x00", 6),
           "the card's two callbacks: +3E4020 (pushed at +3FAE04) makes the buttons through +6B2650 (vt+0x1C0), +3E4060 updates (+6B2700), each after the control test");
+    // stats pings: the info panel icons (RTTI, their update entries +0x6c), the text font strings they write (+40C6E0 on
+    // [fs+0x9c]: armor [+0x130] / [+0x134], the hero's [+0x12c] / [+0x130] / [+0x134]), shown [+0x94]; the hero level
+    // (+6B92E0: [unit+0x1f0]'s counter +0x6c, +0805A0: the lookup of its pair [+8] / [+0xc], [+0x78], then + 1)
+    CHECK(Rtti(RVA_ICON_DAMAGE_VT, "CInfoPanelIconDamage") && Rtti(RVA_ICON_ARMOR_VT, "CInfoPanelIconArmor") && Rtti(RVA_ICON_HERO_VT, "CInfoPanelIconHero")
+          && *(DWORD *)(g_base + RVA_ICON_HERO_VT + 0x6c) == (DWORD)(g_base + 0x409290) && *(DWORD *)(g_base + RVA_ICON_ARMOR_VT + 0x6c) == (DWORD)(g_base + 0x4083a0)
+          && !memcmp(g_base + 0x4083cd, "\x83\xBE\x94\x00\x00\x00\x00", 7)
+          && !memcmp(g_base + 0x4085f0, "\x8B\x8E\x30\x01\x00\x00", 6) && SiteTarget(g_base + 0x4085fc) == g_base + 0x40c6e0
+          && !memcmp(g_base + 0x40862e, "\x8B\x8E\x34\x01\x00\x00", 6) && !memcmp(g_base + 0x4093c3, "\x8B\xB3\x2C\x01\x00\x00", 6)
+          && !memcmp(g_base + 0x4094df, "\x8B\xB3\x30\x01\x00\x00", 6) && !memcmp(g_base + 0x4095fc, "\x8B\xB3\x34\x01\x00\x00", 6)
+          && !memcmp(g_base + 0x40c6f9, "\x8B\x87\x9C\x00\x00\x00", 6)
+          && !memcmp(g_base + 0x6b92e0, "\x8B\x81\xF0\x01\x00\x00\x85\xC0\x74\x0A\x8D\x48\x6C\xE8", 14) && SiteTarget(g_base + 0x6b92ed) == g_base + 0x0805a0
+          && !memcmp(g_base + 0x0805a0, "\x8B\x51\x0C\x8B\x49\x08\xE8", 7) && SiteTarget(g_base + 0x0805a6) == g_base + RVA_HANDLE_LOOKUP
+          && !memcmp(g_base + 0x0805ab, "\x8B\x40\x78\xC3", 4) && SiteTarget(g_base + 0x232af0) == g_base + 0x6b92e0,
+          "stats pings: the icons' classes and text fields, shown [+0x94]; the hero level as GetHeroLevel reads it");
     // a spell hit's ability (layout 34): GetSpellAbilityId +235000 (registered at +23AFC7) asks the event id (+235FC0: the game
     // state's trigger context +2135F0 = [state+0x1c], made when 0; slot 6 of its stack +2BB780: [ctx + slot*16 + 0x98] entries at
     // [+0x9c]); a spell event is 272 + 0..0x15; cdecl, ret 0

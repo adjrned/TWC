@@ -249,6 +249,31 @@ int main() {
     rc[1] = 0.60f, rc[3] = 0.64f;
     BYTE *hv2 = Hovered(ui, &kind);
     CHECK(hv == btn && hv2 == nullptr, "no hover from the game: the button under the cursor by its rect; elsewhere: none");
+    g_cursorUi = CursorUi;
+    // stats pings: the info panel's armor and hero icons (their texts), the portrait (HP / mana, the hero's level)
+    static BYTE armorIc[0x200], heroIc[0x200], fs[5][0x100], portraitF[0x200], heroObj[0x100];
+    const char *texts[5] = { "25", "|cff00ff00+5|r", "120", "80", "60 |cff00ff00+20|r" };
+    for (int i = 0; i < 5; i++)
+        *(DWORD *)fs[i] = (DWORD)(img + RVA_FONTSTRING_VTABLE), *(const char **)(fs[i] + FS_TEXT) = texts[i];
+    *(DWORD *)armorIc = (DWORD)(img + RVA_ICON_ARMOR_VT), *(DWORD *)(armorIc + ICON_SHOWN) = 1;
+    *(BYTE **)(armorIc + 0x130) = fs[0], *(BYTE **)(armorIc + 0x134) = fs[1];
+    *(DWORD *)heroIc = (DWORD)(img + RVA_ICON_HERO_VT), *(DWORD *)(heroIc + ICON_SHOWN) = 1;
+    *(BYTE **)(heroIc + 0x12c) = fs[2], *(BYTE **)(heroIc + 0x130) = fs[3], *(BYTE **)(heroIc + 0x134) = fs[4];
+    *(BYTE **)(panel + 0x140) = armorIc, *(BYTE **)(panel + 0x144) = heroIc;
+    *(BYTE **)(top + TOP_HOVER) = armorIc; int sa = PingCommand(ui); char armorLine[128]; strcpy_s(armorLine, sh.pingText);
+    *(BYTE **)(top + TOP_HOVER) = heroIc; int sh2 = PingCommand(ui); char heroLine[128]; strcpy_s(heroLine, sh.pingText);
+    CHECK(sa == 1 && sh2 == 1 && !strncmp(armorLine, "Paladin", 7) && strstr(armorLine, ">> Armor 25 +5") && strstr(heroLine, ">> Str 120 | Agi 80 | Int 60 +20"),
+          "the armor icon: \"%s\"; the hero icon: \"%s\"", armorLine, heroLine);
+    // the portrait: the selection's unit, a hero ('Hpal'): its HP / mana (the fake state getter) and level (its counter's [+0x78] + 1)
+    *(DWORD *)portraitF = (DWORD)(img + 0xab0000), *(BYTE **)(ui + 0x3f4) = portraitF;
+    *(BYTE **)(sel + SELECTION_ACTIVE) = mine, *(DWORD *)(mine + 0x30) = 'Hpal';
+    *(float *)(mine + UNIT_HP) = 1500, *(float *)(mine + UNIT_MANA) = 40;
+    *(BYTE **)(mine + 0x1f0) = heroObj;
+    int savedFlags = *(int *)(flagsObj + 0x78);
+    *(int *)(flagsObj + 0x78) = 11;                                         // the fake lookup's object: level 12
+    *(BYTE **)(top + TOP_HOVER) = portraitF; int sp = PingCommand(ui);
+    *(int *)(flagsObj + 0x78) = savedFlags;
+    CHECK(sp == 1 && strstr(sh.pingText, "(Level 12) >> HP 1,500 / ") && strstr(sh.pingText, "| Mana 40 / "), "the portrait: \"%s\"", sh.pingText);
     Verdict();
     return g_fails;
 }
