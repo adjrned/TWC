@@ -53,7 +53,7 @@ ModuleCheckLogText() {
     path := A_ScriptDir "\native\twc-game.log"
     if !FileExist(path)
         return ""
-    try return FileRead(path)
+    try return FileRead(path, "UTF-8")      ; the players' names are UTF-8 (the rest is ASCII)
     return ""
 }
 ; -> { now, before } from the log's text. A second copy that stays idle ("loaded
