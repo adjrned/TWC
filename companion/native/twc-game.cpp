@@ -1232,7 +1232,7 @@ static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float tota
     bool fresh = !s || now - s->at > 2000;
     s = s ? s : old;
     s->unit = unit, s->id = id, s->at = now;
-    if (fresh && g_tsHooked)
+    if (fresh && g_tsHooked && aura)        // auras only: a buff has its own time (B0BU, a 9999 s passive, took an 8 s timer)
         BuffMatchTimer(unit, id, now);
     if (!fresh || !g_tsHooked || g_bsLogs >= 16)
         return;

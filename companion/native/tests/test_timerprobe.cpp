@@ -73,7 +73,7 @@ int main() {
     CHECK(!BuffMapLeft(unit, 'B04Q', &ml, &mt), "its timer run out: none");
     DWORD t2 = t1 + 5000;
     Note(12, timer10, t2 - 30), Note(20, timer30, t2 - 30);
-    BuffAppeared(unit, 'B0XX', false, 5, 5, t2);
+    BuffAppeared(unit, 'B0XX', true, 4, 4, t2);
     CHECK(!BuffMapLeft(unit, 'B0XX', &ml, &mt) && LogHas("'B0XX': no map timer of its own (2 lengths"), "two lengths started with it: no guess");
     // two items at once: B04Q (seen alone: callback 0x111, 10 s) and B0YY (seen alone: 0x222, 20 s), their timers started together
     static BYTE timerA[0x40], timerB[0x40];
@@ -81,13 +81,13 @@ int main() {
     remain = 6;
     DWORD t3 = t2 + 5000;
     Note(20, timerB, t3 - 3000, (void *)0x222);                          // B0YY alone once: learned
-    BuffAppeared(unit, 'B0YY', false, 20, 20, t3 - 2990);
+    BuffAppeared(unit, 'B0YY', true, 4, 4, t3 - 2990);
     for (BuffMapTimer &m : g_bmt) m.id = 0;                              // both run out
     // both items used at once: both buffs new in the same read, both timers started 30 ms before
     for (BuffMapTimer &m : g_bmt) m.id = 0;
     DWORD t4 = t3 + 5000;
     Note(20, timerB, t4 - 30, (void *)0x222), Note(10, timerA, t4 - 30, (void *)0x111);
-    BuffAppeared(unit, 'B0YY', false, 20, 20, t4), BuffAppeared(unit, 'B04Q', true, 4, 4, t4);
+    BuffAppeared(unit, 'B0YY', true, 4, 4, t4), BuffAppeared(unit, 'B04Q', true, 4, 4, t4);
     float la = 0, ta = 0, lb = 0, tb = 0;
     bool a = BuffMapLeft(unit, 'B04Q', &la, &ta), bb = BuffMapLeft(unit, 'B0YY', &lb, &tb);
     CHECK(a && ta == 10 && bb && tb == 20 && LogHas("by its callback"), "two items at once: each buff its own timer by its callback (B04Q %.0f s, B0YY %.0f s)", ta, tb);
@@ -95,8 +95,12 @@ int main() {
     for (BuffMapTimer &m : g_bmt) m.id = 0;
     DWORD t5 = t4 + 5000;
     Note(20, timerB, t5 - 30, (void *)0x333), Note(10, timerA, t5 - 30, (void *)0x444);
-    BuffAppeared(unit, 'B0ZZ', false, 9, 9, t5);
+    BuffAppeared(unit, 'B0ZZ', true, 4, 4, t5);
     CHECK(!BuffMapLeft(unit, 'B0ZZ', &la, &ta) && LogHas("'B0ZZ': no map timer of its own (2 lengths") && LogHas("not seen alone yet"), "one never seen alone, among two: no guess");
+    DWORD t6 = t5 + 5000;
+    Note(8, timerA, t6 - 30, (void *)0x555);
+    BuffAppeared(unit, 'B0BU', false, 0, 9999, t6);
+    CHECK(!BuffMapLeft(unit, 'B0BU', &la, &ta), "a buff (not an aura: its own time, a 9999 s passive): no map timer");
     CHECK(BuffSlotDrawn(1 | 2 | 4 | 8) && !BuffSlotDrawn(1 | 2 | 4) && BuffSlotDrawn(1), "drawn with its map timer even as an aura kept up; not without it");
     CHECK(TimerStartWatch(false) && !g_tsHooked && !memcmp(f, body, 5), "off: the game's bytes back");
     LONG noted = g_tsN;
