@@ -217,13 +217,12 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD dmPad;            // unused (Shared is packed to 4: the doubles needn't be 8-aligned)
     double dmTotal[16];     // module: damage dealt by each player's units since this module started (the companion takes differences)
     DWORD dmHits[16];       //   and their hits
-    char dmName[16][32];    // module: the players' names (UTF-8), "" for an empty slot; colour codes taken out, each kept as it
-                            //   first was in a game (layout 30: the map renames players, SetPlayerName, and names moved between rows)
+    char dmName[16][32];    // module: the players' names now (UTF-8), "" for an empty slot; colour codes taken out (layout 30).
+                            //   A name changes with the map's -convert (a save's owner's name), as the game's own does
     // layout 30
     int dmColour[16];       // module: each player's colour as GetPlayerColor gives it (0 red ... 11 brown; -1 none)
     // layout 31
-    int dmLocal;            // module: your own slot (the game state's local player, -1 none): the companion names it with
-                            //   your Battle.net account (the user's game of 2026-10-29: their own row read "Player 6")
+    int dmLocal;            // module: your own slot (the game state's local player, -1 none)
 };
 #pragma pack(pop)
 
@@ -3899,14 +3898,12 @@ static void PlainName(const char *s, char *out, int n) {
         o--;
     out[o] = 0;
 }
-// The players' names, as GetPlayerName reads them (every 2 s while on), each kept as it first was in
-// a game: the map renames players (SetPlayerName +0x246550 writes the same string), and in the
-// user's game of 2026-10-29 a rename put another player's name (with its colour codes) on their row;
-// their scoreboard keeps the first ones too. A new game (another game state or player): read again.
-// The colour: CPlayer [+0x264], as GetPlayerColor (+0x233ed0) gives it.
+// The players' names, as GetPlayerName reads them now (every 2 s while on): the map renames players
+// with SetPlayerName (+0x246550 writes the same string), as its -convert does (you take a save's
+// owner's name, the user's word 2026-10-29: so a name kept from the game's start, or your Battle.net
+// account, would be the wrong one). The colour: CPlayer [+0x264], as GetPlayerColor (+0x233ed0) gives it.
 // (PLAYER_COLOUR: as the health bar colours read it)
 static void DamageNames() {
-    static BYTE *keptState, *keptPl[16];
     // the first reads logged (the user's first game showed "Player N" for everyone): the names found,
     // and for an empty slot where the chain stopped (player, its slot byte, the string, its text)
     static int logs;
@@ -3926,32 +3923,25 @@ static void DamageNames() {
                 pl = nullptr;
             int colour = pl ? *(int *)(pl + PLAYER_COLOUR) : -1;
             g_shared->dmColour[i] = colour >= 0 && colour < 24 ? colour : -1;
-            if (state != keptState || pl != keptPl[i])
-                keptPl[i] = nullptr, g_shared->dmName[i][0] = 0;     // a new game or player: its name read again
             BYTE *str = pl ? *(BYTE **)(pl + 0x24 + 8) : nullptr;
             const char *name = str ? *(const char **)(str + 0x1c) : nullptr;
-            if (!keptPl[i]) {               // else kept as it first was
-                if (name)
-                    PlainName(name, g_shared->dmName[i], sizeof(g_shared->dmName[i]));
-                else
-                    g_shared->dmName[i][0] = 0;
-                if (g_shared->dmName[i][0])
-                    keptPl[i] = pl;
-            }
-            // logged: the name kept, and the game's own now (codes and all) when it's another
+            if (name)
+                PlainName(name, g_shared->dmName[i], sizeof(g_shared->dmName[i]));
+            else
+                g_shared->dmName[i][0] = 0;
+            // logged: the name shown, and the game's own (codes and all) when that's another
             if (logs < 2 && pl && o < (int)sizeof(b) - 120) {
-                char now[40] = "";
+                char raw[40] = "";
                 if (name)
-                    strncpy_s(now, name, _TRUNCATE);
+                    strncpy_s(raw, name, _TRUNCATE);
                 if (g_shared->dmName[i][0])
-                    o += sprintf_s(b + o, sizeof(b) - o, strcmp(now, g_shared->dmName[i]) ? " %d '%s' (now '%s')" : " %d '%s'", i, g_shared->dmName[i], now);
+                    o += sprintf_s(b + o, sizeof(b) - o, strcmp(raw, g_shared->dmName[i]) ? " %d '%s' (the game's '%s')" : " %d '%s'", i, g_shared->dmName[i], raw);
                 else
-                    o += sprintf_s(b + o, sizeof(b) - o, " %d (empty: player %p slot %u, string %p, text %p '%s')", i, pl, pl[0x30], *(BYTE **)(pl + 0x2c), (void *)name, now);
+                    o += sprintf_s(b + o, sizeof(b) - o, " %d (empty: player %p slot %u, string %p, text %p '%s')", i, pl, pl[0x30], *(BYTE **)(pl + 0x2c), (void *)name, raw);
             }
         }
         if (logs < 2 && state && n > 0)         // in a game only (at the menu there's no game state: those said nothing)
             logs++, Log("damage: player names (%d players, state %p, you %d):%s", n, state, g_shared->dmLocal, o ? b : " none");
-        keptState = state;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         if (logs < 2)
             logs++, Log("damage: reading the player names faulted (after:%s)", o ? b : " none");

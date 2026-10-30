@@ -61,16 +61,11 @@ int main() {
     CHECK(g_dmHooked && sh.dmState == 1 && vt[UNIT_DAMAGE_SLOT / 4] == (DWORD)UnitDamage, "on: CUnit's vtable +0x120 is ours");
     CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[5], "|Kaelith x") && !sh.dmName[3][0] && !sh.dmName[0][0], "names as GetPlayerName reads them, the codes out: slot 1 '%s', 5 '%s', empty ones ''", sh.dmName[1], sh.dmName[5]);
     CHECK(sh.dmColour[1] == 3 && sh.dmColour[5] == 5 && sh.dmColour[0] == -1 && sh.dmLocal == 5, "colours as GetPlayerColor gives them (slot 1: %d, 5: %d, none: %d); you: slot %d", sh.dmColour[1], sh.dmColour[5], sh.dmColour[0], sh.dmLocal);
-    // the map renames player 1 (SetPlayerName): the first name stays; a player's slot taken by another: read again
+    // the map renames player 1 (its -convert: a save's owner's name, SetPlayerName): the meter follows the game
     names[0] = "|cffff8000Silverwolve", *(const char **)(str[0] + 0x1c) = names[0];
     names[1] = "Morrow", *(const char **)(str[1] + 0x1c) = names[1];
     FollowDamage(12500);
-    CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[3], "Morrow"), "renamed mid-game: the first name kept ('%s'); one with none before gets it ('%s')", sh.dmName[1], sh.dmName[3]);
-    static BYTE plNew[0x300]; memcpy(plNew, pl[0], sizeof(plNew) < sizeof(pl[0]) ? sizeof(plNew) : sizeof(pl[0]));
-    plNew[0x30] = 1, *(BYTE **)(plNew + 0x24 + 8) = str[0], *(int *)(plNew + PLAYER_COLOUR) = 0;
-    *(BYTE **)(state + 0x58 + 4) = plNew;
-    FollowDamage(15000);
-    CHECK(!strcmp(sh.dmName[1], "Silverwolve") && sh.dmColour[1] == 0, "another player in the slot (a new game): read again ('%s', colour %d)", sh.dmName[1], sh.dmColour[1]);
+    CHECK(!strcmp(sh.dmName[1], "Silverwolve") && !strcmp(sh.dmName[3], "Morrow"), "renamed mid-game (-convert): the game's name now ('%s', '%s')", sh.dmName[1], sh.dmName[3]);
     Hit(2, 0, 100), Hit(2, 1, 50), Hit(0, 2, 30);
     CHECK(gameCalls == 4 && sh.dmTotal[2] == 75 && sh.dmHits[2] == 2 && sh.dmTotal[5] == 15 && sh.dmSeq == 3,
           "each hit after the game's own: what it dealt to the owner of the source (player 2: %.0f in %lu hits, 5: %.0f)", sh.dmTotal[2], sh.dmHits[2], sh.dmTotal[5]);

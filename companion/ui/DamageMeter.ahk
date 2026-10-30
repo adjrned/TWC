@@ -168,17 +168,13 @@ class DamageMeter {
         d := this.gm.damage()
         if !d || d.state != 1
             return
-        if !this.sample {
-            for i, n in d.names {
+        if !this.sample
+            for i, n in d.names {           ; the game's names now (they follow the map's -convert)
                 if n != ""
                     this.names[i - 1] := n
                 if d.colours[i] >= 0
                     this.colours[i - 1] := d.colours[i]
             }
-            ; your own row: your Battle.net account, whatever the map renamed you to (else the game's name)
-            if d.local >= 0 && d.local <= 11 && (acc := this.account()) != ""
-                this.names[d.local] := acc
-        }
         if this.seen && d.seq != this.feedSeq
             for i, t in d.total
                 if (dt := t - this.seen[i]) > 0
@@ -298,11 +294,6 @@ class DamageMeter {
             row.bar.Redraw()
         }
         this.dirty := false
-    }
-    ; your Battle.net account (the Battle.net login's; "" if it isn't set)
-    account() {
-        global bnetLogin
-        return IsSet(bnetLogin) && IsObject(bnetLogin) ? Trim(bnetLogin.account) : ""
     }
     statusText() {
         if this.sample
