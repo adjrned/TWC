@@ -8790,9 +8790,15 @@ static void OrbComboPass() {
 // the chat is open; the key held (its repeats) doesn't start another
 static bool OrbComboKey(WPARAM vk, LPARAM lp) {
     DWORD k = g_shared->ocKey;
-    if (vk != (k & 0xff) || ((GetKeyState(VK_CONTROL) & 0x8000) != 0) != ((k & 0x100) != 0) || ((GetKeyState(VK_MENU) & 0x8000) != 0) != ((k & 0x200) != 0)
-        || ((GetKeyState(VK_SHIFT) & 0x8000) != 0) != ((k & 0x400) != 0))
+    if (vk != (k & 0xff))
         return false;
+    bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0, alt = (GetKeyState(VK_MENU) & 0x8000) != 0, shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+    if (ctrl != ((k & 0x100) != 0) || alt != ((k & 0x200) != 0) || shift != ((k & 0x400) != 0)) {
+        static int odd;
+        if (odd++ < 3)
+            Log("dash combo: its key %02lX came with Ctrl %d Alt %d Shift %d (it wants %d %d %d): the game's", (DWORD)vk, ctrl, alt, shift, (k & 0x100) != 0, (k & 0x200) != 0, (k & 0x400) != 0);
+        return false;
+    }
     __try {
         BYTE *ui = (BYTE *)GameUi(), *chat = ui ? *(BYTE **)(ui + UI_CHAT_STATE) : nullptr;
         if (!ui || (chat && *(DWORD *)(chat + 0x1dc)))
