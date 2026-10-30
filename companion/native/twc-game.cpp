@@ -3767,7 +3767,19 @@ static int __fastcall AllySeesHook(void *unit, int edx) {
     if (r || !g_shared->alOn || g_alBad)
         return r;
     __try {
-        return CardShown((BYTE *)unit) ? 1 : 0;
+        int yes = CardShown((BYTE *)unit) ? 1 : 0;
+        // the first answers logged: which of the game's 24 callers asks, for whose unit (the card not showing
+        // in the user's game, 2026-10-29: does the game ask at all for an ally's or a boss's unit?)
+        static int logs;
+        static DWORD callers[8];
+        DWORD from = (DWORD)_ReturnAddress() - (DWORD)g_base;
+        bool known = false;
+        for (int i = 0; i < logs && i < 8; i++)
+            known |= callers[i] == from;
+        if (!known && logs < 8)
+            callers[logs++] = from, Log("allies' abilities: the game asks whether you see unit %p's commands (owner %d) from +%06lX: %s", unit,
+                IsUnit((BYTE *)unit) ? *(int *)((BYTE *)unit + UNIT_OWNER) : -1, from - 5, yes ? "yes (ours)" : "no");
+        return yes;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_alBad = true;
         return 0;
