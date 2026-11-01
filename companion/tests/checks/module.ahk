@@ -89,7 +89,7 @@ TwcModuleRun() {
         "fastMenu", [(*) => gameDisplay.fastMenuStatus(), "the menus switch at once"],
         "unitNames", [(*) => gameDisplay.unitNamesStatus(), "no name over the unit under the mouse"],
         "countdown", [(*) => gameDisplay.countdownStatus(), "start 0 s after Start Game (the game's own: 6 s)"],
-        "buffBar", [(*) => gameDisplay.buffBarStatus(), "On · x1.5 (in the widescreen UI's layout)"])
+        "buffBar", [(*) => gameDisplay.buffBarStatus(), "On · x1.5 (with Wide UI)"])
     for name, w in want {
         st := w[1]()
         TwcCheck(InStr(st, w[2]), name ": " st)

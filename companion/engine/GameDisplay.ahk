@@ -291,7 +291,7 @@ class GameDisplayEngine {
         if (w := this.moduleWait(23)) != ""
             return w
         st := NumGet(this.gm.live(), Shm.bbState, "uint"), k := RTrim(RTrim(Format("{:.2f}", this.buffBarScale), "0"), ".")
-        return st = 1 ? "On · x" k (this.wideUi ? " (in the widescreen UI's layout)" : "")
+        return st = 1 ? "On · x" k (this.wideUi ? " (with Wide UI)" : "")
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
 
