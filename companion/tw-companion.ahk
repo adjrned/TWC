@@ -207,6 +207,7 @@ trayDebug.Add("Show status in game", DebugStatusToggle)
 trayDebug.Add("Save HUD pictures (15 s)", (*) => hudCapture.start())
 A_TrayMenu.Add("Debug", trayDebug)
 A_TrayMenu.Add()
+A_TrayMenu.Add("Reload", (*) => Reload())          ; back by the user's ask (2026-11-01): starts the companion again
 A_TrayMenu.Add("Exit", (*) => ExitApp())
 A_TrayMenu.Default := "Open TW Companion"
 A_TrayMenu.ClickCount := 1
