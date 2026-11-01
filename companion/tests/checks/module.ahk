@@ -316,6 +316,12 @@ TwcModuleRun() {
         "a quickcast key, the module's keys ready: sent once at once (" (sent.Length ? sent[1] : "nothing") ")" (err != "" ? " error: " err : ""))
     NumPut("uint", 0, v, Shm.qkState)
     TwcCheck(k1 && !r1 && r2 && k2 = 0, "quickcast keys: Q / W / Numpad 7 pushed and on; ready only once the module says so; off outside a game")
+    ; a map's dialog (layout 49): never read from an older module; up: remaps and macros stand aside; gone: back
+    NumPut("uint", 2, v, Shm.dialogState), d0 := gameModule.dialogState()
+    NumPut("uint", 49, v, Shm.layout), d1 := gameModule.dialogState(), DialogPoll(), d2 := inDialog
+    NumPut("uint", 1, v, Shm.dialogState), DialogPoll(), d3 := !inDialog
+    NumPut("uint", 0, v, Shm.dialogState), NumPut("uint", 32, v, Shm.layout)
+    TwcCheck(d0 = 0 && d1 = 2 && d2 && d3, "a map's dialog: not from an older module; up: remaps stand aside; gone: back (" d0 d1 d2 d3 ")")
     ; quickcast's state and counts (layout 27): the Module check row, and why it isn't ready
     NumPut("uint", 1, v, Shm.qcState), NumPut("uint", 40, v, Shm.qcAsked), NumPut("uint", 30, v, Shm.qcClicked), NumPut("uint", 6, v, Shm.qcNoTarget)
     NumPut("uint", 1, v, Shm.qcNotFront), NumPut("uint", 3, v, Shm.qcCancelled)

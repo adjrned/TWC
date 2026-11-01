@@ -225,10 +225,10 @@ class RemapEngine {
     ; the key comes): each slot's game key, on only while the companion's keys are
     ; (in a game, not paused, chat closed), since the keys also reach it straight
     pushKeys() {
-        global gameModule, toolEnabled, chatting, inGame, gChatSending
+        global gameModule, toolEnabled, chatting, inGame, gChatSending, inDialog
         if !IsSet(gameModule) || !gameModule
             return
-        on := gameModule.enabled && gameModule.quickcast && toolEnabled && !chatting && !gChatSending && inGame && InStr(WC3WindowKey(), "reforged") != 1
+        on := gameModule.enabled && gameModule.quickcast && toolEnabled && !chatting && !gChatSending && inGame && !inDialog && InStr(WC3WindowKey(), "reforged") != 1
         gameModule.pushKeys(this.qkVks, on, this.qkSubVks)
     }
     ; -- sub menus (the game hook only) ------------------------------------------

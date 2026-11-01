@@ -103,6 +103,9 @@ int main() {
     *(DWORD *)(upper + 0x164) = 0; bool c2 = KeyCast('Q'); *(DWORD *)(upper + 0x164) = 1;
     *(DWORD *)(chat + 0x1dc) = 1; bool c3 = KeyCast('Q'); *(DWORD *)(chat + 0x1dc) = 0;
     CHECK(!c1 && !c2 && !c3 && presses == before, "WFE's checks: [ui+0x258], the upper bar's +0x164 = 0, [[ui+0x3fc]+0x1dc]: not now");
+    *(DWORD *)(ui + UI_DIALOG_MODE) = 0x77; *(DWORD *)(ui + UI_MODE) = 0x77; bool d1 = KeyCast('Q'); Idle();
+    bool d2 = KeyCast('W'); *(DWORD *)(ui + UI_DIALOG_MODE) = 0;
+    CHECK(!d1 && d2 && presses == before + 1, "a map's dialog up ([ui+0x1b4] = its mode [ui+0x244]): Q is the dialog's; gone: W pressed again");
     Idle();
     r = KeyCast(VK_NUMPAD7);
     CHECK(r && pressThis == items[0] && pressArg == 1, "Numpad 7: the first item's button pressed");

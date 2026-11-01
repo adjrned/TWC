@@ -106,7 +106,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 ; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).
-global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0, chatEnterAt := 0
+global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0, chatEnterAt := 0, inDialog := false
 global debugGui := 0, debugText := 0
 global showMain := false
 global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture
@@ -219,6 +219,7 @@ A_TrayMenu.ClickCount := 1
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
+SetTimer(DialogPoll, 100)      ; a map's dialog on screen: remaps stand aside
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
 SetTimer(() => gameModule.check(), 1000)    ; the 1.28 game module, when it's on (soon after the game starts: the Battle.net login waits on it)
 SetTimer(StartUpdateCheck, -4000)         ; source copies follow the beta branch:
@@ -2633,6 +2634,18 @@ ChatBoxPoll() {
         ; chat (closing the game menu, a dialog). Don't leave remaps off.
         ChatClosed("no chat box on screen")
     }
+}
+; A map's dialog (the teleport menu: [1] Alfon Village...) takes its buttons' keys, so remaps and macros stand
+; aside while one's up, as for chat (the user, 2026-11-01: 1, remapped to an item, never reached it). The game
+; module (1.28f) says when (layout 49); without it, nothing changes.
+DialogPoll() {
+    global inDialog, gameModule, macros, remap
+    open := gameModule.dialogState() = 2
+    if open = inDialog
+        return
+    inDialog := open
+    DebugLog(open ? "a map's dialog is up: remaps and macros stand aside" : "the map's dialog is gone: remaps and macros back")
+    macros.refresh(), remap.refresh()
 }
 ; Esc in the game: the game gets one Esc (however long it's held, so nothing
 ; spams it), chat counts as closed, a quickcast setup is cancelled, and

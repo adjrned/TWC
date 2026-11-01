@@ -286,8 +286,8 @@ class RegisterHotkey {
         global toolEnabled
         if !this.key
             return
-        global chatting, inGame, qcCalibrating
-        live := toolEnabled && !(IsSet(chatting) && chatting) && (!IsSet(inGame) || inGame)
+        global chatting, inGame, qcCalibrating, inDialog
+        live := toolEnabled && !(IsSet(chatting) && chatting) && (!IsSet(inGame) || inGame) && !(IsSet(inDialog) && inDialog)
             && !(IsSet(qcCalibrating) && qcCalibrating)
         active := this.enable && (!this.gated || live)
         HotIfWinActive(this.win)

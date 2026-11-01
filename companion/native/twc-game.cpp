@@ -315,6 +315,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD icState;          // module: 0 off, 1 moved off, 2 waiting for a game, 3 refused (see the log)
     // layout 48: the chat box as the game has it, for the companion's remaps (FollowChat)
     DWORD chatState;        // module: 0 no game UI (menus, the lobby, loading), 1 closed, 2 open
+    // layout 49: a map's dialog on screen (DialogDisplay: the teleport menu...), for the companion's remaps
+    DWORD dialogState;      // module: 0 no game UI, 1 none, 2 one shown (its buttons' keys are the game's then)
 };
 #pragma pack(pop)
 
@@ -7968,6 +7970,12 @@ static void FollowTargetMode() {
 // another quickcast key is held back and done as soon as that target mode ends (the worker posts
 // g_kcMsg), within 500 ms, so a quick Q then W still casts both.
 static const DWORD UI_CHAT_STATE = 0x3fc, UI_UPPER_BAR = 0x3d0, UI_BUSY = 0x258;
+// A map's dialog (DialogDisplay +22FDC0 -> the dialog's show +27BF30 -> CGameUI +3A8AC0(frame, x, y)): the game
+// keeps its frame at [ui+0x3b4] and switches the UI into its dialog mode, [ui+0x244] (SetMode +3A8330, as the
+// target mode's), so the current mode [ui+0x1b4] is that one while it's up; its buttons take their keys then
+// (the user, 2026-11-01: 1 on TWRPG's teleport menu, remapped to an item, never reached it)
+static const DWORD UI_DIALOG_MODE = 0x244, UI_DIALOG = 0x3b4;
+static bool DialogUp(BYTE *ui) { DWORD m = *(DWORD *)(ui + UI_DIALOG_MODE); return m && *(DWORD *)(ui + UI_MODE) == m; }
 // A reticle already up when a quickcast key comes (another ability's waiting for a target, or one whose
 // click missed): the card shows only Cancel then, so the slot's button is empty and the key did nothing
 // (the user, 2026-10-29: "it should still press the ability"). Now the target mode is cancelled as Esc
@@ -8037,8 +8045,8 @@ static bool KeyCast(WPARAM vk) {
         if (!ui)
             return false;
         BYTE *a = *(BYTE **)(ui + UI_CHAT_STATE), *b = *(BYTE **)(ui + UI_UPPER_BAR);
-        if ((a && *(DWORD *)(a + 0x1dc)) || (b && !*(DWORD *)(b + 0x164)) || *(DWORD *)(ui + UI_BUSY))
-            return false;
+        if ((a && *(DWORD *)(a + 0x1dc)) || (b && !*(DWORD *)(b + 0x164)) || *(DWORD *)(ui + UI_BUSY) || DialogUp(ui))
+            return false;               // (a map's dialog up: its buttons' keys, Q Prev / E Next on TWRPG's teleport)
         // the card's slots from the sub menu's keys while one is open, the inventory's always from qkVk
         // (sub menu keys off, none set: the card's keys always, as before layout 45)
         bool anySub = false;
@@ -8187,19 +8195,24 @@ static void FollowKeyCast(int t) {
 // own count (Enter, Esc, a click) drifted, and a click counted as chat closed, so remaps typed in the chat (the
 // user's report, 2026-11-01: 5, remapped to an item, typed 1 with the chat open)
 static void FollowChat() {
-    DWORD st = 0;
+    DWORD st = 0, dl = 0, frame = 0;
     if (g_getUi)
         __try {
             BYTE *ui = (BYTE *)GameUi(), *a = ui ? *(BYTE **)(ui + UI_CHAT_STATE) : nullptr;
             st = !ui ? 0 : a && *(DWORD *)(a + 0x1dc) ? 2 : 1;
+            dl = !ui ? 0 : DialogUp(ui) ? 2 : 1;
+            frame = ui ? *(DWORD *)(ui + UI_DIALOG) : 0;
         } __except (EXCEPTION_EXECUTE_HANDLER) {
-            st = 0;
+            st = 0, dl = 0;
         }
-    static DWORD was;
-    static int logs;
+    static DWORD was, dlWas;
+    static int logs, dlLogs;
     if (st != was && logs < 40)
         logs++, Log("chat: %s (the game's)", st == 2 ? "open" : st == 1 ? "closed" : "no game UI");
+    if (dl != dlWas && dlLogs < 40)
+        dlLogs++, Log("dialog: %s (frame %08lX)", dl == 2 ? "a map's dialog shown: remaps stand aside" : dl == 1 ? "none" : "no game UI", frame);
     was = st, g_shared->chatState = st;
+    dlWas = dl, g_shared->dialogState = dl;
 }
 
 // -- the loop ----------------------------------------------------------------------
@@ -8545,7 +8558,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 48;
+        g_shared->layout = 49;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

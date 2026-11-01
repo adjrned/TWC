@@ -190,5 +190,6 @@ class Shm {
     static icOn := 75632
     static icState := 75636
     static chatState := 75640
-    static size := 75644
+    static dialogState := 75644
+    static size := 75648
 }
