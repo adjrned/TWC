@@ -93,6 +93,7 @@ UISetFont(ctl, opts) {
 }
 global boxes := Map()       ; control hwnd -> the Box drawn behind it (StyleControl)
 global buttons := Map()     ; MkButton hwnd -> its background colour (picks the style)
+global mainToggles := []    ; the main window's MkToggles (their box behind takes their look once styled)
 global navItems := Map()    ; page -> { box, icon, label } in the sidebar
 global popovers := Map()    ; hover popovers by name (AddPopover)
 global chatHook := InputHook("V")       ; records the WC3 chat line (ChatEnter)
@@ -120,7 +121,7 @@ global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list 
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
-global macroNewBtn, macroHelpBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
+global macroNewBtn, macroHelpBtn, macroPasteCb, macroPasteLbl, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
 global macroLblMsg
 global macroKind := "chat"      ; the editor's kind: chat, or an extension's (MacrosEngine.ext)
 global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
@@ -311,6 +312,8 @@ BuildWindow() {
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
+    for t in mainToggles
+        SetToggle(t, ToggleOn(t))
     BuildSaveList()
     BuildMacroList()
     BuildHostList()
@@ -491,6 +494,23 @@ MkButton(label, x, y, w, h, bg, fg, handler) {
     buttons[b.Hwnd] := bg
     return b
 }
+
+; an On/Off switch where a checkbox was (the WC3 cards' look: lit when on, the user's ask 2026-11-01:
+; no checkboxes, one look). on: its state; set(on) when it's clicked. ToggleOn / SetToggle read and change it.
+MkToggle(g, x, y, on, set, w := 56, h := 24) {
+    global mainGui, buttons, mainToggles, C
+    t := g.AddText("x" x " y" y " w" w " h" h " Center 0x200 +Background" C.chip " c" C.muted, "")
+    UISetFont(t, "s9 w600")
+    if IsSet(mainGui) && g = mainGui
+        buttons[t.Hwnd] := C.chip, mainToggles.Push(t)     ; a box behind it, as MkButton's (StyleControl)
+    else
+        Box.Round(t, w, h, 4)
+    SetToggle(t, on)
+    t.OnEvent("Click", (src, *) => (SetToggle(src, !ToggleOn(src)), set(ToggleOn(src))))
+    return t
+}
+ToggleOn(t) => t.Text = "On"
+SetToggle(t, on) => Wc3SetSwitch(t, on)
 
 AddToPage(name, ctrls*) {
     global pages
@@ -1046,11 +1066,11 @@ BuildMacrosPage() {
     macroClearBtn := MkButton("Clear", 40, 160, 77, 26, C.chip, C.text, (*) => MacroClearKey())
     macroHint := mainGui.AddText("x40 y160 w160 h34 +Background" C.panel " c" C.dim, "")
     UISetFont(macroHint, "s8")
-    macroPasteCb := mainGui.AddCheckbox("x40 y160 w160 h22 +Background" C.panel " c" C.text (ChatPasteOn() ? " Checked" : ""), " Paste chat lines")
-    UISetFont(macroPasteCb, "s9")
-    macroPasteCb.OnEvent("Click", (src, *) => SetIni(src.Value, "Chat", "paste"))
+    macroPasteLbl := mainGui.AddText("x40 y160 w100 h24 0x200 +Background" C.panel " c" C.text, "Paste chat lines")
+    UISetFont(macroPasteLbl, "s9")
+    macroPasteCb := MkToggle(mainGui, 40, 160, ChatPasteOn(), (on) => SetIni(on ? 1 : 0, "Chat", "paste"))
     AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit)
-    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroPasteCb)
+    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroPasteLbl, macroPasteCb)
     if MacrosEngine.ext                         ; an extension's editor parts
         MacrosEngine.ext.build()
     AddPopover("macros", macroHelpBtn, [
@@ -1075,7 +1095,8 @@ LayoutMacros() {
     macroCapBtn.Move(rx, ey + 56, 77, 26)
     macroClearBtn.Move(rx + 83, ey + 56, 77, 26)
     macroHint.Move(rx, ey + 94)
-    macroPasteCb.Move(rx, ey + 132)
+    macroPasteLbl.Move(rx, ey + 132)
+    macroPasteCb.Move(rx + 104, ey + 132, 56, 24)
     if MacrosEngine.ext
         MacrosEngine.ext.layout(ey)
 }
@@ -1752,11 +1773,14 @@ QuickcastSettings(ver := "") {
     g.AddText("x" x " y" y " w" tw " h1 +Background" C.border)     ; divider
     y += 16
 
-    g.SetFont("s10", UI_FONT)                         ; before the checkbox, so it sizes to it
-    rep := g.AddCheckbox("x" x " y" y " w226 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat, every")
+    g.SetFont("s10", UI_FONT)
+    g.AddText("x" x " y" (y + 2) " w" (tw - 64) " h20 +Background" C.card " c" C.text, "Hold the key to repeat")
+    rep := MkToggle(g, x + tw - 56, y - 1, s.repeat, (on) => quickcast.set("repeat", on ? 1 : 0))
+    g.SetFont("s10", UI_FONT)
+    y += 30
+    g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "every")
     iv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
     ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
-    rep.OnEvent("Click", (src, *) => quickcast.set("repeat", src.Value))
     iv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set(mod128 ? "hookInterval" : "interval", Max(15, Min(1000, src.Value + 0)))))
     y += 30
     ; after a cast it waits longer, so the reticle doesn't reopen while the hero gets there
@@ -1772,7 +1796,10 @@ QuickcastSettings(ver := "") {
         sd := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.muted, "SUB MENUS")
         UISetFont(sd, "s8 w600")
         y += 24
-        subCb := g.AddCheckbox("x" x " y" y " w" tw " h22 +Background" C.card " c" C.text (remap.subOn() ? " Checked" : ""), " Quickcast in sub menus")
+        g.AddText("x" x " y" (y + 2) " w" (tw - 64) " h20 +Background" C.card " c" C.text, "Quickcast in sub menus")
+        subBoxes := []
+        subCb := MkToggle(g, x + tw - 56, y - 1, remap.subOn(), (on) => (remap.setSub(0, on), SubBoxesOn(subBoxes, on)))
+        g.SetFont("s10", UI_FONT)
         y += 28
         subTxt := "A skill that opens a sub menu (the Paladin's) puts its buttons where the card's were. "
             . "While one is open, these keys quickcast its slots, laid out as the card. Empty: the game's key."
@@ -1780,16 +1807,14 @@ QuickcastSettings(ver := "") {
         UISetFont(sd, "s9")
         sh := TextHeight(sd, subTxt, tw), sd.Move(, , , sh)
         y += sh + 10
-        subBoxes := []
         for i, sk in remap.subKeys() {
             se := g.AddEdit("x" (x + Mod(i - 1, 4) * 56) " y" (y + (i - 1) // 4 * 30) " w48 h24 Center Uppercase Limit12 +Background" C.well " c" C.text, sk)
             ; not a key (yet): dimmed and not saved; leaving the box shows what is
             se.OnEvent("Change", ((n, src, *) => (src.Opt("+c" (remap.setSub(n, src.Value) ? C.text : C.dim)), 0)).Bind(i))
             se.OnEvent("LoseFocus", ((n, src, *) => (src.Opt("+c" C.text), src.Value := remap.subKeys()[n])).Bind(i))
-            se.Enabled := subCb.Value
+            se.Enabled := ToggleOn(subCb)
             subBoxes.Push(se)
         }
-        subCb.OnEvent("Click", (src, *) => (remap.setSub(0, src.Value), SubBoxesOn(subBoxes, src.Value)))
         y += 3 * 30 + 16
     }
     close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
@@ -2128,10 +2153,10 @@ BuildSettingsPage() {
     setShowKeyBtn := MkButton("", x + half - pad - 130, y + 35, 130, 26, C.chip, C.text, (*) => SettingsShowKey())
     lbl("Overlay (show / hide)", x + pad, y + 72, 180)
     setOvKeyBtn := MkButton("", x + half - pad - 130, y + 69, 130, 26, C.chip, C.text, (*) => (OverlayCapture("hotkey", setOvKeyBtn), RefreshSettings()))
-    local cb := mainGui.AddCheckbox("x" (x + pad) " y" (y + 104) " h22 +Background" C.card " c" C.text, " Hide the window on start")
-    cb.OnEvent("Click", SettingToggle.Bind("hideOnStart"))
-    setChecks["hideOnStart"] := cb
-    AddToPage("settings", setShowKeyBtn, setOvKeyBtn, cb)
+    lbl("Hide the window on start", x + pad, y + 106, 180)
+    local tg := MkToggle(mainGui, x + half - pad - 56, y + 103, 0, SettingToggle.Bind("hideOnStart"))
+    setChecks["hideOnStart"] := tg
+    AddToPage("settings", setShowKeyBtn, setOvKeyBtn, tg)
     ; -- Loading ---------------------------------------------------------------------------
     Box("settings", rx, y, half, 138, C.card, C.border, 6)
     head("LOADING", rx + pad, y + 12)
@@ -2209,8 +2234,8 @@ SettingsShowKey() {
 RefreshSettings() {
     global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, loader, w3lEdit, w3lArgsEdit, w3lLabel, bnetLogin, webOverlay
     s := settings.get()
-    for key, cb in setChecks
-        cb.Value := s.HasProp(key) ? s.%key% : 0
+    for key, tg in setChecks
+        SetToggle(tg, s.HasProp(key) ? s.%key% : 0)
     loadDelayEdit.Value := s.loadDelay
     postDelayEdit.Value := s.postLoadDelay
     cfg := loader.config(Map())
@@ -2224,7 +2249,7 @@ RefreshSettings() {
     w3lLabel.Text := "launcher  ·  " bnetLogin.w3lStatus()
     RefreshUpdateLabel()
 }
-SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
+SettingToggle(key, on) => settings.set(Map("key", key, "value", on ? 1 : 0))
 ResetAll() {
     if Dialog("This clears every setting, macro, remap and favourite, then restarts the companion.", "Reset settings", ["Reset", "Cancel"]) = "Reset"
         settings.reset(Map())
@@ -2274,10 +2299,10 @@ BuildOverlayPage() {
         ["autoInstall", "Install updates automatically"]]
     y := 336
     for pair in labels {
-        cb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " " pair[2])
-        cb.OnEvent("Click", OverlayCheck.Bind(pair[1]))
-        ovChecks[pair[1]] := cb
-        AddToPage("overlay", cb)
+        lbl(pair[2], 40, y + 2, 440)
+        tg := MkToggle(mainGui, 484, y, 0, OverlayCheck.Bind(pair[1]))
+        ovChecks[pair[1]] := tg
+        AddToPage("overlay", tg)
         y += 30
     }
     ovVersionText := lbl("", 40, 434, 680)
@@ -2301,8 +2326,8 @@ RefreshOverlay() {
     ovOpacityEdit.Value := s.opacity
     ovPinOpacityEdit.Value := s.pinOpacity
     ovUnloadEdit.Value := s.unloadMinutes
-    for key, cb in ovChecks
-        cb.Value := s.%key%
+    for key, tg in ovChecks
+        SetToggle(tg, s.%key%)
     ovVersionText.Text := s.version ? "Offline data: " s.version : "Offline data: not installed (Update data now)"
 }
 OverlayCapture(key, btn) {
@@ -2317,7 +2342,7 @@ OverlaySide(side, *) {
     webOverlay.set("side", side)
     RefreshOverlay()
 }
-OverlayCheck(key, ctrl, *) => webOverlay.set(key, ctrl.Value)
+OverlayCheck(key, on) => webOverlay.set(key, on ? 1 : 0)
 
 ; ============================================================================
 ;  Shared: tool toggle, overlay, show/hide, toast

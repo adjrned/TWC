@@ -69,7 +69,10 @@ TwcPagesRun() {
     for ctl in cg
         if ctl.Type = "Checkbox"
             cbs.Push(ctl)
-    TwcCheck(cbs.Length = 5, "colours: a player colour box per owner")
+    chips := 0
+    for ctl in cg
+        chips += ctl.Type = "Text" && ctl.Text = "Player colour"
+    TwcCheck(!cbs.Length && chips = 5, "colours: a Player colour button per owner, no checkboxes")
     BarPlayerColour("allies", "0080FF", 1)
     TwcCheck(healthBars.colour("allies") = "player", "allies: player colour")
     BarPlayerColour("allies", "0080FF", 0)

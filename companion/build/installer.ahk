@@ -58,19 +58,36 @@ ShowWindow() {
         . (upgrading ? "`nYour settings, saves list and Quickcast Setup are kept." : "")
     g.SetFont("s9 w400", "Segoe UI")
     g.AddText("w440 y+14 c" muted, info)
+    ; On / Off switches as the companion's (no checkboxes: one look)
     g.SetFont("s10 w400", "Segoe UI")
-    deskCb := g.AddCheckbox("w440 y+16 c" text " Checked" Ini("desktop", 1), " Desktop shortcut")
-    runCb := g.AddCheckbox("w440 y+8 c" text " Checked", " Start TW Companion when done")
-    g.SetFont("s8 w400", "Segoe UI")
-    g.AddText("w440 y+16 c" muted, "Warcraft III should run in Windowed Fullscreen (or windowed). "
+    g.AddText("w370 h24 y+16 0x200 c" text, "Desktop shortcut")
+    deskCb := InstSwitch(Ini("desktop", 1))
+    g.SetFont("s10 w400", "Segoe UI")
+    g.AddText("xm w370 h24 y+8 0x200 c" text, "Start TW Companion when done")
+    runCb := InstSwitch(1)
+    g.AddText("xm w440 y+16 c" muted, "Warcraft III should run in Windowed Fullscreen (or windowed). "
         . "Windows asks for admin rights each time the companion starts: it needs them to send keys to Warcraft III.")
     g.SetFont("s9 w400", "Segoe UI")
     ok := g.AddButton("y+18 w130 h32 Default", upgrading ? "Update" : "Install")
     no := g.AddButton("x+10 w100 h32", "Cancel")
-    ok.OnEvent("Click", (*) => (Install(deskCb.Value, runCb.Value), ExitApp()))
+    ok.OnEvent("Click", (*) => (Install(deskCb.Text = "On", runCb.Text = "On"), ExitApp()))
     no.OnEvent("Click", (*) => ExitApp())
     g.OnEvent("Close", (*) => ExitApp())
     g.Show()
+}
+
+; an On / Off switch after the row's text (lit when on, as the companion's)
+InstSwitch(on) {
+    global g
+    g.SetFont("s9 w600", "Segoe UI")
+    t := g.AddText("x+14 yp w56 h24 Center 0x200", "")
+    SwitchLook(t, on)
+    t.OnEvent("Click", (src, *) => SwitchLook(src, src.Text != "On"))
+    return t
+}
+SwitchLook(t, on) {
+    t.Text := on ? "On" : "Off"
+    t.Opt("+Background" (on ? "29231A" : "191C22") " +c" (on ? "F5A623" : "9A9EAA")), t.Redraw()
 }
 
 ; ---- install -------------------------------------------------------------------

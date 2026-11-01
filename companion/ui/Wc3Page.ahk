@@ -77,17 +77,17 @@ Wc3Features() {
         { tab: "timers", title: "Timers in the game", badge: "1.28f",
             desc: "Seconds left on abilities, items and buffs, on their buttons and buff icons.",
             status: (*) => Wc3Both([[timersHud.cooldowns, "Cooldowns", (*) => timersHud.cooldownStatus()], [timersHud.buffs, "Buffs", (*) => timersHud.buffStatus()]]),
-            opts: (d) => (OptCheck(d, "Cooldowns on the command card and items", timersHud.cooldowns, (v) => timersHud.setCooldowns(v)),
-                OptCheck(d, "Buff seconds under the buff icons", timersHud.buffs, (v) => timersHud.setBuffs(v)),
+            opts: (d) => (OptToggle(d, "Cooldowns on the command card and items", timersHud.cooldowns, (v) => timersHud.setCooldowns(v)),
+                OptToggle(d, "Buff seconds under the buff icons", timersHud.buffs, (v) => timersHud.setBuffs(v)),
                 OptDivider(d), OptHeader(d, "HOW THEY LOOK"),
                 OptSlider(d, "Size", (*) => timersHud.cdSize, (v) => (timersHud.setCdSize(v), timersHud.setBfSize(v)), 0.75, 1.5, 0.05, BarSizeText),
                 OptSlider(d, "Turns gold at", (*) => timersHud.cdGold, (v) => (timersHud.setCdGold(v), timersHud.setBfGold(v)), 0, 30, 1),
                 OptNote(d, "A warning: the number turns gold with this many seconds left or fewer (0: always white)."),
-                OptCheck(d, "Minutes as m:ss (1:35 rather than 95)", timersHud.cdMinutes, (v) => (timersHud.setMinutes("cdMinutes", v), timersHud.setMinutes("buffMinutes", v))),
-                OptCheck(d, "'Ready' in green for a moment when a cooldown is over", timersHud.cdReady, (v) => timersHud.setCdReady(v)),
-                OptCheck(d, "Our own cooldown sweep", timersHud.cdSweep, (v) => timersHud.setCdSweep(v)),
+                OptToggle(d, "Minutes as m:ss (1:35 rather than 95)", timersHud.cdMinutes, (v) => (timersHud.setMinutes("cdMinutes", v), timersHud.setMinutes("buffMinutes", v))),
+                OptToggle(d, "'Ready' in green for a moment when a cooldown is over", timersHud.cdReady, (v) => timersHud.setCdReady(v)),
+                OptToggle(d, "Our own cooldown sweep", timersHud.cdSweep, (v) => timersHud.setCdSweep(v)),
                 OptNote(d, "The game's clock redrawn as the plain dark sweep, without TWRPG's clock badge and timer."),
-                OptCheck(d, "Seconds on auras too", timersHud.bfAuras, (v) => timersHud.setBfAuras(v)),
+                OptToggle(d, "Seconds on auras too", timersHud.bfAuras, (v) => timersHud.setBfAuras(v)),
                 OptNote(d, "Once you're out of an aura's range: the seconds before it wears off (in range it's kept up: no number).")) },
         { tab: "timers", title: "Buff alerts", badge: "Both",
             desc: "A line over the game when a buff on your hero is missing or running out.",
@@ -98,21 +98,21 @@ Wc3Features() {
             desc: "Bar size and colours, numbers over them, mana bars, the portrait's HP and mana.",
             status: (*) => Wc3Both([[healthBars.enabled, "Size", (*) => healthBars.statusText()], [healthBars.colours, "Colours", (*) => healthBars.colourStatus()],
                 [healthBars.numbers, "Numbers", (*) => healthBars.numberStatus()], [healthBars.mana, "Mana bars", (*) => healthBars.manaStatus()], [healthBars.portrait, "Portrait", 0]]),
-            opts: (d) => (OptCheck(d, "Bigger health and mana bars", healthBars.enabled, (v) => healthBars.setEnabled(v)),
-                OptCheck(d, "Health bar colours", healthBars.colours, (v) => healthBars.setColours(v)),
+            opts: (d) => (OptToggle(d, "Bigger health and mana bars", healthBars.enabled, (v) => healthBars.setEnabled(v)),
+                OptToggle(d, "Health bar colours", healthBars.colours, (v) => healthBars.setColours(v)),
                 OptButtons(d, [["Size…", (*) => BarSizeDialog()], ["Colours…", (*) => BarColoursDialog()]]),
                 OptDivider(d),
-                OptCheck(d, "A number over every health bar", healthBars.numbers, (v) => healthBars.setNumbers(v)),
+                OptToggle(d, "A number over every health bar", healthBars.numbers, (v) => healthBars.setNumbers(v)),
                 OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
                 OptChoice(d, "Colour", HealthBarsEngine.NUMBER_COLOURS, (*) => healthBars.numberColour, (v) => healthBars.setNumberColour(v)),
                 OptSwatch(d, "Custom colour", (*) => healthBars.numberCustom, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.numberCustom)) != "" ? (healthBars.setNumberCustom(rgb), rgb) : ""),
                 OptNote(d, "Health: green, to yellow at half, to red. Its bar: the bar's own colour (Colours… above). Custom: the swatch's, once Custom is picked."),
-                OptChecks(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on)),
-                OptCheck(d, "Mana bars under the health bars", healthBars.mana, (v) => healthBars.setMana(v)),
+                OptToggles(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on)),
+                OptToggle(d, "Mana bars under the health bars", healthBars.mana, (v) => healthBars.setMana(v)),
                 OptNote(d, "Mana bars' size: under Size… (numbers and mana bars use the game's Storm.dll)."),
                 OptDivider(d),
-                OptCheck(d, "Portrait: HP and mana with their regen per second", healthBars.portrait, (v) => healthBars.setPortrait(v)),
-                OptCheck(d, "and the percent", healthBars.portraitPercent, (v) => healthBars.setPortraitPercent(v), 22)) },
+                OptToggle(d, "Portrait: HP and mana with their regen per second", healthBars.portrait, (v) => healthBars.setPortrait(v)),
+                OptToggle(d, "and the percent", healthBars.portraitPercent, (v) => healthBars.setPortraitPercent(v), 22)) },
         { tab: "display", title: "Game keys", badge: "1.28f",
             desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
@@ -121,19 +121,19 @@ Wc3Features() {
         { tab: "display", title: "Hide the UI", badge: "1.28f",
             desc: "As WFE: the black console goes, the world shows through; the minimap and buffs stay.",
             on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
-            opts: (d) => (OptCheck(d, "Hide the upper menu bar's buttons too", gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(v)),
-                OptCheck(d, "Remove the inventory cover", gameDisplay.coverOff, (v) => gameDisplay.setCoverOff(v)),
+            opts: (d) => (OptToggle(d, "Hide the upper menu bar's buttons too", gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(v)),
+                OptToggle(d, "Remove the inventory cover", gameDisplay.coverOff, (v) => gameDisplay.setCoverOff(v)),
                 OptNote(d, "As WFE's: the art over the inventory of a unit that has none goes. On its own, whatever the card's switch is.")) },
         ; the world and the UI in one card (as WFE's widescreen and Upgraded UI)
         { tab: "display", title: "Widescreen", badge: "1.28f",
             desc: "As WFE's: on a wide window the world, UI and cursor aren't stretched.",
             status: (*) => Wc3Both([[gameDisplay.widescreen, "World", (*) => gameDisplay.wsStatus()], [gameDisplay.wideUi, "UI", (*) => gameDisplay.wideUiStatus()],
                 [gameDisplay.slimCursor, "Cursor", (*) => gameDisplay.slimCursorStatus()]]),
-            opts: (d) => (OptCheck(d, "The world isn't stretched", gameDisplay.widescreen, (v) => gameDisplay.setWidescreen(v)),
+            opts: (d) => (OptToggle(d, "The world isn't stretched", gameDisplay.widescreen, (v) => gameDisplay.setWidescreen(v)),
                 OptNote(d, "Steps aside for a widescreen mix file (RenderEdge's) that already does it."),
-                OptCheck(d, "The UI isn't stretched (WFE's Upgraded UI)", gameDisplay.wideUi, (v) => gameDisplay.setWideUi(v)),
+                OptToggle(d, "The UI isn't stretched (WFE's Upgraded UI)", gameDisplay.wideUi, (v) => gameDisplay.setWideUi(v)),
                 OptNote(d, "The command card, inventory, minimap and info panel laid out for the wide window. The buff bar's place is on the Buff bar card."),
-                OptCheck(d, "The cursor isn't stretched (WFE's Slim Cursor)", gameDisplay.slimCursor, (v) => gameDisplay.setSlimCursor(v)),
+                OptToggle(d, "The cursor isn't stretched (WFE's Slim Cursor)", gameDisplay.slimCursor, (v) => gameDisplay.setSlimCursor(v)),
                 OptNote(d, "In the menus and in games, on any wide window, with or without the two above.")) },
         ; the buff bar's own settings in one place (the user's ask, 2026-10-30: the raise sat in the Widescreen UI's
         ; Options): the switch is the bigger size; the raise is on its own (the module's, or the Widescreen UI's layout when that's on)
@@ -143,7 +143,7 @@ Wc3Features() {
             opts: (d) => (OptSlider(d, "Size", (*) => gameDisplay.buffBarScale, (v) => gameDisplay.setBuffBarScale(v), 1, 2, 0.05, BarSizeText),
                 OptNote(d, "Times the game's own size (the card's switch). Still 8 buffs at most: the game has 8 buff icons. With the Widescreen UI on, it grows to the right instead."),
                 OptDivider(d),
-                OptCheck(d, "Raise the buff bar over the console", gameDisplay.buffBarUp, (v) => gameDisplay.setBuffBarUp(v)),
+                OptToggle(d, "Raise the buff bar over the console", gameDisplay.buffBarUp, (v) => gameDisplay.setBuffBarUp(v)),
                 OptNote(d, "As WFE's upgraded buff bar: it floats above the command card, without its label. With or without the Widescreen UI, whatever this card's switch is.")) },
         { tab: "display", title: "Hide hover names", badge: "1.28f",
             desc: "As WFE's Hero Overhead Tip off: no name over the unit under the mouse.",
@@ -163,7 +163,7 @@ Wc3Features() {
         { tab: "combat", title: "Allies' and bosses' cards", badge: "1.28f",
             desc: "An ally's or a boss's unit selected: its abilities and cooldowns on the card.",
             on: (*) => timersHud.allies, set: (v) => timersHud.setAllies(v), status: (*) => timersHud.alliesStatus(),
-            opts: (d) => (OptCheck(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
+            opts: (d) => (OptToggle(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
                 OptNote(d, "As WFE's ally ability bar, as an observer sees it. Clicking their buttons does nothing. A boss TWRPG holds paused until it's engaged shows an empty card till then.")) },
         { tab: "combat", title: "Pings", badge: "1.28f",
             desc: "Alt + click an ability, item, buff, stat or the portrait: your allies are told.",
@@ -461,7 +461,7 @@ BattleNetLoginDialog() {
     OptButtons(d, [["Forget the password", (*) => (bnetLogin.setPassword(""), Toast("Password removed"), BattleNetLoginDialog(), RefreshWc3())]])
     OptDivider(d)
     OptHeader(d, "THEN")
-    OptCheck(d, "Open the custom games", bnetLogin.customGames, (v) => bnetLogin.setCustomGames(v))
+    OptToggle(d, "Open the custom games", bnetLogin.customGames, (v) => bnetLogin.setCustomGames(v))
     gm := row("Join game", "Limit31", bnetLogin.game)
     SendMessage(0x1501, 1, StrPtr("its name (empty: the list)"), gm)       ; EM_SETCUEBANNER
     gm.OnEvent("Change", (src, *) => bnetLogin.setGame(src.Value))
@@ -507,13 +507,15 @@ Wc3DialogShow(d) {
 }
 
 ; -- rows for the Options windows (d: a Wc3Dialog) ------------------------------
-; a checkbox; indent moves it right (a sub-option)
-OptCheck(d, text, on, set, indent := 0) {
+; a switch: its text, and an On/Off toggle at the row's end (MkToggle); indent moves the text right (a sub-option)
+OptToggle(d, text, on, set, indent := 0) {
     global C
-    cb := d.g.AddCheckbox("x" (d.x + indent) " y" d.y " w" (d.tw - indent) " h24 +Background" C.card " c" C.text (on ? " Checked" : ""), " " text)
-    cb.OnEvent("Click", (src, *) => set(src.Value))
-    d.y += 30
-    return cb
+    tw := d.tw - indent - 66
+    lb := d.g.AddText("x" (d.x + indent) " y" (d.y + 2) " w" tw " h20 +Background" C.card " c" C.text, text)
+    nh := Max(20, TextHeight(lb, text, tw)), lb.Move(, , , nh)
+    t := MkToggle(d.g, d.x + d.tw - 56, d.y, on, (v) => set(v ? 1 : 0))
+    d.y += Max(30, nh + 10)
+    return t
 }
 ; a number: a slider and a box to type in (the game changes as you go). get() -> the value,
 ; set(v) -> false if it isn't one; step: the slider's step (0.1 for tenths); fmt: the box's text
@@ -589,10 +591,11 @@ OptColour(d, label, get, pick, boxText, check) {
     g := d.g, col := get()
     lb := g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
     sw := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w60 h22 +Border +Background" (col = "player" ? C.card : col), "")
-    cb := g.AddCheckbox("x" (d.x + 146 + 60 + 14) " y" (d.y + 1) " w" (d.tw - 146 - 60 - 14) " h26 +Background" C.card " c" C.text (col = "player" ? " Checked" : ""), " " boxText)
-    paint() => (cur := get(), sw.Opt("+Background" (cur = "player" ? C.card : cur)), sw.Redraw(), cb.Value := cur = "player")
+    pb := OptChip(g, d.x + 146 + 60 + 14, d.y, boxText)
+    paint() => (cur := get(), sw.Opt("+Background" (cur = "player" ? C.card : cur)), sw.Redraw(), Wc3SetSelected(pb, cur = "player"))
     sw.OnEvent("Click", (*) => (pick() != "" && paint()))
-    cb.OnEvent("Click", (src, *) => (check(src.Value), paint()))
+    pb.OnEvent("Click", (*) => (check(get() != "player" ? 1 : 0), paint()))
+    paint()
     d.y += 34
 }
 ; a colour swatch to click (Windows' colour dialog): get() -> RRGGBB; pick(g) -> the new RRGGBB or ""
@@ -604,16 +607,25 @@ OptSwatch(d, label, get, pick) {
     sw.OnEvent("Click", (*) => ((rgb := pick(g)) != "" && (sw.Opt("+Background" rgb), sw.Redraw())))
     d.y += 34
 }
-; check boxes in a row after a label: items [[key, text], ...]; on(key) -> 0/1, set(key, on)
-OptChecks(d, label, items, on, set) {
+; a button that's lit while it's on (OptToggles', OptColour's), as OptChoice's
+OptChip(g, x, y, text) {
+    global C
+    b := g.AddText("x" x " y" y " w60 h26 Center 0x200 +Background" C.chip " c" C.muted, text)
+    UISetFont(b, "s9 w600")
+    bw := Max(70, TextWidth(b, text) + 22), b.Move(, , bw), Box.Round(b, bw, 26, 4)
+    return b
+}
+; any of a few: a row of buttons after a label, each lit while it's on: items [[key, text], ...]; on(key) -> 0/1, set(key, on)
+OptToggles(d, label, items, on, set) {
     global C
     g := d.g, bx := d.x + 80
     g.AddText("x" d.x " y" (d.y + 3) " w76 h22 0x200 +Background" C.card " c" C.text, label)
     for it in items {
-        cb := g.AddCheckbox("x" bx " y" (d.y + 1) " h26 +Background" C.card " c" C.text (on(it[1]) ? " Checked" : ""), " " it[2])
-        cb.GetPos(, , &cw)
-        cb.OnEvent("Click", ((key, src, *) => set(key, src.Value)).Bind(it[1]))
-        bx += Max(72, cw + 8)
+        b := OptChip(g, bx, d.y, it[2])
+        Wc3SetSelected(b, on(it[1]))
+        b.OnEvent("Click", ((key, src, *) => (set(key, on(key) ? 0 : 1), Wc3SetSelected(src, on(key)))).Bind(it[1]))
+        b.GetPos(, , &bw)
+        bx += bw + 6                            ; (GetPos is in base units: WindowScale)
     }
     d.y += 34
 }
