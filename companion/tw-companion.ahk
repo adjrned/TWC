@@ -1853,7 +1853,7 @@ BuildHostPage() {
     hostPrivBtn := MkButton("HOST PRIVATE LOBBY", 40, 160, 330, 36, C.accent, C.onAccent, (*) => host.doHost(1))
     hostPubBtn := MkButton("HOST PUBLIC LOBBY", 40, 160, 330, 36, C.chip, C.accent, (*) => host.doHost(0))
     hostNote := mainGui.AddText("x40 y160 w680 h18 +Background" C.panel " c" C.dim,
-        "In Warcraft III chat:  -h lee sey  hosts sey on leebot (private),  -hp  public.  Plain  -h  uses the selected bot.")
+        "From the game's chat:  -h <bot> <game>  private,  -hp  public,  -h  alone: the selected bot and game.")
     UISetFont(hostNote, "s9")
     AddToPage("host", hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote)
     AddPopover("host", hostHelpBtn, [
@@ -1892,8 +1892,9 @@ BuildHostList() {
     hostBar := mainGui.AddText("x" (x + 1) " y" y " w3 h" (HOST_ROW_H - 1) " +Background" C.accent)
     hostThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
     AddToPage("host", hostBar, hostThumb)
-    ; columns: padding | bot | trigger | extra commands | remove
-    local cols := [["pad", 4, 12], ["name", 16, 200], ["trig", 216, 120], ["extra", 336, 300], ["del", 636, 32]]
+    ; columns: padding | bot | what's its own (a trigger other than the usual, extra commands) | remove (to the
+    ; card's edge: the selected row's colour ran short of it)
+    local cols := [["pad", 4, 12], ["name", 16, 200], ["extra", 216, 420], ["del", 636, w - 637]]
     loop HOST_ROWS {
         local i := A_Index, ry := y + 1 + (i - 1) * HOST_ROW_H, row := { idx: i }
         for col in cols {
@@ -1924,8 +1925,12 @@ RefreshHost() {
 }
 ; the selected bot's own trigger and extra commands in the fields
 ShowHostBot() {
-    global host, hostEdits
+    global host, hostEdits, hostLbls
     bot := host.selected
+    ; the fields are the selected bot's own: their labels say whose
+    SetIf(hostLbls["trigger"], "Trigger" (bot != "" ? " · " bot : ""))
+    SetIf(hostLbls["exBefore"], "Command before hosting" (bot != "" ? " · " bot : ""))
+    SetIf(hostLbls["exAfter"], "Command after hosting" (bot != "" ? " · " bot : ""))
     for id in ["trigger", "exBefore", "exAfter"]
         if hostEdits[id].Value != (v := host.field(bot, id))
             hostEdits[id].Value := v
@@ -1934,7 +1939,17 @@ RenderHost() {
     global
     Freeze()
     try RenderHostRows()
+    HostButtonsText()
     Thaw()
+}
+; the host buttons say what they'll do: "HOST PRIVATE  ·  sey on geybot" (the plain label with no game name)
+HostButtonsText() {
+    global host, hostEdits, hostPrivBtn, hostPubBtn
+    game := Trim(hostEdits["gameName"].Value), bot := host.selected
+    if StrLen(game) > 18
+        game := SubStr(game, 1, 17) "…"
+    for b in [[hostPrivBtn, "PRIVATE"], [hostPubBtn, "PUBLIC"]]
+        SetIf(b[1], game = "" || bot = "" ? "HOST " b[2] " LOBBY" : "HOST " b[2] "  ·  " game " on " bot)
 }
 RenderHostRows() {
     global
@@ -1943,24 +1958,24 @@ RenderHostRows() {
     hostBar.Visible := false
     for row in hostRows {
         local idx := hostOffset + row.idx, has := idx <= bots.Length
-        for k in ["pad", "name", "trig", "extra", "del", "sep"]
+        for k in ["pad", "name", "extra", "del", "sep"]
             row.%k%.Visible := has
         if !has
             continue
         local b := bots[idx], on := b = cur, bg := on ? C.navOn : C.card
-        local ex := [], before := host.field(b, "exBefore"), after := host.field(b, "exAfter")
+        local ex := [], before := host.field(b, "exBefore"), after := host.field(b, "exAfter"), trig := host.field(b, "trigger")
+        if trig != Ini(host.section, "trigger", "!")           ; (the usual one isn't repeated on every row)
+            ex.Push("trigger " trig)
         if before != ""
             ex.Push("before: " before)
         if after != ""
             ex.Push("after: " after)
         row.name.Text := b
-        row.trig.Text := "trigger  " host.field(b, "trigger")
         row.extra.Text := Join("   ·   ", ex*)
         row.del.Text := host.isKnown(b) ? "" : Chr(0xE711)          ; ✕ on bots you added
         row.pad.Opt("+Background" bg)
         row.name.Opt("+Background" bg " +c" (on ? C.accent : C.text))
-        row.trig.Opt("+Background" bg " +c" C.muted)
-        row.extra.Opt("+Background" bg " +c" C.dim)
+        row.extra.Opt("+Background" bg " +c" C.muted)
         row.del.Opt("+Background" bg " +c" C.dim)
         if on {
             row.name.GetPos(, &ry)
@@ -2006,7 +2021,7 @@ HostFieldChanged(id, ctrl, *) {
     global host
     v := Trim(ctrl.Value)
     if id = "gameName"
-        SetIni(v, host.section, "gameName")
+        SetIni(v, host.section, "gameName"), HostButtonsText()
     else if id != "newBot" {
         host.setField(host.selected, id, v)
         RenderHost()
@@ -2016,7 +2031,7 @@ HostInc() {
     global host, hostEdits
     v := host.increment(hostEdits["gameName"].Value)
     hostEdits["gameName"].Value := v
-    SetIni(v, host.section, "gameName")
+    SetIni(v, host.section, "gameName"), HostButtonsText()
 }
 HostListWheel(wParam, lParam, msg, hwnd) {
     global
