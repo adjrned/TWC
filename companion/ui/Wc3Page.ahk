@@ -100,7 +100,7 @@ Wc3Features() {
                 OptNote(d, "A green 'Ready' for a moment when a cooldown ends."),
                 OptToggle(d, "CD Countdown Animation", timersHud.cdSweep, (v) => timersHud.setCdSweep(v)),
                 OptNote(d, "Replaces TWRPG's clock on the button with a plain dark sweep.")) },
-        { tab: "timers", title: "Buff Alerts", badge: "Both",
+        { tab: "timers", title: "Buff Alerts", badge: "Both", wip: true,     ; (WIP: the user, 2026-11-01)
             desc: "A line over the game when a buff on your hero is missing or running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
             window: (*) => BuffWatchDialog() },
