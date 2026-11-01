@@ -64,6 +64,7 @@ class Extensions {
     static onStart := []
     static wc3Features := []
     static pinnedType := (*) => ""          ; a unit type the boss timers always time ("" none)
+    static updates := []                    ; updates of their own: { ready(), start(), apply() } (start / apply -> a restart wanted)
 }
 
 ; Every feature on the page. Keys: tab, title, badge ("1.28f" / "Reforged" /

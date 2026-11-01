@@ -138,7 +138,7 @@ global remapQcCtrls := Map(), remapCard, REMAP_CARD_Y := 346      ; the detail c
 global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
 global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, updLabel, updBtn, trayDebug
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, updLabel, updBtn, updPill := 0, trayDebug
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -173,6 +173,8 @@ host := HostEngine()
 settings := SettingsEngine()
 updater := UpdaterEngine()
 selfUpdate := SelfUpdateEngine()
+StartStagedUpdate()             ; an update downloaded while it last ran goes in now (and it starts again with it)
+OnExit(ExitStagedUpdate)        ; or as it exits
 gameModule := GameModuleEngine()
 timersHud := TimerHud(gameModule)
 gameCmds := GameCommandsEngine(gameModule)
@@ -187,6 +189,7 @@ for fn in Extensions.onStart                ; parts loaded besides (their engine
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
+UpdateFlag()                    ; one waiting from before (the sidebar's arrow)
 ApplyShowKey()                  ; the open / hide key (F8 unless set in Settings)
 
 ; startup behaviour
@@ -203,6 +206,7 @@ A_TrayMenu.Add("Open TW Companion", (*) => ShowMainWindow())
 A_TrayMenu.Add("Open the TWRPG overlay", (*) => webOverlay.showFull())
 A_TrayMenu.Add()
 A_TrayMenu.Add("Check for updates", (*) => (SelfUpdateCheck(true), webOverlay.runUpdate(true)))
+A_TrayMenu.Add("Update now", (*) => UpdateNow())
 trayDebug := Menu()
 trayDebug.Add("Show status in game", DebugStatusToggle)
 trayDebug.Add("Save HUD pictures (15 s)", (*) => hudCapture.start())
@@ -243,11 +247,18 @@ BuildWindow() {
         bx := Box("", 10, y, SIDE_W - 20, 34, C.side, C.side, 4)
         ic := mainGui.AddText("x22 y" y " w22 h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).icon)
         ic.SetFont("s11", ICON_FONT)
-        lb := mainGui.AddText("x52 y" y " w" (SIDE_W - 66) " h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).nav)
+        lb := mainGui.AddText("x52 y" y " w" (SIDE_W - (name = "settings" ? 92 : 66)) " h34 0x200 +Background" C.side " c" C.muted, PageInfo(name).nav)
         UISetFont(lb, "s10 w500")
         for t in [ic, lb]
             t.OnEvent("Click", NavClick.Bind(name))
         navItems[name] := { box: bx, icon: ic, label: lb }
+        ; an update waiting (UpdateFlag): a download arrow at the Settings row's end; a click: Update now
+        if name = "settings" {
+            updPill := mainGui.AddText("x" (SIDE_W - 38) " y" (y + 7) " w20 h20 Center 0x200 Hidden +Background" C.side " c" C.accent, Chr(0xE896))
+            updPill.SetFont("s10", ICON_FONT)
+            updPill.OnEvent("Click", (*) => UpdateNow())
+            navItems[name].badge := updPill
+        }
     }
     navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
 
@@ -572,6 +583,8 @@ ShowPageInner(name, shown) {
         it.box.Fill := bg
         it.icon.Opt("+Background" bg " +c" (on ? C.accent : C.muted)), it.icon.Redraw()
         it.label.Opt("+Background" bg " +c" (on ? C.text : C.muted)), it.label.Redraw()
+        if it.HasProp("badge")
+            it.badge.Opt("+Background" bg), it.badge.Redraw()
         if on {
             it.label.GetPos(, &y)
             navBar.Move(, y), navBar.Redraw()
@@ -2869,11 +2882,13 @@ ApplyDark(hwnd) {
     try DllCall("uxtheme\SetWindowTheme", "ptr", hwnd, "str", "DarkMode_Explorer", "ptr", 0)
 }
 
-; ---- self-update (source copies) ---------------------------------------------
-; New commits on the branch are downloaded right away; the companion restarts
-; at once, or (in the middle of a game) as soon as Warcraft III isn't focused.
-; A ".no-self-update" file next to the script turns it off (the dev machine,
-; whose files are ahead of GitHub).
+; ---- updates -------------------------------------------------------------------
+; Found on start and once an hour, downloaded at once, but put in only when the companion next starts or
+; exits (the user, 2026-11-01: it restarted by itself for every update, in the middle of playing). Until
+; then the sidebar's Update pill (on the Settings row) shows one is waiting; Update now (the pill, or
+; Settings) puts it in at once. Source copies: the changed files, staged (SelfUpdateEngine.stage); the exe:
+; its Setup, run at the next start. Parts loaded besides (Extensions.updates) the same way.
+; A ".no-self-update" file next to the script turns it off (the dev machine, whose files are ahead of GitHub).
 SelfUpdateCheck(manual := false) {
     global selfUpdate
     if A_IsCompiled
@@ -2884,22 +2899,50 @@ SelfUpdateCheck(manual := false) {
     catch as e
         return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
     SetIni(A_Now, selfUpdate.section, "lastCheck")
-    RefreshUpdateLabel()
     if !r.files.Length {
         SetIni(r.commit, selfUpdate.section, "commit")
+        if selfUpdate.staged != ""
+            selfUpdate.dropStaged()             ; (the files are what it had: nothing to put in)
+        UpdateFlag()
         return manual ? Toast("The companion is up to date (" SubStr(r.commit, 1, 7) ")") : 0
     }
-    try selfUpdate.apply(r)
-    catch as e
-        return Toast("Companion update failed: " e.Message, "error")
-    n := r.files.Length " file" (r.files.Length = 1 ? "" : "s")
-    if WinActive(WarcraftIII) {
-        Toast("Companion updated (" n "): it restarts when you leave the game", "", 6000)
-        SetTimer(RestartWhenIdle, 2000)
-    } else {
-        Toast("Companion updated (" n "), restarting…")
-        SetTimer(() => Reload(), -1500)
+    if selfUpdate.staged = r.commit && FileExist(selfUpdate.stageDir "\.staged-files") {
+        UpdateFlag()
+        return manual ? Toast("An update is ready: it goes in when the companion restarts (or Update now)") : 0
     }
+    try selfUpdate.stage(r)
+    catch as e {
+        selfUpdate.dropStaged()
+        return manual ? Toast("Companion update failed: " e.Message, "error") : DebugLog("update: the download failed: " e.Message)
+    }
+    n := r.files.Length " file" (r.files.Length = 1 ? "" : "s")
+    DebugLog("update: " SubStr(r.commit, 1, 7) " downloaded (" n "): it goes in when the companion restarts")
+    UpdateReadyToast(manual)
+    UpdateFlag()
+}
+UpdateReadyToast(manual) {
+    if manual || !WinActive(WarcraftIII)
+        Toast("Update ready: it goes in when TW Companion restarts (Update on the sidebar: now)", "", 6000)
+}
+; anything waiting to go in (the companion's own, or a part's)
+UpdateReady() {
+    global selfUpdate
+    if A_IsCompiled ? selfUpdate.pendingSetup.commit != "" : selfUpdate.staged != ""
+        return true
+    for u in Extensions.updates
+        if u.ready()
+            return true
+    return false
+}
+; the sidebar pill and the Settings row follow what's waiting
+UpdateFlag() {
+    global updPill, updBtn
+    ready := UpdateReady()
+    if IsSet(updPill) && updPill
+        updPill.Visible := ready
+    if IsSet(updBtn) && updBtn
+        updBtn.Text := ready ? "Update now" : "Check for updates"
+    RefreshUpdateLabel()
 }
 ; Settings: "Updates: beta · 84486dc · checked 2 min ago"
 RefreshUpdateLabel() {
@@ -2911,10 +2954,15 @@ RefreshUpdateLabel() {
         m := DateDiff(A_Now, last, "Minutes")
         ago := m < 1 ? "just now" : m < 60 ? m " min ago" : m < 1440 ? (m // 60) " h ago" : (m // 1440) " d ago"
     }
+    if UpdateReady() {
+        c := A_IsCompiled ? selfUpdate.pendingSetup.commit : selfUpdate.staged
+        updLabel.Text := "Update ready" (c != "" ? " (" SubStr(c, 1, 7) ")" : "") ": it goes in when the companion restarts"
+        return
+    }
     if A_IsCompiled {
         global buildCommit
         updLabel.Text := "Updates: beta  ·  " version (buildCommit ? " (" SubStr(buildCommit, 1, 7) ")" : "")
-            . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
+            . (ago ? "  ·  checked " ago : "") "  ·  checked every hour"
         return
     }
     if FileExist(A_ScriptDir "\.no-self-update") {
@@ -2923,12 +2971,76 @@ RefreshUpdateLabel() {
     }
     c := selfUpdate.commit
     updLabel.Text := "Updates: " selfUpdate.branch "  ·  " (c ? SubStr(c, 1, 7) : "not checked yet")
-        . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
+        . (ago ? "  ·  checked " ago : "") "  ·  checked every hour"
 }
-UpdateButton() => SelfUpdateCheck(true)
+UpdateButton() => UpdateReady() ? UpdateNow() : SelfUpdateCheck(true)
+; Update now: what's waiting goes in at once, and the companion restarts
+UpdateNow() {
+    global selfUpdate
+    if !UpdateReady()
+        return SelfUpdateCheck(true)
+    if Dialog("Install the update now? TW Companion restarts.", "Update", ["Update now", "Later"]) != "Update now"
+        return
+    restart := false
+    for u in Extensions.updates
+        if u.ready()
+            try restart := u.apply() || restart
+    if A_IsCompiled {
+        p := selfUpdate.pendingSetup
+        if p.commit != "" {
+            if SelfUpdateEngine.SetupMatches(p.path, p.sha)
+                return InstallUpdate(p.path)
+            selfUpdate.setPendingSetup()
+            UpdateFlag()
+            return Toast("The downloaded update is gone or changed: check for updates again", "error")
+        }
+    } else if selfUpdate.staged != "" {
+        try restart := selfUpdate.applyStaged() > 0 || restart
+        catch as e
+            return Toast("Companion update failed: " e.Message, "error")
+    }
+    UpdateFlag()
+    if restart {
+        Toast("Updating the companion…")
+        SetTimer(() => Reload(), -800)
+    }
+}
+; on start, before anything else runs: what was downloaded while it ran goes in (and it starts again with it)
+StartStagedUpdate() {
+    global selfUpdate, buildCommit
+    if A_IsCompiled {
+        p := selfUpdate.pendingSetup
+        if p.commit = ""
+            return
+        if p.commit = buildCommit || !SelfUpdateEngine.SetupMatches(p.path, p.sha)
+            return selfUpdate.setPendingSetup()         ; installed (this is it), or the file's gone
+        DebugLog("update: installing " SubStr(p.commit, 1, 7) " at the start")
+        return InstallUpdate(p.path, false)
+    }
+    restart := false
+    for u in Extensions.updates
+        try restart := u.start() || restart
+    if !FileExist(A_ScriptDir "\.no-self-update") {
+        n := 0
+        try n := selfUpdate.applyStaged()
+        catch as e
+            DebugLog("update: the staged files couldn't go in: " e.Message)
+        if n
+            DebugLog("update: " n " files put in at the start"), restart := true
+    }
+    if restart
+        Reload()
+}
+; on exit: the staged files go in (a source copy: the next start is the new one; the exe's Setup waits for it)
+ExitStagedUpdate(*) {
+    global selfUpdate
+    if !A_IsCompiled && !FileExist(A_ScriptDir "\.no-self-update")
+        try selfUpdate.applyStaged()
+}
 ; on start: when the last check was under an hour ago (the user's ask, 2026-10-30), not now but once that hour is up
 StartUpdateCheck() {
     global selfUpdate
+    UpdateFlag()
     m := 60
     try m := DateDiff(A_Now, Ini(selfUpdate.section, "lastCheck", ""), "Minutes")
     if m >= 0 && m < 60 {
@@ -2937,38 +3049,42 @@ StartUpdateCheck() {
     }
     SelfUpdateCheck()
 }
-; The installed exe follows the beta-latest release (rebuilt by GitHub on every
-; push to beta): a build from another commit is downloaded and installed with
-; its Setup (silently: it keeps the settings and starts the new version). In the
-; middle of a game that waits until Warcraft III isn't focused.
+; The installed exe follows the beta-latest release (rebuilt by GitHub on every push to beta): a build from
+; another commit has its Setup downloaded (checked by its SHA-256) and run at the next start (silently: it
+; keeps the settings and starts the new version), or at once with Update now.
 ExeUpdateCheck(manual) {
     global selfUpdate, buildCommit
-    static pending := ""
-    if pending
-        return manual ? Toast("An update is ready: it installs when you leave the game") : 0
     if !buildCommit
         return manual ? Toast("This build doesn't know its version, so it can't update itself", "error") : 0
     try r := selfUpdate.checkRelease()
     catch as e
         return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
     SetIni(A_Now, selfUpdate.section, "lastCheck")
-    RefreshUpdateLabel()
-    if r.commit = buildCommit
+    if r.commit = buildCommit {
+        selfUpdate.setPendingSetup()
+        UpdateFlag()
         return manual ? Toast("The companion is up to date (" SubStr(buildCommit, 1, 7) ")") : 0
+    }
+    p := selfUpdate.pendingSetup
+    if p.commit = r.commit && SelfUpdateEngine.SetupMatches(p.path, p.sha) {
+        UpdateFlag()
+        return manual ? Toast("An update is ready: it installs when the companion restarts (or Update now)") : 0
+    }
     DebugLog("update: " SubStr(buildCommit, 1, 7) " -> " SubStr(r.commit, 1, 7))
     try path := selfUpdate.downloadSetup(r)
-    catch as e
-        return Toast("Companion update failed: " e.Message, "error")
-    if WinActive(WarcraftIII) {
-        pending := path
-        Toast("Companion update downloaded: it installs when you leave the game", "", 6000)
-        SetTimer(() => (!WinActive(WarcraftIII) && !KeyCaptureActive() && InstallUpdate(pending)), 2000)
-    } else
-        InstallUpdate(path)
+    catch as e {
+        selfUpdate.setPendingSetup()
+        return manual ? Toast("Companion update failed: " e.Message, "error") : DebugLog("update: the download failed: " e.Message)
+    }
+    selfUpdate.setPendingSetup(path, r.sha, r.commit)
+    UpdateReadyToast(manual)
+    UpdateFlag()
 }
-InstallUpdate(path) {
-    Toast("Updating the companion…", "", 0)
-    Sleep(800)
+InstallUpdate(path, toast := true) {
+    if toast {
+        Toast("Updating the companion…", "", 0)
+        Sleep(800)
+    }
     Run('"' path '" /S')                ; closes this companion, installs, starts the new one
     ExitApp
 }

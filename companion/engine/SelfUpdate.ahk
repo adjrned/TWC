@@ -4,13 +4,14 @@
 ;  of a GitHub branch (beta by default), without git.
 ;  The branch's file list (GitHub's tree API) gives every file's git blob id,
 ;  a SHA-1 of its content. Local files are hashed the same way, so only the
-;  files that differ are downloaded (pinned to the commit, so they all match),
-;  then the companion restarts. Settings, saves lists and web\ are never in
+;  files that differ are downloaded (pinned to the commit, so they all match)
+;  and put in when the companion next starts or exits. Settings, saves lists and web\ are never in
 ;  the repo, so they are never touched. Only for the .ahk (source) version:
 ;  the compiled exe is updated by downloading a new release.
 ; ============================================================================
 class SelfUpdateEngine {
     section := "SelfUpdate"
+    dir := A_ScriptDir                  ; the copy kept up to date (a check: a scratch folder)
     static REPO := "adjrned/TWC"
     static PREFIX := "companion/"       ; the companion's folder in the repo
     static TEXT := "i)\.(ahk|md|txt|py|ps1|json|csv)$"   ; stored with LF in git
@@ -33,7 +34,7 @@ class SelfUpdateEngine {
                 if SubStr(e[1], 1, StrLen(SelfUpdateEngine.PREFIX)) != SelfUpdateEngine.PREFIX
                     continue
                 rel := SubStr(e[1], StrLen(SelfUpdateEngine.PREFIX) + 1)
-                lp := A_ScriptDir "\" StrReplace(rel, "/", "\")
+                lp := this.dir "\" StrReplace(rel, "/", "\")
                 if !FileExist(lp) || GitBlobSha(lp, rel ~= SelfUpdateEngine.TEXT) != e[2]
                     changed.Push({ path: rel, sha: e[2] })
             }
@@ -41,27 +42,62 @@ class SelfUpdateEngine {
         return { commit: head, files: changed }
     }
 
-    ; download every changed file to a temp folder first, then move them in
-    apply(res) {
-        tmp := A_Temp "\tw-companion-update"
-        try DirDelete(tmp, true)
-        DirCreate(tmp)
+    ; -- staged: downloaded when found, put in when the companion next starts or exits (the user, 2026-11-01:
+    ; it restarted by itself for every update), or at once with Update now
+    stageDir => A_Temp "\tw-companion-staged"
+    staged => Ini(this.section, "staged", "")          ; the commit downloaded and waiting ("" none)
+    ; download every changed file to the staging folder (each checked against its git id), with the list
+    stage(res) {
+        dir := this.stageDir
+        try DirDelete(dir, true)
+        SetIni("", this.section, "staged")
+        DirCreate(dir)
+        list := ""
         for f in res.files {
-            dest := tmp "\" StrReplace(f.path, "/", "\")
-            SplitPath(dest, , &dir)
-            DirCreate(dir)
+            dest := dir "\" StrReplace(f.path, "/", "\")
+            SplitPath(dest, , &sub)
+            DirCreate(sub)
             Download("https://raw.githubusercontent.com/" SelfUpdateEngine.REPO "/" res.commit "/" SelfUpdateEngine.PREFIX f.path, dest)
             if GitBlobSha(dest, false) != f.sha
                 throw Error("Download didn't match: " f.path)
+            list .= f.path "`n"
         }
-        for f in res.files {
-            target := A_ScriptDir "\" StrReplace(f.path, "/", "\")
-            SplitPath(target, , &dir)
-            DirCreate(dir)
-            FileMove(tmp "\" StrReplace(f.path, "/", "\"), target, true)
+        FileAppend(list, dir "\.staged-files", "UTF-8")
+        SetIni(res.commit, this.section, "staged")
+    }
+    ; move the staged files in -> how many (0: none waiting; files gone from the staging folder: forgotten,
+    ; the next check downloads them again)
+    applyStaged() {
+        c := this.staged, dir := this.stageDir
+        if c = ""
+            return 0
+        SetIni("", this.section, "staged")
+        if !FileExist(dir "\.staged-files")
+            return 0
+        paths := StrSplit(Trim(FileRead(dir "\.staged-files", "UTF-8"), "`r`n"), "`n", "`r")
+        for p in paths
+            if !FileExist(dir "\" StrReplace(p, "/", "\")) {
+                try DirDelete(dir, true)
+                return 0
+            }
+        for p in paths {
+            target := this.dir "\" StrReplace(p, "/", "\")
+            SplitPath(target, , &sub)
+            DirCreate(sub)
+            FileMove(dir "\" StrReplace(p, "/", "\"), target, true)
         }
-        try DirDelete(tmp, true)
-        SetIni(res.commit, this.section, "commit")
+        try DirDelete(dir, true)
+        SetIni(c, this.section, "commit")
+        return paths.Length
+    }
+    dropStaged() {
+        SetIni("", this.section, "staged")
+        try DirDelete(this.stageDir, true)
+    }
+    ; the exe's Setup downloaded and waiting (run when the companion next starts): { path, sha, commit }, commit "" none
+    pendingSetup => { path: Ini(this.section, "setupPath", ""), sha: Ini(this.section, "setupSha", ""), commit: Ini(this.section, "setupCommit", "") }
+    setPendingSetup(path := "", sha := "", commit := "") {
+        SetIni(path, this.section, "setupPath"), SetIni(sha, this.section, "setupSha"), SetIni(commit, this.section, "setupCommit")
     }
 
     ; -- the installed exe: the rolling beta-latest release ------------------
