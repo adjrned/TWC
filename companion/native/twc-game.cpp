@@ -8264,7 +8264,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
-        Log("---- twc-game.dll loaded into pid %lu", GetCurrentProcessId());
+        Log("---- twc-game.dll loaded into pid %lu (built %s %s)", GetCurrentProcessId(), __DATE__, __TIME__);
         HANDLE t = CreateThread(nullptr, 0, Worker, nullptr, 0, nullptr);
         if (t)
             CloseHandle(t);
