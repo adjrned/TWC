@@ -446,8 +446,7 @@ class LoaderEngine {
         ; companion has; Ctrl+Alt+Del always releases it)
         BlockInput("On")
         try {
-            if Integer(Ini(this.section, "convert", 1))
-                wc3Chat("-convert " userName)
+            wc3Chat("-convert " userName)       ; always (the user, 2026-10-31: no longer a setting)
             for code in codes {
                 Sleep(delay)
                 wc3Chat(code)
@@ -460,8 +459,7 @@ class LoaderEngine {
             }
             Sleep(Integer(Ini("Settings", "postLoadDelay", 1000)))
             ControlSend("{f1}{Ctrl Down}{1}{Ctrl Up}", , WarcraftIII)
-            if Integer(Ini("Settings", "summonBagAfterLoad", 0))
-                ControlSend("{Esc}", , WarcraftIII)
+            ControlSend("{Esc}", , WarcraftIII)          ; the bag summoned back: always (the user, 2026-10-31)
         } finally {
             BlockInput("Off")
         }

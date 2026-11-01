@@ -136,7 +136,7 @@ global remapQcCtrls := Map(), remapCard, REMAP_CARD_Y := 346      ; the detail c
 global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
 global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, updLabel, updBtn, trayDebug
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -193,12 +193,21 @@ else {
     ShowMainWindow()
 }
 
-A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.showFull())
-A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
-A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(true))
-A_TrayMenu.Insert("4&", "Debug: show status in game", DebugStatusToggle)
-A_TrayMenu.Insert("5&", "Debug: save HUD pictures (15 s)", (*) => hudCapture.start())
-A_TrayMenu.Insert("6&")
+; the tray icon (the user, 2026-10-31): a click opens the companion; its menu only what's ours (AutoHotkey's own
+; items, Window Spy, Edit Script, Pause..., gone)
+A_TrayMenu.Delete()
+A_TrayMenu.Add("Open TW Companion", (*) => ShowMainWindow())
+A_TrayMenu.Add("Open the TWRPG overlay", (*) => webOverlay.showFull())
+A_TrayMenu.Add()
+A_TrayMenu.Add("Check for updates", (*) => (SelfUpdateCheck(true), webOverlay.runUpdate(true)))
+trayDebug := Menu()
+trayDebug.Add("Show status in game", DebugStatusToggle)
+trayDebug.Add("Save HUD pictures (15 s)", (*) => hudCapture.start())
+A_TrayMenu.Add("Debug", trayDebug)
+A_TrayMenu.Add()
+A_TrayMenu.Add("Exit", (*) => ExitApp())
+A_TrayMenu.Default := "Open TW Companion"
+A_TrayMenu.ClickCount := 1
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
@@ -1955,7 +1964,7 @@ RenderHost() {
     HostButtonsText()
     Thaw()
 }
-; the host buttons say what they'll do: "HOST PRIVATE  ·  sey on geybot" (the plain label with no game name)
+; the host buttons say what they'll do: "HOST PRIVATE  ·  sey on leebot" (the plain label with no game name)
 HostButtonsText() {
     global host, hostEdits, hostPrivBtn, hostPubBtn
     game := Trim(hostEdits["gameName"].Value), bot := host.selected
@@ -2066,8 +2075,8 @@ HostListWheel(wParam, lParam, msg, hwnd) {
 ; ============================================================================
 BuildSettingsPage() {
     global
-    labels := Map("summonBagAfterLoad", "Summon bag (Esc) after loading",
-        "hideOnStart", "Hide window on start")
+    ; (summoning the bag back after a load and -convert before it: always, no longer settings, the user 2026-10-31)
+    labels := Map("hideOnStart", "Hide window on start")
     y := 160
     for key, text in labels {
         cb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " " text)
@@ -2076,10 +2085,11 @@ BuildSettingsPage() {
         AddToPage("settings", cb)
         y += 30
     }
-    convertCb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " Send -convert before loading (Reforged name fix, WIP)")
-    convertCb.OnEvent("Click", (src, *) => loader.setConvert(Map("value", src.Value)))
-    AddToPage("settings", convertCb)
-    y += 30
+    ; the overlay's show / hide key (as on the Overlay page)
+    ovl := mainGui.AddText("x40 y" (y + 4) " w220 h20 +Background" C.panel " c" C.muted, "Overlay key (show / hide)")
+    setOvKeyBtn := MkButton("", 270, y, 160, 28, C.chip, C.text, (*) => (OverlayCapture("hotkey", setOvKeyBtn), RefreshSettings()))
+    AddToPage("settings", ovl, setOvKeyBtn)
+    y += 40
     l1 := mainGui.AddText("x40 y" (y + 8) " w220 h20 +Background" C.panel " c" C.muted, "Delay between codes (ms)")
     loadDelayEdit := mainGui.AddEdit("x270 y" (y + 4) " w80 h24 Number +Background" C.well " c" C.text, "200")
     l2 := mainGui.AddText("x40 y" (y + 40) " w220 h20 +Background" C.panel " c" C.muted, "Delay after load (ms)")
@@ -2104,14 +2114,14 @@ BuildSettingsPage() {
     AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, w3lLabel, w3lEdit, w3lSet, w3lAutoBtn, resetBtn, updLabel, updBtn)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader, w3lEdit, w3lLabel, bnetLogin
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, loader, w3lEdit, w3lLabel, bnetLogin, webOverlay
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
     loadDelayEdit.Value := s.loadDelay
     postDelayEdit.Value := s.postLoadDelay
     cfg := loader.config(Map())
-    convertCb.Value := cfg.convert
+    SetIf(setOvKeyBtn, (hk := webOverlay.get().hotkey) ? ReadableHotkey(hk) : "none")
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
     w3lEdit.Value := bnetLogin.w3lPath
@@ -2432,7 +2442,7 @@ DebugStatusToggle(*) {
     global debugGui, debugText
     if debugGui {
         SetTimer(DebugStatusUpdate, 0), debugGui.Destroy(), debugGui := 0
-        A_TrayMenu.Uncheck("Debug: show status in game")
+        trayDebug.Uncheck("Show status in game")
         return
     }
     debugGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-debug")      ; click-through
@@ -2441,7 +2451,7 @@ DebugStatusToggle(*) {
     UISetFont(debugText, "s9 w600")
     WinSetTransparent(220, debugGui)
     debugGui.Show("x0 y40 w636 h28 NoActivate")
-    A_TrayMenu.Check("Debug: show status in game")
+    trayDebug.Check("Show status in game")
     SetTimer(DebugStatusUpdate, 250)
 }
 DebugStatusUpdate() {

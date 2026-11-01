@@ -11,7 +11,9 @@
 ; ============================================================================
 class HostEngine {
     section := "Host"
-    static BOTS := ["awebo", "macibot", "geybot", "leebot", "yozorabot", "spookybot", "stonebot"]
+    ; the one bot it comes with (the user, 2026-10-31; it had awebo, macibot, geybot, yozorabot, spookybot and
+    ; stonebot too: one of them picked before is kept, as a bot you added)
+    static BOTS := ["leebot"]
     static CMD := "i)^\s*-(h|host|hp|hostpub)(?:\s+(.*?))?\s*$"
 
     ; -- bots ------------------------------------------------------------------
@@ -30,7 +32,15 @@ class HostEngine {
                 return true
         return false
     }
-    selected => Ini(this.section, "botName", "geybot")
+    selected {
+        get {
+            bot := Ini(this.section, "botName", "leebot")
+            for b in this.bots()
+                if b = bot
+                    return b
+            return this.addBot(bot) || "leebot"           ; (picked before the list was cut: kept as one you added)
+        }
+    }
     select(bot) => SetIni(bot, this.section, "botName")
     gameName => Ini(this.section, "gameName", "sey")
 
@@ -51,7 +61,7 @@ class HostEngine {
             if b != "" && b != name
                 list.Push(b)
         SetIni(Join("|", list*), this.section, "botNameList")
-        if this.selected = name
+        if Ini(this.section, "botName", "") = name       ; (the stored one: .selected would keep it as one you added)
             this.select(HostEngine.BOTS[1])
     }
 
