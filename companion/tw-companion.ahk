@@ -101,7 +101,7 @@ global toastGui := 0, toastText := 0   ; the themed toast (Toast)
 global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
-global version := "1.2.0-beta"
+global version := "1.3.0-beta"
 global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit it was built from)
 ; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
