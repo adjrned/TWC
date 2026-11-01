@@ -1,11 +1,21 @@
 ﻿#Requires AutoHotkey v2.0
 #SingleInstance Force
+; a held quickcast key fires its hotkey on every key repeat (~30 a second, as WFE's AutoCast):
+; AutoHotkey's default (70 in 2 s) stopped with "71 hotkeys have been received in the last
+; 2000ms" during normal play (the user, 2026-10-29)
+A_MaxHotkeysPerInterval := 2000
+; a hotkey (a quickcast key) may interrupt a running timer at once, not after its first 15 ms
+; (AHK's default): the meter's and the timers' ticks held keys back (2026-10-29, a delay before casting)
+Thread("Interrupt", 0)
+;@Ahk2Exe-SetName TW Companion
+;@Ahk2Exe-SetDescription TW Companion
+;@Ahk2Exe-SetCopyright By Ruzai
 ; ============================================================================
 ;  TW Companion - light native TWRPG loader for Warcraft III.
 ;  Borderless window on a baked background in the site's theme; native controls on top.
 ;  Opens loader-first; other sections are nav pages.
 ;
-;  Control hotkeys:  F10 toggle (WC3) · F8 show/hide · Pause pause (WC3)
+;  Control hotkeys:  hold Esc 1.5 s pause remaps (WC3) · F8 show/hide · Pause pause (WC3)
 ;                    Esc hide window · Alt+Esc exit
 ;  Overlay (TWRPG site over the game): Shift+Space show/hide ·
 ;                    Ctrl+Shift+Space pin (configurable on the Overlay page)
@@ -14,11 +24,28 @@
 #Include lib\Common.ahk
 #Include engine\Loader.ahk
 #Include engine\Macros.ahk
+#Include *i private\Private.ahk          ; local-only parts, when there (not in git)
 #Include engine\Quickcast.ahk
+#Include engine\ChatBox.ahk
+#Include engine\InGame.ahk
 #Include engine\Remap.ahk
 #Include engine\Host.ahk
 #Include engine\Settings.ahk
 #Include engine\Updater.ahk
+#Include engine\SelfUpdate.ahk
+#Include engine\GameLayout.ahk
+#Include engine\GameModule.ahk
+#Include engine\GameCommands.ahk
+#Include engine\BuffWatch.ahk
+#Include engine\HealthBars.ahk
+#Include engine\GameDisplay.ahk
+#Include engine\BattleNetLogin.ahk
+#Include engine\HudCapture.ahk
+#Include ui\WindowScale.ahk
+#Include ui\TimerHud.ahk
+#Include ui\BossTimers.ahk
+#Include ui\Wc3Page.ahk
+#Include ui\ModuleCheck.ahk
 #Include ui\OverlayPanel.ahk
 
 ; ---- palette: the site's theme (src/styles/base.css) -------------------------
@@ -40,12 +67,15 @@ global C := {
 ; window, sidebar width, and where page content starts (see assets/generate_bg.py)
 global W := 880, H := 510, SIDE_W := 150, CX := 174, CY := 76
 global TB_Y := 20           ; toolbar row: page title + that page's main controls
+global TB_R := W - 82       ; where the toolbar row's page controls end: the window's – and ✕ come after
 ; Display scaling: GUI sizes and positions are in 96-DPI units (AHK scales
 ; them), but window regions, text measurement and screen coordinates are in
 ; real pixels. DPI_K converts (1.5 at 150%).
 global DPI_K := A_ScreenDPI / 96
-global NAV_ORDER := ["loader", "remap", "macros", "host", "settings", "overlay"]
-global ICON_FONT := "Segoe Fluent Icons"
+global NAV_ORDER := ["loader", "remap", "macros", "host", "wc3", "settings", "overlay"]
+; Windows 11 has Segoe Fluent Icons; Windows 10 only Segoe MDL2 Assets (the same code points for
+; the icons used here): without it the sidebar showed dots instead of icons
+global ICON_FONT := FileExist(A_WinDir "\Fonts\SegoeIcons.ttf") ? "Segoe Fluent Icons" : "Segoe MDL2 Assets"
 ; the site's system-ui font on Windows 11; classic Segoe UI on older systems
 global UI_FONT := FileExist(A_WinDir "\Fonts\SegUIVar.ttf") ? "Segoe UI Variable Text" : "Segoe UI"
 
@@ -70,11 +100,16 @@ global toastGui := 0, toastText := 0   ; the themed toast (Toast)
 global freezeDepth := 0                 ; Freeze/Thaw nesting
 
 ; ---- globals ---------------------------------------------------------------
-global version := "1.0.0"
-global toolEnabled := true, chatting := false, toolEnableHistory := true
+global version := "1.2.0-beta"
+global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit it was built from)
+; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
+; game, not a menu. Remaps and macros are live while the tool is on, in a
+; game, with chat closed (RegisterHotkey).
+global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
+global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, remap, host, settings, updater, webOverlay
-global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture, dmgMeter
+global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon, sideGame := 0     ; sideGame: the sidebar's Join game box
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()
 
@@ -85,17 +120,23 @@ global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list 
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
-global macroListBox, macroCapBtn, macroMsgEdit, macroPendingHK := "", macroPendingLabel := "", macroSel := -1
+global macroNewBtn, macroHelpBtn, macroPasteCb, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
+global macroLblMsg
+global macroKind := "chat"      ; the editor's kind: chat, or an extension's (MacrosEngine.ext)
+global macroRows := [], macroRowAt := Map(), macroCard, macroBar, macroThumb, macroDropLine, macroEmptyTitle, macroEmptySub    ; the custom list (BuildMacroList)
+global macroSel := -1, macroOffset := 0, macroDraftHK := ""     ; macroSel 0 = a new macro being made
+global MACRO_ROWS := 6, MACRO_ROW_H := 36
 ; remap
 global remapListBox, remapListHdr, remapDetail, remapStatus, remapInfo, remapSetBtn, remapClearBtn, remapQcBtn
 global remapViewBtns := Map(), remapTiles := [], remapTileAt := Map(), remapListCtrls := [], remapHudCtrls := []
 global remapSlots := [], remapSel := { group: "card", index: 9 }      ; Skill Q
 global remapListCache := "", remapViewShown := ""
-global remapQcSetupBtn, remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
+global remapQcCtrls := Map(), remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
 ; host
-global hostEdits := Map()
+global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
+global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, updLabel, updBtn
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -111,49 +152,76 @@ if !A_IsAdmin {
 }
 
 ProcessSetPriority("High")
-; Cinzel (the site's display font) for headings, loaded for this process only
+; Cinzel (the site's display font) for headings, loaded for this process only.
+; Headings use q4 (grayscale smoothing): ClearType's coloured fringes blur
+; its thin serifs on the dark background
 DllCall("gdi32\AddFontResourceEx", "str", A_ScriptDir "\assets\Cinzel.ttf", "uint", 0x10, "ptr", 0)
 SetKeyDelay(Integer(Ini("Settings", "keyDelay", 10)))
+; the companion's icon (tray, windows); a built exe has it inside (build.ps1)
+if !A_IsCompiled && FileExist(A_ScriptDir "\assets\twc.ico")
+    TraySetIcon(A_ScriptDir "\assets\twc.ico")
 
 loader := LoaderEngine()
 macros := MacrosEngine()
 quickcast := QuickcastEngine()
+chatBox := ChatBoxEngine()
+inGameEng := InGameEngine()
 remap := RemapEngine()
 host := HostEngine()
 settings := SettingsEngine()
 updater := UpdaterEngine()
+selfUpdate := SelfUpdateEngine()
+gameModule := GameModuleEngine()
+timersHud := TimerHud(gameModule)
+gameCmds := GameCommandsEngine(gameModule)
+buffWatch := BuffWatchEngine(timersHud)
+healthBars := HealthBarsEngine(gameModule)
+gameDisplay := GameDisplayEngine(gameModule)
+bnetLogin := BattleNetLoginEngine(gameModule)
+hudCapture := HudCaptureEngine(quickcast, timersHud)
+bossBars := BossTimers(gameModule)
+for fn in Extensions.onStart                ; parts loaded besides (their engines), now that the others are
+    fn()
 webOverlay := OverlayPanel(updater)
 
-BuildOverlay()
 BuildWindow()
 
 ; startup behaviour
-if !Ini("Settings", "enableToolOnStart", 0)
-    ToggleTool()
 if Ini("Settings", "hideOnStart", 0)
     mainGui.Hide()
 else {
     ShowMainWindow()
 }
 
-A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.show())
+A_TrayMenu.Insert("1&", "Open TWRPG overlay", (*) => webOverlay.showFull())
 A_TrayMenu.Insert("2&", "Update overlay data", (*) => webOverlay.runUpdate(true))
-A_TrayMenu.Insert("3&")
+A_TrayMenu.Insert("3&", "Check for companion updates", (*) => SelfUpdateCheck(true))
+A_TrayMenu.Insert("4&", "Debug: show status in game", DebugStatusToggle)
+A_TrayMenu.Insert("5&", "Debug: save HUD pictures (15 s)", (*) => hudCapture.start())
+A_TrayMenu.Insert("6&")
 SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
+SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
+SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
+SetTimer(() => gameModule.check(), 1000)    ; the 1.28 game module, when it's on (soon after the game starts: the Battle.net login waits on it)
+SetTimer(StartUpdateCheck, -4000)         ; source copies follow the beta branch:
+SetTimer(SelfUpdateCheck, 60 * 60000)     ; on start, then once an hour (the user's pick, 2026-10-29; was every 5 minutes)
 
 ; ============================================================================
 ;  Window construction
 ; ============================================================================
 BuildWindow() {
     global
-    mainGui := Gui("-Caption +Border", "TW Companion")
+    mainGui := Gui("-Caption +MinimizeBox", "TW Companion")     ; the box: the taskbar button minimizes / restores it too
+    MakeScalable(mainGui, "main")                               ; drag an edge or corner: all of it bigger or smaller
+    OnRescale(mainGui, (*) => MainRegion())
     mainGui.BackColor := C.win
     mainGui.SetFont("s10", UI_FONT)
     mainGui.OnEvent("Close", (*) => HideMainWindow())
     mainGui.OnEvent("Escape", (*) => EscHide())
 
-    bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, A_ScriptDir "\assets\bg.png")
+    bgPic := mainGui.AddPicture("x0 y0 w" W " h" H, BgImage())
+    ScaleImage(bgPic, BgImage)                                  ; drawn again for each size
 
     ; sidebar nav, like the site's .nav-link: icon + label, the active one tinted
     ; with an orange icon and an accent bar on the sidebar's edge
@@ -170,6 +238,18 @@ BuildWindow() {
     }
     navBar := mainGui.AddText("x0 y84 w3 h34 +Background" C.accent)
 
+    ; under the nav (the user's place for them): the game the Battle.net login joins by its name (the
+    ; same name as in its Options) and W3L, eurobattle.net's launcher (its place: Settings > W3L)
+    ; (above the line bg.png draws over the footer, 12 px over it; the label is the box's hint)
+    local gy := H - 64 - 82, gw := SIDE_W - 28, gb
+    Box("", 14, gy, gw, 26, C.well, C.frame, 4)
+    sideGame := mainGui.AddEdit("x20 y" (gy + 4) " w" (gw - 12) " h19 -E0x200 -TabStop +Background" C.well " c" C.text " Limit31", bnetLogin.game)
+    UISetFont(sideGame, "s9")
+    SendMessage(0x1501, 1, StrPtr("Game Name"), sideGame)     ; EM_SETCUEBANNER
+    sideGame.OnEvent("Change", (src, *) => bnetLogin.setGame(src.Value))
+    gb := MkButton("Launch W3L", 14, gy + 32, gw, 28, C.chip, C.text, (*) => bnetLogin.launchW3l())
+    Box.Round(gb, gw, 28, 4)
+
     ; sidebar footer: tool On | Off as a full-width segmented control (like
     ; the site's language switcher)
     ; like the site's .sidebar-footer: the switch, then a small credit line
@@ -183,27 +263,30 @@ BuildWindow() {
         UISetFont(t, "s9 w600"), t.OnEvent("Click", (*) => ToggleTool())
         t.GetPos(, , &tw, &th), Box.Round(t, tw, th, 4)
     }
-    verText := mainGui.AddText("x14 y" (fy + 38) " w50 h16 +Background" C.side " c" C.dim, "v" version)
+    verText := mainGui.AddText("x14 y" (fy + 38) " w66 h16 +Background" C.side " c" C.dim, "v" version)
     UISetFont(verText, "s8")
     ; "By" muted, the name in the accent (the site's "Made by Ruzai")
     nameText := mainGui.AddText("x" (SIDE_W - 84) " y" (fy + 38) " w70 h16 Right +Background" C.side " c" C.accent, "Ruzai")
     UISetFont(nameText, "s8 w600")
     nw := TextWidth(nameText, "Ruzai")
-    byText := mainGui.AddText("x" (SIDE_W - 14 - nw - 40) " y" (fy + 38) " w36 h16 Right +Background" C.side " c" C.dim, "By")
+    byText := mainGui.AddText("x" (SIDE_W - 14 - nw - 22) " y" (fy + 38) " w18 h16 Right +Background" C.side " c" C.dim, "By")
     UISetFont(byText, "s8")
 
+    ; – minimizes to the taskbar; ✕ hides to the tray (F8 or the tray icon brings it back)
+    MkButton("–", W - 70, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => mainGui.Minimize())
     MkButton("✕", W - 40, TB_Y + 1, 26, 26, C.panel, C.muted, (*) => HideMainWindow())
 
     ; toolbar: compact Cinzel page title (the divider under it is baked into
     ; bg.png); pages put their main controls on the same row
     titleText := mainGui.AddText("x" CX " y" TB_Y " w150 h28 0x200 +Background" C.panel " c" C.text, "")
-    titleText.SetFont("s14 w700", "Cinzel")
+    titleText.SetFont("s14 w700 q4", "Cinzel")
 
     ; pages are laid out from (40, 160); shift them into the content area
     BuildLoaderPage()
     BuildRemapPage()
     BuildMacrosPage()
     BuildHostPage()
+    BuildWc3Page()
     BuildSettingsPage()
     BuildOverlayPage()
     for pg, arr in pages
@@ -213,10 +296,14 @@ BuildWindow() {
         }
     LayoutLoader()
     LayoutRemap()
+    LayoutMacros()
+    LayoutHost()
     for pg, arr in pages.Clone()
         for ctl in arr.Clone()
             StyleControl(pg, ctl)
     BuildSaveList()
+    BuildMacroList()
+    BuildHostList()
     BuildRemapTiles()
     ; search icon inside the loader's search box, like the site's search inputs.
     ; The edit starts right of it: an edit repaints its whole rect, so any
@@ -237,7 +324,7 @@ BuildWindow() {
 ; load-message row sits at the bottom, under the save list
 LayoutLoader() {
     global
-    local R := W - 52                      ; stop short of the close button
+    local R := TB_R                        ; stop short of the window buttons
     hiddenChip.Move(R - 140, TB_Y, 140, 28)
     helpBtn.Move(R - 178, TB_Y, 30, 28)
     searchEdit.Move(CX + 160, TB_Y, R - 186 - (CX + 160), 28)
@@ -252,6 +339,7 @@ PageInfo(name) {
         "remap",    { nav: "Remap",    icon: Chr(0xE8AB), title: "Remap" },
         "macros",   { nav: "Macros",   icon: Chr(0xE765), title: "Macros" },
         "host",     { nav: "Host",     icon: Chr(0xE716), title: "Host" },
+        "wc3",      { nav: "WC3",      icon: Chr(0xE7FC), title: "WC3" },
         "settings", { nav: "Settings", icon: Chr(0xE713), title: "Settings" },
         "overlay",  { nav: "Overlay",  icon: Chr(0xE8A7), title: "Overlay" })
     return info[name]
@@ -293,9 +381,11 @@ class Box {
     static Round(ctl, w, h, r) {
         if r <= 0
             return
-        k := DPI_K, rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", Round(w * k) + 1, "int", Round(h * k) + 1,
+        k := UiK(ctl.Gui), rgn := DllCall("CreateRoundRectRgn", "int", 0, "int", 0, "int", Round(w * k) + 1, "int", Round(h * k) + 1,
             "int", Round(r * 2 * k), "int", Round(r * 2 * k), "ptr")
         DllCall("SetWindowRgn", "ptr", ctl.Hwnd, "ptr", rgn, "int", 1)
+        if winScale.Has(ctl.Gui.Hwnd)
+            scRgn[ctl.Hwnd] := [w, h, r]
     }
 }
 
@@ -347,14 +437,35 @@ SetShown(ctrl, v) {
         boxes[ctrl.Hwnd].Visible := v
 }
 
+; bg.png drawn for this screen's scale (bg@150.png at 150%...), so the
+; wordmark and lines aren't a stretched 100% image; else the next bigger one
+; (k: pixels per unit: the window's size counts too)
+BgImage(k := DPI_K) {
+    pct := Round(k * 100), best := "", bestPct := 0
+    for s in [100, 125, 150, 175, 200] {
+        f := A_ScriptDir "\assets\" (s = 100 ? "bg.png" : "bg@" s ".png")
+        if !FileExist(f)
+            continue
+        if !best || (bestPct < pct && s > bestPct) || (s >= pct && s < bestPct)
+            best := f, bestPct := s
+    }
+    return best ? best : A_ScriptDir "\assets\bg.png"
+}
+
 ; drag window by clicking the background
 ; drag the window from any empty spot. Clicks on the background picture and on
 ; plain labels fall through to the window itself (statics are transparent to
 ; the mouse), so both mean "empty space".
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
-    global bgPic, mainGui
+    global bgPic, mainGui, macroRowAt
+    if ScClick(hwnd)                                        ; a window's edge: resize; a dialog's empty spot: move
+        return 0
     if IsSet(mainGui) && (hwnd = mainGui.Hwnd || hwnd = bgPic.Hwnd) {
         PostMessage(0xA1, 2, , , "ahk_id " mainGui.Hwnd)    ; WM_NCLBUTTONDOWN, HTCAPTION
+        return 0
+    }
+    if macroRowAt.Has(hwnd) {                               ; a macro row: click or drag
+        MacroRowDown(macroRowAt[hwnd])
         return 0
     }
 }
@@ -392,6 +503,12 @@ Freeze() {
     if freezeDepth++ = 0
         SendMessage(0x0B, 0, 0, mainGui)                       ; WM_SETREDRAW off
 }
+; a Box's area as a RECT in real pixels (Box sizes are 96-DPI units)
+BoxRect(b) {
+    rc := Buffer(16), k := UiK(mainGui)
+    NumPut("int", Floor(b.x * k), "int", Floor(b.y * k), "int", Ceil((b.x + b.w) * k), "int", Ceil((b.y + b.h) * k), rc)
+    return rc
+}
 Thaw(rect := 0) {
     global freezeDepth, mainGui
     if --freezeDepth > 0
@@ -414,8 +531,8 @@ ShowPageInner(name, shown) {
     ; only the page we leave and the one we open change (first time: all)
     for pg, arr in pages
         if shown = "" || pg = shown || pg = name
-            for c in arr
-                c.Visible := (pg = name)
+            for pageCtl in arr                  ; not "c": that's the global C (names ignore case)
+                pageCtl.Visible := (pg = name)
     titleText.Text := PageInfo(name).title
     for nm, it in navItems {
         on := nm = name
@@ -433,6 +550,7 @@ ShowPageInner(name, shown) {
         case "remap":    RefreshRemap()
         case "macros":   RefreshMacros()
         case "host":     RefreshHost()
+        case "wc3":      Wc3PageOpened()
         case "settings": RefreshSettings()
         case "overlay":  RefreshOverlay()
     }
@@ -521,16 +639,17 @@ BuildSaveList() {
         ["-l sniper", "loads the closest match: exact name, then starts with, then contains"],
         ["-l 2", "loads your 2nd ★ favourite (other numbers match names: -l 92 finds knight#92)"],
         ["-l  /  -ll", "reloads the save you loaded last"],
-        ["-sn", "saves the next number of the save you loaded with the companion: after knight#92 it types -save knight#93 (lowercase, no spaces, like TWRPG names its files)"],
+        ["-sn", "saves the next number of the save you loaded with the companion: after knight#92 it types -save knight#93 (lowercase, no spaces, like TWRPG names its files) and copies knight#93 to the clipboard"],
         ["", "Also -load and -loadlast. Loader commands are never sent to chat. Keyboard and mouse are held for the second or two a load takes."]])
     AddPopover("message", msgInfo, [
         ["Load message", ""],
-        ["What", "A chat line the companion types in Warcraft III each time this save loads, right before its -load codes."],
+        ["What", "A chat line the companion types in Warcraft III each time this save loads, right after its -load codes."],
         ["When", "Every load: LOAD, double-click, Enter, -l, -ll and favourites."],
         ["Random", "Separate options with  |  and one of them is picked at random each load."],
         ["Example", "gl hf | sniper time | brb    →  sends one of these three"],
+        ["Name", "% is the save's name: the default  % time!  sends  knight time!  for knight#92."],
         ["Series", "Numbered saves (knight#91, #92…) share one message for the whole series."],
-        ["Empty", "Leave it blank to send nothing."],
+        ["Empty", "Clear it to send nothing."],
         ["", "It's sent like anything you type in chat, so other players can see it."]], "above-right")
     OnMessage(0x200, PopoverHover)         ; WM_MOUSEMOVE: open a popover when its anchor is hovered
 }
@@ -565,8 +684,14 @@ RefreshFiles(reload := true) {
         for f in fs
             if !newest || f.sortKey > newest
                 newest := f.sortKey
-        local top := fs[1]
-        tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: StrReplace(top.name, ".txt", ""),
+        ; the row is named after the series: its unnumbered save ("Sniper") if
+        ; there is one, else the name before the number ("knight" for knight#92);
+        ; loading it loads the newest number
+        local top := fs[1], label := top.series.stem
+        for f in fs
+            if StrReplace(f.name, ".txt", "") = f.series.stem
+                label := StrReplace(f.name, ".txt", "")
+        tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: label,
             pinned: pins.Has(key) ? pins[key] : 0, hidden: top.hidden, msg: top.msg, date: top.date, sortKey: newest, files: fs })
     }
     for e in tops
@@ -581,8 +706,8 @@ RefreshFiles(reload := true) {
             continue
         saveFiles.Push(e)
         if e.kind = "series" && expanded.Has(e.key)
-            loop e.files.Length - 1 {
-                local f := e.files[A_Index + 1]
+            loop e.files.Length {                   ; every save in it, newest first
+                local f := e.files[A_Index]
                 saveFiles.Push({ kind: "child", id: f.name, name: f.name, key: e.key, label: StrReplace(f.name, ".txt", ""),
                     pinned: 0, hidden: e.hidden, msg: e.msg, date: f.date, sortKey: f.sortKey, files: 0 })
             }
@@ -611,8 +736,7 @@ RenderSaves() {
     Freeze()
     try RenderSaveRows()
     local c := saveCard
-    local rc := Buffer(16), _ := NumPut("int", c.x, "int", c.y, "int", c.x + c.w, "int", c.y + c.h, rc)
-    Thaw(rc)
+    Thaw(BoxRect(c))
 }
 RenderSaveRows() {
     global
@@ -632,11 +756,11 @@ RenderSaveRows() {
         row.count.Text := f.kind = "series" && f.files.Length > 1
             ? f.files.Length " saves  " (expanded.Has(f.key) ? "▾" : "▸") : ""
         row.count.Opt("+Background" bg " +c" C.muted)
-        row.msg.Text := f.msg ? Chr(0xE8BD) : ""
+        row.msg.Text := CustomMessage(f.msg) ? Chr(0xE8BD) : ""
         row.msg.Opt("+Background" bg " +c" C.muted)
         row.date.Text := f.date "  "
         row.date.Opt("+Background" bg " +c" C.muted)
-        row.msg.Text := f.msg && !child ? Chr(0xE8BD) : ""
+        row.msg.Text := CustomMessage(f.msg) && !child ? Chr(0xE8BD) : ""
         row.eye.Text := child ? "" : Chr(f.hidden ? 0xED1A : 0xE890)
         row.eye.Opt("+Background" bg " +c" (f.hidden ? C.accent : C.dim))
         if on {
@@ -707,7 +831,7 @@ SaveListWheel(wParam, lParam, msg, hwnd) {
         return
     mx := lParam << 48 >> 48, my := lParam << 32 >> 48       ; signed screen coords
     WinGetClientPos(&wx, &wy, , , mainGui)
-    mx := (mx - wx) / DPI_K, my := (my - wy) / DPI_K
+    mx := (mx - wx) / UiK(mainGui), my := (my - wy) / UiK(mainGui)
     if mx < saveCard.x || mx > saveCard.x + saveCard.w || my < saveCard.y || my > saveCard.y + saveCard.h
         return
     step := (wParam << 32 >> 48) > 0 ? -3 : 3
@@ -745,16 +869,18 @@ SaveMessageChanged() {
     e := saveFiles[i]
     loader.setMessage(Map("name", e.key, "msg", Trim(msgEdit.Value)))
     msgSummary.Text := MessageSummary(msgEdit.Value)
-    had := e.msg != ""
+    had := CustomMessage(e.msg)
     for f in saveFiles                      ; a series shares one message
         if f.key = e.key
             f.msg := Trim(msgEdit.Value)
     for f in saveCache                      ; keep the cached read in step
         if f.key = e.key
             f.msg := Trim(msgEdit.Value)
-    if had != (e.msg != "")
+    if had != CustomMessage(e.msg)
         RenderSaves()
 }
+; the row badge marks a message you wrote (not the "% time!" default)
+CustomMessage(m) => m != "" && m != LoaderEngine.DEFAULT_MSG
 
 ; why the save list is empty -> [title, subtitle, show "Choose folder"]
 EmptyReason() {
@@ -814,9 +940,8 @@ ShowPopover(name, show := true) {
     }
     if !p.gui {
         g := Gui("-Caption +ToolWindow +Owner" mainGui.Hwnd)
-        g.BackColor := C.frame                           ; = the 1px border
         g.MarginX := 0, g.MarginY := 0
-        w := 470, card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+        w := 470, card := DialogCard(g, w)
         y := 14
         for line in p.lines {
             if line[2] = "" {
@@ -844,9 +969,9 @@ ShowPopover(name, show := true) {
     }
     p.anchor.GetPos(&ax, &ay, &aw, &ah)
     WinGetClientPos(&wx, &wy, , , mainGui)
-    k := DPI_K
-    x := Round(InStr(p.place, "right") ? wx + (ax + aw - p.w) * k : wx + ax * k)
-    y := Round(InStr(p.place, "above") ? wy + (ay - p.h - 6) * k : wy + (ay + ah + 6) * k)
+    k := UiK(mainGui)
+    x := Round(InStr(p.place, "right") ? wx + (ax + aw) * k - p.w * DPI_K : wx + ax * k)
+    y := Round(InStr(p.place, "above") ? wy + ay * k - (p.h + 6) * DPI_K : wy + (ay + ah) * k + 6 * DPI_K)
     p.gui.Show("NA x" x " y" y)
     SetTimer(PopoverHoverCheck, 120)
 }
@@ -883,81 +1008,367 @@ SortBy(arr, cmp) {
 }
 
 ; ============================================================================
-;  Macros page
+;  Macros page - the macros as a card list like the Loader's saves (key, what
+;  it does, count, ✕ to delete; drag a row to reorder), and an editor under it
+;  for the selected one that saves as you go: the chat lines on the left, the
+;  hotkey (Bind Key / Clear, like Remap) on the right. A macro types chat
+;  lines, or (an invisible spot in the bottom-right corner) presses game keys, e.g. several
+;  items at once. New macro starts an empty one: it's added with its first
+;  line or key. The rows are a fixed pool of controls re-filled as you scroll.
 ; ============================================================================
 BuildMacrosPage() {
     global
-    macroListBox := mainGui.AddListBox("x40 y162 w680 h214 +Background" C.well " c" C.text, [])
-    UISetFont(macroListBox, "s10")
-    macroListBox.OnEvent("DoubleClick", (*) => MacroEditSelected())
-    ApplyDark(macroListBox.Hwnd)
-    lbl := mainGui.AddText("x40 y384 w150 h18 +Background" C.panel " c" C.muted, "Hotkey")
-    lbl2 := mainGui.AddText("x200 y384 w300 h18 +Background" C.panel " c" C.muted, "Message (line per row)")
-    macroCapBtn := MkButton("click to set", 40, 404, 150, 28, C.chip, C.text, (*) => MacroCapture())
-    macroMsgEdit := mainGui.AddEdit("x200 y404 w520 h52 Multi +Background" C.well " c" C.text, "")
+    macroNewBtn := MkButton("+  New macro", 40, 160, 140, 28, C.accent, C.onAccent, (*) => MacroNew())
+    macroHelpBtn := MkButton("?", 40, 160, 30, 28, C.chip, C.muted, (*) => ShowPopover("macros"))
+    ; left: what it sends
+    macroLblMsg := mainGui.AddText("x40 y160 w250 h18 +Background" C.panel " c" C.muted, "")
+    macroSummary := mainGui.AddText("x40 y160 w240 h18 Right +Background" C.panel " c" C.dim, "")
+    UISetFont(macroSummary, "s9")
+    macroMsgEdit := mainGui.AddEdit("x40 y160 w500 h132 Multi -Wrap -VScroll +Background" C.well " c" C.text, "")
     UISetFont(macroMsgEdit, "s10")
-    addBtn := MkButton("Add / Update", 40, 470, 140, 30, C.accent, C.onAccent, (*) => MacroSave())
-    delBtn := MkButton("Delete", 190, 470, 90, 30, C.chip, C.text, (*) => MacroDelete())
-    newBtn := MkButton("New", 290, 470, 80, 30, C.chip, C.text, (*) => MacroNew())
-    AddToPage("macros", macroListBox, lbl, lbl2, macroCapBtn, macroMsgEdit, addBtn, delBtn, newBtn)
+    macroMsgEdit.OnEvent("Change", (*) => SetTimer(MacroCommit, -400))
+    ApplyDark(macroMsgEdit.Hwnd)
+    ; right: the hotkey, like Remap's detail
+    macroLblKey := mainGui.AddText("x40 y160 w160 h18 +Background" C.panel " c" C.muted, "Hotkey")
+    macroKeyText := mainGui.AddText("x40 y160 w160 h30 0x200 +Background" C.panel " c" C.text, "")
+    UISetFont(macroKeyText, "s13 w600")
+    macroCapBtn := MkButton("Bind Key", 40, 160, 77, 26, C.accent, C.onAccent, (*) => MacroCapture())
+    macroClearBtn := MkButton("Clear", 40, 160, 77, 26, C.chip, C.text, (*) => MacroClearKey())
+    macroHint := mainGui.AddText("x40 y160 w160 h34 +Background" C.panel " c" C.dim, "")
+    UISetFont(macroHint, "s8")
+    macroPasteCb := mainGui.AddCheckbox("x40 y160 w160 h22 +Background" C.panel " c" C.text (ChatPasteOn() ? " Checked" : ""), " Paste chat lines")
+    UISetFont(macroPasteCb, "s9")
+    macroPasteCb.OnEvent("Click", (src, *) => SetIni(src.Value, "Chat", "paste"))
+    AddToPage("macros", macroNewBtn, macroHelpBtn, macroLblMsg, macroSummary, macroMsgEdit)
+    AddToPage("macros", macroLblKey, macroKeyText, macroCapBtn, macroClearBtn, macroHint, macroPasteCb)
+    if MacrosEngine.ext                         ; an extension's editor parts
+        MacrosEngine.ext.build()
+    AddPopover("macros", macroHelpBtn, [
+        ["Macros", ""],
+        ["What", "One key that types chat lines in Warcraft III: each row is sent as its own line, in order. Empty rows are skipped."],
+        ["When", "In a game, with chat closed, while the tool is On (hold Esc 1.5 s to pause it)."],
+        ["Hotkey", "Bind Key, then any key, combo or mouse button (Mouse 4/5, middle, wheel). Keys the companion already uses (remaps, the overlay, F8, Enter...) are refused. Clear turns the macro off but keeps it."],
+        ["List", "Drag a row to reorder, ✕ deletes. Changes save as you go."],
+        ["Paste", "Each chat line is pasted (Ctrl+V) instead of typed: faster for long lines, any characters. Your clipboard is put back after. Also for loading and hosting. If lines come out empty, turn it off."]])
 }
+; editor under the list (window coordinates; runs before StyleControl boxes them)
+LayoutMacros() {
+    global
+    local R := TB_R, ey := CY + MACRO_ROWS * MACRO_ROW_H + 2 + 18, rx := CX + 520
+    macroNewBtn.Move(R - 140, TB_Y, 140, 28)
+    macroHelpBtn.Move(R - 178, TB_Y, 30, 28)
+    macroLblMsg.Move(CX, ey)
+    macroSummary.Move(CX + 260, ey)
+    macroMsgEdit.Move(CX, ey + 22, 500, 132)
+    macroLblKey.Move(rx, ey)
+    macroKeyText.Move(rx, ey + 20)
+    macroCapBtn.Move(rx, ey + 56, 77, 26)
+    macroClearBtn.Move(rx + 83, ey + 56, 77, 26)
+    macroHint.Move(rx, ey + 94)
+    macroPasteCb.Move(rx, ey + 132)
+    if MacrosEngine.ext
+        MacrosEngine.ext.layout(ey)
+}
+BuildMacroList() {
+    global
+    local x := CX, y := CY, w := 680, h := MACRO_ROWS * MACRO_ROW_H + 2
+    macroCard := Box("macros", x, y, w, h, C.card, C.border, 6)
+    ; made before the rows so they draw over them: the selection bar, the
+    ; scroll thumb and the drop line while dragging
+    macroBar := mainGui.AddText("x" (x + 1) " y0 w3 h" (MACRO_ROW_H - 1) " +Background" C.accent)
+    macroThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
+    macroDropLine := mainGui.AddText("x" (x + 1) " y" y " w" (w - 2) " h2 Hidden +Background" C.accent)
+    AddToPage("macros", macroBar, macroThumb, macroDropLine)
+    ; columns: padding | key | what it does | count | delete
+    local cols := [["pad", 4, 12], ["key", 16, 140], ["msg", 156, 404], ["lines", 560, 76], ["del", 636, 32]]
+    loop MACRO_ROWS {
+        local i := A_Index, ry := y + 1 + (i - 1) * MACRO_ROW_H, row := { idx: i }
+        for col in cols {
+            ; 0x100 (SS_NOTIFY): the cells get the mouse, for click / drag (MacroRowDown)
+            local t := mainGui.AddText("x" (x + col[2]) " y" ry " w" col[3] " h" (MACRO_ROW_H - 1)
+                " 0x200 0x100 +Background" C.card (col[1] = "lines" ? " Right" : col[1] = "del" ? " Center" : ""), "")
+            if col[1] = "del" {
+                t.SetFont("s8", ICON_FONT)
+                t.OnEvent("Click", MacroRowDelete.Bind(i))
+            } else {
+                UISetFont(t, col[1] = "key" ? "s10 w600" : col[1] = "msg" ? "s10" : "s9")
+                macroRowAt[t.Hwnd] := i
+            }
+            row.%col[1]% := t
+            AddToPage("macros", t)
+        }
+        row.sep := mainGui.AddText("x" (x + 1) " y" (ry + MACRO_ROW_H - 1) " w" (w - 2) " h1 +Background" C.border)
+        AddToPage("macros", row.sep)
+        macroRows.Push(row)
+    }
+    macroEmptyTitle := mainGui.AddText("x" x " y" (y + 70) " w" w " h24 Center +Background" C.card " c" C.text, "No macros yet")
+    UISetFont(macroEmptyTitle, "s11 w600")
+    macroEmptySub := mainGui.AddText("x" x " y" (y + 100) " w" w " h40 Center +Background" C.card " c" C.muted,
+        "A macro types chat lines in Warcraft III with one key.`nPress New macro to make one.")
+    AddToPage("macros", macroEmptyTitle, macroEmptySub)
+    OnMessage(0x20A, MacroListWheel)
+}
+
+; page shown: keep the selection if it still exists, else the first macro
 RefreshMacros() {
-    global macroListBox, macros
-    list := macros.list()
-    items := []
-    for m in list {
-        prev := StrReplace(StrReplace(m.text, "`r", ""), "`n", "  |  ")
-        items.Push((m.label ? m.label : "-") "        " prev)
-    }
-    macroListBox.Delete()
-    if items.Length
-        macroListBox.Add(items)
-}
-MacroEditSelected() {
-    global macros, macroSel, macroPendingHK, macroPendingLabel, macroCapBtn, macroMsgEdit
-    idx := macroListBox.Value
-    if !idx
-        return
-    m := macros.list()[idx]
-    macroSel := idx
-    macroPendingHK := m.hotkey, macroPendingLabel := m.label
-    macroCapBtn.Text := m.label ? m.label : "click to set"
-    macroMsgEdit.Value := m.text
-}
-MacroCapture() {
-    global macros, macroCapBtn, macroPendingHK, macroPendingLabel
-    macroCapBtn.Text := "press keys…"
-    r := macros.capture(Map())
-    if r.hotkey {
-        macroPendingHK := r.hotkey, macroPendingLabel := r.label
-    }
-    macroCapBtn.Text := macroPendingLabel ? macroPendingLabel : "click to set"
-}
-MacroSave() {
-    global macros, macroPendingHK, macroMsgEdit, macroSel
-    if !macroPendingHK || !Trim(macroMsgEdit.Value) {
-        Toast("Set a hotkey and a message", "error")
-        return
-    }
-    args := Map("hotkey", macroPendingHK, "text", macroMsgEdit.Value)
-    if macroSel >= 1
-        args["index"] := macroSel
-    macros.save(args)
-    MacroNew()
-    RefreshMacros()
-}
-MacroDelete() {
     global macros, macroSel
-    if macroSel >= 1 {
-        macros.delete(Map("index", macroSel))
-        MacroNew()
-        RefreshMacros()
+    n := macros.list().Length
+    if macroSel > n || macroSel < 0
+        macroSel := n ? 1 : 0
+    LoadMacroEditor()
+    RenderMacros()
+}
+RenderMacros() {
+    global
+    Freeze()
+    try RenderMacroRows()
+    Thaw()                                 ; the editor changes with the list
+}
+RenderMacroRows() {
+    global
+    local list := macros.list()
+    macroOffset := Max(0, Min(macroOffset, list.Length - MACRO_ROWS))
+    macroBar.Visible := false, macroDropLine.Visible := false    ; (opening the page shows every control)
+    for row in macroRows {
+        local idx := macroOffset + row.idx, has := idx <= list.Length
+        for k in ["pad", "key", "msg", "lines", "del", "sep"]
+            row.%k%.Visible := has
+        if !has
+            continue
+        local m := list[idx], bg := idx = macroSel ? C.navOn : C.card
+        local n := MacroLines(m.text).Length
+        row.key.Text := m.label != "" ? m.label : "no key"
+        row.msg.Text := m.summary
+        row.lines.Text := m.kind != "chat" ? (MacrosEngine.ext ? MacrosEngine.ext.countText(m) : "") : n > 1 ? n " lines" : ""
+        row.del.Text := Chr(0xE711)                         ; ✕ (Segoe Fluent "Cancel")
+        row.pad.Opt("+Background" bg)
+        row.key.Opt("+Background" bg " +c" (m.label != "" ? C.accent : C.dim))
+        row.msg.Opt("+Background" bg " +c" (m.label != "" ? C.text : C.muted))
+        row.lines.Opt("+Background" bg " +c" C.muted)
+        row.del.Opt("+Background" bg " +c" C.dim)
+        if idx = macroSel {
+            row.key.GetPos(, &ry)
+            macroBar.Move(, ry), macroBar.Visible := true
+        }
     }
+    macroEmptyTitle.Visible := macroEmptySub.Visible := !list.Length
+    local over := list.Length > MACRO_ROWS
+    macroThumb.Visible := over
+    if over {
+        local trackH := macroCard.h - 8, th := Max(18, trackH * MACRO_ROWS // list.Length)
+        macroThumb.Move(, macroCard.y + 4 + (trackH - th) * macroOffset // (list.Length - MACRO_ROWS), , th)
+    }
+}
+; the rows that are sent (empty ones are skipped, as when sending)
+MacroLines(text) {
+    out := []
+    for l in StrSplit(StrReplace(text, "`r"), "`n")
+        if Trim(l) != ""
+            out.Push(l)
+    return out
+}
+
+; fill the editor from the selected macro (macroSel 0: the new one being made
+; keeps what's there)
+LoadMacroEditor() {
+    global
+    local m := macroSel ? macros.list()[macroSel] : 0
+    if m {
+        macroKind := m.kind
+        if MacrosEngine.ext
+            MacrosEngine.ext.load(m)
+        macroMsgEdit.Value := m.kind = "chat" ? m.text : ""
+    }
+    ShowMacroEditor()
+}
+; show the editor's state: chat box or keys, hotkey, status
+ShowMacroEditor() {
+    global
+    local m := macroSel ? macros.list()[macroSel] : 0
+    local hk := m ? m.hotkey : macroDraftHK, other := macroKind != "chat", ext := MacrosEngine.ext
+    macroKeyText.Text := hk ? ReadableHotkey(hk) : "None"
+    macroKeyText.Opt("+c" (hk ? C.accent : C.dim)), macroKeyText.Redraw()
+    macroLblMsg.Text := !other ? "Chat lines  ·  one per row" : ext ? ext.title() : "Not available in this version"
+    SetShown(macroMsgEdit, !other)
+    if ext
+        ext.show(other)
+    macroHint.Text := !hk ? "No hotkey: Bind Key to use it."
+        : (other ? "Pressed" : "Sent") " in a game with chat closed, while the tool is On."
+    macroSummary.Text := MacroStatus()
+}
+MacroStatus() {
+    global
+    local m := macroSel ? macros.list()[macroSel] : 0
+    local ext := macroKind != "chat" ? MacrosEngine.ext : 0
+    if macroKind != "chat" && !ext
+        return "not available in this version"
+    local n := ext ? ext.count() : MacroLines(macroMsgEdit.Value).Length
+    local what := ext ? "a key to press" : "a line"
+    if !m
+        return "new macro: add " what
+    if m.kind != macroKind && !n
+        return "add " what " to switch it"
+    if ext
+        return ext.status(n)
+    return !n ? "empty: not saved, ✕ deletes it" : n = 1 ? "1 line" : n " lines, sent in order"
+}
+
+; save the editor (chat is debounced while typing); a new macro is added with
+; its first line or key
+MacroCommit() {
+    global
+    SetTimer(MacroCommit, 0)
+    local list := macros.list(), m := macroSel ? list[macroSel] : 0, hk := m ? m.hotkey : macroDraftHK
+    local ext := macroKind != "chat" ? MacrosEngine.ext : 0
+    if macroKind != "chat" && !ext
+        return                                  ; another kind, no extension: left as it is
+    local text := ext ? ext.text() : RegExReplace(StrReplace(macroMsgEdit.Value, "`r"), "\n+$")
+    local n := ext ? ext.count() : MacroLines(text).Length
+    if n && !(m && m.text == text && m.kind = macroKind) {
+        local args := Map("hotkey", hk, "text", text, "kind", macroKind)
+        if m
+            args["index"] := macroSel
+        macros.save(args)
+        if !m {
+            macroSel := macros.list().Length, macroDraftHK := ""
+            macroOffset := Max(0, macroSel - MACRO_ROWS)
+        }
+        RenderMacros()
+    }
+    macroSummary.Text := MacroStatus()
+}
+MacroSelect(idx) {
+    global
+    if idx > macros.list().Length || idx = macroSel
+        return
+    MacroCommit()
+    macroSel := idx
+    if MacrosEngine.ext
+        MacrosEngine.ext.reset()
+    LoadMacroEditor()
+    RenderMacros()
+}
+; a press on a row: a click selects it, a drag moves it (a line shows where it
+; lands; let go to drop)
+MacroRowDown(i) {
+    global
+    local idx := macroOffset + i, n := macros.list().Length
+    if idx > n
+        return
+    CoordMode("Mouse", "Client")
+    MouseGetPos(, &y0)
+    local dragging := false, slot := 0
+    while GetKeyState("LButton", "P") {
+        MouseGetPos(, &my)
+        if !dragging && Abs(my - y0) > 5 * DPI_K
+            dragging := true
+        if dragging {
+            ; the gap between rows nearest the mouse: 0 = above the first shown
+            slot := Max(0, Min(Min(MACRO_ROWS, n - macroOffset), Round((my / UiK(mainGui) - macroCard.y - 1) / MACRO_ROW_H)))
+            macroDropLine.Move(, macroCard.y + Max(1, slot * MACRO_ROW_H - 1))
+            macroDropLine.Visible := true
+        }
+        Sleep(15)
+    }
+    macroDropLine.Visible := false
+    if !dragging
+        return MacroSelect(idx)
+    local before := macroOffset + slot + 1           ; dropped above this one (n + 1 = at the end)
+    local to := before > idx ? before - 1 : before
+    if to = idx
+        return RenderMacros()
+    MacroCommit()
+    macros.move(Map("from", idx, "to", to))
+    macroSel := to
+    LoadMacroEditor()
+    RenderMacros()
+}
+MacroRowDelete(i, *) {
+    global
+    local idx := macroOffset + i, list := macros.list()
+    if idx > list.Length
+        return
+    local m := list[idx]
+    if Dialog("Delete the " (m.label != "" ? m.label " macro" : 'macro "' m.summary '"') "?", "Delete macro", ["Delete", "Cancel"]) != "Delete"
+        return
+    SetTimer(MacroCommit, 0)
+    macros.delete(Map("index", idx))
+    if macroSel = idx
+        macroSel := Min(idx, macros.list().Length)
+    else if macroSel > idx
+        macroSel--
+    if !macroSel
+        macroMsgEdit.Value := "", macroKind := "chat", MacrosEngine.ext ? MacrosEngine.ext.reset() : 0
+    LoadMacroEditor()
+    RenderMacros()
 }
 MacroNew() {
-    global macroSel := -1, macroPendingHK := "", macroPendingLabel := "", macroCapBtn, macroMsgEdit
-    macroCapBtn.Text := "click to set"
+    global
+    MacroCommit()
+    macroSel := 0, macroDraftHK := "", macroKind := "chat"
+    if MacrosEngine.ext
+        MacrosEngine.ext.reset()
     macroMsgEdit.Value := ""
+    ShowMacroEditor()
+    RenderMacros()
+    macroMsgEdit.Focus()
+}
+MacroCapture() {
+    global
+    macroCapBtn.Text := "press a key…"
+    local r := macros.capture(Map())
+    macroCapBtn.Text := "Bind Key"
+    if r.hotkey {
+        if why := MacroKeyConflict(r.hotkey)
+            Toast(r.label " is " why ".", "error")
+        else
+            MacroSetKey(r.hotkey)
+    }
+    ShowMacroEditor()
+}
+MacroClearKey() {
+    global
+    MacroSetKey("")
+    ShowMacroEditor()
+}
+MacroSetKey(hk) {
+    global
+    if !macroSel {
+        macroDraftHK := hk
+        return
+    }
+    local m := macros.list()[macroSel]
+    macros.save(Map("index", macroSel, "hotkey", hk, "text", m.text, "kind", m.kind))
+    RenderMacros()
+}
+; why a key can't be this macro's: the companion's own keys, the overlay keys,
+; another macro, or a Remap key ("" = free)
+MacroKeyConflict(hk) {
+    global macros, remap, macroSel
+    k := Norm(hk), list := macros.list()
+    if macroSel && Norm(list[macroSel].hotkey) = k
+        return ""
+    if why := remap.reserved(hk)
+        return why
+    for g in ["card", "inv", "mouse"]
+        loop remap.count(g)
+            if (o := remap.yourKey(g, A_Index)) && Norm(o) = k
+                return "your Remap key for " remap.slotName(g, A_Index)
+    return ""
+}
+MacroListWheel(wParam, lParam, msg, hwnd) {
+    global
+    if currentPage != "macros" || !WinActive("ahk_id " mainGui.Hwnd)
+        return
+    local mx := lParam << 48 >> 48, my := lParam << 32 >> 48
+    WinGetClientPos(&wx, &wy, , , mainGui)
+    mx := (mx - wx) / UiK(mainGui), my := (my - wy) / UiK(mainGui)
+    local c := macroCard
+    if mx < c.x || mx > c.x + c.w || my < c.y || my > c.y + c.h
+        return
+    macroOffset += (wParam << 32 >> 48) > 0 ? -1 : 1
+    RenderMacros()
+    return 0
 }
 
 ; ============================================================================
@@ -973,14 +1384,12 @@ BuildRemapPage() {
         remapViewBtns[v] := b
         AddToPage("remap", b)
     }
-    remapQcSetupBtn := MkButton("Quickcast setup", 40, 160, 110, 24, C.chip, C.muted, (*) => QuickcastSettings())
-    UISetFont(remapQcSetupBtn, "s8 w600")
-    AddToPage("remap", remapQcSetupBtn)
-    ; List: column header over a list
-    remapListHdr := mainGui.AddText("x49 y160 w660 h18 +Background" C.panel " c" C.dim,
+
+    ; List: column header over a list (left of the quickcast panel, which both views show)
+    remapListHdr := mainGui.AddText("x49 y160 w470 h18 +Background" C.panel " c" C.dim,
         Fmt("Slot", 12) Fmt("Game key", 11) Fmt("Your key", 18) "Quickcast")
     remapListHdr.SetFont("s10", "Consolas")
-    remapListBox := mainGui.AddListBox("x40 y182 w680 h232 0x100 +Background" C.well " c" C.text, [])     ; 0x100: no integral height, fill down to the card
+    remapListBox := mainGui.AddListBox("x40 y182 w520 h232 0x100 +Background" C.well " c" C.text, [])     ; 0x100: no integral height, fill down to the card
     remapListBox.SetFont("s10", "Consolas")
     remapListBox.OnEvent("Change", (*) => RemapListSelect())
     remapListBox.OnEvent("DoubleClick", (*) => RemapCapture())
@@ -1005,9 +1414,8 @@ BuildRemapPage() {
 ; the view switch sits on the toolbar row, right of the title
 LayoutRemap() {
     global
-    local R := W - 52
+    local R := TB_R
     remapViewBtns["hud"].Move(R - 104, TB_Y + 2)
-    remapQcSetupBtn.Move(R - 104 - 12 - 110, TB_Y + 2)
     remapViewBtns["list"].Move(R - 52, TB_Y + 2)
     ; detail card along the bottom (its box: BuildRemapTiles)
     local y := REMAP_CARD_Y, bx := CX + 680 - 18 - 102
@@ -1017,12 +1425,12 @@ LayoutRemap() {
     remapSetBtn.Move(bx, y + 26), remapClearBtn.Move(bx, y + 56), remapQcBtn.Move(bx, y + 86)   ; one column, centred
 }
 ; HUD: tiles laid out like the game (window coordinates, built after the
-; page shift): inventory 2x3 | command card 4x3 | mouse
+; page shift): inventory 2x3 | command card 4x3 | the quickcast panel
 BuildRemapTiles() {
     global
     local tw := 76, th := 72, gap := 8, y0 := CY + 22
     remapCard := Box("remap", CX, REMAP_CARD_Y, 680, H - 28 - REMAP_CARD_Y, C.card, C.border, 6)
-    local groups := [["inv", "Inventory", CX, 2], ["card", "Command Card", CX + 176, 4], ["mouse", "Mouse", CX + 520, 2]]
+    local groups := [["inv", "Inventory", CX, 2], ["card", "Command Card", CX + 176, 4]]
     local gr, hdr, ctl
     for gr in groups {
         hdr := mainGui.AddText("x" gr[3] " y" CY " w200 h18 +Background" C.panel " c" C.muted, gr[2])
@@ -1055,12 +1463,64 @@ BuildRemapTiles() {
         }
     }
     mainGui.OnEvent("ContextMenu", RemapContext)     ; right-click a slot: toggle its quickcast
+    ; quickcast, right of the command card (and of the List view's table: shown in both views):
+    ; a switch and Options per game version
+    local qx := CX + 530, qw := 150
+    local qh := mainGui.AddText("x" qx " y" CY " w" qw " h18 +Background" C.panel " c" C.muted, "Quickcast")
+    UISetFont(qh, "s9 w600")
+    local qb := Box("remap", qx, y0, qw, 3 * (th + gap) - gap, C.card, C.frame, 5)
+    AddToPage("remap", qh)
+    local qy := y0 + 8
+    for v in [["hook", "Game hook", "1.28f", "Injected into the game: it knows when a target is wanted. No setup."],
+        ["screen", "Screen", "1.28f · Reforged · WIP", "Reads the screen, nothing injected. Set up once per window size."]] {
+        local vl := mainGui.AddText("x" (qx + 10) " y" qy " w" (qw - 20 - 46) " h18 +Background" C.card " c" C.text, v[2])
+        UISetFont(vl, "s9 w600")
+        local vt := mainGui.AddText("x" (qx + 10) " y" (qy + 17) " w" (qw - 20) " h15 +Background" C.card " c" C.accent, v[3])
+        UISetFont(vt, "s7 w600")
+        local vd := mainGui.AddText("x" (qx + 10) " y" (qy + 33) " w" (qw - 20) " h44 +Background" C.card " c" C.dim, v[4])
+        UISetFont(vd, "s8")
+        local sw := MkButton("Off", qx + qw - 50, qy, 40, 18, C.chip, C.muted, RemapQcSwitch.Bind(v[1]))     ; top right, as a slot's QC pill
+        local ob := MkButton("Options", qx + 10, qy + 80, qw - 20, 22, C.chip, C.text, ((ver, *) => QuickcastSettings(ver)).Bind(v[1]))
+        for b in [sw, ob]
+            UISetFont(b, "s8 w600")
+        AddToPage("remap", vl, vt, vd, sw, ob)
+        remapQcCtrls[v[1]] := { label: vl, sw: sw, ob: ob }
+        qy += 112
+    }
+    remapQcCtrls["box"] := qb
 }
 ; Only what changed is touched, each control repainting itself: repainting the
 ; whole window on every click (Freeze/Thaw) made the page flicker.
+; a button and its box to x, y (window units)
+RemapMoveBtn(b, x, y) {
+    global boxes
+    if boxes.Has(b.Hwnd) {
+        bx := boxes[b.Hwnd], bx.Move(x, y, bx.w, bx.h), b.Move(x + 1, y + 1)
+    } else
+        b.Move(x, y)
+}
+; the quickcast switches: the game hook (1.28f, the injected game module: [Game] quickcast) and the
+; screen (1.28f and Reforged: [Quickcast] screen; it was "reforged" for a while)
+RemapQcSwitch(which, *) {
+    global gameModule
+    if which = "hook"
+        gameModule.setQuickcast(!gameModule.quickcast)
+    else
+        SetIni(QuickcastScreenOn() ? 0 : 1, "Quickcast", "screen")
+    RemapQcRefresh()
+}
+QuickcastScreenOn() => Integer(Ini("Quickcast", "screen", Ini("Quickcast", "reforged", 1)))
+RemapQcRefresh() {
+    global remapQcCtrls, gameModule
+    if !remapQcCtrls.Has("hook")
+        return
+    Wc3SetSwitch(remapQcCtrls["hook"].sw, gameModule.quickcast)
+    Wc3SetSwitch(remapQcCtrls["screen"].sw, QuickcastScreenOn())
+}
 RefreshRemap(capturing := false) {
     global remap, remapSel, remapSlots, remapViewBtns, remapListCtrls, remapHudCtrls, remapTiles, remapListBox,
-        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C
+        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C, remapQcCtrls
+    RemapQcRefresh()
     d := remap.get(), view := Ini("Remap", "view", "hud") = "list" ? "list" : "hud", hud := view = "hud", sel := 0
     remapSlots := d.slots
     for s in d.slots
@@ -1079,7 +1539,7 @@ RefreshRemap(capturing := false) {
         for ctl in remapListCtrls
             SetShown(ctl, !hud)
         for ctl in remapHudCtrls
-            ctl.Visible := hud
+            SetShown(ctl, hud)
         for t in remapTiles
             t.box.Visible := hud
     }
@@ -1131,17 +1591,19 @@ RefreshRemap(capturing := false) {
     status := capturing ? "Press a key…"
         : sel.key ? "Your key  " sel.keyLabel "   →   " (sel.group = "mouse" ? "clicks " StrLower(sel.game) : "sends " does) (sel.qc ? "   ·   quickcast" : "")
         : sel.qc ? "No key of its own   ·   " does " quickcasts"
-        : "No key set" (sel.group = "mouse" ? "" : "   ·   the game's " does " works as usual")
+        : "No key set   ·   the game's " does " works as usual"
     if remapStatus.Text != status
         remapStatus.Opt("+c" (capturing || sel.key ? C.text : C.muted)), remapStatus.Text := status
     if currentPage = "remap" {
         SetShown(remapQcBtn, sel.qcAllowed)
     }
-    SetText(remapQcBtn, "Quickcast: " (sel.qc ? "On" : "Off"))
+    SetText(remapQcBtn, "Slot QC: " (sel.qc ? "On" : "Off"))
+    qcHow := !sel.qcAllowed ? " " sel.name " takes no target: no quickcast."
+        : hud ? " QC or right-click switches quickcast on that slot." : " Slot QC switches its quickcast."
     info := sel.note ? sel.note
-        : capturing ? "Any key or combo.  Esc or Backspace clears the slot."
-        : hud ? "Click a slot, then press a key. QC (or right-click) toggles quickcast. Shift + your key queues, like in WC3."
-        : "Double-click a row (or Bind Key), then press a key. Shift + your key queues, like in WC3."
+        : capturing ? "Any key, combo or mouse button (Mouse 4/5, middle, wheel).  Esc or Backspace clears the slot."
+        : hud ? "Click a slot, then press a key or mouse button (Mouse 4/5, middle, wheel)." qcHow
+        : "Double-click a row (or Bind Key), then press a key or mouse button (Mouse 4/5, middle, wheel)." qcHow
     if remapInfo.Text != info
         remapInfo.Opt("+c" (sel.note ? C.accent : C.dim)), remapInfo.Text := info
 }
@@ -1208,52 +1670,142 @@ RemapClear() {
     remap.setKey(Map("group", remapSel.group, "index", remapSel.index, "key", "-"))
     RefreshRemap()
 }
-; Quickcast settings, in the .modal style of Dialog: how quickcast works now,
-; the in-game setup, hold to repeat, and LCH's method as a forced fallback
-QuickcastSettings() {
-    global C, mainGui, quickcast, UI_FONT
-    s := quickcast.get(), w := 480
+; Quickcast Setup window, in the .modal style of Dialog: the status for the
+; running game, the three in-game steps, hold to repeat, and the buttons
+; ver: "hook" (the game hook: 1.28f, injected, no setup) or "screen" (1.28f and Reforged, set
+; up per window size); default: the hook in a 1.28f game, else the screen
+QuickcastSettings(ver := "") {
+    global C, mainGui, quickcast, gameModule, UI_FONT, wc3Ver
+    static g := 0
+    if g
+        try g.Destroy()
+    if ver = ""
+        ver := Wc3RunningVer() = "128" ? "hook" : "screen"
+    s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "hook"
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
-    g.BackColor := C.frame                           ; = the 1px border
+    MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
-    t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, "Quickcast")
-    t.SetFont("s13 w700", "Cinzel")
-    status := !s.window ? "Warcraft III isn't running: start it to check the setup"
-        : s.forceLch ? "Using LCH's method (set below)"
-        : s.calibrated ? "Smart quickcast is set up for " StrReplace(s.window, "_", " ")
-        : "Not set up for " StrReplace(s.window, "_", " ") " yet: using LCH's method"
-    st := g.AddText("x26 y58 w" (w - 52) " h20 +Background" C.card " c" (s.calibrated && !s.forceLch ? C.accent : C.muted), status)
+    card := DialogCard(g, w)
+    t := g.AddText("x" x " y22 w" tw " h28 +Background" C.card " c" C.text, mod128 ? "Quickcast · Game hook" : "Quickcast · Screen")
+    t.SetFont("s13 w700 q4", "Cinzel")
+    where := WC3WindowName(s.window)
+    ok := mod128 ? gameModule.qcReady() : s.calibrated
+    status := mod128 ? gameModule.qcStatusText()
+        : !s.window ? "Start Warcraft III to set it up"
+        : s.calibrated ? "Set up for " where
+        : "Not set up for " where " yet"
+    st := g.AddText("x" x " y56 w" tw " h20 +Background" C.card " c" (ok ? C.accent : C.muted), (ok ? "✓  " : "") status)
     UISetFont(st, "s10 w600")
-    body := "Smart quickcast sends the key, then clicks only once the game is waiting for a target, "
-        . "so a skill on cooldown or out of mana never clicks a unit. It needs a quick setup in game "
-        . "(three presses of Insert), once per game version and window size.`n`n"
-        . "Until then LCH's method is used: it saves your selection to control groups 9 and 0 "
-        . "for every cast, so don't use those groups yourself."
-    bt := g.AddText("x26 y88 w" (w - 52) " +Background" C.card " c" C.dim, body)
-    UISetFont(bt, "s9")
-    bh := TextHeight(bt, body, w - 52), bt.Move(, , , bh)
-    y := 88 + bh + 18
-    g.SetFont("s10", UI_FONT)                         ; before the checkboxes, so they size to it
-    rep := g.AddCheckbox("x26 y" y " w250 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat it, every")
-    iv := g.AddEdit("x280 y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
-    ms := g.AddText("x334 y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
-    lch := g.AddCheckbox("x26 y" (y + 32) " w400 h22 +Background" C.card " c" C.text (s.forceLch ? " Checked" : ""), " Always use LCH's method")
-    rep.OnEvent("Click", (c, *) => quickcast.set("repeat", c.Value))
-    iv.OnEvent("Change", (c, *) => (c.Value != "" && quickcast.set("interval", Max(15, Min(1000, c.Value + 0)))))
-    lch.OnEvent("Click", (c, *) => quickcast.set("forceLch", c.Value))
-    by := y + 32 + 22 + 26
-    setup := g.AddText("x" (w - 26 - 104 - 8 - 150) " y" by " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Set up in game")
-    close := g.AddText("x" (w - 26 - 104) " y" by " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
-    for b in [setup, close]
-        UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh2), Box.Round(b, bw, bh2, 4)
-    setup.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), quickcast.calibrateStart(QuickcastSetupDone)))
-    close.OnEvent("Click", (*) => g.Destroy())
-    h := by + 34 + 24
+    intro := mod128 ? "1.28f only. The companion's game module is injected into Warcraft III and asks the game "
+        . "itself when it waits for a target: the moment it does, it clicks at the cursor, so a cooldown "
+        . "or missing mana never clicks a unit. No setup. Which keys quickcast: QC on their slot."
+        : "1.28f and Reforged. Nothing is injected: it reads the command card on the screen to see when "
+        . "the game waits for a target, then clicks at the cursor. Set it up once per window size. On "
+        . "1.28f it's used when the game hook is off or not ready."
+    it := g.AddText("x" x " y82 w" tw " +Background" C.card " c" C.dim, intro)
+    UISetFont(it, "s9")
+    y := 82 + TextHeight(it, intro, tw) + 18
+    it.Move(, , , y - 100)
+    if mod128
+        y -= 4
+    else {
+
+        ; the three steps, as on screen during the setup (Reforged only)
+        hd := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.muted, "SETUP IN GAME")
+        UISetFont(hd, "s8 w600")
+        y += 26
+        for i, step in QuickcastEngine.STEPS {
+            n := g.AddText("x" x " y" y " w20 h20 Center 0x200 +Background" C.navOn " c" C.accent, i)
+            UISetFont(n, "s8 w700"), Box.Round(n, 20, 20, 10)
+            l := g.AddText("x" (x + 32) " y" (y + 1) " w" (tw - 32) " +Background" C.card " c" C.text, step)
+            UISetFont(l, "s9")
+            lh := Max(20, TextHeight(l, step, tw - 32)), l.Move(, , , lh)
+            y += lh + 10
+    }
+    nt := g.AddText("x" (x + 32) " y" y " w" (tw - 32) " h18 +Background" C.card " c" C.dim, "Once per window size. Esc cancels.")
+    UISetFont(nt, "s8")
+    y += 30
+    }
+    g.AddText("x" x " y" y " w" tw " h1 +Background" C.border)     ; divider
+    y += 16
+
+    g.SetFont("s10", UI_FONT)                         ; before the checkbox, so it sizes to it
+    rep := g.AddCheckbox("x" x " y" y " w226 h22 +Background" C.card " c" C.text (s.repeat ? " Checked" : ""), " Hold the key to repeat, every")
+    iv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
+    ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
+    rep.OnEvent("Click", (src, *) => quickcast.set("repeat", src.Value))
+    iv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("interval", Max(15, Min(1000, src.Value + 0)))))
+    y += 30
+    ; after a cast it waits longer, so the reticle doesn't reopen while the hero gets there
+    gl := g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "and after a cast, wait")
+    gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
+    g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
+    gv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("castGap", Max(0, Min(3000, src.Value + 0)))))
+    y += 44
+    close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    btns := [close]
+    if !mod128 {
+        setup := g.AddText("x" (w - x - 104 - 8 - 150) " y" y " w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, s.calibrated ? "Set up again" : "Set up in game")
+        setup.OnEvent("Click", (*) => (g.Destroy(), WinExist(WarcraftIII) && HideMainWindow(), quickcast.calibrateStart(QuickcastSetupDone)))
+        btns.Push(setup)
+    }
+    for b in btns
+        UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
+    close.OnEvent("Click", (*) => (g.Destroy(), RefreshRemap()))      ; opened from the Remap page (RefreshWc3 here drew the WC3 cards over it)
+    h := y + 34 + 24
     card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => g.Destroy())
+    DialogStyle(g)
     WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-    g.Show("x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2) " w" w " h" h)
+    g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
+    DialogRepaint(g)
+    return g
+}
+; A dialog's look: the window itself in the card colour, and a 1px frame drawn as four
+; thin lines once its height is known (card.Move(, , , h - 2), as the dialogs call it).
+; Not one card-sized control under the others: overlapping siblings repaint in no set
+; order, and the dialogs tore as they opened.
+class DialogCard {
+    __New(g, w) {
+        global C
+        this.g := g, this.w := w, g.BackColor := C.card
+    }
+    Move(x := "", y := "", ww := "", hh := "") {
+        global C
+        h := hh + 2, w := this.w
+        for r in [[0, 0, w, 1], [0, h - 1, w, 1], [0, 0, 1, h], [w - 1, 0, 1, h]]
+            this.g.AddText("x" r[1] " y" r[2] " w" r[3] " h" r[4] " +Background" C.frame)
+    }
+}
+; once shown: no dotted focus box (WM_CHANGEUISTATE: UIS_SET UISF_HIDEFOCUS), then the whole
+; window and its controls painted again at once (RDW_INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW)
+DialogRepaint(g) {
+    SendMessage(0x127, 0x10001, 0, g)
+    DllCall("RedrawWindow", "ptr", g.Hwnd, "ptr", 0, "ptr", 0, "uint", 0x1 | 0x4 | 0x80 | 0x100)
+}
+; before it shows: a dialog's text boxes in the pages' look (StyleControl's): no native border
+; (white on the dark card), a --bg2 box with a --border2 edge behind, the text centred in it
+DialogStyle(g) {
+    global C
+    edits := []
+    for hw, ctl in g
+        if ctl.Type = "Edit"
+            edits.Push(ctl)
+    for e in edits {
+        e.Opt("-E0x200 -Border")
+        DllCall("SetWindowPos", "ptr", e.Hwnd, "ptr", 0, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x37)   ; FRAMECHANGED
+        e.GetPos(&ex, &ey, &ew, &eh)
+        ; at the bottom of the z-order, the fill first: the edge goes under it; WS_CLIPSIBLINGS, or
+        ; they paint over the box above them (siblings repaint in no set order)
+        for part in [[ex + 1, ey + 1, ew - 2, eh - 2, C.well, 3], [ex, ey, ew, eh, C.frame, 4]] {
+            bx := g.AddText("x" part[1] " y" part[2] " w" part[3] " h" part[4] " +0x4000000 +Background" part[5])
+            DllCall("SetWindowPos", "ptr", bx.Hwnd, "ptr", 1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x13)   ; HWND_BOTTOM
+            Box.Round(bx, part[3], part[4], part[6])
+        }
+        e.Move(ex + 2, ey + (eh - 20) // 2, ew - 4, 20)              ; 2 in: the 1px edge stays whole at any scale
+        if !(ControlGetStyle(e) & 0x1)                                  ; not ES_CENTER: the pages' padding
+            SendMessage(0xD3, 3, 6 | (6 << 16), e)                      ; EM_SETMARGINS
+    }
 }
 ; the in-game setup ended: its toast already said how it went
 QuickcastSetupDone(ok, msg) {
@@ -1270,42 +1822,215 @@ RemapToggleQc() {
 ; ============================================================================
 ;  Host page
 ; ============================================================================
+; Host page: the bots as a card list like the Loader's saves (name, trigger,
+; extra commands; ✕ on ones you added), the selected bot's settings and the
+; game name under it, and the host buttons. The rows are a fixed pool of
+; controls re-filled as you scroll.
 BuildHostPage() {
     global
-    mk(id, label, x, y, w) {
-        lbl := mainGui.AddText("x" x " y" y " w" w " h16 +Background" C.panel " c" C.muted, label)
-        e := mainGui.AddEdit("x" x " y" (y + 20) " w" w " h26 +Background" C.well " c" C.text, "")
-        UISetFont(e, "s10")
-        hostEdits[id] := e
-        AddToPage("host", lbl, e)
+    hostHelpBtn := MkButton("?", 40, 160, 30, 28, C.chip, C.muted, (*) => ShowPopover("host"))
+    AddToPage("host", hostHelpBtn)
+    lbl(id, text) {
+        hostLbls[id] := mainGui.AddText("x40 y160 w330 h18 +Background" C.panel " c" C.muted, text)
+        AddToPage("host", hostLbls[id])
     }
-    mk("botName", "Bot name", 40, 160, 300)
-    mk("trigger", "Trigger", 360, 160, 160)
-    mk("gameName", "Game name", 40, 220, 260)
-    incBtn := MkButton("+1", 312, 240, 40, 26, C.chip, C.accent, (*) => HostInc())
-    mk("exBefore", "Extra command before host", 40, 288, 680)
-    mk("exAfter", "Extra command after host", 40, 348, 680)
-    privBtn := MkButton("HOST PRIVATE LOBBY", 40, 420, 330, 36, C.accent, C.onAccent, (*) => DoHost(1))
-    pubBtn := MkButton("HOST PUBLIC LOBBY", 390, 420, 330, 36, C.chip, C.accent, (*) => DoHost(0))
-    AddToPage("host", incBtn, privBtn, pubBtn)
+    field(id, cue := "") {
+        e := mainGui.AddEdit("x40 y160 w100 h28 +Background" C.well " c" C.text, "")
+        UISetFont(e, "s10")
+        if cue
+            SendMessage(0x1501, 1, StrPtr(cue), e)            ; EM_SETCUEBANNER
+        e.OnEvent("Change", HostFieldChanged.Bind(id))
+        hostEdits[id] := e
+        AddToPage("host", e)
+    }
+    lbl("trigger", "Trigger"), field("trigger")
+    lbl("gameName", "Game name"), field("gameName")
+    hostIncBtn := MkButton("+1", 40, 160, 40, 28, C.chip, C.accent, (*) => HostInc())
+    lbl("newBot", "Add a bot"), field("newBot", "bot name")
+    hostAddBtn := MkButton("Add", 40, 160, 54, 28, C.chip, C.accent, (*) => HostAddBot())
+    lbl("exBefore", "Extra command before host"), field("exBefore", "optional")
+    lbl("exAfter", "Extra command after host"), field("exAfter", "optional")
+    hostPrivBtn := MkButton("HOST PRIVATE LOBBY", 40, 160, 330, 36, C.accent, C.onAccent, (*) => host.doHost(1))
+    hostPubBtn := MkButton("HOST PUBLIC LOBBY", 40, 160, 330, 36, C.chip, C.accent, (*) => host.doHost(0))
+    hostNote := mainGui.AddText("x40 y160 w680 h18 +Background" C.panel " c" C.dim,
+        "In Warcraft III chat:  -h lee sey  hosts sey on leebot (private),  -hp  public.  Plain  -h  uses the selected bot.")
+    UISetFont(hostNote, "s9")
+    AddToPage("host", hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote)
+    AddPopover("host", hostHelpBtn, [
+        ["Host from Warcraft III chat", ""],
+        ["-h lee sey", "private lobby on leebot named sey (the bot by name: exact, starts with, or contains)"],
+        ["-hp lee sey", "the same, public"],
+        ["-h sey", "the selected bot, lobby sey (a word that isn't a bot is the game name)"],
+        ["-h  /  -hp", "the selected bot and the last game name"],
+        ["Sent", "/w <bot> <trigger>priv <game>, then  Game Name: <game>. Extra commands go to the bot just before / after."],
+        ["", "Also -host and -hostpub. Host commands are never sent to chat. Each bot keeps its own trigger and extras; changes save as you type."]])
 }
+; window coordinates; runs before StyleControl boxes them
+LayoutHost() {
+    global
+    local R := TB_R, y := CY + HOST_ROWS * HOST_ROW_H + 2 + 16
+    hostHelpBtn.Move(R - 30, TB_Y, 30, 28)
+    hostLbls["trigger"].Move(CX, y), hostLbls["gameName"].Move(CX + 116, y), hostLbls["newBot"].Move(CX + 412, y)
+    hostEdits["trigger"].Move(CX, y + 20, 100, 28)
+    hostEdits["gameName"].Move(CX + 116, y + 20, 230, 28)
+    hostIncBtn.Move(CX + 352, y + 20, 40, 28)
+    hostEdits["newBot"].Move(CX + 412, y + 20, 208, 28)
+    hostAddBtn.Move(CX + 626, y + 20, 54, 28)
+    y += 60
+    hostLbls["exBefore"].Move(CX, y), hostLbls["exAfter"].Move(CX + 350, y)
+    hostEdits["exBefore"].Move(CX, y + 20, 330, 28)
+    hostEdits["exAfter"].Move(CX + 350, y + 20, 330, 28)
+    y += 62
+    hostPrivBtn.Move(CX, y, 330, 36), hostPubBtn.Move(CX + 350, y, 330, 36)
+    hostNote.Move(CX, y + 44)
+}
+BuildHostList() {
+    global
+    local x := CX, y := CY, w := 680, h := HOST_ROWS * HOST_ROW_H + 2
+    hostCard := Box("host", x, y, w, h, C.card, C.border, 6)
+    ; made before the rows so they draw over them
+    hostBar := mainGui.AddText("x" (x + 1) " y" y " w3 h" (HOST_ROW_H - 1) " +Background" C.accent)
+    hostThumb := mainGui.AddText("x" (x + w - 6) " y" (y + 4) " w3 h20 +Background" C.frame)
+    AddToPage("host", hostBar, hostThumb)
+    ; columns: padding | bot | trigger | extra commands | remove
+    local cols := [["pad", 4, 12], ["name", 16, 200], ["trig", 216, 120], ["extra", 336, 300], ["del", 636, 32]]
+    loop HOST_ROWS {
+        local i := A_Index, ry := y + 1 + (i - 1) * HOST_ROW_H, row := { idx: i }
+        for col in cols {
+            local t := mainGui.AddText("x" (x + col[2]) " y" ry " w" col[3] " h" (HOST_ROW_H - 1)
+                " 0x200 +Background" C.card (col[1] = "del" ? " Center" : ""), "")
+            if col[1] = "del" {
+                t.SetFont("s8", ICON_FONT)
+                t.OnEvent("Click", HostRowDelete.Bind(i))
+            } else {
+                UISetFont(t, col[1] = "name" ? "s10 w600" : "s9")
+                t.OnEvent("Click", HostRowClick.Bind(i))
+            }
+            row.%col[1]% := t
+            AddToPage("host", t)
+        }
+        row.sep := mainGui.AddText("x" (x + 1) " y" (ry + HOST_ROW_H - 1) " w" (w - 2) " h1 +Background" C.border)
+        AddToPage("host", row.sep)
+        hostRows.Push(row)
+    }
+    OnMessage(0x20A, HostListWheel)
+}
+
 RefreshHost() {
     global host, hostEdits
-    d := host.get()
-    for id, e in hostEdits
-        e.Value := d.fields.HasProp(id) ? d.fields.%id% : ""
+    hostEdits["gameName"].Value := host.gameName
+    ShowHostBot()
+    RenderHost()
+}
+; the selected bot's own trigger and extra commands in the fields
+ShowHostBot() {
+    global host, hostEdits
+    bot := host.selected
+    for id in ["trigger", "exBefore", "exAfter"]
+        if hostEdits[id].Value != (v := host.field(bot, id))
+            hostEdits[id].Value := v
+}
+RenderHost() {
+    global
+    Freeze()
+    try RenderHostRows()
+    Thaw()
+}
+RenderHostRows() {
+    global
+    local bots := host.bots(), cur := host.selected
+    hostOffset := Max(0, Min(hostOffset, bots.Length - HOST_ROWS))
+    hostBar.Visible := false
+    for row in hostRows {
+        local idx := hostOffset + row.idx, has := idx <= bots.Length
+        for k in ["pad", "name", "trig", "extra", "del", "sep"]
+            row.%k%.Visible := has
+        if !has
+            continue
+        local b := bots[idx], on := b = cur, bg := on ? C.navOn : C.card
+        local ex := [], before := host.field(b, "exBefore"), after := host.field(b, "exAfter")
+        if before != ""
+            ex.Push("before: " before)
+        if after != ""
+            ex.Push("after: " after)
+        row.name.Text := b
+        row.trig.Text := "trigger  " host.field(b, "trigger")
+        row.extra.Text := Join("   ·   ", ex*)
+        row.del.Text := host.isKnown(b) ? "" : Chr(0xE711)          ; ✕ on bots you added
+        row.pad.Opt("+Background" bg)
+        row.name.Opt("+Background" bg " +c" (on ? C.accent : C.text))
+        row.trig.Opt("+Background" bg " +c" C.muted)
+        row.extra.Opt("+Background" bg " +c" C.dim)
+        row.del.Opt("+Background" bg " +c" C.dim)
+        if on {
+            row.name.GetPos(, &ry)
+            hostBar.Move(, ry), hostBar.Visible := true
+        }
+    }
+    local over := bots.Length > HOST_ROWS
+    hostThumb.Visible := over
+    if over {
+        local trackH := hostCard.h - 8, th := Max(18, trackH * HOST_ROWS // bots.Length)
+        hostThumb.Move(, hostCard.y + 4 + (trackH - th) * hostOffset // (bots.Length - HOST_ROWS), , th)
+    }
+}
+HostRowClick(i, *) {
+    global host, hostOffset
+    bots := host.bots(), idx := hostOffset + i
+    if idx > bots.Length
+        return
+    host.select(bots[idx])
+    ShowHostBot()
+    RenderHost()
+}
+HostRowDelete(i, *) {
+    global host, hostOffset
+    bots := host.bots(), idx := hostOffset + i
+    if idx > bots.Length || host.isKnown(bots[idx])
+        return
+    host.removeBot(bots[idx])
+    ShowHostBot()
+    RenderHost()
+}
+HostAddBot() {
+    global host, hostEdits, hostOffset, HOST_ROWS
+    if (b := host.addBot(hostEdits["newBot"].Value)) = ""
+        return
+    hostEdits["newBot"].Value := ""
+    host.select(b)
+    hostOffset := Max(0, host.bots().Length - HOST_ROWS)
+    ShowHostBot()
+    RenderHost()
+}
+HostFieldChanged(id, ctrl, *) {
+    global host
+    v := Trim(ctrl.Value)
+    if id = "gameName"
+        SetIni(v, host.section, "gameName")
+    else if id != "newBot" {
+        host.setField(host.selected, id, v)
+        RenderHost()
+    }
 }
 HostInc() {
     global host, hostEdits
-    r := host.increment(Map("gameName", hostEdits["gameName"].Value))
-    hostEdits["gameName"].Value := r.gameName
+    v := host.increment(hostEdits["gameName"].Value)
+    hostEdits["gameName"].Value := v
+    SetIni(v, host.section, "gameName")
 }
-DoHost(private) {
-    global host, hostEdits
-    args := Map("private", private)
-    for id, e in hostEdits
-        args[id] := e.Value
-    host.host(args)
+HostListWheel(wParam, lParam, msg, hwnd) {
+    global
+    if currentPage != "host" || !WinActive("ahk_id " mainGui.Hwnd)
+        return
+    local mx := lParam << 48 >> 48, my := lParam << 32 >> 48
+    WinGetClientPos(&wx, &wy, , , mainGui)
+    mx := (mx - wx) / UiK(mainGui), my := (my - wy) / UiK(mainGui)
+    local c := hostCard
+    if mx < c.x || mx > c.x + c.w || my < c.y || my > c.y + c.h
+        return
+    hostOffset += (wParam << 32 >> 48) > 0 ? -1 : 1
+    RenderHost()
+    return 0
 }
 
 ; ============================================================================
@@ -1313,11 +2038,8 @@ DoHost(private) {
 ; ============================================================================
 BuildSettingsPage() {
     global
-    labels := Map("enableToolOnStart", "Enable tool on start",
-        "enableToolAfterLoad", "Enable tool after loading a save",
-        "summonBagAfterLoad", "Summon bag (Esc) after loading",
-        "hideOnStart", "Hide window on start",
-        "autoToggleTool", "Auto-disable tool while chatting (Enter)")
+    labels := Map("summonBagAfterLoad", "Summon bag (Esc) after loading",
+        "hideOnStart", "Hide window on start")
     y := 160
     for key, text in labels {
         cb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " " text)
@@ -1326,8 +2048,8 @@ BuildSettingsPage() {
         AddToPage("settings", cb)
         y += 30
     }
-    convertCb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " Send -convert before loading (Reforged name fix)")
-    convertCb.OnEvent("Click", (c, *) => loader.setConvert(Map("value", c.Value)))
+    convertCb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " Send -convert before loading (Reforged name fix, WIP)")
+    convertCb.OnEvent("Click", (src, *) => loader.setConvert(Map("value", src.Value)))
     AddToPage("settings", convertCb)
     y += 30
     l1 := mainGui.AddText("x40 y" (y + 8) " w220 h20 +Background" C.panel " c" C.muted, "Delay between codes (ms)")
@@ -1342,11 +2064,19 @@ BuildSettingsPage() {
     setBtn := MkButton("Change", 490, y + 100, 72, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
     openBtn := MkButton("Open", 568, y + 100, 60, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
     autoBtn := MkButton("Auto-detect", 634, y + 100, 86, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
-    resetBtn := MkButton("Reset all settings", 40, y + 142, 180, 30, C.chip, C.text, (*) => ResetAll())
-    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, resetBtn)
+    ; W3L (eurobattle.net's launcher) for the sidebar's Launch W3L
+    w3lLabel := mainGui.AddText("x40 y" (y + 142) " w680 h20 +Background" C.panel " c" C.muted, "W3L")
+    w3lEdit := mainGui.AddEdit("x40 y" (y + 162) " w440 h24 ReadOnly +Background" C.well " c" C.text, "")
+    w3lSet := MkButton("Change", 490, y + 160, 72, 26, C.chip, C.text, (*) => (bnetLogin.pickW3l(), RefreshSettings()))
+    w3lAutoBtn := MkButton("Auto-detect", 568, y + 160, 86, 26, C.chip, C.text, (*) => (bnetLogin.autoW3l() || Toast("No w3l.exe in the game's folders: pick it with Change"), RefreshSettings()))
+    resetBtn := MkButton("Reset all settings", 40, y + 202, 180, 30, C.chip, C.text, (*) => ResetAll())
+    ; companion updates: which commit this is, when it last looked, and a button
+    updLabel := mainGui.AddText("x40 y" (y + 256) " w500 h20 +Background" C.panel " c" C.muted, "")
+    updBtn := MkButton("Check for updates", 560, y + 252, 160, 28, C.chip, C.text, (*) => UpdateButton())
+    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, w3lLabel, w3lEdit, w3lSet, w3lAutoBtn, resetBtn, updLabel, updBtn)
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, convertCb, loader, w3lEdit, w3lLabel, bnetLogin
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
@@ -1356,6 +2086,9 @@ RefreshSettings() {
     convertCb.Value := cfg.convert
     folderEdit.Value := cfg.folder
     folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
+    w3lEdit.Value := bnetLogin.w3lPath
+    w3lLabel.Text := "W3L, eurobattle.net's launcher (the sidebar's Launch W3L)  ·  " bnetLogin.w3lStatus()
+    RefreshUpdateLabel()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
 ResetAll() {
@@ -1402,7 +2135,7 @@ BuildOverlayPage() {
     ovUnloadEdit := num("unloadMinutes", 200, 294)
     lbl("Frees memory while hidden. 0 = keep loaded.", 270, 296, 440)
 
-    labels := [["outsideGame", "Hotkeys also work outside Warcraft III"],
+    labels := [["outsideGame", "Hotkeys also work in other apps while Warcraft III runs"],
         ["checkOnStart", "Check for TWRPG data updates on start"],
         ["autoInstall", "Install updates automatically"]]
     y := 336
@@ -1414,9 +2147,12 @@ BuildOverlayPage() {
         y += 30
     }
     ovVersionText := lbl("", 40, 434, 680)
-    openBtn := MkButton("Open overlay", 40, 466, 150, 32, C.accent, C.onAccent, (*) => (HideMainWindow(), webOverlay.show()))
-    updBtn := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.accent, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
-    AddToPage("overlay", openBtn, updBtn)
+    local ovOpen := MkButton("Open full window", 40, 466, 150, 32, C.accent, C.onAccent, (*) => (HideMainWindow(), webOverlay.showFull()))
+    local ovUpd := MkButton("Update data now", 200, 466, 170, 32, C.chip, C.accent, (*) => (webOverlay.runUpdate(true), RefreshOverlay()))
+    local ovModes := mainGui.AddText("x384 y466 w470 h32 +Background" C.panel " c" C.dim,
+        "Opens as a normal window (move, resize, maximise). With Warcraft III running, the show / hide key docks it over the game.")
+    UISetFont(ovModes, "s8")
+    AddToPage("overlay", ovOpen, ovUpd, ovModes)
 }
 RefreshOverlay() {
     global ovHkBtn, ovPinBtn, ovSideBtns, ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks, ovVersionText, webOverlay, C, boxes
@@ -1439,7 +2175,8 @@ OverlayCapture(key, btn) {
     btn.Text := "press keys… (Esc = none)"
     combo := KeyWaitCombo()
     combo := RegExReplace(combo, "[<>]")     ; either Shift/Ctrl/Alt
-    webOverlay.set(key, combo = "Escape" ? "" : combo)
+    if combo != ""                           ; "": cancelled (the key stays as it was)
+        webOverlay.set(key, combo = "Escape" ? "" : combo)
     RefreshOverlay()
 }
 OverlaySide(side, *) {
@@ -1451,12 +2188,15 @@ OverlayCheck(key, ctrl, *) => webOverlay.set(key, ctrl.Value)
 ; ============================================================================
 ;  Shared: tool toggle, overlay, show/hide, toast
 ; ============================================================================
+; Esc held 1.5 s / the sidebar switch: pause remaps and macros by hand (e.g. to use the
+; game's own keys for a moment, or if chat tracking ever gets it wrong)
 ToggleTool() {
     global toolEnabled := !toolEnabled
-    UpdateOverlay()
+    DebugLog(toolEnabled ? "tool on" : "tool paused")
     UpdateToolPill()
     macros.refresh()
     remap.refresh()
+    Toast(toolEnabled ? "Remaps and macros on" : "Remaps and macros paused (hold Esc to resume)", "", 2000)
 }
 
 UpdateToolPill() {
@@ -1470,8 +2210,15 @@ UpdateToolPill() {
 ShowMainWindow() {
     global showMain := true
     ShowPage(currentPage)               ; before Show, so other pages' controls never flash
+    if WinExist("ahk_id " mainGui.Hwnd) && WinGetMinMax(mainGui) = -1
+        mainGui.Restore()               ; minimized: F8 / the tray brings it back up
     mainGui.Show("w" W " h" H)
-    try WinSetRegion("0-0 w" Round(W * DPI_K) " h" Round(H * DPI_K) " R" Round(14 * DPI_K) "-" Round(14 * DPI_K), mainGui.Hwnd)
+}
+; the main window's round corners, at its size
+MainRegion() {
+    global mainGui, W, H
+    k := UiK(mainGui)
+    try WinSetRegion("0-0 w" Round(W * k) " h" Round(H * k) " R" Round(14 * k) "-" Round(14 * k), mainGui.Hwnd)
 }
 ; Esc hides the window, except when it was the answer to "press a key"
 EscHide() {
@@ -1482,9 +2229,11 @@ HideMainWindow() {
     global showMain := false
     try mainGui.Hide()
 }
+; F8: open behind the game (after starting, or a click back into it) counts
+; as not shown, so one press always brings it up
 ShowHideMain() {
-    global showMain
-    if showMain
+    global showMain, mainGui
+    if showMain && WinActive("ahk_id " mainGui.Hwnd)
         HideMainWindow()
     else
         ShowMainWindow()
@@ -1495,27 +2244,31 @@ PauseGame() => SendInput("{F10}{m}{F10}")
 ; Loader commands are spotted by what was typed, not by tracking whether chat is
 ; open (that can drift: menus, alt-tab, the lobby's always-open chat box).
 ; chatHook records keys typed in WC3 since the last Enter / Esc / click. On
-; Enter, if that is exactly a loader command (-l, -ll, -sn...), the chat box is
+; Enter, if that is exactly a loader or host command (-l, -sn, -h...), the chat box is
 ; emptied and closed with an empty Enter (no message, nothing in the lobby)
 ; and the command runs; otherwise Enter goes through untouched.
 ; `chatting` is only kept for the tool's auto-disable while typing.
 ChatEnter(hk) {
-    global chatting, chatHook, loader
+    global chatting, chatHook, loader, host
     key := InStr(hk, "+") ? "+{Enter}" : InStr(hk, "Numpad") ? "{NumpadEnter}" : "{Enter}"
     line := chatHook.Input
     ChatRestart()
-    if loader.isCommand(line) {
-        SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
-        ChatClosed()
-        ; then forget what the command itself typed (-load codes, -save ...)
-        SetTimer(() => (loader.command(line), ChatRestart()), -80)
-        return
-    }
+    ; loader (-l, -sn...) and host (-h, -hp...) commands: erased, never sent
+    for owner in [loader, host]
+        if owner.isCommand(line) {
+            SendInput("{End}{BS " (StrLen(line) + 16) "}{Enter}")
+            ChatClosed("command")
+            ; then forget what the command itself typed (-load codes, -save, whispers...).
+            ; Bound now: a for loop's variable is restored when the loop is left
+            run := ObjBindMethod(owner, "command", line)
+            SetTimer(() => (run(), ChatRestart()), -80)
+            return
+        }
     SendInput(key)
     if chatting
-        ChatClosed()
+        ChatClosed("Enter")
     else
-        ChatOpened()
+        ChatOpened("Enter")
 }
 ; start a fresh line (only while WC3 is the active window: never record what
 ; you type in other apps)
@@ -1534,22 +2287,141 @@ ChatWatch() {
         chatHook.Start()
     }
 }
-ChatOpened() {
-    global chatting := true, toolEnabled, toolEnableHistory
-    if Ini("Settings", "autoToggleTool", 1) {
-        toolEnableHistory := toolEnabled, toolEnabled := false
-        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
-    }
+; while chat is open, remaps and macros stand aside so typing works
+ChatOpened(why := "") {
+    global chatting, chatBox, chatSince
+    if !chatting
+        DebugLog("chat open (" why ")")
+    chatting := true, chatSince := A_TickCount
+    macros.refresh(), remap.refresh()
+    ; first chat in this game window: find where its chat box is drawn
+    if WinActive(WarcraftIII) && !chatBox.current()
+        SetTimer(() => chatBox.locate(), -150)
 }
-ChatClosed() {
-    global chatting, toolEnabled, toolEnableHistory
+ChatClosed(why := "") {
+    global chatting
     if !chatting
         return
+    DebugLog("chat closed (" why ")")
     chatting := false
-    if Ini("Settings", "autoToggleTool", 1) {
-        toolEnabled := toolEnableHistory
-        UpdateOverlay(), UpdateToolPill(), macros.refresh(), remap.refresh()
+    macros.refresh(), remap.refresh()
+}
+; The screen has the last word on chat: Enter tracking is instant but can
+; drift (chat opened or closed by clicking, menus), so the chat box itself is
+; checked 5 times a second. Closing only follows a box that was seen open, so
+; the lobby (always-open chat, no box) keeps the Enter tracking.
+ChatBoxPoll() {
+    global chatBox, chatting, inGame, inGameEng, chatSince, chatHook
+    static seenOpen := false
+    if !WinActive(WarcraftIII)
+        return
+    if !(g := chatBox.current()) {
+        ; no chat box to check in this window yet: chat counted open with
+        ; nothing typed for 20 s was an Enter that wasn't chat (a dialog, a
+        ; shop). Don't leave remaps off until the next Enter.
+        if chatting && inGame && chatHook.Input = "" && A_TickCount - chatSince > 20000
+            ChatClosed("nothing typed for 20 s, no chat box to check")
+        return
     }
+    if chatBox.isOpen(g) {
+        seenOpen := true
+        if !inGame {                    ; chat in a game, but no menu bar seen: a HUD
+            inGameEng.distrust()        ; we can't read, so count it as in a game
+            InGamePoll()
+        }
+        if !chatting
+            ChatOpened("chat box on screen")
+    } else if seenOpen {
+        seenOpen := false
+        if chatting
+            ChatClosed("chat box gone")
+    } else if chatting && inGame && inGameEng.reliable() && A_TickCount - chatSince > 800 {
+        ; "chatting" but no chat box in a game: an Enter or Esc that wasn't
+        ; chat (closing the game menu, a dialog). Don't leave remaps off.
+        ChatClosed("no chat box on screen")
+    }
+}
+; Esc in the game: the game gets one Esc (however long it's held, so nothing
+; spams it), chat counts as closed, a quickcast setup is cancelled, and
+; holding it 1.5 s pauses / resumes remaps and macros.
+EscInGame() {
+    SendInput("{Esc}")
+    ChatClosed("Esc"), ChatRestart()
+    if quickcast.cal
+        return quickcast.calibrateEnd(0, "Quickcast Setup cancelled")
+    if timersHud.cal
+        return timersHud.setupEnd(0, "Buff bar setup cancelled")
+    if buffWatch.capturing
+        return buffWatch.captureEnd(0, "Adding a buff cancelled")
+    if !KeyWait("Esc", "T1.5") {
+        ToggleTool()
+        KeyWait("Esc")
+    }
+}
+; remaps and macros only in a game: in menus they'd type into text fields.
+; Into a game at once; out of it only once the bar has been missing for 3
+; looks in a row (3 s), so one bad read (a frame mid-redraw, a dialog over the
+; bar) never switches remaps off. The pinned overlay can cover the bar, so
+; nothing changes while it's on screen.
+InGamePoll() {
+    global inGame, inGameEng, webOverlay
+    static misses := 0
+    if !WinActive(WarcraftIII) || webOverlay.shown
+        return
+    v := inGameEng.inGame()
+    if v
+        misses := 0
+    else if inGame && ++misses < 3
+        return
+    if v != inGame {
+        inGame := v, misses := 0
+        DebugLog(v ? "in a game (menu bar seen)" : "not in a game (no menu bar)")
+        macros.refresh(), remap.refresh()
+    }
+}
+; refresh every gated hotkey (tool pause, chat, in game, quickcast setup)
+RefreshHotkeys() {
+    if IsSet(macros) && macros
+        macros.refresh()
+    if IsSet(remap) && remap
+        remap.refresh()
+}
+; ---- debug log + live status (tray: Debug) ----------------------------------
+; companion-debug.log next to the script: every state change and each quickcast,
+; with the time, to send when something misbehaves. The status line is the
+; same state, live, over the top left of the game.
+DebugLog(msg) {
+    static path := A_ScriptDir "\companion-debug.log", started := false
+    if !started {
+        started := true
+        try if FileGetSize(path) > 512 * 1024
+            FileDelete(path)
+        DebugLog("---- companion " version " started")
+    }
+    try FileAppend(FormatTime(, "yyyy-MM-dd HH:mm:ss") "." Format("{:03}", A_MSec) "  " msg "`n", path, "UTF-8")
+}
+DebugStatusToggle(*) {
+    global debugGui, debugText
+    if debugGui {
+        SetTimer(DebugStatusUpdate, 0), debugGui.Destroy(), debugGui := 0
+        A_TrayMenu.Uncheck("Debug: show status in game")
+        return
+    }
+    debugGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-debug")      ; click-through
+    debugGui.BackColor := "0C0D10"
+    debugText := debugGui.AddText("x8 y4 w620 h20 c" C.accent, "")
+    UISetFont(debugText, "s9 w600")
+    WinSetTransparent(220, debugGui)
+    debugGui.Show("x0 y40 w636 h28 NoActivate")
+    A_TrayMenu.Check("Debug: show status in game")
+    SetTimer(DebugStatusUpdate, 250)
+}
+DebugStatusUpdate() {
+    global debugText, toolEnabled, chatting, inGame, qcCalibrating, quickcast
+    k := WC3WindowKey()
+    debugText.Text := (toolEnabled ? "tool on" : "PAUSED") "  ·  " (inGame ? "in game" : "NOT IN GAME")
+        . "  ·  " (chatting ? "CHATTING" : "chat closed") (qcCalibrating ? "  ·  SETUP RUNNING" : "")
+        . "  ·  quickcast " (quickcast.current() ? "set up" : "NOT SET UP") " (" (k ? k : "no game") ")"
 }
 MsgEditFocused() {
     global msgEdit
@@ -1573,16 +2445,23 @@ Toast(msg, kind := "", ms := 3500) {
     }
     tw := TextWidth(toastText, msg) + 54, th := 40
     toastText.Move(1, 1, tw - 2, th - 2), toastText.Text := msg
+    ; across the middle of the screen, a little under it (the user's pick, 2026-10-29: first the middle,
+    ; then "a little lower"; it was near the top of the game, or the bottom of the window): the game's
+    ; when it's in front, else the screen the companion's window is on
     if WinActive(WarcraftIII) {
-        WinGetClientPos(&ax, &ay, &aw, , WarcraftIII)
-        tx := Round(ax + (aw - tw * DPI_K) / 2), ty := Round(ay + 80 * DPI_K)
-    } else if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
-        WinGetPos(&ax, &ay, , , mainGui)
-        tx := Round(ax + (W - tw) * DPI_K / 2), ty := Round(ay + (H - th - 30) * DPI_K)
+        WinGetClientPos(&ax, &ay, &aw, &ah, WarcraftIII)
+        l := ax, t := ay, r := ax + aw, b := ay + ah
     } else {
-        MonitorGetWorkArea(MonitorGetPrimary(), &l, &t, &r, &b)
-        tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(b - (th + 30) * DPI_K)
+        mon := MonitorGetPrimary()
+        if IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd) {
+            WinGetPos(&ax, &ay, &aw, &ah, mainGui)
+            loop MonitorGetCount()
+                if MonitorGet(A_Index, &ml, &mt, &mr, &mb) && ax + aw / 2 >= ml && ax + aw / 2 < mr && ay + ah / 2 >= mt && ay + ah / 2 < mb
+                    mon := A_Index
+        }
+        MonitorGetWorkArea(mon, &l, &t, &r, &b)
     }
+    tx := Round(l + (r - l - tw * DPI_K) / 2), ty := Round(t + (b - t) * 0.65 - th * DPI_K / 2)     ; its middle at 65% down
     toastGui.Show("NA x" tx " y" ty " w" tw " h" th)
     SetTimer(HideToast, ms > 0 ? -ms : 0)
 }
@@ -1598,18 +2477,18 @@ TextWidth(ctl, s) {
     DllCall("GetTextExtentPoint32W", "ptr", hdc, "str", s, "int", StrLen(s), "int64*", &size := 0)
     DllCall("SelectObject", "ptr", hdc, "ptr", old)
     DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
-    return Round((size & 0xFFFFFFFF) / DPI_K)
+    return Round((size & 0xFFFFFFFF) / UiK(ctl.Gui))
 }
 
 ; height of s word-wrapped to width in ctl's font (GUI units in and out)
 TextHeight(ctl, s, width) {
     hdc := DllCall("GetDC", "ptr", ctl.Hwnd, "ptr")
     old := DllCall("SelectObject", "ptr", hdc, "ptr", SendMessage(0x31, 0, 0, ctl), "ptr")
-    rc := Buffer(16, 0), NumPut("int", Round(width * DPI_K), rc, 8)
+    rc := Buffer(16, 0), NumPut("int", Round(width * UiK(ctl.Gui)), rc, 8)
     DllCall("DrawTextW", "ptr", hdc, "str", s, "int", -1, "ptr", rc, "uint", 0x410)   ; DT_CALCRECT | DT_WORDBREAK
     DllCall("SelectObject", "ptr", hdc, "ptr", old)
     DllCall("ReleaseDC", "ptr", ctl.Hwnd, "ptr", hdc)
-    return Round(NumGet(rc, 12, "int") / DPI_K)
+    return Round(NumGet(rc, 12, "int") / UiK(ctl.Gui))
 }
 
 ; Modal dialog in the site's .modal style (card, Cinzel title, muted text,
@@ -1619,12 +2498,12 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     global C, UI_FONT, mainGui
     owned := IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
     g := Gui("-Caption +ToolWindow +AlwaysOnTop" (owned ? " +Owner" mainGui.Hwnd : ""))
-    g.BackColor := C.frame                           ; = the 1px border
+    MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
     w := 440, res := { v: buttons[buttons.Length] }
-    card := g.AddText("x1 y1 w" (w - 2) " h10 +Background" C.card)
+    card := DialogCard(g, w)
     t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, title)
-    t.SetFont("s13 w700", "Cinzel")
+    t.SetFont("s13 w700 q4", "Cinzel")
     body := g.AddText("x26 y58 w" (w - 52) " +Background" C.card " c" C.muted, text)
     UISetFont(body, "s10")
     bh := TextHeight(body, text, w - 52)
@@ -1646,7 +2525,7 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     g.OnEvent("Close", (*) => g.Destroy())
     if owned {
         WinGetPos(&ox, &oy, &ow, &oh, mainGui)
-        pos := "x" Round(ox + (ow - w * DPI_K) / 2) " y" Round(oy + (oh - h * DPI_K) / 2)
+        pos := "x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2)
     } else {
         pos := "Center"
     }
@@ -1664,26 +2543,112 @@ ApplyDark(hwnd) {
     try DllCall("uxtheme\SetWindowTheme", "ptr", hwnd, "str", "DarkMode_Explorer", "ptr", 0)
 }
 
-; ============================================================================
-;  Overlay
-; ============================================================================
-BuildOverlay() {
-    global overlay, overlayText, C
-    overlay := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20", "twc-overlay")
-    overlay.BackColor := C.win
-    UISetFont(overlay, "s10 w600")
-    overlayText := overlay.AddText("+BackgroundTrans w140 h22", "")
-    WinSetTransparent(210, overlay)
-    UpdateOverlay()
-    if !Ini("Settings", "hideOverlay", 0)
-        overlay.Show("x0 y0 NoActivate")
+; ---- self-update (source copies) ---------------------------------------------
+; New commits on the branch are downloaded right away; the companion restarts
+; at once, or (in the middle of a game) as soon as Warcraft III isn't focused.
+; A ".no-self-update" file next to the script turns it off (the dev machine,
+; whose files are ahead of GitHub).
+SelfUpdateCheck(manual := false) {
+    global selfUpdate
+    if A_IsCompiled
+        return ExeUpdateCheck(manual)
+    if FileExist(A_ScriptDir "\.no-self-update") || (!manual && !selfUpdate.enabled)
+        return manual ? Toast("Self-update is off on this computer (.no-self-update)") : 0
+    try r := selfUpdate.check()
+    catch as e
+        return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
+    SetIni(A_Now, selfUpdate.section, "lastCheck")
+    RefreshUpdateLabel()
+    if !r.files.Length {
+        SetIni(r.commit, selfUpdate.section, "commit")
+        return manual ? Toast("The companion is up to date (" SubStr(r.commit, 1, 7) ")") : 0
+    }
+    try selfUpdate.apply(r)
+    catch as e
+        return Toast("Companion update failed: " e.Message, "error")
+    n := r.files.Length " file" (r.files.Length = 1 ? "" : "s")
+    if WinActive(WarcraftIII) {
+        Toast("Companion updated (" n "): it restarts when you leave the game", "", 6000)
+        SetTimer(RestartWhenIdle, 2000)
+    } else {
+        Toast("Companion updated (" n "), restarting…")
+        SetTimer(() => Reload(), -1500)
+    }
 }
-UpdateOverlay() {
-    global overlayText, C
-    if !IsSet(overlayText)
+; Settings: "Updates: beta · 84486dc · checked 2 min ago"
+RefreshUpdateLabel() {
+    global updLabel, updBtn, selfUpdate, version
+    if !IsSet(updLabel)
         return
-    overlayText.Opt("+c" (toolEnabled ? C.accent : C.dim))
-    overlayText.Text := toolEnabled ? "◆ TW ON" : "◇ TW OFF"
+    last := Ini(selfUpdate.section, "lastCheck", ""), ago := ""
+    if last {
+        m := DateDiff(A_Now, last, "Minutes")
+        ago := m < 1 ? "just now" : m < 60 ? m " min ago" : m < 1440 ? (m // 60) " h ago" : (m // 1440) " d ago"
+    }
+    if A_IsCompiled {
+        global buildCommit
+        updLabel.Text := "Updates: beta  ·  " version (buildCommit ? " (" SubStr(buildCommit, 1, 7) ")" : "")
+            . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
+        return
+    }
+    if FileExist(A_ScriptDir "\.no-self-update") {
+        updLabel.Text := "Updates are off on this computer (.no-self-update)"
+        return
+    }
+    c := selfUpdate.commit
+    updLabel.Text := "Updates: " selfUpdate.branch "  ·  " (c ? SubStr(c, 1, 7) : "not checked yet")
+        . (ago ? "  ·  checked " ago : "") "  ·  automatic every hour"
+}
+UpdateButton() => SelfUpdateCheck(true)
+; on start: when the last check was under an hour ago (the user's ask, 2026-10-30), not now but once that hour is up
+StartUpdateCheck() {
+    global selfUpdate
+    m := 60
+    try m := DateDiff(A_Now, Ini(selfUpdate.section, "lastCheck", ""), "Minutes")
+    if m >= 0 && m < 60 {
+        DebugLog("update: the start's check skipped (the last was " m " min ago), the next in " (60 - m) " min")
+        return SetTimer(() => SelfUpdateCheck(), -(60 - m) * 60000)   ; its own timer: SelfUpdateCheck's is the hourly one
+    }
+    SelfUpdateCheck()
+}
+; The installed exe follows the beta-latest release (rebuilt by GitHub on every
+; push to beta): a build from another commit is downloaded and installed with
+; its Setup (silently: it keeps the settings and starts the new version). In the
+; middle of a game that waits until Warcraft III isn't focused.
+ExeUpdateCheck(manual) {
+    global selfUpdate, buildCommit
+    static pending := ""
+    if pending
+        return manual ? Toast("An update is ready: it installs when you leave the game") : 0
+    if !buildCommit
+        return manual ? Toast("This build doesn't know its version, so it can't update itself", "error") : 0
+    try r := selfUpdate.checkRelease()
+    catch as e
+        return manual ? Toast("Couldn't check for updates: " e.Message, "error") : 0
+    SetIni(A_Now, selfUpdate.section, "lastCheck")
+    RefreshUpdateLabel()
+    if r.commit = buildCommit
+        return manual ? Toast("The companion is up to date (" SubStr(buildCommit, 1, 7) ")") : 0
+    DebugLog("update: " SubStr(buildCommit, 1, 7) " -> " SubStr(r.commit, 1, 7))
+    try path := selfUpdate.downloadSetup(r)
+    catch as e
+        return Toast("Companion update failed: " e.Message, "error")
+    if WinActive(WarcraftIII) {
+        pending := path
+        Toast("Companion update downloaded: it installs when you leave the game", "", 6000)
+        SetTimer(() => (!WinActive(WarcraftIII) && !KeyCaptureActive() && InstallUpdate(pending)), 2000)
+    } else
+        InstallUpdate(path)
+}
+InstallUpdate(path) {
+    Toast("Updating the companion…", "", 0)
+    Sleep(800)
+    Run('"' path '" /S')                ; closes this companion, installs, starts the new one
+    ExitApp
+}
+RestartWhenIdle() {
+    if !WinActive(WarcraftIII) && !KeyCaptureActive()
+        Reload()
 }
 
 ; ============================================================================
@@ -1703,11 +2668,10 @@ $*F8:: ShowHideMain()
 $!Esc:: ExitApp
 
 #HotIf WinActive(WarcraftIII)
-$~F10:: ToggleTool()
 $~Pause:: PauseGame()
 $Enter::
 $NumpadEnter::
 $+Enter:: ChatEnter(ThisHotkey)
-$~LButton::
-$~Esc:: (ChatClosed(), ChatRestart())
+$~LButton:: (ChatClosed("click"), ChatRestart())     ; a click closes chat (never sends Esc)
+$Esc:: EscInGame()
 #HotIf

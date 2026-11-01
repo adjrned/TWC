@@ -1,12 +1,18 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
 ;  OverlayPanel - the TWRPG site (builds, items, bosses...) in a WebView2 panel
-;  docked over Warcraft III, PoE-overlay style:
+;  docked over Warcraft III, PoE-overlay style. Without the game running (or
+;  with "Open full window"), it's a normal window instead: title bar, move,
+;  resize, maximise, a taskbar button, and it stays open when you click
+;  elsewhere; its size and place are kept (ini [Overlay] window). Keys:
 ;    Shift+Space       show + focus / hide (configurable)
 ;    Ctrl+Shift+Space  pin: stays on screen, see-through and click-through,
 ;                      so the game keeps focus (configurable)
 ;    Esc               hide (when Esc didn't close something in the page)
-;  Hides when you click back into the game or switch to another app.
+;  The docked panel's inner edge sets its width and its bottom edge its height
+;  (drag them; both kept: ini [Overlay] width / height, 0 = the default).
+;  The docked panel hides when you click back into the game or switch to
+;  another app, and gives focus back to the game (or the app you opened it from).
 ;  Served offline from web\TWC as https://twc.local/TWC/ (see UpdaterEngine).
 ;  The WebView is created on first use and closed after sitting hidden for a
 ;  while, so it costs nothing until you open it.
@@ -17,14 +23,16 @@ class OverlayPanel {
     section := "Overlay"
     static HOST := "twc.local"
     static HOME := "https://twc.local/TWC/index.html"
-    static GRIP := 6         ; resize strip on the panel's inner edge, px
-    static MIN_W := 380
+    static GRIP := 6         ; resize strips on the panel's inner and bottom edges, px
+    static MIN_W := 380, MIN_H := 300
 
-    gui := 0, wvc := 0, wv := 0, grip := 0
+    gui := 0, wvc := 0, wv := 0, grip := 0, gripH := 0
     shown := false, pinned := false, ready := false
     pending := []            ; messages to post once the page says "ready"
     updating := false
     hkShow := "", hkPin := ""
+    prevWin := 0             ; window that had focus before show, when not WC3
+    windowMode := false      ; a normal window (no game, or "Open full window") rather than the docked panel
 
     __New(updater) {
         this.updater := updater
@@ -43,6 +51,7 @@ class OverlayPanel {
             pinHotkey: Ini(this.section, "pinHotkey", "^+Space"),
             side: Ini(this.section, "side", "right"),
             width: Integer(Ini(this.section, "width", 0)),
+            height: Integer(Ini(this.section, "height", 0)),
             opacity: Integer(Ini(this.section, "opacity", 100)),
             pinOpacity: Integer(Ini(this.section, "pinOpacity", 70)),
             unloadMinutes: Integer(Ini(this.section, "unloadMinutes", 10)),
@@ -62,15 +71,16 @@ class OverlayPanel {
     }
 
     ; -- hotkeys -------------------------------------------------------------
-    ; Active in Warcraft III (or anywhere with outsideGame) and in the overlay
-    ; itself, but never while typing in WC3 chat so Shift+Space stays a space.
+    ; Active in Warcraft III, anywhere while the game isn't running (or with
+    ; outsideGame) and in the overlay itself, but never while typing in WC3
+    ; chat so Shift+Space stays a space.
     hotkeyActive() {
         global chatting
         if this.gui && WinActive("ahk_id " this.gui.Hwnd)
             return true
-        if chatting
-            return false
-        return WinActive(WarcraftIII) || Ini(this.section, "outsideGame", 0)
+        if WinActive(WarcraftIII)
+            return !chatting
+        return !WinExist(WarcraftIII) || Ini(this.section, "outsideGame", 0)
     }
 
     bindHotkeys() {
@@ -90,24 +100,107 @@ class OverlayPanel {
 
     ; -- show / hide / pin ---------------------------------------------------
     toggle() {
+        if this.shown && this.windowMode && !WinActive("ahk_id " this.gui.Hwnd)
+            return this.show(true)              ; a window behind others: to the front
         if this.shown && !this.pinned
             this.hide()
         else
             this.show()
     }
 
-    show() {
+    ; full: a normal window even with the game running (else: only without it)
+    show(full := false) {
+        a := WinExist("A")
         if !this.ensure()
             return
+        wasWin := this.shown && this.windowMode          ; already open as a window: just to the front, where it is
+        win := full || this.windowMode && this.shown || !WinExist(WarcraftIII) || WinGetMinMax(WarcraftIII) = -1
+        if !this.shown && a && a != this.gui.Hwnd && !WinActive(WarcraftIII)
+            this.prevWin := a
         SetTimer(this.unloadFn, 0)
         this.setPinned(false)
-        this.applyLayout()
-        this.gui.Show("NA")
+        if win != this.windowMode && this.shown
+            this.saveWindow(), this.gui.Hide()  ; the styles change while hidden (the taskbar button follows)
+        this.setWindowMode(win)
+        if win && wasWin {
+            if WinGetMinMax(this.gui) = -1
+                WinRestore(this.gui)
+        } else if win {
+            this.showWindow()
+        } else {
+            this.applyLayout()
+            this.gui.Show("NA")
+        }
         this.wvc.IsVisible := true
         this.shown := true
         WinActivate("ahk_id " this.gui.Hwnd)
         try this.wvc.MoveFocus(0)
-        SetTimer(this.watchFn, 200)
+        SetTimer(this.watchFn, win ? 0 : 200)
+    }
+    showFull() => this.show(true)
+
+    ; -- the normal window ------------------------------------------------------
+    setWindowMode(on) {
+        if this.windowMode = on
+            return
+        this.windowMode := on
+        if on {
+            this.gui.Opt("-AlwaysOnTop -ToolWindow +Caption +Border +Resize +MinimizeBox +MaximizeBox +SysMenu")
+            ; a dark title bar, like the site under it (Windows 10 2004+ / 11; older ones ignore it)
+            DllCall("dwmapi\DwmSetWindowAttribute", "ptr", this.gui.Hwnd, "int", 20, "int*", 1, "int", 4)
+        } else
+            this.gui.Opt("+AlwaysOnTop +ToolWindow -Caption -Border -Resize -MinimizeBox -MaximizeBox -SysMenu")
+        WinSetTransparent("Off", this.gui)
+    }
+    ; where it was last ("x,y,w,h,maximised", outer pixels), or 80% of the work
+    ; area under the mouse, in the middle
+    showWindow() {
+        r := StrSplit(Ini(this.section, "window", ""), ",")
+        if r.Length = 5 && this.onScreen(r[1] + 0, r[2] + 0, r[3] + 0, r[4] + 0) {
+            this.gui.Show("NA x" r[1] " y" r[2] " w" r[3] " h" r[4])
+            WinMove(r[1], r[2], r[3], r[4], this.gui)          ; outer size (Show sizes the client)
+            if r[5] = 1
+                WinMaximize(this.gui)
+        } else {
+            t := this.target(true), w := Round(t.w * 0.8), h := Round(t.h * 0.85)
+            this.gui.Show("NA")
+            WinMove(t.x + (t.w - w) // 2, t.y + (t.h - h) // 2, w, h, this.gui)
+        }
+        WinGetClientPos(, , &cw, &ch, this.gui)
+        this.layoutChildren(cw, ch)
+    }
+    onScreen(x, y, w, h) {
+        if w < 300 || h < 200
+            return false
+        loop MonitorGetCount() {
+            MonitorGetWorkArea(A_Index, &l, &t, &r, &b)
+            if x + 100 < r && x + w - 100 > l && y >= t - 20 && y + 50 < b
+                return true
+        }
+        return false
+    }
+    saveWindow() {
+        if !this.gui || !this.windowMode || !this.shown
+            return
+        mm := WinGetMinMax(this.gui)
+        if mm = -1
+            return
+        old := StrSplit(Ini(this.section, "window", ""), ",")
+        if mm = 1 && old.Length = 5                 ; maximised: keep the size it comes back to
+            return SetIni(old[1] "," old[2] "," old[3] "," old[4] ",1", this.section, "window")
+        if mm = 1 {                                 ; maximised before any save: its restored place (WINDOWPLACEMENT.rcNormalPosition)
+            wp := Buffer(44, 0), NumPut("uint", 44, wp)
+            if DllCall("GetWindowPlacement", "ptr", this.gui.Hwnd, "ptr", wp) {
+                l := NumGet(wp, 28, "int"), t := NumGet(wp, 32, "int")
+                return SetIni(l "," t "," (NumGet(wp, 36, "int") - l) "," (NumGet(wp, 40, "int") - t) ",1", this.section, "window")
+            }
+        }
+        WinGetPos(&x, &y, &w, &h, this.gui)
+        SetIni(x "," y "," w "," h "," (mm = 1 ? 1 : 0), this.section, "window")
+    }
+    onSize(g, minMax, w, h) {
+        if this.windowMode && minMax != -1
+            this.layoutChildren(w, h)
     }
 
     hide(refocusGame := true) {
@@ -115,18 +208,23 @@ class OverlayPanel {
             return
         SetTimer(this.watchFn, 0)
         this.setPinned(false)
+        this.saveWindow()
+        if this.windowMode
+            refocusGame := false                ; a normal window: nothing to hand focus back to
         this.gui.Hide()
         try this.wvc.IsVisible := false    ; lets WebView2 throttle while hidden
         this.shown := false
         this.saveUrl()
         if refocusGame
-            FocusWarcraft()
+            this.refocus()
         mins := Ini(this.section, "unloadMinutes", 10)
         if mins > 0
             SetTimer(this.unloadFn, -mins * 60000)
     }
 
     togglePin() {
+        if this.windowMode && this.shown
+            return                              ; pinning is for the panel over the game
         if this.pinned {
             this.show()          ; unpin -> back to interactive
             return
@@ -135,7 +233,15 @@ class OverlayPanel {
             this.show()
         this.setPinned(true)
         SetTimer(this.watchFn, 0)
-        FocusWarcraft()
+        this.refocus()
+    }
+
+    ; back to the game, or without it to the window the overlay was opened from
+    refocus() {
+        if FocusWarcraft()
+            return
+        if this.prevWin && WinExist("ahk_id " this.prevWin)
+            try WinActivate("ahk_id " this.prevWin)
     }
 
     setPinned(on) {
@@ -174,8 +280,8 @@ class OverlayPanel {
     ; -- layout --------------------------------------------------------------
     ; Docks to the WC3 client area (or the work area of the screen under the
     ; mouse when the game isn't running).
-    target() {
-        if WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1 {
+    target(screenOnly := false) {
+        if !screenOnly && WinExist(WarcraftIII) && WinGetMinMax(WarcraftIII) != -1 {
             WinGetClientPos(&x, &y, &w, &h, WarcraftIII)
             if w > 200
                 return { x: x, y: y, w: w, h: h }
@@ -200,26 +306,32 @@ class OverlayPanel {
             w := Max(Min(w, t.w), Min(OverlayPanel.MIN_W, t.w))
             x := s.side = "left" ? t.x : t.x + t.w - w
         }
-        this.gui.Move(x, t.y, w, t.h)
-        this.layoutChildren(w, t.h)
+        h := s.height ? Max(Min(s.height, t.h), Min(OverlayPanel.MIN_H, t.h)) : t.h     ; from the top down
+        this.gui.Move(x, t.y, w, h)
+        this.layoutChildren(w, h)
         this.applyOpacity(this.pinned ? s.pinOpacity : s.opacity)
     }
 
     layoutChildren(w, h) {
         g := OverlayPanel.GRIP, side := Ini(this.section, "side", "right")
-        full := side = "full"
+        full := side = "full" || this.windowMode
         gx := side = "left" ? w - g : 0
+        docked := !this.windowMode
         this.grip.Move(gx, 0, g, h)
         this.grip.Visible := !full
+        this.gripH.Move(0, h - g, w, g)         ; the bottom edge: the panel's height (also when it's full width)
+        this.gripH.Visible := docked
         left := full || side = "left" ? 0 : g
         right := full || side != "left" ? w : w - g
         rc := Buffer(16)
-        NumPut("int", left, "int", 0, "int", right, "int", h, rc)
+        NumPut("int", left, "int", 0, "int", right, "int", docked ? h - g : h, rc)
         try this.wvc.Bounds := rc
     }
 
-    ; drag the grip to resize; width is saved when you let go
+    ; drag a grip to resize: the inner edge's width or the bottom edge's height, saved when you let go
     onLButtonDown(wParam, lParam, msg, hwnd) {
+        if this.gripH && hwnd = this.gripH.Hwnd
+            return this.dragHeight()
         if !this.grip || hwnd != this.grip.Hwnd
             return
         CoordMode("Mouse", "Screen")
@@ -239,7 +351,27 @@ class OverlayPanel {
         return 0
     }
 
+    dragHeight() {
+        CoordMode("Mouse", "Screen")
+        this.gui.GetPos(&x, &y, &w, &h)
+        t := this.target()
+        while GetKeyState("LButton", "P") {
+            MouseGetPos(, &my)
+            nh := Max(Min(OverlayPanel.MIN_H, t.h), Min(t.y + t.h - y, my - y))
+            this.gui.Move(, , , nh)
+            this.layoutChildren(w, nh)
+            Sleep(15)
+        }
+        this.gui.GetPos(, , , &h)
+        SetIni(h >= t.h ? 0 : h, this.section, "height")          ; dragged back down to the bottom: full height again
+        return 0
+    }
+
     onSetCursor(wParam, lParam, msg, hwnd) {
+        if this.gripH && wParam = this.gripH.Hwnd {
+            DllCall("SetCursor", "ptr", DllCall("LoadCursor", "ptr", 0, "ptr", 32645, "ptr"))   ; IDC_SIZENS
+            return true
+        }
         if this.grip && wParam = this.grip.Hwnd {
             DllCall("SetCursor", "ptr", DllCall("LoadCursor", "ptr", 0, "ptr", 32644, "ptr"))   ; IDC_SIZEWE
             return true
@@ -267,16 +399,22 @@ class OverlayPanel {
     }
 
     build() {
-        g := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale", "TW Overlay")
+        g := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale", "TWRPG - TW Companion")
         g.BackColor := "0C0D10"
         g.OnEvent("Close", (*) => this.hide())
+        g.OnEvent("Size", ObjBindMethod(this, "onSize"))
+        this.windowMode := false
         this.grip := g.AddText("x0 y0 w" OverlayPanel.GRIP " h100 Background30343E")
+        this.gripH := g.AddText("x0 y94 w100 h" OverlayPanel.GRIP " Background30343E")
         this.gui := g
         g.Show("Hide w800 h600")
 
         dataDir := A_AppData "\tw-companion\webview"
         DirCreate(dataDir)
-        this.wvc := WebView2.create(g.Hwnd, , 0, dataDir)
+        ; the loader DLL by full path: a compiled companion has no script folder of
+        ; its own for WebView2.ahk to look next to
+        dll := A_ScriptDir "\lib\WebView2\" (A_PtrSize * 8) "bit\WebView2Loader.dll"
+        this.wvc := WebView2.create(g.Hwnd, , 0, dataDir, "", 0, dll)
         try this.wvc.DefaultBackgroundColor := 0x100D0CFF    ; site --bg #0C0D10 (bytes A,R,G,B): no white flash
         z := Ini(this.section, "zoom", "")
         if z
@@ -300,7 +438,7 @@ class OverlayPanel {
         this.saveUrl()
         try this.wvc.Close()
         try this.gui.Destroy()
-        this.gui := 0, this.wvc := 0, this.wv := 0, this.grip := 0
+        this.gui := 0, this.wvc := 0, this.wv := 0, this.grip := 0, this.gripH := 0
         this.ready := false, this.pinned := false
     }
 
@@ -339,7 +477,8 @@ class OverlayPanel {
                 this.post(m)
             this.pending := []
         } else if msg = "hide" {
-            this.hide()
+            if !this.windowMode                 ; Esc in the page: closes the panel, not the window
+                this.hide()
         } else if msg = "update" {
             SetTimer(() => this.runUpdate(true), -10)
         } else if InStr(msg, "open|") = 1 {

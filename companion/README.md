@@ -16,7 +16,38 @@ the Microsoft Edge WebView2 Runtime (built into Windows 11; on Windows 10 instal
 it from Microsoft if the overlay won't start). Warcraft III must run in
 **Windowed Fullscreen** (or windowed) for anything to draw over it.
 
-## Run
+## Install (players)
+
+Run **`TWC-Companion-Setup-<version>.exe`**: no AutoHotkey or admin rights
+needed. It installs for the current user into
+`%LOCALAPPDATA%\Programs\TW Companion`, adds a Start Menu (and optional
+desktop) shortcut and an Apps & features entry with an uninstaller. Running a
+newer Setup updates it in place and keeps the settings. `/S` installs silently.
+(`TWC-Companion-<version>.zip` is the same without installing.)
+
+## Build the zip
+
+```
+powershell -ExecutionPolicy Bypass -File companion\build\build.ps1
+```
+
+Compiles `tw-companion.ahk` with Ahk2Exe (downloaded into `build\.tools` on
+the first run), compiles `build\installer.ahk` around it into the Setup exe,
+and zips it with `assets\`, the WebView2 loader DLL and
+`build\README.txt` into `companion\dist\`. The version comes from
+`global version` in `tw-companion.ahk`.
+
+## Run from source
+
+Running `tw-companion.ahk` (not the exe), the companion keeps itself on the
+latest commit of the `beta` branch: on start and once an hour it compares
+its files with GitHub's (by git blob hash), downloads only the changed ones
+and restarts (in the middle of a game: once Warcraft III isn't focused). Tray
+menu: *Check for companion updates*, or *Check for updates* on the Settings page
+(which also shows the current commit and when it last checked). Settings, `HiddenFiles.txt` and `web\`
+are never touched. `[SelfUpdate] branch=` / `auto=0` in the ini change the
+branch or turn it off; a `.no-self-update` file next to the script turns it
+off too (for a dev checkout whose files are ahead of GitHub).
 
 Double-click **`tw-companion.ahk`**. It relaunches itself as admin (WC3 Reforged
 usually runs elevated, and key sends need matching elevation).
@@ -28,26 +59,37 @@ usually runs elevated, and key sends need matching elevation).
 
 | Key | Action | Where |
 |-----|--------|-------|
-| `F10` | toggle the tool on/off | in WC3 |
+| hold `Esc` 1.5 s | pause / resume remaps and macros (a tap is a normal Esc) | in WC3 |
 | `F8`  | show/hide the window | anywhere |
 | `Pause` | pause the game | in WC3 |
 | `Esc` | hide the window | window focused |
 | `Alt+Esc` | exit | anywhere |
-| `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay |
-| `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay |
+| `Shift+Space` | show/hide the TWRPG overlay | in WC3 / overlay / anywhere without WC3 |
+| `Ctrl+Shift+Space` | pin the overlay (see-through, click-through) | in WC3 / overlay / anywhere without WC3 |
 
-A tiny always-on-top overlay (top-left) shows the tool state. When the tool is
-OFF, remap/macro hotkeys are suspended. With *Auto-disable while chatting* on
-(default), pressing `Enter` in WC3 temporarily suspends the tool so macro keys
-don't fire mid-message.
+Remaps and macros are on in a game, never in menus or lobbies (the game's menu
+bar at the top left says which, read from the screen once a second), and they
+step aside while the WC3 chat box is open, so typing is never interrupted. The companion follows `Enter` / `Esc` / clicks and
+also checks the chat box on screen 5 times a second (its gold border; the place
+is known for 1.28 and Reforged at 1920x1080 and found by itself the first time chat opens
+elsewhere), which corrects the tracking when chat is opened or closed some
+other way.
+Holding `Esc` for 1.5 s (or the sidebar's On | Off) pauses them by hand, with a
+short toast. F10 is left to the game (its menu).
+
+Something off? Tray menu > *Debug: show status in game* puts a live line over
+the game (tool, in game, chat, quickcast set up), and `companion-debug.log`
+next to the script records each change and each quickcast with the time.
 
 ## Sections (nav in the window)
 
 - **Loader** (default) — your saves as a list like the site's item rows:
   click ☆ to make a save a favourite (★ saves stay on top, the rest are newest
   first), click the eye to hide one (**Show hidden** brings them back, dimmed).
-  Select a save to edit its **load message**: a chat line sent when it loads;
-  separate options with `|` and one is picked at random each time. The ⓘ next
+  Select a save to edit its **load message**: a chat line sent once it has loaded (after its codes);
+  separate options with `|` and one is picked at random each time, and `%` is
+  the save's name. The default is `% time!` (`knight time!` for `knight#92`);
+  clear the field to send nothing. The ⓘ next
   to the field explains it, and the text beside it shows what will be sent
   (nothing / once per load / N options picked at random). Double-click,
   Enter or **LOAD** loads the selected save (arrows / PgUp / PgDn / wheel to move).
@@ -66,12 +108,15 @@ don't fire mid-message.
     way, and `-l` ignores spaces when matching (`-l sorc 3` finds `sorc3`)
 
   **Numbered saves.** Saves ending in a number (`knight#91`, `knight#92`, or
-  `sniper_007`) are one *series*: a single row showing the newest number with a
-  "N saves ▸" badge (click it to list the older ones), and one star, hide toggle
+  `sniper_007`) are one *series*: a single row named after it (`knight`, or the
+  unnumbered save that heads it, like `Sniper`) with a "N saves ▸" badge (click
+  it to list them all; loading the row loads the newest number), and one star, hide toggle
   and load message for the whole series. `-l knight` loads the newest number.
   `-sn` uses the highest number on disk + 1, so loading an older save and saving
   again never overwrites a newer one; your separator and zero padding are kept
-  (`sniper_007` → `sniper_008`).
+  (`sniper_007` → `sniper_008`). A save without a number heads the series that
+  `-sn` starts from it: `lm` counts as #1 and is listed under `lm#2`, `lm#3`,
+  and its star, hide toggle and message move to the series.
 
   These never reach chat. The companion records what you type in WC3 (only while
   WC3 is focused) since the last Enter/Esc/click; if a line is exactly a loader
@@ -89,21 +134,37 @@ don't fire mid-message.
   Move Stop Hold Attack / Patrol D T F / Q W E R), inventory slots 1–6
   (Numpad 7 8 4 5 1 2) and both mouse buttons. *HUD* shows them laid out
   like the game (click a slot, press a key); *List* is the same as a table.
-  Unset slots keep the game's key; Shift + your key still queues; a key can
+  Your key can be any key or combo, or Mouse 4 / Mouse 5 / middle click / the
+  wheel (with Ctrl, Alt or Shift too; a wheel notch casts once). Unset slots keep the game's key; Shift + your key still queues; a key can
   only be on one slot (setting it again moves it), and keys the companion
-  uses (F8, F10, macros, overlay) are refused. Esc or Backspace (or *Clear*)
+  uses (F8, Esc, macros, overlay) are refused. Esc or Backspace (or *Clear*)
   clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.
   **Quickcast** casts at the cursor; held, it repeats (every 40 ms by default).
-  *Quickcast setup* on the toolbar runs a one-time setup in game (Insert three
-  times: over Move, over the bottom-right button, then while a skill waits for
-  a target), per game version and window size. After that the companion clicks
+  *Quickcast Setup* on the toolbar runs a one-time setup in game, per game
+  version and window size (kept in the ini, so updates don't lose it; it
+  also tunes itself as you play): point at Move and press Space, point at the
+  command card's bottom-right button and press Space, then press A (Attack)
+  and Space while the card shows only Cancel. After that the companion clicks
   only when the command card shows the game is waiting for a target, read from
-  the screen, no injection, same on 1.28 and Reforged. Without a setup it uses
-  LCH's method (selection saved to control groups 9 and 0 around each cast).
+  the screen, no injection, same on 1.28 and Reforged. Until then, quickcast
+  slots just send their key. Held, a quickcast key repeats every 40 ms, but
+  waits 450 ms after a cast (both in the Quickcast Setup window) so the reticle
+  doesn't reopen while your hero turns or walks into range.
 - **Macros** — hotkey → chat-line macros (seeded with `-recall`, `-a`,
-  `-chest im lagging`, GET GOOD). Message is multi-line: one chat line per row.
-- **Host** — whisper a host bot for private/public lobbies with a `+1` game-name
-  incrementer. In-game: `-h`/`-host`, `-hp`/`-hostpub`.
+  `-chest im lagging`, GET GOOD), listed like the Loader's saves: key, first
+  line and line count; drag a row to reorder, ✕ deletes. Select one to edit it
+  below the list: the chat lines on the left (one per row; changes save as you
+  type), the hotkey on the right with **Bind Key** / **Clear** like Remap
+  (cleared = kept but off). **+ New macro** starts an empty one, added with its
+  first line. Keys the companion already uses (remaps, the overlay keys, F8,
+  Enter, other macros) are refused.
+- **Host** — whisper a host bot for private/public lobbies. The bots are a list
+  like the Loader's (TWRPG's, plus any you add; ✕ removes yours); each keeps its
+  own trigger and extra commands, edited under the list with the game name (`+1`
+  bumps it). In Warcraft III chat: `-h lee sey` hosts a private lobby "sey" on
+  leebot (the bot by name: exact, starts with, contains), `-hp` the same in
+  public; `-h sey` uses the selected bot, plain `-h` / `-hp` the selected bot and
+  the last game name. Also `-host` / `-hostpub`; like `-l`, they never reach chat.
 - **Settings** — startup behaviour, load timing, TWRPG folder, reset.
 - **Overlay** — hotkeys, dock side, opacity, unload timer, update options.
 
@@ -120,6 +181,11 @@ notes) in a panel docked over the game, like Path of Exile's Awakened Trade:
   clicks go through to the game, as a reference while you play.
   `Shift+Space` unpins it.
 - The hotkeys are off while you type in WC3 chat, so `Shift+Space` stays a space.
+- Works without the game too: while Warcraft III isn't running the hotkeys work
+  in any app and the panel docks to the screen under the mouse; hiding or
+  pinning it gives focus back to the app you opened it from. With the game
+  running they only work in WC3 unless you tick *Hotkeys also work in other
+  apps* on the Overlay page.
 - Docks right by default (left / full on the Overlay page); drag the inner
   edge to resize. Width, zoom (`Ctrl+wheel`) and the last page are remembered.
 - Works fully **offline**: the site is bundled in `web/TWC` and served locally
@@ -151,10 +217,11 @@ lib/Common.ahk      helpers, INI, InputHook, RegisterHotkey
 lib/WebView2/       thqby's WebView2.ahk (MIT) + Microsoft's WebView2Loader.dll
 lib/ComVar.ahk, lib/Promise.ahk   its dependencies
 engine/             GUI-free logic that the window calls directly:
-  Loader Remap Quickcast Macros Host Settings Updater
+  Loader Remap Quickcast ChatBox InGame Macros Host Settings Updater SelfUpdate
 ui/OverlayPanel.ahk the WebView2 overlay window (hotkeys, docking, pin, messages)
 web/TWC/            offline copy of the TWRPG site (managed by the updater)
-assets/bg.png       pre-rendered page + card panel + TWRPG wordmark
+assets/bg*.png      pre-rendered page + card panel + TWRPG wordmark, one per
+                    display scale (bg.png = 100%, bg@125 ... bg@200.png)
 assets/Cinzel.ttf   the site's display font (OFL, see Cinzel-OFL.txt), loaded
                     privately at startup for section titles
 ```
@@ -174,7 +241,8 @@ window calls directly — no IPC, no bridge.
 
 ### Regenerating the background
 
-`assets/bg.png` is 880×510 and matches the window layout (`W`, `H`, `SIDE_W`,
+`assets/bg.png` is 880×510 (the `bg@NNN.png` copies are the same drawn at
+125–200% so the window shows the one for your display scale unstretched) and matches the window layout (`W`, `H`, `SIDE_W`,
 `CX` in `tw-companion.ahk`). To tweak it, edit and
 run `assets/generate_bg.py` (Pillow) from the `assets/` folder. Its colours are the
 site's tokens from `src/styles/base.css`, the same ones as the `C` palette in

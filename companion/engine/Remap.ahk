@@ -1,9 +1,11 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
-;  RemapEngine - your keys for the WC3 command card, inventory and mouse.
-;  Slots follow the HUD: the 4x3 command card (TWRPG's layout), the 2x3
-;  inventory and the two mouse buttons. A slot you give a key to sends that
-;  slot's game key; a slot without one is left alone (the game's key works).
+;  RemapEngine - your keys for the WC3 command card and inventory.
+;  Slots follow the HUD: the 4x3 command card (TWRPG's layout) and the 2x3
+;  inventory. A slot you give a key to sends that slot's game key; a slot
+;  without one is left alone (the game's key works). (The two mouse-button
+;  slots were dropped on 2026-10-26, the user's call: count("mouse") is 0, so
+;  they're neither shown nor bound; old [Remap] mouse keys are ignored.)
 ; ============================================================================
 class RemapEngine {
     section := "Remap"
@@ -17,6 +19,12 @@ class RemapEngine {
     static MOUSE := ["Left", "Right"]
     static NO_QC := Map(2, 1, 3, 1)        ; Stop and Hold never take a target
     registered := []
+    holding := Map()            ; quickcast key -> held (cleared by its key-up hotkey)
+    sendFn := SendInput         ; how keyCastHeld sends (a check swaps it: never real keys)
+    qcRecent := [], qcMissRun := 0      ; the last 10 quickcast hit delays (ms); misses in a row
+    qcLate := 0                         ; the late-reticle watch running after a miss (lateWatch)
+    qcTry := 0, qcStart := 0, qcBase := ""   ; the press being served: its try (1 = the press, 2+ = repeats while held), start, key
+    qkVks := []                         ; the game key (virtual key) of each quickcast slot for the game module (pushKeys)
 
     __New() {
         this.migrate()
@@ -28,7 +36,7 @@ class RemapEngine {
         return group = "card" ? RemapEngine.CARD[i].game : group = "inv" ? RemapEngine.INV_TARGETS[i] : RemapEngine.MOUSE[i]
     }
     yourKey(group, i) => Ini(this.section, group i, "")
-    count(group) => group = "card" ? 12 : group = "inv" ? 6 : 2
+    count(group) => group = "card" ? 12 : group = "inv" ? 6 : 0
     slotName(group, i) => group = "card" ? RemapEngine.CARD[i].name : group = "inv" ? "Item " i : RemapEngine.MOUSE[i] " click"
     qcAllowed(group, i) => group = "inv" || (group = "card" && !RemapEngine.NO_QC.Has(i))
 
@@ -106,14 +114,14 @@ class RemapEngine {
     reserved(key) {
         global macros, webOverlay
         k := Norm(key)
-        for c in [["f8", "the show / hide window key"], ["f10", "the tool toggle"], ["pause", "the pause key"],
+        for c in [["f8", "the show / hide window key"], ["pause", "the pause key"],
                   ["enter", "the chat key"], ["numpadenter", "the chat key"], ["escape", "WC3's cancel key"]]
             if k = c[1]
                 return c[2]
         if IsSet(macros) && macros
             for m in macros.list()
                 if Norm(m.hotkey) = k
-                    return "a macro (" StrSplit(m.text, "`n")[1] ")"
+                    return "a macro (" m.summary ")"
         if IsSet(webOverlay) && webOverlay {
             s := webOverlay.get()
             if s.hotkey && Norm(s.hotkey) = k
@@ -162,6 +170,10 @@ class RemapEngine {
             reg.refresh()
         }
         this.registered := []
+        this.qkVks := []
+        for group in ["card", "inv"]
+            loop this.count(group)
+                this.qkVks.Push(this.qcAllowed(group, A_Index) && Integer(Ini(this.section, group "QC" A_Index, 0)) ? GetKeyVK(this.gameKey(group, A_Index)) : 0)
         used := Map()                           ; every key a slot was given
         for group in ["card", "inv", "mouse"]
             loop this.count(group)
@@ -181,13 +193,29 @@ class RemapEngine {
                     : qc ? this.castQuick.Bind(this, game, key)
                     : this.castPlain.Bind(this, game, key)
                 this.registered.Push(RegisterHotkey(key, fn, WarcraftIII, true))
+                ; quickcast repeats while held: its key-up ends the repeat (a wheel
+                ; notch has no "up" and can't be held)
+                if qc && group != "mouse" && !IsWheel(key)
+                    this.registered.Push(RegisterHotkey(key " up", this.released.Bind(this, HotkeyBase(key)), WarcraftIII, true))
             }
         }
+        this.pushKeys()
     }
 
     refresh() {
         for reg in this.registered
             reg.refresh()
+        this.pushKeys()
+    }
+    ; the game module's quickcast keys (1.28f, as WFE: it presses the slot's button as
+    ; the key comes): each slot's game key, on only while the companion's keys are
+    ; (in a game, not paused, chat closed), since the keys also reach it straight
+    pushKeys() {
+        global gameModule, toolEnabled, chatting, inGame
+        if !IsSet(gameModule) || !gameModule
+            return
+        on := gameModule.enabled && gameModule.quickcast && toolEnabled && !chatting && inGame && InStr(WC3WindowKey(), "reforged") != 1
+        gameModule.pushKeys(this.qkVks, on)
     }
 
     ; -- actions -------------------------------------------------------------
@@ -199,54 +227,375 @@ class RemapEngine {
     ; Shift held on a key that doesn't use Shift itself = WC3's queue (shift-queue)
     queued(yourKey) => GetKeyState("Shift", "P") && !InStr(HotkeyMods(yourKey), "+") ? "+" : ""
 
+    ; the module takes quickcast keys now (cached 250 ms): 0, or the repeat settings { repeat, interval }
+    keyCastNow() {
+        global quickcast, gameModule
+        static at := -1000, kc := 0, was := -1
+        if A_TickCount - at < 250
+            return kc
+        at := A_TickCount
+        ok := InStr(WC3WindowKey(), "reforged") != 1 && gameModule.qcReady() && gameModule.keyCastReady()
+        if ok != was && was != -1
+            DebugLog("quickcast: the game module's keys " (ok ? "are ready again" : "aren't ready: " gameModule.qcWhyNot()))
+        was := ok
+        s := ok ? quickcast.get() : 0
+        kc := ok ? { repeat: s.repeat, interval: s.interval } : 0
+        return kc
+    }
+    ; The key to the game module, which presses its button and clicks (as WFE). Held, it goes again every
+    ; [Quickcast] interval (40 ms) until let go (WFE's AutoCast repeats as long), unless repeat is off.
+    ; Paced here, not by the key's own repeat: Windows waits its repeat delay (a quarter to half a second)
+    ; before the first one, the pause after the first press a user felt on an item key (2026-10-29).
+    ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left it
+    ; "down" and the loop pressed on by itself (a user's report, 2026-10-29). A key that isn't the one sent
+    ; (F1 -> an item slot) is asked of Windows too (GetAsyncKeyState can't miss a key-up), and goes until
+    ; let go as WFE's; one sent as itself (its own key quickcasts) can't be told apart from what's sent, so
+    ; it keeps the 20 s most a repeat lasts. t0: when the hotkey's thread started (QpcMs), for the timing line.
+    keyCastHeld(game, yourKey, base, kc, t0) {
+        static told := 0
+        q := this.queued(yourKey)
+        (this.sendFn)(q this.keyText(game))
+        this.keyTiming(QpcMs() - t0)
+        this.holding[base] := true, start := A_TickCount, presses := 1
+        if told++ < 3
+            DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
+        same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
+        vk := GetKeyVK(base), why := ""
+        while kc.repeat && !IsWheel(base) {
+            if (why := this.waitHeld(base, same ? start : A_TickCount, kc.interval)) != ""
+                break
+            if !same && vk && !(DllCall("GetAsyncKeyState", "int", vk, "short") & 0x8000) {
+                why := "the key isn't down (Windows says; its key-up never came)"
+                break
+            }
+            (this.sendFn)(q this.keyText(game)), presses++
+        }
+        if presses > 1
+            DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " kc.interval " ms): " why)
+        this.holding[base] := false
+    }
+    ; how long a press took from its hotkey to the key sent: every 25, the median and the slowest
+    keyTiming(ms) {
+        static list := []
+        list.Push(ms)
+        if list.Length < 25
+            return
+        sorted := list.Clone(), n := sorted.Length
+        loop n - 1 {                            ; insertion sort (25)
+            i := A_Index + 1, v := sorted[i], j := i - 1
+            while j >= 1 && sorted[j] > v
+                sorted[j + 1] := sorted[j], j--
+            sorted[j + 1] := v
+        }
+        DebugLog("quickcast keys: the last 25 presses: sent " Round(sorted[13], 1) " ms after the hotkey (median), slowest " Round(sorted[n], 1) " ms")
+        list := []
+    }
+
     castPlain(game, yourKey) {
         SendInput(this.queued(yourKey) this.keyText(game))
+        DebugLog("remap " ReadableHotkey(yourKey) " -> " game " (" WC3WindowKey() ")")
     }
 
     ; Quickcast: the ability goes off at the cursor. Held, it repeats until the
     ; key is let go (one hotkey thread loops; the key's auto-repeat is ignored).
+    ; It stops on the first of: the key's own key-up, the key no longer down,
+    ; the game losing focus (overlay, alt-tab), the tool going Off or chat
+    ; opening, or 20 s as a last resort, so a key-up that went missing (focus
+    ; moving mid-press) can never leave it casting forever. After a cast it
+    ; waits castGap (450 ms) before pressing again: the hero may still be
+    ; turning or walking into range, and each press reopens the reticle (its
+    ; animation and sound) and gives the order again.
+    ; Two ways to know the game waits for a target: the game hook (1.28f
+    ; only: the injected game module asks the game; no setup) and the screen
+    ; (1.28f and Reforged: reads the command card; set up per window size).
+    ; On 1.28f the hook goes first, the screen when the hook is off or not
+    ; ready. Neither: the key goes alone.
     castQuick(game, yourKey) {
-        global quickcast
+        global quickcast, gameModule
+        static hinted := Map()          ; window keys already hinted about
+        t0 := QpcMs()
+        ; the module's keys (as WFE), decided at most every 250 ms: the key goes out first, before anything is
+        ; read (each press read ~10 ini settings and the game's state first: a delay a user felt, 2026-10-29)
+        if (kc := this.keyCastNow()) {
+            base := HotkeyBase(yourKey)
+            if !IsWheel(base) && this.holding.Get(base, false)
+                return                          ; the key's own repeat: this thread presses again itself
+            return this.keyCastHeld(game, yourKey, base, kc, t0)
+        }
         q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
-        cal := s.forceLch ? 0 : quickcast.current()
+        reforged := InStr(WC3WindowKey(), "reforged") = 1
+        hookOn := !reforged && gameModule.quickcast, screenOn := QuickcastScreenOn()
+        inGameQc := hookOn && gameModule.qcReady()
+        ; the game hook going (not) ready, logged when it changes, with why: a quickcast that
+        ; stops working shows here when and why it went to the screen or the key alone
+        static wasReady := -1
+        if hookOn && inGameQc != wasReady {
+            if wasReady != -1 || !inGameQc
+                DebugLog("quickcast: the game hook " (inGameQc ? "is ready again" : "isn't ready: " gameModule.qcWhyNot()))
+            wasReady := inGameQc
+        }
+        ; 1.28f: the game module presses the slot's button as the key comes and clicks at once
+        ; (as WFE): only the key goes. Held, it goes again every [Quickcast] interval (40 ms) until
+        ; let go (WFE's AutoCast repeats as long), unless repeat is off. Paced here, not by the
+        ; key's own repeat: Windows waits its repeat delay (a quarter to half a second) before the
+        ; first one, the pause after the first press a user felt on an item key (2026-10-29)
+        if inGameQc && gameModule.keyCastReady() {
+            if !IsWheel(base) && this.holding.Get(base, false)
+                return
+            return this.keyCastHeld(game, yourKey, base, { repeat: s.repeat, interval: s.interval }, t0)
+        }
+        cal := !inGameQc && screenOn ? quickcast.current() : 0
+        ; neither: the key alone, with a hint once per window (a fullscreen /
+        ; windowed switch or a resize changes it; none when both switches are off)
+        if (hookOn || screenOn) && !inGameQc && !cal && !hinted.Has(k := WC3WindowKey()) {
+            hinted[k] := true
+            DebugLog("quickcast: " (hookOn ? "the game hook isn't ready, " : "") (screenOn ? "the screen isn't set up for " k : "the screen is off") ": the key alone")
+            Toast(hookOn ? "Quickcast: the game hook isn't ready (" gameModule.qcStatusText() ")" (screenOn ? "; or set up Screen quickcast: Remap page > Screen > Options" : "")
+                : "Quickcast isn't set up for this window size (" WC3WindowName(k) "): Remap page > Screen > Options", "", 6000)
+        }
+        this.holding[base] := true, start := A_TickCount
+        this.qcStart := start, this.qcBase := base
+        hits := 0
         loop {
-            if cal
-                this.quickSmart(game, q, cal)
+            this.qcTry := A_Index, hit := false
+            if inGameQc
+                hit := this.quickModule(game, q, A_Index > 1)
+            else if cal
+                hit := this.quickSmart(game, q, cal, A_Index > 1)
             else
-                this.quickLch(game, q)
-            if !s.repeat || !GetKeyState(base, "P") || !WinActive(WarcraftIII)
+                SendInput(q this.keyText(game)), DebugLog("quickcast " game ": not set up for " WC3WindowKey() ", key only" this.tryTag())
+            hits += hit
+            if !s.repeat {
+                why := "repeat while held is off"
                 break
-            Sleep(s.interval)
-            if !GetKeyState(base, "P")
+            }
+            if (why := this.waitHeld(base, start, hit ? Max(s.interval, s.castGap) : s.interval)) != ""
                 break
         }
+        ; how the press ended; a repeat logs it always, a single press only when not let go as usual
+        tries := this.qcTry
+        if tries > 1 || why != "the key was let go"
+            DebugLog("quickcast " game ": done after " tries (tries = 1 ? " try" : " tries") " (" hits " cast) in "
+                . Round((A_TickCount - start) / 1000, 1) " s: " why)
+        this.holding[base] := false, this.qcTry := 0
+    }
+    ; wait ms while the key stays held (checked often, so letting go ends it at
+    ; once) -> "" if it still is, or why the repeat ends (heldWhy)
+    waitHeld(base, start, ms) {
+        endAt := A_TickCount + ms
+        loop {
+            if (why := this.heldWhy(base, start)) != ""
+                return why
+            if A_TickCount >= endAt
+                return ""
+            Sleep(Min(15, endAt - A_TickCount))
+        }
+    }
+    released(base) {
+        this.holding[base] := false
+    }
+    ; "" while the key is held and the repeat may go on, else why not
+    heldWhy(base, start) {
+        global toolEnabled, chatting, inGame
+        try down := !IsWheel(base) && GetKeyState(base, "P")
+        catch
+            down := false
+        return !this.holding.Get(base, false) ? "the key was let go"
+            : !down ? "the key isn't down any more (its key-up never came)"
+            : !WinActive(WarcraftIII) ? "the game isn't in front"
+            : !toolEnabled ? "the tool went off"
+            : chatting ? "the chat is open"
+            : !inGame ? "not in a game"
+            : A_TickCount - start >= 20000 ? "20 s held, the most a repeat lasts"
+            : ""
+    }
+    ; for the log: which try of a held key this is (the press itself: nothing),
+    ; and whether the key was still down then, to tell a repeat from a lone press
+    tryTag() {
+        if this.qcTry <= 1
+            return ""
+        try down := GetKeyState(this.qcBase, "P")
+        catch
+            down := false
+        return " [repeat " (this.qcTry - 1) ", " Round((A_TickCount - this.qcStart) / 1000, 1) " s after the press, key "
+            . (down ? "down" : "up") (this.holding.Get(this.qcBase, false) ? "" : ", key-up seen") "]"
     }
     ; send the key, then click only once the game waits for a target: an
     ; instant spell, a cooldown or "not enough mana" never gets a stray click
-    quickSmart(game, q, cal) {
+    ; The card changes a frame or two after the key; it's read back to back
+    ; from right after the key (no waits in between), and a targeted cast clicks
+    ; the moment it's seen. How long to keep looking adapts: 3x the typical
+    ; delay of the last hits (60-150 ms), so a cooldown or the T menu gives up
+    ; quickly and a held key repeats sooner. Misses don't stretch it (holding a
+    ; key on cooldown used to push every look to 200 ms); every third miss in a
+    ; row looks for 200 ms once, in case the game got slower. The log line says
+    ; what was seen.
+    ; again: a repeat while the key is held. A busy game can draw the reticle
+    ; after the look gave up; if it's up from the last press, it's clicked
+    ; instead of pressing the key over it.
+    quickSmart(game, q, cal, again := false) {
         global quickcast
+        this.stopLate()
+        if again && quickcast.targeting(cal) {
+            SendInput(q "{Click}")
+            this.qcMissRun := 0
+            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): clicked" this.tryTag())
+            return true
+        }
+        limit := this.lookLimit()
         SendInput(q this.keyText(game))
-        t := A_TickCount
-        while A_TickCount - t < 90 {        ; the card changes a frame or two later
-            Sleep(10)
-            if quickcast.targeting(cal) {
+        t := QpcMs(), checks := 0, best := { same: -1, diffs: "" }
+        while QpcMs() - t < limit {
+            checks++
+            hit := quickcast.targeting(cal)
+            if quickcast.seen.same > best.same
+                best := quickcast.seen
+            if hit {
+                quickcast.learnCapture(cal, true)       ; (first hit only: tests the window read, still targeting)
                 SendInput(q "{Click}")
+                this.qcMissRun := 0, quickcast.noteHit()
+                ms := QpcMs() - t
+                this.noteHit(ms)
+                DebugLog("quickcast " game ": clicked " Round(ms, 1) " ms after the key (" checks " reads, "
+                    . (quickcast.fromWindow.Get(WC3WindowKey(), false) ? "game window" : "screen") ")" this.tryTag())
                 return true
             }
         }
+        ; either way of reading (the screen, the game window) can go stale, its
+        ; picture no longer updating: one look the other way tells. If that one
+        ; shows targeting, click and read that way from now on. (A key on
+        ; cooldown looks the same both ways, so it never switches for that.)
+        k := WC3WindowKey(), win := quickcast.fromWindow.Get(k, false)
+        if quickcast.targeting(cal, !win) {
+            quickcast.fromWindow[k] := !win, quickcast.misses := 0
+            SendInput(q "{Click}")
+            DebugLog("quickcast " game ": the " (win ? "game window's" : "screen's") " picture was stale, the "
+                . (win ? "screen" : "game window") " shows targeting: clicked, reading that way from now on" this.tryTag())
+            this.qcMissRun := 0
+            return true
+        }
+        quickcast.learnCapture(cal, false)
+        quickcast.noteMiss(cal, best.same)
+        this.qcMissRun++
+        this.lateWatch(game, q, cal, t)
+        static lastDiffs := "", frozen := 0
+        frozen := best.diffs != "" && best.diffs == lastDiffs ? frozen + 1 : 0
+        lastDiffs := best.diffs
+        if frozen = 5 {
+            ; 6 misses with the very same card (fine on a cooldown; if the reticle
+            ; was up, the picture is stuck both ways): what both ways see, and the window
+            quickcast.targeting(cal, false), viaScreen := quickcast.seen.diffs
+            quickcast.targeting(cal, true), viaWindow := quickcast.seen.diffs
+            hwnd := WinExist(WarcraftIII), WinGetClientPos(&cx, &cy, &cw, &ch, hwnd)
+            try proc := WinGetProcessName(hwnd)
+            catch
+                proc := "?"
+            DebugLog("quickcast: the same card 6 misses in a row (reading the " (win ? "game window" : "screen") "). Screen "
+                . viaScreen " / game window " viaWindow " / window " Format("0x{:X}", hwnd) " " proc ' "' WinGetTitle(hwnd) '" at ' cx "," cy " " cw "x" ch)
+        }
+        DebugLog("quickcast " game ": no click, not targeting: best " best.same "/11 slots empty (needs 8) in " checks
+            . " reads / " Round(QpcMs() - t) " ms (gives up at " Round(limit) "); slot differences " best.diffs this.tryTag())
         return false
     }
-    ; LCH's method (no calibration needed): save the selection to groups 9 and
-    ; 0, cast with a click, then reselect, in case the click selected a unit
-    ; because the cast didn't happen. Two groups so the recall is never a
-    ; double-tap (which would move the camera).
-    quickLch(game, q) {
-        SendInput("{Ctrl Down}{9}{0}{Ctrl Up}")
-        SendInput(q this.keyText(game))
-        SendInput(q "{Click}")
-        SendInput("{9}{0}")
+    ; how long to look for the reticle after the key (see quickSmart)
+    lookLimit() {
+        limit := 150
+        if this.qcRecent.Length >= 3 {
+            sorted := this.qcRecent.Clone(), SortBy(sorted, (a, b) => a - b)
+            limit := Max(60, Min(150, 3 * sorted[(sorted.Length + 1) // 2]))
+        }
+        if this.qcMissRun >= 3 && Mod(this.qcMissRun, 3) = 0
+            limit := 200
+        return limit
     }
-
+    ; quickSmart through the 1.28 game module: send the key, then the module
+    ; clicks the moment the game waits for a target, or gives up at the
+    ; deadline (same adaptive look as the screen's). A repeat first asks for a
+    ; click on a reticle still up from the last press. After a miss the late
+    ; watch keeps asking for 500 ms, as with the screen.
+    quickModule(game, q, again := false) {
+        global gameModule
+        this.stopLate()
+        if again && gameModule.qcWait(seq := gameModule.qcAsk(20, q != ""), 20) = 1 {
+            this.qcMissRun := 0
+            DebugLog("quickcast " game ": the reticle from the last press came up late (a busy game): the game module clicked" this.tryTag())
+            return true
+        }
+        ; the request first, then the key: the module clicks as the game opens the target mode
+        ; (on the game thread), which can be before a request written after the key
+        limit := this.lookLimit()
+        seq := gameModule.qcAsk(limit, q != "")
+        SendInput(q this.keyText(game))
+        t := QpcMs()
+        r := gameModule.qcWait(seq, limit)
+        if r = 1 {
+            ms := gameModule.qcMs()
+            this.qcMissRun := 0, this.noteHit(ms)
+            DebugLog("quickcast " game ": the game module clicked " ms " ms after the key" this.tryTag())
+            return true
+        }
+        this.qcMissRun++
+        DebugLog("quickcast " game ": no click, " (r = 3 ? "the game wanted a target but wasn't in front" : "the game didn't want a target") " within " Round(limit) " ms (game module)" this.tryTag())
+        if r = 2
+            this.lateWatch(game, q, 0, t)
+        return false
+    }
+    ; end a late watch still running (and its game module request)
+    stopLate() {
+        global gameModule
+        if !this.qcLate
+            return
+        SetTimer(this.qcLate.fn, 0), this.qcLate.ih.Stop()
+        gameModule.qcCancel(this.qcLate.seq)
+        this.qcLate := 0
+    }
+    noteHit(ms) {
+        this.qcRecent.Push(ms)
+        if this.qcRecent.Length > 10
+            this.qcRecent.RemoveAt(1)
+    }
+    ; After a miss the reticle may still come up (a busy game draws it late):
+    ; watched for 500 ms and clicked if it shows, unless you pressed a key or a
+    ; mouse button meanwhile (then what's on screen is yours). The delay counts
+    ; as a hit, so the looks grow longer while the game is slow.
+    ; cal = 0: through the game module (it clicks; this only ends the request early)
+    lateWatch(game, q, cal, t) {
+        global quickcast, gameModule
+        endAt := A_TickCount + 500, ih := InputHook("V"), tag := this.tryTag()
+        seq := cal ? 0 : gameModule.qcAsk(500, q != "")
+        ih.MinSendLevel := 1                    ; your keys, not the companion's own
+        ih.KeyOpt("{All}", "N")
+        ih.OnKeyDown := (*) => (ih.Stop())
+        ih.Start()
+        tick() {
+            global chatting, toolEnabled
+            if !ih.InProgress || A_TickCount > endAt || GetKeyState("LButton", "P") || GetKeyState("RButton", "P")
+                || !WinActive(WarcraftIII) || chatting || !toolEnabled {
+                SetTimer(tick, 0), ih.Stop(), gameModule.qcCancel(seq), this.qcLate := 0
+                return
+            }
+            if !cal {
+                if !(r := gameModule.qcResult(seq))
+                    return
+                SetTimer(tick, 0), ih.Stop(), this.qcLate := 0
+                if r = 1 {
+                    ms := QpcMs() - t
+                    this.noteHit(ms), this.qcMissRun := 0
+                    DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): the game module clicked" tag)
+                }
+                return
+            }
+            if quickcast.targeting(cal) {
+                SetTimer(tick, 0), ih.Stop(), this.qcLate := 0
+                SendInput(q "{Click}")
+                ms := QpcMs() - t
+                this.noteHit(ms), this.qcMissRun := 0
+                DebugLog("quickcast " game ": the reticle came up late, " Round(ms) " ms after the key (a busy game): clicked" tag)
+            }
+        }
+        this.qcLate := { fn: tick, ih: ih, seq: seq }
+        SetTimer(tick, 15)
+    }
     clickMouse(side, yourKey) {
         SendInput(this.queued(yourKey) "{Click " side "}")
     }

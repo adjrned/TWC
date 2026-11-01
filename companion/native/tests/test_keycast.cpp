@@ -1,0 +1,204 @@
+// harness: quickcast keys as WFE does them (KeyCast): the key's button pressed on the game thread
+// through its own click (vtable +0x6c, 1, [+0x138] bit 2 during), then the click at the cursor
+// when the game wants a target; the key kept from the game. A fake game image and a fake
+// "Warcraft III" window of our own (never shown in front, no real keys or clicks: g_click is ours,
+// key states are faked)
+#define GetKeyState FakeKeyState
+#define GetAsyncKeyState FakeAsync
+#include "../twc-game.cpp"
+#include "check.h"
+#undef GetKeyState
+#undef GetAsyncKeyState
+static int syncVk[256], asyncVk[256];
+SHORT WINAPI FakeKeyState(int vk) { return syncVk[vk & 0xff] ? (SHORT)0x8000 : 0; }
+SHORT WINAPI FakeAsync(int vk) { return asyncVk[vk & 0xff] ? (SHORT)0x8000 : 0; }
+static BYTE *img;
+static BYTE ui[0x400], card[0x200], btns[12][0x200], *rowBtns[3][4], rowsTab[3][16], chat[0x200], upper[0x200];
+static BYTE inv[0x200], invTab[6][8], items[6][0x200], datas[18][0x700], abils[18][0x100], targetMode[0x40];
+static void *__fastcall FakeGetUi(int, int) { return ui; }
+static int presses, pressArg, flagsSeen; static void *pressThis; static bool aims[0x1000];
+static int __fastcall FakePress(BYTE *b, int, int arg) {
+    presses++, pressArg = arg, pressThis = b, flagsSeen = *(DWORD *)(b + BTN_FLAGS);
+    if (aims[(b - (BYTE *)0) & 0xfff])
+        *(DWORD *)(ui + UI_MODE) = *(DWORD *)(ui + UI_TARGET_MODE);  // a targeted ability: the game asks for a target
+    return 1;
+}
+static int __fastcall FaultPress(BYTE *, int, int) { return *(volatile int *)8; }
+static int clicks; static DWORD clickFlags;
+static void FakeClick(DWORD f) { clicks++, clickFlags = f; }
+static int gameKeys, gameChars, gameEsc;
+static DWORD fakeNow;
+static DWORD WINAPI FakeNow() { return fakeNow; }
+static LRESULT CALLBACK GameProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
+    if (m == WM_KEYDOWN)
+        gameKeys++, gameEsc += wp == VK_ESCAPE;
+    if (m == WM_CHAR)
+        gameChars++;
+    return DefWindowProcA(w, m, wp, lp);
+}
+static void Stub(DWORD rva, void *to) { BYTE *p = img + rva; p[-1] = 0xCC; p[0] = 0xE9; *(LONG *)(p + 1) = (LONG)((BYTE *)to - (p + 5)); }
+static void Button(BYTE *b, int k, bool aim, DWORD vt) {
+    *(DWORD *)b = vt; *(DWORD *)(b + BTN_FLAGS) = 0x10; *(BYTE **)(b + BTN_DATA) = datas[k];
+    *(BYTE **)(datas[k] + 0x6d4) = abils[k]; *(DWORD *)(abils[k] + 0x34) = 'AHtb';
+    aims[(b - (BYTE *)0) & 0xfff] = aim;
+}
+static void Idle() { *(DWORD *)(ui + UI_MODE) = 0x99; }
+int main() {
+    strcpy_s(g_logPath, "keycast.log"); DeleteFileA("keycast.log");
+    static Shared sh; g_shared = &sh;
+    img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    g_base = img; g_imageSize = 0x1000000;
+    Stub(0x200000, FakePress); Stub(0x200100, FaultPress);
+    DWORD old; VirtualProtect(img + 0xaaa000, 0x4000, PAGE_READWRITE, &old);
+    DWORD *btnVt = (DWORD *)(img + 0xaac000); btnVt[BTN_CLICK / 4] = (DWORD)(img + 0x200000);
+    DWORD *badVt = (DWORD *)(img + 0xaac400); badVt[BTN_CLICK / 4] = (DWORD)(img + 0x200100);
+    *(DWORD *)ui = (DWORD)(img + RVA_UI_VTABLE); g_uiVtable = *(DWORD *)ui;
+    *(BYTE **)(ui + UI_TARGET_MODE) = targetMode; Idle();
+    *(BYTE **)(ui + 0x3c8) = card; *(BYTE **)(ui + UI_CHAT_STATE) = chat; *(BYTE **)(ui + UI_UPPER_BAR) = upper; *(DWORD *)(upper + 0x164) = 1;
+    *(int *)(card + 0x124) = 3; *(int *)(card + 0x128) = 4; *(BYTE **)(card + 0x154) = (BYTE *)rowsTab;
+    for (int i = 0; i < 12; i++) { Button(btns[i], i, i != 9, (DWORD)btnVt); rowBtns[i / 4][i % 4] = btns[i]; }
+    for (int r = 0; r < 3; r++) { *(DWORD *)(rowsTab[r] + 4) = 4; *(BYTE ***)(rowsTab[r] + 8) = rowBtns[r]; }
+    BYTE *console = ui + 0x300; *(BYTE **)(ui + 0x3c4) = console; *(BYTE **)(console + 0x148) = inv;
+    *(int *)(inv + 0x12c) = 6; *(BYTE **)(inv + 0x130) = (BYTE *)invTab;
+    for (int i = 0; i < 6; i++) { Button(items[i], 12 + i, false, (DWORD)btnVt); *(BYTE **)(invTab[i] + 4) = items[i]; }
+    g_getUi = FakeGetUi; g_click = FakeClick;
+    // TWRPG's keys: Q W E R the bottom row (slots 8-11), items on the numpad
+    g_shared->qkVk[8] = 'Q', g_shared->qkVk[9] = 'W', g_shared->qkVk[10] = 'E', g_shared->qkVk[12] = VK_NUMPAD7;
+    WNDCLASSA wc = {}; wc.lpfnWndProc = GameProc; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);
+    RegisterClassA(&wc);
+    HWND wnd = CreateWindowA("Warcraft III", "Warcraft III", WS_OVERLAPPEDWINDOW, -3000, -3000, 200, 100, 0, 0, wc.hInstance, 0);
+    ShowWindow(wnd, SW_SHOWNOACTIVATE);
+
+    CHECK(!KeyCast('Q') && presses == 0, "off (the companion hasn't asked): nothing");
+    g_shared->qkOn = 1; FollowKeyCast(0);
+    CHECK(g_shared->qkState == 1 && g_oldProc, "on: the game window is ours (state %lu)", g_shared->qkState);
+    bool r = KeyCast('Q');
+    CHECK(r && presses == 1 && pressThis == btns[8] && pressArg == 1 && (flagsSeen & 2) && *(DWORD *)(btns[8] + BTN_FLAGS) == 0x10 && clicks == 1 && clickFlags == 0
+        && g_shared->qkPressed == 1 && g_shared->qkClicked == 1,
+        "Q: slot 8's button pressed with 1 (bit 2 during, flags back), the game wants a target: clicked at once, no Shift");
+    Idle();
+    r = KeyCast('W');
+    CHECK(r && presses == 2 && pressThis == btns[9] && clicks == 1, "W: an instant ability: pressed, no click, the key kept from the game");
+    *(DWORD *)(abils[10] + 0x20) = 0x200;
+    r = KeyCast('E');
+    CHECK(!r && presses == 2, "E cooling down: not pressed, the key goes to the game (as WFE)");
+    *(DWORD *)(abils[10] + 0x20) = 0;
+    *(DWORD *)(btns[10] + BTN_DATA) = 0;
+    CHECK(!KeyCast('E') && presses == 2, "an empty slot: the game's key");
+    *(BYTE **)(btns[10] + BTN_DATA) = datas[10];
+    CHECK(!KeyCast('R') && !KeyCast('Z') && presses == 2, "keys that don't quickcast: the game's");
+    syncVk[VK_CONTROL] = 1;
+    CHECK(!KeyCast('Q') && presses == 2, "Ctrl+Q: the game's (a control group or so)");
+    syncVk[VK_CONTROL] = 0;
+    syncVk[VK_SHIFT] = asyncVk[VK_SHIFT] = 1; Idle();
+    KeyCast('Q');
+    DWORD held = clickFlags;
+    asyncVk[VK_SHIFT] = 0; Idle();
+    KeyCast('Q');
+    syncVk[VK_SHIFT] = 0;
+    CHECK(held == 1 && clickFlags == 3 && clicks == 3, "Shift (a queued order): kept while held (1), pressed around the click once it's up (3)");
+    // WFE's checks (0x10066a86..abb)
+    int before = presses;
+    *(DWORD *)(ui + UI_BUSY) = 1; bool c1 = KeyCast('Q'); *(DWORD *)(ui + UI_BUSY) = 0;
+    *(DWORD *)(upper + 0x164) = 0; bool c2 = KeyCast('Q'); *(DWORD *)(upper + 0x164) = 1;
+    *(DWORD *)(chat + 0x1dc) = 1; bool c3 = KeyCast('Q'); *(DWORD *)(chat + 0x1dc) = 0;
+    CHECK(!c1 && !c2 && !c3 && presses == before, "WFE's checks: [ui+0x258], the upper bar's +0x164 = 0, [[ui+0x3fc]+0x1dc]: not now");
+    Idle();
+    r = KeyCast(VK_NUMPAD7);
+    CHECK(r && pressThis == items[0] && pressArg == 1, "Numpad 7: the first item's button pressed");
+    // through the game window: a quickcast key never reaches the game, others do
+    Idle(); gameKeys = 0;
+    SendMessageA(wnd, WM_KEYDOWN, 'Q', 0);
+    SendMessageA(wnd, WM_CHAR, 'q', 0);
+    SendMessageA(wnd, WM_KEYDOWN, 'Z', 0);
+    SendMessageA(wnd, WM_CHAR, 'z', 0);
+    CHECK(gameKeys == 1 && gameChars == 1, "through the window: Q and its character kept from the game, Z and its character passed on (%d, %d)", gameKeys, gameChars);
+    g_shared->qkOn = 0; FollowKeyCast(0); gameKeys = 0;
+    SendMessageA(wnd, WM_KEYDOWN, 'Q', 0);
+    CHECK(g_shared->qkState == 0 && gameKeys == 1, "off again: Q goes to the game");
+    g_shared->qkOn = 1; FollowKeyCast(0);
+    // held: the key's repeat while our click is out (the reticle still up) neither presses nor clicks again;
+    // another key waits for the target mode to end; after 250 ms (the click surely read) it's a new aim
+    g_kcNow = FakeNow; fakeNow = 1000; Idle();
+    int p1 = presses, k1 = clicks;
+    KeyCast('Q'); fakeNow += 30;
+    bool rep = KeyCast('Q');
+    CHECK(rep && presses == p1 + 1 && clicks == k1 + 1, "Q held: its repeat 30 ms later, the reticle still up: dropped (one press, one click)");
+    fakeNow += 10;
+    KeyCast(VK_NUMPAD7);
+    bool heldBack = g_kcHeldVk == VK_NUMPAD7 && presses == p1 + 1;
+    FollowKeyCast(1); KeyCastHeld();                // still aiming: the worker doesn't post yet... but the game thread re-checks
+    bool stillHeld = presses == p1 + 1 && g_kcHeldVk == VK_NUMPAD7;
+    Idle(); fakeNow += 16;                          // the game read our click: cast, the target mode over
+    KeyCastHeld();
+    CHECK(heldBack && stillHeld && presses == p1 + 2 && pressThis == items[0] && !g_kcHeldVk, "Numpad 7 meanwhile: held back while the reticle is up, pressed once it ends");
+    KeyCast('Q'); fakeNow += 300;
+    int p2 = presses, k2 = clicks, e0 = gameEsc;
+    bool took = KeyCast('Q');
+    bool cancelled = took && presses == p2 && gameEsc == e0 + 1 && g_kcHeldVk == 'Q';
+    fakeNow += 40; KeyCast('Q');                    // its repeat before the game read the Esc: no second Esc
+    bool oneEsc = gameEsc == e0 + 1;
+    FollowKeyCast(1);                               // still aiming: not posted
+    Idle(); fakeNow += 16; KeyCastHeld();            // the game read the Esc: the target mode over
+    CHECK(cancelled && oneEsc && presses == p2 + 1 && clicks == k2 + 1 && !g_kcHeldVk && !g_kcCancelAt,
+          "the reticle still up 300 ms after our click (it missed): cancelled with one Esc, then Q aims and clicks again");
+    // another ability's reticle up (waiting for a target), then a quickcast key: cancelled, then that key's ability
+    Idle(); g_kcFiredAt = 0; fakeNow += 1000;
+    *(DWORD *)(ui + UI_MODE) = *(DWORD *)(ui + UI_TARGET_MODE);
+    int p4 = presses, e1 = gameEsc;
+    took = KeyCast(VK_NUMPAD7);
+    bool c4 = took && presses == p4 && gameEsc == e1 + 1;
+    Idle(); KeyCastHeld();
+    CHECK(c4 && presses == p4 + 1 && pressThis == items[0], "a reticle already up (another ability's), then Numpad 7: Esc to the game, then the item pressed");
+    // the same with a card key, as the game has it: with the reticle up the card shows only Cancel (its buttons
+    // empty), so the slot's button can't tell (the user, 2026-10-31: another ability or A didn't work)
+    g_shared->qkVk[4] = 'A';
+    *(BYTE **)(btns[5] + BTN_DATA) = 0;          // (slot 5 empty before the reticle too)
+    g_shared->qkVk[5] = 'S';
+    Idle(); fakeNow += 1000; KeyCastSnapshot();
+    bool had = g_kcHad[9] && g_kcHad[4] && !g_kcHad[5];
+    *(DWORD *)(ui + UI_MODE) = *(DWORD *)(ui + UI_TARGET_MODE);
+    for (int i = 0; i < 12; i++)
+        *(BYTE **)(btns[i] + BTN_DATA) = 0;
+    KeyCastSnapshot();                          // (aiming: what it had is kept)
+    int p5 = presses, e2 = gameEsc;
+    took = KeyCast('W');
+    bool c5 = took && presses == p5 && gameEsc == e2 + 1 && g_kcHeldVk == 'W';
+    bool empty = !KeyCast('S') && gameEsc == e2 + 1;
+    for (int i = 0; i < 12; i++)
+        *(BYTE **)(btns[i] + BTN_DATA) = i == 5 ? nullptr : datas[i];
+    Idle(); KeyCastHeld();
+    bool wPressed = presses == p5 + 1 && pressThis == btns[9];
+    *(DWORD *)(ui + UI_MODE) = *(DWORD *)(ui + UI_TARGET_MODE);
+    for (int i = 0; i < 12; i++)
+        *(BYTE **)(btns[i] + BTN_DATA) = 0;
+    fakeNow += 200, g_kcCancelAt = 0;
+    took = KeyCast('A');
+    for (int i = 0; i < 12; i++)
+        *(BYTE **)(btns[i] + BTN_DATA) = i == 5 ? nullptr : datas[i];
+    Idle(); KeyCastHeld();
+    CHECK(had && c5 && empty && wPressed && took && presses == p5 + 2 && pressThis == btns[4],
+          "a reticle up, the card only Cancel: W (its slot had an ability before) cancels it and is pressed after; A the same; S (empty before too) stays the game's");
+    *(BYTE **)(btns[5] + BTN_DATA) = datas[5];
+    g_shared->qkVk[4] = 0, g_shared->qkVk[5] = 0;
+    Idle(); KeyCast('Q'); fakeNow += 30; KeyCast('W'); fakeNow += 600; Idle();
+    int p3 = presses; KeyCastHeld();
+    CHECK(presses == p3 && !g_kcHeldVk, "a key held back over 500 ms: dropped, not pressed late");
+    g_kcNow = GetTickCount; Idle(); g_kcFiredAt = 0;
+    // Allies' abilities on: CCommandButton's click entry is its hook, which passes the click on to the game's
+    DWORD *allyVt = (DWORD *)(img + 0xaac800); allyVt[BTN_CLICK / 4] = (DWORD)AllyClickHook;
+    Stub(RVA_BUTTON_CLICK, FakePress);
+    *(DWORD *)btns[8] = (DWORD)allyVt; Idle();
+    int p0 = presses, c0 = clicks;
+    r = KeyCast('Q');
+    *(DWORD *)btns[8] = (DWORD)btnVt;
+    CHECK(r && presses == p0 + 1 && pressThis == btns[8] && pressArg == 1 && clicks == c0 + 1, "Allies' abilities' click hook in the entry: still pressed (through it) and clicked");
+    // a button that faults: off for good, the key to the game
+    Idle(); g_kcFiredAt = 0; g_kcHeldVk = 0;
+    *(DWORD *)btns[11] = (DWORD)badVt; g_shared->qkVk[11] = 'T';
+    r = KeyCast('T');
+    CHECK(!r && g_shared->qkState == 3 && !KeyCast('Q'), "a press faulting: caught, quickcast keys off (state 3)");
+    Unsubclass(); DestroyWindow(wnd);
+    Verdict();
+    return g_fails;
+}

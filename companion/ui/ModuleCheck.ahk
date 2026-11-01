@@ -1,0 +1,281 @@
+#Requires AutoHotkey v2.0
+; ============================================================================
+;  Module check - what the 1.28f game module has seen of each feature in the
+;  running (or last) game, from this session's twc-game.log and the module's
+;  live state: ✓ worked, ✗ refused or faulted (the log says why), · not seen
+;  yet (off, or not tried in this game). "Copy report" puts all of it and the
+;  session's log on the clipboard, to paste when something needs a look.
+;  Opened from the WC3 page's game module row (Check).
+; ============================================================================
+
+; [name, ok pattern, refused pattern] per feature, matched against log lines
+ModuleCheckFeatures() => [
+    ["Quickcast through the game", "quickcast: clicked", ""],
+    ["Quickcast keys (as WFE)", "quickcast keys: key .* pressed slot|quickcast keys: on \(", "quickcast keys: (pressing a button faulted|the game window couldn.t be subclassed|slot \d+.s button .* isn.t a game button)"],
+    ["Quickcast: reticle already up", "quickcast keys: key .. with a reticle already up", ""],
+    ["Quickcast keys: timing", "quickcast keys: the last 25 presses waited", ""],
+    ["Quickcast on the game thread (target mode)", "quickcast: clicked as the game opened the target mode|quickcast: the target mode.s Enter is ours", "quickcast: vtable \+AAA220 entry|quickcast: the target mode.s vtable .* isn.t where|quickcast: the target mode hook faulted"],
+    ["Cooldown and buff timers", "timers: game getter at .* checks out|timers in the game: drawing", "timers: refused|frames: refused|no more frames in this session"],
+    ["Cooldowns on the card", "timers in the game: the first cooldown drawn", "cooldowns: the command card .* isn't readable"],
+    ["Clear messages / chat", "clear (messages|chat): frame", "not a message frame|clear .* faulted"],
+    ["Health bar size", "health bars: the game's own size is|health bars: pass resized", "health bars: refused|reads faulted"],
+    ["Health bar colours", "health bar colours: on", "health bar colours: refused|colouring a bar faulted"],
+    ["FPS unlock", "FPS: limiter patched", "FPS: refused|FPS: the game's option functions faulted|C9 already"],
+    ["Multiboard", "multiboard: [0-9A-F]{8}, vtable", "multiboard: refused|not a multiboard|multiboard: the game's call faulted"],
+    ["Allies' abilities", "allies' abilities: on|allies' abilities: the first ability shown", "allies' abilities: refused|allies' abilities: writing the hooks failed|allies' abilities: .* faulted"],
+    ["Allies' cards: buttons made", "allies' abilities: the first buttons made", "allies' abilities: making the buttons faulted"],
+    ["Enemies' abilities (bosses)", "allies' abilities: the first enemy's ability shown|allies' abilities: on .*enemies' too", "allies' abilities: refused|allies' abilities: .* faulted"],
+    ["Buff bar raised (no Widescreen UI)", "buff bar raise: the bar .* over the console", "buff bar raise: .*(refused|faulted)"],
+    ["Stats / HP ping", "ping: .* \(the (portrait|hero icon|damage icon|armor icon), unit", ""],
+    ["Buff ping", "ping: .+\| (.+ left|active). \(buff", ""],
+    ["Ping by the cursor (allies', bosses')", "ping: a (button|buff) .* found by the cursor", ""],
+    ["Cooldown ping", "ping: .+\| (Cooldown|Ready|Not enough mana)", "ping: reading the button faulted"],
+    ["Lobby latency", "latency: \d+ ms", "latency: refused|writing the patch failed|latency: a getter was changed"],
+    ["Start countdown", "start countdown: [0-9.]+ s in games you host", "start countdown: refused|start countdown: writing it failed|start countdown: .* changed by someone else"],
+    ["Health numbers", "health numbers: the first one", "frames: refused|no more frames in this session|health numbers / mana bars: refused"],
+    ["Mana bars", "mana bars: the first one .* checks out", "mana bars: the new bar|mana bars: destroying one faulted|health numbers / mana bars: refused"],
+    ["Portrait regen", "portrait: the first update wrapped", "portrait: refused|portrait: writing a line faulted|portrait: the update entry was changed|portrait: the call at .* was changed|portrait: writing the call at"],
+    ["Storm.dll (for new frames)", "SMemAlloc \(401\) at .* check out", "Storm.dll isn't loaded in the game|ordinals 401 / 403 aren't"],
+    ["Hide hover names", "unit names: on|unit names: the first name tip kept hidden", "unit names: refused|unit names: vtable .* left as it is"],
+    ["Fast menu", "fast menu: the first transition sped up", "fast menu: refused|fast menu: writing the detour failed|fast menu: .* faulted|fast menu: .* changed by someone else"],
+    ["Widescreen", "widescreen: on, the window is|widescreen: .* already hooked by", "widescreen: refused|isn't the game's call to its projection|widescreen: writing the call"],
+    ["Detailed tooltips", "tooltips: the first .* tooltip got its lines", "tooltips: refused|tooltips: adding the lines faulted|tooltips: vtable .* left as it is"],
+    ["Widescreen UI", "UI layout: \d+ frames laid out", "UI layout: .*stopping|UI layout: putting a (frame|model) back faulted|UI layout: the .* faulted: left out"],
+    ["Portrait text", "portrait text: on", "portrait text: (no frames|making its frames failed|the portrait update isn't wrapped|giving the lines back faulted)"],
+    ["Hide the UI", "hide UI: console .* textures|hide UI: .* RTTI", "hide UI: .* refused|hide UI: .* faulted|  not the (time of day|minimap|upper menu bar|resource bar|idle workers|buff bar)"],
+    ["Your hero's buffs (alerts)", "hero buffs: your hero is", ""],
+    ["Cooldown sweep", "cooldown sweep: the first one made", "cooldown sweep: .*(no sweeps|faulted)"],
+    ["Battle.net login", "battle.net login: account '.*' typed in, Logon clicked", "battle.net login: .*(faulted|not a glue)"],
+    ["Bigger buff bar", "buff bar size: x[0-9.]+ \(\d+ frames resized", "buff bar size: .*(refused|faulted)"],
+    ["Damage feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
+    ["Hide the UI, again (1.5 s pass)", "hide UI: the .* (hidden again|anchored again)", ""],
+    ["Buff durations", "buff timers: new '[^']+'", "buff timers: (the map.s timer start .* isn.t|writing the timer probe failed)"],
+    ["Damage: taken, sources", "damage: unit type '....' is named|damage: '....' \(a unit type or an ability\) is named", ""],
+    ["Damage: spell names", "damage: a spell hit's ability: '....' \(the (spell event|source's last cooldown)", ""],
+    ["Damage: spells' timers", "damage: a spell hit's ability: '....' \(the map timer", "damage: the map timers' (entry|vtable)"],
+    ["Damage: on-hit effects", "damage: a hit dealt while another's damage ran", ""],
+    ["Boss timers: enemies' spells", "boss casts: player \d+'s '....' .* cast '....'", "boss casts: (the call at .* isn.t|writing the call|reading a cast faulted)"],
+    ["Map text lines (probe)", "map text: on \(|map text: '", "map text: the call at .* isn.t|map text: writing the call"],
+    ["Damage feed: player names", "damage: player names .*'", "damage: reading the player names faulted|damage: player names \([^)]*\):(?!.*')"],
+]
+
+; more rows, and a feature being tried now, from parts loaded besides (none in the shipped companion)
+class ModuleCheckExt {
+    static rows := []           ; [name, ok pattern, refused pattern] each, as ModuleCheckFeatures'
+    static latest := ""         ; a log line pattern: its latest 15 lines go first in the report
+    static latestName := ""     ; what they're about ("the dash combo")
+}
+
+; the companion's log lines from its last start about quickcast, damage and the game module (60 at most)
+ModuleCheckCompanionLines() {
+    path := A_ScriptDir "\companion-debug.log", out := []
+    if !FileExist(path)
+        return out
+    try text := FileRead(path, "UTF-8")
+    catch
+        return out
+    lines := StrSplit(text, "`n", "`r")
+    start := 1
+    loop lines.Length
+        if InStr(lines[lines.Length - A_Index + 1], "---- companion ") {
+            start := lines.Length - A_Index + 1
+            break
+        }
+    loop lines.Length - start + 1 {
+        l := lines[start + A_Index - 1]
+        if l != "" && RegExMatch(l, "i)quickcast|damage meter|game module|boss timers")
+            out.Push(l)
+    }
+    while out.Length > 60
+        out.RemoveAt(1)
+    return out
+}
+; this session's log lines (from the last "loaded" line), or [] if none
+ModuleCheckLog() => ModuleCheckLines(ModuleCheckLogText()).now
+; the module before it, when it was swapped live for this one: its lines from
+; "unloading: a newer module replaces this one" on ([] if there was no swap)
+ModuleCheckSwap() => ModuleCheckLines(ModuleCheckLogText()).before
+ModuleCheckLogText() {
+    path := A_ScriptDir "\native\twc-game.log"
+    if !FileExist(path)
+        return ""
+    try return FileRead(path, "UTF-8")      ; the players' names are UTF-8 (the rest is ASCII)
+    return ""
+}
+; -> { now, before } from the log's text. A second copy that stays idle ("loaded
+; again ... stays idle") doesn't start a session: the live module's lines go on
+ModuleCheckLines(text) {
+    lines := StrSplit(StrReplace(text, "`r"), "`n")
+    start := 0, prev := 0
+    for i, l in lines
+        if InStr(l, "---- twc-game.dll loaded") && !InStr(l, "---- twc-game.dll loaded again")
+            prev := start, start := i
+    now := [], before := []
+    if !start
+        return { now: now, before: before }
+    loop lines.Length - start + 1
+        if (l := lines[start + A_Index - 1]) != ""
+            now.Push(l)
+    ; the old module's unloading, just above this one's start (after its own start)
+    i := start - 1, from := 0
+    while i > prev && !from {
+        if InStr(lines[i], "unloading: a newer module replaces this one")
+            from := i
+        i--
+    }
+    if from
+        loop start - from
+            if (l := lines[from + A_Index - 1]) != ""
+                before.Push(l)
+    return { now: now, before: before }
+}
+
+; -> [{ mark, name, detail }] for the probe, the game UI and each feature
+ModuleCheckRows(log) {
+    global gameModule
+    s := gameModule.state(), rows := []
+    find(re) {
+        for l in log
+            if re != "" && RegExMatch(l, re)
+                return SubStr(l, 26)            ; without the time stamp
+        return ""
+    }
+    rows.Push(!s.loaded ? { mark: "·", name: "Module", detail: !gameModule.enabled ? "off (top of the WC3 page)" : "not in a game yet: start a 1.28f game" }
+        : s.status = 2 ? { mark: "✗", name: "Module", detail: "the game isn't 1.28f (build " s.build "): idle" }
+        : { mark: "✓", name: "Module", detail: "loaded, layout " s.layout (s.live ? ", running" : ", not responding") })
+    if s.loaded && s.status != 2
+        rows.Push(s.probe = 1 ? { mark: "✓", name: "Address check", detail: "passed" }
+            : s.probe = 2 ? { mark: "✗", name: "Address check", detail: s.probeText }
+            : { mark: "·", name: "Address check", detail: "not run yet" })
+    if s.loaded && s.status != 2 {
+        why := gameModule.qcWhyNot()
+        rows.Push(why != "" ? { mark: "✗", name: "Quickcast now", detail: why }
+            : !s.qc ? { mark: "·", name: "Quickcast now", detail: "ready (an older module: no counts)" }
+            : { mark: s.qc.state = 1 ? "✓" : "·", name: "Quickcast now", detail: GameModuleEngine.QcStateText(s.qc.state) " · " s.qc.asked " asked: "
+                . s.qc.clicked " clicked, " s.qc.noTarget " no target in time, " s.qc.notFront " not in front, " s.qc.cancelled " called off"
+                . (s.qk ? " · keys as WFE: " (s.qk.state = 1 ? "on" : s.qk.state = 3 ? "refused" : "off") ", " s.qk.pressed " pressed, " s.qk.clicked " clicked" : "") })
+    }
+    ui := find("game UI at .*vtable checks out")
+    rows.Push(ui != "" ? { mark: "✓", name: "Game UI", detail: ui } : { mark: "·", name: "Game UI", detail: "not seen yet: start a game (not just the lobby)" })
+    feats := ModuleCheckFeatures()
+    feats.Push(ModuleCheckExt.rows*)
+    for f in feats {
+        bad := find(f[3]), ok := find(f[2])
+        rows.Push(bad != "" ? { mark: "✗", name: f[1], detail: bad }
+            : ok != "" ? { mark: "✓", name: f[1], detail: ok }
+            : { mark: "·", name: f[1], detail: "not seen yet (off, or not tried in this game)" })
+    }
+    tips := []
+    for l in log
+        if InStr(l, "tooltips: ")
+            tips.Push(Trim(SubStr(l, 26)))
+    rows.Push({ mark: "·", name: "Tooltips (probe)", detail: tips.Length ? Join(" | ", tips*) : "not logged yet" })
+    return rows
+}
+
+ModuleCheckReport(rows, log) {
+    global version, gameModule
+    s := gameModule.state()
+    r := "TW Companion " version " · module layout " s.layout " · game build " s.build " · " FormatTime(, "yyyy-MM-dd HH:mm") "`n`n"
+    for row in rows
+        r .= row.mark " " row.name ": " row.detail "`n"
+    ; the features being tried now: their latest lines first (a long paste got cut off before the log's end, where
+    ; they were: the user's 11:48 report)
+    latest := []
+    for l in log
+        if ModuleCheckExt.latest != "" && RegExMatch(l, ModuleCheckExt.latest)
+            latest.Push(l)
+    if latest.Length {
+        r .= "`nLatest (the module's log, the last " Min(15, latest.Length) " about " ModuleCheckExt.latestName "):`n"
+        loop Min(15, latest.Length)
+            r .= latest[latest.Length - Min(15, latest.Length) + A_Index] "`n"
+    }
+    if (swap := ModuleCheckSwap()).Length {
+        r .= "`nThe module before (swapped live for this one), its unloading:`n"
+        for l in swap
+            r .= l "`n"
+    }
+    ; the companion's own side (companion-debug.log, this run): quickcast's timing and the other lines a report
+    ; needs that the module can't see (the user pasted the module's log twice looking for them, 2026-10-30)
+    own := ModuleCheckCompanionLines()
+    if own.Length {
+        r .= "`nThe companion (companion-debug.log, this run: quickcast, damage, game module; the last " own.Length "):`n"
+        for l in own
+            r .= l "`n"
+    }
+    r .= "`nLog (this session, " log.Length " lines):`n"
+    ; a long session: its start and its latest lines (quickcast's state and counts are the latest)
+    for i, l in log
+        if log.Length <= 400 || i <= 100 || i > log.Length - 300
+            r .= l "`n"
+        else if i = 101
+            r .= "... (" (log.Length - 400) " lines left out here; all of them are in native\twc-game.log)`n"
+    return r
+}
+
+; collapsed (the default, the user's ask 2026-10-30: even two columns didn't fit their screen): the
+; counts and the refused rows only, "Show all" opens the full list
+ModuleCheckDialog(expanded := false) {
+    global C, mainGui, UI_FONT
+    static g := 0
+    if g
+        try g.Destroy()
+    log := ModuleCheckLog(), all := ModuleCheckRows(log)
+    rows := all, ok := 0, seen := 0
+    if !expanded {
+        rows := []
+        for row in all
+            if row.mark = "✗"
+                rows.Push(row)
+            else if row.mark = "✓"
+                ok++
+            else
+                seen++
+    }
+    ; the rows in two columns once there are many, and the buttons in the title row: with 45-odd rows the
+    ; window ran off the screen and Copy report couldn't be reached (the user, 2026-10-29)
+    cols := rows.Length > 16 ? 2 : 1
+    w := cols = 2 ? 1080 : 640, x := 26, tw := w - 52, gap := 20, colW := (tw - (cols - 1) * gap) // cols
+    g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
+    MakeScalable(g, "popup")
+    g.MarginX := 0, g.MarginY := 0
+    card := DialogCard(g, w)
+    t := g.AddText("x" x " y22 w300 h28 +Background" C.card " c" C.text, "Module check")
+    t.SetFont("s13 w700 q4", "Cinzel")
+    copy := g.AddText("x" (w - x - 104 - 8 - 150) " y18 w150 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "Copy report")
+    close := g.AddText("x" (w - x - 104) " y18 w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
+    for b in [copy, close]
+        UISetFont(b, "s9 w600"), b.GetPos(, , &bw, &bh), Box.Round(b, bw, bh, 4)
+    copy.OnEvent("Click", (*) => (A_Clipboard := ModuleCheckReport(all, log), Toast("Report copied: paste it in your message", "", 2500)))
+    close.OnEvent("Click", (*) => g.Destroy())
+    intro := expanded ? "What the game module saw in this game: ✓ worked, ✗ refused (it says why), · not seen yet. Try each feature once, then Copy report."
+        : "In this game: " ok " ✓ worked, " rows.Length " ✗ refused" (rows.Length ? " (below)" : "") ", " seen " · not seen yet. Copy report has all of it."
+    it := g.AddText("x" x " y60 w" tw " +Background" C.card " c" C.dim, intro)
+    UISetFont(it, "s9")
+    y0 := 60 + TextHeight(it, intro, tw) + 14
+    it.Move(, , , y0 - 74)
+    ; rows as tall as fit on the screen (24 at most, 18 at least)
+    perCol := Ceil(rows.Length / cols), room := A_ScreenHeight / UiK(g) - 60 - y0 - 24
+    rowH := Max(18, Min(24, Floor(room / Max(1, perCol))))
+    for i, row in rows {
+        col := (i - 1) // perCol, cx := x + col * (colW + gap), y := y0 + Mod(i - 1, perCol) * rowH
+        m := g.AddText("x" cx " y" y " w18 h20 +Background" C.card " c" (row.mark = "✓" ? C.accent : row.mark = "✗" ? "E5534B" : C.dim), row.mark)
+        UISetFont(m, "s10 w700")
+        n := g.AddText("x" (cx + 22) " y" (y + 1) " w170 h20 +Background" C.card " c" C.text, row.name)
+        UISetFont(n, "s9 w600")
+        d := g.AddText("x" (cx + 196) " y" (y + 2) " w" (colW - 196) " h18 +Background" C.card " c" C.muted, row.detail)
+        UISetFont(d, "s8")
+    }
+    h := y0 + (rows.Length ? perCol * rowH : 0) + 24
+    more := g.AddText("x" x " y" (h - 6) " w200 h20 +Background" C.card " c" C.accent, expanded ? "‹ Show less" : "Show all " all.Length " ›")
+    UISetFont(more, "s9 w600")
+    more.OnEvent("Click", (*) => SetTimer(() => ModuleCheckDialog(!expanded), -1))
+    h += 26
+    card.Move(, , , h - 2)
+    g.OnEvent("Escape", (*) => g.Destroy())
+    DialogStyle(g)
+    WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+    g.Show("x" Round(Max(0, ox + (ow - w * UiK(g)) / 2)) " y" Round(Max(0, Min(oy + (oh - h * UiK(g)) / 2, A_ScreenHeight - h * UiK(g)))) " w" w " h" h)
+    DialogRepaint(g)
+    return g
+}

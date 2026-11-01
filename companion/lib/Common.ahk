@@ -27,16 +27,58 @@ KeyWaitAny() {
     return ihGlobal.EndKey
 }
 
-KeyWaitCombo() {
-    global keyCapturing := true, keyCaptureEnd
+; A key or combo, or one of the extra mouse buttons (an InputHook only sees the
+; keyboard, so those are caught by hotkeys while it waits). Left and right
+; click are never taken: they're how you click.
+; The next key (or mouse button) pressed, "" if none: the wait ends by itself after limit ms or
+; as soon as none of the companion's windows is in front. It listens to the whole system, so a
+; bind started and left (back to the game, no key pressed) took the next key pressed in a fight
+; and rebound the slot (a user's report, 2026-10-29).
+global keyCaptureCancelled := false
+KeyWaitCombo(limit := 10000) {
+    global keyCapturing := true, keyCaptureEnd, capturedMouse := "", keyCaptureCancelled := false
     ihGlobal.VisibleNonText := false
     ihGlobal.KeyOpt("{All}", "E")
     ihGlobal.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-E")
+    CaptureMouse(true)
+    watch := KeyCaptureWatch.Bind(A_TickCount + limit)
+    SetTimer(watch, 100)
     ihGlobal.Start()
     try ihGlobal.Wait()
-    finally keyCapturing := false, keyCaptureEnd := A_TickCount
+    finally {
+        SetTimer(watch, 0)
+        CaptureMouse(false)
+        keyCapturing := false, keyCaptureEnd := A_TickCount
+    }
+    if keyCaptureCancelled {
+        try Toast("Key binding cancelled: press the key while the companion is in front, within 10 s", "", 3000)
+        return ""
+    }
+    if capturedMouse
+        return (GetKeyState("Ctrl") ? "^" : "") (GetKeyState("Alt") ? "!" : "") (GetKeyState("Shift") ? "+" : "") capturedMouse
     return ihGlobal.EndMods . ihGlobal.EndKey
 }
+; the wait's watch: over its time, or none of our windows in front -> it ends with no key
+KeyCaptureWatch(endAt) {
+    global keyCaptureCancelled
+    hw := WinExist("A")
+    if A_TickCount > endAt || !hw || WinGetPID(hw) != DllCall("GetCurrentProcessId") {
+        keyCaptureCancelled := true
+        ihGlobal.Stop()
+    }
+}
+global capturedMouse := ""
+CaptureMouse(on) {
+    HotIf()                                     ; anywhere (capture happens in the companion window)
+    for k in MouseKeys()
+        try Hotkey("*" k, CaptureMouseHit.Bind(k), on ? "On" : "Off")
+}
+CaptureMouseHit(k, *) {
+    global capturedMouse := k
+    ihGlobal.Stop()
+}
+MouseKeys() => ["XButton1", "XButton2", "MButton", "WheelUp", "WheelDown", "WheelLeft", "WheelRight"]
+IsWheel(key) => RegExMatch(key, "i)Wheel(Up|Down|Left|Right)$")
 
 ; ---- hotkey display --------------------------------------------------------
 ReadableHotkey(hotkey, fullName := false) {
@@ -55,6 +97,10 @@ ReadableHotkey(hotkey, fullName := false) {
         i++
     }
     key := SubStr(hotkey, i)
+    static names := Map("xbutton1", "Mouse 4", "xbutton2", "Mouse 5", "mbutton", "Middle click",
+        "wheelup", "Wheel up", "wheeldown", "Wheel down", "wheelleft", "Wheel left", "wheelright", "Wheel right")
+    if names.Has(StrLower(key))
+        return mods names[StrLower(key)]
     key := StrLen(key) = 1 || RegExMatch(key, "i)^F\d+$") ? StrUpper(key) : StrUpper(SubStr(key, 1, 1)) StrLower(SubStr(key, 2))
     return mods key
 }
@@ -79,9 +125,111 @@ Join(sep, params*) {
 }
 
 ; ---- warcraft chat ---------------------------------------------------------
-; one SendInput per line, so nothing you press can land in the middle of it
+; Each game version has its own way, since the companion can tell them apart:
+;  1.28      one SendInput per line (Enter, text, Enter), so nothing you press
+;            can land in the middle of it. Works smoothly.
+;  Reforged  opens its chat box 15-50 ms after Enter and loses what's typed
+;            before, and fast Shift key presses don't take (capitals and #$%&@?
+;            in load codes come out wrong). So: Enter, wait for the box on
+;            screen, then the text in {Text} mode (the characters themselves,
+;            no Shift; as in LCH's loader, github.com/Lch3181/Warcraft-lll_TWrpg_AHKs,
+;            MIT), Enter, and wait for the box to close before the next line.
+; A chat line in Warcraft III: open chat, the text, Enter. With [Chat] paste
+; on (Macros page), the text is pasted (Ctrl+V) instead of typed: faster for
+; long lines, any characters; the clipboard is put back after.
 wc3Chat(text) {
+    if InStr(WC3WindowKey(), "reforged")
+        return wc3ChatReforged(text)
+    if ChatPasteOn() {
+        SendInput("{Enter}"), Sleep(40)
+        ChatInsert(text)
+        return SendInput("{Enter}")
+    }
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
+}
+ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
+; the text into the open chat box: pasted (keeping the clipboard), or typed.
+; The clipboard is put back 500 ms after the last paste, not right away: the
+; game reads it when it gets to the Ctrl+V, which can be frames later (a busy
+; or slow game). Pastes in a row keep the clipboard from before the first.
+global gChatClip := 0                           ; the clipboard to put back after pasting (0 = none pending)
+ChatInsert(text) {
+    global gChatClip
+    if !ChatPasteOn()
+        return SendInput("{Text}" text)
+    SetTimer(ChatClipRestore, 0)
+    if !gChatClip
+        gChatClip := ClipboardAll()
+    A_Clipboard := ""
+    A_Clipboard := text
+    if !ClipWait(0.5) {
+        ChatClipRestore()
+        return SendInput("{Text}" text)          ; the clipboard didn't take it: typed
+    }
+    SendInput("^v")
+    Sleep(30)
+    SetTimer(ChatClipRestore, -500)
+}
+ChatClipRestore() {
+    global gChatClip
+    if gChatClip
+        A_Clipboard := gChatClip, gChatClip := 0
+}
+; put text on the clipboard, after any chat line still pasting (it then goes
+; back to this, not to what was there before)
+SetClipboardAfterChat(text) {
+    global gChatClip
+    if gChatClip
+        gChatClip := text
+    else
+        A_Clipboard := text
+}
+wc3ChatReforged(text) {
+    global chatBox
+    g := IsSet(chatBox) && chatBox ? chatBox.current() : 0
+    SendInput("{Enter}")
+    t := A_TickCount
+    while A_TickCount - t < 300 && !(g && chatBox.isOpen(g))
+        Sleep(10)
+    opened := A_TickCount - t
+    Sleep(g ? 30 : 200)                     ; let its text field take focus (no box known: just wait)
+    ChatInsert(text)
+    Sleep(30)
+    global debugGui
+    if IsSet(debugGui) && debugGui          ; tray Debug on: keep what the box shows (chat-*.bmp)
+        try ChatBoxSnapshot(g)
+    SendInput("{Enter}")
+    t := A_TickCount
+    while A_TickCount - t < 200 && g && chatBox.isOpen(g)
+        Sleep(10)
+    try DebugLog("chat line (Reforged): box " (!g ? "position unknown" : opened < 300 ? "open after " opened " ms" : "NOT SEEN in 300 ms")
+        . ", closed after " (A_TickCount - t) " ms: " SubStr(text, 1, 12) "…")
+}
+
+; Save the chat box as it looks now to chat-<time>.bmp next to the debug log,
+; to see what Reforged actually received. Kept to the last 20.
+ChatBoxSnapshot(g) {
+    if !g || !WinExist(WarcraftIII)
+        return
+    WinGetClientPos(&wx, &wy, &cw, &ch, WarcraftIII)
+    x := Round(wx + g.l * cw) - 4, y := Round(wy + g.t * ch) - 4
+    w := Round((g.r - g.l) * cw) + 9, h := Round((g.b - g.t) * ch) + 9
+    s := ScreenGrab(x, y, w, h)
+    dir := A_ScriptDir "\debug"
+    DirCreate(dir)
+    files := []
+    loop files dir "\chat-*.bmp"
+        files.Push(A_LoopFileFullPath)
+    while files.Length >= 20
+        FileDelete(files.RemoveAt(1))
+    ; a bottom-up 32-bit BMP: 14-byte file header, 40-byte info header, pixels
+    size := w * h * 4, bmp := Buffer(54 + size, 0)
+    NumPut("ushort", 0x4D42, "uint", 54 + size, "uint", 0, "uint", 54, bmp)
+    NumPut("uint", 40, "int", w, "int", h, "ushort", 1, "ushort", 32, bmp, 14)
+    loop h
+        DllCall("RtlMoveMemory", "ptr", bmp.Ptr + 54 + (A_Index - 1) * w * 4, "ptr", s.buf.Ptr + (h - A_Index) * w * 4, "uptr", w * 4)
+    f := FileOpen(dir "\chat-" FormatTime(, "HHmmss") "-" A_MSec ".bmp", "w")
+    f.RawWrite(bmp), f.Close()
 }
 
 FocusWarcraft() {
@@ -118,7 +266,10 @@ class RegisterHotkey {
         global toolEnabled
         if !this.key
             return
-        active := this.enable && (!this.gated || toolEnabled)
+        global chatting, inGame, qcCalibrating
+        live := toolEnabled && !(IsSet(chatting) && chatting) && (!IsSet(inGame) || inGame)
+            && !(IsSet(qcCalibrating) && qcCalibrating)
+        active := this.enable && (!this.gated || live)
         HotIfWinActive(this.win)
         cb := (*) => this.fn.Call()
         try Hotkey(this.key, cb, active ? "On" : "Off")

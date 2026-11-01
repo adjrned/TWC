@@ -4,12 +4,12 @@
 ; ============================================================================
 class SettingsEngine {
     section := "Settings"
-    static BOOLS := ["enableToolOnStart", "enableToolAfterLoad", "summonBagAfterLoad", "hideOnStart", "autoToggleTool"]
+    static BOOLS := ["summonBagAfterLoad", "hideOnStart"]
 
     get(args := 0) {
         out := {}
         for k in SettingsEngine.BOOLS
-            out.%k% := Integer(Ini(this.section, k, k == "autoToggleTool" ? 1 : 0))
+            out.%k% := Integer(Ini(this.section, k, 0))
         out.loadDelay := Integer(Ini(this.section, "loadDelay", 200))
         out.postLoadDelay := Integer(Ini(this.section, "postLoadDelay", 1000))
         return out
