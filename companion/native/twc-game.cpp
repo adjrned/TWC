@@ -7835,17 +7835,20 @@ static bool KeyCast(WPARAM vk) {
         s->qkSubSeen += sub;
         // what the card's menu list holds each time the check turns (the user, 2026-11-01: sub menus
         // worked, the card's own keys stopped quickcasting: is it set outside sub menus too?)
-        static int subWas = -1, turns;
-        if (anySub && (int)sub != subWas && turns++ < 40) {
-            subWas = sub;
+        static int subWas = -1, turns, subLogs;
+        bool turned = anySub && (int)sub != subWas && turns < 40;
+        if (turned || sub && subLogs < 20) {
+            turns += turned, subLogs += sub, subWas = sub;
             DWORD n = *(DWORD *)(*(BYTE **)(ui + 0x3c8) + CARD_MENUS);
             DWORD w[6] = {};
             if (n - 0x10000 <= 0x7ffeffff)
                 memcpy(w, (void *)n, sizeof w);
-            BYTE *b11 = CardSlot(ui, 11);
-            Log("quickcast keys: key %02X: %s (the card's +0x%lX node %08lX: %08lX %08lX [+8] %08lX %08lX %08lX %08lX; slot 11 %s) -> %s",
+            // slot 11: the sub menu's Cancel in one, an ability (R) on TWRPG's own card
+            BYTE *b11 = CardSlot(ui, 11), *d11 = b11 ? *(BYTE **)(b11 + BTN_DATA) : nullptr, *a11 = d11 ? *(BYTE **)(d11 + DATA_ABILITY) : nullptr;
+            Log("quickcast keys: key %02X: %s (the card's +0x%lX node %08lX: %08lX %08lX [+8] %08lX %08lX %08lX %08lX; slot 11 %s '%s') -> %s",
                 (DWORD)vk, sub ? "a sub menu open, its keys" : "the card's own keys", CARD_MENUS, n, w[0], w[1], w[2], w[3], w[4], w[5],
-                b11 && *(DWORD *)(b11 + BTN_DATA) ? "has a button" : "empty", slot < 0 ? "the game's" : slot < 12 ? "a card slot" : "an item");
+                !d11 ? "empty" : a11 ? "ability" : "a button, no ability", a11 ? IdText(*(DWORD *)(a11 + 0x34)).s : "",
+                slot < 0 ? "the game's" : slot < 12 ? "a card slot" : "an item");
         }
         if (slot < 0)
             return false;
