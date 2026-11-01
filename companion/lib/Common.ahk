@@ -140,6 +140,7 @@ Join(sep, params*) {
 wc3Chat(text) {
     if InStr(WC3WindowKey(), "reforged")
         return wc3ChatReforged(text)
+    ChatSendHold()
     if ChatPasteOn() {
         SendInput("{Enter}"), Sleep(40)
         ChatInsert(text)
@@ -148,6 +149,23 @@ wc3Chat(text) {
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
 }
 ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
+; The game module's quickcast keys are off while the companion types a chat
+; line: 1.28 opens its chat box a frame after the Enter, so the line's first
+; quickcast key reached the module before it, which pressed the ability and
+; kept the letter from the chat ("-lod", "-onvert": a user's report,
+; 2026-11-01). On again 400 ms after the last line (the game has read it all).
+global gChatSending := false
+ChatSendHold() {
+    global gChatSending, remap
+    gChatSending := true
+    SetTimer(ChatSendRelease, -400)
+    try remap.pushKeys()
+}
+ChatSendRelease() {
+    global gChatSending, remap
+    gChatSending := false
+    try remap.pushKeys()
+}
 ; the text into the open chat box: pasted (keeping the clipboard), or typed.
 ; The clipboard is put back 500 ms after the last paste, not right away: the
 ; game reads it when it gets to the Ctrl+V, which can be frames later (a busy
