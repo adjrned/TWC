@@ -130,7 +130,7 @@ global macroSel := -1, macroOffset := 0, macroDraftHK := ""     ; macroSel 0 = a
 global MACRO_ROWS := 6, MACRO_ROW_H := 36
 ; remap
 global remapListBox, remapListHdr, remapDetail, remapStatus, remapInfo, remapSetBtn, remapClearBtn, remapQcBtn
-global remapViewBtns := Map(), remapTiles := [], remapTileAt := Map(), remapListCtrls := [], remapHudCtrls := []
+global remapProfileBtn, remapViewBtns := Map(), remapTiles := [], remapTileAt := Map(), remapListCtrls := [], remapHudCtrls := []
 global remapSlots := [], remapSel := { group: "card", index: 9 }      ; Skill Q
 global remapListCache := "", remapViewShown := ""
 global remapQcCtrls := Map(), remapCard, REMAP_CARD_Y := 346      ; the detail card under the HUD / list (window y)
@@ -1419,6 +1419,10 @@ BuildRemapPage() {
         AddToPage("remap", b)
     }
 
+    ; the profile in use, left of the view switch: a click opens the profiles' menu
+    remapProfileBtn := MkButton("", 40, 160, 190, 24, C.chip, C.text, (*) => RemapProfileMenu())
+    UISetFont(remapProfileBtn, "s8 w600")
+    AddToPage("remap", remapProfileBtn)
     ; List: column header over a list (left of the quickcast panel, which both views show)
     remapListHdr := mainGui.AddText("x49 y160 w470 h18 +Background" C.panel " c" C.dim,
         Fmt("Slot", 12) Fmt("Game key", 11) Fmt("Your key", 18) "Quickcast")
@@ -1451,6 +1455,7 @@ LayoutRemap() {
     local R := TB_R
     remapViewBtns["hud"].Move(R - 104, TB_Y + 2)
     remapViewBtns["list"].Move(R - 52, TB_Y + 2)
+    remapProfileBtn.Move(R - 104 - 8 - 190, TB_Y + 2, 190, 24)
     ; detail card along the bottom (its box: BuildRemapTiles)
     local y := REMAP_CARD_Y, bx := CX + 680 - 18 - 102
     remapDetail.Move(CX + 18, y + 14)
@@ -1565,8 +1570,9 @@ RemapQcRefresh() {
 }
 RefreshRemap(capturing := false) {
     global remap, remapSel, remapSlots, remapViewBtns, remapListCtrls, remapHudCtrls, remapTiles, remapListBox,
-        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C, remapQcCtrls
+        remapDetail, remapStatus, remapQcBtn, remapInfo, remapListCache, remapViewShown, currentPage, boxes, C, remapQcCtrls, remapProfileBtn
     RemapQcRefresh()
+    SetIf(remapProfileBtn, "Profile: " remap.profile "  ▾")
     d := remap.get(), view := Ini("Remap", "view", "hud") = "list" ? "list" : "hud", hud := view = "hud", sel := 0
     remapSlots := d.slots
     for s in d.slots
@@ -1691,6 +1697,51 @@ RemapTileQc(group, index, *) {
     global remapSel := { group: group, index: index }
     RemapToggleQc()
 }
+; the Remap page's profiles (engine: RemapEngine profiles): switch, a new one (a copy of these keys,
+; or empty), rename, delete
+RemapProfileMenu() {
+    global remap
+    m := Menu(), cur := remap.profile
+    for p in remap.profiles() {
+        m.Add(p, ((pn, *) => (remap.useProfile(pn), RefreshRemap())).Bind(p))
+        if p = cur
+            m.Check(p)
+    }
+    m.Add()
+    m.Add("New profile (a copy of these keys)…", (*) => RemapProfileNew(true))
+    m.Add("New empty profile…", (*) => RemapProfileNew(false))
+    m.Add("Rename '" cur "'…", (*) => RemapProfileRename())
+    m.Add("Delete '" cur "'", (*) => RemapProfileDelete())
+    if remap.profiles().Length < 2
+        m.Disable("Delete '" cur "'")
+    m.Show()
+}
+RemapProfileNew(copy) {
+    global remap
+    name := AskText("New remap profile", "A name for it (e.g. the hero it's for). Link it to a save from the Loader: right-click the save > Remap profile.", "")
+    if name = ""
+        return
+    if remap.newProfile(name, copy) = ""
+        return Toast("That name is taken or empty", "error")
+    RefreshRemap()
+}
+RemapProfileRename() {
+    global remap
+    cur := remap.profile
+    name := AskText("Rename profile", "A new name for '" cur "'. Saves linked to it stay linked.", cur)
+    if name = "" || name == cur
+        return
+    if remap.renameProfile(cur, name) = ""
+        return Toast("That name is taken or empty", "error")
+    RefreshRemap()
+}
+RemapProfileDelete() {
+    global remap
+    cur := remap.profile
+    if Dialog("Delete the remap profile '" cur "'? Saves linked to it are unlinked.", "Delete profile", ["Delete", "Cancel"]) != "Delete"
+        return
+    remap.deleteProfile(cur), RefreshRemap()
+}
 RemapContext(gui, ctrl, *) {
     global remapTileAt, saveRowAt
     if ctrl && saveRowAt.Has(ctrl.Hwnd)
@@ -1702,7 +1753,7 @@ RemapContext(gui, ctrl, *) {
 ; and of -l's guesses, still loadable by its exact name or with Show ignored), Show in folder. A save
 ; of a series (an expanded row) ignores / stars the whole series, as its eye and star do.
 SaveContext(i) {
-    global saveFiles, saveOffset, saveSel, loader
+    global saveFiles, saveOffset, saveSel, loader, remap
     idx := saveOffset + i
     if idx > saveFiles.Length
         return
@@ -1715,6 +1766,17 @@ SaveContext(i) {
     m.Add((f.pinned || (f.kind = "child" && SaveKeyPinned(f.key)) ? "Remove from favourites" : "Favourite") series,
         (*) => (loader.pinToggle(Map("name", f.key)), RefreshFiles()))
     m.Add((f.hidden ? "Stop ignoring" : "Ignore") series, (*) => (loader.hideToggle(Map("name", f.key)), RefreshFiles()))
+    ; its Remap profile: loading it switches to it (a series: all of it)
+    pm := Menu(), cur := loader.profileFor(f.name)
+    pm.Add("None (keep the one in use)", (*) => (loader.setProfileFor(f.name, ""), RefreshFiles(false)))
+    if cur = ""
+        pm.Check("None (keep the one in use)")
+    for p in remap.profiles() {
+        pm.Add(p, ((pn, *) => (loader.setProfileFor(f.name, pn), RefreshFiles(false))).Bind(p))
+        if p = cur
+            pm.Check(p)
+    }
+    m.Add("Remap profile" (cur != "" ? ": " cur : "") series, pm)
     m.Add()
     m.Add("Show in folder", (*) => Run('explorer.exe /select,"' loader.folder "\" f.name '"'))
     m.Show()
@@ -2723,6 +2785,51 @@ Dialog(text, title := "TW Companion", buttons := ["OK"]) {
     }
     g.Show(pos " w" w " h" h)
     WinWaitClose("ahk_id " g.Hwnd)
+    return res.v
+}
+; a line of text asked for, in the dialogs' look: what was typed ("" when cancelled)
+AskText(title, text, default := "") {
+    global C, UI_FONT, mainGui
+    owned := IsSet(mainGui) && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
+    g := Gui("-Caption +ToolWindow +AlwaysOnTop" (owned ? " +Owner" mainGui.Hwnd : ""))
+    MakeScalable(g, "popup")
+    g.MarginX := 0, g.MarginY := 0
+    w := 440, res := { v: "" }
+    card := DialogCard(g, w)
+    t := g.AddText("x26 y22 w" (w - 52) " h28 +Background" C.card " c" C.text, title)
+    t.SetFont("s13 w700 q4", "Cinzel")
+    body := g.AddText("x26 y58 w" (w - 52) " +Background" C.card " c" C.muted, text)
+    UISetFont(body, "s10")
+    bh := TextHeight(body, text, w - 52), body.Move(, , , bh)
+    ey := 58 + bh + 14
+    ed := g.AddEdit("x26 y" ey " w" (w - 52) " h26 +Background" C.well " c" C.text, default)
+    UISetFont(ed, "s10")
+    by := ey + 26 + 22
+    ok := g.AddText("x" (w - 26 - 104) " y" by " w104 h34 Center 0x200 +Background" C.accent " c" C.onAccent, "OK")
+    no := g.AddText("x" (w - 26 - 216) " y" by " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Cancel")
+    for b in [ok, no]
+        UISetFont(b, "s9 w600"), Box.Round(b, 104, 34, 4)
+    done(v) => (res.v := v, g.Destroy())
+    ok.OnEvent("Click", (*) => done(Trim(ed.Value)))
+    no.OnEvent("Click", (*) => done(""))
+    h := by + 34 + 24
+    card.Move(, , , h - 2)
+    g.OnEvent("Escape", (*) => done(""))
+    g.OnEvent("Close", (*) => done(""))
+    pos := "Center"
+    if owned {
+        WinGetPos(&ox, &oy, &ow, &oh, mainGui)
+        pos := "x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2)
+    }
+    g.Show(pos " w" w " h" h)
+    ed.Focus()
+    HotIfWinActive("ahk_id " g.Hwnd)
+    Hotkey("Enter", (*) => done(Trim(ed.Value)), "On")
+    HotIfWinActive()
+    WinWaitClose("ahk_id " g.Hwnd)
+    HotIfWinActive("ahk_id " g.Hwnd)
+    try Hotkey("Enter", "Off")
+    HotIfWinActive()
     return res.v
 }
 Push(event, data) {

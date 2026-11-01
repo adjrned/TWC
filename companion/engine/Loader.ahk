@@ -277,6 +277,42 @@ class LoaderEngine {
         return opts.Length ? opts[Random(1, opts.Length)] : ""
     }
 
+    ; a save's Remap profile (the user, 2026-11-01): loading it switches the remap to that profile;
+    ; none: the profile in use stays. [LoadProfiles] <the save's key (a series' for numbered ones)>=<profile>
+    profileFor(name) => Ini("LoadProfiles", this.keyOf(name), "")
+    setProfileFor(name, profile) {
+        global iniFile
+        if profile = "" {
+            try IniDelete(iniFile, "LoadProfiles", this.keyOf(name))
+        } else {
+            SetIni(profile, "LoadProfiles", this.keyOf(name))
+        }
+    }
+    ; a profile renamed ("" deleted): every save linked to it follows (deleted: unlinked)
+    renameProfileLinks(old, name) {
+        global iniFile
+        try section := IniRead(iniFile, "LoadProfiles")
+        catch
+            return
+        for line in StrSplit(section, "`n") {
+            if !(p := InStr(line, "="))
+                continue
+            k := SubStr(line, 1, p - 1), v := SubStr(line, p + 1)
+            if v = old
+                name = "" ? IniDelete(iniFile, "LoadProfiles", k) : SetIni(name, "LoadProfiles", k)
+        }
+    }
+    ; after a load: its profile in use (true if one was switched to)
+    applyProfile(name) {
+        global remap
+        p := this.profileFor(name)
+        if p = "" || !IsSet(remap) || !remap || !remap.hasProfile(p) || p = remap.profile
+            return false
+        remap.useProfile(p)
+        Push("toast", { kind: "ok", msg: "Remap profile: " p })
+        return true
+    }
+
     setMessage(args) {
         SetIni(args["msg"], this.section "Msg", args["name"])
         return { ok: 1 }
@@ -468,6 +504,7 @@ class LoaderEngine {
         SetIni(name, this.section, "selectedFile")
         this.sessionLast := name
         Push("toast", { kind: "ok", msg: "Loaded " StrReplace(name, ".txt", "") " (" codes.Length " codes)" })
+        this.applyProfile(name)
         return { ok: 1 }
     }
 

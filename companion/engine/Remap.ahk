@@ -254,6 +254,134 @@ class RemapEngine {
         return true
     }
 
+    ; -- profiles (the user, 2026-11-01: a set of keys per hero, switched by the save you load) ---------
+    ; The keys in use stay in [Remap]; a profile is a copy of them in [RemapProfile <name>] (every slot's
+    ; key and quickcast, the sub menus' keys). [RemapProfiles] list / current. Switching saves the keys
+    ; in use into the current profile first, then copies the other one's in. The first is "Default".
+    static PROFILE_KEYS() {
+        keys := ["subQC"]
+        loop 12
+            keys.Push("card" A_Index, "cardQC" A_Index, "sub" A_Index)
+        loop 6
+            keys.Push("inv" A_Index, "invQC" A_Index)
+        return keys
+    }
+    profile => Ini("RemapProfiles", "current", "Default")
+    profiles() {
+        out := []
+        for n in StrSplit(Ini("RemapProfiles", "list", "Default"), "|")
+            if Trim(n) != ""
+                out.Push(Trim(n))
+        return out.Length ? out : ["Default"]
+    }
+    hasProfile(name) {
+        for n in this.profiles()
+            if n = name
+                return true
+        return false
+    }
+    static ProfileName(name) => Trim(RegExReplace(name, "[|\[\]=;\r\n]"))
+    ; the keys in use into a profile's own section
+    storeProfile(name) {
+        global iniFile
+        sect := "RemapProfile " name
+        for k in RemapEngine.PROFILE_KEYS() {
+            v := Ini(this.section, k, Chr(1))
+            if v = Chr(1) {
+                try IniDelete(iniFile, sect, k)
+            } else {
+                SetIni(v, sect, k)
+            }
+        }
+    }
+    ; switch to a profile: true if it's the one in use now
+    useProfile(name) {
+        global iniFile
+        if !this.hasProfile(name)
+            return false
+        if name = this.profile
+            return true
+        this.storeProfile(this.profile)
+        sect := "RemapProfile " name
+        for k in RemapEngine.PROFILE_KEYS() {
+            v := Ini(sect, k, Chr(1))
+            if v = Chr(1) {
+                try IniDelete(iniFile, this.section, k)
+            } else {
+                SetIni(v, this.section, k)
+            }
+        }
+        SetIni(name, "RemapProfiles", "current")
+        this.registerAll()
+        DebugLog("remap: profile " name)
+        return true
+    }
+    ; a new profile, a copy of the keys in use (or empty), and in use: "" if the name is taken or empty
+    newProfile(name, copy := true) {
+        global iniFile
+        name := RemapEngine.ProfileName(name)
+        if name = "" || this.hasProfile(name)
+            return ""
+        this.storeProfile(this.profile)
+        list := this.profiles(), list.Push(name)
+        SetIni(Join("|", list*), "RemapProfiles", "list")
+        if copy
+            this.storeProfile(name)
+        else
+            try IniDelete(iniFile, "RemapProfile " name)
+        if copy {
+            SetIni(name, "RemapProfiles", "current")
+            this.registerAll()
+        } else
+            this.useProfile(name)
+        return name
+    }
+    renameProfile(old, name) {
+        global iniFile, loader
+        name := RemapEngine.ProfileName(name)
+        if name = "" || !this.hasProfile(old) || (this.hasProfile(name) && name != old)
+            return ""
+        this.storeProfile(old)
+        sect := "RemapProfile " old
+        for k in RemapEngine.PROFILE_KEYS()
+            if (v := Ini(sect, k, Chr(1))) != Chr(1)
+                SetIni(v, "RemapProfile " name, k)
+        if name != old
+            try IniDelete(iniFile, sect)
+        list := []
+        for n in this.profiles()
+            list.Push(n = old ? name : n)
+        SetIni(Join("|", list*), "RemapProfiles", "list")
+        if this.profile = old
+            SetIni(name, "RemapProfiles", "current")
+        if IsSet(loader) && loader
+            loader.renameProfileLinks(old, name)
+        return name
+    }
+    ; not the last one; the one in use: the first other one takes over
+    deleteProfile(name) {
+        global iniFile, loader
+        list := this.profiles()
+        if list.Length < 2 || !this.hasProfile(name)
+            return false
+        if this.profile = name {
+            for n in list
+                if n != name {
+                    this.useProfile(n)
+                    break
+                }
+        }
+        rest := []
+        for n in list
+            if n != name
+                rest.Push(n)
+        SetIni(Join("|", rest*), "RemapProfiles", "list")
+        try IniDelete(iniFile, "RemapProfile " name)
+        if IsSet(loader) && loader
+            loader.renameProfileLinks(name, "")
+        return true
+    }
+
     ; -- actions -------------------------------------------------------------
     ; "{q}", never "{Q}": an upper-case letter is sent with Shift (a queued order)
     keyText(key) {
