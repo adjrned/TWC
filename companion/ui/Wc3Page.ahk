@@ -98,7 +98,7 @@ Wc3Features() {
                 OptToggle(d, "Show Minutes (1:35, not 95)", timersHud.cdMinutes, (v) => timersHud.setMinutes("cdMinutes", v)),
                 OptToggle(d, "Ready Flash", timersHud.cdReady, (v) => timersHud.setCdReady(v)),
                 OptNote(d, "A green 'Ready' for a moment when a cooldown ends."),
-                OptToggle(d, "Plain Sweep", timersHud.cdSweep, (v) => timersHud.setCdSweep(v)),
+                OptToggle(d, "CD Countdown Animation", timersHud.cdSweep, (v) => timersHud.setCdSweep(v)),
                 OptNote(d, "Replaces TWRPG's clock on the button with a plain dark sweep.")) },
         { tab: "timers", title: "Buff Alerts", badge: "Both",
             desc: "A line over the game when a buff on your hero is missing or running out.",
