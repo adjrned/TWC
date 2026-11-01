@@ -107,7 +107,9 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     volatile LONG cmdSeq;   // companion: +1 per command (written last)
     DWORD cmd;              // companion: 1 clear messages, 2 clear chat, 3 multiboard minimise / maximise,
                             //   4 autocast toggle on the command card slot cmdArg (unused since 2026-10-26),
-                            //   5 the cooldown ping of the button under the cursor (layout 18: pingText)
+                            //   5 the cooldown ping of the button under the cursor (layout 18: pingText),
+                            //   6 the same for card slot cmdArg (0-11 row by row, 12-17 the inventory), 7 every
+                            //   card and inventory button on cooldown in one line (layout 47)
     volatile LONG cmdDone;  // module: the command it answered
     DWORD cmdResult;        // module: 1 done, 2 refused (see the log), 3 the game thread didn't run it in time
     // layout 5: health bar size (BarsPass)
@@ -1559,6 +1561,8 @@ static volatile LONG g_dispQueued;
 static int ToggleMultiboard(BYTE *ui);
 static int AutocastToggle(BYTE *ui, DWORD slot);
 static int PingCommand(BYTE *ui);
+static int PingSlot(BYTE *ui, DWORD slot);
+static int PingAllCooldowns(BYTE *ui);
 static void SelfCast();
 static UINT g_selfMsg;              // "TWC_GameThreadSelfCast": run SelfCast on the game thread
 static void FramesPass();
@@ -1762,6 +1766,10 @@ static int RunOnGameThread(DWORD cmd) {
         return AutocastToggle((BYTE *)ui, g_shared->cmdArg);
     if (cmd == 5)
         return PingCommand((BYTE *)ui);
+    if (cmd == 6)
+        return PingSlot((BYTE *)ui, g_shared->cmdArg);
+    if (cmd == 7)
+        return PingAllCooldowns((BYTE *)ui);
     return 2;
 }
 
@@ -4289,16 +4297,85 @@ static int PingStats(BYTE *ui, BYTE *f, int kind) {
         Log("ping: \"%s\" (%s, unit %p)", g_shared->pingText, kind == HOVER_PORTRAIT ? "the portrait" : kind == HOVER_HERO ? "the hero icon" : kind == HOVER_DAMAGE ? "the damage icon" : "the armor icon", unit);
     return 1;
 }
+static int PingButton(BYTE *ui, BYTE *btn);
 // command 5, on the game thread: 1 pingText written, 2 nothing to ping
 static int PingCommand(BYTE *ui) {
     g_shared->pingText[0] = 0, g_shared->pingChat = 0;
     __try {
         int kind;
-        BYTE *btn = Hovered(ui, &kind), *data = btn && kind == HOVER_BUTTON ? *(BYTE **)(btn + 0x190) : nullptr;
+        BYTE *btn = Hovered(ui, &kind);
         if (btn && kind == HOVER_BUFF)
             return PingBuff(ui, btn);
         if (btn && kind >= HOVER_DAMAGE)
             return PingStats(ui, btn, kind);
+        return btn && kind == HOVER_BUTTON ? PingButton(ui, btn) : 2;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("ping: reading the button faulted");
+        g_shared->pingText[0] = 0;
+        return 2;
+    }
+}
+// a card slot (0-11, row by row) or an inventory slot (12-17) of the selected unit
+static BYTE *SlotButton(BYTE *ui, DWORD slot) {
+    if (slot >= 12)
+        return slot < 18 ? ItemButton(ui, slot - 12) : nullptr;
+    BYTE *card = P(ui, 0x3c8);
+    if (!card)
+        return nullptr;
+    int rows = *(int *)(card + 0x124), cols = *(int *)(card + 0x128), r = slot / 4, c = slot % 4;
+    return rows > 0 && rows <= 3 && cols > 0 && cols <= 4 && r < rows && c < cols ? GridButton(card, r, c) : nullptr;
+}
+// command 6 (layout 47): a slot's ping by key, the line as command 5's for that button
+static int PingSlot(BYTE *ui, DWORD slot) {
+    g_shared->pingText[0] = 0, g_shared->pingChat = 0;
+    __try {
+        BYTE *btn = SlotButton(ui, slot);
+        return btn ? PingButton(ui, btn) : 2;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("ping: reading slot %lu faulted", slot);
+        g_shared->pingText[0] = 0;
+        return 2;
+    }
+}
+// command 7 (layout 47): "<unit> >> On cooldown: Holy Light 7, Divine Shield 40, Potion 20" (the card, then
+// the inventory), "<unit> >> Nothing on cooldown" when none is
+static int PingAllCooldowns(BYTE *ui) {
+    g_shared->pingText[0] = 0, g_shared->pingChat = 0;
+    __try {
+        char who[64] = "", list[112] = "";
+        PanelName(ui, who, sizeof(who));
+        int n = 0;
+        for (DWORD slot = 0; slot < 18; slot++) {
+            BYTE *btn = SlotButton(ui, slot), *data = btn ? *(BYTE **)(btn + 0x190) : nullptr;
+            float left = 0, total = 0;
+            if (!data || !PageIs(data + DATA_NAME, READ) || (ButtonCooldown(btn, &left, &total), !(left > 0)))
+                continue;
+            char name[48], t[12];
+            PlainText((const char *)(data + DATA_NAME), name, sizeof(name));
+            TimeText(left, t, sizeof(t), (g_shared->tmMinutes & MIN_COOLDOWNS) != 0);
+            if (!name[0] || !t[0])
+                continue;
+            size_t o = strlen(list);
+            _snprintf_s(list + o, sizeof(list) - o, _TRUNCATE, "%s%s %s", n ? ", " : "", name, t);
+            n++;
+        }
+        _snprintf_s(g_shared->pingText, sizeof(g_shared->pingText), _TRUNCATE, who[0] ? "%s >> %s%s" : "%s%s%s", who,
+            n ? "On cooldown: " : "Nothing on cooldown", list);
+        g_shared->pingChat = ChatRecipient(ui);
+        static int logs;
+        if (logs++ < 3)
+            Log("ping: \"%s\" (every cooldown: %d)", g_shared->pingText, n);
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        Log("ping: reading the cooldowns faulted");
+        g_shared->pingText[0] = 0;
+        return 2;
+    }
+}
+// an ability or item button's line: "<unit> >> <ability> | Cooldown: 7", "| Ready!" or "| Not enough mana!"
+static int PingButton(BYTE *ui, BYTE *btn) {
+    BYTE *data = btn ? *(BYTE **)(btn + 0x190) : nullptr;
+    __try {
         if (!data || !PageIs(data + DATA_NAME, READ))
             return 2;
         char ability[64], who[64] = "", t[12];
@@ -8446,7 +8523,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 46;
+        g_shared->layout = 47;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

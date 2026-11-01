@@ -187,6 +187,22 @@ TwcModuleRun() {
     timersHud.resetLook("buffs"), lk2 := timersHud.bfSize = 1 && timersHud.cdSize = 1.4
     timersHud.resetLook("cds"), lk3 := timersHud.cdSize = 1 && timersHud.cdGold = 5 && timersHud.allies = keepAllies
     TwcCheck(lk1 && lk2 && lk3, "Buff / CD Timers: sizes apart; each card's Reset to default: only its own, allies left as they were")
+    ; Pings' Text: full as the module's, short, custom ({unit} {name} {status}); every cooldown short; stats as they are
+    pf := (l, st, f := "") => TimerHud.PingText(l, st, f)
+    p1 := pf("Paladin >> Holy Light | Cooldown: 8", "short") = "Holy Light: 8s" && pf("Paladin >> Holy Light | Ready!", "short") = "Holy Light: ready"
+    p2 := pf("Paladin >> Holy Light | Not enough mana! 8", "short") = "Holy Light: no mana (8s)" && pf("Paladin >> Inner Fire | 12 s left", "short") = "Inner Fire: 12s left"
+    p3 := pf("Paladin >> On cooldown: Holy Light 8, Potion 1:35", "short") = "On CD: Holy Light 8s, Potion 1:35" && pf("Paladin >> Nothing on cooldown", "short") = "Nothing on CD"
+    p4 := pf("Paladin >> Holy Light | Cooldown: 8", "custom", "{name} in {status} ({unit})") = "Holy Light in Cooldown: 8 (Paladin)" && pf("Paladin >> Holy Light | Ready!", "full") = "Paladin >> Holy Light | Ready!"
+    p5 := pf("Paladin >> HP 500 / 800", "short") = "HP 500 / 800"
+    TwcCheck(p1 && p2 && p3 && p4 && p5, "ping text: short, custom and full (" p1 p2 p3 p4 p5 ")")
+    ; Ping by Key: Ctrl + each slot's key (yours, else the game's), and the every-cooldown key; off: none
+    keepKeys := timersHud.pingKeys, keepAll := timersHud.pingAllKey
+    timersHud.setPingKeys(1), timersHud.setPingAllKey("F7"), n1 := timersHud.pingKeysReg.Length, hasQ := false, hasAll := false
+    for k in timersHud.pingKeysReg
+        hasQ |= k = "$^Q", hasAll |= k = "$F7"
+    timersHud.setPingKeys(0), timersHud.setPingAllKey(""), n2 := timersHud.pingKeysReg.Length
+    timersHud.setPingKeys(keepKeys), timersHud.setPingAllKey(keepAll)
+    TwcCheck(n1 >= 13 && hasQ && hasAll && n2 = 0, "ping keys: " n1 " set (Ctrl + Q among them, F7 for every cooldown); off: " n2)
     ; W3L's launch arguments (WFE's Launch Arguments): one line, trimmed
     bnetLogin.setW3lArgs("  -window`r`n-nativefullscr "), a1 := bnetLogin.w3lArgs, bnetLogin.setW3lArgs("")
     TwcCheck(a1 = "-window -nativefullscr" && bnetLogin.w3lArgs = "", "W3L arguments: kept on one line, trimmed ('" a1 "')")

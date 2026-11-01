@@ -206,6 +206,9 @@ class RemapEngine {
             }
         }
         this.pushKeys()
+        global timersHud                        ; the pings' Ctrl + key follow your keys
+        if IsSet(timersHud) && timersHud
+            timersHud.pingKeysOn()
     }
 
     refresh() {

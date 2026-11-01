@@ -43,7 +43,86 @@ class TimerHud {
         HotIf(ObjBindMethod(this, "pingActive"))
         Hotkey("<!LButton", (*) => this.ping(), "On T3")         ; T3: a click while the last one is asking isn't dropped
         HotIf()
+        this.pingKeysOn()
     }
+    ; -- the ping's options (the user, 2026-11-01): how the line reads, a key per slot, one for every cooldown --
+    ; Text: full (the module's line), short ('Holy Light: 8s') or custom (a template: {unit} {name} {status});
+    ; [Timers] pingStyle / pingFormat. Ctrl + an ability's or item's key pings that slot ([Timers] pingKeys,
+    ; the module's command 6, layout 47); a key of its own pings every cooldown at once ([Timers] pingAllKey,
+    ; command 7). Ctrl, not Alt or Shift: Shift queues orders in the game and Alt + Q is the game's quit.
+    static PING_STYLES := [["full", "Full"], ["short", "Short"], ["custom", "Custom"]]
+    static PING_FORMAT := "{unit} >> {name} | {status}"
+    pingStyle => (v := Ini(this.section, "pingStyle", "full")) = "short" || v = "custom" ? v : "full"
+    setPingStyle(v) => SetIni(v, this.section, "pingStyle")
+    pingFormat => (v := Ini(this.section, "pingFormat", "")) != "" ? v : TimerHud.PING_FORMAT
+    setPingFormat(v) => SetIni(Trim(StrReplace(StrReplace(v, "`n", " "), "`r")), this.section, "pingFormat")
+    pingKeys => Integer(Ini(this.section, "pingKeys", 0))
+    setPingKeys(on) => (SetIni(on ? 1 : 0, this.section, "pingKeys"), this.pingKeysOn())
+    pingAllKey => Ini(this.section, "pingAllKey", "")
+    setPingAllKey(k) => (SetIni(k, this.section, "pingAllKey"), this.pingKeysOn())
+    ; the line as the Text option says. The module's: "<unit> >> <name> | <status>" (an ability, item or
+    ; buff), "<unit> >> <numbers>" (stats), "<unit> >> On cooldown: A 8, B 1:35" / "Nothing on cooldown"
+    static PingText(line, style, fmt := "") {
+        if style = "full" || line = ""
+            return line
+        who := "", rest := line
+        if (p := InStr(line, " >> "))
+            who := SubStr(line, 1, p - 1), rest := SubStr(line, p + 4)
+        if InStr(rest, "On cooldown: ") = 1 || rest = "Nothing on cooldown" {
+            if style != "short"
+                return line
+            return rest = "Nothing on cooldown" ? "Nothing on CD"
+                : "On CD: " RegExReplace(SubStr(rest, 14), "(?<![\d:])(\d+)(?=,|$)", "$1s")
+        }
+        if !(p := InStr(rest, " | "))
+            return style = "short" ? rest : line            ; stats: their numbers as they are
+        name := SubStr(rest, 1, p - 1), status := SubStr(rest, p + 3)
+        if style = "custom"
+            return StrReplace(StrReplace(StrReplace(fmt, "{unit}", who), "{name}", name), "{status}", status)
+        st := RegExMatch(status, "^Cooldown: (\S+)$", &m) ? m[1] (InStr(m[1], ":") ? "" : "s")
+            : status = "Ready!" ? "ready"
+            : RegExMatch(status, "^Not enough mana!(?: (\S+))?$", &m) ? "no mana" (m[1] != "" ? " (" m[1] (InStr(m[1], ":") ? "" : "s") ")" : "")
+            : RegExMatch(status, "^(\S+) s left$", &m) ? m[1] "s left"
+            : status
+        return name ": " st
+    }
+    ; the keys, on while a ping could go out (as pingActive, without the cursor)
+    pingKeyActive(*) {
+        global toolEnabled, chatting
+        if !this.pings || !toolEnabled || chatting || !WinActive(WarcraftIII)
+            return false
+        v := this.gm.live()
+        return v && NumGet(v, Shm.layout, "uint") >= 47 && NumGet(v, Shm.qcState, "uint") = 1
+    }
+    pingKeysReg := []
+    pingKeysOn() {
+        global remap
+        HotIf(ObjBindMethod(this, "pingKeyActive"))
+        for k in this.pingKeysReg
+            try Hotkey(k, "Off")
+        this.pingKeysReg := []
+        add(key, fn) {
+            try {
+                Hotkey(key, fn, "On")
+                this.pingKeysReg.Push(key)
+            } catch as e
+                DebugLog("ping: the key " key " couldn't be set: " e.Message)
+        }
+        if this.pingKeys && IsSet(remap) && remap
+            for group in ["card", "inv"]
+                loop remap.count(group) {
+                    i := A_Index, k := remap.yourKey(group, i)
+                    k := k != "" ? RegExReplace(k, "^[$~*]+") : remap.gameKey(group, i)
+                    if k = "" || RegExMatch(k, "[\^!+#<>]") || IsWheel(k)          ; a key with modifiers of its own: left alone
+                        continue
+                    add("$^" k, ObjBindMethod(this, "pingSlot", (group = "inv" ? 12 : 0) + i - 1))
+                }
+        if (k := this.pingAllKey) != ""
+            add("$" k, ObjBindMethod(this, "pingAll"))
+        HotIf()
+    }
+    pingSlot(slot, *) => this.pingAsk(6, slot)
+    pingAll(*) => this.pingAsk(7, 0)
     allies => Integer(Ini(this.section, "allies", 0))
     ; enemies' units too (bosses, creeps): alOn bit 2, the card an observer sees
     alliesEnemies => Integer(Ini(this.section, "alliesEnemies", 0))
@@ -82,8 +161,13 @@ class TimerHud {
         if A_TickCount - last < 120             ; one click seen twice
             return
         last := A_TickCount
-        r := this.gm.commandWait(this.gm.command(5), 400)
+        this.pingAsk(5, 0)
+    }
+    ; ask the module for a line (5 the hovered button, 6 a slot, 7 every cooldown), then queue it as the Text option says
+    pingAsk(cmd, arg) {
+        r := this.gm.commandWait(this.gm.command(cmd, arg), 400)
         text := r = 1 && (v := this.gm.live()) ? StrGet(v + Shm.pingText, 128, "UTF-8") : ""
+        text := TimerHud.PingText(text, this.pingStyle, this.pingFormat)
         DebugLog("cooldown ping: " (text != "" ? text : "nothing to ping (" r ")") (this.pingQueue.Length || this.pingBusy ? " (queued)" : ""))
         if text = ""
             return
@@ -238,7 +322,8 @@ class TimerHud {
             return "Off"
         if !this.gm.enabled
             return "On · needs the game module (top of this page)"
-        return this.gm.live() ? "On · Alt + click in the game" : "On · starts with a 1.28f game"
+        keys := (this.pingKeys ? ", Ctrl + an ability's key" : "") (this.pingAllKey != "" ? ", " ReadableHotkey(this.pingAllKey) " for every cooldown" : "")
+        return this.gm.live() ? "On · Alt + click in the game" keys : "On · starts with a 1.28f game"
     }
     buffStatus() => this.statusOf(this.buffs, "under the buff icons")
     statusOf(on, where) {

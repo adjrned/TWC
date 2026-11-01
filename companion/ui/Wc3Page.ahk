@@ -185,9 +185,20 @@ Wc3Features() {
             opts: (d) => (OptToggle(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
                 OptNote(d, "Shown as an observer sees it. Clicking their buttons does nothing. A boss TWRPG holds paused until it's engaged shows an empty card till then.")) },
         { tab: "combat", title: "Pings", badge: "1.28f",
-            desc: "Alt + click an ability, item, buff, stat or the portrait: your allies are told.",
+            desc: "Tell your allies a cooldown, buff or stat: Alt + click it, or a key.",
             on: (*) => timersHud.pings, set: (v) => timersHud.setPings(v), status: (*) => timersHud.pingStatus(),
-            opts: (d) => OptNote(d, "Sent to your allies (who gets it: the game's Chat dialog):`n'Paladin >> Holy Light | Cooldown: 7', '| Ready!' or '| Not enough mana!'`na buff: 'Paladin >> Inner Fire | 12 s left' or '| active'`nthe portrait: HP and mana (and a hero's level); the damage, armor and hero icons: their numbers.`nYour units', allies' and enemies'.") },
+            ; how the line reads, and keys to ping without the mouse (the user's asks, 2026-11-01)
+            opts: (d) => (OptNote(d, "Alt + click an ability, item, buff, stat icon or the portrait, yours, an ally's or an enemy's. The line goes where the game's Chat dialog sends (your allies unless changed)."),
+                OptDivider(d),
+                OptChoice(d, "Text", TimerHud.PING_STYLES, (*) => timersHud.pingStyle, (v) => timersHud.setPingStyle(v)),
+                OptNote(d, "Full: 'Paladin >> Holy Light | Cooldown: 8'. Short: 'Holy Light: 8s'. Custom: the line below."),
+                OptEdit(d, "Custom", (*) => timersHud.pingFormat, (v) => timersHud.setPingFormat(v)),
+                OptNote(d, "{unit}, {name} and {status} are filled in, e.g. '{name} is ready in {status}'."),
+                OptDivider(d),
+                OptToggle(d, "Ping by Key", timersHud.pingKeys, (v) => timersHud.setPingKeys(v)),
+                OptNote(d, "Hold Ctrl and press an ability's or item's key to ping it: your key from the Remap page, or the game's."),
+                OptKeySet(d, "Ping All CDs", (*) => timersHud.pingAllKey, (k) => timersHud.setPingAllKey(k)),
+                OptNote(d, "One line with every ability and item on cooldown.")) },
         { tab: "combat", title: "Boss Timers", badge: "1.28f", wip: true,
             desc: "Learns each boss's spells over your attempts and counts down to the next ones.",
             on: (*) => bossBars.enabled, set: (v) => bossBars.setEnabled(v), status: (*) => bossBars.statusText(),
@@ -599,6 +610,38 @@ OptRight(d, n, ctl, gap := 6) {
         ct := ctl(A_Index)
         ct.GetPos(, , &rw), ct.Move(x), x += rw + gap
     }
+}
+; a line of text to type: its label, and a box (saved as you type)
+OptEdit(d, label, get, set) {
+    global C
+    g := d.g
+    g.AddText("x" d.x " y" (d.y + 3) " w76 h22 0x200 +Background" C.card " c" C.text, label)
+    ed := g.AddEdit("x" (d.x + 80) " y" (d.y + 1) " w" (d.tw - 80) " h24 +Background" C.well " c" C.text, get())
+    ed.OnEvent("Change", (src, *) => set(src.Value))
+    d.y += 34
+    return ed
+}
+; a key of the companion's: its label, the key, and Set key (Esc while asked: none). get() -> the key, set(key)
+OptKeySet(d, label, get, set) {
+    global C, remap
+    g := d.g
+    g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
+    kt := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w" (d.tw - 146 - 100) " h22 Right 0x200 +Background" C.card " c" C.accent, (k := get()) != "" ? ReadableHotkey(k) : "none")
+    b := g.AddText("x" (d.x + d.tw - 90) " y" d.y " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Set key")
+    UISetFont(b, "s9 w600"), Box.Round(b, 90, 28, 4)
+    ask(*) {
+        b.Text := "press…"
+        combo := RegExReplace(KeyWaitCombo(), "[<>]")
+        b.Text := "Set key"
+        if combo = ""
+            return
+        k := combo = "Escape" ? "" : combo
+        if k != "" && (why := remap.reserved(k)) != ""
+            return Toast(ReadableHotkey(k) " is already " why, "error")
+        set(k), kt.Text := k != "" ? ReadableHotkey(k) : "none"
+    }
+    b.OnEvent("Click", ask)
+    d.y += 34
 }
 ; a game key (GameCommands): its key, and a button that asks for a new one
 OptKey(d, label, name) {

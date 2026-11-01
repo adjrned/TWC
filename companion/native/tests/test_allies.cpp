@@ -157,6 +157,17 @@ int main() {
         *(DWORD *)(chatDlg + DIALOG_TO) = k, *(int *)(chatDlg + DIALOG_PLAYER) = -1, PingCommand(ui), to[k] = sh.pingChat;
     *(DWORD *)(chatDlg + DIALOG_TO) = 0, *(int *)(chatDlg + DIALOG_PLAYER) = 3, PingCommand(ui);
     CHECK(to[0] == 1 && to[1] == 2 && to[2] == 3 && to[3] == 1 && sh.pingChat == 4, "the chat opens to: all (0, no player), allies (1), observers (2), all (3), one player");
+    // by key (command 6): a slot's line as the hovered one's; a slot with no button: nothing. Every cooldown (command 7)
+    *(BYTE **)(top + TOP_HOVER) = nullptr, *(DWORD *)card = (DWORD)(img + 0xab0000);      // (a game object: the slot lookup checks)
+    int ps0 = PingSlot(ui, 0); char slotLine[128]; strcpy_s(slotLine, sh.pingText);
+    int ps5 = PingSlot(ui, 5), ps20 = PingSlot(ui, 20);
+    CHECK(ps0 == 1 && !strcmp(slotLine, "Paladin >> Holy Light | Cooldown: 8") && ps5 == 2 && ps20 == 2, "slot 0 by key: \"%s\"; slot 5 (no button) and 20: nothing", slotLine);
+    int pa1 = PingAllCooldowns(ui); char allLine[128]; strcpy_s(allLine, sh.pingText);
+    *(DWORD *)(ab + 0x20) = 0;
+    int pa2 = PingAllCooldowns(ui);
+    CHECK(pa1 == 1 && !strcmp(allLine, "Paladin >> On cooldown: Holy Light 8") && pa2 == 1 && !strcmp(sh.pingText, "Paladin >> Nothing on cooldown"),
+          "every cooldown: \"%s\", then \"%s\"", allLine, sh.pingText);
+    *(DWORD *)(ab + 0x20) = 0x200, *(BYTE **)(top + TOP_HOVER) = btn;
     // DISPLAYMINUTES: whole seconds by default (WFE's), m:ss with it on
     char t1[12], t2[12], t3[12];
     TimeText(95, t1, sizeof(t1), false), TimeText(95, t2, sizeof(t2), true), TimeText(0.46f, t3, sizeof(t3), false);
