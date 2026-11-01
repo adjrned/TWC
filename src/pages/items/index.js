@@ -658,7 +658,8 @@ export async function initItems({ params, query }) {
   document.addEventListener('keydown', onKey);
 
   const unbindHover = bindItemHover(listEl);
-  const saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || 'null');
+  let saved = null;     // (bad saved data mustn't blank the page)
+  try { saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || 'null'); } catch { /* none */ }
   update({ onDone: () => { if (saved && saved.hash === listHash) window.scrollTo(0, saved.y); } });
 
 
