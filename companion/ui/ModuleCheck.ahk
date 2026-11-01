@@ -170,6 +170,12 @@ ModuleCheckRows(log) {
         if InStr(l, "tooltips: ")
             tips.Push(Trim(SubStr(l, 26)))
     rows.Push({ mark: "·", name: "Tooltips (probe)", detail: tips.Length ? Join(" | ", tips*) : "not logged yet" })
+    ; each turn of the sub menu check (layout 45): what the card's menu list held, in and out of sub menus
+    subs := []
+    for l in log
+        if RegExMatch(l, "quickcast keys: key .. (with a sub menu open|: a sub menu open|: the card's own keys)") && subs.Length < 16
+            subs.Push(Trim(SubStr(l, 12)))
+    rows.Push({ mark: "·", name: "Quickcast keys: sub menus (probe)", detail: subs.Length ? Join(" | ", subs*) : "not logged yet (no sub menu keys, or no quickcast key pressed)" })
     return rows
 }
 
