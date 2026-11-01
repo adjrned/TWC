@@ -6,6 +6,8 @@ import { t } from './i18n.js';
 import { showToast } from './ui/toast.js';
 
 const PUBLIC_URL = 'https://adjrned.github.io/TWC/';
+// the companion's installer: the rolling beta release keeps this name (.github/workflows/companion-beta.yml)
+const COMPANION_SETUP = 'https://github.com/adjrned/TWC/releases/download/beta-latest/TWC-Companion-Setup-beta.exe';
 const host = window.chrome?.webview;
 export const inOverlay = !!host;
 
@@ -92,4 +94,20 @@ export function initOverlay() {
   initEscape();
   initExternalLinks();
   send('ready');
+}
+
+// On the site (not in the overlay, whose bar is there): the companion's download, where the overlay's update
+// button sits, in the sidebar's footer and the phone layout's sheet.
+export function initDownload() {
+  if (inOverlay) return;
+  for (const foot of document.querySelectorAll('.sidebar-footer, .bn-sheet-foot')) {
+    const bar = document.createElement('div');
+    bar.className = 'ov-bar dl-bar';
+    bar.innerHTML = '<a class="btn primary dl-app" data-i18n="download.app"></a><span class="ov-ver" data-i18n="download.note"></span>';
+    const a = bar.querySelector('.dl-app');
+    a.href = COMPANION_SETUP;
+    a.rel = 'noopener';
+    for (const el of bar.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+    foot.prepend(bar);
+  }
 }

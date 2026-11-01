@@ -18,6 +18,8 @@ const STRINGS = {
     'overlay.retry': "Update failed, retry",
     'overlay.error': "Couldn't update the overlay data",
     'overlay.version': "Data {v}",
+    'download.app': "Download TW Companion",
+    'download.note': "Windows app: quickcast, macros, this site over the game",
     'sim.title': "Damage Sim",
     'sim.subtitle': "Single-hit damage, step by step, following the Effects tab damage formula",
     'sim.loading': "Loading…",
@@ -544,6 +546,8 @@ const STRINGS = {
   },
 
   ko: {
+    'download.app': "TW Companion 다운로드",
+    'download.note': "Windows 앱: 퀵캐스트, 매크로, 게임 위에 이 사이트",
     'nav.builder': '빌드 플래너',
     'nav.items': '아이템 도감',
     'nav.heroes': '영웅',
@@ -948,6 +952,8 @@ const STRINGS = {
   },
 
   zh: {
+    'download.app': "下载 TW Companion",
+    'download.note': "Windows 应用：快速施法、宏、在游戏上显示本站",
     'nav.builder': '构建规划',
     'nav.items': '物品图鉴',
     'nav.heroes': '英雄',
