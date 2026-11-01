@@ -119,6 +119,7 @@ global searchEdit, hiddenChip, helpBtn, msgLabel, msgSummary, msgInfo, msgEdit, 
 global emptyTitle, emptySub, emptyBtn
 global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list (BuildSaveList)
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
+global saveRowAt := Map()       ; a save row's control hwnd -> its row (the right-click menu)
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
 ; macros
 global macroNewBtn, macroHelpBtn, macroPasteCb, macroPasteLbl, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
@@ -334,7 +335,7 @@ BuildWindow() {
     UpdateToolPill()
 }
 
-; Loader: search, ? and Show hidden share the toolbar row with the title; the
+; Loader: search, ? and Show ignored share the toolbar row with the title; the
 ; load-message row sits at the bottom, under the save list
 LayoutLoader() {
     global
@@ -644,6 +645,7 @@ BuildSaveList() {
             else
                 t.SetFont("s10", ICON_FONT)
             row.%col[1]% := t
+            saveRowAt[t.Hwnd] := i
             AddToPage("loader", t)
         }
         row.sep := mainGui.AddText("x" (x + 1) " y" (ry + SAVE_ROW_H - 1) " w" (w - 2) " h1 +Background" C.border)
@@ -743,7 +745,7 @@ RefreshFiles(reload := true) {
                     pinned: 0, hidden: e.hidden, msg: e.msg, date: f.date, sortKey: f.sortKey, files: 0 })
             }
     }
-    hiddenChip.Text := (showHidden ? "Hide hidden" : "Show hidden") (hiddenCount ? "  (" hiddenCount ")" : "")
+    hiddenChip.Text := (showHidden ? "Hide ignored" : "Show ignored") (hiddenCount ? "  (" hiddenCount ")" : "")
     if !SaveIndex(saveSel)
         saveSel := saveFiles.Length ? saveFiles[1].id : ""
     saveOffset := Max(0, Min(saveOffset, saveFiles.Length - SAVE_ROWS))
@@ -1690,9 +1692,39 @@ RemapTileQc(group, index, *) {
     RemapToggleQc()
 }
 RemapContext(gui, ctrl, *) {
-    global remapTileAt
+    global remapTileAt, saveRowAt
+    if ctrl && saveRowAt.Has(ctrl.Hwnd)
+        return SaveContext(saveRowAt[ctrl.Hwnd])
     if ctrl && remapTileAt.Has(ctrl.Hwnd) && (t := remapTileAt[ctrl.Hwnd]).qc
         RemapTileQc(t.group, t.index)
+}
+; right-click a save row (the user, 2026-11-01): Load, Favourite, Ignore (the row's eye: out of the list
+; and of -l's guesses, still loadable by its exact name or with Show ignored), Show in folder. A save
+; of a series (an expanded row) ignores / stars the whole series, as its eye and star do.
+SaveContext(i) {
+    global saveFiles, saveOffset, saveSel, loader
+    idx := saveOffset + i
+    if idx > saveFiles.Length
+        return
+    f := saveFiles[idx], saveSel := f.id, RenderSaves(), ShowSelectedMessage()
+    m := Menu()
+    m.Add("Load", (*) => SaveRowClick(i, "load"))
+    m.Default := "Load"
+    m.Add()
+    series := f.kind != "file" ? " (the series)" : ""
+    m.Add((f.pinned || (f.kind = "child" && SaveKeyPinned(f.key)) ? "Remove from favourites" : "Favourite") series,
+        (*) => (loader.pinToggle(Map("name", f.key)), RefreshFiles()))
+    m.Add((f.hidden ? "Stop ignoring" : "Ignore") series, (*) => (loader.hideToggle(Map("name", f.key)), RefreshFiles()))
+    m.Add()
+    m.Add("Show in folder", (*) => Run('explorer.exe /select,"' loader.folder "\" f.name '"'))
+    m.Show()
+}
+SaveKeyPinned(key) {
+    global loader
+    for n in loader.pinned()
+        if n == key
+            return true
+    return false
 }
 RemapTileClick(group, index, *) {
     global remapSel := { group: group, index: index }

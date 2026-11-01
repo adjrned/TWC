@@ -382,14 +382,15 @@ class LoaderEngine {
                 if i = Integer(q)
                     return InStr(n, "#*") ? this.latestOf(n, files) : n
         }
-        ; ties: favourite, not hidden, then the highest number in a series, then newest
+        ; ties: favourite, not ignored, then the highest number in a series, then newest (an ignored
+        ; save is only ever its exact name: the user's Ignore, 2026-11-01)
         best := "", bestScore := 0, bestNum := -1, bestKey := ""
         for f in files {
             n := LoaderEngine.TwrpgName(StrReplace(f.name, ".txt", ""))
             score := n == q ? 3 : SubStr(n, 1, StrLen(q)) == q ? 2 : InStr(n, q) ? 1 : 0
             if f.series && LoaderEngine.TwrpgName(f.series.stem) == q
                 score := 3                                  ; "-l knight" = the series
-            if !score
+            if !score || (f.hidden && score < 3)        ; ignored: only by its exact name
                 continue
             score := score * 10 + (pins.Has(f.key) || pins.Has(f.name) ? 5 : 0) + (f.hidden ? 0 : 1)
             num := f.series ? f.series.num : -1
