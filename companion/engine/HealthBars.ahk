@@ -13,17 +13,14 @@
 ;  (green, to yellow at half, to red). Each owner's colour can be "player":
 ;  the unit owner's own player colour (layout 12; BarColoursDialog). The
 ;  module sets them right after the game's own bar update.
-;  Health numbers and mana bars (layout 11; they need the game's Storm.dll,
-;  both off by default): a number over each health bar ([HealthBars] numbers,
+;  Health numbers and mana bars (layout 11; they need the game's Storm.dll;
+;  numbers off by default, mana bars always on since 2026-11-01): a number over each health bar ([HealthBars] numbers,
 ;  numberMode current / max / percent) and a mana bar under the health bar
 ;  of each unit with mana ([HealthBars] mana, manaHeight / manaWidth: times
 ;  the health bar's height / width, x0.25 to x2; width from layout 12).
 ;  Frames the module adds to the game; turning off takes them away.
-;  Portrait regen (layout 11, off by default, no Storm.dll needed): the
-;  portrait's own HP / mana lines become "cur / max +regen" (and the percent,
-;  [HealthBars] portraitPercent) right after the game writes them
-;  ([HealthBars] portrait). An option of Detailed tooltips since 2026-10-26:
-;  it's on only while that switch is.
+;  Portrait regen (layout 11): taken out of the companion on 2026-11-01 (the
+;  user's ask), always pushed off; the module's code for it stays.
 ; ============================================================================
 class HealthBarsEngine {
     section := "HealthBars"
@@ -59,10 +56,6 @@ class HealthBarsEngine {
         return true
     }
     sizeLabel => "Size " HealthBarsEngine.Fmt(this.height) " / " HealthBarsEngine.Fmt(this.width)
-    setPortraitPercent(on) {
-        SetIni(on ? 1 : 0, this.section, "portraitPercent")
-        this.push()
-    }
     setNumberMode(i) {
         SetIni(HealthBarsEngine.NUMBER_MODES[i][1], this.section, "numberMode")
         this.push()
@@ -134,23 +127,9 @@ class HealthBarsEngine {
     setNumberColour(v) => (SetIni(v, this.section, "numberColour"), this.push())
     numberCustom => Ini(this.section, "numberCustom", "FFD700")
     setNumberCustom(rgb) => (SetIni(rgb, this.section, "numberCustom"), this.push())
-    mana => Integer(Ini(this.section, "mana", 0))
-    setMana(on) {
-        SetIni(on ? 1 : 0, this.section, "mana")
-        this.push()
-    }
+    ; mana bars: always on, no option (the user, 2026-11-01; [HealthBars] mana isn't read any more)
+    mana => 1
     manaHeight => this.size("manaHeight")
-    portrait => Integer(Ini(this.section, "portrait", 0))
-    setPortrait(on) {
-        SetIni(on ? 1 : 0, this.section, "portrait")
-        this.push()
-    }
-    portraitPercent => Integer(Ini(this.section, "portraitPercent", 0))
-    togglePortraitPercent() {
-        SetIni(this.portraitPercent ? 0 : 1, this.section, "portraitPercent")
-        this.push()
-    }
-    portraitPercentLabel => this.portraitPercent ? "Percent: on" : "Percent: off"
     static Fmt(v) => "×" RTrim(RTrim(Format("{:.2f}", v), "0"), ".")
 
     ; the wanted sizes to the module in the running game (once a second, and on changes)
@@ -171,8 +150,7 @@ class HealthBarsEngine {
         NumPut("uint", this.numberMode - 1, v, Shm.hnMode), NumPut("float", this.manaHeight, v, Shm.mbHeight)
         NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, Shm.hnOn)
         NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, Shm.mbOn)
-        NumPut("uint", this.portraitPercent, v, Shm.prMode)
-        NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, Shm.prOn)     ; on its own since 2026-10-30 (was with Detailed tooltips)
+        NumPut("uint", 0, v, Shm.prMode), NumPut("uint", 0, v, Shm.prOn)     ; the portrait's regen: taken out (2026-11-01)
         if NumGet(v, Shm.layout, "uint") >= 12
             NumPut("float", this.size("manaWidth"), v, Shm.mbWidth)
         if NumGet(v, Shm.layout, "uint") >= 43 {
@@ -200,19 +178,6 @@ class HealthBarsEngine {
         v := this.gm.live(), st := NumGet(v, stateOff, "uint")
         return NumGet(v, Shm.stState, "uint") = 2 ? "On · the game has no Storm.dll loaded: the module can't add frames"
             : st = 1 ? "On · " what(v) : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
-    }
-    portraitStatus() {
-        if !this.portrait
-            return "Off"
-        if !this.gm.enabled
-            return "On · needs the game module (top of this page)"
-        s := this.gm.state()
-        if !WinExist(WarcraftIII) || !s.loaded
-            return "On · starts with a 1.28f game"
-        if s.layout < 11
-            return "On · the game has an older module loaded: restart the game"
-        st := NumGet(this.gm.live(), Shm.prState, "uint")
-        return st = 1 ? "On · regen next to the portrait's HP and mana" : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for a game"
     }
     numberStatus() => this.frameStatus(this.numbers, Shm.hnState, (v) => "numbers over the health bars (" NumGet(v, Shm.hnCount, "uint") " now)")
     manaStatus() => this.frameStatus(this.mana, Shm.mbState, (v) => "mana bars under the health bars (" NumGet(v, Shm.mbCount, "uint") " now)")

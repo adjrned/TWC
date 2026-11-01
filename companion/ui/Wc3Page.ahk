@@ -93,26 +93,22 @@ Wc3Features() {
             desc: "A line over the game when a buff on your hero is missing or running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
             window: (*) => BuffWatchDialog() },
-        ; the bars in one card: size, colours, numbers, mana bars and the portrait's HP / mana lines
+        ; the bars in one card: size, colours, numbers; mana bars are always there (the user, 2026-11-01)
         { tab: "display", title: "Health and mana bars", badge: "1.28f",
-            desc: "Bar size and colours, numbers over them, mana bars, the portrait's HP and mana.",
+            desc: "Size and colours of the bars, numbers over them; mana bars under them.",
             status: (*) => Wc3Both([[healthBars.enabled, "Size", (*) => healthBars.statusText()], [healthBars.colours, "Colours", (*) => healthBars.colourStatus()],
-                [healthBars.numbers, "Numbers", (*) => healthBars.numberStatus()], [healthBars.mana, "Mana bars", (*) => healthBars.manaStatus()], [healthBars.portrait, "Portrait", 0]]),
-            opts: (d) => (OptToggle(d, "Bigger health and mana bars", healthBars.enabled, (v) => healthBars.setEnabled(v)),
-                OptToggle(d, "Health bar colours", healthBars.colours, (v) => healthBars.setColours(v)),
-                OptButtons(d, [["Size…", (*) => BarSizeDialog()], ["Colours…", (*) => BarColoursDialog()]]),
+                [healthBars.numbers, "Numbers", (*) => healthBars.numberStatus()], [healthBars.mana, "Mana bars", (*) => healthBars.manaStatus()]]),
+            ; each switch with its own window's button on its row (Size… sat under the colours' switch, the user)
+            opts: (d) => (OptToggle(d, "Health and Mana Size", healthBars.enabled, (v) => healthBars.setEnabled(v), 0, ["Size…", (*) => BarSizeDialog()]),
+                OptToggle(d, "Health bar colours", healthBars.colours, (v) => healthBars.setColours(v), 0, ["Colours…", (*) => BarColoursDialog()]),
+                OptNote(d, "Mana bars are always under the health bars (their size is under Size…)."),
                 OptDivider(d),
                 OptToggle(d, "A number over every health bar", healthBars.numbers, (v) => healthBars.setNumbers(v)),
                 OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
                 OptChoice(d, "Colour", HealthBarsEngine.NUMBER_COLOURS, (*) => healthBars.numberColour, (v) => healthBars.setNumberColour(v)),
                 OptSwatch(d, "Custom colour", (*) => healthBars.numberCustom, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.numberCustom)) != "" ? (healthBars.setNumberCustom(rgb), rgb) : ""),
                 OptNote(d, "Health: green, to yellow at half, to red. Its bar: the bar's own colour (Colours… above). Custom: the swatch's, once Custom is picked."),
-                OptToggles(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on)),
-                OptToggle(d, "Mana bars under the health bars", healthBars.mana, (v) => healthBars.setMana(v)),
-                OptNote(d, "Mana bars' size: under Size… (numbers and mana bars use the game's Storm.dll)."),
-                OptDivider(d),
-                OptToggle(d, "Portrait: HP and mana with their regen per second", healthBars.portrait, (v) => healthBars.setPortrait(v)),
-                OptToggle(d, "and the percent", healthBars.portraitPercent, (v) => healthBars.setPortraitPercent(v), 22)) },
+                OptToggles(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on))) },
         { tab: "display", title: "Game keys", badge: "1.28f",
             desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
@@ -507,10 +503,19 @@ Wc3DialogShow(d) {
 }
 
 ; -- rows for the Options windows (d: a Wc3Dialog) ------------------------------
-; a switch: its text, and an On/Off toggle at the row's end (MkToggle); indent moves the text right (a sub-option)
-OptToggle(d, text, on, set, indent := 0) {
+; a switch: its text, and an On/Off toggle at the row's end (MkToggle); indent moves the text right (a sub-option);
+; btn: [text, click], a button of its own just before the switch (its window: Size…, Colours…)
+OptToggle(d, text, on, set, indent := 0, btn := 0) {
     global C
-    tw := d.tw - indent - 66
+    bw := 0
+    if btn {
+        b := d.g.AddText("x0 y" d.y " w60 h24 Center 0x200 +Background" C.chip " c" C.text, btn[1])
+        UISetFont(b, "s9 w600")
+        bw := Max(80, TextWidth(b, btn[1]) + 24), b.Move(d.x + d.tw - 56 - 8 - bw, , bw), Box.Round(b, bw, 24, 4)
+        b.OnEvent("Click", btn[2])
+        bw += 8
+    }
+    tw := d.tw - indent - 66 - bw
     lb := d.g.AddText("x" (d.x + indent) " y" (d.y + 2) " w" tw " h20 +Background" C.card " c" C.text, text)
     nh := Max(20, TextHeight(lb, text, tw)), lb.Move(, , , nh)
     t := MkToggle(d.g, d.x + d.tw - 56, d.y, on, (v) => set(v ? 1 : 0))

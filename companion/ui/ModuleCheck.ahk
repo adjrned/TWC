@@ -34,7 +34,6 @@ ModuleCheckFeatures() => [
     ["Start countdown", "start countdown: [0-9.]+ s in games you host", "start countdown: refused|start countdown: writing it failed|start countdown: .* changed by someone else"],
     ["Health numbers", "health numbers: the first one", "frames: refused|no more frames in this session|health numbers / mana bars: refused"],
     ["Mana bars", "mana bars: the first one .* checks out", "mana bars: the new bar|mana bars: destroying one faulted|health numbers / mana bars: refused"],
-    ["Portrait regen", "portrait: the first update wrapped", "portrait: refused|portrait: writing a line faulted|portrait: the update entry was changed|portrait: the call at .* was changed|portrait: writing the call at"],
     ["Storm.dll (for new frames)", "SMemAlloc \(401\) at .* check out", "Storm.dll isn't loaded in the game|ordinals 401 / 403 aren't"],
     ["Hide hover names", "unit names: on|unit names: the first name tip kept hidden", "unit names: refused|unit names: vtable .* left as it is"],
     ["Fast menu", "fast menu: the first transition sped up", "fast menu: refused|fast menu: writing the detour failed|fast menu: .* faulted|fast menu: .* changed by someone else"],

@@ -76,7 +76,6 @@ TwcModuleRun() {
         "colours", [(*) => healthBars.colourStatus(), "by owner"],
         "numbers", [(*) => healthBars.numberStatus(), "(12 now)"],
         "mana", [(*) => healthBars.manaStatus(), "(5 now)"],
-        "portrait", [(*) => healthBars.portraitStatus(), "regen next to"],
         "cooldowns", [(*) => timersHud.cooldownStatus(), "drawn on the command card and items"],
         "allies", [(*) => timersHud.alliesStatus(), "On · allies'"],
         "pings", [(*) => timersHud.pingStatus(), "On · Alt + click in the game"],
@@ -98,7 +97,8 @@ TwcModuleRun() {
     healthBars.push(), gameDisplay.push(), timersHud.pushGame()
     v := twcShmBuf.Ptr
     TwcCheck(NumGet(v, Shm.itOn, "uint") = 3, "pushed itOn: cooldowns (1) and buffs (2)")
-    for f in ["hnOn", "mbOn", "prOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn", "alOn", "pingOn", "utOn"]
+    TwcCheck(NumGet(v, Shm.prOn, "uint") = 0, "the portrait's regen: taken out, always pushed off")
+    for f in ["hnOn", "mbOn", "hbOn", "hcOn", "wsOn", "fpsOn", "latOn", "ulOn", "ttOn", "fmOn", "csOn", "alOn", "pingOn", "utOn"]
         TwcCheck(NumGet(v, Shm.%f%, "uint") = (f = "ulOn" ? 3 : 1), "pushed " f)    ; ulOn 3: the buff bar raised by default
     TwcCheck(NumGet(v, Shm.uiHide, "uint") = 0x3D && NumGet(v, Shm.fpsLimit, "uint") = 200 && NumGet(v, Shm.latMs, "uint") = 50
         && Abs(NumGet(v, Shm.mbHeight, "float") - 0.75) < 0.001 && Abs(NumGet(v, Shm.hbHeight, "float") - 1.5) < 0.001, "pushed values: what the UI hides, FPS limit, latency, mana and bar height")
@@ -210,25 +210,12 @@ TwcModuleRun() {
         "two pings 130 ms apart (and one click seen twice): both said, in order (" said.Length ", " quick " ms; no wait for Alt)")
     rows := ModuleCheckRows(ModuleCheckLog())
     TwcCheck(rows.Length >= 20, "Module check rows: " rows.Length)
-    ; the lines 1.28f's portrait fallback logs (call sites instead of the vtable): not a refusal, then working
     row(rows, name) {
         for r in rows
             if r.name = name
                 return r
         return { mark: "?", detail: "no row" }
     }
-    pr := ["2026-10-25 22:30:22.504  portrait: the update +40D0E0 isn't in the first 128 entries of vtable +AB05B4"
-        , "2026-10-25 22:30:22.590    called directly at +40C2A1 (call)"
-        , "2026-10-25 22:30:22.591  portrait: the update will be wrapped at its 1 call sites (on the game thread)"]
-    r := row(ModuleCheckRows(pr), "Portrait regen")
-    TwcCheck(r.mark = "·", "portrait, call sites found, not wrapped yet: " r.mark " " r.detail)
-    pr.Push("2026-10-25 22:30:22.700  portrait: on (its update +40D0E0 is wrapped at 1 call sites)"
-        , "2026-10-25 22:30:22.800  portrait: the first update wrapped (portrait 2EA90088, unit 1E000000, lines +240 3BFA0088 / +244 3BFA0188)")
-    r := row(ModuleCheckRows(pr), "Portrait regen")
-    TwcCheck(r.mark = "✓", "portrait through its call sites: " r.mark " " r.detail)
-    pr.Push("2026-10-25 22:31:00.000  portrait: the call at +40C2A1 was changed by someone else: stopping")
-    r := row(ModuleCheckRows(pr), "Portrait regen")
-    TwcCheck(r.mark = "✗", "portrait, a call site changed: " r.mark " " r.detail)
     ; bar size: sized in the bar's update, so a pass may never log "pass resized": the first size line is the sign
     r := row(ModuleCheckRows(["2026-10-26 10:00:00.000  health bars: the game's own size is 0.00400 high, 0.03000 wide (UI units; the width is the first unit's)"]), "Health bar size")
     TwcCheck(r.mark = "✓", "bar size from its first size line: " r.mark " " r.detail)

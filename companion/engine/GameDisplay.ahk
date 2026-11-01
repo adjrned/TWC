@@ -229,18 +229,16 @@ class GameDisplayEngine {
     ; detailed tooltips (the info panel's damage / armor icons): layout 15, ini [Display] tooltips
     tooltips => Integer(Ini(this.section, "tooltips", 0))
     setTooltips(on) {
-        global healthBars
         SetIni(on ? 1 : 0, this.section, "tooltips")
-        this.push(), healthBars.push()          ; its portrait regen option goes with it
+        this.push()
     }
     tooltipsStatus() {
         if !this.tooltips
             return "Off"
         if (w := this.moduleWait(15)) != ""
             return w
-        global healthBars
-        st := NumGet(this.gm.live(), Shm.ttState, "uint"), pr := healthBars.portrait ? " · portrait regen" : ""
-        return st = 1 ? "On · hover the damage or armor icon" pr
+        st := NumGet(this.gm.live(), Shm.ttState, "uint")
+        return st = 1 ? "On · hover the damage or armor icon"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
     setHideUi(on) {
