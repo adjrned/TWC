@@ -302,6 +302,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD hnCustom;         // companion: the colour of its own, 0xAARRGGBB
     // layout 44: more reserved for the local part: 16 words, its own
     DWORD pvMore[16];
+    // layout 45: quickcast keys in a sub menu (a skill that opens one, the Paladin's: WFE's "SA" keybinds)
+    BYTE qkSubVk[12];       // companion: while the card shows a sub menu, the game key of each card slot that
+                            //   quickcasts there, 0 = none (qkVk's card keys aren't used then: the game's)
+    DWORD qkSubSeen;        // module: quickcast keys that came with a sub menu open
 };
 #pragma pack(pop)
 
@@ -7789,15 +7793,25 @@ static bool ClickOut(BYTE *ui) {
         return g_kcFiredAt = 0, false;
     return true;
 }
+// A sub menu on the card (a skill that opens one: the Paladin's): its buttons sit where the card's own
+// were, so the card's keys would press the wrong ones (the user, 2026-11-01: R pressed the sub menu's
+// Cancel, slot 11). WFE has a key set for it ("SA" keybinds, table 0x10143324) and uses it when
+// (0x100675cf..0x10067619) the card's list at +0x1b4 (a TSList: +0x1bc its first node, ~ a tag when
+// empty; set up by the card's ctor +3d158d) holds a node whose +8 isn't 0; the same check here.
+static const DWORD CARD_MENUS = 0x1bc;
+static bool SubMenuOpen(BYTE *ui) {
+    BYTE *card = *(BYTE **)(ui + 0x3c8);
+    DWORD n = card ? *(DWORD *)(card + CARD_MENUS) : 0;
+    return n - 0x10000 <= 0x7ffeffff && *(DWORD *)(n + 8);
+}
 static bool KeyCast(WPARAM vk) {
     Shared *s = g_shared;
     if (!vk || vk > 0xff || !g_getUi || s->qkState != 1)
         return false;
-    int slot = -1;
-    for (int i = 0; i < 18 && slot < 0; i++)
-        if (s->qkVk[i] == vk)
-            slot = i;
-    if (slot < 0 || (GetKeyState(VK_CONTROL) & 0x8000) || (GetKeyState(VK_MENU) & 0x8000))
+    bool any = false;
+    for (int i = 0; i < 18 && !any; i++)
+        any = s->qkVk[i] == vk || i < 12 && s->qkSubVk[i] == vk;
+    if (!any || (GetKeyState(VK_CONTROL) & 0x8000) || (GetKeyState(VK_MENU) & 0x8000))
         return false;                   // not a quickcast key, or Ctrl / Alt with it: the game's
     static int logs;
     __try {
@@ -7806,6 +7820,22 @@ static bool KeyCast(WPARAM vk) {
             return false;
         BYTE *a = *(BYTE **)(ui + UI_CHAT_STATE), *b = *(BYTE **)(ui + UI_UPPER_BAR);
         if ((a && *(DWORD *)(a + 0x1dc)) || (b && !*(DWORD *)(b + 0x164)) || *(DWORD *)(ui + UI_BUSY))
+            return false;
+        // the card's slots from the sub menu's keys while one is open, the inventory's always from qkVk
+        bool sub = SubMenuOpen(ui);
+        const BYTE *card = sub ? s->qkSubVk : s->qkVk;
+        int slot = -1;
+        for (int i = 0; i < 18 && slot < 0; i++)
+            if ((i < 12 ? card[i] : s->qkVk[i]) == vk)
+                slot = i;
+        if (sub) {
+            static int subs;
+            s->qkSubSeen++;
+            if (subs++ < 3)
+                Log("quickcast keys: key %02X with a sub menu open (the card's +0x%lX node %p): %s", (DWORD)vk, CARD_MENUS,
+                    *(void **)(*(BYTE **)(ui + 0x3c8) + CARD_MENUS), slot < 0 ? "not a sub menu key: the game's" : slot < 12 ? "its sub menu slot" : "an item");
+        }
+        if (slot < 0)
             return false;
         BYTE *btn = slot < 12 ? CardSlot(ui, slot) : ItemButton(ui, slot - 12);
         bool there = btn && *(DWORD *)(btn + BTN_DATA), aiming = Aiming(ui);
@@ -7908,10 +7938,10 @@ static void FollowKeyCast(int t) {
             return;
         }
         s->qkState = 1;
-        int n = 0;
+        int n = 0, ns = 0;
         for (int i = 0; i < 18; i++)
-            n += s->qkVk[i] != 0;
-        Log("quickcast keys: on (%d slots: their buttons pressed as the key comes, as WFE)", n);
+            n += s->qkVk[i] != 0, ns += i < 12 && s->qkSubVk[i] != 0;
+        Log("quickcast keys: on (%d slots, %d in sub menus: their buttons pressed as the key comes, as WFE)", n, ns);
     } else if (!s->qkOn && s->qkState == 1) {
         s->qkState = 0;
         static int offs;
@@ -8262,7 +8292,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 44;
+        g_shared->layout = 45;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

@@ -183,5 +183,7 @@ class Shm {
     static hnColour := 75536
     static hnCustom := 75540
     static pvMore := 75544
-    static size := 75608
+    static qkSubVk := 75608
+    static qkSubSeen := 75620
+    static size := 75624
 }

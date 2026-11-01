@@ -257,11 +257,15 @@ class GameModuleEngine {
     ; key comes (KeyCast) and clicks at once if the game wants a target: the
     ; companion only sends the key. vks: the game key of each slot (12 card, row
     ; by row, then 6 inventory; 0 = not quickcast); on: 0 while chat is open etc.
-    pushKeys(vks, on) {
+    ; subVks: in a sub menu, the game key of each card slot (layout 45; an older module: none, its card keys)
+    pushKeys(vks, on, subVks := []) {
         if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 28
             return
         loop 20
             NumPut("uchar", A_Index <= vks.Length ? vks[A_Index] : 0, v, Shm.qkVk + A_Index - 1)
+        if NumGet(v, Shm.layout, "uint") >= 45
+            loop 12
+                NumPut("uchar", A_Index <= subVks.Length ? subVks[A_Index] : 0, v, Shm.qkSubVk + A_Index - 1)
         NumPut("uint", on ? 1 : 0, v, Shm.qkOn)
     }
     ; the module is handling the keys (qcReady too: alive, checked)

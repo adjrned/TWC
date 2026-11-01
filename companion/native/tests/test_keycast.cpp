@@ -193,6 +193,31 @@ int main() {
     r = KeyCast('Q');
     *(DWORD *)btns[8] = (DWORD)btnVt;
     CHECK(r && presses == p0 + 1 && pressThis == btns[8] && pressArg == 1 && clicks == c0 + 1, "Allies' abilities' click hook in the entry: still pressed (through it) and clicked");
+    // a sub menu open (the Paladin's: its abilities on the top row, Cancel at slot 11): the card's keys from
+    // qkSubVk, never qkVk's (R was slot 11 = Cancel); the items' still; a node with +8 = 0 isn't one
+    static BYTE menuNode[0x20];
+    Idle(); g_kcFiredAt = 0; g_kcHeldVk = 0;
+    g_shared->qkVk[11] = 'R';
+    g_shared->qkSubVk[0] = 'Q', g_shared->qkSubVk[3] = 'R';
+    *(BYTE **)(card + CARD_MENUS) = menuNode; *(DWORD *)(menuNode + 8) = 1;
+    int p6 = presses;
+    bool subR = KeyCast('R') && presses == p6 + 1 && pressThis == btns[3];
+    Idle();
+    bool subQ = KeyCast('Q') && presses == p6 + 2 && pressThis == btns[0];
+    Idle();
+    bool subW = !KeyCast('W') && presses == p6 + 2;
+    bool subItem = KeyCast(VK_NUMPAD7) && pressThis == items[0];
+    Idle();
+    *(DWORD *)(menuNode + 8) = 0;
+    bool plainR = KeyCast('R') && pressThis == btns[11];
+    Idle();
+    *(DWORD *)(card + CARD_MENUS) = ~(DWORD)(card + 0x1b8);      // empty: the list's end tag (the ctor's)
+    bool emptyR = KeyCast('R') && pressThis == btns[11];
+    CHECK(subR && subQ && subW && subItem && plainR && emptyR && g_shared->qkSubSeen == 4,
+          "a sub menu open: R and Q press its slots 3 and 0 (not Cancel at 11), W (no sub menu key) is the game's, Numpad 7 still the item; "
+          "a node with +8 = 0 or the empty list's tag: the card's keys again (sub menu keys seen %lu)", g_shared->qkSubSeen);
+    *(DWORD *)(card + CARD_MENUS) = 0;
+    g_shared->qkSubVk[0] = g_shared->qkSubVk[3] = 0;
     // a button that faults: off for good, the key to the game
     Idle(); g_kcFiredAt = 0; g_kcHeldVk = 0;
     *(DWORD *)btns[11] = (DWORD)badVt; g_shared->qkVk[11] = 'T';

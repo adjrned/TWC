@@ -25,6 +25,7 @@ class RemapEngine {
     qcLate := 0                         ; the late-reticle watch running after a miss (lateWatch)
     qcTry := 0, qcStart := 0, qcBase := ""   ; the press being served: its try (1 = the press, 2+ = repeats while held), start, key
     qkVks := []                         ; the game key (virtual key) of each quickcast slot for the game module (pushKeys)
+    qkSubVks := []                      ; and of each card slot in a sub menu (the Paladin's: WFE's "SA" keys; subKeys)
 
     __New() {
         this.migrate()
@@ -176,6 +177,9 @@ class RemapEngine {
         for group in ["card", "inv"]
             loop this.count(group)
                 this.qkVks.Push(this.qcAllowed(group, A_Index) && Integer(Ini(this.section, group "QC" A_Index, 0)) ? GetKeyVK(this.gameKey(group, A_Index)) : 0)
+        on := this.subOn(), this.qkSubVks := []
+        for k in this.subKeys()
+            this.qkSubVks.Push(on && k != "" ? GetKeyVK(k) : 0)
         used := Map()                           ; every key a slot was given
         for group in ["card", "inv", "mouse"]
             loop this.count(group)
@@ -217,7 +221,34 @@ class RemapEngine {
         if !IsSet(gameModule) || !gameModule
             return
         on := gameModule.enabled && gameModule.quickcast && toolEnabled && !chatting && !gChatSending && inGame && InStr(WC3WindowKey(), "reforged") != 1
-        gameModule.pushKeys(this.qkVks, on)
+        gameModule.pushKeys(this.qkVks, on, this.qkSubVks)
+    }
+    ; -- sub menus (the game hook only) ------------------------------------------
+    ; A skill that opens a sub menu (the Paladin's) puts its buttons where the card's
+    ; own were, so the card's keys would press the wrong ones (R its Cancel). While
+    ; one is open the game module quickcasts by these keys instead, one per card slot
+    ; ("" = none: the game's key), as WFE's "SA" keybinds. Default: Q W E R on the top
+    ; row, where TWRPG's sub menus put their abilities.
+    static SUB_DEFAULT := ["Q", "W", "E", "R", "", "", "", "", "", "", "", ""]
+    subOn() => Integer(Ini(this.section, "subQC", 1))
+    subKeys() {
+        keys := []
+        loop 12
+            keys.Push(StrUpper(Ini(this.section, "sub" A_Index, RemapEngine.SUB_DEFAULT[A_Index])))
+        return keys
+    }
+    ; on / off, or slot i's key ("" none); false: not a key
+    setSub(i, key := 0) {
+        if i = 0
+            SetIni(key ? 1 : 0, this.section, "subQC")
+        else {
+            key := Trim(key)
+            if key != "" && !GetKeyVK(key)
+                return false
+            SetIni(StrUpper(key), this.section, "sub" i)
+        }
+        this.registerAll()
+        return true
     }
 
     ; -- actions -------------------------------------------------------------

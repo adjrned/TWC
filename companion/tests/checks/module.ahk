@@ -245,6 +245,16 @@ TwcModuleRun() {
     k1 := NumGet(v, Shm.qkVk + 8, "uchar") = 0x51 && NumGet(v, Shm.qkVk + 12, "uchar") = 0x67 && NumGet(v, Shm.qkVk + 13, "uchar") = 0 && NumGet(v, Shm.qkOn, "uint") = 1
     r1 := gameModule.keyCastReady(), NumPut("uint", 1, v, Shm.qkState), r2 := gameModule.keyCastReady()
     remap.pushKeys(), k2 := NumGet(v, Shm.qkOn, "uint")         ; not in a game here: off
+    ; sub menu keys (layout 45): an older module's memory left alone; then the defaults (Q W E R, the top row), one changed, off
+    gameModule.pushKeys([], false, [0x51, 0, 0, 0x52]), s0 := NumGet(v, Shm.qkSubVk, "uchar")
+    NumPut("uint", 45, v, Shm.layout)
+    remap.registerAll()
+    s1 := NumGet(v, Shm.qkSubVk, "uchar") = 0x51 && NumGet(v, Shm.qkSubVk + 3, "uchar") = 0x52 && NumGet(v, Shm.qkSubVk + 4, "uchar") = 0
+    s2 := remap.setSub(4, "t") && NumGet(v, Shm.qkSubVk + 3, "uchar") = 0x54 && !remap.setSub(5, "notakey") && Ini("Remap", "sub5", "") = ""
+    remap.setSub(0, false), s3 := NumGet(v, Shm.qkSubVk, "uchar") = 0 && NumGet(v, Shm.qkSubVk + 3, "uchar") = 0
+    remap.setSub(0, true), remap.setSub(4, "R")
+    NumPut("uint", 32, v, Shm.layout)
+    TwcCheck(s0 = 0 && s1 && s2 && s3 && remap.subKeys()[4] = "R", "sub menu keys: not written to an older module; Q W E R on the top row by default, T for slot 4, 'notakey' refused, off: none")
     ; a quickcast key with the module's keys ready: the key goes out first, once (not held), through sendFn (no real keys)
     NumPut("uint", 1, v, Shm.qkState)
     sent := [], keepSend := remap.sendFn, remap.sendFn := (t) => sent.Push(t)

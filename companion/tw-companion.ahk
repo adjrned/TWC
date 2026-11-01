@@ -1697,7 +1697,7 @@ RemapClear() {
 ; ver: "hook" (the game hook: 1.28f, injected, no setup) or "screen" (1.28f and Reforged, set
 ; up per window size); default: the hook in a 1.28f game, else the screen
 QuickcastSettings(ver := "") {
-    global C, mainGui, quickcast, gameModule, UI_FONT, wc3Ver
+    global C, mainGui, quickcast, gameModule, UI_FONT, wc3Ver, remap
     static g := 0
     if g
         try g.Destroy()
@@ -1765,6 +1765,33 @@ QuickcastSettings(ver := "") {
     g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
     gv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set(mod128 ? "hookCastGap" : "castGap", Max(0, Min(3000, src.Value + 0)))))
     y += 44
+    if mod128 {
+        ; sub menus (the Paladin's): a key per card slot while one is open (RemapEngine.subKeys), as WFE's "SA" keys
+        g.AddText("x" x " y" (y - 12) " w" tw " h1 +Background" C.border)
+        y += 4
+        sd := g.AddText("x" x " y" y " w" tw " h18 +Background" C.card " c" C.muted, "SUB MENUS")
+        UISetFont(sd, "s8 w600")
+        y += 24
+        subCb := g.AddCheckbox("x" x " y" y " w" tw " h22 +Background" C.card " c" C.text (remap.subOn() ? " Checked" : ""), " Quickcast in sub menus")
+        y += 28
+        subTxt := "A skill that opens a sub menu (the Paladin's) puts its buttons where the card's were. "
+            . "While one is open, these keys quickcast its slots, laid out as the card. Empty: the game's key."
+        sd := g.AddText("x" x " y" y " w" tw " +Background" C.card " c" C.dim, subTxt)
+        UISetFont(sd, "s9")
+        sh := TextHeight(sd, subTxt, tw), sd.Move(, , , sh)
+        y += sh + 10
+        subBoxes := []
+        for i, sk in remap.subKeys() {
+            se := g.AddEdit("x" (x + Mod(i - 1, 4) * 56) " y" (y + (i - 1) // 4 * 30) " w48 h24 Center Uppercase Limit12 +Background" C.well " c" C.text, sk)
+            ; not a key (yet): dimmed and not saved; leaving the box shows what is
+            se.OnEvent("Change", ((n, src, *) => (src.Opt("+c" (remap.setSub(n, src.Value) ? C.text : C.dim)), 0)).Bind(i))
+            se.OnEvent("LoseFocus", ((n, src, *) => (src.Opt("+c" C.text), src.Value := remap.subKeys()[n])).Bind(i))
+            se.Enabled := subCb.Value
+            subBoxes.Push(se)
+        }
+        subCb.OnEvent("Click", (src, *) => (remap.setSub(0, src.Value), SubBoxesOn(subBoxes, src.Value)))
+        y += 3 * 30 + 16
+    }
     close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
     btns := [close]
     if !mod128 {
@@ -1783,6 +1810,10 @@ QuickcastSettings(ver := "") {
     g.Show("x" Round(ox + (ow - w * UiK(g)) / 2) " y" Round(oy + (oh - h * UiK(g)) / 2) " w" w " h" h)
     DialogRepaint(g)
     return g
+}
+SubBoxesOn(ctls, on) {
+    for b in ctls
+        b.Enabled := on
 }
 ; A dialog's look: the window itself in the card colour, and a 1px frame drawn as four
 ; thin lines once its height is known (card.Move(, , , h - 2), as the dialogs call it).
