@@ -313,6 +313,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD csrState;         // module: 0 off, 1 narrowed, 2 waiting (no cursor model, or the window isn't wide), 3 refused (see the log)
     DWORD icOn;             // companion: 1 = the inventory cover (over the inventory of a unit that has none) moved off the screen
     DWORD icState;          // module: 0 off, 1 moved off, 2 waiting for a game, 3 refused (see the log)
+    // layout 48: the chat box as the game has it, for the companion's remaps (FollowChat)
+    DWORD chatState;        // module: 0 no game UI (menus, the lobby, loading), 1 closed, 2 open
 };
 #pragma pack(pop)
 
@@ -8181,6 +8183,25 @@ static void FollowKeyCast(int t) {
     }
 }
 
+// the worker's part: whether the game's chat box is open (the check WFE and KeyCast make), for the companion: its
+// own count (Enter, Esc, a click) drifted, and a click counted as chat closed, so remaps typed in the chat (the
+// user's report, 2026-11-01: 5, remapped to an item, typed 1 with the chat open)
+static void FollowChat() {
+    DWORD st = 0;
+    if (g_getUi)
+        __try {
+            BYTE *ui = (BYTE *)GameUi(), *a = ui ? *(BYTE **)(ui + UI_CHAT_STATE) : nullptr;
+            st = !ui ? 0 : a && *(DWORD *)(a + 0x1dc) ? 2 : 1;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            st = 0;
+        }
+    static DWORD was;
+    static int logs;
+    if (st != was && logs < 40)
+        logs++, Log("chat: %s (the game's)", st == 2 ? "open" : st == 1 ? "closed" : "no game UI");
+    was = st, g_shared->chatState = st;
+}
+
 // -- the loop ----------------------------------------------------------------------
 // A quickcast request is answered once: clicked when the game waits for a
 // target (and is in front), or given up at its deadline. Between requests the
@@ -8424,6 +8445,7 @@ static void Run() {
         FollowDamage(GetTickCount());           // (not t: that's Targeting()'s, which kept the names from being read again)
         FollowTargetMode();
         FollowKeyCast(t);
+        FollowChat();
         QueueDisplay();
         QueueFrames();
         QueueSweeps();
@@ -8523,7 +8545,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 47;
+        g_shared->layout = 48;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

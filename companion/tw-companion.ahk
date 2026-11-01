@@ -106,7 +106,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 ; toolEnabled: the manual pause (hold Esc); chatting: WC3 chat is open; inGame: in a
 ; game, not a menu. Remaps and macros are live while the tool is on, in a
 ; game, with chat closed (RegisterHotkey).
-global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
+global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0, chatEnterAt := 0
 global debugGui := 0, debugText := 0
 global showMain := false
 global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture
@@ -2503,7 +2503,7 @@ PauseGame() => SendInput("{F10}{m}{F10}")
 ; and the command runs; otherwise Enter goes through untouched.
 ; `chatting` is only kept for the tool's auto-disable while typing.
 ChatEnter(hk) {
-    global chatting, chatHook, loader, host
+    global chatting, chatHook, loader, host, gameModule, chatEnterAt
     key := InStr(hk, "+") ? "+{Enter}" : InStr(hk, "Numpad") ? "{NumpadEnter}" : "{Enter}"
     line := chatHook.Input
     ChatRestart()
@@ -2518,8 +2518,12 @@ ChatEnter(hk) {
             SetTimer(() => (run(), ChatRestart()), -80)
             return
         }
-    SendInput(key)
-    if chatting
+    ; open or closed before this Enter: the game's word (1.28f, the module), else the count (it can drift).
+    ; Not right after an Enter: the game reads it a frame later, and a quick second one would read the old
+    st := A_TickCount - chatEnterAt > 300 ? gameModule.chatState() : 0
+    open := st ? st = 2 : chatting
+    SendInput(key), chatEnterAt := A_TickCount
+    if open
         ChatClosed("Enter")
     else
         ChatOpened("Enter")
@@ -2540,6 +2544,16 @@ ChatWatch() {
     } else if !chatHook.InProgress {
         chatHook.Start()
     }
+}
+; A click leaves the game's chat box open (it only starts a fresh line to record). It used to count as
+; chat closed: remaps came back while typing (5 typed 1, a user's report, 2026-11-01). Only when nothing
+; can check the chat box (no module, no chat box found on screen) it still does, so a non-chat Enter
+; (a dialog) doesn't leave remaps off until the next Enter
+ChatClicked() {
+    global chatBox, gameModule
+    if !gameModule.chatState() && !chatBox.current()
+        ChatClosed("click, nothing to check the chat box")
+    ChatRestart()
 }
 ; while chat is open, remaps and macros stand aside so typing works
 ChatOpened(why := "") {
@@ -2565,10 +2579,22 @@ ChatClosed(why := "") {
 ; checked 5 times a second. Closing only follows a box that was seen open, so
 ; the lobby (always-open chat, no box) keeps the Enter tracking.
 ChatBoxPoll() {
-    global chatBox, chatting, inGame, inGameEng, chatSince, chatHook
+    global chatBox, chatting, inGame, inGameEng, chatSince, chatHook, gameModule, chatEnterAt
     static seenOpen := false
     if !WinActive(WarcraftIII)
         return
+    ; 1.28f with the game module: the game's own chat box state, nothing else (the screen and the count
+    ; can drift: a click counted as chat closed, and remaps typed into the chat: 5 as an item's key
+    ; typed 1, a user's report, 2026-11-01). Not within 300 ms of an Enter: the game hasn't read it yet
+    if st := gameModule.chatState() {
+        if A_TickCount - chatEnterAt < 300
+            return
+        if st = 2 && !chatting
+            ChatOpened("the game's chat box is open")
+        else if st = 1 && chatting
+            ChatClosed("the game's chat box is closed")
+        return
+    }
     if !(g := chatBox.current()) {
         ; no chat box to check in this window yet: chat counted open with
         ; nothing typed for 20 s was an Enter that wasn't chat (a dialog, a
@@ -2971,6 +2997,6 @@ $~Pause:: PauseGame()
 $Enter::
 $NumpadEnter::
 $+Enter:: ChatEnter(ThisHotkey)
-$~LButton:: (ChatClosed("click"), ChatRestart())     ; a click closes chat (never sends Esc)
+$~LButton:: ChatClicked()
 $Esc:: EscInGame()
 #HotIf

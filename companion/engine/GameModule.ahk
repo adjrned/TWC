@@ -269,7 +269,15 @@ class GameModuleEngine {
         NumPut("uint", on ? 1 : 0, v, Shm.qkOn)
     }
     ; the module is handling the keys (qcReady too: alive, checked)
-    keyCastReady() => this.qcReady() && (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 28 && NumGet(v, Shm.qkState, "uint") = 1
+    ; the game's chat box (layout 48): 1 closed, 2 open; 0 = can't say (no module, an older one, one that
+    ; stopped beating, no game UI)
+    chatState() {
+        if !(v := this.live()) || NumGet(v, Shm.layout, "uint") < 48 || NumGet(v, Shm.status, "uint") != 1
+            || (A_TickCount - NumGet(v, Shm.heartbeat, "uint")) & 0xFFFFFFFF > 2000
+            return 0
+        return NumGet(v, Shm.chatState, "uint")
+    }
+    keyCastReady() =>this.qcReady() && (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 28 && NumGet(v, Shm.qkState, "uint") = 1
     ; why qcReady is false ("" when it's true), for the log and the Module check
     qcWhyNot() {
         if !this.enabled
