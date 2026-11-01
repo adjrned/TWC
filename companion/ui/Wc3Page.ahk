@@ -74,7 +74,7 @@ Wc3Features() {
         return list
     list := [
         ; Cooldowns and buff seconds in one card (the user's cleanup, 2026-10-30): a switch each, one look for both
-        { tab: "timers", title: "Timers in the game", badge: "1.28f",
+        { tab: "timers", title: "Timers in the Game", badge: "1.28f",
             desc: "Seconds left on abilities, items and buffs, on their buttons and buff icons.",
             status: (*) => Wc3Both([[timersHud.cooldowns, "Cooldowns", (*) => timersHud.cooldownStatus()], [timersHud.buffs, "Buffs", (*) => timersHud.buffStatus()]]),
             opts: (d) => (OptToggle(d, "Cooldowns on the command card and items", timersHud.cooldowns, (v) => timersHud.setCooldowns(v)),
@@ -89,27 +89,28 @@ Wc3Features() {
                 OptNote(d, "The game's clock redrawn as the plain dark sweep, without TWRPG's clock badge and timer."),
                 OptToggle(d, "Seconds on auras too", timersHud.bfAuras, (v) => timersHud.setBfAuras(v)),
                 OptNote(d, "Once you're out of an aura's range: the seconds before it wears off (in range it's kept up: no number).")) },
-        { tab: "timers", title: "Buff alerts", badge: "Both",
+        { tab: "timers", title: "Buff Alerts", badge: "Both",
             desc: "A line over the game when a buff on your hero is missing or running out.",
             on: (*) => buffWatch.enabled, set: (v) => buffWatch.setEnabled(v), status: (*) => buffWatch.statusText(),
             window: (*) => BuffWatchDialog() },
         ; the bars in one card: size, colours, numbers; mana bars are always there (the user, 2026-11-01)
-        { tab: "display", title: "Health and mana bars", badge: "1.28f",
-            desc: "Size and colours of the bars, numbers over them; mana bars under them.",
+        { tab: "display", title: "Health and Mana Bars", badge: "1.28f",
+            desc: "Size and colors of the bars, numbers over them; mana bars under them.",
             status: (*) => Wc3Both([[healthBars.enabled, "Size", (*) => healthBars.statusText()], [healthBars.colours, "Colours", (*) => healthBars.colourStatus()],
                 [healthBars.numbers, "Numbers", (*) => healthBars.numberStatus()], [healthBars.mana, "Mana bars", (*) => healthBars.manaStatus()]]),
-            ; each switch with its own window's button on its row (Size… sat under the colours' switch, the user)
-            opts: (d) => (OptToggle(d, "Health and Mana Size", healthBars.enabled, (v) => healthBars.setEnabled(v), 0, ["Size…", (*) => BarSizeDialog()]),
-                OptToggle(d, "Health bar colours", healthBars.colours, (v) => healthBars.setColours(v), 0, ["Colours…", (*) => BarColoursDialog()]),
-                OptNote(d, "Mana bars are always under the health bars (their size is under Size…)."),
+            ; each switch with its own window's button on its row (Size… sat under the colours' switch, the user), both
+            ; named Options; titles in title case, US spelling here (the user's "Health Bar Colors")
+            opts: (d) => (OptToggle(d, "Health and Mana Size", healthBars.enabled, (v) => healthBars.setEnabled(v), 0, ["Options", (*) => BarSizeDialog()]),
+                OptToggle(d, "Health Bar Colors", healthBars.colours, (v) => healthBars.setColours(v), 0, ["Options", (*) => BarColoursDialog()]),
+                OptNote(d, "Mana bars are always under the health bars (their size: Health and Mana Size's Options)."),
                 OptDivider(d),
-                OptToggle(d, "A number over every health bar", healthBars.numbers, (v) => healthBars.setNumbers(v)),
+                OptToggle(d, "Health Numbers", healthBars.numbers, (v) => healthBars.setNumbers(v)),
                 OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
-                OptChoice(d, "Colour", HealthBarsEngine.NUMBER_COLOURS, (*) => healthBars.numberColour, (v) => healthBars.setNumberColour(v)),
-                OptSwatch(d, "Custom colour", (*) => healthBars.numberCustom, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.numberCustom)) != "" ? (healthBars.setNumberCustom(rgb), rgb) : ""),
-                OptNote(d, "Health: green, to yellow at half, to red. Its bar: the bar's own colour (Colours… above). Custom: the swatch's, once Custom is picked."),
+                OptChoice(d, "Color", HealthBarsEngine.NUMBER_COLOURS, (*) => healthBars.numberColour, (v) => healthBars.setNumberColour(v)),
+                OptSwatch(d, "Custom Color", (*) => healthBars.numberCustom, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.numberCustom)) != "" ? (healthBars.setNumberCustom(rgb), rgb) : ""),
+                OptNote(d, "Health: green, to yellow at half, to red. Its bar: the bar's own color (Health Bar Colors above). Custom: the swatch's, once Custom is picked."),
                 OptToggles(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on))) },
-        { tab: "display", title: "Game keys", badge: "1.28f",
+        { tab: "display", title: "Game Keys", badge: "1.28f",
             desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
             opts: (d) => (OptKey(d, "Clear messages", "clearMessages"), OptKey(d, "Clear chat", "clearChat"), OptKey(d, "Multiboard", "multiboard"),
@@ -128,12 +129,12 @@ Wc3Features() {
             opts: (d) => (OptToggle(d, "The world isn't stretched", gameDisplay.widescreen, (v) => gameDisplay.setWidescreen(v)),
                 OptNote(d, "Steps aside for a widescreen mix file (RenderEdge's) that already does it."),
                 OptToggle(d, "The UI isn't stretched (WFE's Upgraded UI)", gameDisplay.wideUi, (v) => gameDisplay.setWideUi(v)),
-                OptNote(d, "The command card, inventory, minimap and info panel laid out for the wide window. The buff bar's place is on the Buff bar card."),
+                OptNote(d, "The command card, inventory, minimap and info panel laid out for the wide window. The buff bar's place is on the Buff Bar card."),
                 OptToggle(d, "The cursor isn't stretched (WFE's Slim Cursor)", gameDisplay.slimCursor, (v) => gameDisplay.setSlimCursor(v)),
                 OptNote(d, "In the menus and in games, on any wide window, with or without the two above.")) },
         ; the buff bar's own settings in one place (the user's ask, 2026-10-30: the raise sat in the Widescreen UI's
         ; Options): the switch is the bigger size; the raise is on its own (the module's, or the Widescreen UI's layout when that's on)
-        { tab: "display", title: "Buff bar", badge: "1.28f",
+        { tab: "display", title: "Buff Bar", badge: "1.28f",
             desc: "The buff bar bigger (x1 to x2), and raised over the console.",
             on: (*) => gameDisplay.buffBar, set: (v) => gameDisplay.setBuffBar(v), status: (*) => gameDisplay.buffBarStatus(),
             opts: (d) => (OptSlider(d, "Size", (*) => gameDisplay.buffBarScale, (v) => gameDisplay.setBuffBarScale(v), 1, 2, 0.05, BarSizeText),
@@ -141,22 +142,22 @@ Wc3Features() {
                 OptDivider(d),
                 OptToggle(d, "Raise the buff bar over the console", gameDisplay.buffBarUp, (v) => gameDisplay.setBuffBarUp(v)),
                 OptNote(d, "As WFE's upgraded buff bar: it floats above the command card, without its label. With or without the Widescreen UI, whatever this card's switch is.")) },
-        { tab: "display", title: "Hide hover names", badge: "1.28f",
+        { tab: "display", title: "Hide Hover Names", badge: "1.28f",
             desc: "As WFE's Hero Overhead Tip off: no name over the unit under the mouse.",
             on: (*) => gameDisplay.unitNames, set: (v) => gameDisplay.setUnitNames(v), status: (*) => gameDisplay.unitNamesStatus() },
-        { tab: "display", title: "Fast menu", badge: "1.28f",
+        { tab: "display", title: "Fast Menu", badge: "1.28f",
             desc: "As WFE's: the menus' screens change at once, without their slow animations.",
             on: (*) => gameDisplay.fastMenu, set: (v) => gameDisplay.setFastMenu(v), status: (*) => gameDisplay.fastMenuStatus() },
-        { tab: "display", title: "Detailed tooltips", badge: "1.28f",
+        { tab: "display", title: "Detailed Tooltips", badge: "1.28f",
             desc: "As WFE's: the damage and armor tooltips show cooldown, attacks a second, speed.",
             on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus() },
-        { tab: "display", title: "FPS unlock", badge: "1.28f",
+        { tab: "display", title: "FPS Unlock", badge: "1.28f",
             desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
             opts: (d) => (OptSlider(d, "Limit", (*) => gameDisplay.fpsLimit, (v) => gameDisplay.setFpsLimit(v), 64, 1000, 1),
                 OptNote(d, "Frames a second, 64 to 1000.")) },
         ; out of the Cooldowns' Options (the user's cleanup): cards of their own, on the Combat tab
-        { tab: "combat", title: "Allies' and bosses' cards", badge: "1.28f",
+        { tab: "combat", title: "Allies' and Bosses' Cards", badge: "1.28f",
             desc: "An ally's or a boss's unit selected: its abilities and cooldowns on the card.",
             on: (*) => timersHud.allies, set: (v) => timersHud.setAllies(v), status: (*) => timersHud.alliesStatus(),
             opts: (d) => (OptToggle(d, "Enemies' too (bosses, creeps)", timersHud.alliesEnemies, (v) => timersHud.setAlliesEnemies(v)),
@@ -165,7 +166,7 @@ Wc3Features() {
             desc: "Alt + click an ability, item, buff, stat or the portrait: your allies are told.",
             on: (*) => timersHud.pings, set: (v) => timersHud.setPings(v), status: (*) => timersHud.pingStatus(),
             opts: (d) => OptNote(d, "As WFE's ping, to your allies (who gets it: the game's Chat dialog):`n'Paladin >> Holy Light | Cooldown: 7', '| Ready!' or '| Not enough mana!'`na buff: 'Paladin >> Inner Fire | 12 s left' or '| active'`nthe portrait: HP and mana (and a hero's level); the damage, armor and hero icons: their numbers.`nYour units', allies' and enemies'.") },
-        { tab: "combat", title: "Boss timers", badge: "1.28f", wip: true,
+        { tab: "combat", title: "Boss Timers", badge: "1.28f", wip: true,
             desc: "Learns each boss's spells over your attempts and counts down to the next ones.",
             on: (*) => bossBars.enabled, set: (v) => bossBars.setEnabled(v), status: (*) => bossBars.statusText(),
             opts: (d) => (OptSlider(d, "Rows", (*) => bossBars.rowCount, (v) => bossBars.setNumber("rows", v, 3, 8, true), 3, 8, 1),
@@ -179,17 +180,17 @@ Wc3Features() {
                 OptButtons(d, [["Show the timers", (*) => (bossBars.setHidden(false), RefreshWc3())], ["Show a sample", (*) => bossBars.setSample(true)], ["Hide the sample", (*) => bossBars.setSample(false)],
                     ["Forget all", (*) => (MsgBox("Forget what the boss timers learned about every boss?", "TW Companion", "YesNo 0x40000") = "Yes" ? (bossBars.forget(), RefreshWc3()) : 0)]]),
                 OptNote(d, "It comes up by itself when you hit a boss or it casts. Its ✕ hides it until the next attempt; Show the timers brings it back now. The sample is a made-up boss: drag the window where you want it.")) },
-        { tab: "hosting", title: "Lobby latency", badge: "1.28f",
+        { tab: "hosting", title: "Lobby Latency", badge: "1.28f",
             desc: "Games you host answer orders sooner: a shorter turn time, as WFE's.",
             on: (*) => gameDisplay.latency, set: (v) => gameDisplay.setLatency(v), status: (*) => gameDisplay.latencyStatus(),
             opts: (d) => (OptSlider(d, "Latency", (*) => gameDisplay.latencyMs, (v) => gameDisplay.setLatencyMs(v), 5, 1000, 1),
                 OptNote(d, "Milliseconds, 5 to 1000. The game's own is 100, as is WFE's default.")) },
-        { tab: "hosting", title: "Start countdown", badge: "1.28f",
+        { tab: "hosting", title: "Start Countdown", badge: "1.28f",
             desc: "As WFE's: games you host start this long after Start Game, not 6 s.",
             on: (*) => gameDisplay.countdown, set: (v) => gameDisplay.setCountdown(v), status: (*) => gameDisplay.countdownStatus(),
             opts: (d) => (OptSlider(d, "Seconds", (*) => gameDisplay.countdownSecs, (v) => gameDisplay.setCountdownSecs(v), 0, 6, 0.1, SecsText),
                 OptNote(d, "From 0 to 6 s; the game's own is 6. WFE adds 0.1 s, so does this.")) },
-        { tab: "hosting", title: "Battle.net login", badge: "1.28f",
+        { tab: "hosting", title: "Battle.net Login", badge: "1.28f",
             desc: "Straight to Battle.net, logged in, and into your game (or the custom games).",
             on: (*) => bnetLogin.enabled, set: (v) => bnetLogin.setEnabled(v), status: (*) => bnetLogin.statusText(),
             window: (*) => BattleNetLoginDialog() },
@@ -352,7 +353,7 @@ BuffWatchDialog() {
     if g
         try g.Destroy()
     list := buffWatch.buffs()
-    d := Wc3Dialog("Buff alerts", "A line over the game when a buff you watch is missing on your hero, or running out.", 480)
+    d := Wc3Dialog("Buff Alerts", "A line over the game when a buff you watch is missing on your hero, or running out.", 480)
     g := d.g
     if wc3Ver = "128" {
         OptHeader(d, "ON YOUR HERO NOW")
@@ -436,7 +437,7 @@ BattleNetLoginDialog() {
     static g := 0
     if g
         try g.Destroy()
-    d := Wc3Dialog("Battle.net login", "At the main menu, the game goes to Battle.net and logs in with your account: on the gateway chosen in the game (eurobattle.net).", 460)
+    d := Wc3Dialog("Battle.net Login", "At the main menu, the game goes to Battle.net and logs in with your account: on the gateway chosen in the game (eurobattle.net).", 460)
     g := d.g
     row(label, opts, value) {
         lb := g.AddText("x" d.x " y" (d.y + 3) " w100 h22 0x200 +Background" C.card " c" C.text, label)
@@ -504,7 +505,7 @@ Wc3DialogShow(d) {
 
 ; -- rows for the Options windows (d: a Wc3Dialog) ------------------------------
 ; a switch: its text, and an On/Off toggle at the row's end (MkToggle); indent moves the text right (a sub-option);
-; btn: [text, click], a button of its own just before the switch (its window: Size…, Colours…)
+; btn: [text, click], a button of its own just before the switch (its window: Options)
 OptToggle(d, text, on, set, indent := 0, btn := 0) {
     global C
     bw := 0
@@ -540,15 +541,13 @@ OptSlider(d, label, get, set, lo, hi, step, fmt := 0) {
 ; one of a few: a row of buttons, the chosen one lit. choices: [[value, text], ...]
 OptChoice(d, label, choices, get, set) {
     global C
-    g := d.g, bx := d.x + 80, btns := []
+    g := d.g, btns := []
     lb := g.AddText("x" d.x " y" (d.y + 3) " w76 h22 0x200 +Background" C.card " c" C.text, label)
     for ch in choices {
-        b := g.AddText("x" bx " y" d.y " w60 h26 Center 0x200 +Background" C.chip " c" C.muted, ch[2])
-        UISetFont(b, "s9 w600")
-        bw := Max(70, TextWidth(b, ch[2]) + 22), b.Move(, , bw), Box.Round(b, bw, 26, 4)
+        b := OptChip(g, d.x, d.y, ch[2])
         btns.Push({ ctl: b, v: ch[1] })
-        bx += bw + 6
     }
+    OptRight(d, btns.Length, (i) => btns[i].ctl)
     paint() {
         for it in btns
             it.ctl.Opt("+Background" (it.v = get() ? C.navOn : C.chip) " +c" (it.v = get() ? C.accent : C.muted)), it.ctl.Redraw()
@@ -558,18 +557,30 @@ OptChoice(d, label, choices, get, set) {
     paint()
     d.y += 34
 }
-; a row of buttons: [[text, click], ...]
+; a row of buttons: [[text, click], ...], at the row's right end
 OptButtons(d, list) {
     global C
-    bx := d.x
+    bts := []
     for b in list {
-        bt := d.g.AddText("x" bx " y" d.y " w60 h28 Center 0x200 +Background" C.chip " c" C.text, b[1])
+        bt := d.g.AddText("x" d.x " y" d.y " w60 h28 Center 0x200 +Background" C.chip " c" C.text, b[1])
         UISetFont(bt, "s9 w600")
         bw := Max(90, TextWidth(bt, b[1]) + 24), bt.Move(, , bw), Box.Round(bt, bw, 28, 4)
         bt.OnEvent("Click", b[2])
-        bx += bw + 8
+        bts.Push(bt)
     }
+    OptRight(d, bts.Length, (i) => bts[i], 8)
     d.y += 36
+}
+; a row's controls moved to end at its right edge, in order, gap apart (the user's general rule: to the right)
+OptRight(d, n, ctl, gap := 6) {
+    total := 0
+    loop n
+        ctl(A_Index).GetPos(, , &rw), total += rw + (A_Index > 1 ? gap : 0)          ; (GetPos is in base units: WindowScale)
+    x := d.x + d.tw - total
+    loop n {
+        ct := ctl(A_Index)
+        ct.GetPos(, , &rw), ct.Move(x), x += rw + gap
+    }
 }
 ; a game key (GameCommands): its key, and a button that asks for a new one
 OptKey(d, label, name) {
@@ -597,6 +608,7 @@ OptColour(d, label, get, pick, boxText, check) {
     lb := g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
     sw := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w60 h22 +Border +Background" (col = "player" ? C.card : col), "")
     pb := OptChip(g, d.x + 146 + 60 + 14, d.y, boxText)
+    pb.GetPos(, , &pw), pb.Move(d.x + d.tw - pw), sw.Move(d.x + d.tw - pw - 12 - 60)
     paint() => (cur := get(), sw.Opt("+Background" (cur = "player" ? C.card : cur)), sw.Redraw(), Wc3SetSelected(pb, cur = "player"))
     sw.OnEvent("Click", (*) => (pick() != "" && paint()))
     pb.OnEvent("Click", (*) => (check(get() != "player" ? 1 : 0), paint()))
@@ -608,7 +620,7 @@ OptSwatch(d, label, get, pick) {
     global C
     g := d.g
     lb := g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
-    sw := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w60 h22 +Border +Background" get(), "")
+    sw := g.AddText("x" (d.x + d.tw - 60) " y" (d.y + 3) " w60 h22 +Border +Background" get(), "")
     sw.OnEvent("Click", (*) => ((rgb := pick(g)) != "" && (sw.Opt("+Background" rgb), sw.Redraw())))
     d.y += 34
 }
@@ -625,13 +637,14 @@ OptToggles(d, label, items, on, set) {
     global C
     g := d.g, bx := d.x + 80
     g.AddText("x" d.x " y" (d.y + 3) " w76 h22 0x200 +Background" C.card " c" C.text, label)
+    chips := []
     for it in items {
         b := OptChip(g, bx, d.y, it[2])
         Wc3SetSelected(b, on(it[1]))
         b.OnEvent("Click", ((key, src, *) => (set(key, on(key) ? 0 : 1), Wc3SetSelected(src, on(key)))).Bind(it[1]))
-        b.GetPos(, , &bw)
-        bx += bw + 6                            ; (GetPos is in base units: WindowScale)
+        chips.Push(b)
     }
+    OptRight(d, chips.Length, (i) => chips[i])
     d.y += 34
 }
 OptNote(d, text) {
@@ -655,7 +668,7 @@ BarSizeDialog(*) {
     static g := 0
     if g
         try g.Destroy()
-    d := Wc3Dialog("Health and mana bar size", "Health bars: times the game's own size (with Bigger health and mana bars on). Mana bars: times their health bar's.", 460)
+    d := Wc3Dialog("Health and Mana Size", "Health bars: times the game's own size (with Health and Mana Size on). Mana bars: times their health bar's.", 460)
     g := d.g
     for sec in [["HEALTH BARS", [["height", "Height"], ["width", "Width"]]], ["MANA BARS", [["manaHeight", "Height"], ["manaWidth", "Width"]]]] {
         if sec[1] = "MANA BARS"
@@ -680,16 +693,16 @@ BarColoursDialog() {
     static g := 0
     if g
         try g.Destroy()
-    d := Wc3Dialog("Health bar colours", "By owner (your own colour, or each owner's player colour), or by health left.", 440)
+    d := Wc3Dialog("Health Bar Colors", "By owner (your own color, or each owner's player color), or by health left.", 440)
     g := d.g
-    OptChoice(d, "Colour", [["owner", "By owner"], ["health", "By health"]], (*) => healthBars.colourMode, (v) => healthBars.setColourMode(v))
+    OptChoice(d, "Color", [["owner", "By owner"], ["health", "By health"]], (*) => healthBars.colourMode, (v) => healthBars.setColourMode(v))
     OptNote(d, "By health: green, to yellow at half, to red.")
     OptDivider(d)
     OptHeader(d, "BY OWNER")
     for o in HealthBarsEngine.OWNERS
-        OptColour(d, o[3], ((key, *) => healthBars.colour(key)).Bind(o[1]), BarPickColour.Bind(o[1], g), "Player colour",
+        OptColour(d, o[3], ((key, *) => healthBars.colour(key)).Bind(o[1]), BarPickColour.Bind(o[1], g), "Player Color",
             ((key, def, on) => BarPlayerColour(key, def, on)).Bind(o[1], o[2]))
-    OptNote(d, "Click a colour to change it. Player colour: each owner's own (the game's 12).")
+    OptNote(d, "Click a color to change it. Player Color: each owner's own (the game's 12).")
     Wc3DialogShow(d)
     return g
 }

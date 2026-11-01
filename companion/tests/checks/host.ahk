@@ -28,7 +28,7 @@ TwcHostRun() {
         DllCall("GetMenuStringW", "ptr", A_TrayMenu.Handle, "uint", A_Index - 1, "ptr", buf, "int", 256, "uint", 0x400)
         items .= (A_Index > 1 ? "|" : "") StrGet(buf)
     }
-    TwcCheck(items = "Open TW Companion|Open the TWRPG overlay||Check for updates|Debug||Exit" && A_TrayMenu.ClickCount = 1,
+    TwcCheck(items = "Open TW Companion|Open the TWRPG overlay||Check for updates|Debug||Reload|Exit" && A_TrayMenu.ClickCount = 1,
         "the tray menu: " items "; a click opens the companion")
     TwcCheckDone()
 }
