@@ -142,6 +142,13 @@ class TimerHud {
         SetIni(on ? 1 : 0, this.section, key)
         this.pushGame()
     }
+    ; Reset to default (the Buffs and CDs window): both switches and both looks
+    resetLook() {
+        global iniFile
+        for k in ["cooldowns", "buffs", "cdSize", "cdGold", "cdReady", "cdNoSweep", "cdMinutes", "bfSize", "bfGold", "bfAuras", "buffMinutes"]
+            try IniDelete(iniFile, this.section, k)
+        this.pushGame()
+    }
     cooldowns => Integer(Ini(this.section, "cooldowns", 0))
     buffs => Integer(Ini(this.section, "buffs", 0))
     setCooldowns(on) {
