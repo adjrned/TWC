@@ -300,6 +300,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD hnWho;            // companion: whose bars get a number, bits: 1 yours, 2 allies, 4 enemies, 8 neutral (creeps); 0 = all
     DWORD hnColour;         // companion: 0 white, 1 by health (green, yellow, red), 2 its bar's colour, 3 hnCustom
     DWORD hnCustom;         // companion: the colour of its own, 0xAARRGGBB
+    // layout 44: more reserved for the local part: 16 words, its own
+    DWORD pvMore[16];
 };
 #pragma pack(pop)
 
@@ -8260,7 +8262,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 43;
+        g_shared->layout = 44;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

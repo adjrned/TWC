@@ -182,5 +182,6 @@ class Shm {
     static hnWho := 75532
     static hnColour := 75536
     static hnCustom := 75540
-    static size := 75544
+    static pvMore := 75544
+    static size := 75608
 }
