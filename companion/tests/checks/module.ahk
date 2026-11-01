@@ -181,11 +181,12 @@ TwcModuleRun() {
     gameDisplay.setToFront(0), NumPut("uint", 0, v, Shm.qcState), gameDisplay.frontWatch(), Sleep(5100), NumPut("uint", 1, v, Shm.qcState), f4 := gameDisplay.frontWatch()
     gameDisplay.frontFn := keepFront
     TwcCheck(!f0 && !f1 && f2 && !f3 && !f4 && fronts = 1, "bring to front: once for a game after 5 s out (" f0 f1 f2 f3 f4 ", " fronts "); not at the first look, a brief gap or when off")
-    ; Buffs and CDs: each its own look now; Reset to default puts both back (and leaves the allies' option alone)
+    ; Buff Timers / CD Timers: each its own look; each card's Reset to default puts back only its own (and leaves the allies' option alone)
     keepAllies := timersHud.allies
     timersHud.setCdSize(1.4), timersHud.setBfSize(0.8), timersHud.setCdGold(9), lk1 := timersHud.cdSize = 1.4 && timersHud.bfSize = 0.8 && timersHud.bfGold = 5
-    timersHud.resetLook(), lk2 := timersHud.cdSize = 1 && timersHud.bfSize = 1 && timersHud.cdGold = 5 && timersHud.allies = keepAllies
-    TwcCheck(lk1 && lk2, "Buffs and CDs: CD and buff sizes apart; Reset to default: both looks back, allies left as they were")
+    timersHud.resetLook("buffs"), lk2 := timersHud.bfSize = 1 && timersHud.cdSize = 1.4
+    timersHud.resetLook("cds"), lk3 := timersHud.cdSize = 1 && timersHud.cdGold = 5 && timersHud.allies = keepAllies
+    TwcCheck(lk1 && lk2 && lk3, "Buff / CD Timers: sizes apart; each card's Reset to default: only its own, allies left as they were")
     ; W3L's launch arguments (WFE's Launch Arguments): one line, trimmed
     bnetLogin.setW3lArgs("  -window`r`n-nativefullscr "), a1 := bnetLogin.w3lArgs, bnetLogin.setW3lArgs("")
     TwcCheck(a1 = "-window -nativefullscr" && bnetLogin.w3lArgs = "", "W3L arguments: kept on one line, trimmed ('" a1 "')")

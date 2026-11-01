@@ -193,7 +193,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD pingChat;         // module, with command 5: where Enter opens the chat (the Chat dialog's recipient): 0 unknown, 1 all, 2 allies, 3 observers, 4 one player
     // layout 20: how the cooldowns drawn in the game look (every text drawn has a black outline)
     float cdSize;           // companion: their size, times 0.014 (0.75-1.5; 0 = 1)
-    float cdGold;           // companion: gold from this many seconds left down (0 = always white)
+    float cdGold;           // companion: red from this many seconds left down (0 = always white; the name is from when it was gold)
     DWORD cdReady;          // companion: 1 = "Ready" in green for half a second when one is over
     // layout 21
     DWORD cdSweep;          // companion, while cooldowns are drawn: bit 2 = the game's cooldown clock hidden on command card and inventory buttons and our own sweep drawn in its place (bits 1, 4, 8 are retired, never set: the number badge hide, our ring, 'no shade')
@@ -208,7 +208,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD hrFlags[24];      //   1 a buff, 2 an aura, 4 positive (the game shows its name green), 8 hrName is the game's, 16 kept up (as buffFlags 4)
     char hrName[24][48];    //   the game's name for it (its Bufftip, colour codes taken out; UTF-8), "" = none found
     float bfSize;           // companion: the buff seconds' size, times WFE's 0.013 (0.75-1.5; 0 = 1)
-    float bfGold;           // companion: gold from this many seconds left down (0 = always white)
+    float bfGold;           // companion: red from this many seconds left down (0 = always white)
     DWORD bfOpts;           // companion, bits: 1 seconds on auras too (WFE's ISDRAWAURADURATION); 2 (our ring round the buffs) is retired, never set
     // layout 23: a bigger buff bar (BuffBarSizePass; with the widescreen UI on, its UlBuffs)
     float bbScale;          // companion: the buff bar and its icons, times the game's size (1-2; 0 or 1 = the game's own)
@@ -2510,7 +2510,7 @@ static void TextAt(BYTE *t, int pt, float x, float y) {
 // Better seen than WFE's (which puts four black copies under white): every text has a
 // full black outline, eight copies around it (the game's text frames have only one
 // drop shadow, and its font flags no outline); cooldowns can be bigger (cdSize), turn
-// gold near the end (cdGold) and say "Ready" in green for half a second when over
+// red near the end (cdGold, the name kept) and say "Ready" in green for half a second when over
 // (cdReady); the buffs' seconds the same with bfSize / bfGold, and on auras with bfOpts 1.
 // The copies go first, so the text is drawn over them.
 static const int OUTLINES = 8;
@@ -2518,7 +2518,7 @@ struct TimerSlot { BYTE *btn, *text, *out[OUTLINES]; char shown[12]; float heigh
 static TimerSlot g_tCd[12], g_tBuff[16], g_tItem[6];
 static BYTE *g_framesUi;            // the game UI the text frames belong to (another one: they're gone)
 static const float OUTLINE = 0.0008f, CD_TEXT = 0.014f, BUFF_TEXT_Y = -0.0115f, READY_SIZE = 0.75f;
-static const DWORD WHITE = 0xFFFFFFFF, BLACK = 0xFF000000, GOLD = 0xFFFFCC00, GREEN = 0xFF40FF40;
+static const DWORD WHITE = 0xFFFFFFFF, BLACK = 0xFF000000, WARN = 0xFFFF4040, GREEN = 0xFF40FF40;   // WARN: red near the end (was gold, the user 2026-11-01)
 static const float OUT_DIR[OUTLINES][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 0.7f, 0.7f }, { -0.7f, 0.7f }, { 0.7f, -0.7f }, { -0.7f, -0.7f } };
 // WFE's [BUFFUI] TEXTSIZE 0.013, 0.0105 with its Upgraded UI on and the buff bar not raised;
 // times bfSize (0.75-1.5), as the cooldowns' cdSize
@@ -2609,7 +2609,7 @@ static void SlotDraw(BYTE *ui, TimerSlot &s, BYTE *btn, float left, bool buff) {
         s.btn = btn;
     }
     float gold = buff ? g_shared->bfGold : g_shared->cdGold;
-    DWORD c = ready ? GREEN : gold > 0 && left <= gold ? GOLD : WHITE;
+    DWORD c = ready ? GREEN : gold > 0 && left <= gold ? WARN : WHITE;
     if (c != s.colour)
         TextColour(s.text, c), s.colour = c;
     if (strcmp(t, s.shown)) {

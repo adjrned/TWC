@@ -116,7 +116,7 @@ class TimerHud {
         } finally
             this.pingBusy := false
     }
-    ; how the cooldowns look (layout 20): size x0.75-1.5, gold from n s left (0 = never), "Ready" when over
+    ; how the cooldowns look (layout 20): size x0.75-1.5, red (was gold: the keys keep the name) from n s left (0 = never), "Ready" when over
     cdSize => Min(Max(Float(Ini(this.section, "cdSize", 1)), 0.75), 1.5)
     cdGold => Min(Max(Integer(Ini(this.section, "cdGold", 5)), 0), 30)
     cdReady => Integer(Ini(this.section, "cdReady", 1))
@@ -142,10 +142,10 @@ class TimerHud {
         SetIni(on ? 1 : 0, this.section, key)
         this.pushGame()
     }
-    ; Reset to default (the Buffs and CDs window): both switches and both looks
-    resetLook() {
+    ; Reset to default (the Buff Timers / CD Timers windows): that card's switch and look
+    resetLook(which) {
         global iniFile
-        for k in ["cooldowns", "buffs", "cdSize", "cdGold", "cdReady", "cdNoSweep", "cdMinutes", "bfSize", "bfGold", "bfAuras", "buffMinutes"]
+        for k in which = "buffs" ? ["buffs", "bfSize", "bfGold", "bfAuras", "buffMinutes"] : ["cooldowns", "cdSize", "cdGold", "cdReady", "cdNoSweep", "cdMinutes"]
             try IniDelete(iniFile, this.section, k)
         this.pushGame()
     }

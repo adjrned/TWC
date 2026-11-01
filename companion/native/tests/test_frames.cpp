@@ -173,9 +173,9 @@ int main() {
     CHECK(g_tCd[0].text[0x1e0] == 1 && texts == 36 && !strcmp(g_tCd[0].shown, "2"), "cooling down again: the same frames shown");
     // the cooldowns' look (layout 20): gold near the end, a size, "Ready" in green when over
     sh.cdGold = 5; sh.cdLeft[0] = 4.2f; TimerFramesDraw(ui);
-    bool gold = *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == GOLD && *(DWORD *)(g_tCd[0].out[0] + TEXT_COLOURS) == BLACK;
+    bool gold = *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == WARN && *(DWORD *)(g_tCd[0].out[0] + TEXT_COLOURS) == BLACK;
     sh.cdLeft[0] = 8; TimerFramesDraw(ui);
-    CHECK(gold && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == WHITE, "gold at 4.2 s with 'gold from 5 s', white again at 8 s; the outline black");
+    CHECK(gold && *(DWORD *)(g_tCd[0].text + TEXT_COLOURS) == WHITE, "red at 4.2 s with 'red from 5 s', white again at 8 s; the outline black");
     int fn0 = fonts, an0 = anchors;
     sh.cdSize = 1.5f; TimerFramesDraw(ui);
     CHECK(fonts >= fn0 + 9 && anchors >= an0 + 9 && fabsf(lastFontH - 0.021f) < 1e-5f && texts == 36, "size x1.5: %.4f, the outline anchored again further out, no new frames", lastFontH);
@@ -301,11 +301,11 @@ int main() {
     CHECK(g_tCd[0].text[0x1e0] == 0 && g_tBuff[2].text[0x1e0] == 1, "buffs only (bit 2): the cooldowns hidden");
     // the buffs' look (layout 22): gold near the end (bfGold), a size (bfSize), auras' seconds only with bfOpts 1
     sh.bfGold = 3, sh.buffLeft[2] = 2.4f; TimerFramesDraw(ui);
-    bool bgold = *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == GOLD;
+    bool bgold = *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == WARN;
     sh.buffLeft[2] = 6; TimerFramesDraw(ui);
     bool bwhite = *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == WHITE;
     sh.cdGold = 30, sh.bfGold = 0, sh.buffLeft[2] = 2.4f; TimerFramesDraw(ui);
-    CHECK(bgold && bwhite && *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == WHITE, "a buff gold at 2.4 s with 'gold from 3 s', white at 6 s; the cooldowns' setting leaves buffs alone");
+    CHECK(bgold && bwhite && *(DWORD *)(g_tBuff[2].text + TEXT_COLOURS) == WHITE, "a buff red at 2.4 s with 'red from 3 s', white at 6 s; the cooldowns' setting leaves buffs alone");
     sh.cdGold = 0, sh.bfSize = 1.5f; TimerFramesDraw(ui);
     CHECK(fabsf(lastFontH - 0.0195f) < 1e-5f && fabsf(g_tBuff[2].height - 0.0195f) < 1e-5f, "buff size x1.5: %.4f (0.013 x 1.5)", lastFontH);
     sh.bfSize = 0, sh.buffFlags[2] = 3; TimerFramesDraw(ui);
