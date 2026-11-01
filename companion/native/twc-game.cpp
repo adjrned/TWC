@@ -306,6 +306,11 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     BYTE qkSubVk[12];       // companion: while the card shows a sub menu, the game key of each card slot that
                             //   quickcasts there, 0 = none (qkVk's card keys aren't used then: the game's)
     DWORD qkSubSeen;        // module: quickcast keys that came with a sub menu open
+    // layout 46: WFE's Slim Cursor (CursorPass) and its INTERFACE ISINVENTORYCOVER off (UiLayoutPass)
+    DWORD csrOn;            // companion: 1 = the cursor narrowed back to its shape on a wide window
+    DWORD csrState;         // module: 0 off, 1 narrowed, 2 waiting (no cursor model, or the window isn't wide), 3 refused (see the log)
+    DWORD icOn;             // companion: 1 = the inventory cover (over the inventory of a unit that has none) moved off the screen
+    DWORD icState;          // module: 0 off, 1 moved off, 2 waiting for a game, 3 refused (see the log)
 };
 #pragma pack(pop)
 
@@ -6105,11 +6110,25 @@ static void UlPortrait(BYTE *ui, BYTE *) {
         if (BYTE *pa = P(ui, 0x424))
             UlWidth(pf, 0.060f), UlPoint(pf, 6, pa + FRAME_LAYOUT, 6, 0.260f, 0.031f);
 }
+static bool g_icDone;                // the cover is off the screen now
 static void UlCover(BYTE *ui, BYTE *) {
-    // ISINVENTORYCOVER 0x1008bc80
+    // ISINVENTORYCOVER 0x1008bc80; with it off (icOn: WFE's cl = 0, 0x1008bf29) its bottom right
+    // corner goes to x 2.0 ([0x100fa8b8]), off the screen to the right, Widescreen UI or not
     BYTE *info0 = P(ui, 0x3c4);
-    if (BYTE *cover = P(info0, 0x14c))
+    BYTE *cover = P(info0, 0x14c);
+    g_icDone = false;
+    if (!cover)
+        return;
+    if (!g_shared->icOn) {
         UlWidth(cover, 0.095f), UlClear(cover), UlAbs(cover, 8, 0.550f, 0);
+        return;
+    }
+    UlClear(cover), UlAbs(cover, 8, 2.0f, 0);
+    LaySave *sv = UlSave(cover);
+    g_icDone = sv && HasPoint(sv->lay, 8, nullptr, 0, 2.0f, 0);
+    static bool logged;
+    if (g_icDone && !logged)
+        logged = true, Log("inventory cover: moved off the screen (frame %p)", cover);
 }
 static void UlItems(BYTE *ui, BYTE *root) {
     BYTE *info0 = P(ui, 0x3c4);
@@ -6778,17 +6797,45 @@ static void UlApply(BYTE *ui, int upTo, bool logNewest) {
     }
 }
 
+// the inventory cover off without the Widescreen UI: only its group, every second
+static const int UL_COVER = 5;          // UL_GROUPS' "inventory cover"
+static void CoverOnlyPass(BYTE *ui) {
+    static DWORD at;
+    DWORD now = GetTickCount();
+    if (at && now - at < 1000 && g_icDone)
+        return;
+    at = now;
+    if (g_ulGroupBad >> UL_COVER & 1)
+        return;
+    __try {
+        UlCover(ui, ui + FRAME_LAYOUT);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_ulGroupBad |= 1u << UL_COVER, g_icDone = false;
+        Log("UI layout: the inventory cover faulted: left out");
+    }
+}
+
 // on the game thread
+static bool g_ulFull;                   // the last pass laid the whole UI out (not only the cover)
 static void UiLayoutPass() {
     bool on = g_shared->ulOn != 0 && !g_ulBad;
     BYTE *ui = (BYTE *)GameUi();
     if (ui != g_ulUi) {
         g_ulN = 0, g_ulUi = ui, g_ulAt = 0, g_shared->ulCount = 0, g_ulStage = 0;    // a new game: its own frames
-        g_ptOn = false, g_ulModelN = 0;                                                 // (the old models went with the old game)
+        g_ptOn = false, g_ulModelN = 0, g_icDone = false;                               // (the old models went with the old game)
     }
     RECT r = {};
     bool wide = g_gameWnd && GetClientRect(g_gameWnd, &r) && r.bottom > 0 && r.right * 2 >= r.bottom * 3;
+    bool coverOnly = g_shared->icOn && !g_ulBad && ui && !(on && wide);
+    g_shared->icState = !g_shared->icOn ? 0 : g_ulBad || (g_ulGroupBad >> UL_COVER & 1) ? 3 : g_icDone ? 1 : 2;
+    if (coverOnly && !g_ulFull) {       // the cover's own save stays (put back when it's turned off)
+        CoverOnlyPass(ui);
+        g_shared->ulState = !g_shared->ulOn ? 0 : 2;
+        return;
+    }
     if (!on || !ui || !wide) {
+        g_ulFull = false;
+        g_icDone = false;
         PortraitTextOff();
         if (g_ulModelN && ui) {
             __try {
@@ -6813,6 +6860,7 @@ static void UiLayoutPass() {
         g_shared->ulState = g_ulBad ? 3 : !g_shared->ulOn ? 0 : 2;
         return;
     }
+    g_ulFull = true;
     DWORD now = GetTickCount();
     bool rampUp = g_ulStage < UL_GROUP_COUNT;   // at first one more handler a pass (4 a second)
     if (!rampUp && g_ulAt && now - g_ulAt < 2000)
@@ -6952,6 +7000,80 @@ static void FastMenuPass() {
         g_shared->fmState = g_fmHooked ? 1 : 0;
 }
 
+// -- the slim cursor (layout 46) ------------------------------------------------------
+// WFE's Slim Cursor ([INTERFACE] ISSLIMCURSOR; read by hand: its option handler 0x10095570
+// calls 0x100879e0 with dl = on): the 4:3 UI is drawn stretched on a wide window, and the
+// cursor with it. WFE narrows the cursor's model as it narrows the buttons' (0x10036d80,
+// 0x10035390: the matrix rebuilt with x scaled), x 0.75 on 16:9 ([0x100fade0] by aspect
+// index; 1 when off), in two places: the menus' cursor [[glue]+0x16c] ([0x1013a648] = the
+// glue's getter +0x3112a0 on 1.28f, 0x1002284f) and the game's [[ui]+0x16c] (+0x3a0b70).
+// Both are the CCursorFrame (vtable +0xa7d42c) the game's +0x14c420 makes at its root's
+// +0x16c. Here the scale is 4:3 over the window's shape (0.75 on 16:9, 0.5 at least), only
+// to an unrotated model (as the buttons'), each saved first and put back while its frame
+// still holds it; done again whenever the game puts it back.
+static const DWORD RVA_CURSOR_FRAME_VT = 0xa7d42c, ROOT_CURSOR = 0x16c;
+struct CursorSave { BYTE *sprite; float orig[9]; };
+static CursorSave g_csr[2];             // 0 the game's cursor, 1 the menus'
+static bool g_csrBad;
+static float CursorSlim() {
+    RECT r = {};
+    if (!g_gameWnd || !GetClientRect(g_gameWnd, &r) || r.bottom <= 0 || r.right * 3 <= r.bottom * 4)
+        return 1;
+    float k = 4.0f * r.bottom / (3.0f * r.right);
+    return k < 0.5f ? 0.5f : k;
+}
+// one cursor: true when it's narrowed
+static bool CursorOne(int i, BYTE *root, float sx) {
+    CursorSave &c = g_csr[i];
+    BYTE *f = P(root, ROOT_CURSOR), *s = nullptr;
+    if (f && *(DWORD *)f != (DWORD)(g_base + RVA_CURSOR_FRAME_VT))
+        f = nullptr;
+    float *m = f ? ModelMatrix(f, &s) : nullptr;
+    if (c.sprite && (s != c.sprite || sx >= 1)) {
+        if (m && s == c.sprite) {           // turned off: put back (another model now: it went with its frame)
+            memcpy(m, c.orig, sizeof(c.orig));
+            Log("slim cursor: the %s cursor put back", i ? "menus'" : "game's");
+        }
+        c.sprite = nullptr;
+    }
+    if (!m || sx >= 1)
+        return false;
+    if (!c.sprite) {
+        static const int OFF[] = { 1, 2, 3, 5, 6, 7 };
+        for (int k : OFF)
+            if (fabsf(m[k]) > 1e-4f) {
+                static bool turned;
+                if (!turned)
+                    turned = true, Log("slim cursor: the %s cursor's model %p is turned (m[%d] %.3f): left alone", i ? "menus'" : "game's", s, k, m[k]);
+                return false;
+            }
+        if (m[0] <= 0 || m[4] <= 0 || m[8] <= 0)
+            return false;
+        c.sprite = s;
+        memcpy(c.orig, m, sizeof(c.orig));
+        Log("slim cursor: the %s cursor (model %p, %s) x %.3f -> %.3f", i ? "menus'" : "game's", s, (BYTE *)m - s == 0x64 ? "mini" : "uber", m[0], c.orig[0] * sx);
+    }
+    float want = c.orig[0] * sx;
+    if (m[0] != want)
+        m[0] = want, m[4] = c.orig[4], m[8] = c.orig[8];
+    return true;
+}
+// on the game thread
+static void CursorPass() {
+    if (g_csrBad)
+        return;
+    float sx = g_shared->csrOn ? CursorSlim() : 1;
+    __try {
+        BYTE *glue = *(BYTE **)(g_base + DATA_GLUE);    // the glue's getter makes one when there's none: not called
+        bool a = CursorOne(0, (BYTE *)GameUi(), sx), b = CursorOne(1, V(glue), sx);
+        g_shared->csrState = !g_shared->csrOn ? 0 : a || b ? 1 : 2;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_csrBad = true, g_shared->csrState = 3;
+        g_csr[0].sprite = g_csr[1].sprite = nullptr;
+        Log("slim cursor: the cursor's model faulted: left to the game");
+    }
+}
+
 // on the game thread
 static void LoginPass();
 // How long a screen's controls must have been shown and enabled before the next step (1 s up to
@@ -7070,6 +7192,7 @@ static void DisplayPass() {
     MapTextPass();
     UiHidePass();
     UiLayoutPass();
+    CursorPass();
     BuffBarSizePass();
     BuffBarRaisePass();
     LoginPass();
@@ -7080,7 +7203,7 @@ static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
     bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !PvWants() && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_shared->icOn && !g_shared->csrOn && !g_csr[0].sprite && !g_csr[1].sprite && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !PvWants() && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -7996,7 +8119,7 @@ static bool LiveModuleThere(const Shared *s) {
 static void SwitchesOff() {
     Shared *s = g_shared;
     s->hbOn = s->hcOn = s->wsOn = s->fpsOn = s->latOn = s->uiHide = s->itOn = s->hnOn = s->mbOn = s->prOn = s->tmWant = s->scHeld = s->ulOn = s->ttOn = s->fmOn = s->csOn = s->alOn = s->pingOn = s->hrWant = 0;
-    s->bbScale = 0, s->blOn = 0, s->utOn = 0, s->dmOn = 0, s->bbUp = 0;
+    s->bbScale = 0, s->blOn = 0, s->utOn = 0, s->dmOn = 0, s->bbUp = 0, s->csrOn = 0, s->icOn = 0;
     SecureZeroMemory(s->blPassword, sizeof(s->blPassword));
     s->qcUntil = 0;
     s->qkOn = 0, s->qkState = s->qkState == 3 ? 3 : 0;
@@ -8307,7 +8430,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 45;
+        g_shared->layout = 46;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

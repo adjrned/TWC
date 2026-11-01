@@ -185,5 +185,9 @@ class Shm {
     static pvMore := 75544
     static qkSubVk := 75608
     static qkSubSeen := 75620
-    static size := 75624
+    static csrOn := 75624
+    static csrState := 75628
+    static icOn := 75632
+    static icState := 75636
+    static size := 75640
 }

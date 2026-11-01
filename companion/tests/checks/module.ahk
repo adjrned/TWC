@@ -172,6 +172,20 @@ TwcModuleRun() {
     st2 := bnetLogin.w3lStatus(), SetIni("", "Battle.net", "w3l")
     TwcCheck(found = w3dir "\w3l.exe" && auto && p1 = found && st1 = "found automatically" && InStr(st2, "not there any more") && InStr(bnetLogin.w3lStatus(), "not set"),
         "W3L: Auto-detect finds it next to the game's folder and saves it (" st1 "); gone: '" st2 "'")
+    ; W3L's launch arguments (WFE's Launch Arguments): one line, trimmed
+    bnetLogin.setW3lArgs("  -window`r`n-nativefullscr "), a1 := bnetLogin.w3lArgs, bnetLogin.setW3lArgs("")
+    TwcCheck(a1 = "-window -nativefullscr" && bnetLogin.w3lArgs = "", "W3L arguments: kept on one line, trimmed ('" a1 "')")
+    ; the slim cursor and the inventory cover (layout 46): not pushed to an older module; pushed, their lines
+    gameDisplay.setSlimCursor(1), gameDisplay.setCoverOff(1), c0 := NumGet(v, Shm.csrOn, "uint") + NumGet(v, Shm.icOn, "uint"), w0 := gameDisplay.slimCursorStatus()
+    NumPut("uint", 46, v, Shm.layout), gameDisplay.push()
+    c1 := NumGet(v, Shm.csrOn, "uint") = 1 && NumGet(v, Shm.icOn, "uint") = 1
+    NumPut("uint", 1, v, Shm.csrState), NumPut("uint", 1, v, Shm.icState)
+    w1 := gameDisplay.slimCursorStatus(), h1 := gameDisplay.hideStatus()
+    gameDisplay.setHideUi(0), h2 := gameDisplay.hideStatus(), gameDisplay.setHideUi(1)
+    gameDisplay.setSlimCursor(0), gameDisplay.setCoverOff(0), c2 := NumGet(v, Shm.csrOn, "uint") + NumGet(v, Shm.icOn, "uint")
+    NumPut("uint", 32, v, Shm.layout)
+    TwcCheck(c0 = 0 && InStr(w0, "older module") && c1 && w1 = "On · the cursor isn't stretched" && InStr(h1, "· the inventory cover removed") && h2 = "Off · the inventory cover removed" && c2 = 0
+        && InStr(gameDisplay.hideStatus(), "time of day, minimap") && !InStr(gameDisplay.hideStatus(), "cover"), "slim cursor / inventory cover: not to an older module (" w0 "); pushed: '" w1 "', '" h1 "', switch off: '" h2 "'; off: 0")
     gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
     TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())
     bnetLogin.setEnabled(0), BattleNetLoginEngine.TARGET := "TW Companion/Battle.net"

@@ -2158,12 +2158,17 @@ BuildSettingsPage() {
     local setBtn := MkButton("Change", bx, fy + 55, 84, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
     local openBtn := MkButton("Open", bx + 90, fy + 55, 84, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
     local autoBtn := MkButton("Auto-detect", bx + 180, fy + 55, 84, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
-    lbl("W3L", x + pad, fy + 90, 120)
-    w3lLabel := lbl("", x + pad + 124, fy + 90, cw - 2 * pad - 124, C.dim)
+    lbl("W3L", x + pad, fy + 90, 40)
+    w3lLabel := lbl("", x + pad + 44, fy + 90, bx - 82 - (x + pad + 44), C.dim)
+    ; the arguments W3L starts the game with (WFE's Launch Arguments), saved as you type
+    lbl("Arguments", bx - 76, fy + 90, 70)
+    w3lArgsEdit := mainGui.AddEdit("x" bx " y" (fy + 86) " w264 h22 +Background" C.chip " c" C.text, "")
+    SendMessage(0x1501, 1, StrPtr("e.g. -window  -nativefullscr  -opengl"), w3lArgsEdit)      ; EM_SETCUEBANNER
+    w3lArgsEdit.OnEvent("Change", (ed, *) => bnetLogin.setW3lArgs(ed.Value))
     w3lEdit := mainGui.AddEdit("x" (x + pad) " y" (fy + 112) " w" fw " h24 ReadOnly +Background" C.chip " c" C.text, "")
     local w3lSet := MkButton("Change", bx, fy + 111, 84, 26, C.chip, C.text, (*) => (bnetLogin.pickW3l(), RefreshSettings()))
     local w3lAutoBtn := MkButton("Auto-detect", bx + 180, fy + 111, 84, 26, C.chip, C.text, (*) => (bnetLogin.autoW3l() || Toast("No w3l.exe in the game's folders: pick it with Change"), RefreshSettings()))
-    AddToPage("settings", folderEdit, setBtn, openBtn, autoBtn, w3lEdit, w3lSet, w3lAutoBtn)
+    AddToPage("settings", folderEdit, setBtn, openBtn, autoBtn, w3lEdit, w3lSet, w3lAutoBtn, w3lArgsEdit)
     ; -- updates, and Reset ------------------------------------------------------------------
     local uy := fy + 150 + 14
     local resetBtn := MkButton("Reset all settings", x, uy, 150, 28, C.chip, C.muted, (*) => ResetAll())
@@ -2202,7 +2207,7 @@ SettingsShowKey() {
     RefreshSettings()
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, loader, w3lEdit, w3lLabel, bnetLogin, webOverlay
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, loader, w3lEdit, w3lArgsEdit, w3lLabel, bnetLogin, webOverlay
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
@@ -2214,7 +2219,9 @@ RefreshSettings() {
     folderEdit.Value := cfg.folder
     folderLabel.Text := !cfg.found ? "not found: pick it with Change" : cfg.auto ? "found automatically" : "chosen by you"
     w3lEdit.Value := bnetLogin.w3lPath
-    w3lLabel.Text := "eurobattle.net's launcher, for the sidebar's Launch W3L  ·  " bnetLogin.w3lStatus()
+    if w3lArgsEdit.Value != bnetLogin.w3lArgs
+        w3lArgsEdit.Value := bnetLogin.w3lArgs
+    w3lLabel.Text := "launcher  ·  " bnetLogin.w3lStatus()
     RefreshUpdateLabel()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))

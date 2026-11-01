@@ -166,6 +166,36 @@ class GameDisplayEngine {
             : st = 2 ? "On · waits for a game in a wide window (4:3 is left as it is)"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
+    ; WFE's Slim Cursor: layout 46, ini [Display] slimCursor (the Widescreen card)
+    slimCursor => Integer(Ini(this.section, "slimCursor", 0))
+    setSlimCursor(on) {
+        SetIni(on ? 1 : 0, this.section, "slimCursor")
+        this.push()
+    }
+    slimCursorStatus() {
+        if !this.slimCursor
+            return "Off"
+        if (w := this.moduleWait(46)) != ""
+            return w
+        st := NumGet(this.gm.live(), Shm.csrState, "uint")
+        return st = 1 ? "On · the cursor isn't stretched" : st = 2 ? "On · waits for a wide window (4:3 is left as it is)"
+            : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
+    ; the inventory cover off (WFE's [INTERFACE] ISINVENTORYCOVER unticked): layout 46, ini [Display]
+    ; coverOff (the Hide the UI card's Options, whatever its switch is)
+    coverOff => Integer(Ini(this.section, "coverOff", 0))
+    setCoverOff(on) {
+        SetIni(on ? 1 : 0, this.section, "coverOff")
+        this.push()
+    }
+    coverStatus() {
+        if !this.coverOff
+            return ""
+        if (w := this.moduleWait(46)) != ""
+            return "the inventory cover " StrReplace(w, "On · ")
+        st := NumGet(this.gm.live(), Shm.icState, "uint")
+        return st = 1 ? "the inventory cover removed" : st = 3 ? "the inventory cover refused (see the log)" : "the inventory cover: waiting for a game"
+    }
     ; fast menus (WFE's Fast Menu): layout 16, ini [Display] fastMenu
     fastMenu => Integer(Ini(this.section, "fastMenu", 0))
     setFastMenu(on) {
@@ -265,6 +295,10 @@ class GameDisplayEngine {
             NumPut("uint", this.unitNames && this.gm.enabled ? 1 : 0, v, Shm.utOn)
         if NumGet(v, Shm.layout, "uint") >= 35          ; the raise without the Widescreen UI too (with it, ulOn bit 2)
             NumPut("uint", this.buffBarUp && this.gm.enabled ? 1 : 0, v, Shm.bbUp)
+        if NumGet(v, Shm.layout, "uint") >= 46 {
+            NumPut("uint", this.slimCursor && this.gm.enabled ? 1 : 0, v, Shm.csrOn)
+            NumPut("uint", this.coverOff && this.gm.enabled ? 1 : 0, v, Shm.icOn)
+        }
     }
 
     ; the common part of both status lines ("" = the module is there to ask)
@@ -290,17 +324,20 @@ class GameDisplayEngine {
             : st = 4 ? "On · another widescreen mod (e.g. RenderEdge's mix file) already does it: left to it"
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
     }
+    ; the card's line: the switch's parts, and the inventory cover (on its own, whatever the switch is)
     hideStatus() {
+        cv := this.coverStatus()
         if !this.hideUi
-            return "Off"
+            return cv = "" ? "Off" : "Off · " cv
         if (w := this.moduleWait(10)) != ""
             return w
         st := NumGet(this.gm.live(), Shm.uiState, "uint"), names := []
         for i, n in GameDisplayEngine.PARTS
             if st & (1 << (i - 1))
                 names.Push(StrLower(n))
-        return st & 0x80000000 ? "On · a part was refused by the module's checks (see the log)"
+        s := st & 0x80000000 ? "On · a part was refused by the module's checks (see the log)"
             : names.Length ? "On · hidden: " Join(", ", names*) : "On · waiting for a game"
+        return cv = "" ? s : s " · " cv
     }
     latencyStatus() {
         if !this.latency

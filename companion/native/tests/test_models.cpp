@@ -7,7 +7,8 @@
 static BYTE *img;
 static BYTE ui[0x500], card[0x200], rows[3][16], btn[0x300], frame[4][0x200], spr[4][0x200], tod[0x200], tspr[0x200], other[0x200];
 static BYTE *cardBtns[4], *lists[6][1];
-static BYTE menu[0x200], quest[0x200], qspr[0x200];
+static BYTE menu[0x200], quest[0x200], qspr[0x200], cur[0x200], cspr[0x200], glue[0x200], gcur[0x200], gspr[0x200];
+static BYTE *clists[2][1];
 static float *M(BYTE *s, DWORD off) { return (float *)(s + off); }
 static void Frame(BYTE *f, BYTE *s, DWORD svt, int k) {
     *(DWORD *)f = (DWORD)(img + 0xa7ac24); *(int *)(f + 0x174) = 1; lists[k][0] = s; *(BYTE ***)(f + 0x178) = lists[k];
@@ -59,6 +60,19 @@ int main() {
     // hidden over a Widescreen UI squeeze: put back to the matrix the squeeze found, which it then squeezes again
     UlModels(ui, ui + 0xb4); ClockHidePass(ui, true); ClockHidePass(ui, false);
     CHECK(a[0] == 1, "over the Widescreen UI's squeeze: put back to its original (%.3f)", a[0]);
+    // the slim cursor (layout 46): the game's cursor [ui+0x16c], a CCursorFrame, narrowed from its own x; put back; another kind of frame left alone
+    *(DWORD *)cur = (DWORD)(img + RVA_CURSOR_FRAME_VT); *(int *)(cur + 0x174) = 1; clists[0][0] = cspr; *(BYTE ***)(cur + 0x178) = clists[0];
+    *(DWORD *)cspr = (DWORD)(img + RVA_SPRITE_UBER_VT[0]); Identity(M(cspr, 0x108), 1.2f); *(BYTE **)(ui + 0x16c) = cur;
+    float *cm = M(cspr, 0x108);
+    bool on = CursorOne(0, ui, 0.75f) && fabsf(cm[0] - 0.9f) < 1e-5f && cm[4] == 1.2f && cm[8] == 1.2f;
+    cm[0] = 1.2f; bool again2 = CursorOne(0, ui, 0.75f) && fabsf(cm[0] - 0.9f) < 1e-5f;
+    bool back = !CursorOne(0, ui, 1) && cm[0] == 1.2f && !g_csr[0].sprite;
+    CHECK(on && again2 && back, "the game's cursor: x 1.2 -> 0.9 (0.75 of its own), again after the game resets it, put back to 1.2");
+    *(DWORD *)glue = (DWORD)(img + RVA_UI_VTABLE); *(BYTE **)(glue + 0x16c) = gcur;
+    Frame(gcur, gspr, RVA_SPRITE_MINI_VT[0], 5); Identity(M(gspr, 0x64), 1);       // a frame, but not the cursor's kind
+    CHECK(!CursorOne(1, glue, 0.75f) && M(gspr, 0x64)[0] == 1, "a frame at +0x16c that isn't a CCursorFrame: left alone");
+    CursorOne(0, ui, 0.75f); clists[0][0] = gspr;                                   // the cursor's model changed: the old one isn't written
+    CHECK(!CursorOne(0, ui, 1) && !g_csr[0].sprite && fabsf(cm[0] - 0.9f) < 1e-5f && M(gspr, 0x64)[0] == 1, "its model swapped: the save dropped, neither written");
     Verdict();
     return g_fails;
 }

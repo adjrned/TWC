@@ -64,6 +64,10 @@ class BattleNetLoginEngine {
         SetIni(exe, this.section, "w3l"), SetIni(1, this.section, "w3lAuto")
         return true
     }
+    ; the arguments it's started with (WFE's Launcher > Launch Arguments: -window, -nativefullscr, -opengl...;
+    ; W3L hands them on to the game), [Battle.net] w3lArgs, one line
+    w3lArgs => Ini(this.section, "w3lArgs", "")
+    setW3lArgs(t) => SetIni(Trim(StrReplace(StrReplace(t, "`n", " "), "`r")), this.section, "w3lArgs")
     ; Settings' line about it
     w3lStatus() => this.w3lPath = "" ? "not set: Change or Auto-detect" : !FileExist(this.w3lPath) ? "not there any more: Change or Auto-detect"
         : this.w3lAuto ? "found automatically" : "chosen by you"
@@ -89,12 +93,13 @@ class BattleNetLoginEngine {
         if WinExist(WarcraftIII)
             Toast("Warcraft III is already running: W3L started anyway", "", 4000)
         SplitPath(exe, , &dir)
-        try Run('"' exe '"', dir)
+        args := this.w3lArgs
+        try Run('"' exe '"' (args != "" ? " " args : ""), dir)
         catch as e {
             Toast("W3L couldn't be started: " e.Message, "error")
             return false
         }
-        DebugLog("w3l: started " exe)
+        DebugLog("w3l: started " exe (args != "" ? " " args : ""))
         return true
     }
     setAccount(name) => SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "account")
