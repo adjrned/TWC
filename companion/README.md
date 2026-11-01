@@ -139,7 +139,7 @@ next to the script records each change and each quickcast with the time.
   only be on one slot (setting it again moves it), and keys the companion
   uses (F8, Esc, macros, overlay) are refused. Esc or Backspace (or *Clear*)
   clears a slot. The QC pill on a slot (or right-click) toggles its quickcast. Remaps are live whenever the tool is On.
-  **Quickcast** casts at the cursor; held, it repeats (every 40 ms by default).
+  **Quickcast** casts at the cursor; held, it repeats (every 80 ms by default, 400 ms after a cast).
   *Quickcast Setup* on the toolbar runs a one-time setup in game, per game
   version and window size (kept in the ini, so updates don't lose it; it
   also tunes itself as you play): point at Move and press Space, point at the

@@ -276,7 +276,7 @@ class RemapEngine {
         return kc
     }
     ; The key to the game module, which presses its button and clicks (as WFE). Held, it goes again every
-    ; [Quickcast] interval (40 ms) until let go (WFE's AutoCast repeats as long), unless repeat is off.
+    ; [Quickcast] interval (80 ms) until let go (WFE's AutoCast repeats as long), unless repeat is off.
     ; Paced here, not by the key's own repeat: Windows waits its repeat delay (a quarter to half a second)
     ; before the first one, the pause after the first press a user felt on an item key (2026-10-29).
     ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left it
@@ -347,7 +347,7 @@ class RemapEngine {
     ; the game losing focus (overlay, alt-tab), the tool going Off or chat
     ; opening, or 20 s as a last resort, so a key-up that went missing (focus
     ; moving mid-press) can never leave it casting forever. After a cast it
-    ; waits castGap (450 ms) before pressing again: the hero may still be
+    ; waits castGap (400 ms) before pressing again: the hero may still be
     ; turning or walking into range, and each press reopens the reticle (its
     ; animation and sound) and gives the order again.
     ; Two ways to know the game waits for a target: the game hook (1.28f
@@ -381,7 +381,7 @@ class RemapEngine {
             wasReady := inGameQc
         }
         ; 1.28f: the game module presses the slot's button as the key comes and clicks at once
-        ; (as WFE): only the key goes. Held, it goes again every [Quickcast] interval (40 ms) until
+        ; (as WFE): only the key goes. Held, it goes again every [Quickcast] interval (80 ms) until
         ; let go (WFE's AutoCast repeats as long), unless repeat is off. Paced here, not by the
         ; key's own repeat: Windows waits its repeat delay (a quarter to half a second) before the
         ; first one, the pause after the first press a user felt on an item key (2026-10-29)

@@ -56,9 +56,9 @@ TwcQuickcastRun() {
     RemapQcSwitch("hook")
     TwcCheck(both && toScreen && toHook && none && gameModule.quickcast, "one quickcast at a time: the defaults (both on) are the hook; Screen on turns the hook off and back; both can be off")
     h := quickcast.get("hook"), sc := quickcast.get("screen")
-    TwcCheck(h.interval = 40 && h.castGap = 400 && sc.interval = 40 && sc.castGap = 450, "timings: the game hook's 40 / 400 ms, the screen's 40 / 450 (" h.interval "/" h.castGap ", " sc.interval "/" sc.castGap ")")
+    TwcCheck(h.interval = 80 && h.castGap = 400 && sc.interval = 80 && sc.castGap = 400, "timings: 80 ms repeats, 400 ms after a cast, both methods (" h.interval "/" h.castGap ", " sc.interval "/" sc.castGap ")")
     quickcast.set("hookCastGap", 300)
-    TwcCheck(quickcast.get("hook").castGap = 300 && quickcast.get("screen").castGap = 450, "each its own: the hook's wait set, the screen's kept")
+    TwcCheck(quickcast.get("hook").castGap = 300 && quickcast.get("screen").castGap = 400, "each its own: the hook's wait set, the screen's kept")
     IniDelete(iniFile, "Quickcast", "hookCastGap")
     TwcCheckDone()
 }
