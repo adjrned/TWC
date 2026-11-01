@@ -269,13 +269,15 @@ class RegisterHotkey {
     win := ""
     enable := false
     gated := true
+    opts := ""                  ; Hotkey()'s options (T2: a second thread while one runs)
 
-    __New(key := "", fn := "", win := "", enable := false, gated := true) {
+    __New(key := "", fn := "", win := "", enable := false, gated := true, opts := "") {
         this.key := key ? "*" . key : ""
         this.fn := fn
         this.win := win
         this.enable := enable
         this.gated := gated
+        this.opts := opts
         if key
             this.refresh()
     }
@@ -290,7 +292,7 @@ class RegisterHotkey {
         active := this.enable && (!this.gated || live)
         HotIfWinActive(this.win)
         cb := (*) => this.fn.Call()
-        try Hotkey(this.key, cb, active ? "On" : "Off")
+        try Hotkey(this.key, cb, (active ? "On" : "Off") (this.opts != "" ? " " this.opts : ""))
         HotIfWinActive()
     }
 }

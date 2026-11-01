@@ -43,6 +43,17 @@ TwcQuickcastRun() {
     remap.holding["f24"] := false, t3 := remap.tryTag(), remap.qcTry := 0
     TwcCheck(w1 = "the key was let go" && InStr(w2, "isn't down"), "heldWhy: let go / no key-up (" w1 " / " w2 ")")
     TwcCheck(t1 = "" && InStr(t2, "[repeat 3, 2.5 s after the press, key up]") && InStr(t3, "key up, key-up seen]"), "tryTag: none on the press, then the repeat's number and the key (" t2 t3 ")")
+    ; the key's own repeat stopping ends a repeat whose key-up went missing (the user's report, 2026-11-01)
+    now := A_TickCount, g := []
+    for t in [[0, 0], [2000, 2000], [3000, 100], [3000, 1500]]
+        remap.pressAt["f24"] := now - t[1], remap.downAt["f24"] := now - t[2], g.Push(remap.repeatGone("f24"))
+    remap.pressAt.Delete("f24"), remap.downAt.Delete("f24")
+    TwcCheck(!g[1] && g[2] && !g[3] && g[4], "repeatGone: just pressed / no repeat 2 s after the press / repeating / repeats stopped 1.5 s ago (" g[1] g[2] g[3] g[4] ")")
+    ; a repeat that throws still lets go of the key (left 'held', it never quickcast again)
+    sendWas := remap.sendFn, remap.sendFn := (*) => 0
+    try remap.keyCastHeld("Q", "$f24", "f24", {}, QpcMs())   ; no .repeat: throws in the repeat
+    remap.sendFn := sendWas
+    TwcCheck(!remap.holding.Get("f24", false), "keyCastHeld: the key let go after an error")
     ; one method at a time (the user, 2026-10-31): both on from before -> the hook; each switch on turns the other off
     global gameModule
     for k in ["quickcast"]
