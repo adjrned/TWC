@@ -4744,6 +4744,7 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     if (!IsUnit(src) || !IsUnit(target))
         return;
     int from = *(int *)(src + UNIT_OWNER), to = *(int *)(target + UNIT_OWNER);
+    PvHit(src, target, dealt, c.ab, (*(DWORD *)(rec + REC_FLAGS) & 0x100) != 0);     // (every hit: a spell's dummies are neutral)
     if (from < 0 || from > 15 || to < 0 || to > 15 || from == to || from > 11 && to > 11)
         return;                             // one side a player: 12-15 are the neutrals (the creeps among themselves aren't anyone's)
     if (from <= 11) {                       // dealt: players only (the creeps' "Player 13" row, the user's screenshot)
@@ -4764,7 +4765,6 @@ static void DamageSeen(BYTE *target, BYTE *rec, float dealt, const DmCause &c) {
     DWORD ab = spell ? c.ab : 0;
     h.how = spell ? c.how : DMA_NONE;
     g_shared->dmRingAbility[n & (DM_RING - 1)] = ab;
-    PvHit(src, target, dealt, spell ? c.ab : 0, (fl & 0x100) != 0);
     InterlockedExchange(&g_shared->dmRingSeq, n + 1);
     DamageType(st), DamageType(tt), DamageType(ab);
     static int abLogs[6];
