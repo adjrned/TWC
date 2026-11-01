@@ -117,11 +117,18 @@ Wc3Features() {
             opts: (d) => (OptKey(d, "Clear messages", "clearMessages"), OptKey(d, "Clear chat", "clearChat"), OptKey(d, "Multiboard", "multiboard"),
                 OptNote(d, "Esc while setting one: no key.")) },
         { tab: "display", title: "Hide the UI", badge: "1.28f",
-            desc: "As WFE: the black console goes, the world shows through; the minimap and buffs stay.",
+            ; plain words (the user, 2026-11-01: the old ones were confusing): what goes, what stays, what each option does
+            desc: "Removes the black console and the top bars, so you see more of the map.",
             on: (*) => gameDisplay.hideUi, set: (v) => gameDisplay.setHideUi(v), status: (*) => gameDisplay.hideStatus(),
-            opts: (d) => (OptToggle(d, "Hide the upper menu bar's buttons too", gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(v)),
-                OptToggle(d, "Remove the inventory cover", gameDisplay.coverOff, (v) => gameDisplay.setCoverOff(v)),
-                OptNote(d, "As WFE's: the art over the inventory of a unit that has none goes. On its own, whatever the card's switch is.")) },
+            opts: (d) => (OptNote(d, "Hidden: the console's black frame, the clock, the gold and lumber bar and the idle worker button. "
+                    . "Kept: the minimap, portrait, command card, inventory and buffs."),
+                OptDivider(d),
+                ; both as what stays on screen (the user's names): On = shown, the opposite of the ini's hideMenu / coverOff
+                OptToggle(d, "Show Upper Menu Bar", !gameDisplay.hideMenu, (v) => gameDisplay.setHideMenu(!v)),
+                OptNote(d, "The Quests, Menu, Allies and Log buttons at the top. Off: hidden with the rest."),
+                OptDivider(d),
+                OptToggle(d, "Show Inventory Cover", !gameDisplay.coverOff, (v) => gameDisplay.setCoverOff(!v)),
+                OptNote(d, "The art over the inventory of a unit that has none. Off: empty slots instead, even with the card switched off.")) },
         ; the world and the UI in one card (as WFE's widescreen and Upgraded UI)
         { tab: "display", title: "Widescreen", badge: "1.28f",
             desc: "As WFE's: on a wide window the world, UI and cursor aren't stretched.",
