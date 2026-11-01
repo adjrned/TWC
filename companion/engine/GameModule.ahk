@@ -436,8 +436,8 @@ class GameModuleEngine {
             out.lines.Push(StrGet(v + Shm.mtText + 128 * Mod(seq - Min(seq - since, 8) + A_Index - 1, 8), 127, "UTF-8"))
         return out
     }
-    ; the switch (layout 29), on while anyone wants the hits (the meter, the boss timers: who); false: no module, or an older one
-    damageWanted(on, who := "meter") {
+    ; the switch (layout 29), on while anyone wants the hits (who: the boss timers, or any other reader); false: no module, or an older one
+    damageWanted(on, who := "feed") {
         static wants := Map()
         wants[who] := on
         any := false

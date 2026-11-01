@@ -1,4 +1,4 @@
-// The damage meter's feed (layout 29), against a fake game image: CUnit's vtable entry +0x120 (its
+// The damage feed (layout 29), against a fake game image: CUnit's vtable entry +0x120 (its
 // damage) is swapped for ours; the game's own runs first and what it dealt is added to the source
 // unit's owner when the target is another player's (not its own, not 0 dealt); the players' names
 // as GetPlayerName reads them; off: the game's entry again; an entry someone else changed is refused.
@@ -102,7 +102,7 @@ int main() {
     CHECK(g_dmTmHooked && tvt[TIMER_EVENT_SLOT / 4] == (DWORD)TimerEvent, "and CTimerWar3's event entry +0xC (the map timers followed)");
     CHECK(!strcmp(sh.dmName[1], "Ruzai") && !strcmp(sh.dmName[5], "|Kaelith x") && !sh.dmName[3][0] && !sh.dmName[0][0], "names as GetPlayerName reads them, the codes out: slot 1 '%s', 5 '%s', empty ones ''", sh.dmName[1], sh.dmName[5]);
     CHECK(sh.dmColour[1] == 3 && sh.dmColour[5] == 5 && sh.dmColour[0] == -1 && sh.dmLocal == 5, "colours as GetPlayerColor gives them (slot 1: %d, 5: %d, none: %d); you: slot %d", sh.dmColour[1], sh.dmColour[5], sh.dmColour[0], sh.dmLocal);
-    // the map renames player 1 (its -convert: a save's owner's name, SetPlayerName): the meter follows the game
+    // the map renames player 1 (its -convert: a save's owner's name, SetPlayerName): the feed follows the game
     names[0] = "|cffff8000Silverwolve", *(const char **)(str[0] + 0x1c) = names[0];
     names[1] = "Morrow", *(const char **)(str[1] + 0x1c) = names[1];
     FollowDamage(12500);

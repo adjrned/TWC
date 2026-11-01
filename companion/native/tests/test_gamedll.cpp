@@ -235,7 +235,7 @@ int main() {
     CHECK(!memcmp(g_base + 0x13b943, "\x83\xBF\x94\x00\x00\x00\x00\x74", 8) && !memcmp(g_base + 0x13b97f, "\xC7\x87\x94\x00\x00\x00\x00\x00\x00\x00", 10)
           && !memcmp(g_base + 0x11c6d3, "\x8B\x87\xB0\x00\x00\x00\xA8\x01\x75", 9) && SiteTarget(g_base + 0x12582f) == g_base + 0x11c6d0 && g_base[0x12582f] == 0xE9,
           "Hide the UI's still-hidden test: a simple frame's hide returns on [+0x94] 0, a CFrame's on [+0xB0] bit 1 (the time of day's too)");
-    // the damage meter's feed: CUnit's vtable +0x120 is +6CF530 (thiscall, ret 0x10), which writes what was dealt to *[ebp+8]
+    // the damage feed: CUnit's vtable +0x120 is +6CF530 (thiscall, ret 0x10), which writes what was dealt to *[ebp+8]
     // (its invulnerable exit: 0 there, +6CF548..+6CF553); UnitDamageTarget +24AE80 makes the record with +6D6F80 (source
     // [+0] = its 3rd argument, the amount [+0x10] = *1st) and calls vt+0x120 with (&dealt, &record, 0, 0)
     CHECK(Rtti(RVA_UNIT_VT, "CUnit") && *(DWORD *)(g_base + RVA_UNIT_VT + UNIT_DAMAGE_SLOT) == (DWORD)(g_base + RVA_UNIT_DAMAGE)
@@ -244,7 +244,7 @@ int main() {
           && SiteTarget(g_base + 0x24aeef) == g_base + 0x6d6f80 && !memcmp(g_base + 0x6d6f91, "\x8B\x45\x10\x89\x01", 5) && !memcmp(g_base + 0x6d6f83, "\x8B\x45\x08\x8B\x00\x89\x41\x10", 8)
           && !memcmp(g_base + 0x24af01, "\x8D\x4D\xFC\x51\x8B\xCE\xFF\x92\x20\x01\x00\x00", 12),
           "the damage feed: CUnit's +0x120 is +6CF530 (ret 0x10, *dealt written), the record's source [+0] and amount [+0x10]");
-    // the damage meter's causes: CTimerWar3's event entry (vtable +A8EFB4 slot +0xC, its only pointer) is +2727E0: 0x80204 (the
+    // the damage feed's causes: CTimerWar3's event entry (vtable +A8EFB4 slot +0xC, its only pointer) is +2727E0: 0x80204 (the
     // expiry its agent timer posts, +27C19D) and 0x80272 both run +272860, which fires the timer's trigger [+0x40] (+22ABF0);
     // GetSpellAbilityId reads the trigger context's slot 6 (+235FC0 -> +2BB780: [ctx + 16 * slot + 0x98] entries at [+0x9C], the
     // last one), the context [state+0x1C] (+2135F0)

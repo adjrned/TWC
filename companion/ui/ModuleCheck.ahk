@@ -82,7 +82,7 @@ ModuleCheckCompanionLines() {
         }
     loop lines.Length - start + 1 {
         l := lines[start + A_Index - 1]
-        if l != "" && RegExMatch(l, "i)quickcast|damage meter|game module|boss timers")
+        if l != "" && RegExMatch(l, "i)quickcast|damage|game module|boss timers")
             out.Push(l)
     }
     while out.Length > 60

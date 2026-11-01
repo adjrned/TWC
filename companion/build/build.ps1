@@ -3,6 +3,8 @@
 #   companion\dist\TWC-Companion-<version>.zip
 # Run from anywhere:  powershell -ExecutionPolicy Bypass -File companion\build\build.ps1
 # First run downloads Ahk2Exe (the official AutoHotkey compiler) into build\.tools.
+# companion\private (local-only parts, not in git) is left out unless -WithPrivate: a build to share never has them.
+param([switch]$WithPrivate)
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 # GitHub API: with the build's token when there is one (shared build machines hit rate limits)
@@ -59,8 +61,12 @@ $commit = $env:BUILD_COMMIT
 if (-not $commit) { $commit = (git -C $src rev-parse HEAD 2>$null) }
 if (-not $commit) { $commit = "" }
 $stamped = Join-Path $src "_build_main.ahk"
-(Get-Content $main -Raw -Encoding UTF8).Replace('global buildCommit := ""', "global buildCommit := `"$commit`"") |
-    Set-Content $stamped -Encoding UTF8 -NoNewline
+$text = (Get-Content $main -Raw -Encoding UTF8).Replace('global buildCommit := ""', "global buildCommit := `"$commit`"")
+if (-not $WithPrivate) {
+    $text = [regex]::Replace($text, '(?m)^#Include \*i private\\Private\.ahk.*$', '; (the local-only parts: left out of this build)')
+    if ($text -match 'private\\Private\.ahk') { throw "The private parts' #Include is still in the build" }
+}
+$text | Set-Content $stamped -Encoding UTF8 -NoNewline
 
 Write-Host "Compiling TW Companion $version ($($commit.Substring(0, [Math]::Min(7, $commit.Length))))..."
 $exe = Join-Path $stage "TW Companion.exe"

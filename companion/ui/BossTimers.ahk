@@ -1,7 +1,7 @@
 ; Boss timers (1.28f, layout 36; the user's pick, 2026-10-30: "boss timers that learn the fight")
 ;  The game module notes every enemy's spell as the game fires its SPELL_EFFECT (the caster, its type,
 ;  the ability, its HP then). An attempt: the enemy caster with the most HP (at least "Bosses from" HP,
-;  or the meter's pinned type), from the players' first hit on it (the meter's hits; else its first
+;  or a pinned type: Extensions.pinnedType), from the players' first hit on it (the damage feed's hits; else its first
 ;  cast) until it dies (a kill) or 30 s pass without a hit on it or a cast of its (a reset). Hitting such
 ;  an enemy starts one too, before it casts (its HP read through the module's watch): the window comes
 ;  up by itself as you engage. Its ✕ hides it for that attempt only.
@@ -26,7 +26,7 @@ class BossTimers {
     learned := Map()                ; boss type -> { name, attempts, kills, abilities: Map(ability -> { first: [], hp: [], gap: [] }) }
     sample := false
     sampleFn := 0
-    pinned := ""                    ; the meter's pinned unit type (a boss whatever its HP)
+    pinned := ""                    ; a pinned unit type (Extensions.pinnedType: a boss whatever its HP)
 
     __New(gameModule := 0) {
         this.gm := gameModule
@@ -212,7 +212,6 @@ class BossTimers {
 
     ; -- the feed ------------------------------------------------------------------------
     feed(now := A_TickCount) {
-        global dmgMeter                         ; (a damage meter's pinned unit, when one is there)
         if !this.gm || this.sample              ; (the sample's fight is made up: nothing read, nothing learned)
             return
         on := this.enabled && !this.sample
@@ -230,7 +229,7 @@ class BossTimers {
                 this.typeNames[k] := n
             this.typeN := t.n
         }
-        try this.pinned := IsSet(dmgMeter) && dmgMeter ? dmgMeter.filter : ""
+        try this.pinned := (pt := Extensions.pinnedType)()
         if (r := this.gm.damageHits(this.hitSeq)) {
             if this.hitSeq < 0 || r.seq >= this.hitSeq
                 for hit in r.hits {
@@ -270,7 +269,7 @@ class BossTimers {
                 this.notBoss.Delete(u)
     }
     ; no attempt: the enemy the players hit last (in the last 5 s, not ruled out) is followed by the module's
-    ; watch for its HP; a boss (at least "Bosses from" HP, or the meter's pinned type) starts the attempt, timed
+    ; watch for its HP; a boss (at least "Bosses from" HP, or a pinned type) starts the attempt, timed
     ; from the first hit on it (a boss that hadn't cast yet never brought the window up)
     findByHits(now) {
         if (c := this.candidate) {

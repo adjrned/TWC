@@ -63,6 +63,7 @@ Wc3PlannedText(tab, ver) {
 class Extensions {
     static onStart := []
     static wc3Features := []
+    static pinnedType := (*) => ""          ; a unit type the boss timers always time ("" none)
 }
 
 ; Every feature on the page. Keys: tab, title, badge ("1.28f" / "Reforged" /
@@ -206,7 +207,7 @@ Wc3Features() {
                 OptSlider(d, "Warn at", (*) => bossBars.warnSecs, (v) => bossBars.setNumber("warn", v, 0, 10), 0, 10, 0.5, SecsText),
                 OptNote(d, "A bar turns red this long before its spell (an HP mark: within 5%)."),
                 OptSlider(d, "Bosses from", (*) => bossBars.minHp, (v) => bossBars.setNumber("minHp", v, 0, 1000000), 0, 100000, 1000),
-                OptNote(d, "HP: an enemy with less isn't timed (its minions). The meter's pinned unit always is."),
+                OptNote(d, "HP: an enemy with less isn't timed (its minions)."),
                 OptSlider(d, "Opacity", (*) => bossBars.opacity, (v) => (bossBars.setNumber("opacity", v, 30, 100), bossBars.rebuild(), true), 30, 100, 1),
                 OptNote(d, "Each attempt teaches it: when each spell first came (from the first hit, and at what HP) and how often after. The first attempt only learns; '~' means the times spread; 'at 50%' a spell that comes at an HP mark."),
                 OptDivider(d),

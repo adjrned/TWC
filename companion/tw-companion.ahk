@@ -5,7 +5,7 @@
 ; 2000ms" during normal play (the user, 2026-10-29)
 A_MaxHotkeysPerInterval := 2000
 ; a hotkey (a quickcast key) may interrupt a running timer at once, not after its first 15 ms
-; (AHK's default): the meter's and the timers' ticks held keys back (2026-10-29, a delay before casting)
+; (AHK's default): the companion's and the timers' ticks held keys back (2026-10-29, a delay before casting)
 Thread("Interrupt", 0)
 ;@Ahk2Exe-SetName TW Companion
 ;@Ahk2Exe-SetDescription TW Companion
@@ -109,7 +109,7 @@ global buildCommit := ""       ; filled in by build.ps1 for the exe (the commit 
 global toolEnabled := true, chatting := false, inGame := false, qcCalibrating := false, chatSince := 0
 global debugGui := 0, debugText := 0
 global showMain := false
-global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture, dmgMeter
+global loader, macros, quickcast, chatBox, inGameEng, remap, host, settings, updater, selfUpdate, webOverlay, gameModule, timersHud, gameCmds, buffWatch, healthBars, gameDisplay, bnetLogin, hudCapture
 global mainGui, bgPic, titleText, navBar, toolOn, toolOff, searchIcon, sideGame := 0     ; sideGame: the sidebar's Join game box
 global pages := Map(), currentPage := "loader"
 global controlsToDrag := Map()

@@ -45,7 +45,7 @@
 static const DWORD BUILD_128F = 7680;
 
 #pragma pack(push, 4)
-// layout 33: one hit of the damage meter's feed (UnitDamage), as the record and the units have it
+// layout 33: one hit of the damage feed (UnitDamage), as the record and the units have it
 static const int DM_RING = 2048, DM_TYPES = 128, DM_NAMES = 2 * DM_TYPES;
 struct DmHit {
     float amount;           // what was dealt (after armor and type)
@@ -244,7 +244,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD qkState;          // module: 0 off, 1 on (the window is ours), 3 refused (see the log)
     DWORD qkPressed;        // module: buttons pressed this way
     DWORD qkClicked;        //   and of those, clicked at the cursor (the game wanted a target)
-    // layout 29: the damage meter's feed (UnitDamage): what each player's units deal to other players' units
+    // layout 29: the damage feed (UnitDamage): what each player's units deal to other players' units
     DWORD dmOn;             // companion: 1 = watch the damage
     DWORD dmState;          // module: 0 off, 1 on (CUnit's damage entry is ours), 3 refused (see the log)
     volatile LONG dmSeq;    // module: +1 a hit
@@ -266,7 +266,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     volatile LONG btNewSeq; // module: +1 a buff's length learned (written first, at [seq & 15])
     DWORD btNewId[16];
     float btNewLen[16];
-    // layout 33: the damage meter's hits one by one (players' units against anyone's, the neutrals' against
+    // layout 33: the damage feed's hits one by one (players' units against anyone's, the neutrals' against
     // players'), the unit types' names, your selection; the map's text lines (DisplayTextToPlayer & co)
     volatile LONG dmRingSeq; // module: hits written in all; hit n is dmRing[n & (DM_RING - 1)], written before the +1
     DmHit dmRing[DM_RING];
@@ -1154,7 +1154,7 @@ static void __fastcall TimerStartHook(void *timer, int edx, float *timeout, int 
         TimerStartRec &r = g_tsRing[(InterlockedIncrement(&g_tsN) - 1) & 4095];
         r.at = GetTickCount(), r.timeout = timeout ? *timeout : -1, r.periodic = (DWORD)periodic, r.timer = timer, r.code = code;
         if (g_shared->dmOn)
-            DamageTimerStarted(timer, r.timeout, periodic, r.at);      // the damage meter: the spell it was started in
+            DamageTimerStarted(timer, r.timeout, periodic, r.at);      // the damage feed: the spell it was started in
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
     ((TimerStartFn)g_tsTramp)(timer, edx, timeout, periodic, code);
@@ -1415,7 +1415,7 @@ static void BuffAppeared(BYTE *unit, DWORD id, bool aura, float left, float tota
     bool fresh = !s || now - s->at > 2000;
     s = s ? s : old;
     s->unit = unit, s->id = id, s->at = now;
-    bool watched = g_tsHooked && (g_shared->itOn & 2);     // (the damage meter watches the timers too)
+    bool watched = g_tsHooked && (g_shared->itOn & 2);     // (the damage feed watches the timers too)
     if (fresh && watched && aura)           // auras only: a buff has its own time (B0BU, a 9999 s passive, took an 8 s timer)
         BuffMatchTimer(unit, id, now);
     if (fresh && watched && g_bsLogs < 16)
@@ -4231,7 +4231,7 @@ static void FsText(BYTE *fs, char *out, size_t n) {
         out[--l] = 0;
 }
 // a ping's number, short (the user, 2026-10-31: TWRPG's HP runs into the millions): 812, 45.6K, 1.23M, 250M
-// (3 figures at most, trailing zeros dropped: 2M, not 2.00M), as the damage meter writes them
+// (3 figures at most, trailing zeros dropped: 2M, not 2.00M), short
 static void ShortNum(float v, char *out, size_t n) {
     static const struct { float at; char u; } UNITS[] = { { 1e9f, 'B' }, { 1e6f, 'M' }, { 1e3f, 'K' } };
     for (const auto &u : UNITS)
@@ -4624,7 +4624,7 @@ static void FollowUnitTip() {
         g_shared->utState = g_utHooked ? 1 : 0;
 }
 
-// -- the damage meter's feed -------------------------------------------------------------
+// -- the damage feed -------------------------------------------------------------------
 // Every damage to a unit goes through its vtable +0x120 (CUnit's +0x6cf530, the only pointer to
 // it the slot +0xb68a34; 76 indirect callers: attacks, missiles, abilities, UnitDamageTarget
 // +0x24ae80): thiscall(target, float *dealt, record, a3, a4), ret 0x10. It writes what was
@@ -4836,7 +4836,7 @@ static void NoCauseLog(BYTE *src, const DmCause &c, DWORD now) {
         if (t)
             sprintf_s(tm, "in a %.2f s %s map timer started %.1f s before with no spell", t->timeout, t->periodic ? "periodic" : "one-shot", (now - t->at) / 1000.0);
         else
-            sprintf_s(tm, "in a map timer started before the meter was on (or not by +27C160)");
+            sprintf_s(tm, "in a map timer started before the feed was on (or not by +27C160)");
     }
     Log("damage: a spell hit with no cause of its own (%s '%s'): trigger event %lu, %s, %d hits deep; %s", (*(DWORD *)(src + 0x30) >> 24) - 'A' < 26 ? "hero" : "unit",
         IdText(*(DWORD *)(src + 0x30)).s, EventNow(), tm, g_dmDepth, c.how == DMA_COOLDOWN ? "guessed by the last cooldown" : "nothing cooling down either");
@@ -5057,7 +5057,7 @@ static void DamageNames() {
             logs++, Log("damage: reading the player names faulted (after:%s)", o ? b : " none");
     }
 }
-// your selection's active unit (for the meter's "this target" filter), read by the worker
+// your selection's active unit (a reader's "this target" filter), read by the worker
 static void DamageSelection() {
     BYTE *unit = nullptr;
     __try {
@@ -5074,11 +5074,11 @@ static void DamageSelection() {
     g_shared->dmSelUnit = (DWORD)unit;
 }
 
-// -- the map's text lines (the damage meter's cross-check with the map's own total) -----------
+// -- the map's text lines (a cross-check of the damage feed with the map's own total) ----------
 // DisplayTextToPlayer (+0x22ff30), DisplayTimedTextFromPlayer (+0x22ffe0) and DisplayTimedTextToPlayer
 // (+0x2300c0) check the player is you (+0x299400), then each calls the game UI's text line +0x3a8eb0
 // thiscall(ui, float x, float y, const char *text, float secs, DWORD colour), ret 0x14 (its only 3
-// callers: +0x22ffd3, +0x23009d, +0x230123). While the meter is on those calls are pointed at
+// callers: +0x22ffd3, +0x23009d, +0x230123). While the feed is on those calls are pointed at
 // MapTextHook: the game's own first, then the line is kept in mtText (the codes out) and the first
 // ones logged, so the map's damage line can be found (TWRPG's damage ability: "text shown in the
 // game, not the chat", the user's word). Rewritten on the game thread, put back off and on unload.
@@ -5125,7 +5125,7 @@ static bool MapTextSites(bool on) {
     Log(on ? "map text: on (the 3 DisplayText natives' lines are read)" : "map text: off (the calls are the game's again)");
     return true;
 }
-// on the game thread: with the damage meter
+// on the game thread: with the damage feed
 static void MapTextPass() {
     bool on = g_shared->dmOn && !g_mtBad;
     if (on != g_mtHooked && (!on || FnStart(RVA_UI_TEXT)) && !MapTextSites(on))
@@ -5160,7 +5160,7 @@ static void FollowDamage(DWORD now) {
         checked = 2, g_shared->dmState = 3;
     else if (g_shared->dmState != 3)
         g_shared->dmState = g_dmHooked ? 1 : 0;
-    // the map timers (the spells they were started in): refused, the meter goes on without them
+    // the map timers (the spells they were started in): refused, the feed goes on without them
     static int timers;              // 1 checked out, 2 refused
     if (checked == 1 && on && !timers) {
         char rtti[64] = "";
@@ -7206,7 +7206,7 @@ static void BossCastSeen(BYTE *unit, BYTE *ability) {
     c.at = GetTickCount(), c.unit = (DWORD)unit, c.unitType = *(DWORD *)(unit + 0x30), c.ability = id;
     c.hp = hp == hp ? hp : 0, c.hpMax = mx, c.owner = (BYTE)owner;
     InterlockedExchange(&g_shared->bcSeq, n + 1);
-    DamageType(c.unitType), DamageType(id);         // named on the game thread, as the meter's
+    DamageType(c.unitType), DamageType(id);         // named on the game thread, as the feed's
     static int logs;
     if (logs < 5) {
         char rtti[48] = "";

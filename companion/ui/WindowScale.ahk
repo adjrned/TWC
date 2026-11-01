@@ -27,7 +27,7 @@ global SCALE_MIN := 0.7, SCALE_MAX := 2.5, SCALE_STEP := 0.05
 UiK(g) => DPI_K * (IsObject(g) && winScale.Has(g.Hwnd) ? winScale[g.Hwnd].k : 1)
 
 ; g resized as a whole from now on (before its controls are added); kind: "main", "popup" or a
-; window's own ("meter"); all but the main window move by any empty spot
+; window's own name (its own size); all but the main window move by any empty spot
 ScaleKey(kind) => kind = "main" ? "scale" : kind "Scale"
 MakeScalable(g, kind) {
     WindowScaleInit()

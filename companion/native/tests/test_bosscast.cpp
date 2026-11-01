@@ -54,7 +54,7 @@ int main() {
     bool named = false;
     for (int i = 0; i < g_dmPendN; i++)
         named |= g_dmPend[i] == 'A0MT';
-    CHECK(named, "its ability waits to be named with the meter's names (the game thread's pass)");
+    CHECK(named, "its ability waits to be named with the feed's names (the game thread's pass)");
     sh.bcWatch = (DWORD)boss; BossCastPass();
     bool live = sh.bcWatchAlive == 1 && sh.bcWatchHp == 800 && sh.bcWatchMax == 1000;
     *(float *)(boss + UNIT_HP) = 0; BossCastPass();
