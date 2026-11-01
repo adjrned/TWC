@@ -172,6 +172,15 @@ TwcModuleRun() {
     st2 := bnetLogin.w3lStatus(), SetIni("", "Battle.net", "w3l")
     TwcCheck(found = w3dir "\w3l.exe" && auto && p1 = found && st1 = "found automatically" && InStr(st2, "not there any more") && InStr(bnetLogin.w3lStatus(), "not set"),
         "W3L: Auto-detect finds it next to the game's folder and saves it (" st1 "); gone: '" st2 "'")
+    ; Bring Game to Front (WFE's Loading Notification): a game UI after 5 s without one, the game in the background:
+    ; brought forward once; not when off, not for a brief gap, not at the first look (the companion starting mid-game)
+    fronts := 0, keepFront := gameDisplay.frontFn, gameDisplay.frontFn := (*) => fronts++, gameDisplay.frontReset := 1
+    gameDisplay.setToFront(1), NumPut("uint", 1, v, Shm.qcState), f0 := gameDisplay.frontWatch()
+    NumPut("uint", 0, v, Shm.qcState), gameDisplay.frontWatch(), NumPut("uint", 1, v, Shm.qcState), f1 := gameDisplay.frontWatch()
+    NumPut("uint", 0, v, Shm.qcState), gameDisplay.frontWatch(), Sleep(5100), NumPut("uint", 1, v, Shm.qcState), f2 := gameDisplay.frontWatch(), f3 := gameDisplay.frontWatch()
+    gameDisplay.setToFront(0), NumPut("uint", 0, v, Shm.qcState), gameDisplay.frontWatch(), Sleep(5100), NumPut("uint", 1, v, Shm.qcState), f4 := gameDisplay.frontWatch()
+    gameDisplay.frontFn := keepFront
+    TwcCheck(!f0 && !f1 && f2 && !f3 && !f4 && fronts = 1, "bring to front: once for a game after 5 s out (" f0 f1 f2 f3 f4 ", " fronts "); not at the first look, a brief gap or when off")
     ; W3L's launch arguments (WFE's Launch Arguments): one line, trimmed
     bnetLogin.setW3lArgs("  -window`r`n-nativefullscr "), a1 := bnetLogin.w3lArgs, bnetLogin.setW3lArgs("")
     TwcCheck(a1 = "-window -nativefullscr" && bnetLogin.w3lArgs = "", "W3L arguments: kept on one line, trimmed ('" a1 "')")

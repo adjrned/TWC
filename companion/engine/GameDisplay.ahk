@@ -203,13 +203,45 @@ class GameDisplayEngine {
         this.push()
     }
     fastMenuStatus() {
+        fr := this.toFront ? " · brings the game to the front when one starts" : ""
         if !this.fastMenu
-            return "Off"
+            return "Off" fr
         if (w := this.moduleWait(16)) != ""
             return w
         st := NumGet(this.gm.live(), Shm.fmState, "uint")
-        return st = 1 ? "On · the menus switch at once"
+        return st = 1 ? "On · the menus switch at once" fr
             : st = 3 ? "On · refused by the module's checks (see the log)" : "On · waiting for the game"
+    }
+    ; WFE's Loading Notification: when a game starts (the module sees the game UI appear) while Warcraft III
+    ; is in the background or minimised, it's brought to the front. Ini [Display] toFront, off by default;
+    ; the Fast Menu card's Options, on its own. Checked once a second (push's timer)
+    toFront => Integer(Ini(this.section, "toFront", 0))
+    setToFront(on) => SetIni(on ? 1 : 0, this.section, "toFront")
+    frontFn := GameDisplayEngine.BringToFront           ; (the checks swap it: no window is activated there)
+    static BringToFront(*) {
+        try {
+            if WinGetMinMax(WarcraftIII) = -1
+                WinRestore(WarcraftIII)
+            WinActivate(WarcraftIII)
+        }
+    }
+    ; (a start: the game UI after at least 5 s without it, so a moment's odd read in a game never counts; nothing
+    ; at the companion's own start, mid-game)
+    frontWatch() {
+        static was := -1, outSince := 0
+        if this.HasProp("frontReset")                                   ; (the checks: start over)
+            was := -1, outSince := 0, this.DeleteProp("frontReset")
+        v := this.gm.enabled ? this.gm.live() : 0
+        now := v && NumGet(v, Shm.qcState, "uint") = 1                 ; 1: the game UI is there (a game)
+        if !now && was != 0
+            outSince := A_TickCount
+        started := was = 0 && now && A_TickCount - outSince >= 5000
+        was := now ? 1 : 0
+        if !started || !this.toFront || !WinExist(WarcraftIII) || WinActive(WarcraftIII)
+            return false
+        (f := this.frontFn)()
+        DebugLog("bring to front: a game started with Warcraft III in the background")
+        return true
     }
     ; the name tip over the unit under the mouse hidden (WFE's Hero Overhead Tip off): layout 26, ini [Display] unitNames
     unitNames => Integer(Ini(this.section, "unitNames", 0))
@@ -265,6 +297,7 @@ class GameDisplayEngine {
 
     ; the switches to the module in the running game (once a second, and on changes)
     push() {
+        this.frontWatch()
         if !(v := this.gm.live()) || NumGet(v, Shm.layout, "uint") < 7
             return
         NumPut("uint", this.fpsLimit, v, Shm.fpsLimit)
