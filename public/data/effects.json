@@ -2717,7 +2717,7 @@
                   "key": "D → Q",
                   "skill": "Aura of Retribution",
                   "via": "Sigil",
-                  "value": "2.5% (12% for STR Paladin)"
+                  "value": "2.5% (7.5% for STR Paladin)"
                 },
                 {
                   "hero": "Paladin",
