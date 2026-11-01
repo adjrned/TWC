@@ -7822,18 +7822,30 @@ static bool KeyCast(WPARAM vk) {
         if ((a && *(DWORD *)(a + 0x1dc)) || (b && !*(DWORD *)(b + 0x164)) || *(DWORD *)(ui + UI_BUSY))
             return false;
         // the card's slots from the sub menu's keys while one is open, the inventory's always from qkVk
-        bool sub = SubMenuOpen(ui);
+        // (sub menu keys off, none set: the card's keys always, as before layout 45)
+        bool anySub = false;
+        for (int i = 0; i < 12 && !anySub; i++)
+            anySub = s->qkSubVk[i] != 0;
+        bool sub = anySub && SubMenuOpen(ui);
         const BYTE *card = sub ? s->qkSubVk : s->qkVk;
         int slot = -1;
         for (int i = 0; i < 18 && slot < 0; i++)
             if ((i < 12 ? card[i] : s->qkVk[i]) == vk)
                 slot = i;
-        if (sub) {
-            static int subs;
-            s->qkSubSeen++;
-            if (subs++ < 3)
-                Log("quickcast keys: key %02X with a sub menu open (the card's +0x%lX node %p): %s", (DWORD)vk, CARD_MENUS,
-                    *(void **)(*(BYTE **)(ui + 0x3c8) + CARD_MENUS), slot < 0 ? "not a sub menu key: the game's" : slot < 12 ? "its sub menu slot" : "an item");
+        s->qkSubSeen += sub;
+        // what the card's menu list holds each time the check turns (the user, 2026-11-01: sub menus
+        // worked, the card's own keys stopped quickcasting: is it set outside sub menus too?)
+        static int subWas = -1, turns;
+        if (anySub && (int)sub != subWas && turns++ < 40) {
+            subWas = sub;
+            DWORD n = *(DWORD *)(*(BYTE **)(ui + 0x3c8) + CARD_MENUS);
+            DWORD w[6] = {};
+            if (n - 0x10000 <= 0x7ffeffff)
+                memcpy(w, (void *)n, sizeof w);
+            BYTE *b11 = CardSlot(ui, 11);
+            Log("quickcast keys: key %02X: %s (the card's +0x%lX node %08lX: %08lX %08lX [+8] %08lX %08lX %08lX %08lX; slot 11 %s) -> %s",
+                (DWORD)vk, sub ? "a sub menu open, its keys" : "the card's own keys", CARD_MENUS, n, w[0], w[1], w[2], w[3], w[4], w[5],
+                b11 && *(DWORD *)(b11 + BTN_DATA) ? "has a button" : "empty", slot < 0 ? "the game's" : slot < 12 ? "a card slot" : "an item");
         }
         if (slot < 0)
             return false;

@@ -216,8 +216,12 @@ int main() {
     CHECK(subR && subQ && subW && subItem && plainR && emptyR && g_shared->qkSubSeen == 4,
           "a sub menu open: R and Q press its slots 3 and 0 (not Cancel at 11), W (no sub menu key) is the game's, Numpad 7 still the item; "
           "a node with +8 = 0 or the empty list's tag: the card's keys again (sub menu keys seen %lu)", g_shared->qkSubSeen);
-    *(DWORD *)(card + CARD_MENUS) = 0;
     g_shared->qkSubVk[0] = g_shared->qkSubVk[3] = 0;
+    *(BYTE **)(card + CARD_MENUS) = menuNode; *(DWORD *)(menuNode + 8) = 1; Idle();
+    bool offR = KeyCast('R') && pressThis == btns[11];
+    CHECK(offR && g_shared->qkSubSeen == 4, "sub menu keys off (none set): the card's keys even with the list's node set");
+    Idle();
+    *(DWORD *)(card + CARD_MENUS) = 0;
     // a button that faults: off for good, the key to the game
     Idle(); g_kcFiredAt = 0; g_kcHeldVk = 0;
     *(DWORD *)btns[11] = (DWORD)badVt; g_shared->qkVk[11] = 'T';
