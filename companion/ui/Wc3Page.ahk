@@ -469,14 +469,20 @@ BattleNetLoginDialog() {
         e := g.AddEdit("x" (d.x + 104) " y" (d.y + 1) " w" (d.tw - 104 - 100) " h24 +Background" C.well " c" C.text " " opts, value)
         return e
     }
-    acc := row("Account", "Limit31", bnetLogin.account)
-    acc.OnEvent("Change", (src, *) => bnetLogin.setAccount(src.Value))
-    d.y += 34
+    ; the account the next login uses: a button with its name, a click opens the accounts (the user, 2026-11-01:
+    ; several saved, each with its own password); the password row below is the picked account's
+    g.AddText("x" d.x " y" (d.y + 3) " w100 h22 0x200 +Background" C.card " c" C.text, "Account")
+    acc := g.AddText("x" (d.x + 104) " y" d.y " w" (d.tw - 104 - 100) " h28 Center 0x200 +Background" C.chip " c" C.text,
+        (bnetLogin.account != "" ? bnetLogin.account : "add one") "  ▾")
+    UISetFont(acc, "s9 w600"), Box.Round(acc, d.tw - 104 - 100, 28, 4)
+    acc.OnEvent("Click", (*) => BattleNetAccountMenu())
+    d.y += 36
     pw := row("Password", "Password Limit63", "")
     SendMessage(0x1501, 1, StrPtr(bnetLogin.hasPassword() ? "saved (type to replace)" : "not saved yet"), pw)   ; EM_SETCUEBANNER
     save := g.AddText("x" (d.x + d.tw - 90) " y" (d.y - 1) " w90 h28 Center 0x200 +Background" C.chip " c" C.text, "Save")
     UISetFont(save, "s9 w600"), Box.Round(save, 90, 28, 4)
-    save.OnEvent("Click", (*) => (pw.Value != "" && (bnetLogin.setPassword(pw.Value) ? Toast("Password saved in Windows' Credential Manager") : Toast("The password couldn't be saved", "error")),
+    save.OnEvent("Click", (*) => (pw.Value != "" && (bnetLogin.account = "" ? Toast("Add an account first", "error")
+        : bnetLogin.setPassword(pw.Value) ? Toast("Password for " bnetLogin.account " saved in Windows' Credential Manager") : Toast("The password couldn't be saved", "error")),
         pw.Value := "", BattleNetLoginDialog(), RefreshWc3()))
     d.y += 36
     OptNote(d, "The password is kept in Windows' Credential Manager (encrypted for your Windows account), never in the companion's files. It goes to the game only at the login screen.")
@@ -493,6 +499,32 @@ BattleNetLoginDialog() {
     OptNote(d, "Once each time the game starts. Hold Shift at the main menu to stay there. A wrong password isn't tried again: the game says so, log in yourself.")
     Wc3DialogShow(d)
     return g
+}
+
+; the saved accounts: pick one (the next login uses it), add one, remove the picked one (its password too)
+BattleNetAccountMenu() {
+    global bnetLogin
+    m := Menu(), cur := bnetLogin.account
+    for a in bnetLogin.accounts() {
+        m.Add(a (bnetLogin.hasPassword(a) ? "" : "  (no password)"), ((an, *) => (bnetLogin.setAccount(an), BattleNetLoginDialog(), RefreshWc3())).Bind(a))
+        if a = cur
+            m.Check(a (bnetLogin.hasPassword(a) ? "" : "  (no password)"))
+    }
+    if bnetLogin.accounts().Length
+        m.Add()
+    m.Add("Add an account…", (*) => BattleNetAccountAdd())
+    if cur != "" {
+        m.Add("Remove '" cur "'", (*) => (Dialog("Remove the account '" cur "' and its saved password?", "Remove account", ["Remove", "Cancel"]) = "Remove"
+            && bnetLogin.removeAccount(cur), BattleNetLoginDialog(), RefreshWc3()))
+    }
+    m.Show()
+}
+BattleNetAccountAdd() {
+    global bnetLogin
+    name := AskText("Add an account", "Its Battle.net account name. Then type its password and Save: each account keeps its own.", "")
+    if name != "" && bnetLogin.setAccount(name) = ""
+        Toast("Not a name", "error")
+    BattleNetLoginDialog(), RefreshWc3()
 }
 
 ; a dialog in the companion's style: -> { g, card, x, tw, w, y } to add rows to, then Wc3DialogShow

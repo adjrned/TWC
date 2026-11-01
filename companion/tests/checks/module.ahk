@@ -217,9 +217,26 @@ TwcModuleRun() {
     NumPut("uint", 32, v, Shm.layout)
     TwcCheck(c0 = 0 && InStr(w0, "older module") && c1 && w1 = "On · the cursor isn't stretched" && InStr(h1, "· the inventory cover removed") && h2 = "Off · the inventory cover removed" && c2 = 0
         && InStr(gameDisplay.hideStatus(), "time of day, minimap") && !InStr(gameDisplay.hideStatus(), "cover"), "slim cursor / inventory cover: not to an older module (" w0 "); pushed: '" w1 "', '" h1 "', switch off: '" h2 "'; off: 0")
+    ; several accounts (2026-11-01): each its own password; the picked one is handed over at the login screen;
+    ; removing one takes its password and picks the other; the old single entry moves to the account's own
+    a1 := bnetLogin.setAccount("AltOne"), hasAlt0 := bnetLogin.hasPassword(), bnetLogin.setPassword("alt-pw")
+    hasRuzai := bnetLogin.hasPassword("Ruzai"), list1 := Join("|", bnetLogin.accounts()*)
+    NumPut("int", 0, v, Shm.blSeq), NumPut("int", 0, v, Shm.blDone), NumPut("uint", 2, v, Shm.blState), bnetLogin.answered := 0, bnetLogin.tick()
+    accA := StrGet(v + Shm.blAccount, 32, "UTF-8"), pwA := StrGet(v + Shm.blPassword, 64, "UTF-8")
+    NumPut("int", 1, v, Shm.blDone), NumPut("uint", 3, v, Shm.blState)
+    rm := bnetLogin.removeAccount("AltOne"), afterRm := bnetLogin.account, altGone := !bnetLogin.hasPassword("AltOne")
+    TwcCheck(a1 = "AltOne" && !hasAlt0 && hasRuzai && list1 = "Ruzai|AltOne" && accA = "AltOne" && pwA = "alt-pw" && rm && afterRm = "Ruzai" && altGone,
+        "accounts: " list1 "; AltOne picked: its own password handed over (" accA "); removed: its password gone, Ruzai picked again")
+    BattleNetLoginEngine.CredWrite(BattleNetLoginEngine.TARGET, "old-pw", "Mig"), SetIni("Mig", bnetLogin.section, "account")
+    bnetLogin.migrate(), buf := Buffer(64, 0), nm := BattleNetLoginEngine.CredRead(bnetLogin.target("Mig"), buf, 64), mig := nm > 0 ? StrGet(buf, nm, "UTF-8") : ""
+    oldGone := !BattleNetLoginEngine.CredHas(BattleNetLoginEngine.TARGET)
+    bnetLogin.removeAccount("Mig"), bnetLogin.setAccount("Ruzai")
+    TwcCheck(mig = "old-pw" && oldGone && !BattleNetLoginEngine.CredHas(bnetLogin.target("Mig")), "the old single password moved to the account's own entry ('" mig "'), the old entry gone")
     gone := bnetLogin.setPassword("") && !bnetLogin.hasPassword()
     TwcCheck(gone && InStr(bnetLogin.statusText(), "set your account and password"), "the password forgotten (Credential Manager entry removed): " bnetLogin.statusText())
     bnetLogin.setEnabled(0), BattleNetLoginEngine.TARGET := "TW Companion/Battle.net"
+    for k in ["account", "accounts"]                ; (the checks' ini: no account left for the next start)
+        try IniDelete(iniFile, bnetLogin.section, k)
     ; the bigger buff bar (layout 23): x1.5 by default, typed values clamped to 1-2, 0 when off
     k1 := NumGet(v, Shm.bbScale, "float"), ok := gameDisplay.setBuffBarScale("2.5") && !gameDisplay.setBuffBarScale("big")
     k2 := NumGet(v, Shm.bbScale, "float"), gameDisplay.setBuffBar(0), k3 := NumGet(v, Shm.bbScale, "float")

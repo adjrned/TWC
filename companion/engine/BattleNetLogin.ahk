@@ -12,9 +12,13 @@
 ;  joined by its name (typed into the panel's box, Join clicked); with no name
 ;  set, or a game selected in the list, the list is left open to pick from.
 ;  The password is kept in Windows' Credential Manager (generic credential
-;  "TW Companion/Battle.net", encrypted for your Windows account), never in
-;  the ini. It goes to the module only when the module is at the login
-;  screen, and the module wipes its copy once it's typed in.
+;  "TW Companion/Battle.net/<account>", encrypted for your Windows account),
+;  never in the ini. It goes to the module only when the module is at the
+;  login screen, and the module wipes its copy once it's typed in.
+;  Several accounts (the user, 2026-11-01): [Battle.net] accounts (a|b), each
+;  with its own password; the one picked ([Battle.net] account) is the one the
+;  next login uses. The old single entry "TW Companion/Battle.net" moves over
+;  to the account's own the first time (migrate).
 ; ============================================================================
 class BattleNetLoginEngine {
     section := "Battle.net"
@@ -23,6 +27,7 @@ class BattleNetLoginEngine {
 
     __New(gameModule) {
         this.gm := gameModule
+        this.migrate()
         this.tickFn := ObjBindMethod(this, "tick")
         SetTimer(this.tickFn, 100)          ; the module waits on it at the login screen
     }
@@ -102,41 +107,117 @@ class BattleNetLoginEngine {
         DebugLog("w3l: started " exe (args != "" ? " " args : ""))
         return true
     }
-    setAccount(name) => SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "account")
+    ; -- accounts ---------------------------------------------------------------
+    accounts() {
+        out := []
+        for n in StrSplit(Ini(this.section, "accounts", ""), "|")
+            if Trim(n) != ""
+                out.Push(Trim(n))
+        if !out.Length && this.account != ""
+            out.Push(this.account)                  ; (before the list: the one account)
+        return out
+    }
+    hasAccount(name) {
+        for n in this.accounts()
+            if n = name
+                return true
+        return false
+    }
+    static AccountName(name) => Trim(RegExReplace(name, "[|\r\n]"))
+    ; pick one for the next login, added to the list if it's new: -> its name, "" if empty
+    setAccount(name) {
+        name := BattleNetLoginEngine.AccountName(name)
+        if name = ""
+            return ""
+        list := this.accounts()
+        if !this.hasAccount(name)
+            list.Push(name)
+        SetIni(Join("|", list*), this.section, "accounts")
+        SetIni(name, this.section, "account")
+        this.answered := 0
+        DebugLog("battle.net login: account '" name "' picked")
+        return name
+    }
+    ; its password gone too; the one picked: the first other takes over (none: no account)
+    removeAccount(name) {
+        global iniFile
+        if !this.hasAccount(name)
+            return false
+        this.setPassword("", name)
+        rest := []
+        for n in this.accounts()
+            if n != name
+                rest.Push(n)
+        SetIni(Join("|", rest*), this.section, "accounts")
+        if this.account = name {
+            if rest.Length
+                SetIni(rest[1], this.section, "account")
+            else
+                try IniDelete(iniFile, this.section, "account")
+        }
+        return true
+    }
+    ; the old single password ("TW Companion/Battle.net") into the account's own entry, once
+    migrate() {
+        if A_ScriptName = "_preview.ahk" && BattleNetLoginEngine.TARGET = "TW Companion/Battle.net"   ; (checks, previews: never the real entry)
+            return
+        acc := this.account
+        if acc = "" || BattleNetLoginEngine.CredHas(this.target(acc)) || !BattleNetLoginEngine.CredHas(BattleNetLoginEngine.TARGET)
+            return
+        buf := Buffer(64, 0), n := BattleNetLoginEngine.CredRead(BattleNetLoginEngine.TARGET, buf, 64)
+        if n >= 0 && BattleNetLoginEngine.CredWrite(this.target(acc), StrGet(buf, n, "UTF-8"), acc)
+            DllCall("advapi32\CredDeleteW", "str", BattleNetLoginEngine.TARGET, "uint", 1, "uint", 0)
+        DllCall("RtlZeroMemory", "ptr", buf, "uptr", buf.Size)
+        list := this.accounts()
+        if !this.hasAccount(acc)
+            list.Push(acc)
+        SetIni(Join("|", list*), this.section, "accounts")
+        DebugLog("battle.net login: the saved password moved to account '" acc "'s own entry")
+    }
+    target(acc) => BattleNetLoginEngine.TARGET "/" acc
 
     ; -- the password in Credential Manager (CREDENTIALW, generic) -------------
     static CredOffsets() {
         p := A_PtrSize, blob := (20 + 2 * p + p - 1) // p * p
         return { target: 8, blobSize: 16 + 2 * p, blob: blob, persist: blob + p, user: blob + p + 8 + 2 * p, size: blob + p + 8 + 3 * p }
     }
-    hasPassword() {
-        if !DllCall("advapi32\CredReadW", "str", BattleNetLoginEngine.TARGET, "uint", 1, "uint", 0, "ptr*", &pc := 0)
+    ; an account's password (the one picked by default)
+    hasPassword(acc := "") => (acc := acc != "" ? acc : this.account) != "" && BattleNetLoginEngine.CredHas(this.target(acc))
+    ; save it ("" removes it): -> true if done
+    setPassword(pw, acc := "") {
+        acc := acc != "" ? acc : this.account
+        if acc = ""
+            return false
+        if pw = ""
+            return DllCall("advapi32\CredDeleteW", "str", this.target(acc), "uint", 1, "uint", 0) || !this.hasPassword(acc)
+        ok := BattleNetLoginEngine.CredWrite(this.target(acc), pw, acc)
+        DebugLog("battle.net login: password for '" acc "' " (ok ? "saved in Credential Manager" : "not saved (CredWrite failed, " A_LastError ")"))
+        return ok
+    }
+    static CredHas(target) {
+        if !DllCall("advapi32\CredReadW", "str", target, "uint", 1, "uint", 0, "ptr*", &pc := 0)
             return false
         DllCall("advapi32\CredFree", "ptr", pc)
         return true
     }
-    ; save it ("" removes it): -> true if done
-    setPassword(pw) {
-        if pw = ""
-            return DllCall("advapi32\CredDeleteW", "str", BattleNetLoginEngine.TARGET, "uint", 1, "uint", 0) || !this.hasPassword()
+    static CredWrite(target, pw, user) {
         o := BattleNetLoginEngine.CredOffsets()
         n := StrPut(pw, "UTF-8") - 1
         blob := Buffer(Max(n, 1), 0), StrPut(pw, blob, n, "UTF-8")
         cred := Buffer(o.size, 0)
         NumPut("uint", 1, cred, 4)                                          ; CRED_TYPE_GENERIC
-        NumPut("ptr", StrPtr(BattleNetLoginEngine.TARGET), cred, o.target)
+        NumPut("ptr", StrPtr(target), cred, o.target)
         NumPut("uint", n, cred, o.blobSize), NumPut("ptr", blob.Ptr, cred, o.blob)
         NumPut("uint", 2, cred, o.persist)                                  ; CRED_PERSIST_LOCAL_MACHINE
-        user := this.account
         NumPut("ptr", StrPtr(user), cred, o.user)
         ok := DllCall("advapi32\CredWriteW", "ptr", cred, "uint", 0)
         DllCall("RtlZeroMemory", "ptr", blob, "uptr", blob.Size)
-        DebugLog("battle.net login: password " (ok ? "saved in Credential Manager" : "not saved (CredWrite failed, " A_LastError ")"))
         return ok
     }
-    ; the password as UTF-8 into buf (at most max bytes, ending in 0): -> its length, -1 if none saved
-    readPassword(buf, max) {
-        if !DllCall("advapi32\CredReadW", "str", BattleNetLoginEngine.TARGET, "uint", 1, "uint", 0, "ptr*", &pc := 0)
+    ; the picked account's password as UTF-8 into buf (at most max bytes, ending in 0): -> its length, -1 if none saved
+    readPassword(buf, max) => this.account = "" ? -1 : BattleNetLoginEngine.CredRead(this.target(this.account), buf, max)
+    static CredRead(target, buf, max) {
+        if !DllCall("advapi32\CredReadW", "str", target, "uint", 1, "uint", 0, "ptr*", &pc := 0)
             return -1
         o := BattleNetLoginEngine.CredOffsets()
         n := Min(NumGet(pc, o.blobSize, "uint"), max - 1)
