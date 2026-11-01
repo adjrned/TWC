@@ -15,7 +15,7 @@
 ;  module sets them right after the game's own bar update.
 ;  Health numbers and mana bars (layout 11; they need the game's Storm.dll;
 ;  numbers off by default, mana bars always on since 2026-11-01): a number over each health bar ([HealthBars] numbers,
-;  numberMode current / max / percent) and a mana bar under the health bar
+;  numberMode total / truncated / percent) and a mana bar under the health bar
 ;  of each unit with mana ([HealthBars] mana, manaHeight / manaWidth: times
 ;  the health bar's height / width, x0.25 to x2; width from layout 12).
 ;  Frames the module adds to the game; turning off takes them away.
@@ -24,10 +24,13 @@
 ; ============================================================================
 class HealthBarsEngine {
     section := "HealthBars"
-    static NUMBER_MODES := [["current", "Current"], ["max", "Current / max"], ["percent", "Percent"]]
-    ; the numbers' colour (layout 43; the user, 2026-10-31), and whose bars get one: [ini key, name, the module's bit]
-    static NUMBER_COLOURS := [["white", "White"], ["health", "Health"], ["bar", "Its bar"], ["custom", "Custom"]]
-    static NUMBER_WHO := [["numYours", "Yours", 1], ["numAllies", "Allies", 2], ["numEnemies", "Enemies", 4], ["numNeutral", "Creeps", 8]]
+    ; the numbers' value, colour and whose bars (the user, 2026-11-01): [ini value, name, the module's value]
+    ; (truncated: 13k, the module's hnMode 3; an older module shows it as the total)
+    static NUMBER_MODES := [["current", "Total", 0], ["short", "Truncated", 3], ["percent", "Percent", 2]]
+    ; (layout 43) dynamic: green, to yellow at half, to red; owner: its bar's colour (the bars' own, or the owner's player colour)
+    static NUMBER_COLOURS := [["health", "Dynamic", 1], ["bar", "Owner", 2], ["custom", "Custom", 3]]
+    ; enemies: the creeps too (neutral hostile), as the bars' Enemies do in TWRPG
+    static NUMBER_WHO := [["numYours", "Player", 1], ["numAllies", "Allies", 2], ["numEnemies", "Enemies", 4 | 8]]
     ; [ini key, default RRGGBB or "player", name]
     static OWNERS := [["yours", "00FF00", "Yours"], ["allies", "0080FF", "Allies"], ["enemies", "FF0000", "Enemies"],
         ["hostile", "FF8000", "Neutral hostile"], ["passive", "A0A0A0", "Neutral passive"]]
@@ -108,11 +111,6 @@ class HealthBarsEngine {
             return 1
         }
     }
-    cycleNumberMode() {
-        SetIni(HealthBarsEngine.NUMBER_MODES[Mod(this.numberMode, 3) + 1][1], this.section, "numberMode")
-        this.push()
-    }
-    numberModeLabel => HealthBarsEngine.NUMBER_MODES[this.numberMode][2]
     numberShows(key) => Integer(Ini(this.section, key, 1))
     setNumberShows(key, on) => (SetIni(on ? 1 : 0, this.section, key), this.push())
     numberWho {
@@ -123,7 +121,15 @@ class HealthBarsEngine {
             return bits
         }
     }
-    numberColour => Ini(this.section, "numberColour", "white")
+    numberColour {                      ; one of NUMBER_COLOURS (the old White: Dynamic)
+        get {
+            v := Ini(this.section, "numberColour", "health")
+            for c in HealthBarsEngine.NUMBER_COLOURS
+                if c[1] = v
+                    return v
+            return "health"
+        }
+    }
     setNumberColour(v) => (SetIni(v, this.section, "numberColour"), this.push())
     numberCustom => Ini(this.section, "numberCustom", "FFD700")
     setNumberCustom(rgb) => (SetIni(rgb, this.section, "numberCustom"), this.push())
@@ -131,6 +137,23 @@ class HealthBarsEngine {
     mana => 1
     manaHeight => this.size("manaHeight")
     static Fmt(v) => "×" RTrim(RTrim(Format("{:.2f}", v), "0"), ".")
+    ; Reset to default: the whole card (every [HealthBars] key), the sizes, or the bars' colours
+    reset(part := "all") {
+        global iniFile
+        if part = "all" {
+            try IniDelete(iniFile, this.section)
+        } else {
+            for k in part = "sizes" ? ["height", "width", "manaHeight", "manaWidth"] : this.colourKeys()
+                try IniDelete(iniFile, this.section, k)
+        }
+        this.push()
+    }
+    colourKeys() {
+        keys := ["colourMode"]
+        for o in HealthBarsEngine.OWNERS
+            keys.Push(o[1], o[1] "Own")
+        return keys
+    }
 
     ; the wanted sizes to the module in the running game (once a second, and on changes)
     push() {
@@ -147,7 +170,7 @@ class HealthBarsEngine {
         NumPut("uint", this.colours && this.gm.enabled ? 1 : 0, v, Shm.hcOn)   ; last
         if NumGet(v, Shm.layout, "uint") < 11
             return
-        NumPut("uint", this.numberMode - 1, v, Shm.hnMode), NumPut("float", this.manaHeight, v, Shm.mbHeight)
+        NumPut("uint", HealthBarsEngine.NUMBER_MODES[this.numberMode][3], v, Shm.hnMode), NumPut("float", this.manaHeight, v, Shm.mbHeight)
         NumPut("uint", this.numbers && this.gm.enabled ? 1 : 0, v, Shm.hnOn)
         NumPut("uint", this.mana && this.gm.enabled ? 1 : 0, v, Shm.mbOn)
         NumPut("uint", 0, v, Shm.prMode), NumPut("uint", 0, v, Shm.prOn)     ; the portrait's regen: taken out (2026-11-01)
@@ -155,10 +178,10 @@ class HealthBarsEngine {
             NumPut("float", this.size("manaWidth"), v, Shm.mbWidth)
         if NumGet(v, Shm.layout, "uint") >= 43 {
             ci := 1
-            for i, c in HealthBarsEngine.NUMBER_COLOURS
-                ci := c[1] = this.numberColour ? i : ci
+            for c in HealthBarsEngine.NUMBER_COLOURS
+                ci := c[1] = this.numberColour ? c[3] : ci
             ; (none ticked: still a bit, so it isn't read as the older companion's 0 = all)
-            NumPut("uint", (w := this.numberWho) ? w : 0x80000000, v, Shm.hnWho), NumPut("uint", ci - 1, v, Shm.hnColour)
+            NumPut("uint", (w := this.numberWho) ? w : 0x80000000, v, Shm.hnWho), NumPut("uint", ci, v, Shm.hnColour)
             NumPut("uint", Integer("0x" this.numberCustom), v, Shm.hnCustom)
         }
     }

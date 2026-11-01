@@ -149,7 +149,7 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD itState;          // module: 0 off, 1 on, 2 waiting (no game yet, or no Storm.dll), 3 refused (see the log)
     DWORD frCount;          // module: text frames made in this game
     DWORD hnOn;             // companion: 1 = health numbers over the health bars (BarExtras)
-    DWORD hnMode;           // companion: 0 current, 1 current / max, 2 percent
+    DWORD hnMode;           // companion: 0 current, 1 current / max, 2 percent, 3 truncated (13k, 1.5M; an older module: as 0)
     DWORD hnState;          // module: as itState
     DWORD mbOn;             // companion: 1 = mana bars under the health bars of units with mana
     float mbHeight;         // companion: the mana bar's height, times the health bar's (0.25-2)
@@ -3211,9 +3211,25 @@ static void ManaUpdate(BarExtra *e, BYTE *unit, float cur, float max, bool shown
         (shown ? g_gameBarShow : g_gameBarHide)(m, 0), e->manaShown = shown;
 }
 
+// 13000 -> 13k, 1599 -> 1.5k, 2340000 -> 2.3M: cut, never rounded up (a decimal under 10 of the unit)
+static void ShortNumber(int c, char *b, size_t n) {
+    static const struct { int unit; char sfx; } U[] = { { 1000000000, 'B' }, { 1000000, 'M' }, { 1000, 'k' } };
+    for (auto &u : U)
+        if (c >= u.unit) {
+            int whole = c / u.unit, tenth = c % u.unit / (u.unit / 10);
+            if (whole < 10 && tenth)
+                sprintf_s(b, n, "%d.%d%c", whole, tenth, u.sfx);
+            else
+                sprintf_s(b, n, "%d%c", whole, u.sfx);
+            return;
+        }
+    sprintf_s(b, n, "%d", c);
+}
 static void NumberText(int mode, float cur, float max, char *b, size_t n) {
     int c = (int)ceilf(cur);
-    if (mode == 2)
+    if (mode == 3)
+        ShortNumber(c, b, n);
+    else if (mode == 2)
         sprintf_s(b, n, "%d%%", (int)ceilf(cur * 100 / max));
     else if (mode == 1)
         sprintf_s(b, n, "%d / %d", c, (int)max);
@@ -3252,7 +3268,7 @@ static void NumberUpdate(BarExtra *e, BYTE *ui, BYTE *unit, float cur, float max
         }
     }
     char t[sizeof(e->last)];
-    NumberText(g_shared->hnMode <= 2 ? (int)g_shared->hnMode : 0, cur, max, t, sizeof(t));
+    NumberText(g_shared->hnMode <= 3 ? (int)g_shared->hnMode : 0, cur, max, t, sizeof(t));
     if (strcmp(t, e->last)) {
         TextSet(e->text, t);
         strcpy_s(e->last, t);

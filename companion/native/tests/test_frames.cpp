@@ -95,6 +95,11 @@ static void *__fastcall FakeGetUi(int, int) { return fakeUi; }
 int main() {
     strcpy_s(g_logPath, "frames.log"); DeleteFileA("frames.log");
     static Shared sh; g_shared = &sh;
+    {
+        char b[16], c[16], d2[16], e2[16], f2[16];
+        NumberText(3, 13000, 20000, b, 16); NumberText(3, 1599, 2000, c, 16); NumberText(3, 2340000, 3e6f, d2, 16); NumberText(3, 999, 1000, e2, 16); NumberText(3, 10999, 20000, f2, 16);
+        CHECK(!strcmp(b, "13k") && !strcmp(c, "1.5k") && !strcmp(d2, "2.3M") && !strcmp(e2, "999") && !strcmp(f2, "10k"), "truncated numbers: %s %s %s %s %s (13k 1.5k 2.3M 999 10k)", b, c, d2, e2, f2);
+    }
     img = (BYTE *)VirtualAlloc(nullptr, 0x1000000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     g_base = img; g_imageSize = 0x1000000;
     Stub(RVA_TEXT_CTOR, FakeTextCtor); Stub(RVA_TEXT_FLAGS, FakeFlags); Stub(RVA_TEXT_SET, FakeSetText);

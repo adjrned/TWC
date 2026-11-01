@@ -96,20 +96,21 @@ Wc3Features() {
         ; the bars in one card: size, colours, numbers; mana bars are always there (the user, 2026-11-01)
         { tab: "display", title: "Health and Mana Bars", badge: "1.28f",
             desc: "Size and colors of the bars, numbers over them; mana bars under them.",
+            reset: (*) => healthBars.reset(),
             status: (*) => Wc3Both([[healthBars.enabled, "Size", (*) => healthBars.statusText()], [healthBars.colours, "Colours", (*) => healthBars.colourStatus()],
                 [healthBars.numbers, "Numbers", (*) => healthBars.numberStatus()], [healthBars.mana, "Mana bars", (*) => healthBars.manaStatus()]]),
             ; each switch with its own window's button on its row (Size… sat under the colours' switch, the user), both
             ; named Options; titles in title case, US spelling here (the user's "Health Bar Colors")
             opts: (d) => (OptToggle(d, "Health and Mana Size", healthBars.enabled, (v) => healthBars.setEnabled(v), 0, ["Options", (*) => BarSizeDialog()]),
                 OptToggle(d, "Health Bar Colors", healthBars.colours, (v) => healthBars.setColours(v), 0, ["Options", (*) => BarColoursDialog()]),
-                OptNote(d, "Mana bars are always under the health bars (their size: Health and Mana Size's Options)."),
                 OptDivider(d),
-                OptToggle(d, "Health Numbers", healthBars.numbers, (v) => healthBars.setNumbers(v)),
-                OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
+                OptToggle(d, "Health Bar Numbers", healthBars.numbers, (v) => healthBars.setNumbers(v)),
+                OptChoice(d, "Value", [[1, "Total"], [2, "Truncated"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
+                OptNote(d, "Total: 13000. Truncated: 13k. Percent: 65%."),
                 OptChoice(d, "Color", HealthBarsEngine.NUMBER_COLOURS, (*) => healthBars.numberColour, (v) => healthBars.setNumberColour(v)),
                 OptSwatch(d, "Custom Color", (*) => healthBars.numberCustom, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.numberCustom)) != "" ? (healthBars.setNumberCustom(rgb), rgb) : ""),
-                OptNote(d, "Health: green, to yellow at half, to red. Its bar: the bar's own color (Health Bar Colors above). Custom: the swatch's, once Custom is picked."),
-                OptToggles(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on))) },
+                OptNote(d, "Dynamic: green, to yellow at half, to red. Owner: its bar's color (Health Bar Colors above). Custom: the swatch's."),
+                OptToggles(d, "Display", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on))) },
         { tab: "display", title: "Game Keys", badge: "1.28f",
             desc: "Keys that wipe the trigger messages or the chat, and minimise the multiboard.",
             on: (*) => gameCmds.enabled, set: (v) => gameCmds.setEnabled(v), status: (*) => gameCmds.statusText(),
@@ -306,6 +307,8 @@ Wc3Options(f, *) {
     d := Wc3Dialog(f.title, f.desc, 440)
     g := d.g
     (o := f.opts)(d)
+    if f.HasProp("reset")
+        d.reset := (*) => ((r := f.reset)(), Wc3Options(f))
     Wc3DialogShow(d)
     return g
 }
@@ -492,6 +495,11 @@ Wc3DialogShow(d) {
     close := g.AddText("x" (w - d.x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
     UISetFont(close, "s9 w600"), Box.Round(close, 104, 34, 4)
     close.OnEvent("Click", (*) => (g.Destroy(), RefreshWc3()))
+    if d.HasProp("reset") {             ; this window's settings back to their defaults (it opens again with them)
+        rs := g.AddText("x" d.x " y" y " w150 h34 Center 0x200 +Background" C.chip " c" C.muted, "Reset to default")
+        UISetFont(rs, "s9 w600"), Box.Round(rs, 150, 34, 4)
+        rs.OnEvent("Click", (*) => (r := d.reset)())
+    }
     h := y + 34 + 24
     d.card.Move(, , , h - 2)
     g.OnEvent("Escape", (*) => (g.Destroy(), RefreshWc3()))
@@ -678,8 +686,9 @@ BarSizeDialog(*) {
             lim := HealthBarsEngine.SIZES[r[1]]
             OptSlider(d, r[2], ((k, *) => healthBars.size(k)).Bind(r[1]), ((k, v) => healthBars.setSize(k, v)).Bind(r[1]), lim[2], lim[3], 0.01, BarSizeText)
         }
-        OptNote(d, sec[1] = "HEALTH BARS" ? "×0.25 to ×4; ×1 is the game's own. The width is experimental." : "×0.25 to ×2 of the health bar; shown with Mana bars on.")
+        OptNote(d, sec[1] = "HEALTH BARS" ? "×0.25 to ×4; ×1 is the game's own. The width is experimental." : "×0.25 to ×2 of the health bar.")
     }
+    d.reset := (*) => (healthBars.reset("sizes"), BarSizeDialog())
     Wc3DialogShow(d)
     return g
 }
@@ -703,6 +712,7 @@ BarColoursDialog() {
         OptColour(d, o[3], ((key, *) => healthBars.colour(key)).Bind(o[1]), BarPickColour.Bind(o[1], g), "Player Color",
             ((key, def, on) => BarPlayerColour(key, def, on)).Bind(o[1], o[2]))
     OptNote(d, "Click a color to change it. Player Color: each owner's own (the game's 12).")
+    d.reset := (*) => (healthBars.reset("colours"), BarColoursDialog())
     Wc3DialogShow(d)
     return g
 }

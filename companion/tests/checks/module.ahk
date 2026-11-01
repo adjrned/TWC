@@ -339,13 +339,21 @@ TwcModuleNumbers() {
         w1 := NumGet(mem, Shm.hnWho, "uint"), c1 := NumGet(mem, Shm.hnColour, "uint"), cu := NumGet(mem, Shm.hnCustom, "uint")
         healthBars.setNumberShows("numEnemies", false), healthBars.setNumberShows("numNeutral", false)
         w2 := NumGet(mem, Shm.hnWho, "uint")
+        healthBars.setNumberMode(2), m2 := NumGet(mem, Shm.hnMode, "uint"), healthBars.setNumberMode(3), m3 := NumGet(mem, Shm.hnMode, "uint")
+        healthBars.setNumberMode(1), m1 := NumGet(mem, Shm.hnMode, "uint")
+        healthBars.setNumberColour("white"), cw := healthBars.numberColour
+        ; Reset to default: the sizes alone, the colours alone, then the whole card
+        healthBars.setSize("height", 3), healthBars.setColour("yours", "123456"), healthBars.setNumbers(1)
+        healthBars.reset("sizes"), r1 := healthBars.height = 1.5 && healthBars.colour("yours") = "123456"
+        healthBars.reset("colours"), r2 := healthBars.colour("yours") = "00FF00" && healthBars.numbers = 1
+        healthBars.reset(), r3 := healthBars.numbers = 0
     } catch as e
         err := e.Message
     for k in ["numYours", "numAllies", "numEnemies", "numNeutral", "numberColour", "numberCustom"]
         try IniDelete(iniFile, healthBars.section, k)
     healthBars.gm := keep
-    TwcCheck(err = "" && w0 = 15 && c0 = 0 && w1 = 12 && c1 = 3 && cu = 0x12AB34 && w2 = 0x80000000,
-        "health numbers to the module: all and white by default; enemies and creeps only, a custom colour 12AB34; none ticked isn't 'all'" (err != "" ? " (error: " err ")" : ""))
+    TwcCheck(err = "" && w0 = 15 && c0 = 1 && w1 = 12 && c1 = 3 && cu = 0x12AB34 && w2 = 0x80000000 && m2 = 3 && m3 = 2 && m1 = 0 && cw = "health" && r1 && r2 && r3,
+        "health numbers to the module: all and Dynamic by default; Enemies (creeps with them) only, a custom colour 12AB34; none on isn't 'all'; Truncated = mode 3, Percent 2, Total 0; the old White reads as Dynamic; Reset to default: sizes, colours, all (" r1 r2 r3 ")" (err != "" ? " (error: " err ")" : ""))
 }
 ; swapping the module live: the copy the game loads, and the hand-over (no game, no injector)
 TwcModuleSwap() {
