@@ -276,6 +276,13 @@ int main() {
     CHECK(sp == 1 && strstr(sh.pingText, "(Level 12) >> HP 1.5K / ") && strstr(sh.pingText, "| Mana 40 / "), "the portrait: \"%s\"", sh.pingText);
     char n1[16], n2[16], n3[16], n4[16], n5[16], n6[16];
     ShortNum(812, n1, sizeof(n1)), ShortNum(45600, n2, sizeof(n2)), ShortNum(1234567, n3, sizeof(n3)), ShortNum(250e6f, n4, sizeof(n4)), ShortNum(2e6f, n5, sizeof(n5)), ShortNum(999.6f, n6, sizeof(n6));
+    // a text longer than its *_s buffer: the module's handler returns (-1, an empty string), the game isn't ended
+    NoAbortOnOverflow();
+    char tiny[8], longText[200];
+    memset(longText, 'x', sizeof(longText) - 1), longText[sizeof(longText) - 1] = 0;
+    LONG before = g_badParams;
+    int r8 = sprintf_s(tiny, "%s", longText);
+    CHECK(r8 == -1 && !tiny[0] && g_badParams == before + 1, "an overflowing sprintf_s: -1 and an empty string, the process goes on (the game's would have ended)");
     CHECK(!strcmp(n1, "812") && !strcmp(n2, "45.6K") && !strcmp(n3, "1.23M") && !strcmp(n4, "250M") && !strcmp(n5, "2M") && !strcmp(n6, "1K"),
           "the ping's numbers short: %s, %s, %s, %s, %s, %s", n1, n2, n3, n4, n5, n6);
     Verdict();

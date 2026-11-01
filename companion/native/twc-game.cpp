@@ -4169,7 +4169,7 @@ static int PingBuff(BYTE *ui, BYTE *ind) {
     sprintf_s(state, t[0] ? "%s s left" : "active", t);
     if (t[0] && strchr(t, ':'))
         sprintf_s(state, "%s left", t);
-    sprintf_s(g_shared->pingText, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, name, state);
+    _snprintf_s(g_shared->pingText, sizeof(g_shared->pingText), _TRUNCATE, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, name, state);
     g_shared->pingChat = ChatRecipient(ui);
     static int logs;
     if (logs++ < 3)
@@ -4255,7 +4255,7 @@ static int PingStats(BYTE *ui, BYTE *f, int kind) {
             return 2;
         sprintf_s(body, b[0] ? "%s %s %s" : "%s %s", kind == HOVER_DAMAGE ? "Damage" : "Armor", a, b);
     }
-    sprintf_s(g_shared->pingText, head[0] ? "%s >> %s" : "%s%s", head, body);
+    _snprintf_s(g_shared->pingText, sizeof(g_shared->pingText), _TRUNCATE, head[0] ? "%s >> %s" : "%s%s", head, body);
     g_shared->pingChat = ChatRecipient(ui);
     static int logs;
     if (logs++ < 4)
@@ -4292,7 +4292,7 @@ static int PingCommand(BYTE *ui) {
         bool noMana = cost > 0 && mana >= 0 && (float)cost > mana;
         char state[40];
         sprintf_s(state, "%s%s%s", noMana ? "Not enough mana!" : t[0] ? "Cooldown:" : "Ready!", t[0] ? " " : "", t);
-        sprintf_s(g_shared->pingText, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, ability, state);
+        _snprintf_s(g_shared->pingText, sizeof(g_shared->pingText), _TRUNCATE, who[0] ? "%s >> %s | %s" : "%s%s | %s", who, ability, state);
         g_shared->pingChat = ChatRecipient(ui);
         static int logs;
         if (logs++ < 3)
@@ -8221,9 +8221,18 @@ static DWORD WINAPI Worker(void *) {
     return 0;
 }
 
+// A *_s call given too small a buffer (a sprintf_s's text longer than its buffer) calls the CRT's invalid-parameter
+// handler, whose default ends the process: here the game's (a security check, 2026-10-31: the pings' text, 128
+// characters, from a unit's and an ability's names that can add up to more). Ours just returns: the call gives -1 and
+// an empty string, the game goes on. The CRT is the module's own (/MT): the game's isn't touched.
+static volatile LONG g_badParams;
+static void __cdecl NoAbort(const wchar_t *, const wchar_t *, const wchar_t *, unsigned, uintptr_t) { InterlockedIncrement(&g_badParams); }
+static void NoAbortOnOverflow() { _set_invalid_parameter_handler(NoAbort); }
+
 BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         g_self = inst;
+        NoAbortOnOverflow();
         DisableThreadLibraryCalls(inst);
         GetModuleFileNameA(inst, g_logPath, MAX_PATH);
         char *slash = strrchr(g_logPath, '\\');

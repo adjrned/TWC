@@ -72,17 +72,28 @@ class SelfUpdateEngine {
         j := this.api("releases/tags/" SelfUpdateEngine.RELEASE)
         commit := RegExMatch(j, '"target_commitish"\s*:\s*"([0-9a-f]{40})"', &m) ? m[1] : ""
         url := RegExMatch(j, '"browser_download_url"\s*:\s*"([^"]*' SelfUpdateEngine.SETUP ')"', &u) ? u[1] : ""
-        if !commit || !url
+        ; the Setup's SHA-256, as GitHub keeps it for each release file ("digest"), in its own entry (from its name
+        ; to its download link): the download is run as admin, so it's checked against it first
+        sha := ""
+        if (at := RegExMatch(j, '"name"\s*:\s*"' SelfUpdateEngine.SETUP '"')) && (end := InStr(j, '"browser_download_url"', , at))
+            sha := RegExMatch(SubStr(j, at, end - at), '"digest"\s*:\s*"sha256:([0-9a-f]{64})"', &d) ? d[1] : ""
+        if !commit || !url || !sha
             throw Error("The beta release isn't ready (it's rebuilt after each change; try again in a few minutes)")
-        return { commit: commit, url: url }
+        return { commit: commit, url: url, sha: sha }
     }
-    ; -> the downloaded Setup's path
+    static SetupMatches(path, sha) => sha != "" && FileExist(path) && FileSha256(path) = sha
+    ; -> the downloaded Setup's path, once its SHA-256 is the release's (a security check found the Setup ran with
+    ; only its size checked, 2026-10-31)
     downloadSetup(r) {
         path := A_Temp "\" SelfUpdateEngine.SETUP
         try FileDelete(path)
         Download(r.url, path)
         if FileGetSize(path) < 1000000
             throw Error("The download looks incomplete")
+        if !r.HasProp("sha") || !SelfUpdateEngine.SetupMatches(path, r.sha) {
+            try FileDelete(path)
+            throw Error("The download didn't match the release (its SHA-256): not installed")
+        }
         return path
     }
 

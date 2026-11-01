@@ -425,7 +425,7 @@ class OverlayPanel {
         st := wv.Settings
         st.IsStatusBarEnabled := false
         wv.SetVirtualHostNameToFolderMapping(OverlayPanel.HOST, this.updater.webDir, WebView2.HOST_RESOURCE_ACCESS_KIND.ALLOW)
-        wv.add_WebMessageReceived((s, args) => this.onMessage(args.TryGetWebMessageAsString()))
+        wv.add_WebMessageReceived((s, args) => this.onMessage(args.TryGetWebMessageAsString(), OverlayPanel.SourceOf(args, wv)))
         wv.add_NewWindowRequested(ObjBindMethod(this, "onNewWindow"))
         wv.add_ProcessFailed((*) => SetTimer(() => (this.hide(false), this.unload()), -10))
         wv.Navigate(this.startUrl())
@@ -469,7 +469,21 @@ class OverlayPanel {
     }
 
     ; -- page <-> AHK messages -----------------------------------------------
-    onMessage(msg) {
+    ; the page that sent a message (the event's own, else the frame's)
+    static SourceOf(args, wv) {
+        try return args.Source
+        try return wv.Source
+        return ""
+    }
+    ; only the companion's own page (https://twc.local/TWC/) is listened to: a page it navigated to by some
+    ; other way can't ask for anything (a security check, 2026-10-31)
+    onMessage(msg, src := "") {
+        if src != "" && InStr(src, "https://" OverlayPanel.HOST "/TWC/") != 1 {
+            static told := 0
+            if told++ < 3
+                DebugLog("overlay: a message from " SubStr(src, 1, 80) " ignored (not the companion's page)")
+            return
+        }
         if msg = "ready" {
             this.ready := true
             this.post({ type: "version", version: this.updater.localVersion() })

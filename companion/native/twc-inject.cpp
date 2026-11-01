@@ -41,6 +41,14 @@ int main(int argc, char **argv) {
     file = file ? file + 1 : dll;
     if (GetFileAttributesA(dll) == INVALID_FILE_ATTRIBUTES)
         return Fail("finding the dll");
+    // only a dll from this program's own folder (the companion's native\): a security check, 2026-10-31
+    char self[MAX_PATH], full[MAX_PATH];
+    DWORD sn = GetModuleFileNameA(nullptr, self, MAX_PATH), fn = GetFullPathNameA(dll, MAX_PATH, full, nullptr);
+    char *ss = sn && sn < MAX_PATH ? strrchr(self, '\\') : nullptr, *fs = fn && fn < MAX_PATH ? strrchr(full, '\\') : nullptr;
+    if (!ss || !fs || ss - self != fs - full || _strnicmp(self, full, ss - self + 1)) {
+        fprintf(stderr, "the dll isn't in this program's folder: not loaded\n");
+        return 1;
+    }
     if (Loaded(pid, file))
         return 2;
 
