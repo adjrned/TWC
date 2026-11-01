@@ -15,7 +15,7 @@ Thread("Interrupt", 0)
 ;  Borderless window on a baked background in the site's theme; native controls on top.
 ;  Opens loader-first; other sections are nav pages.
 ;
-;  Control hotkeys:  hold Esc 1.5 s pause remaps (WC3) · F8 show/hide · Pause pause (WC3)
+;  Control hotkeys:  hold Esc 1.5 s pause remaps (WC3) · F8 show/hide (Settings) · Pause pause (WC3)
 ;                    Esc hide window · Alt+Esc exit
 ;  Overlay (TWRPG site over the game): Shift+Space show/hide ·
 ;                    Ctrl+Shift+Space pin (configurable on the Overlay page)
@@ -136,7 +136,7 @@ global remapQcCtrls := Map(), remapCard, REMAP_CARD_Y := 346      ; the detail c
 global hostEdits := Map(), hostLbls := Map(), hostHelpBtn, hostIncBtn, hostAddBtn, hostPrivBtn, hostPubBtn, hostNote
 global hostRows := [], hostCard, hostBar, hostThumb, hostOffset := 0, HOST_ROWS := 7, HOST_ROW_H := 30   ; the bot list (BuildHostList)
 ; settings
-global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, updLabel, updBtn, trayDebug
+global setChecks := Map(), loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, updLabel, updBtn, trayDebug
 ; overlay
 global ovHkBtn, ovPinBtn, ovSideBtns := Map(), ovOpacityEdit, ovPinOpacityEdit, ovUnloadEdit, ovChecks := Map(), ovVersionText
 
@@ -185,6 +185,7 @@ for fn in Extensions.onStart                ; parts loaded besides (their engine
 webOverlay := OverlayPanel(updater)
 
 BuildWindow()
+ApplyShowKey()                  ; the open / hide key (F8 unless set in Settings)
 
 ; startup behaviour
 if Ini("Settings", "hideOnStart", 0)
@@ -1056,7 +1057,7 @@ BuildMacrosPage() {
         ["Macros", ""],
         ["What", "One key that types chat lines in Warcraft III: each row is sent as its own line, in order. Empty rows are skipped."],
         ["When", "In a game, with chat closed, while the tool is On (hold Esc 1.5 s to pause it)."],
-        ["Hotkey", "Bind Key, then any key, combo or mouse button (Mouse 4/5, middle, wheel). Keys the companion already uses (remaps, the overlay, F8, Enter...) are refused. Clear turns the macro off but keeps it."],
+        ["Hotkey", "Bind Key, then any key, combo or mouse button (Mouse 4/5, middle, wheel). Keys the companion already uses (remaps, the overlay, the open / hide key, Enter...) are refused. Clear turns the macro off but keeps it."],
         ["List", "Drag a row to reorder, ✕ deletes. Changes save as you go."],
         ["Paste", "Each chat line is pasted (Ctrl+V) instead of typed: faster for long lines, any characters. Your clipboard is put back after. Also for loading and hosting. If lines come out empty, turn it off."]])
 }
@@ -2075,46 +2076,102 @@ HostListWheel(wParam, lParam, msg, hwnd) {
 ; ============================================================================
 BuildSettingsPage() {
     global
-    ; (summoning the bag back after a load and -convert before it: always, no longer settings, the user 2026-10-31)
-    labels := Map("hideOnStart", "Hide window on start")
-    y := 160
-    for key, text in labels {
-        cb := mainGui.AddCheckbox("x40 y" y " h22 +Background" C.panel " c" C.text, " " text)
-        cb.OnEvent("Click", SettingToggle.Bind(key))
-        setChecks[key] := cb
-        AddToPage("settings", cb)
-        y += 30
+    ; cards, as the WC3 page's (the user, 2026-10-31: "clean up the design"): Keys and Loading side by side,
+    ; Folders under them, then updates and Reset
+    local x := 40, y := 160, cw := 682, half := (cw - 12) // 2, rx := x + half + 12, pad := 14
+    lbl(t, xx, yy, w, col := "") {
+        local ctl := mainGui.AddText("x" xx " y" yy " w" w " h20 0x200 +Background" C.card " c" (col = "" ? C.text : col), t)
+        UISetFont(ctl, "s9")
+        AddToPage("settings", ctl)
+        return ctl
     }
-    ; the overlay's show / hide key (as on the Overlay page)
-    ovl := mainGui.AddText("x40 y" (y + 4) " w220 h20 +Background" C.panel " c" C.muted, "Overlay key (show / hide)")
-    setOvKeyBtn := MkButton("", 270, y, 160, 28, C.chip, C.text, (*) => (OverlayCapture("hotkey", setOvKeyBtn), RefreshSettings()))
-    AddToPage("settings", ovl, setOvKeyBtn)
-    y += 40
-    l1 := mainGui.AddText("x40 y" (y + 8) " w220 h20 +Background" C.panel " c" C.muted, "Delay between codes (ms)")
-    loadDelayEdit := mainGui.AddEdit("x270 y" (y + 4) " w80 h24 Number +Background" C.well " c" C.text, "200")
-    l2 := mainGui.AddText("x40 y" (y + 40) " w220 h20 +Background" C.panel " c" C.muted, "Delay after load (ms)")
-    postDelayEdit := mainGui.AddEdit("x270 y" (y + 36) " w80 h24 Number +Background" C.well " c" C.text, "1000")
+    head(t, xx, yy) {
+        local ctl := mainGui.AddText("x" xx " y" yy " w200 h16 +Background" C.card " c" C.muted, t)
+        UISetFont(ctl, "s8 w600")
+        AddToPage("settings", ctl)
+    }
+    ; -- Keys ------------------------------------------------------------------------------
+    Box("settings", x, y, half, 138, C.card, C.border, 6)
+    head("KEYS", x + pad, y + 12)
+    lbl("Open / hide TW Companion", x + pad, y + 38, 180)
+    setShowKeyBtn := MkButton("", x + half - pad - 130, y + 35, 130, 26, C.chip, C.text, (*) => SettingsShowKey())
+    lbl("Overlay (show / hide)", x + pad, y + 72, 180)
+    setOvKeyBtn := MkButton("", x + half - pad - 130, y + 69, 130, 26, C.chip, C.text, (*) => (OverlayCapture("hotkey", setOvKeyBtn), RefreshSettings()))
+    local cb := mainGui.AddCheckbox("x" (x + pad) " y" (y + 104) " h22 +Background" C.card " c" C.text, " Hide the window on start")
+    cb.OnEvent("Click", SettingToggle.Bind("hideOnStart"))
+    setChecks["hideOnStart"] := cb
+    AddToPage("settings", setShowKeyBtn, setOvKeyBtn, cb)
+    ; -- Loading ---------------------------------------------------------------------------
+    Box("settings", rx, y, half, 138, C.card, C.border, 6)
+    head("LOADING", rx + pad, y + 12)
+    lbl("Delay between codes", rx + pad, y + 38, 180)
+    loadDelayEdit := mainGui.AddEdit("x" (rx + half - pad - 110) " y" (y + 36) " w80 h24 Number Right +Background" C.chip " c" C.text, "200")
+    lbl("ms", rx + half - pad - 24, y + 38, 24, C.dim)
+    lbl("Delay after a load", rx + pad, y + 72, 180)
+    postDelayEdit := mainGui.AddEdit("x" (rx + half - pad - 110) " y" (y + 70) " w80 h24 Number Right +Background" C.chip " c" C.text, "1000")
+    lbl("ms", rx + half - pad - 24, y + 72, 24, C.dim)
+    local ln := mainGui.AddText("x" (rx + pad) " y" (y + 104) " w" (half - 2 * pad) " h28 +Background" C.card " c" C.dim,
+        "The bag is summoned back after each load, and -convert sent before it.")
+    UISetFont(ln, "s8")
     loadDelayEdit.OnEvent("Change", (*) => settings.set(Map("key", "loadDelay", "value", loadDelayEdit.Value + 0)))
     postDelayEdit.OnEvent("Change", (*) => settings.set(Map("key", "postLoadDelay", "value", postDelayEdit.Value + 0)))
-    folderLabel := mainGui.AddText("x40 y" (y + 82) " w460 h20 +Background" C.panel " c" C.muted, "TWRPG folder")
-    l3 := folderLabel
-    folderEdit := mainGui.AddEdit("x40 y" (y + 102) " w440 h24 ReadOnly +Background" C.well " c" C.text, "")
-    setBtn := MkButton("Change", 490, y + 100, 72, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
-    openBtn := MkButton("Open", 568, y + 100, 60, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
-    autoBtn := MkButton("Auto-detect", 634, y + 100, 86, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
-    ; W3L (eurobattle.net's launcher) for the sidebar's Launch W3L
-    w3lLabel := mainGui.AddText("x40 y" (y + 142) " w680 h20 +Background" C.panel " c" C.muted, "W3L")
-    w3lEdit := mainGui.AddEdit("x40 y" (y + 162) " w440 h24 ReadOnly +Background" C.well " c" C.text, "")
-    w3lSet := MkButton("Change", 490, y + 160, 72, 26, C.chip, C.text, (*) => (bnetLogin.pickW3l(), RefreshSettings()))
-    w3lAutoBtn := MkButton("Auto-detect", 568, y + 160, 86, 26, C.chip, C.text, (*) => (bnetLogin.autoW3l() || Toast("No w3l.exe in the game's folders: pick it with Change"), RefreshSettings()))
-    resetBtn := MkButton("Reset all settings", 40, y + 202, 180, 30, C.chip, C.text, (*) => ResetAll())
-    ; companion updates: which commit this is, when it last looked, and a button
-    updLabel := mainGui.AddText("x40 y" (y + 256) " w500 h20 +Background" C.panel " c" C.muted, "")
-    updBtn := MkButton("Check for updates", 560, y + 252, 160, 28, C.chip, C.text, (*) => UpdateButton())
-    AddToPage("settings", l1, loadDelayEdit, l2, postDelayEdit, l3, folderEdit, setBtn, openBtn, autoBtn, w3lLabel, w3lEdit, w3lSet, w3lAutoBtn, resetBtn, updLabel, updBtn)
+    AddToPage("settings", loadDelayEdit, postDelayEdit, ln)
+    ; -- Folders ---------------------------------------------------------------------------
+    local fy := y + 138 + 12, fw := cw - 2 * pad - 3 * 84 - 3 * 6
+    Box("settings", x, fy, cw, 150, C.card, C.border, 6)
+    head("FOLDERS", x + pad, fy + 12)
+    lbl("TWRPG folder", x + pad, fy + 34, 120)
+    folderLabel := lbl("", x + pad + 124, fy + 34, cw - 2 * pad - 124, C.dim)
+    folderEdit := mainGui.AddEdit("x" (x + pad) " y" (fy + 56) " w" fw " h24 ReadOnly +Background" C.chip " c" C.text, "")
+    local bx := x + pad + fw + 6
+    local setBtn := MkButton("Change", bx, fy + 55, 84, 26, C.chip, C.text, (*) => (loader.setFolder(Map()), RefreshSettings()))
+    local openBtn := MkButton("Open", bx + 90, fy + 55, 84, 26, C.chip, C.text, (*) => loader.openFolder(Map()))
+    local autoBtn := MkButton("Auto-detect", bx + 180, fy + 55, 84, 26, C.chip, C.text, (*) => (loader.autoFolder(Map()), RefreshSettings()))
+    lbl("W3L", x + pad, fy + 90, 120)
+    w3lLabel := lbl("", x + pad + 124, fy + 90, cw - 2 * pad - 124, C.dim)
+    w3lEdit := mainGui.AddEdit("x" (x + pad) " y" (fy + 112) " w" fw " h24 ReadOnly +Background" C.chip " c" C.text, "")
+    local w3lSet := MkButton("Change", bx, fy + 111, 84, 26, C.chip, C.text, (*) => (bnetLogin.pickW3l(), RefreshSettings()))
+    local w3lAutoBtn := MkButton("Auto-detect", bx + 180, fy + 111, 84, 26, C.chip, C.text, (*) => (bnetLogin.autoW3l() || Toast("No w3l.exe in the game's folders: pick it with Change"), RefreshSettings()))
+    AddToPage("settings", folderEdit, setBtn, openBtn, autoBtn, w3lEdit, w3lSet, w3lAutoBtn)
+    ; -- updates, and Reset ------------------------------------------------------------------
+    local uy := fy + 150 + 14
+    local resetBtn := MkButton("Reset all settings", x, uy, 150, 28, C.chip, C.muted, (*) => ResetAll())
+    updLabel := mainGui.AddText("x" (x + 166) " y" (uy + 4) " w" (cw - 166 - 170) " h20 Right +Background" C.panel " c" C.muted, "")
+    UISetFont(updLabel, "s9")
+    updBtn := MkButton("Check for updates", x + cw - 160, uy, 160, 28, C.chip, C.text, (*) => UpdateButton())
+    AddToPage("settings", resetBtn, updLabel, updBtn)
+}
+; the key that opens / hides the companion: [Settings] showKey (F8 by default; the user, 2026-10-31: it was fixed)
+ShowKey() => Ini("Settings", "showKey", "F8")
+ApplyShowKey() {
+    static current := ""
+    if current != ""
+        try Hotkey(current, "Off")
+    current := ""
+    if (k := ShowKey()) = ""
+        return
+    hk := RegExMatch(k, "[\^!+#]") ? "$" k : "$*" k          ; (a plain key: with any modifiers, as F8 always was)
+    try {
+        Hotkey(hk, (*) => ShowHideMain(), "On")
+        current := hk
+    } catch as e
+        DebugLog("settings: the open / hide key " k " couldn't be set: " e.Message)
+}
+SettingsShowKey() {
+    global setShowKeyBtn, remap
+    setShowKeyBtn.Text := "press keys… (Esc = none)"
+    combo := RegExReplace(KeyWaitCombo(), "[<>]")
+    if combo != "" {
+        k := combo = "Escape" ? "" : combo
+        if k != "" && Norm(k) != Norm(ShowKey()) && (why := remap.reserved(k)) != ""
+            Toast(ReadableHotkey(k) " is already " why, "error")
+        else
+            SetIni(k, "Settings", "showKey"), ApplyShowKey()
+    }
+    RefreshSettings()
 }
 RefreshSettings() {
-    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, loader, w3lEdit, w3lLabel, bnetLogin, webOverlay
+    global settings, setChecks, loadDelayEdit, postDelayEdit, folderEdit, folderLabel, setOvKeyBtn, setShowKeyBtn, loader, w3lEdit, w3lLabel, bnetLogin, webOverlay
     s := settings.get()
     for key, cb in setChecks
         cb.Value := s.HasProp(key) ? s.%key% : 0
@@ -2122,10 +2179,11 @@ RefreshSettings() {
     postDelayEdit.Value := s.postLoadDelay
     cfg := loader.config(Map())
     SetIf(setOvKeyBtn, (hk := webOverlay.get().hotkey) ? ReadableHotkey(hk) : "none")
+    SetIf(setShowKeyBtn, (sk := ShowKey()) != "" ? ReadableHotkey(sk) : "none")
     folderEdit.Value := cfg.folder
-    folderLabel.Text := "TWRPG folder  ·  " (!cfg.found ? "not found, pick it with Change" : cfg.auto ? "found automatically" : "chosen by you")
+    folderLabel.Text := !cfg.found ? "not found: pick it with Change" : cfg.auto ? "found automatically" : "chosen by you"
     w3lEdit.Value := bnetLogin.w3lPath
-    w3lLabel.Text := "W3L, eurobattle.net's launcher (the sidebar's Launch W3L)  ·  " bnetLogin.w3lStatus()
+    w3lLabel.Text := "eurobattle.net's launcher, for the sidebar's Launch W3L  ·  " bnetLogin.w3lStatus()
     RefreshUpdateLabel()
 }
 SettingToggle(key, ctrl, *) => settings.set(Map("key", key, "value", ctrl.Value))
@@ -2702,7 +2760,6 @@ PgDn:: SaveMove(SAVE_ROWS)
 Enter:: LoadSelected()
 #HotIf
 
-$*F8:: ShowHideMain()
 $!Esc:: ExitApp
 
 #HotIf WinActive(WarcraftIII)

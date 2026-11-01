@@ -15,6 +15,13 @@ TwcHostRun() {
         try IniDelete(iniFile, host.section, k)
     ShowPage("settings")
     TwcCheck(setOvKeyBtn.Text = ReadableHotkey(webOverlay.get().hotkey), "Settings: the overlay key shown (" setOvKeyBtn.Text ")")
+    ; the open / hide key: F8 by default, settable; the key it's set to is refused for macros / remaps
+    global remap, setShowKeyBtn
+    f8 := ShowKey() = "F8" && remap.reserved("F8") != "" && setShowKeyBtn.Text = "F8"
+    IniWrite("F9", iniFile, "Settings", "showKey"), ApplyShowKey(), RefreshSettings()
+    f9 := setShowKeyBtn.Text = "F9" && InStr(remap.reserved("F9"), "open / hide") && remap.reserved("F8") = ""
+    IniDelete(iniFile, "Settings", "showKey"), ApplyShowKey(), RefreshSettings()
+    TwcCheck(f8 && f9 && setShowKeyBtn.Text = "F8", "the open / hide key: F8 by default; set to F9, F9 is taken and F8 free; back to F8")
     items := ""
     loop DllCall("GetMenuItemCount", "ptr", A_TrayMenu.Handle) {
         buf := Buffer(256 * 2, 0)
