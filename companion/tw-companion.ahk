@@ -1501,15 +1501,27 @@ RemapMoveBtn(b, x, y) {
 }
 ; the quickcast switches: the game hook (1.28f, the injected game module: [Game] quickcast) and the
 ; screen (1.28f and Reforged: [Quickcast] screen; it was "reforged" for a while)
+; one quickcast method at a time (the user, 2026-10-31): switching one on switches the other off
 RemapQcSwitch(which, *) {
     global gameModule
-    if which = "hook"
-        gameModule.setQuickcast(!gameModule.quickcast)
-    else
-        SetIni(QuickcastScreenOn() ? 0 : 1, "Quickcast", "screen")
+    if which = "hook" {
+        on := !gameModule.quickcast
+        gameModule.setQuickcast(on)
+        if on
+            SetIni(0, "Quickcast", "screen")
+    } else {
+        on := !QuickcastScreenOn()
+        SetIni(on ? 1 : 0, "Quickcast", "screen")
+        if on
+            gameModule.setQuickcast(false)
+    }
     RemapQcRefresh()
 }
-QuickcastScreenOn() => Integer(Ini("Quickcast", "screen", Ini("Quickcast", "reforged", 1)))
+; the screen method: never with the game hook on (one at a time: settings from before, both on, keep the hook)
+QuickcastScreenOn() {
+    global gameModule
+    return !(IsSet(gameModule) && gameModule && gameModule.quickcast) && Integer(Ini("Quickcast", "screen", Ini("Quickcast", "reforged", 1)))
+}
 RemapQcRefresh() {
     global remapQcCtrls, gameModule
     if !remapQcCtrls.Has("hook")
@@ -1681,7 +1693,7 @@ QuickcastSettings(ver := "") {
         try g.Destroy()
     if ver = ""
         ver := Wc3RunningVer() = "128" ? "hook" : "screen"
-    s := quickcast.get(), w := 460, x := 26, tw := w - 52, mod128 := ver = "hook"
+    mod128 := ver = "hook", s := quickcast.get(mod128 ? "hook" : "screen"), w := 460, x := 26, tw := w - 52
     g := Gui("-Caption +ToolWindow +AlwaysOnTop +Owner" mainGui.Hwnd)
     MakeScalable(g, "popup")
     g.MarginX := 0, g.MarginY := 0
@@ -1698,10 +1710,11 @@ QuickcastSettings(ver := "") {
     UISetFont(st, "s10 w600")
     intro := mod128 ? "1.28f only. The companion's game module is injected into Warcraft III and asks the game "
         . "itself when it waits for a target: the moment it does, it clicks at the cursor, so a cooldown "
-        . "or missing mana never clicks a unit. No setup. Which keys quickcast: QC on their slot."
+        . "or missing mana never clicks a unit. No setup. Which keys quickcast: QC on their slot. "
+        . "On, it switches Screen quickcast off: one at a time."
         : "1.28f and Reforged. Nothing is injected: it reads the command card on the screen to see when "
-        . "the game waits for a target, then clicks at the cursor. Set it up once per window size. On "
-        . "1.28f it's used when the game hook is off or not ready."
+        . "the game waits for a target, then clicks at the cursor. Set it up once per window size. "
+        . "On, it switches the game hook off: one at a time."
     it := g.AddText("x" x " y82 w" tw " +Background" C.card " c" C.dim, intro)
     UISetFont(it, "s9")
     y := 82 + TextHeight(it, intro, tw) + 18
@@ -1734,13 +1747,13 @@ QuickcastSettings(ver := "") {
     iv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
     ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
     rep.OnEvent("Click", (src, *) => quickcast.set("repeat", src.Value))
-    iv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("interval", Max(15, Min(1000, src.Value + 0)))))
+    iv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set(mod128 ? "hookInterval" : "interval", Max(15, Min(1000, src.Value + 0)))))
     y += 30
     ; after a cast it waits longer, so the reticle doesn't reopen while the hero gets there
     gl := g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "and after a cast, wait")
     gv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.castGap)
     g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
-    gv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set("castGap", Max(0, Min(3000, src.Value + 0)))))
+    gv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set(mod128 ? "hookCastGap" : "castGap", Max(0, Min(3000, src.Value + 0)))))
     y += 44
     close := g.AddText("x" (w - x - 104) " y" y " w104 h34 Center 0x200 +Background" C.chip " c" C.text, "Close")
     btns := [close]

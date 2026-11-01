@@ -43,6 +43,23 @@ TwcQuickcastRun() {
     remap.holding["f24"] := false, t3 := remap.tryTag(), remap.qcTry := 0
     TwcCheck(w1 = "the key was let go" && InStr(w2, "isn't down"), "heldWhy: let go / no key-up (" w1 " / " w2 ")")
     TwcCheck(t1 = "" && InStr(t2, "[repeat 3, 2.5 s after the press, key up]") && InStr(t3, "key up, key-up seen]"), "tryTag: none on the press, then the repeat's number and the key (" t2 t3 ")")
+    ; one method at a time (the user, 2026-10-31): both on from before -> the hook; each switch on turns the other off
+    global gameModule
+    for k in ["quickcast"]
+        try IniDelete(iniFile, gameModule.section, k)
+    for k in ["screen", "reforged", "hookInterval", "hookCastGap", "interval", "castGap"]
+        try IniDelete(iniFile, "Quickcast", k)
+    both := gameModule.quickcast && !QuickcastScreenOn()
+    RemapQcSwitch("screen"), toScreen := !gameModule.quickcast && QuickcastScreenOn()
+    RemapQcSwitch("hook"), toHook := gameModule.quickcast && !QuickcastScreenOn()
+    RemapQcSwitch("hook"), none := !gameModule.quickcast && !QuickcastScreenOn()
+    RemapQcSwitch("hook")
+    TwcCheck(both && toScreen && toHook && none && gameModule.quickcast, "one quickcast at a time: the defaults (both on) are the hook; Screen on turns the hook off and back; both can be off")
+    h := quickcast.get("hook"), sc := quickcast.get("screen")
+    TwcCheck(h.interval = 40 && h.castGap = 400 && sc.interval = 40 && sc.castGap = 450, "timings: the game hook's 40 / 400 ms, the screen's 40 / 450 (" h.interval "/" h.castGap ", " sc.interval "/" sc.castGap ")")
+    quickcast.set("hookCastGap", 300)
+    TwcCheck(quickcast.get("hook").castGap = 300 && quickcast.get("screen").castGap = 450, "each its own: the hook's wait set, the screen's kept")
+    IniDelete(iniFile, "Quickcast", "hookCastGap")
     TwcCheckDone()
 }
 SetTimer(TwcQuickcastRun, -4000)

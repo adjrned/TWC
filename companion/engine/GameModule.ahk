@@ -223,6 +223,8 @@ class GameModuleEngine {
     ; it clicks at the cursor the moment the game waits for a target, or gives
     ; up at the deadline. Requests are numbered; the module answers the latest.
     quickcast => Integer(Ini(this.section, "quickcast", 1))
+    ; the quickcast keys' clicks so far (the module counts each), -1: no module
+    keyClicks() => (v := this.live()) && NumGet(v, Shm.layout, "uint") >= 28 ? NumGet(v, Shm.qkClicked, "uint") : -1
     setQuickcast(on) => SetIni(on ? 1 : 0, this.section, "quickcast")
     ; on, loaded in this game, alive, and its probe passed
     qcReady() {

@@ -22,10 +22,13 @@ class QuickcastEngine {
     misses := 0                 ; quickcasts in a row with no targeting seen (window reads)
 
     ; -- settings --------------------------------------------------------------
-    get() {
+    ; mode "screen" (its interval / castGap) or "hook" (the game hook's own: hookInterval 40, hookCastGap 400 ms,
+    ; the user's pick, 2026-10-31); repeat is the same switch for both
+    get(mode := "screen") {
+        hook := mode = "hook"
         return { repeat: Integer(Ini(this.section, "repeat", 1)),
-            interval: Integer(Ini(this.section, "interval", 40)),
-            castGap: Integer(Ini(this.section, "castGap", 450)),
+            interval: Integer(Ini(this.section, hook ? "hookInterval" : "interval", 40)),
+            castGap: Integer(Ini(this.section, hook ? "hookCastGap" : "castGap", hook ? 400 : 450)),
             window: this.windowKey(), calibrated: this.current() ? 1 : 0 }
     }
     set(key, value) => SetIni(value, this.section, key)

@@ -238,8 +238,8 @@ class RemapEngine {
         if ok != was && was != -1
             DebugLog("quickcast: the game module's keys " (ok ? "are ready again" : "aren't ready: " gameModule.qcWhyNot()))
         was := ok
-        s := ok ? quickcast.get() : 0
-        kc := ok ? { repeat: s.repeat, interval: s.interval } : 0
+        s := ok ? quickcast.get("hook") : 0
+        kc := ok ? { repeat: s.repeat, interval: s.interval, castGap: s.castGap } : 0
         return kc
     }
     ; The key to the game module, which presses its button and clicks (as WFE). Held, it goes again every
@@ -251,6 +251,10 @@ class RemapEngine {
     ; (F1 -> an item slot) is asked of Windows too (GetAsyncKeyState can't miss a key-up), and goes until
     ; let go as WFE's; one sent as itself (its own key quickcasts) can't be told apart from what's sent, so
     ; it keeps the 20 s most a repeat lasts. t0: when the hotkey's thread started (QpcMs), for the timing line.
+    gm() {
+        global gameModule
+        return gameModule
+    }
     keyCastHeld(game, yourKey, base, kc, t0) {
         static told := 0
         q := this.queued(yourKey)
@@ -261,9 +265,17 @@ class RemapEngine {
             DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
         same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
         vk := GetKeyVK(base), why := ""
+        clicks := this.gm().keyClicks()
         while kc.repeat && !IsWheel(base) {
             if (why := this.waitHeld(base, same ? start : A_TickCount, kc.interval)) != ""
                 break
+            ; the module clicked (a cast): wait the rest of the after-cast gap (the hero still turning or walking into
+            ; range, and each press reopens the reticle); the game hook's own, 400 ms by default
+            if clicks >= 0 && (now := this.gm().keyClicks()) > clicks {
+                clicks := now
+                if kc.HasProp("castGap") && kc.castGap > kc.interval && (why := this.waitHeld(base, same ? start : A_TickCount, kc.castGap - kc.interval)) != ""
+                    break
+            }
             if !same && vk && !(DllCall("GetAsyncKeyState", "int", vk, "short") & 0x8000) {
                 why := "the key isn't down (Windows says; its key-up never came)"
                 break
@@ -322,10 +334,11 @@ class RemapEngine {
                 return                          ; the key's own repeat: this thread presses again itself
             return this.keyCastHeld(game, yourKey, base, kc, t0)
         }
-        q := this.queued(yourKey), base := HotkeyBase(yourKey), s := quickcast.get()
+        q := this.queued(yourKey), base := HotkeyBase(yourKey)
         reforged := InStr(WC3WindowKey(), "reforged") = 1
         hookOn := !reforged && gameModule.quickcast, screenOn := QuickcastScreenOn()
         inGameQc := hookOn && gameModule.qcReady()
+        s := quickcast.get(inGameQc ? "hook" : "screen")       ; (each method's own timings)
         ; the game hook going (not) ready, logged when it changes, with why: a quickcast that
         ; stops working shows here when and why it went to the screen or the key alone
         static wasReady := -1
@@ -342,7 +355,7 @@ class RemapEngine {
         if inGameQc && gameModule.keyCastReady() {
             if !IsWheel(base) && this.holding.Get(base, false)
                 return
-            return this.keyCastHeld(game, yourKey, base, { repeat: s.repeat, interval: s.interval }, t0)
+            return this.keyCastHeld(game, yourKey, base, { repeat: s.repeat, interval: s.interval, castGap: s.castGap }, t0)
         }
         cal := !inGameQc && screenOn ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /
