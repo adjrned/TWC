@@ -71,10 +71,29 @@ class GameModuleEngine {
         return copy
     }
 
+    ; Is the game in this window 1.28? Its Game.dll's file version (or the exe's, without one) must be 1.28.x:
+    ; anything else, Reforged above all, is never injected (the user, 2026-10-31: "make sure none of this ever
+    ; interacts with Reforged"; besides the folder check, the injector's 32-bit one and the module's own build check)
+    static Is128(hwnd) {
+        static seen := Map()
+        if seen.Has(hwnd)
+            return seen[hwnd]
+        ver := ""
+        try {
+            SplitPath(path := WinGetProcessPath(hwnd), , &dir)
+            ver := FileGetVersion(FileExist(dir "\Game.dll") ? dir "\Game.dll" : path)
+        }
+        ok := InStr(ver, "1.28.") = 1
+        if !ok
+            DebugLog("game module: this game isn't 1.28 (version '" ver "'): never loaded into it")
+        seen[hwnd] := ok
+        return ok
+    }
+
     ; 1.28 game running and not loaded yet -> load it; a module that's older
     ; than native\twc-game.dll (layout 13 on) -> swap it (the timer calls this)
     check() {
-        if !this.enabled || !(hwnd := WinExist(WarcraftIII)) || !InStr(WC3WindowKey(), "classic")
+        if !this.enabled || !(hwnd := WinExist(WarcraftIII)) || !InStr(WC3WindowKey(), "classic") || !GameModuleEngine.Is128(hwnd)
             return
         pid := WinGetPID(hwnd)
         if this.swapping

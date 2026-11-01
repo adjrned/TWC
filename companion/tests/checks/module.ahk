@@ -288,6 +288,8 @@ TwcModuleRun() {
     TwcCheck(true, "the game module's own switch")
     TwcModuleBuffTimers()
     TwcModuleNumbers()
+    ; not 1.28 (here AutoHotkey's own window: its exe is version 2.x): never injected
+    TwcCheck(!GameModuleEngine.Is128(A_ScriptHwnd) && FileGetVersion(A_AhkPath) != "", "a game window whose Game.dll / exe isn't 1.28.x: never injected (" FileGetVersion(A_AhkPath) ")")
     TwcModuleSwap()
     fake.Destroy()
     TwcCheckDone()
