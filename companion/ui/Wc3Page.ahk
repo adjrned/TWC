@@ -24,14 +24,16 @@
 ; ============================================================================
 
 global wc3Tab := "display", wc3TabBtns := Map(), wc3Cards := [], wc3ModuleBtn, wc3ModuleText, wc3Planned
-global wc3Ver := Ini("Wc3", "view", "128"), wc3VerBtns := Map(), wc3VerText, wc3ModuleRow := []
+; the page is 1.28f's only for now (the user, 2026-11-01: the 1.28f | Reforged switch is gone; the Reforged side's
+; cards and lines stay in the code, for when it comes back: Wc3Versions)
+global wc3Ver := "128", wc3ModuleRow := []
 global wc3PageNo := Map(), wc3PagerCtls := [], wc3PagerText       ; tab + version -> the page shown
 global wc3HoverCard := 0                                           ; the card under the cursor
 global WC3_COL_W := 335, WC3_CARD_H := 48, WC3_ROW := 54
 
 Wc3Tabs() => [["display", "Display"], ["timers", "Timers"], ["combat", "Combat"], ["hosting", "Hosting"]]
 ; the two versions: key, switch label
-Wc3Versions() => [["128", "1.28f"], ["reforged", "Reforged"]]
+Wc3Versions() => [["128", "1.28f"]]                ; (["reforged", "Reforged"] when its side comes back)
 Wc3VerBadge(ver) => ver = "128" ? "1.28f" : "Reforged"
 ; the running game's version ("128" / "reforged"), "" if none
 Wc3RunningVer() => (k := WC3WindowKey()) = "" ? "" : InStr(k, "reforged") = 1 ? "reforged" : "128"
@@ -39,7 +41,8 @@ Wc3RunningVer() => (k := WC3WindowKey()) = "" ? "" : InStr(k, "reforged") = 1 ? 
 Wc3OnVersion(f, ver) => f.badge = "Both" || f.badge = Wc3VerBadge(ver)
 ; its badge on the version in view: "1.28f", or "1.28f · WIP" for one still being worked on (wip: true) and
 ; for everything on the Reforged side (the user, 2026-10-31, readying the public beta: Reforged is experimental)
-Wc3BadgeText(f, ver) => f.badge ((f.HasProp("wip") && f.wip) || ver = "reforged" ? " · WIP" : "")
+; (with only 1.28f on the page, no "1.28f" on every card: only WIP shows)
+Wc3BadgeText(f, ver) => (f.HasProp("wip") && f.wip) || ver = "reforged" ? "WIP" : ""
 
 ; what each tab will hold later on each version (on the line at the bottom)
 Wc3PlannedText(tab, ver) {
@@ -239,39 +242,26 @@ Wc3ScreenQcStatus(*) {
 BuildWc3Page() {
     global
     local x := 40, y := 160, cw := 682
-    ; the version switch, at the far right of the title row (page space is
-    ; shifted by CX - 40, CY - 160), what's running just left of it
-    local vx := TB_R - (CX - 40) - 2 * 86 + 4
-    for i, v in Wc3Versions() {
-        local b := MkButton(v[2], vx + (i - 1) * 86, TB_Y + 1 - CY + 160, 82, 26, C.chip, C.muted, Wc3ShowVersion.Bind(v[1]))
-        wc3VerBtns[v[1]] := b
-        AddToPage("wc3", b)
-    }
-    wc3VerText := mainGui.AddText("x" (vx - 8 - 270) " y" (TB_Y + 5 - CY + 160) " w270 h18 Right 0x200 +Background" C.panel " c" C.dim, "")
-    UISetFont(wc3VerText, "s8")
-    AddToPage("wc3", wc3VerText)
-    ; top to bottom (the user's pick, 2026-11-01): which game (the title row), the game module, then the tabs
-    ; right above the cards they switch. The game module (1.28f side only): its status, Log, Check, and its
-    ; On switch at the row's right end as every card's
-    local gl := mainGui.AddText("x" x " y" (y + 2) " w120 h22 0x200 +Background" C.panel " c" C.text, "Game Module")
-    UISetFont(gl, "s10 w600")
-    wc3ModuleText := mainGui.AddText("x" (x + 126) " y" (y + 2) " w" (cw - 126 - 246) " h22 0x200 +Background" C.panel " c" C.dim, "")
+    ; the game module in the title row (the user, 2026-11-01: the version switch's place): its status, then Log,
+    ; Check and its On switch at the far right (page space is shifted by CX - 40, CY - 160); the tabs under it
+    local mx := TB_R - (CX - 40) - 3 * 76 + 6, ty := TB_Y + 1 - CY + 160
+    wc3ModuleText := mainGui.AddText("x" (x + 80) " y" (ty + 4) " w" (mx - 8 - x - 80) " h18 Right 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3ModuleText, "s8")
-    local logBtn := MkButton("Log", x + cw - 236, y, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
-    local chkBtn := MkButton("Check", x + cw - 160, y, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
-    wc3ModuleBtn := MkButton("Off", x + cw - 84, y, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
-    AddToPage("wc3", gl, wc3ModuleText, logBtn, chkBtn, wc3ModuleBtn)
-    wc3ModuleRow := [gl, wc3ModuleText, logBtn, chkBtn, wc3ModuleBtn]
-    ; the tabs, like the Overlay page's dock switch (on Reforged, with no module row, they move up: RefreshWc3)
+    local logBtn := MkButton("Log", mx, ty, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
+    local chkBtn := MkButton("Check", mx + 76, ty, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
+    wc3ModuleBtn := MkButton("Off", mx + 152, ty, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
+    AddToPage("wc3", wc3ModuleText, logBtn, chkBtn, wc3ModuleBtn)
+    wc3ModuleRow := [wc3ModuleText, logBtn, chkBtn, wc3ModuleBtn]
+    ; the tabs, like the Overlay page's dock switch
     for i, t in Wc3Tabs() {
-        local b := MkButton(t[2], x + (i - 1) * 96, y + 40, 90, 28, C.chip, C.muted, Wc3ShowTab.Bind(t[1]))
+        local b := MkButton(t[2], x + (i - 1) * 96, y, 90, 28, C.chip, C.muted, Wc3ShowTab.Bind(t[1]))
         wc3TabBtns[t[1]] := b
         AddToPage("wc3", b)
     }
     ; feature cards, all built at one spot: RefreshWc3 shows the tab's and
     ; version's own and lays them out in two columns
     for f in Wc3Features() {
-        local top := y + 82 + 40, cwd := WC3_COL_W, right := x + cwd - 12 - 64
+        local top := y + 42, cwd := WC3_COL_W, right := x + cwd - 12 - 64
         local card := Box("wc3", x, top, cwd, WC3_CARD_H, C.card, C.border, 6)
         local tt := mainGui.AddText("x" (x + 12) " y" (top + 6) " w200 h20 0x200 +Background" C.card " c" C.text, f.title)
         UISetFont(tt, "s10 w600")
@@ -296,10 +286,10 @@ BuildWc3Page() {
         wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, st], sw: sw, ob: ob, x: 0, y: 0, shown: false })
     }
     ; the pager, at the right end of the tab row (shown only when a tab has pages)
-    local pr := MkButton("‹", x + cw - 108, y + 42, 28, 24, C.chip, C.text, Wc3Turn.Bind(-1))
-    wc3PagerText := mainGui.AddText("x" (x + cw - 76) " y" (y + 42) " w44 h24 Center 0x200 +Background" C.panel " c" C.dim, "")
+    local pr := MkButton("‹", x + cw - 108, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(-1))
+    wc3PagerText := mainGui.AddText("x" (x + cw - 76) " y" (y + 2) " w44 h24 Center 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3PagerText, "s8")
-    local nx := MkButton("›", x + cw - 28, y + 42, 28, 24, C.chip, C.text, Wc3Turn.Bind(1))
+    local nx := MkButton("›", x + cw - 28, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(1))
     AddToPage("wc3", pr, wc3PagerText, nx)
     wc3PagerCtls := [pr, wc3PagerText, nx]
     ; the line at the bottom: the hovered card's description and status, else what's planned
@@ -349,7 +339,7 @@ Wc3Hover(wParam, lParam, msg, hwnd) {
 Wc3HintLine() {
     global wc3HoverCard, wc3Planned, wc3Tab, wc3Ver, C
     if hc := wc3HoverCard {
-        SetIf(wc3Planned, hc.f.title " (" Wc3BadgeText(hc.f, wc3Ver) "): " hc.f.desc "`n" hc.f.status())
+        SetIf(wc3Planned, hc.f.title ((bt := Wc3BadgeText(hc.f, wc3Ver)) != "" ? " (" bt ")" : "") ": " hc.f.desc "`n" hc.f.status())
         wc3Planned.Opt("c" C.muted)
     } else {
         SetIf(wc3Planned, (p := Wc3PlannedText(wc3Tab, wc3Ver)) != "" ? p : "Point at a feature to see what it does.")
@@ -784,8 +774,7 @@ Wc3ShowVersion(ver, *) {
 ; opening the page: the running game's version, if one runs
 Wc3PageOpened() {
     global wc3Ver
-    if (r := Wc3RunningVer()) != "" && r != wc3Ver
-        wc3Ver := r, SetIni(r, "Wc3", "view")
+    ; (1.28f's side only for now: the running game no longer picks the side)
     RefreshWc3()
 }
 Wc3Switch(f, *) {
@@ -814,27 +803,8 @@ Wc3SetSelected(b, on) {
     if boxes.Has(b.Hwnd)
         boxes[b.Hwnd].Fill := bg
 }
-Wc3VerLine() {
-    global wc3Ver
-    r := Wc3RunningVer()
-    return r = "" ? "No game running" : r = wc3Ver ? "● " Wc3VerBadge(r) " is running"
-        : "● " Wc3VerBadge(r) " is running (this is the " Wc3VerBadge(wc3Ver) " side)"
-}
 
 ; move a card (its box, texts, switch, Options and their boxes) to x, y (window units)
-; a page control (and the box drawn behind a button) moved to y, its x kept
-Wc3PlaceAt(ctl, y) {
-    global boxes
-    if boxes.Has(ctl.Hwnd) {
-        bx := boxes[ctl.Hwnd]
-        if bx.y != y
-            bx.Move(bx.x, y, bx.w, bx.h), ctl.Move(, y + 1)
-        return
-    }
-    ctl.GetPos(, &cy0)
-    if cy0 != y
-        ctl.Move(, y)
-}
 Wc3MoveCard(card, x, y) {
     global boxes
     if !card.x
@@ -861,15 +831,12 @@ Wc3Short(s) => (p := InStr(s, " (")) ? SubStr(s, 1, p - 1) : s
 
 RefreshWc3() {
     global wc3Tab, wc3TabBtns, wc3Cards, wc3ModuleBtn, wc3ModuleText, wc3Planned, gameModule, currentPage
-    global wc3Ver, wc3VerBtns, wc3VerText, wc3ModuleRow, wc3PageNo, wc3PagerCtls, wc3PagerText, H, wc3HoverCard
+    global wc3Ver, wc3ModuleRow, wc3PageNo, wc3PagerCtls, wc3PagerText, H, wc3HoverCard
     ; only on its own page: it shows its cards, and called from elsewhere (a window that
     ; closed over another page) it drew them over that page
     if currentPage != "wc3"
         return SetTimer(Wc3Tick, 0)
     Freeze()
-    for ver, b in wc3VerBtns
-        Wc3SetSelected(b, ver = wc3Ver)
-    SetIf(wc3VerText, Wc3VerLine())
     for tab, b in wc3TabBtns
         Wc3SetSelected(b, tab = wc3Tab)
     ; the game module row: 1.28f only
@@ -877,16 +844,9 @@ RefreshWc3() {
     for c in wc3ModuleRow
         SetShown(c, withModule)
     Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
-    SetIf(wc3ModuleText, gameModule.statusText())
-    ; the tabs (and the pager on their row) under the module row, or in its place on Reforged
-    wc3ModuleRow[1].GetPos(, &my)
-    rowY := my - 2 + (withModule ? 40 : 0)
-    for , b in wc3TabBtns
-        Wc3PlaceAt(b, rowY)
-    for c in wc3PagerCtls
-        Wc3PlaceAt(c, rowY + 2)
+    SetIf(wc3ModuleText, "Game module: " gameModule.statusText())
     wc3TabBtns[Wc3Tabs()[1][1]].GetPos(&tx, &ty, , &th)
-    topY := rowY + 28 + 12                          ; right under the tabs
+    topY := ty + th + 12                            ; right under the tabs
     hintY := H - 40                                 ; the bottom line
     ; the tab's cards on this version, two a row, in pages of as many rows as fit
     inTab := 0
@@ -933,11 +893,10 @@ RefreshWc3() {
 }
 ; once a second: just the status lines and switches (no repaint of the rest)
 Wc3Tick() {
-    global currentPage, mainGui, wc3Tab, wc3Cards, wc3ModuleBtn, wc3ModuleText, gameModule, wc3Ver, wc3VerText, wc3HoverCard
+    global currentPage, mainGui, wc3Tab, wc3Cards, wc3ModuleBtn, wc3ModuleText, gameModule, wc3Ver, wc3HoverCard
     if currentPage != "wc3" || !DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
         return SetTimer(Wc3Tick, 0)
-    SetIf(wc3VerText, Wc3VerLine())
-    SetIf(wc3ModuleText, gameModule.statusText())
+    SetIf(wc3ModuleText, "Game module: " gameModule.statusText())
     if (wc3ModuleBtn.Text = "On") != !!gameModule.enabled
         Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     for card in wc3Cards
