@@ -250,26 +250,28 @@ BuildWc3Page() {
     wc3VerText := mainGui.AddText("x" (vx - 8 - 270) " y" (TB_Y + 5 - CY + 160) " w270 h18 Right 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3VerText, "s8")
     AddToPage("wc3", wc3VerText)
-    ; tabs, like the Overlay page's dock switch
+    ; top to bottom (the user's pick, 2026-11-01): which game (the title row), the game module, then the tabs
+    ; right above the cards they switch. The game module (1.28f side only): its status, Log, Check, and its
+    ; On switch at the row's right end as every card's
+    local gl := mainGui.AddText("x" x " y" (y + 2) " w120 h22 0x200 +Background" C.panel " c" C.text, "Game Module")
+    UISetFont(gl, "s10 w600")
+    wc3ModuleText := mainGui.AddText("x" (x + 126) " y" (y + 2) " w" (cw - 126 - 246) " h22 0x200 +Background" C.panel " c" C.dim, "")
+    UISetFont(wc3ModuleText, "s8")
+    local logBtn := MkButton("Log", x + cw - 236, y, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
+    local chkBtn := MkButton("Check", x + cw - 160, y, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
+    wc3ModuleBtn := MkButton("Off", x + cw - 84, y, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
+    AddToPage("wc3", gl, wc3ModuleText, logBtn, chkBtn, wc3ModuleBtn)
+    wc3ModuleRow := [gl, wc3ModuleText, logBtn, chkBtn, wc3ModuleBtn]
+    ; the tabs, like the Overlay page's dock switch (on Reforged, with no module row, they move up: RefreshWc3)
     for i, t in Wc3Tabs() {
-        local b := MkButton(t[2], x + (i - 1) * 96, y, 90, 28, C.chip, C.muted, Wc3ShowTab.Bind(t[1]))
+        local b := MkButton(t[2], x + (i - 1) * 96, y + 40, 90, 28, C.chip, C.muted, Wc3ShowTab.Bind(t[1]))
         wc3TabBtns[t[1]] := b
         AddToPage("wc3", b)
     }
-    ; the game module (1.28f side only): its master switch and log
-    local gl := mainGui.AddText("x" x " y" (y + 40) " w170 h22 0x200 +Background" C.panel " c" C.text, "Game module (1.28f)")
-    UISetFont(gl, "s10 w600")
-    wc3ModuleText := mainGui.AddText("x" (x + 176) " y" (y + 40) " w" (cw - 176 - 246) " h22 0x200 +Background" C.panel " c" C.dim, "")
-    UISetFont(wc3ModuleText, "s8")
-    local chkBtn := MkButton("Check", x + cw - 236, y + 38, 70, 26, C.chip, C.text, (*) => ModuleCheckDialog())
-    wc3ModuleBtn := MkButton("Off", x + cw - 160, y + 38, 70, 26, C.chip, C.muted, (*) => (gameModule.setEnabled(!gameModule.enabled), RefreshWc3()))
-    local logBtn := MkButton("Log", x + cw - 84, y + 38, 70, 26, C.chip, C.text, (*) => Wc3OpenLog())
-    AddToPage("wc3", gl, wc3ModuleText, chkBtn, wc3ModuleBtn, logBtn)
-    wc3ModuleRow := [gl, wc3ModuleText, chkBtn, wc3ModuleBtn, logBtn]
     ; feature cards, all built at one spot: RefreshWc3 shows the tab's and
     ; version's own and lays them out in two columns
     for f in Wc3Features() {
-        local top := y + 82, cwd := WC3_COL_W, right := x + cwd - 12 - 64
+        local top := y + 82 + 40, cwd := WC3_COL_W, right := x + cwd - 12 - 64
         local card := Box("wc3", x, top, cwd, WC3_CARD_H, C.card, C.border, 6)
         local tt := mainGui.AddText("x" (x + 12) " y" (top + 6) " w200 h20 0x200 +Background" C.card " c" C.text, f.title)
         UISetFont(tt, "s10 w600")
@@ -294,10 +296,10 @@ BuildWc3Page() {
         wc3Cards.Push({ f: f, box: card, ctrls: [tt, bd, st], sw: sw, ob: ob, x: 0, y: 0, shown: false })
     }
     ; the pager, at the right end of the tab row (shown only when a tab has pages)
-    local pr := MkButton("‹", x + cw - 108, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(-1))
-    wc3PagerText := mainGui.AddText("x" (x + cw - 76) " y" (y + 2) " w44 h24 Center 0x200 +Background" C.panel " c" C.dim, "")
+    local pr := MkButton("‹", x + cw - 108, y + 42, 28, 24, C.chip, C.text, Wc3Turn.Bind(-1))
+    wc3PagerText := mainGui.AddText("x" (x + cw - 76) " y" (y + 42) " w44 h24 Center 0x200 +Background" C.panel " c" C.dim, "")
     UISetFont(wc3PagerText, "s8")
-    local nx := MkButton("›", x + cw - 28, y + 2, 28, 24, C.chip, C.text, Wc3Turn.Bind(1))
+    local nx := MkButton("›", x + cw - 28, y + 42, 28, 24, C.chip, C.text, Wc3Turn.Bind(1))
     AddToPage("wc3", pr, wc3PagerText, nx)
     wc3PagerCtls := [pr, wc3PagerText, nx]
     ; the line at the bottom: the hovered card's description and status, else what's planned
@@ -820,6 +822,19 @@ Wc3VerLine() {
 }
 
 ; move a card (its box, texts, switch, Options and their boxes) to x, y (window units)
+; a page control (and the box drawn behind a button) moved to y, its x kept
+Wc3PlaceAt(ctl, y) {
+    global boxes
+    if boxes.Has(ctl.Hwnd) {
+        bx := boxes[ctl.Hwnd]
+        if bx.y != y
+            bx.Move(bx.x, y, bx.w, bx.h), ctl.Move(, y + 1)
+        return
+    }
+    ctl.GetPos(, &cy0)
+    if cy0 != y
+        ctl.Move(, y)
+}
 Wc3MoveCard(card, x, y) {
     global boxes
     if !card.x
@@ -863,8 +878,15 @@ RefreshWc3() {
         SetShown(c, withModule)
     Wc3SetSwitch(wc3ModuleBtn, gameModule.enabled)
     SetIf(wc3ModuleText, gameModule.statusText())
+    ; the tabs (and the pager on their row) under the module row, or in its place on Reforged
+    wc3ModuleRow[1].GetPos(, &my)
+    rowY := my - 2 + (withModule ? 40 : 0)
+    for , b in wc3TabBtns
+        Wc3PlaceAt(b, rowY)
+    for c in wc3PagerCtls
+        Wc3PlaceAt(c, rowY + 2)
     wc3TabBtns[Wc3Tabs()[1][1]].GetPos(&tx, &ty, , &th)
-    topY := ty + th + (withModule ? 44 : 12)        ; under the module row, or right under the tabs
+    topY := rowY + 28 + 12                          ; right under the tabs
     hintY := H - 40                                 ; the bottom line
     ; the tab's cards on this version, two a row, in pages of as many rows as fit
     inTab := 0
