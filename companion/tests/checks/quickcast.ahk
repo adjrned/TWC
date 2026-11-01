@@ -46,9 +46,18 @@ TwcQuickcastRun() {
     ; the key's own repeat stopping ends a repeat whose key-up went missing (the user's report, 2026-11-01)
     now := A_TickCount, g := []
     for t in [[0, 0], [2000, 2000], [3000, 100], [3000, 1500]]
-        remap.pressAt["f24"] := now - t[1], remap.downAt["f24"] := now - t[2], g.Push(remap.repeatGone("f24"))
-    remap.pressAt.Delete("f24"), remap.downAt.Delete("f24")
+        remap.pressAt["f24"] := now - t[1], remap.downAt["f24"] := now - t[2], g.Push(remap.repeatGone("f24", t[2] + 5))
     TwcCheck(!g[1] && g[2] && !g[3] && g[4], "repeatGone: just pressed / no repeat 2 s after the press / repeating / repeats stopped 1.5 s ago (" g[1] g[2] g[3] g[4] ")")
+    ; not when it can't tell: another key after its last repeat (Windows repeats the last key only), a mouse button
+    other := remap.repeatGone("f24", 200)
+    remap.pressAt["xbutton1"] := now - 3000, remap.downAt["xbutton1"] := now - 3000
+    mouse := remap.repeatGone("xbutton1", 3005)
+    for k in ["f24", "xbutton1"]
+        remap.pressAt.Delete(k), remap.downAt.Delete(k)
+    TwcCheck(!other && !mouse, "repeatGone: not after another key (Shift, a second key) / never for a mouse button")
+    ; a hold ended with the key up (a tap let go before its press was done): not spent, the next tap is a press
+    remap.spend("f24", "repeat while held is off")
+    TwcCheck(!remap.spent.Get("f24", false), "spend: a key that's up isn't marked")
     ; a repeat that throws still lets go of the key (left 'held', it never quickcast again)
     sendWas := remap.sendFn, remap.sendFn := (*) => 0
     try remap.keyCastHeld("Q", "$f24", "f24", {}, QpcMs())   ; no .repeat: throws in the repeat

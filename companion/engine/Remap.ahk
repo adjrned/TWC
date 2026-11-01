@@ -20,6 +20,7 @@ class RemapEngine {
     static NO_QC := Map(2, 1, 3, 1)        ; Stop and Hold never take a target
     registered := []
     holding := Map()            ; quickcast key -> held (cleared by its key-up hotkey)
+    spent := Map()              ; quickcast key -> its hold ended with it still down (cleared by its key-up hotkey)
     pressAt := Map(), downAt := Map()   ; quickcast key -> when it was pressed, when it last came (its own repeat)
     sendFn := SendInput         ; how keyCastHeld sends (a check swaps it: never real keys)
     qcRecent := [], qcMissRun := 0      ; the last 10 quickcast hit delays (ms); misses in a row
@@ -415,10 +416,10 @@ class RemapEngine {
     ; Paced here, not by the key's own repeat: Windows waits its repeat delay (a quarter to half a second)
     ; before the first one, the pause after the first press a user felt on an item key (2026-10-29).
     ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left it
-    ; "down" and the loop pressed on by itself (a user's report, 2026-10-29). A key that isn't the one sent
-    ; (F1 -> an item slot) is asked of Windows too (GetAsyncKeyState can't miss a key-up), and goes until
-    ; let go as WFE's; one sent as itself (its own key quickcasts) can't be told apart from what's sent, so
-    ; it keeps the 20 s most a repeat lasts. t0: when the hotkey's thread started (QpcMs), for the timing line.
+    ; "down" and the loop pressed on by itself (a user's report, 2026-10-29): the key's own repeat stopping
+    ; ends it (repeatGone). Not GetAsyncKeyState: the hotkey keeps the key from Windows, so it reads up
+    ; while held. A key that isn't the one sent (F1 -> an item slot) goes until let go as WFE's; one sent
+    ; as itself keeps the 20 s most a repeat lasts. t0: when the hotkey's thread started (QpcMs), for the timing line.
     gm() {
         global gameModule
         return gameModule
@@ -428,9 +429,11 @@ class RemapEngine {
         (this.sendFn)(q this.keyText(game))
         this.keyTiming(QpcMs() - t0)
         this.holding[base] := true, start := A_TickCount, presses := 1
+        why := ""
         try this.keyCastRepeat(game, base, q, kc, start, &presses, &why)
         finally
             this.holding[base] := false
+        this.spend(base, why)
         if presses > 1
             DebugLog("quickcast " game ": held, pressed " presses " times in " Round((A_TickCount - start) / 1000, 1) " s (every " kc.interval " ms): " why)
     }
@@ -440,7 +443,6 @@ class RemapEngine {
         if told++ < 3
             DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
         same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
-        vk := GetKeyVK(base)
         clicks := this.gm().keyClicks()
         while kc.repeat && !IsWheel(base) {
             if (why := this.waitHeld(base, same ? start : A_TickCount, kc.interval)) != ""
@@ -451,10 +453,6 @@ class RemapEngine {
                 clicks := now
                 if kc.HasProp("castGap") && kc.castGap > kc.interval && (why := this.waitHeld(base, same ? start : A_TickCount, kc.castGap - kc.interval)) != ""
                     break
-            }
-            if !same && vk && !(DllCall("GetAsyncKeyState", "int", vk, "short") & 0x8000) {
-                why := "the key isn't down (Windows says; its key-up never came)"
-                break
             }
             (this.sendFn)(q this.keyText(game)), presses++
         }
@@ -501,12 +499,17 @@ class RemapEngine {
         t0 := QpcMs()
         ; the key's own repeat (T2: it comes while the press's thread runs): only noted, the press's
         ; thread presses again itself, and ends the repeat once these stop (repeatGone)
+        ; A hold that already ended with the key still down (repeat off, 20 s, ...) takes no more: its
+        ; repeats came here as new presses, ~30 a second
         base := HotkeyBase(yourKey)
         if !IsWheel(base) {
-            this.downAt[base] := A_TickCount
+            last := this.downAt.Get(base, 0), this.downAt[base] := A_TickCount
             if this.holding.Get(base, false)
                 return
-            this.pressAt[base] := A_TickCount
+            r := RemapEngine.keyRepeat()
+            if this.spent.Get(base, false) && A_TickCount - last <= (last = this.pressAt.Get(base, 0) ? r.first : r.gap)
+                return
+            this.spent[base] := false, this.pressAt[base] := A_TickCount
         }
         ; the module's keys (as WFE), decided at most every 250 ms: the key goes out first, before anything is
         ; read (each press read ~10 ini settings and the game's state first: a delay a user felt, 2026-10-29)
@@ -543,7 +546,7 @@ class RemapEngine {
         }
         this.holding[base] := true, start := A_TickCount
         this.qcStart := start, this.qcBase := base
-        hits := 0
+        hits := 0, why := ""
         try loop {
             this.qcTry := A_Index, hit := false
             if inGameQc
@@ -561,6 +564,7 @@ class RemapEngine {
                 break
         } finally
             this.holding[base] := false
+        this.spend(base, why)
         ; how the press ended; a repeat logs it always, a single press only when not let go as usual
         tries := this.qcTry
         if tries > 1 || why != "the key was let go"
@@ -581,7 +585,16 @@ class RemapEngine {
         }
     }
     released(base) {
-        this.holding[base] := false
+        this.holding[base] := false, this.spent[base] := false
+    }
+    ; a hold ended with the key still down (not let go): its repeats aren't new presses (castQuick);
+    ; a tap let go before its press was done isn't (the next tap of a spam would be dropped)
+    spend(base, why) {
+        try down := !IsWheel(base) && GetKeyState(base, "P")
+        catch
+            down := false
+        if down && why != "the key was let go"
+            this.spent[base] := true
     }
     ; "" while the key is held and the repeat may go on, else why not
     heldWhy(base, start) {
@@ -604,20 +617,31 @@ class RemapEngine {
     ; events while the script is busy), and then the hook still says "down": a key that quickcasts as
     ; itself pressed on by itself for 20 s (~250 presses), and wasn't a quickcast again till then (a
     ; user's report, 2026-11-01). Generous margins: a busy script handles a repeat late, and ending
-    ; early only means pressing again. Holding a second key stops the first one's repeat (Windows
-    ; repeats the last key), so the first stops too.
-    repeatGone(base) {
-        static delay := 0, period := 0
-        if !delay {
-            d := 1, sp := 31
-            DllCall("SystemParametersInfo", "uint", 0x16, "uint", 0, "uint*", &d, "uint", 0)     ; SPI_GETKEYBOARDDELAY: 0-3
-            DllCall("SystemParametersInfo", "uint", 0x0A, "uint", 0, "uint*", &sp, "uint", 0)    ; SPI_GETKEYBOARDSPEED: 0-31
-            delay := (Min(d, 3) + 1) * 250, period := Round(1000 / (2.5 + Min(sp, 31) * 27.5 / 31))
-        }
-        if !this.pressAt.Has(base)
+    ; early only means pressing again. Only said when sure: Windows repeats only the last key pressed,
+    ; so any key after this one's last repeat (Shift for a queue, a second key held, any other key)
+    ; leaves it to the key-up (A_TimeIdleKeyboard: the hook's last physical key, ups and repeats too);
+    ; mouse buttons never repeat, and Filter Keys has repeat times of its own (or none).
+    repeatGone(base, idle := A_TimeIdleKeyboard) {
+        if !this.pressAt.Has(base) || RegExMatch(base, "i)^([LRM]Button|XButton[12])$") || !(r := RemapEngine.keyRepeat()).on
             return false
         last := this.downAt.Get(base, 0)
-        return A_TickCount - last > (last = this.pressAt[base] ? delay + 400 : 2 * period + 400)
+        if A_TickCount - idle > last + 5
+            return false
+        return A_TickCount - last > (last = this.pressAt[base] ? r.first : r.gap)
+    }
+    ; the keyboard's repeat (read once): first, the most a held key waits for its first repeat (the
+    ; repeat delay, 250-1000 ms, + 400); gap, between repeats (2x the rate's period + 400); on: 0 while
+    ; Filter Keys is on
+    static keyRepeat() {
+        static r := 0
+        if r
+            return r
+        d := 1, sp := 31, fk := Buffer(24, 0), NumPut("uint", 24, fk)
+        DllCall("SystemParametersInfo", "uint", 0x16, "uint", 0, "uint*", &d, "uint", 0)     ; SPI_GETKEYBOARDDELAY: 0-3
+        DllCall("SystemParametersInfo", "uint", 0x0A, "uint", 0, "uint*", &sp, "uint", 0)    ; SPI_GETKEYBOARDSPEED: 0-31
+        DllCall("SystemParametersInfo", "uint", 0x32, "uint", 24, "ptr", fk, "uint", 0)      ; SPI_GETFILTERKEYS
+        return r := { first: (Min(d, 3) + 1) * 250 + 400, gap: 2 * Round(1000 / (2.5 + Min(sp, 31) * 27.5 / 31)) + 400,
+            on: !(NumGet(fk, 4, "uint") & 1) }                                              ; FKF_FILTERKEYSON
     }
     ; for the log: which try of a held key this is (the press itself: nothing),
     ; and whether the key was still down then, to tell a repeat from a lone press
