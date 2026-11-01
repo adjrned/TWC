@@ -11,23 +11,32 @@
 ;  optionally desktop) shortcut, an Apps & features entry. Installing over an
 ;  older version keeps tw-companion.ini and HiddenFiles.txt.
 ;    Setup.exe              install (window)
-;    Setup.exe /S           install silently (for updates), then start it
-;    Uninstall.exe /uninstall
+;    Setup.exe /S           install silently (for updates), then start it (/nostart: not)
+;    Uninstall.exe /uninstall       (/S: no questions)
+;  The uninstaller can't delete the folder it runs from (the user, 2026-10-31: "the uninstaller didn't work":
+;  it ran rmdir 2 s later from Uninstall.exe inside the folder, which its own "was removed" box kept open),
+;  so it runs a copy of itself from %TEMP% (/uninstall-temp), which removes the folder and then itself.
 ; ============================================================================
 global VERSION := "{VERSION}"
 global APP := "TW Companion"
 global DIR := EnvGet("LOCALAPPDATA") "\Programs\" APP
 global UNINST_KEY := "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\TWCompanion"
-global silent := false
+global silent := false, noStart := false, uninstallArg := ""
 
 for a in A_Args {
-    if a = "/uninstall"
-        Uninstall(), ExitApp()
+    if a = "/uninstall" || a = "/uninstall-temp"
+        uninstallArg := a
     if a = "/S"
         silent := true
+    if a = "/nostart"
+        noStart := true
+}
+if uninstallArg != "" {
+    Uninstall(uninstallArg = "/uninstall-temp")
+    ExitApp
 }
 if silent {
-    Install(Ini("desktop", 0), true)
+    Install(Ini("desktop", 0), !noStart)
     ExitApp
 }
 ShowWindow()
@@ -68,6 +77,7 @@ ShowWindow() {
 Install(desktop, start) {
     if !CloseCompanion()
         return
+    try FileDelete(A_Temp "\TWC-Uninstall.exe")          ; (an uninstaller's copy that couldn't delete itself)
     try {
         DirCreate(DIR "\assets")
         DirCreate(DIR "\lib\WebView2\64bit")
@@ -118,19 +128,74 @@ Install(desktop, start) {
 }
 
 ; ---- uninstall -------------------------------------------------------------------
-Uninstall() {
-    if MsgBox("Remove " APP " from this computer?`n`nYour settings and saves list in " DIR " go too. "
+; fromTemp: this is the copy in %TEMP% (the one in DIR handed over to it); it removes everything, then itself
+Uninstall(fromTemp := false) {
+    if !fromTemp && A_IsCompiled && InStr(A_ScriptFullPath, DIR "\") = 1 {
+        tmp := A_Temp "\TWC-Uninstall.exe"
+        try {
+            FileCopy(A_ScriptFullPath, tmp, 1)
+            Run('"' tmp '" /uninstall-temp' (silent ? " /S" : ""), A_Temp)
+            return
+        }
+        ; (no copy: carry on from here; the folder goes after this exits)
+    }
+    if !silent && MsgBox("Remove " APP " from this computer?`n`nYour settings and saves list in " DIR " go too. "
             . "Your Warcraft III save files are not touched.", APP, "YesNo Icon?") != "Yes"
         return
-    if !CloseCompanion()
+    if !CloseCompanion() || !CloseGame()
         return
     for lnk in [A_Programs "\" APP ".lnk", A_Desktop "\" APP ".lnk"]
         try FileDelete(lnk)
     try RegDeleteKey(UNINST_KEY)
-    try DirDelete(EnvGet("APPDATA") "\tw-companion", true)       ; the overlay's browser cache
-    ; this exe is in DIR: delete the folder once it has exited
-    Run(A_ComSpec ' /c ping 127.0.0.1 -n 3 >nul & rmdir /s /q "' DIR '"', A_Temp, "Hide")   ; not from inside DIR
-    MsgBox(APP " was removed.", APP)
+    ; the folder (and the overlay's browser cache): a few tries, the overlay's browser processes let go of their
+    ; files a moment after the companion's gone
+    left := []
+    for d in [DIR, EnvGet("APPDATA") "\tw-companion"] {
+        if InStr(A_ScriptFullPath, d "\") = 1          ; (no copy in %TEMP%: this exe is still in it)
+            continue
+        loop 10 {
+            try DirDelete(d, true)
+            if !DirExist(d)
+                break
+            Sleep(500)
+        }
+        if DirExist(d)
+            left.Push(d)
+    }
+    ; what's left of this exe once it has exited: through cmd, which may not be allowed to start (an antivirus or
+    ; app control: "Access is denied", the old uninstaller's whole removal hung on it); a copy left in %TEMP% is
+    ; harmless, and the next Setup deletes it
+    if InStr(A_ScriptFullPath, DIR "\") = 1 {          ; not from %TEMP%: the folder too
+        try Run(A_ComSpec ' /c ping 127.0.0.1 -n 3 >nul & rmdir /s /q "' DIR '"', A_Temp, "Hide")
+        catch
+            left.Push(DIR)
+    } else if fromTemp
+        try Run(A_ComSpec ' /c ping 127.0.0.1 -n 3 >nul & del /f /q "' A_ScriptFullPath '"', A_Temp, "Hide")
+    if !silent
+        MsgBox(left.Length ? APP " was removed, but some files are still in use and stayed:`n`n" Join(left, "`n")
+            . "`n`nDelete them by hand after restarting Windows." : APP " was removed.", APP, left.Length ? "Icon!" : "")
+}
+Join(list, sep) {
+    t := ""
+    for v in list
+        t .= (A_Index > 1 ? sep : "") v
+    return t
+}
+; Warcraft III with the game module loaded keeps its copy (native\twc-game.*.dll) open: then ask to quit it
+CloseGame() {
+    loop {
+        running := false
+        for exe in ["Warcraft III.exe", "war3.exe"]
+            running := running || ProcessExist(exe)
+        if !running || silent
+            return true
+        r := MsgBox("Warcraft III is running and may keep a file of " APP " open (its game module). Quit Warcraft III, then press Retry.`n`n"
+            . "Or press Ignore to remove the rest now.", APP, "AbortRetryIgnore Icon!")
+        if r = "Abort"
+            return false
+        if r = "Ignore"
+            return true
+    }
 }
 
 ; A running companion keeps its exe locked. It runs as admin, so this (normal
