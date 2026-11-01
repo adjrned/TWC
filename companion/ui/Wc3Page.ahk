@@ -104,6 +104,10 @@ Wc3Features() {
                 OptDivider(d),
                 OptCheck(d, "A number over every health bar", healthBars.numbers, (v) => healthBars.setNumbers(v)),
                 OptChoice(d, "Show", [[1, "Current"], [2, "Current / max"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),
+                OptChoice(d, "Colour", HealthBarsEngine.NUMBER_COLOURS, (*) => healthBars.numberColour, (v) => healthBars.setNumberColour(v)),
+                OptSwatch(d, "Custom colour", (*) => healthBars.numberCustom, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.numberCustom)) != "" ? (healthBars.setNumberCustom(rgb), rgb) : ""),
+                OptNote(d, "Health: green, to yellow at half, to red. Its bar: the bar's own colour (Colours… above). Custom: the swatch's, once Custom is picked."),
+                OptChecks(d, "Over", HealthBarsEngine.NUMBER_WHO, (key) => healthBars.numberShows(key), (key, on) => healthBars.setNumberShows(key, on)),
                 OptCheck(d, "Mana bars under the health bars", healthBars.mana, (v) => healthBars.setMana(v)),
                 OptNote(d, "Mana bars' size: under Size… (numbers and mana bars use the game's Storm.dll)."),
                 OptDivider(d),
@@ -584,6 +588,28 @@ OptColour(d, label, get, pick, boxText, check) {
     paint() => (cur := get(), sw.Opt("+Background" (cur = "player" ? C.card : cur)), sw.Redraw(), cb.Value := cur = "player")
     sw.OnEvent("Click", (*) => (pick() != "" && paint()))
     cb.OnEvent("Click", (src, *) => (check(src.Value), paint()))
+    d.y += 34
+}
+; a colour swatch to click (Windows' colour dialog): get() -> RRGGBB; pick(g) -> the new RRGGBB or ""
+OptSwatch(d, label, get, pick) {
+    global C
+    g := d.g
+    lb := g.AddText("x" d.x " y" (d.y + 3) " w140 h22 0x200 +Background" C.card " c" C.text, label)
+    sw := g.AddText("x" (d.x + 146) " y" (d.y + 3) " w60 h22 +Border +Background" get(), "")
+    sw.OnEvent("Click", (*) => ((rgb := pick(g)) != "" && (sw.Opt("+Background" rgb), sw.Redraw())))
+    d.y += 34
+}
+; check boxes in a row after a label: items [[key, text], ...]; on(key) -> 0/1, set(key, on)
+OptChecks(d, label, items, on, set) {
+    global C
+    g := d.g, bx := d.x + 80
+    g.AddText("x" d.x " y" (d.y + 3) " w76 h22 0x200 +Background" C.card " c" C.text, label)
+    for it in items {
+        cb := g.AddCheckbox("x" bx " y" (d.y + 1) " h26 +Background" C.card " c" C.text (on(it[1]) ? " Checked" : ""), " " it[2])
+        cb.GetPos(, , &cw)
+        cb.OnEvent("Click", ((key, src, *) => set(key, src.Value)).Bind(it[1]))
+        bx += Max(72, cw + 8)
+    }
     d.y += 34
 }
 OptNote(d, text) {

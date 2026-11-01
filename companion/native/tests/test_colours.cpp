@@ -51,6 +51,22 @@ int main() {
     CHECK(argb(1) == 0xFF20C000 && argb(2) == 0xFF0042FF && argb(0) == NO_PLAYER_COLOUR, "player colours: ally green %08lX, enemy blue %08lX, a bad index grey %08lX", argb(1), argb(2), argb(0));
     g_shared->hcColours[0] = 0xFFFFFFFF; update(0);
     CHECK(argb(0) == 0xFFFFFFFF, "your own colour with the others by player: %08lX", argb(0));
+    // the health numbers (layout 43): whose (all by default; allies only; enemies only), their colour
+    bool all = true;
+    for (int i = 0; i < 5; i++)
+        all = all && NumberWanted(units[i]);
+    sh.hnWho = 2;
+    bool allies = !NumberWanted(units[0]) && NumberWanted(units[1]) && !NumberWanted(units[2]) && !NumberWanted(units[3]) && !NumberWanted(units[4]);
+    sh.hnWho = 4 | 8;
+    bool enemies = !NumberWanted(units[0]) && !NumberWanted(units[1]) && NumberWanted(units[2]) && NumberWanted(units[3]) && NumberWanted(units[4]);
+    sh.hnWho = 0;
+    DWORD white = NumberColour(units[2], 25, 100);
+    sh.hnColour = 1; DWORD byHp = NumberColour(units[2], 25, 100);
+    sh.hnColour = 2; DWORD asBar = NumberColour(units[1], 25, 100);
+    sh.hnColour = 3, sh.hnCustom = 0xFFD700; DWORD own = NumberColour(units[1], 25, 100);
+    sh.hnColour = 0;
+    CHECK(all && allies && enemies && white == 0xFFFFFFFF && byHp == 0xFFFF7F00 && asBar == 0xFF20C000 && own == 0xFFFFD700,
+          "health numbers: all by default, allies only, enemies and creeps only; white, by health %08lX, as the bar %08lX, its own %08lX", byHp, asBar, own);
     fills[0][0x68] = 0x11; ((BarUpdateFn)vt[STATBAR_SET_UNIT / 4])(bars[0], 0, units[0]);
     CHECK(vt[STATBAR_SET_UNIT / 4] == (DWORD)BarSetUnitHook && argb(0) == 0xFFFFFFFF, "the set-unit entry +0x78 (repaints without the update) is wrapped too: colour after it %08lX", argb(0));
     *(float *)(bars[0] + BAR_HEIGHT) = 0.004f, *(float *)(bars[0] + BAR_WIDTH) = 0.03f;

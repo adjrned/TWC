@@ -179,5 +179,8 @@ class Shm {
     static bcWatchMax := 75464
     static bcWatchAlive := 75468
     static pvData := 75472
-    static size := 75532
+    static hnWho := 75532
+    static hnColour := 75536
+    static hnCustom := 75540
+    static size := 75544
 }

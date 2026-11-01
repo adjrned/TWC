@@ -296,6 +296,10 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD bcWatchAlive;     // module: 1 alive, 0 dead, gone or none
     // layouts 37-42: reserved for a local part (not in git; see the end of this file): 15 words, its own
     DWORD pvData[15];
+    // layout 43: the health numbers' look (the user, 2026-10-31: colours, allies' / enemies' only)
+    DWORD hnWho;            // companion: whose bars get a number, bits: 1 yours, 2 allies, 4 enemies, 8 neutral (creeps); 0 = all
+    DWORD hnColour;         // companion: 0 white, 1 by health (green, yellow, red), 2 its bar's colour, 3 hnCustom
+    DWORD hnCustom;         // companion: the colour of its own, 0xAARRGGBB
 };
 #pragma pack(pop)
 
@@ -2116,6 +2120,18 @@ static DWORD HealthColour(float r) {
     return 0xFF000000 | ((DWORD)(rd * 255) << 16) | ((DWORD)(g * 255) << 8);
 }
 
+// whose a unit is: 0 yours, 1 an ally's, 2 an enemy's, 3 neutral hostile (player 13, the creeps), 4 neutral passive
+// (player 16); -1 not known (no game state)
+static int OwnerClass(BYTE *unit, BYTE **stateOut = nullptr) {
+    int owner = *(int *)(unit + UNIT_OWNER);
+    BYTE *state = *(BYTE **)(g_base + RVA_PLAYERS);
+    int local = state ? *(short *)(state + 0x28) : -1;
+    if (stateOut)
+        *stateOut = state;
+    if (!state || owner < 0 || owner > 15 || local < 0 || local > 15)
+        return -1;
+    return owner == local ? 0 : owner == 12 ? 3 : owner == 15 ? 4 : Allied(state, local, owner) ? 1 : 2;
+}
 static DWORD BarColour(BYTE *unit) {
     if (g_shared->hcMode == 1) {
         float hp = 0;
@@ -2133,10 +2149,10 @@ static DWORD BarColour(BYTE *unit) {
         logged = true;
         Log("health bar colours: game state %p, local player %d, %d players; the first bar's owner %d", state, local, players, owner);
     }
-    if (!state || owner < 0 || owner > 15 || local < 0 || local > 15)
+    int k = OwnerClass(unit);
+    if (k < 0)
         return 0;
-    const DWORD *c = g_shared->hcColours;
-    DWORD r = owner == local ? c[0] : owner == 12 ? c[3] : owner == 15 ? c[4] : Allied(state, local, owner) ? c[1] : c[2];
+    DWORD r = g_shared->hcColours[k];
     return r >> 24 ? r : PlayerColour(state, owner);
 }
 
@@ -3048,7 +3064,7 @@ static void QueueSweeps() {
 // it (WFE's 0.002 gap), filled and coloured like WFE's.
 // shown: the health bar's own visibility, from [+0x94] when the entry is made (WFE's
 // test), then from the game's hide / show calls only
-struct BarExtra { BYTE *bar, *mana, *text; char last[32]; bool shown, manaShown, textShown; };   // last: the number shown
+struct BarExtra { BYTE *bar, *mana, *text; char last[32]; bool shown, manaShown, textShown; DWORD colour; };   // last: the number shown; colour: its (0 not known)
 static const int BX_N = 2048;
 static BarExtra g_bx[BX_N];         // open addressing on the bar's address
 static int g_bxCount;
@@ -3194,12 +3210,30 @@ static void NumberText(int mode, float cur, float max, char *b, size_t n) {
         sprintf_s(b, n, "%d", c);
 }
 
-static void NumberUpdate(BarExtra *e, BYTE *ui, float cur, float max, bool shown) {
+// whose bars get a number (hnWho: 1 yours, 2 allies, 4 enemies, 8 neutral; 0 or not known: all)
+static bool NumberWanted(BYTE *unit) {
+    DWORD who = g_shared->hnWho;
+    int k = who ? OwnerClass(unit) : -1;
+    static const DWORD BIT[5] = { 1, 2, 4, 8, 8 };
+    return k < 0 || (who & BIT[k]) != 0;
+}
+// a number's colour: white, by health, its bar's (the bar colours' own, or the owner's player colour), or one of its own
+static DWORD NumberColour(BYTE *unit, float cur, float max) {
+    DWORD c = 0;
+    switch (g_shared->hnColour) {
+    case 1: c = max > 0 ? HealthColour(cur / max) : 0; break;
+    case 2: c = BarColour(unit); break;
+    case 3: c = g_shared->hnCustom ? 0xFF000000 | g_shared->hnCustom : 0; break;
+    }
+    return c ? c : 0xFFFFFFFF;
+}
+static void NumberUpdate(BarExtra *e, BYTE *ui, BYTE *unit, float cur, float max, bool shown) {
     if (!e->text) {
+        bool fresh = !g_textPoolN;
         e->text = g_textPoolN ? g_textPool[--g_textPoolN] : NewText(ui, 0, NUM_TEXT, 0xFFFFFFFF);
         if (!e->text)
             return;
-        e->last[0] = 0, e->textShown = false;
+        e->last[0] = 0, e->textShown = false, e->colour = fresh ? 0xFFFFFFFF : 0;     // (a pooled one: whatever it last had)
         if (!g_shared->hnCount++) {
             static int logs;
             if (logs++ < 3)
@@ -3212,6 +3246,9 @@ static void NumberUpdate(BarExtra *e, BYTE *ui, float cur, float max, bool shown
         TextSet(e->text, t);
         strcpy_s(e->last, t);
     }
+    DWORD c = NumberColour(unit, cur, max);
+    if (c != e->colour)
+        TextColour(e->text, c), e->colour = c;
     BYTE *pos = *(BYTE **)(e->bar + BAR_POS);
     if (pos)
         TextAt(e->text, PT_BOTTOM, *(float *)(pos + 4), *(float *)(pos + 8) + NUM_Y);
@@ -3257,12 +3294,13 @@ static void BarExtras(BYTE *bar, BYTE *unit) {
             e->mana = nullptr;
         }
         BYTE *ui = hn ? (BYTE *)GameUi() : nullptr;
-        if (hn && ui && ui == g_framesUi && unit && UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &cur, &max)) {
-            NumberUpdate(e, ui, cur, max, shown);
+        bool want = hn && unit && NumberWanted(unit);
+        if (want && ui && ui == g_framesUi && UnitStat(unit, UNIT_HP, UNIT_MAXHP_HANDLE, &cur, &max)) {
+            NumberUpdate(e, ui, unit, cur, max, shown);
             if (*(BYTE **)(bar + BAR_TEXT))             // the bar's own text, a dark copy beside ours: hidden as WFE does (0x100796a1)
                 Game(RVA_REGION_HIDE, *(BYTE **)(bar + BAR_TEXT));
         }
-        else if (e->text && (!hn || ui == g_framesUi))
+        else if (e->text && (!want || ui == g_framesUi))
             NumberDrop(e);
         if (!e->mana && !e->text)
             BxRemove(e);
@@ -8213,7 +8251,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 42;
+        g_shared->layout = 43;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);

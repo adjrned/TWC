@@ -287,6 +287,7 @@ TwcModuleRun() {
     gameModule.setEnabled(false), RefreshWc3(), gameModule.setEnabled(true), RefreshWc3()
     TwcCheck(true, "the game module's own switch")
     TwcModuleBuffTimers()
+    TwcModuleNumbers()
     TwcModuleSwap()
     fake.Destroy()
     TwcCheckDone()
@@ -304,6 +305,34 @@ TwcModuleBuffTimers() {
     kept := IniRead(iniFile, "BuffTimers", "B0NW", "")
     TwcCheck(n1 = 1 && id1 = "B04Q" && l1 = 10 && kept = 12 && NumGet(v, Shm.btKnownN, "uint") = 2,
         "buff timers kept: the ini's B04Q 10 s handed to the module; B0NW 12 s it learned, saved and handed back (" n1 " / " kept " / " NumGet(v, Shm.btKnownN, "uint") ")")
+}
+; the health numbers' look (layout 43): whose bars and the colour, through the real HealthBarsEngine.push over a
+; stand-in memory of that layout
+TwcModuleNumbers() {
+    global healthBars
+    mem := Buffer(Shm.size, 0)
+    NumPut("uint", 0x54574331, mem, Shm.magic), NumPut("uint", 43, mem, Shm.layout)
+    fake := { base: GameModuleEngine.Prototype, enabled: 1 }
+    fake.DefineProp("live", { call: (*) => mem.Ptr })
+    keep := healthBars.gm, healthBars.gm := fake
+    err := ""
+    try {
+        for k in ["numYours", "numAllies", "numEnemies", "numNeutral", "numberColour", "numberCustom"]
+            try IniDelete(iniFile, healthBars.section, k)
+        healthBars.push()
+        w0 := NumGet(mem, Shm.hnWho, "uint"), c0 := NumGet(mem, Shm.hnColour, "uint")
+        healthBars.setNumberShows("numYours", false), healthBars.setNumberShows("numAllies", false)
+        healthBars.setNumberColour("custom"), healthBars.setNumberCustom("12AB34")
+        w1 := NumGet(mem, Shm.hnWho, "uint"), c1 := NumGet(mem, Shm.hnColour, "uint"), cu := NumGet(mem, Shm.hnCustom, "uint")
+        healthBars.setNumberShows("numEnemies", false), healthBars.setNumberShows("numNeutral", false)
+        w2 := NumGet(mem, Shm.hnWho, "uint")
+    } catch as e
+        err := e.Message
+    for k in ["numYours", "numAllies", "numEnemies", "numNeutral", "numberColour", "numberCustom"]
+        try IniDelete(iniFile, healthBars.section, k)
+    healthBars.gm := keep
+    TwcCheck(err = "" && w0 = 15 && c0 = 0 && w1 = 12 && c1 = 3 && cu = 0x12AB34 && w2 = 0x80000000,
+        "health numbers to the module: all and white by default; enemies and creeps only, a custom colour 12AB34; none ticked isn't 'all'" (err != "" ? " (error: " err ")" : ""))
 }
 ; swapping the module live: the copy the game loads, and the hand-over (no game, no injector)
 TwcModuleSwap() {

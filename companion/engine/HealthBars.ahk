@@ -28,6 +28,9 @@
 class HealthBarsEngine {
     section := "HealthBars"
     static NUMBER_MODES := [["current", "Current"], ["max", "Current / max"], ["percent", "Percent"]]
+    ; the numbers' colour (layout 43; the user, 2026-10-31), and whose bars get one: [ini key, name, the module's bit]
+    static NUMBER_COLOURS := [["white", "White"], ["health", "Health"], ["bar", "Its bar"], ["custom", "Custom"]]
+    static NUMBER_WHO := [["numYours", "Yours", 1], ["numAllies", "Allies", 2], ["numEnemies", "Enemies", 4], ["numNeutral", "Creeps", 8]]
     ; [ini key, default RRGGBB or "player", name]
     static OWNERS := [["yours", "00FF00", "Yours"], ["allies", "0080FF", "Allies"], ["enemies", "FF0000", "Enemies"],
         ["hostile", "FF8000", "Neutral hostile"], ["passive", "A0A0A0", "Neutral passive"]]
@@ -117,6 +120,20 @@ class HealthBarsEngine {
         this.push()
     }
     numberModeLabel => HealthBarsEngine.NUMBER_MODES[this.numberMode][2]
+    numberShows(key) => Integer(Ini(this.section, key, 1))
+    setNumberShows(key, on) => (SetIni(on ? 1 : 0, this.section, key), this.push())
+    numberWho {
+        get {
+            bits := 0
+            for w in HealthBarsEngine.NUMBER_WHO
+                bits |= this.numberShows(w[1]) ? w[3] : 0
+            return bits
+        }
+    }
+    numberColour => Ini(this.section, "numberColour", "white")
+    setNumberColour(v) => (SetIni(v, this.section, "numberColour"), this.push())
+    numberCustom => Ini(this.section, "numberCustom", "FFD700")
+    setNumberCustom(rgb) => (SetIni(rgb, this.section, "numberCustom"), this.push())
     mana => Integer(Ini(this.section, "mana", 0))
     setMana(on) {
         SetIni(on ? 1 : 0, this.section, "mana")
@@ -158,6 +175,14 @@ class HealthBarsEngine {
         NumPut("uint", this.portrait && this.gm.enabled ? 1 : 0, v, Shm.prOn)     ; on its own since 2026-10-30 (was with Detailed tooltips)
         if NumGet(v, Shm.layout, "uint") >= 12
             NumPut("float", this.size("manaWidth"), v, Shm.mbWidth)
+        if NumGet(v, Shm.layout, "uint") >= 43 {
+            ci := 1
+            for i, c in HealthBarsEngine.NUMBER_COLOURS
+                ci := c[1] = this.numberColour ? i : ci
+            ; (none ticked: still a bit, so it isn't read as the older companion's 0 = all)
+            NumPut("uint", (w := this.numberWho) ? w : 0x80000000, v, Shm.hnWho), NumPut("uint", ci - 1, v, Shm.hnColour)
+            NumPut("uint", Integer("0x" this.numberCustom), v, Shm.hnCustom)
+        }
     }
     ; the status line of a frame feature: its state at stateOff; what(view) says what's on
     frameStatus(on, stateOff, what) {
