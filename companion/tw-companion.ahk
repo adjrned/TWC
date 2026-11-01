@@ -2823,11 +2823,12 @@ AskText(title, text, default := "") {
     }
     g.Show(pos " w" w " h" h)
     ed.Focus()
-    HotIfWinActive("ahk_id " g.Hwnd)
+    win := "ahk_id " g.Hwnd                 ; (kept: once it's closed, g has no window to ask)
+    HotIfWinActive(win)
     Hotkey("Enter", (*) => done(Trim(ed.Value)), "On")
     HotIfWinActive()
-    WinWaitClose("ahk_id " g.Hwnd)
-    HotIfWinActive("ahk_id " g.Hwnd)
+    WinWaitClose(win)
+    HotIfWinActive(win)
     try Hotkey("Enter", "Off")
     HotIfWinActive()
     return res.v

@@ -27,11 +27,24 @@ TwcProfilesRun() {
     d2 := remap.deleteProfile("Default"), d3 := remap.deleteProfile("Mage")
     TwcCheck(r1 = "Paladin" && lk = "Paladin" && d1 && lk2 = "" && now = "Default" && d2 && !d3 && remap.profiles().Length = 1,
         "rename keeps the link (" lk "); delete unlinks and the first other takes over (" now "); the last can't go")
+    ; the name dialog (AskText): OK returns what was typed, and it closes cleanly (it threw after closing: the
+    ; user's report, 2026-11-01); Cancel returns "". Clicked in its own window (no keys sent anywhere)
+    SetTimer(() => AskClick("Rogue", "OK"), -1200), t1 := AskText("Name check", "A name.", "")
+    SetTimer(() => AskClick("x", "Cancel"), -1200), t2 := AskText("Name check", "A name.", "")
+    TwcCheck(t1 = "Rogue" && t2 = "", "the name dialog: OK gives '" t1 "', Cancel gives '" t2 "'")
     for s in ["RemapProfiles", "LoadProfiles", "RemapProfile Default", "RemapProfile Mage", "RemapProfile Paladin"]
         try IniDelete(iniFile, s)
     for k in ["card9", "cardQC9"]
         try IniDelete(iniFile, "Remap", k)
     remap.registerAll()
     TwcCheckDone()
+}
+AskClick(text, button) {
+    for hw in WinGetList("ahk_pid " DllCall("GetCurrentProcessId"))
+        if InStr(WinGetText(hw), "Name check") {
+            ControlSetText(text, "Edit1", hw)
+            try ControlClick(button, hw)            ; (the window closes inside the click)
+            return
+        }
 }
 SetTimer(TwcProfilesRun, -6000)
