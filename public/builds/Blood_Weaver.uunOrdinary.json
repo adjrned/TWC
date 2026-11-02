@@ -1,0 +1,331 @@
+{
+  "class": "Blood Weaver",
+  "createdBy": "uunOrdinary",
+  "publishedAt": "2026-11-02T02:24:24.730Z",
+  "rows": [
+    {
+      "id": 123,
+      "name": "Early",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Deathbringer",
+            "src": "twicons/Deathbringer.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Fervor",
+            "src": "twicons/Crown%20of%20Fervor.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Reactive Armor",
+            "src": "twicons/Reactive%20Armor.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Corrupt Crystal Wings",
+            "src": "twicons/Corrupt%20Crystal%20Wings.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea,%20the%20Ring%20of%20Chaos.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 124,
+      "name": "SD",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Ruinbringer",
+            "src": "twicons/Ruinbringer.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Hellspike Armor",
+            "src": "twicons/Hellspike%20Armor.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Pure Crystal Wings",
+            "src": "twicons/Pure%20Crystal%20Wings.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Latea, the Ring of Chaos",
+            "src": "twicons/Latea,%20the%20Ring%20of%20Chaos.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 125,
+      "name": "Tower",
+      "slots": {
+        "weapon": [
+          {
+            "name": "The Ender",
+            "src": "twicons/The%20Ender.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Composure",
+            "src": "twicons/Crown%20of%20Composure.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 126,
+      "name": "Aga",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Calamity",
+            "src": "twicons/Calamity.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 127,
+      "name": "Duke",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Calamity",
+            "src": "twicons/Calamity.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Absolute Zero",
+            "src": "twicons/Crown%20of%20Absolute%20Zero.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Felspike Armor",
+            "src": "twicons/Felspike%20Armor.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Archangel Wings",
+            "src": "twicons/Archangel%20Wings.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 128,
+      "name": "Gaia",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Calamity",
+            "src": "twicons/Calamity.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 129,
+      "name": "AC",
+      "slots": {
+        "weapon": [
+          {
+            "name": "Calamity",
+            "src": "twicons/Calamity.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of the One",
+            "src": "twicons/Ring%20of%20the%20One.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 130,
+      "name": "Styrix",
+      "slots": {
+        "weapon": [
+          {
+            "name": "World Sunderer",
+            "src": "twicons/World%20Sunderer.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Crown of Transcendance",
+            "src": "twicons/Crown%20of%20Transcendance.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Titan's Plates",
+            "src": "twicons/Titan's%20Plates.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Wings of Cosmos",
+            "src": "twicons/Wings%20of%20Cosmos.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Ring of Genesis",
+            "src": "twicons/Ring%20of%20Genesis.webp"
+          }
+        ]
+      }
+    },
+    {
+      "id": 131,
+      "name": "Kam",
+      "slots": {
+        "weapon": [
+          {
+            "name": "World Sunderer",
+            "src": "twicons/World%20Sunderer.webp"
+          }
+        ],
+        "helm": [
+          {
+            "name": "Frostmoon Crown",
+            "src": "twicons/Frostmoon%20Crown.webp"
+          }
+        ],
+        "body": [
+          {
+            "name": "Plates of Dawn",
+            "src": "twicons/Plates%20of%20Dawn.webp"
+          }
+        ],
+        "wings": [
+          {
+            "name": "Coil of Ouroboros",
+            "src": "twicons/Coil%20of%20Ouroboros.webp"
+          }
+        ],
+        "accessory": [
+          {
+            "name": "Primal Flame",
+            "src": "twicons/Primal%20Flame.webp"
+          }
+        ]
+      }
+    }
+  ]
+}
