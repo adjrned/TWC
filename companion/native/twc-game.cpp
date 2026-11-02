@@ -7810,9 +7810,13 @@ static void Mouse(INPUT *in, int &n, DWORD flags) {
 // pressed around the click (flags 2: it was down for the key, sent with it, and
 // is up by now). Letting go of Alt or Win alone would open a menu, so a dummy
 // key (vkE8) goes first.
-static void Click(DWORD flags) {
+// The right button down (a right-click attack spammed with the keys) is let go first, as WFE's fire does
+// (0x10066640: GetKeyState(VK_RBUTTON) -> RIGHTUP, then LEFTUP, then the click): with it still down the game
+// took no click, the reticle stayed up and the next press waited for it (two users' reports, 2026-11-02:
+// "breaks every time" spamming right-click with RQRQ / AWEA). On the game thread its own key state, as
+// WFE's (what the game has read so far); elsewhere the mouse as it is.
+static int ClickInputs(INPUT *in, DWORD flags) {
     static const WORD MODS[] = { VK_LCONTROL, VK_RCONTROL, VK_LMENU, VK_RMENU, VK_LWIN, VK_RWIN, VK_LSHIFT, VK_RSHIFT };
-    INPUT in[32];
     int n = 0;
     WORD lifted[8];
     int nl = 0;
@@ -7829,6 +7833,13 @@ static void Click(DWORD flags) {
             lifted[nl++] = vk;
         }
     }
+    bool own = g_gameWnd && GetWindowThreadProcessId(g_gameWnd, nullptr) == GetCurrentThreadId();
+    if ((own ? GetKeyState(VK_RBUTTON) : GetAsyncKeyState(VK_RBUTTON)) & 0x8000) {
+        Mouse(in, n, MOUSEEVENTF_RIGHTUP);
+        static int logs;
+        if (logs++ < 5)
+            Log("quickcast: the right button was down at the click: let go first (as WFE)%s", own ? "" : " (not the game thread)");
+    }
     if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
         Mouse(in, n, MOUSEEVENTF_LEFTUP);
     if (flags & 2)
@@ -7839,6 +7850,11 @@ static void Click(DWORD flags) {
         Key(in, n, VK_LSHIFT, true);
     for (int i = 0; i < nl; i++)
         Key(in, n, lifted[i], false);
+    return n;
+}
+static void Click(DWORD flags) {
+    INPUT in[32];
+    int n = ClickInputs(in, flags);
     SendInput(n, in, sizeof(INPUT));
 }
 static void (*g_click)(DWORD) = Click;     // the tests' own (they never send clicks)

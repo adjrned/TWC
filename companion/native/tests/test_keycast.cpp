@@ -230,6 +230,26 @@ int main() {
     *(DWORD *)btns[11] = (DWORD)badVt; g_shared->qkVk[11] = 'T';
     r = KeyCast('T');
     CHECK(!r && g_shared->qkState == 3 && !KeyCast('Q'), "a press faulting: caught, quickcast keys off (state 3)");
+    // the click's inputs (built, never sent): the right button down (a right-click attack spammed with the keys)
+    // let go first, as WFE's fire (0x10066640); on the game thread its own key state
+    {
+        INPUT in[32];
+        auto has = [&](int n, DWORD f) { for (int i = 0; i < n; i++) if (in[i].type == INPUT_MOUSE && in[i].mi.dwFlags == f) return i; return -1; };
+        int n = ClickInputs(in, 0);
+        CHECK(n == 2 && has(n, MOUSEEVENTF_LEFTDOWN) == 0 && has(n, MOUSEEVENTF_LEFTUP) == 1 && has(n, MOUSEEVENTF_RIGHTUP) < 0,
+            "click, no button down: left down, left up only (%d inputs)", n);
+        syncVk[VK_RBUTTON] = 1;
+        n = ClickInputs(in, 0);
+        CHECK(n == 3 && has(n, MOUSEEVENTF_RIGHTUP) == 0 && has(n, MOUSEEVENTF_LEFTDOWN) == 1,
+            "click with the right button down (the game thread's state): right up first, then the click");
+        syncVk[VK_RBUTTON] = 0, asyncVk[VK_RBUTTON] = 1;
+        n = ClickInputs(in, 0);
+        CHECK(n == 2, "on the game thread only its own state counts (as WFE's GetKeyState): an async-only right button left alone");
+        HWND keep = g_gameWnd; g_gameWnd = nullptr;
+        n = ClickInputs(in, 0);
+        CHECK(n == 3 && has(n, MOUSEEVENTF_RIGHTUP) == 0, "off the game thread (the old request path): the mouse as it is");
+        g_gameWnd = keep, asyncVk[VK_RBUTTON] = 0;
+    }
     Unsubclass(); DestroyWindow(wnd);
     Verdict();
     return g_fails;
