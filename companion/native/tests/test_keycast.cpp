@@ -24,8 +24,11 @@ static int __fastcall FakePress(BYTE *b, int, int arg) {
     return 1;
 }
 static int __fastcall FaultPress(BYTE *, int, int) { return *(volatile int *)8; }
-static int clicks; static DWORD clickFlags;
+static int clicks, rightUps, rightUpAtPress; static DWORD clickFlags;
 static void FakeClick(DWORD f) { clicks++, clickFlags = f; }
+static void FakeRightUp() { rightUps++, rightUpAtPress = presses; }
+static LPARAM extra;
+static LPARAM WINAPI FakeExtra() { return extra; }
 static int gameKeys, gameChars, gameEsc;
 static DWORD fakeNow;
 static DWORD WINAPI FakeNow() { return fakeNow; }
@@ -61,7 +64,7 @@ int main() {
     BYTE *console = ui + 0x300; *(BYTE **)(ui + 0x3c4) = console; *(BYTE **)(console + 0x148) = inv;
     *(int *)(inv + 0x12c) = 6; *(BYTE **)(inv + 0x130) = (BYTE *)invTab;
     for (int i = 0; i < 6; i++) { Button(items[i], 12 + i, false, (DWORD)btnVt); *(BYTE **)(invTab[i] + 4) = items[i]; }
-    g_getUi = FakeGetUi; g_click = FakeClick;
+    g_getUi = FakeGetUi; g_click = FakeClick; g_rightUp = FakeRightUp; g_msgExtra = FakeExtra;
     // TWRPG's keys: Q W E R the bottom row (slots 8-11), items on the numpad
     g_shared->qkVk[8] = 'Q', g_shared->qkVk[9] = 'W', g_shared->qkVk[10] = 'E', g_shared->qkVk[12] = VK_NUMPAD7;
     WNDCLASSA wc = {}; wc.lpfnWndProc = GameProc; wc.lpszClassName = "Warcraft III"; wc.hInstance = GetModuleHandleA(0);
@@ -135,16 +138,45 @@ int main() {
     Idle(); fakeNow += 16;                          // the game read our click: cast, the target mode over
     KeyCastHeld();
     CHECK(heldBack && stillHeld && presses == p1 + 2 && pressThis == items[0] && !g_kcHeldVk, "Numpad 7 meanwhile: held back while the reticle is up, pressed once it ends");
+    // the click missed (the reticle still up): the same key clicks again at once, as WFE, no Esc, no press
     KeyCast('Q'); fakeNow += 300;
     int p2 = presses, k2 = clicks, e0 = gameEsc;
     bool took = KeyCast('Q');
-    bool cancelled = took && presses == p2 && gameEsc == e0 + 1 && g_kcHeldVk == 'Q';
-    fakeNow += 40; KeyCast('Q');                    // its repeat before the game read the Esc: no second Esc
-    bool oneEsc = gameEsc == e0 + 1;
-    FollowKeyCast(1);                               // still aiming: not posted
-    Idle(); fakeNow += 16; KeyCastHeld();            // the game read the Esc: the target mode over
-    CHECK(cancelled && oneEsc && presses == p2 + 1 && clicks == k2 + 1 && !g_kcHeldVk && !g_kcCancelAt,
-          "the reticle still up 300 ms after our click (it missed): cancelled with one Esc, then Q aims and clicks again");
+    CHECK(took && presses == p2 && clicks == k2 + 1 && gameEsc == e0 && !g_kcHeldVk,
+          "the reticle still up 300 ms after our click (it missed): Q clicks again at once (no Esc, no press)");
+    // the compromise: once the game has our click (its button-up with our mark through the window), 50 ms on
+    Idle(); fakeNow += 1000; KeyCast('Q');
+    int p8 = presses, k8 = clicks;
+    extra = 0; SendMessageA(wnd, WM_LBUTTONUP, 0, 0);     // the user's own click: not ours
+    bool notOurs = !g_kcLandedAt;
+    extra = (LPARAM)KC_CLICK_TAG; SendMessageA(wnd, WM_LBUTTONUP, 0, 0); extra = 0;
+    bool landed = g_kcLandedAt == fakeNow;
+    fakeNow += 20; KeyCast('Q');
+    bool early = presses == p8 && clicks == k8;
+    fakeNow += 40; KeyCast('Q');
+    CHECK(notOurs && landed && early && presses == p8 && clicks == k8 + 1,
+          "our click reached the game: its repeat 20 ms on dropped, 60 ms on (still aiming: it missed) clicked again");
+    fakeNow += 30; KeyCast('Q');
+    CHECK(clicks == k8 + 1, "that second click out, not reached the game yet: the next repeat dropped again");
+    // another key with our reticle up and the click had: Esc, then that key (as before)
+    extra = (LPARAM)KC_CLICK_TAG; SendMessageA(wnd, WM_LBUTTONUP, 0, 0); extra = 0;
+    fakeNow += 60;
+    int e3 = gameEsc, p7 = presses;
+    took = KeyCast(VK_NUMPAD7);
+    bool esc = took && gameEsc == e3 + 1 && g_kcHeldVk == VK_NUMPAD7 && !g_kcAimVk;
+    Idle(); KeyCastHeld();
+    CHECK(esc && presses == p7 + 1 && pressThis == items[0], "Numpad 7 with Q's reticle up (Q's click had): Esc, then the item");
+    // a reticle gone in between: none of ours
+    KeyCast('Q'); FollowKeyCast(0);
+    CHECK(!g_kcAimVk, "no reticle up (the worker's round): none of ours");
+    g_shared->qkOn = 1; FollowKeyCast(0);
+    // the right button down: let go before the press (as WFE 0x10067938), the click told so (flags 4)
+    Idle(); fakeNow += 1000; g_kcFiredAt = 0; syncVk[VK_RBUTTON] = 1;
+    int r0 = rightUps, pr = presses;
+    KeyCast('Q'); syncVk[VK_RBUTTON] = 0;
+    CHECK(rightUps == r0 + 1 && rightUpAtPress == pr && (clickFlags & 4), "the right button down: let go before the press, the click doesn't again");
+    Idle(); fakeNow += 1000; KeyCast('Q');
+    CHECK(rightUps == r0 + 1 && !(clickFlags & 4), "the right button up: nothing let go");
     // another ability's reticle up (waiting for a target), then a quickcast key: cancelled, then that key's ability
     Idle(); g_kcFiredAt = 0; fakeNow += 1000;
     *(DWORD *)(ui + UI_MODE) = *(DWORD *)(ui + UI_TARGET_MODE);

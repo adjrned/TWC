@@ -1530,6 +1530,7 @@ static BOOL CALLBACK FindGameWnd(HWND w, LPARAM) {
 static int RunOnGameThread(DWORD cmd);
 static void *GameUi();
 static bool KeyCast(WPARAM vk);
+static void KeyCastLanded();
 // how long a quickcast key waited in the game's message queue before its window got it (the message's
 // time to now; both GetTickCount, ~16 ms steps): every 25, the median and the slowest, logged
 static void KeyQueueTime(DWORD ms) {
@@ -1648,6 +1649,8 @@ static LRESULT CALLBACK GameWndProc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
     // a quickcast key: its button pressed here and the click sent, the key kept from the game (KeyCast),
     // and the character Windows makes of it too (the game reads both)
     static bool dropChar;
+    if (m == WM_LBUTTONUP)
+        KeyCastLanded();
     if (m == WM_KEYDOWN || m == WM_SYSKEYDOWN) {
         if (PvKey(wp, lp)) {
             dropChar = true;                   // the local part's key: kept from the game
@@ -7798,10 +7801,14 @@ static void Key(INPUT *in, int &n, WORD vk, bool up) {
     in[n].ki.dwFlags = up ? KEYEVENTF_KEYUP : 0;
     n++;
 }
+// our clicks' mark (dwExtraInfo): the game window's procedure sees our click's button-up go by, so KeyCast knows
+// when the game has it (ClickOut)
+static const ULONG_PTR KC_CLICK_TAG = 0x54574351;  // 'TWCQ'
 static void Mouse(INPUT *in, int &n, DWORD flags) {
     ZeroMemory(&in[n], sizeof(INPUT));
     in[n].type = INPUT_MOUSE;
     in[n].mi.dwFlags = flags;
+    in[n].mi.dwExtraInfo = KC_CLICK_TAG;
     n++;
 }
 // A left click at the cursor. Modifiers still held from your hotkey are let go
@@ -7814,7 +7821,7 @@ static void Mouse(INPUT *in, int &n, DWORD flags) {
 // (0x10066640: GetKeyState(VK_RBUTTON) -> RIGHTUP, then LEFTUP, then the click): with it still down the game
 // took no click, the reticle stayed up and the next press waited for it (two users' reports, 2026-11-02:
 // "breaks every time" spamming right-click with RQRQ / AWEA). On the game thread its own key state, as
-// WFE's (what the game has read so far); elsewhere the mouse as it is.
+// WFE's (what the game has read so far); elsewhere the mouse as it is. Flags 4: KeyCast let it go already.
 static int ClickInputs(INPUT *in, DWORD flags) {
     static const WORD MODS[] = { VK_LCONTROL, VK_RCONTROL, VK_LMENU, VK_RMENU, VK_LWIN, VK_RWIN, VK_LSHIFT, VK_RSHIFT };
     int n = 0;
@@ -7834,7 +7841,7 @@ static int ClickInputs(INPUT *in, DWORD flags) {
         }
     }
     bool own = g_gameWnd && GetWindowThreadProcessId(g_gameWnd, nullptr) == GetCurrentThreadId();
-    if ((own ? GetKeyState(VK_RBUTTON) : GetAsyncKeyState(VK_RBUTTON)) & 0x8000) {
+    if (!(flags & 4) && (own ? GetKeyState(VK_RBUTTON) : GetAsyncKeyState(VK_RBUTTON)) & 0x8000) {
         Mouse(in, n, MOUSEEVENTF_RIGHTUP);
         static int logs;
         if (logs++ < 5)
@@ -7858,6 +7865,14 @@ static void Click(DWORD flags) {
     SendInput(n, in, sizeof(INPUT));
 }
 static void (*g_click)(DWORD) = Click;     // the tests' own (they never send clicks)
+// the right button let go before KeyCast presses a button, as WFE does (0x10067938) before its press
+static void RightUp() {
+    INPUT in[1];
+    int n = 0;
+    Mouse(in, n, MOUSEEVENTF_RIGHTUP);
+    SendInput(n, in, sizeof(INPUT));
+}
+static void (*g_rightUp)() = RightUp;      // the tests' own
 
 // -- answering a quickcast request -------------------------------------------------
 // Each request is answered once, by whoever gets to it first: the target mode's
@@ -8002,11 +8017,20 @@ static bool DialogUp(BYTE *ui) { DWORD m = *(DWORD *)(ui + UI_DIALOG_MODE); retu
 // check came first, so the key went to the game, which ignores it. Now what each card slot held with no
 // reticle up is kept (g_kcHad: each key, and the display pass 4 a second), and a key whose slot had
 // something is the "reticle already up" case even with its button empty now.
-static const DWORD KC_CLICK_OUT = 250, KC_HOLD_MAX = 500, KC_CANCEL_GAP = 150;
+// Our click out: WFE allows the next one ~10 ms later (its fired flag, cleared by its timer 9 at the
+// shortest elapse); ours waited 250 ms, the "cast delays" of a click the game never took (a user's report,
+// 2026-11-02), for a held key clicked twice per reticle and selected the boss (2026-10-29). In between: until
+// the game has the click (its button-up through the window's procedure, our mark: then it's in the game's
+// input, read next frame) and KC_LAND_GAP after it (~3 frames at 60 fps), else the 250 ms as before; still
+// aiming then = the click missed, and the same key clicks again at once, as WFE does
+static const DWORD KC_CLICK_OUT = 250, KC_HOLD_MAX = 500, KC_CANCEL_GAP = 150, KC_LAND_GAP = 50;
 static volatile DWORD g_kcCancelAt;  // when our last Esc went to the game (0 = none pending)
 static volatile DWORD g_kcFiredAt;  // when our last click went out (0 = none out)
 static volatile LONG g_kcFiredVk;
+static volatile DWORD g_kcLandedAt; // when that click's button-up reached the game's window (0 = not yet)
+static volatile LONG g_kcAimVk;     // the key whose reticle this is (ours, not yet gone; 0 = none)
 static DWORD (WINAPI *g_kcNow)() = GetTickCount;    // the tests' clock
+static LPARAM (WINAPI *g_msgExtra)() = GetMessageExtraInfo;     // the tests' own
 static bool Aiming(BYTE *ui) { return *(DWORD *)(ui + UI_TARGET_MODE) && *(DWORD *)(ui + UI_MODE) == *(DWORD *)(ui + UI_TARGET_MODE); }
 static bool g_kcHad[12];            // the card slot had a button with something on it, last seen with no reticle up
 static BYTE *CardSlot(BYTE *ui, int slot) {
@@ -8022,18 +8046,38 @@ static void KeyCastSnapshot() {
         BYTE *ui = (BYTE *)GameUi(), *b;
         if (!ui || Aiming(ui))
             return;
+        g_kcAimVk = 0;
         for (int i = 0; i < 12; i++)
             g_kcHad[i] = (b = CardSlot(ui, i)) && *(DWORD *)(b + BTN_DATA);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 }
-// our click still out: it went out under 250 ms ago and the target mode it was for is still up
+// our click still out: the target mode it was for still up, and the game not had it long enough (KC_LAND_GAP
+// after it reached the game, else 250 ms after it went)
 static bool ClickOut(BYTE *ui) {
     if (!g_kcFiredAt)
         return false;
-    if (!Aiming(ui) || g_kcNow() - g_kcFiredAt >= KC_CLICK_OUT)
+    DWORD now = g_kcNow(), landed = g_kcLandedAt;
+    if (!Aiming(ui) || now - g_kcFiredAt >= KC_CLICK_OUT || landed && now - landed >= KC_LAND_GAP)
         return g_kcFiredAt = 0, false;
     return true;
+}
+// a left button-up through the game's window: ours (our mark) -> the game has our click
+static void KeyCastLanded() {
+    if (g_kcFiredAt && !g_kcLandedAt && g_msgExtra() == (LPARAM)KC_CLICK_TAG) {
+        DWORD now = g_kcNow();
+        g_kcLandedAt = now ? now : 1;
+    }
+}
+// the click at the cursor, Shift kept for a queued order: down for this key (its message's state); still
+// down -> kept, up by now (sent with the key) -> pressed around the click; rightUp: let go already
+static void KeyCastClick(WPARAM vk, bool rightUp) {
+    g_kcLandedAt = 0, g_kcFiredAt = g_kcNow(), g_kcFiredVk = (LONG)vk, g_kcAimVk = (LONG)vk;
+    if (!g_kcFiredAt)
+        g_kcFiredAt = 1;
+    bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+    g_click((!shift ? 0 : (GetAsyncKeyState(VK_SHIFT) & 0x8000) ? 1 : 3) | (rightUp ? 4 : 0));
+    g_shared->qkClicked++;
 }
 // A sub menu on the card (a skill that opens one: the Paladin's): its buttons sit where the card's own
 // were, so the card's keys would press the wrong ones (the user, 2026-11-01: R pressed the sub menu's
@@ -8098,6 +8142,8 @@ static bool KeyCast(WPARAM vk) {
         bool there = btn && *(DWORD *)(btn + BTN_DATA), aiming = Aiming(ui);
         if (slot < 12 && !aiming)
             g_kcHad[slot] = there;
+        if (!aiming)
+            g_kcAimVk = 0;
         // a reticle up: the card shows only Cancel; the slot had something before it: cancel it, then this key
         bool hidden = !there && aiming && slot < 12 && g_kcHad[slot];
         if (!there && !hidden)
@@ -8114,8 +8160,18 @@ static bool KeyCast(WPARAM vk) {
         float left = 0, total = 0;
         if (!hidden && (ButtonCooldown(btn, &left, &total) & CD_COOLING))
             return false;               // cooling down: not pressed (as WFE), the game says so
+        // its own reticle still up, our click missed (the game had it, or 250 ms): click again at once, as WFE
+        // (0x100678b4: a reticle up before the key -> its fire), no Esc and no wait
+        if (aiming && (LONG)vk == g_kcAimVk && !ClickOut(ui)) {
+            KeyCastClick(vk, false);
+            static int again;
+            if (again++ < 5)
+                Log("quickcast keys: key %02X with its own reticle still up (our click missed): clicked again", (DWORD)vk);
+            return true;
+        }
         if (aiming && !ClickOut(ui) && g_oldProc && g_gameWnd) {
             DWORD now = g_kcNow();
+            g_kcAimVk = 0;                  // (cancelled: another key's now)
             if (!g_kcHeldVk || g_kcHeldVk != (LONG)vk)
                 g_kcHeldVk = (LONG)vk, g_kcHeldAt = now;
             if (!g_kcCancelAt || now - g_kcCancelAt >= KC_CANCEL_GAP) {
@@ -8141,22 +8197,19 @@ static bool KeyCast(WPARAM vk) {
         }
         if (hidden)
             return false;               // (no button to press: the game's)
+        // the right button down (a right-click attack spammed with the keys): let go first, as WFE before its
+        // press (0x10067938); the click then needn't again
+        bool rightUp = (GetKeyState(VK_RBUTTON) & 0x8000) != 0;
+        if (rightUp)
+            g_rightUp();
         DWORD flags = *(DWORD *)(btn + BTN_FLAGS);
         *(DWORD *)(btn + BTN_FLAGS) = flags | 2;
         ((ClickFn)fn)(btn, 0, 1);
         *(DWORD *)(btn + BTN_FLAGS) = flags;
         s->qkPressed++;
         bool aim = Aiming(ui);
-        if (aim) {
-            g_kcFiredAt = g_kcNow(), g_kcFiredVk = (LONG)vk;
-            if (!g_kcFiredAt)
-                g_kcFiredAt = 1;
-            // Shift for a queued order: down for this key (its message's state); still down -> kept,
-            // up by now (sent with the key) -> pressed around the click
-            bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-            g_click(!shift ? 0 : (GetAsyncKeyState(VK_SHIFT) & 0x8000) ? 1 : 3);
-            s->qkClicked++;
-        }
+        if (aim)
+            KeyCastClick(vk, rightUp);
         static int told;
         if (told++ < 3)
             Log("quickcast keys: key %02X pressed slot %d's button %p (vtable +%06lX)%s", (DWORD)vk, slot, btn, vt - (DWORD)g_base,
@@ -8182,9 +8235,11 @@ static void FollowKeyCast(int t) {
         DWORD now = g_kcNow();
         if (now - g_kcHeldAt > KC_HOLD_MAX)
             g_kcHeldVk = 0, g_kcCancelAt = 0;
-        else if (t != 1 || !g_kcCancelAt && now - g_kcFiredAt >= KC_CLICK_OUT)      // after our Esc: once the target mode is gone
-            PostMessageA(g_gameWnd, g_kcMsg, 0, 0);
+        else if (t != 1 || !g_kcCancelAt && (now - g_kcFiredAt >= KC_CLICK_OUT || g_kcLandedAt && now - g_kcLandedAt >= KC_LAND_GAP))
+            PostMessageA(g_gameWnd, g_kcMsg, 0, 0);     // (after our Esc: once the target mode is gone)
     }
+    if (t != 1)
+        g_kcAimVk = 0;                  // no reticle up: none of ours
     Shared *s = g_shared;
     if (s->qkState == 3 || !g_getUi)
         return;
