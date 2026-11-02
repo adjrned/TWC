@@ -17,8 +17,10 @@ const STAT_ALT = 'Attack Damage|Attack Power|Agility|Strength|Intelligence|Main 
 // Coefficients may be ranges ("X 2~4", based on hero level); the sim uses the top of the range.
 const NUM = String.raw`\d+(?:\.\d+)?(?:\s*~\s*\d+(?:\.\d+)?)?`;
 const MUL = String.raw`\s*[X×x]\s*`;
-// A term is "STAT X n", a group "(STR + INT) X n", or a flat number.
-const TERM = String.raw`(?:\((?:${STAT_ALT})(?:\s*\+\s*(?:${STAT_ALT}))+\)${MUL}${NUM}|(?:${STAT_ALT})${MUL}${NUM}%?|\d[\d,]*(?:\.\d+)?(?![\d%~]))`;
+// A stat inside a group, optionally divided: "INT / 3".
+const GROUP_STAT = String.raw`(?:${STAT_ALT})(?:\s*\/\s*\d+(?:\.\d+)?)?`;
+// A term is "STAT X n", a group "(STR + INT) X n" / "(STR + INT / 3) X n", or a flat number.
+const TERM = String.raw`(?:\(${GROUP_STAT}(?:\s*\+\s*${GROUP_STAT})+\)${MUL}${NUM}|(?:${STAT_ALT})${MUL}${NUM}%?|\d[\d,]*(?:\.\d+)?(?![\d%~]))`;
 // The whole formula may be wrapped in parentheses: "(Attack Damage X 0.85 + AGI X 5) pure damage".
 const EXPR = String.raw`${TERM}(?:\s*\+\s*${TERM})*`;
 // An aside may sit between the formula and "damage": "X 2~4 (based on hero level) bonus damage".
@@ -48,7 +50,7 @@ function topLevelParts(expr) {
 }
 
 // "Attack Damage X 1 + AGI X 4" → [{stat:'ad', x:1}, {stat:'agi', x:4}]; "40000" → [{flat:40000}];
-// "(STR + INT) X 9" → [{stat:'str', x:9}, {stat:'int', x:9}]
+// "(STR + INT) X 9" → [{stat:'str', x:9}, {stat:'int', x:9}]; "(STR + INT / 3) X 7.5" → str 7.5, int 2.5
 export function parseTerms(expr) {
   const out = [];
   const inner = expr.trim().match(/^\((.*)\)$/);
@@ -58,9 +60,10 @@ export function parseTerms(expr) {
     const g = part.match(GROUP_RE);
     if (g) {
       for (const st of g[1].split('+')) {
-        const k = statKey(st);
+        const [word, div] = st.split('/');
+        const k = statKey(word);
         if (!k) return null;
-        out.push({ stat: k, x: coef(g[2]) });
+        out.push({ stat: k, x: coef(g[2]) / (div ? Number(div) : 1) });
       }
       continue;
     }
