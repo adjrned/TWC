@@ -124,7 +124,9 @@
       ],
       "modifiers": [
         { "id": "dk-r-str", "label": "STR: Explosion damage increased by 100%", "skill": "Hollow Impact", "step": "conditional", "value": 1, "mode": "str",
-          "onlyHits": ["Hollow Impact"], "onlyParts": ["Hollow Impact#explosion"] }
+          "onlyHits": ["Hollow Impact"], "onlyParts": ["Hollow Impact#explosion"] },
+        { "id": "dk-ee-consec", "label": "Soul Break consecutive casts: +25% each (up to 2)", "skill": "Soul Break", "step": "conditional",
+          "perStack": 0.25, "maxStacks": 2, "default": false, "onlyHits": ["Soul Break"] }
       ]
     },
     "Assassin": {
