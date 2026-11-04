@@ -368,6 +368,14 @@ int main() {
         *(float *)(m0 + BAR_WIDTH), *(float *)(m0 + BAR_HEIGHT));
     sh.mbWidth = 0; sh.mbHeight = 0.75f; update(0);
     CHECK(*(float *)(m0 + BAR_WIDTH) == 0.05f, "width 0 (an older companion): the health bar's");
+    // its colour (layout 50, WFE's "Mana Bar:"): the companion's, 0 the module's own blue
+    *(BYTE **)(m0 + BAR_FILL) = fills[3], *(DWORD **)fills[3] = fillVt;
+    auto fillArgb = [&] { BYTE *f = fills[3]; return ((DWORD)f[0x68] << 24) | ((DWORD)f[0x6b] << 16) | ((DWORD)f[0x6a] << 8) | f[0x69]; };
+    sh.mbColour = 0; update(0);
+    DWORD blue = fillArgb();
+    sh.mbColour = 0xFF8000C0; update(0);
+    CHECK(blue == MANA_COLOUR && fillArgb() == 0xFF8000C0, "the mana bar's colour: the companion's (%08lX), none sent the module's own blue (%08lX)", fillArgb(), blue);
+    sh.mbColour = 0;
     sh.hnMode = 2; *(float *)(units[0] + UNIT_HP) = 125; update(0);
     CHECK(!strcmp((char *)e0->text + 0x100, "25%") && lastRatio == 0.5f, "percent mode: %s; mana ratio %.2f", (char *)e0->text + 0x100, lastRatio);
     ((BarFn)bv[BAR_HIDE / 4])(bars[0], 0);

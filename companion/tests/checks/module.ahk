@@ -353,6 +353,7 @@ TwcModuleRun() {
     TwcCheck(true, "the game module's own switch")
     TwcModuleBuffTimers()
     TwcModuleNumbers()
+    TwcModuleManaColour()
     ; not 1.28 (here AutoHotkey's own window: its exe is version 2.x): never injected
     TwcCheck(!GameModuleEngine.Is128(A_ScriptHwnd) && FileGetVersion(A_AhkPath) != "", "a game window whose Game.dll / exe isn't 1.28.x: never injected (" FileGetVersion(A_AhkPath) ")")
     TwcModuleSwap()
@@ -408,6 +409,28 @@ TwcModuleNumbers() {
     healthBars.gm := keep
     TwcCheck(err = "" && w0 = 15 && c0 = 1 && w1 = 12 && c1 = 3 && cu = 0x12AB34 && w2 = 0x80000000 && m2 = 3 && m3 = 2 && m1 = 0 && cw = "health" && r1 && r2 && r3,
         "health numbers to the module: all and Dynamic by default; Enemies (creeps with them) only, a custom colour 12AB34; none on isn't 'all'; Truncated = mode 3, Percent 2, Total 0; the old White reads as Dynamic; Reset to default: sizes, colours, all (" r1 r2 r3 ")" (err != "" ? " (error: " err ")" : ""))
+}
+; the mana bars' colour (layout 50, WFE's "Mana Bar:"): the module's blue by default, a picked one sent; not to an older module
+TwcModuleManaColour() {
+    global healthBars
+    mem := Buffer(Shm.size, 0)
+    NumPut("uint", 0x54574331, mem, Shm.magic), NumPut("uint", 50, mem, Shm.layout)
+    fake := { base: GameModuleEngine.Prototype, enabled: 1 }
+    fake.DefineProp("live", { call: (*) => mem.Ptr })
+    keep := healthBars.gm, healthBars.gm := fake
+    err := ""
+    try {
+        try IniDelete(iniFile, healthBars.section, "manaColour")
+        healthBars.push(), c0 := NumGet(mem, Shm.mbColour, "uint")
+        healthBars.setManaColour("A020F0"), c1 := NumGet(mem, Shm.mbColour, "uint")
+        NumPut("uint", 0, mem, Shm.mbColour), NumPut("uint", 49, mem, Shm.layout), healthBars.push(), old := NumGet(mem, Shm.mbColour, "uint")
+        healthBars.reset(), c2 := healthBars.manaColour
+    } catch as e
+        err := e.Message
+    try IniDelete(iniFile, healthBars.section, "manaColour")
+    healthBars.gm := keep
+    TwcCheck(err = "" && c0 = 0xFF2060FF && c1 = 0xFFA020F0 && old = 0 && c2 = "2060FF",
+        "mana bar colour to the module: the blue 2060FF by default, a picked one (A020F0) sent; none to a layout-49 module; Reset to default: the blue again" (err != "" ? " (error: " err ")" : ""))
 }
 ; swapping the module live: the copy the game loads, and the hand-over (no game, no injector)
 TwcModuleSwap() {

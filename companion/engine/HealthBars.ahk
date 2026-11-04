@@ -135,6 +135,10 @@ class HealthBarsEngine {
     setNumberCustom(rgb) => (SetIni(rgb, this.section, "numberCustom"), this.push())
     ; mana bars: always on, no option (the user, 2026-11-01; [HealthBars] mana isn't read any more)
     mana => 1
+    ; their colour (WFE's "Mana Bar:" colour; a user's ask, 2026-11-04): RRGGBB, the game module's own blue by default
+    static MANA_COLOUR := "2060FF"
+    manaColour => Ini(this.section, "manaColour", HealthBarsEngine.MANA_COLOUR)
+    setManaColour(rgb) => (SetIni(rgb, this.section, "manaColour"), this.push())
     manaHeight => this.size("manaHeight")
     static Fmt(v) => "×" RTrim(RTrim(Format("{:.2f}", v), "0"), ".")
     ; Reset to default: the whole card (every [HealthBars] key), the sizes, or the bars' colours
@@ -184,6 +188,8 @@ class HealthBarsEngine {
             NumPut("uint", (w := this.numberWho) ? w : 0x80000000, v, Shm.hnWho), NumPut("uint", ci, v, Shm.hnColour)
             NumPut("uint", Integer("0x" this.numberCustom), v, Shm.hnCustom)
         }
+        if NumGet(v, Shm.layout, "uint") >= 50
+            NumPut("uint", 0xFF000000 | Integer("0x" this.manaColour), v, Shm.mbColour)
     }
     ; the status line of a frame feature: its state at stateOff; what(view) says what's on
     frameStatus(on, stateOff, what) {

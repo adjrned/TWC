@@ -116,6 +116,7 @@ Wc3Features() {
             ; named Options; titles in title case, US spelling here (the user's "Health Bar Colors")
             opts: (d) => (OptToggle(d, "Health and Mana Size", healthBars.enabled, (v) => healthBars.setEnabled(v), 0, ["Options", (*) => BarSizeDialog()]),
                 OptToggle(d, "Health Bar Colors", healthBars.colours, (v) => healthBars.setColours(v), 0, ["Options", (*) => BarColoursDialog()]),
+                OptSwatch(d, "Mana Bar Color", (*) => healthBars.manaColour, (g) => (rgb := ChooseColour(g.Hwnd, healthBars.manaColour)) != "" ? (healthBars.setManaColour(rgb), rgb) : ""),
                 OptDivider(d),
                 OptToggle(d, "Health Bar Numbers", healthBars.numbers, (v) => healthBars.setNumbers(v)),
                 OptChoice(d, "Value", [[1, "Total"], [2, "Truncated"], [3, "Percent"]], (*) => healthBars.numberMode, (v) => healthBars.setNumberMode(v)),

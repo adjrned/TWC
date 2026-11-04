@@ -317,6 +317,8 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD chatState;        // module: 0 no game UI (menus, the lobby, loading), 1 closed, 2 open
     // layout 49: a map's dialog on screen (DialogDisplay: the teleport menu...), for the companion's remaps
     DWORD dialogState;      // module: 0 no game UI, 1 none, 2 one shown (its buttons' keys are the game's then)
+    // layout 50: the mana bars' colour (WFE's "Mana Bar:" colour; a user's ask, 2026-11-04)
+    DWORD mbColour;         // companion: 0xAARRGGBB, 0 = MANA_COLOUR
 };
 #pragma pack(pop)
 
@@ -3218,7 +3220,7 @@ static void ManaUpdate(BarExtra *e, BYTE *unit, float cur, float max, bool shown
         Game(RVA_REGION_HIDE, *(BYTE **)(m + BAR_TEXT));
     BYTE *fill = *(BYTE **)(m + BAR_FILL);
     if (fill && IsGameCode(*(BYTE **)(*(BYTE **)fill + 0x24))) {
-        DWORD c = MANA_COLOUR;
+        DWORD c = g_shared->mbColour ? g_shared->mbColour : MANA_COLOUR;
         fill[0x68] = (BYTE)(c >> 24), fill[0x69] = (BYTE)c, fill[0x6a] = (BYTE)(c >> 8), fill[0x6b] = (BYTE)(c >> 16);
         Virt(fill, 0x24);
     }
@@ -8861,7 +8863,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 49;
+        g_shared->layout = 50;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
