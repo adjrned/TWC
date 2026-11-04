@@ -13,6 +13,18 @@ static void __fastcall FakeSet(void *o, int, DWORD id, DWORD v) { if (o == optOb
 static void __fastcall FakeApply(void *o, int, DWORD id) { if (o == optObj && id == 0x17) optApplies++; }
 static void __fastcall FakeGet(void *o, int, DWORD id, DWORD *out) { if (o == optObj && id == 0x17) *out = opt17; }
 static BYTE *mb; static int mbCalls0, mbCalls1;
+// vsync: the renderer (vtable +A7DCAC) and its D3D device (COM: stdcall, this on the stack)
+static BYTE rend[0x800]; static int setups, releases, restores, resets, swaps; static DWORD devInterval = 0;
+static DWORD __fastcall FakeSetup(void *r, int, BYTE *pp) { setups++; memset(pp, 0, 0x38); return r == rend; }
+static void __fastcall FakeRelease(void *r, int, DWORD) { releases++; }
+static void __fastcall FakeRestore(void *r, int) { restores++; }
+static HRESULT __stdcall DevTest(void *) { return 0; }
+static HRESULT __stdcall DevReset(void *, BYTE *pp) { resets++; devInterval = *(DWORD *)(pp + 0x34); return 0; }
+static ULONG __stdcall ScRelease(void *) { return 0; }
+static HRESULT __stdcall ScParams(void *, BYTE *pp) { swaps++; *(DWORD *)(pp + 0x34) = devInterval; return 0; }
+static void *scVt[10] = { 0, 0, (void *)ScRelease, 0, 0, 0, 0, 0, 0, (void *)ScParams }, *sc[1] = { scVt };
+static HRESULT __stdcall DevSwap(void *, UINT, void **out) { *out = sc; return 0; }
+static void *devVt[17] = { 0, 0, 0, (void *)DevTest, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (void *)DevSwap, 0, (void *)DevReset }, *dev[1] = { devVt };
 static void __fastcall FakeMb0(void *b, int) { mbCalls0++; *(DWORD *)((BYTE *)b + MB_STATE) = 0; }
 static void __fastcall FakeMb1(void *b, int) { mbCalls1++; *(DWORD *)((BYTE *)b + MB_STATE) = 1; }
 static void Stub(DWORD rva, void *to) {
@@ -58,6 +70,19 @@ static DWORD WINAPI Tester(void *) {
     *(img + RVA_FPS_BYTE) = 0x90; g_shared->fpsOn = 0; Pump(2);
     CHECK(*(img + RVA_FPS_BYTE) == 0x90 && opt17 == 64, "byte changed by someone else: left (%02X), option back %lu", *(img + RVA_FPS_BYTE), opt17);
     *(img + RVA_FPS_BYTE) = 0x74;
+    // vsync off with it: windowed, the game's own reset flag; fullscreen, the game's reset calls ourselves
+    *(DWORD *)(rend + 0xac) = 2; *(DWORD *)(rend + 0x73c) = 0; g_shared->fpsOn = 1; Pump(2);
+    BYTE pp[0x38];
+    DWORD sr = ((PpSetupFn)SiteTarget(img + PP_SITES[1]))(rend, 0, pp);
+    CHECK(*(DWORD *)(rend + 0x73c) == 1 && SiteTarget(img + PP_SITES[0]) == (BYTE *)PpSetupHook && SiteTarget(img + PP_SITES[1]) == (BYTE *)PpSetupHook
+          && *(DWORD *)(pp + 0x34) == 0x80000000 && sr == 1,
+          "vsync off, windowed: both calls go through ours (the game's result kept), the interval IMMEDIATE, the game asked to reset its device");
+    *(DWORD *)(rend + 0xac) = 1; int rs = resets, rl = releases, rr = restores; g_shared->fpsOn = 0; Pump(6);
+    CHECK(resets == rs + 1 && releases == rl + 1 && restores == rr + 1 && devInterval == 0 && swaps >= 1,
+          "off, fullscreen: the game's resources let go, the device reset with the game's interval (%08lX), made again; checked a second on", devInterval);
+    g_shared->fpsOn = 1; Pump(2);
+    CHECK(resets == rs + 2 && devInterval == 0x80000000, "on again: reset with IMMEDIATE (%08lX)", devInterval);
+    g_shared->fpsOn = 0; Pump(2);
     // multiboard toggle: state 0 -> fn 1, then fn 0
     int r1 = Cmd(1), r2 = Cmd(2);
     CHECK(r1 == 1 && r2 == 1 && mbCalls1 == 1 && mbCalls0 == 1, "multiboard: toggled twice (results %d %d, fn1 %d, fn0 %d)", r1, r2, mbCalls1, mbCalls0);
@@ -68,6 +93,8 @@ static DWORD WINAPI Tester(void *) {
     g_shared->fpsOn = 1; fakeUi = ui; Pump(2);
     FpsPatch(false, true);
     CHECK(*(img + RVA_FPS_BYTE) == 0x74, "unload: limiter byte put back");
+    VsSites(false);
+    CHECK(SiteTarget(img + PP_SITES[0]) == img + RVA_PP_SETUP && SiteTarget(img + PP_SITES[1]) == img + RVA_PP_SETUP, "unload: the present setup's calls put back");
     Verdict();
     PostThreadMessageA(mainTid, WM_QUIT, 0, 0);
     return 0;
@@ -82,11 +109,16 @@ int main() {
     Stub(RVA_OPTIONS, FakeOpts); Stub(RVA_OPT_SET, FakeSet); Stub(RVA_OPT_APPLY, FakeApply); Stub(RVA_OPT_GET, FakeGet);
     Stub(RVA_MB_STATE0, FakeMb0); Stub(RVA_MB_STATE1, FakeMb1);
     img[RVA_FPS_FN - 1] = 0xCC; img[RVA_FPS_FN] = 0x55; img[RVA_FPS_BYTE] = 0x74;
+    Stub(RVA_PP_SETUP, FakeSetup); Stub(RVA_DEV_RELEASE, FakeRelease); Stub(RVA_DEV_RESTORE, FakeRestore);
+    for (DWORD s : PP_SITES)
+        img[s] = 0xE8, *(LONG *)(img + s + 1) = (LONG)(RVA_PP_SETUP - (s + 5));
     memset(img + RVA_MSG_CLEAR - 1, 0xCC, 1); img[RVA_MSG_CLEAR] = 0xC3;
     DWORD old;
     VirtualProtect(img + 0xaaa000, 0x4000, PAGE_READWRITE, &old);       // vtables: data
     VirtualProtect(img + 0xcb1000, 0x1000, PAGE_READWRITE, &old);
     VirtualProtect(img + 0xd1a000, 0x1000, PAGE_READWRITE, &old);
+    VirtualProtect(img + 0xa7d000, 0x1000, PAGE_READWRITE, &old);
+    *(DWORD *)rend = (DWORD)(img + RVA_RENDERER_VT); *(void **)(rend + 0x5a0) = dev; *(BYTE **)(img + RVA_RENDERER) = rend;
     static BYTE board[0x200]; *(DWORD *)board = (DWORD)(img + 0xaac000); mb = board;
     g_uiVtable = (DWORD)(img + RVA_UI_VTABLE); g_getUi = FakeGetUi;
     mainTid = gameTid = GetCurrentThreadId();

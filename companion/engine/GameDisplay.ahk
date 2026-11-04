@@ -6,7 +6,9 @@
 ;  wide window, you see more of it (the camera's projection is narrowed by
 ;  the window's shape; the 2D UI stays the game's 4:3 one). FPS unlock: the game's frame limiter is
 ;  switched off and its frame limit setting raised to the limit here (64 at
-;  least); turning it off puts both back.
+;  least), and vsync off (WFE's ISVSYNC off: the game always presented at the
+;  vertical blank, held to the refresh rate with a frame of input lag; its
+;  device is reset for it); turning it off puts them back.
 ;  Both off by default (ini [Display] widescreen, fps, fpsLimit).
 ;  Also, on the same path: the lobby latency of games you host (WC3 page >
 ;  Hosting; WFE's [DELAY]): the game's LAN, single player and Battle.net

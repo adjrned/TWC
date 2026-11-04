@@ -21,6 +21,7 @@ ModuleCheckFeatures() => [
     ["Health bar size", "health bars: the game's own size is|health bars: pass resized", "health bars: refused|reads faulted"],
     ["Health bar colours", "health bar colours: on", "health bar colours: refused|colouring a bar faulted"],
     ["FPS unlock", "FPS: limiter patched", "FPS: refused|FPS: the game's option functions faulted|C9 already"],
+    ["FPS unlock: vsync off", "FPS: the device presents with interval 80000000", "FPS: vsync refused|FPS: the device reset faulted|FPS: the device wasn't reset with vsync off|isn't the game's present setup"],
     ["Multiboard", "multiboard: [0-9A-F]{8}, vtable", "multiboard: refused|not a multiboard|multiboard: the game's call faulted"],
     ["Allies' abilities", "allies' abilities: on|allies' abilities: the first ability shown", "allies' abilities: refused|allies' abilities: writing the hooks failed|allies' abilities: .* faulted"],
     ["Allies' cards: buttons made", "allies' abilities: the first buttons made", "allies' abilities: making the buttons faulted"],

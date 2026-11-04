@@ -12,10 +12,13 @@ static void Shown(int i, bool on) { if (UI_PARTS[i].hide == 0xd0) *(DWORD *)(fra
 static void __fastcall FHide(void *f, int) { hides[Idx(f)]++; Shown(Idx(f), false); if (GetCurrentThreadId() != gameTid) wrong++; }
 static void __fastcall FShow(void *f, int) { shows[Idx(f)]++; Shown(Idx(f), true); }
 static void __fastcall FAfter(void *f, int) { afters[Idx(f)]++; }
-// the console: 4 regions, 3 of them CSimpleTextures, one a font string
-static BYTE con[0x100], links[4][0x10], regs[4][0x20]; static int texHides, texShows, otherCalls;
-static void __fastcall RHide(BYTE *r, int) { r == regs[2] ? otherCalls++ : texHides++; r[0x10] = 0; }
-static void __fastcall RShow(BYTE *r, int) { r == regs[2] ? otherCalls++ : texShows++; r[0x10] = 1; }
+// the console: 4 regions, 3 of them CSimpleTextures, one a font string; a region's shown bit [+0x7c] 1, as the game's
+static BYTE con[0x100], links[4][0x10], regs[4][0x80]; static int texHides, texShows, otherCalls;
+// the resource bar (part 3): an icon, a text, and the frame rate's font string [bar+0x148]
+static BYTE barLinks[3][0x10], barRegs[3][0x80]; static int barHides, barShows, fpsCalls;
+static int RegCall(BYTE *r, int &bar) { return r == barRegs[2] ? fpsCalls++ : r == barRegs[0] || r == barRegs[1] ? bar++ : -1; }
+static void __fastcall RHide(BYTE *r, int) { if (RegCall(r, barHides) < 0) r == regs[2] ? otherCalls++ : texHides++; r[0x10] = 0; r[0x7c] &= ~1; }
+static void __fastcall RShow(BYTE *r, int) { if (RegCall(r, barShows) < 0) r == regs[2] ? otherCalls++ : texShows++; r[0x10] = 1; r[0x7c] |= 1; }
 // the world frame: its layout at +0xb4, a relative point at slot 0 and an absolute one at 8
 static BYTE world[0x200], relPt[0x20], absPt[0x20], anchorFrame[0x10];
 // the point calls keep the layout's 9 slots as the game does (a point object each), so a pass can see what's there
@@ -56,7 +59,13 @@ static DWORD WINAPI Tester(void *) {
     int h = hides[1]; Shown(1, true); fakeUi = ui2; Pump(1);       // a new game's frame: shown
     CHECK(hides[1] == h + 1, "a new game: hidden at once again");
     g_shared->uiHide = 0x1c; Pump(1);
-    CHECK(shows[1] == 1 && afters[1] >= 3 && hides[2] == 1 && hides[3] == 1 && hides[4] == 1 && g_shared->uiState == 0x1c, "minimap shown (+0xe4 after), the three simple frames hidden (state %lX)", g_shared->uiState);
+    CHECK(shows[1] == 1 && afters[1] >= 3 && hides[2] == 1 && hides[4] == 1 && g_shared->uiState == 0x1c, "minimap shown (+0xe4 after), the menu bar and idle workers hidden (state %lX)", g_shared->uiState);
+    CHECK(!hides[3] && barHides == 2 && !fpsCalls && !(barRegs[0][0x7c] & 1) && (barRegs[2][0x7c] & 1), "the resource bar: its regions hidden, not the bar, and the frame rate text left (/fps; %d, %d)", barHides, fpsCalls);
+    barRegs[1][0x7c] |= 1; Pump(7);
+    CHECK(barHides == 3 && !fpsCalls, "a region the game showed again: hidden again in the 1.5 s pass (%d)", barHides);
+    g_shared->uiHide = 0x14; Pump(1);
+    CHECK(barShows == 2 && !fpsCalls && (barRegs[0][0x7c] & 1) && !(g_shared->uiState & 8), "off: the two shown again, the frame rate text never touched (%d)", barShows);
+    g_shared->uiHide = 0x1c; Pump(1);
     fakeUi = nullptr; Pump(1);
     CHECK((g_shared->uiState & 0x1f) == 0, "between games: state 0");
     fakeUi = ui; nPt = 0; g_shared->uiHide = 0x20; Pump(1);
@@ -113,7 +122,12 @@ int main() {
     *(BYTE **)(con + CONSOLE_REGIONS) = links[0];
     for (int i = 0; i < 4; i++) {
         *(BYTE **)(links[i] + 4) = i < 3 ? links[i + 1] : nullptr; *(BYTE **)(links[i] + 8) = regs[i];
-        *(DWORD *)regs[i] = i == 2 ? strVt : texVt; regs[i][0x10] = 1;
+        *(DWORD *)regs[i] = i == 2 ? strVt : texVt; regs[i][0x10] = 1; regs[i][0x7c] = 1;
+    }
+    *(BYTE **)(frames[3] + CONSOLE_REGIONS) = barLinks[0], *(BYTE **)(frames[3] + BAR_FPS_TEXT) = barRegs[2];
+    for (int i = 0; i < 3; i++) {
+        *(BYTE **)(barLinks[i] + 4) = i < 2 ? barLinks[i + 1] : nullptr; *(BYTE **)(barLinks[i] + 8) = barRegs[i];
+        *(DWORD *)barRegs[i] = i ? strVt : texVt; barRegs[i][0x7c] = 1;
     }
     *(BYTE **)(ui + UI_CONSOLE) = con;
     Stub(RVA_SET_POINT, FSetPoint); Stub(RVA_SET_ABS_POINT, FSetAbs); Stub(RVA_CLEAR_POINTS, FClear);

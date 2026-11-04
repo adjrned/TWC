@@ -126,6 +126,24 @@ int main() {
         bad += !LatencyPatchable(g_base + l);
     CHECK(!bad, "the 3 latency getters are patchable");
     CHECK(g_base[RVA_FPS_BYTE] == 0xE0, "the FPS limiter byte is the game's (%02X)", g_base[RVA_FPS_BYTE]);
+    // vsync off: the present setup, its 3 callers (2 wrapped), the interval it leaves 0, the renderer, its reset flag and reset calls
+    n = FindCallSites(g_base + RVA_PP_SETUP, sites, 8);
+    CHECK(FnStart(RVA_PP_SETUP) && FnStart(RVA_DEV_RELEASE) && FnStart(RVA_DEV_RESTORE) && n == 3 && sites[0] - g_base == PP_SITES[0] && sites[1] - g_base == PP_SITES[1]
+          && sites[2] - g_base == 0x1760ba && g_base[PP_SITES[0]] == 0xE8 && g_base[PP_SITES[1]] == 0xE8,
+          "the present setup +%06lX: called at +17249F (CreateDevice), +1729A6 (Reset), +1760BA (%d found)", RVA_PP_SETUP, n);
+    CHECK(!memcmp(g_base + 0x172725, "\x6A\x38\x6A\x00\x56", 5) && !memcmp(g_base + 0x1727d5, "\xC7\x46\x34\x00\x00\x00\x00", 7) && !memcmp(g_base + 0x1727ea, "\xC2\x04\x00", 3),
+          "it clears the 0x38 bytes and leaves PresentationInterval [+0x34] 0 (vsync), ret 4");
+    CHECK(!memcmp(g_base + 0x1729ab, "\x8B\x86\xA0\x05\x00\x00", 6) && !memcmp(g_base + 0x1729b8, "\xFF\x52\x40", 3) && !memcmp(g_base + 0x172997, "\x6A\x00\x8B\xCE\xE8", 5)
+          && SiteTarget(g_base + 0x17299b) == g_base + RVA_DEV_RELEASE && SiteTarget(g_base + 0x1729c3) == g_base + RVA_DEV_RESTORE,
+          "the game's own reset: +172600(0), the setup, [renderer+0x5A0]->Reset (vt+0x40), +1754A0");
+    CHECK(*(DWORD *)(g_base + 0x165d03) == (DWORD)(g_base + RVA_RENDERER) && Rtti(RVA_RENDERER_VT, "") && *(DWORD *)(g_base + RVA_RENDERER_VT + 0x38) == (DWORD)(g_base + 0x1728c0)
+          && !memcmp(g_base + 0x16c7c5, "\xC7\x86\x3C\x07\x00\x00\x01\x00\x00\x00", 10) && !memcmp(g_base + 0x17291c, "\x39\xBE\x3C\x07\x00\x00", 6)
+          && !memcmp(g_base + 0x169880, "\x8B\x81\xAC\x00\x00\x00\x83\xF8\x02", 9),
+          "the renderer [+D1ACA8] (vtable +A7DCAC, its device check +0x38 = +1728C0), its reset flag [+0x73C], windowed [+0xAC] 2 / 3");
+    // the frame rate text (/fps) is the resource bar's font string [bar+0x148], from its update (vtable +0x34)
+    CHECK(Rtti(0xab20d4, "CResourceBar") && *(DWORD *)(g_base + 0xab20d4 + 0x34) == (DWORD)(g_base + 0x3f61c0) && !memcmp(g_base + 0x402475, "\x8B\x8B\x48\x01\x00\x00", 6)
+          && *(DWORD *)(g_base + 0x402469) == (DWORD)(g_base + 0xab2280) && !strcmp((const char *)g_base + 0xab2280, " FPS: %-4.1f"),
+          "the frame rate text: ' FPS: %%-4.1f' into the resource bar's [+0x148]");
 
     // the widescreen UI's portrait text: the FontHeights lookup, and the font string fields it reads
     const char *fh = *(const char **)(g_base + RVA_FONT_HEIGHTS_NAME);

@@ -5414,12 +5414,151 @@ static int FpsOption(DWORD want) {
     }
 }
 
+// Vsync off with it, as WFE's 0x1004a340 (its ISVSYNC off): the game's present setup +172710
+// (thiscall(renderer, D3DPRESENT_PARAMETERS *), ret 4: 0x38 bytes, cleared first) always leaves
+// PresentationInterval [+0x34] 0, D3D's DEFAULT = wait for the vertical blank, fullscreen and windowed
+// (1.28 has no vsync option): the frame rate held to the refresh rate and a frame or two of input lag
+// with only the limiter's byte (a user's report, 2026-11-04: none with WFE). WFE detours it at start
+// and writes IMMEDIATE (0x80000000). Here its two calls that hand the setup to D3D go through ours,
+// +17249f (CreateDevice, vt+0x40 of [renderer+0x59c]) and +1729a6 (Reset after a lost device); the
+// third, +1760ba (a windowed resize's render target), presents nothing. The device is made before
+// we're in, so it's reset to take it: windowed ([renderer+0xac] 2 or 3, +169880), the game's own
+// flag [renderer+0x73c] (set by +16c7c5 when the window changes; its device check, renderer vtable
+// +0x38 = +1728c0, resets on its next frame); fullscreen has none, so that check's own reset
+// (+172997): +172600(0) lets go of the device's resources, the setup, device->Reset (vt+0x40),
+// +1754a0 makes them again. The renderer: [+d1aca8] (WFE's [0x1013ba38]), vtable +a7dcac.
+static const DWORD RVA_RENDERER = 0xd1aca8, RVA_RENDERER_VT = 0xa7dcac, RVA_PP_SETUP = 0x172710, RVA_DEV_RELEASE = 0x172600, RVA_DEV_RESTORE = 0x1754a0;
+static const DWORD PP_SITES[2] = { 0x17249f, 0x1729a6 };
+static const DWORD R_DEVICE = 0x5a0, R_WINDOW_MODE = 0xac, R_RESET_WANTED = 0x73c, PP_INTERVAL = 0x34, PP_SIZE = 0x38;
+static const DWORD D3D_INTERVAL_IMMEDIATE = 0x80000000, D3DERR_NOTRESET = 0x88760869;
+typedef DWORD(__fastcall *PpSetupFn)(void *, int, BYTE *);
+typedef HRESULT(__stdcall *DevResetFn)(void *, BYTE *);
+typedef HRESULT(__stdcall *DevTestFn)(void *);
+typedef HRESULT(__stdcall *DevSwapFn)(void *, UINT, void **);
+typedef HRESULT(__stdcall *SwapParamsFn)(void *, BYTE *);
+typedef ULONG(__stdcall *ReleaseFn)(void *);
+static bool g_vsHooked;             // the two calls go through PpSetupHook
+static volatile LONG g_vsOff;       // the setups made now: vsync off
+static bool g_vsApplied;            // the device was reset for vsync off (else it has the game's)
+static bool g_vsRefused;
+static DWORD g_vsAskedAt;           // when we last asked for a reset (0 = its outcome seen)
+static DWORD __fastcall PpSetupHook(void *r, int, BYTE *pp) {
+    DWORD v = ((PpSetupFn)(g_base + RVA_PP_SETUP))(r, 0, pp);
+    if (g_vsOff && pp)
+        *(DWORD *)(pp + PP_INTERVAL) = D3D_INTERVAL_IMMEDIATE;
+    return v;
+}
+// the two calls to ours, or back (the game thread, and on unload)
+static bool VsSites(bool on) {
+    const BYTE *from = on ? g_base + RVA_PP_SETUP : (BYTE *)PpSetupHook, *to = on ? (BYTE *)PpSetupHook : g_base + RVA_PP_SETUP;
+    for (DWORD rva : PP_SITES) {
+        BYTE *s = g_base + rva;
+        if (s[0] != 0xE8 || (SiteTarget(s) != from && SiteTarget(s) != to)) {
+            Log("FPS: the call at +%06lX isn't the game's present setup (+%06lX) any more: vsync left to the game", rva, RVA_PP_SETUP);
+            return false;
+        }
+    }
+    for (DWORD rva : PP_SITES) {
+        BYTE *s = g_base + rva;
+        LONG rel = (LONG)(to - (s + 5));
+        if (SiteTarget(s) != to && !WriteCode(s + 1, (const BYTE *)&rel, 4)) {
+            Log("FPS: writing the call at +%06lX failed", rva);
+            return false;
+        }
+    }
+    g_vsHooked = on;
+    return true;
+}
+// the renderer, if it's the D3D one (-opengl has its own)
+static BYTE *Renderer() {
+    BYTE *r = *(BYTE **)(g_base + RVA_RENDERER);
+    return r && PageIs(r, READ) && *(DWORD *)r == (DWORD)(g_base + RVA_RENDERER_VT) && *(BYTE **)(r + R_DEVICE) ? r : nullptr;
+}
+// the device reset for the setting now: 1 asked / done, 0 no renderer yet, -1 faulted
+static int VsReset() {
+    __try {
+        BYTE *r = Renderer();
+        if (!r)
+            return 0;
+        DWORD mode = *(DWORD *)(r + R_WINDOW_MODE);
+        if (mode == 2 || mode == 3) {
+            *(DWORD *)(r + R_RESET_WANTED) = 1;
+            Log("FPS: vsync %s: the game resets its device on its next frame (windowed)", g_vsOff ? "off" : "back to the game's");
+        } else {
+            BYTE *dev = *(BYTE **)(r + R_DEVICE), pp[PP_SIZE];
+            Game(RVA_DEV_RELEASE, r, { 0 });
+            PpSetupHook(r, 0, pp);
+            HRESULT hr = ((DevResetFn)(*(void ***)dev)[16])(dev, pp);
+            if (hr == 0)
+                Game(RVA_DEV_RESTORE, r);
+            Log("FPS: vsync %s: the device reset (fullscreen): %08lX%s", g_vsOff ? "off" : "back to the game's", (DWORD)hr, hr ? " (the game's own check resets it again)" : "");
+        }
+        g_vsAskedAt = GetTickCount() | 1;
+        return 1;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return -1;
+    }
+}
+// a second after a reset we asked for: what the device presents with now (its swap chain's own
+// setup); still not reset (a failed Reset leaves it lost): vsync back to the game's, for good
+static void VsCheck() {
+    if (!g_vsAskedAt || GetTickCount() - g_vsAskedAt < 1000)
+        return;
+    g_vsAskedAt = 0;
+    __try {
+        BYTE *r = Renderer();
+        if (!r)
+            return;
+        void *dev = *(void **)(r + R_DEVICE), *sc = nullptr;
+        HRESULT t = ((DevTestFn)(*(void ***)dev)[3])(dev);
+        DWORD iv = 0xffffffff;
+        if (t == 0 && ((DevSwapFn)(*(void ***)dev)[14])(dev, 0, &sc) == 0 && sc) {
+            BYTE pp[PP_SIZE] = {};
+            if (((SwapParamsFn)(*(void ***)sc)[9])(sc, pp) == 0)
+                iv = *(DWORD *)(pp + PP_INTERVAL);
+            ((ReleaseFn)(*(void ***)sc)[2])(sc);
+        }
+        Log("FPS: the device presents with interval %08lX (%s; device %08lX)", iv,
+            iv == D3D_INTERVAL_IMMEDIATE ? "at once, no vsync" : iv == 0 || iv == 1 ? "at the vertical blank" : "not read", (DWORD)t);
+        if ((DWORD)t == D3DERR_NOTRESET && g_vsOff) {
+            g_vsOff = 0, g_vsRefused = true;
+            *(DWORD *)(r + R_RESET_WANTED) = 1;
+            Log("FPS: the device wasn't reset with vsync off: back to the game's (its next reset)");
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+static bool VsWork() { return (!g_vsRefused && (g_shared->fpsOn != 0) != g_vsApplied) || g_vsAskedAt; }
+static void VsPass() {
+    VsCheck();
+    if (g_vsRefused || (g_shared->fpsOn != 0) == g_vsApplied)
+        return;
+    bool on = g_shared->fpsOn != 0;
+    if (on && !g_vsHooked) {
+        if (!FnStart(RVA_PP_SETUP) || !FnStart(RVA_DEV_RELEASE) || !FnStart(RVA_DEV_RESTORE) || !VsSites(true)) {
+            g_vsRefused = true;
+            Log("FPS: vsync refused (the present setup isn't where 1.28f has it): the frame rate stays held to the refresh rate");
+            return;
+        }
+        Log("FPS: the present setup +%06lX goes through ours at +%06lX and +%06lX (vsync off)", RVA_PP_SETUP, PP_SITES[0], PP_SITES[1]);
+    }
+    g_vsOff = on;
+    int r = VsReset();
+    if (r == 1)
+        g_vsApplied = on;
+    else if (r < 0) {
+        g_vsOff = 0, g_vsRefused = true;
+        Log("FPS: the device reset faulted: vsync left to the game");
+    }
+}
+
 static bool FpsWork() {
-    return g_shared->fpsOn ? !g_fpsPatched || FpsLimit() != g_fpsSetTo : g_fpsPatched || g_fpsSetTo;
+    return (g_shared->fpsOn ? !g_fpsPatched || FpsLimit() != g_fpsSetTo : g_fpsPatched || g_fpsSetTo) || VsWork();
 }
 
 static void FpsPass() {
     static bool refused;
+    VsPass();
     if (refused || !FpsWork())
         return;
     if (!FnStart(RVA_FPS_FN) || !IsGameCode(g_base + RVA_FPS_BYTE) || !FnStart(RVA_OPTIONS) || !FnStart(RVA_OPT_SET)
@@ -5934,10 +6073,101 @@ static int BuffBarCall(BYTE *ui, bool hide) {
     }
 }
 
+// The resource bar, region by region instead of the bar (WFE's ISRESOURCEBAR hides the bar, vtable
+// +0x64), so the game's frame rate stays (a user's ask, 2026-11-04): /fps writes it in the bar's own
+// font string [bar+0x148] (+4023e0, from the bar's update, vtable +0x34, while [bar+0x144] is set),
+// and hiding the bar took it too. The bar draws only its regions (the list [bar+0xd8], as the
+// console's: the icons and the gold / lumber / food / upkeep texts); its child frames, CResourceCover
+// (+3d55c0), are the tooltips' hover areas, drawn by nothing. Each region we hid is kept, and only
+// those are shown again; the region hide does nothing to one hidden already (its [+0x7c] bit 1).
+static const DWORD BAR_FPS_TEXT = 0x148;
+static BYTE *g_rbHid[32];
+static int g_rbHidN;
+static void *g_rbUi;
+static int ResourceBarCall(BYTE *ui, bool hide) {
+    static int checked;             // 1 checked out, 2 refused
+    if (checked == 2)
+        return -1;
+    BYTE *bar = UiFrame(ui, UI_PARTS[3].off);
+    if (!bar)
+        return 0;
+    if (!FnStart(RVA_REGION_HIDE) || !FnStart(RVA_REGION_SHOW)) {
+        checked = 2;
+        Log("hide UI: the resource bar refused (the region hide / show aren't functions)");
+        return -1;
+    }
+    __try {
+        DWORD vt = *(DWORD *)bar;
+        BYTE *frameShow = *(BYTE **)(vt + UI_PARTS[3].show);
+        if (!checked) {
+            char rtti[64];
+            RttiName(vt, g_imageSize, rtti, sizeof(rtti));
+            if (rtti[0] && !strstr(rtti, "CResourceBar")) {
+                Log("hide UI: resource bar %p, RTTI %s: not the resource bar, refusing it", bar, rtti);
+                checked = 2;
+                return -1;
+            }
+            checked = 1;
+        }
+        if (g_rbUi != ui)
+            g_rbUi = ui, g_rbHidN = 0;
+        if (!hide) {
+            for (int i = 0; i < g_rbHidN; i++)
+                ((FrameFn)(g_base + RVA_REGION_SHOW))(g_rbHid[i], 0);
+            g_rbHidN = 0;
+            // a module before this one hid the whole bar (live swap): shown again too
+            if (UiStillHidden(bar, false) && IsGameCode(frameShow))
+                ((FrameFn)frameShow)(bar, 0);
+            return 1;
+        }
+        BYTE *fps = *(BYTE **)(bar + BAR_FPS_TEXT);
+        int n = 0, k = 0, again = 0;
+        char rtti[64];
+        for (BYTE *l = *(BYTE **)(bar + CONSOLE_REGIONS); l && (DWORD)(l - (BYTE *)0x10000) <= 0x7ffeffff && k < 64; l = *(BYTE **)(l + 4), k++) {
+            BYTE *r = *(BYTE **)(l + 8);
+            if (!r || r == fps || (DWORD)(r - (BYTE *)0x10000) > 0x7ffeffff)
+                continue;
+            DWORD rv = *(DWORD *)r;
+            if (rv < (DWORD)g_base || rv - (DWORD)g_base >= g_imageSize)
+                continue;
+            RttiName(rv, g_imageSize, rtti, sizeof(rtti));
+            if (!strstr(rtti, "CSimpleTexture") && !strstr(rtti, "CSimpleFontString"))
+                continue;
+            n++;
+            if (!(*(DWORD *)(r + 0x7c) & 1))
+                continue;                   // hidden already (by us, or by the game)
+            bool ours = false;
+            for (int i = 0; i < g_rbHidN && !ours; i++)
+                ours = g_rbHid[i] == r;
+            if (ours)
+                again++;
+            else if (g_rbHidN < 32)
+                g_rbHid[g_rbHidN++] = r;
+            else
+                continue;                   // (more than we can show again: left)
+            ((FrameFn)(g_base + RVA_REGION_HIDE))(r, 0);
+        }
+        static void *logged;
+        static int agains;
+        if (logged != ui) {
+            logged = ui;
+            Log("hide UI: resource bar %p, vtable +%06lX: %d of its %d regions hidden, the frame rate text %p left", bar, vt - (DWORD)g_base, g_rbHidN, k, fps);
+        } else if (again && agains++ < 3)
+            Log("hide UI: the resource bar's regions hidden again (%d: the game showed them)", again);
+        return n ? 1 : 0;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        checked = 2;
+        Log("hide UI: the resource bar's regions faulted: refusing it");
+        return -1;
+    }
+}
+
 // the console's background goes with the world frame over the whole screen
 static int UiHideCall(BYTE *ui, int i, bool hide) {
     if (i == 6)
         return BuffBarCall(ui, hide);
+    if (i == 3)
+        return ResourceBarCall(ui, hide);
     if (i != 5)
         return UiPartCall(ui, i, hide);
     int r = ConsoleCall(ui, hide);
@@ -8342,6 +8572,8 @@ static void RestoreAll() {
     if (g_wsApplied)
         PointProjection(false), g_wsApplied = false;
     SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false);
+    if (g_vsHooked)
+        g_vsOff = 0, VsSites(false);    // (the device keeps vsync off till its next reset)
 }
 // on the game thread: the last of it, and the window back
 static void FinalPass() {
@@ -8640,7 +8872,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     } else if (reason == DLL_PROCESS_DETACH) {
         g_stop = 1;
         if (!reserved)
-            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false), g_mtHooked && MapTextSites(false);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters, the allies hooks
+            Unsubclass(), g_portraitSlot && SwapPortrait(false), g_prSites && g_portraitHooked && PointSites(false), g_wsApplied && PointProjection(false), SwapBarExtras(false), SwapBarUpdate(false), FpsPatch(false, true), LatencyRestore(true), CountdownRestore(true), AlliesHook(false), g_mtHooked && MapTextSites(false), g_vsHooked && VsSites(false);  // FreeLibrary, not the game exiting: give back the window, the bar update, the limiter, the latency getters, the allies hooks
                                                     // (the frame limit setting and widescreen need the game thread: they stay)
         if (g_shared)
             g_shared->status = 3;

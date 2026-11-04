@@ -176,7 +176,7 @@ Wc3Features() {
             desc: "The damage and armor tooltips also show cooldown, attacks a second and speed.",
             on: (*) => gameDisplay.tooltips, set: (v) => gameDisplay.setTooltips(v), status: (*) => gameDisplay.tooltipsStatus() },
         { tab: "display", title: "FPS Unlock", badge: "1.28f",
-            desc: "Lifts the game's frame rate cap, up to the limit you pick. Off puts it back.",
+            desc: "Lifts the game's frame rate cap, up to the limit you pick, and turns vsync off (as WFE), so it isn't held to your screen's refresh rate. Off puts both back.",
             on: (*) => gameDisplay.fps, set: (v) => gameDisplay.setFps(v), status: (*) => gameDisplay.fpsStatus(),
             opts: (d) => (OptSlider(d, "Limit", (*) => gameDisplay.fpsLimit, (v) => gameDisplay.setFpsLimit(v), 64, 1000, 1),
                 OptNote(d, "Frames a second, 64 to 1000.")) },
