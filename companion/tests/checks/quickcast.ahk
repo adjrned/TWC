@@ -63,11 +63,18 @@ TwcQuickcastRun() {
     try remap.keyCastHeld("Q", "$f24", "f24", {}, QpcMs())   ; no .repeat: throws in the repeat
     remap.sendFn := sendWas
     TwcCheck(!remap.holding.Get("f24", false), "keyCastHeld: the key let go after an error")
+    ; a tap isn't a hold (the user's report, 2026-11-04: mashing keys cast a no-cooldown ability 2-3 times):
+    ; the first repeat waits holdDelay, the next ones the interval
+    waits := [], remap.sendFn := (*) => 0
+    remap.DefineProp("waitHeld", { call: (self, b, start, ms) => (waits.Push(ms), waits.Length < 3 ? "" : "let go") })
+    try remap.keyCastHeld("Q", "$f24", "f24", { repeat: 1, holdDelay: 200, interval: 80, castGap: 400 }, QpcMs())
+    remap.DeleteProp("waitHeld"), remap.sendFn := sendWas
+    TwcCheck(waits.Length = 3 && waits[1] = 200 && waits[2] = 80 && waits[3] = 80, "keyCastHeld: first repeat after the hold delay, then every interval (" waits.Length ": " (waits.Length ? waits[1] : "") ")")
     ; one method at a time (the user, 2026-10-31): both on from before -> the hook; each switch on turns the other off
     global gameModule
     for k in ["quickcast"]
         try IniDelete(iniFile, gameModule.section, k)
-    for k in ["screen", "reforged", "hookInterval", "hookCastGap", "interval", "castGap"]
+    for k in ["screen", "reforged", "hookHoldDelay", "hookInterval", "hookCastGap", "holdDelay", "interval", "castGap"]
         try IniDelete(iniFile, "Quickcast", k)
     both := gameModule.quickcast && !QuickcastScreenOn()
     RemapQcSwitch("screen"), toScreen := !gameModule.quickcast && QuickcastScreenOn()
@@ -76,7 +83,7 @@ TwcQuickcastRun() {
     RemapQcSwitch("hook")
     TwcCheck(both && toScreen && toHook && none && gameModule.quickcast, "one quickcast at a time: the defaults (both on) are the hook; Screen on turns the hook off and back; both can be off")
     h := quickcast.get("hook"), sc := quickcast.get("screen")
-    TwcCheck(h.interval = 80 && h.castGap = 400 && sc.interval = 80 && sc.castGap = 400, "timings: 80 ms repeats, 400 ms after a cast, both methods (" h.interval "/" h.castGap ", " sc.interval "/" sc.castGap ")")
+    TwcCheck(h.holdDelay = 200 && sc.holdDelay = 200 && h.interval = 80 && h.castGap = 400 && sc.interval = 80 && sc.castGap = 400, "timings: held 200 ms, then 80 ms repeats, 400 ms after a cast, both methods (" h.holdDelay "/" h.interval "/" h.castGap ", " sc.holdDelay "/" sc.interval "/" sc.castGap ")")
     quickcast.set("hookCastGap", 300)
     TwcCheck(quickcast.get("hook").castGap = 300 && quickcast.get("screen").castGap = 400, "each its own: the hook's wait set, the screen's kept")
     IniDelete(iniFile, "Quickcast", "hookCastGap")

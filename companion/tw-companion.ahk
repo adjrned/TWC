@@ -1887,7 +1887,13 @@ QuickcastSettings(ver := "") {
     rep := MkToggle(g, x + tw - 56, y - 1, s.repeat, (on) => quickcast.set("repeat", on ? 1 : 0))
     g.SetFont("s10", UI_FONT)
     y += 30
-    g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "every")
+    ; a tap isn't a hold: while mashing keys each is down 80-150 ms, and repeating at once cast them twice
+    g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "once held for")
+    hv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.holdDelay)
+    g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.muted, "ms")
+    hv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set(mod128 ? "hookHoldDelay" : "holdDelay", Max(0, Min(1000, src.Value + 0)))))
+    y += 30
+    g.AddText("x" (x + 22) " y" (y + 2) " w204 h20 +Background" C.card " c" C.muted, "then every")
     iv := g.AddEdit("x" (x + 230) " y" y " w48 h22 Number Center +Background" C.well " c" C.text, s.interval)
     ms := g.AddText("x" (x + 284) " y" (y + 2) " w30 h20 +Background" C.card " c" C.text, "ms")
     iv.OnEvent("Change", (src, *) => (src.Value != "" && quickcast.set(mod128 ? "hookInterval" : "interval", Max(15, Min(1000, src.Value + 0)))))

@@ -22,11 +22,13 @@ class QuickcastEngine {
     misses := 0                 ; quickcasts in a row with no targeting seen (window reads)
 
     ; -- settings --------------------------------------------------------------
-    ; mode "screen" (its interval / castGap) or "hook" (the game hook's own: hookInterval 40, hookCastGap 400 ms,
-    ; the user's pick, 2026-10-31); repeat is the same switch for both
+    ; mode "screen" (its holdDelay / interval / castGap) or "hook" (the game hook's own: hookHoldDelay 200,
+    ; hookInterval 80, hookCastGap 400 ms, the user's pick, 2026-10-31); repeat is the same switch for both.
+    ; holdDelay: how long a key is down before it repeats; a tap while mashing keys is down 80-150 ms
     get(mode := "screen") {
         hook := mode = "hook"
         return { repeat: Integer(Ini(this.section, "repeat", 1)),
+            holdDelay: Integer(Ini(this.section, hook ? "hookHoldDelay" : "holdDelay", 200)),
             interval: Integer(Ini(this.section, hook ? "hookInterval" : "interval", 80)),
             castGap: Integer(Ini(this.section, hook ? "hookCastGap" : "castGap", 400)),
             window: this.windowKey(), calibrated: this.current() ? 1 : 0 }

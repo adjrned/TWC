@@ -408,13 +408,16 @@ class RemapEngine {
             DebugLog("quickcast: the game module's keys " (ok ? "are ready again" : "aren't ready: " gameModule.qcWhyNot()))
         was := ok
         s := ok ? quickcast.get("hook") : 0
-        kc := ok ? { repeat: s.repeat, interval: s.interval, castGap: s.castGap } : 0
+        kc := ok ? { repeat: s.repeat, holdDelay: s.holdDelay, interval: s.interval, castGap: s.castGap } : 0
         return kc
     }
     ; The key to the game module, which presses its button and clicks (as WFE). Held, it goes again every
     ; [Quickcast] interval (80 ms) until let go (WFE's AutoCast repeats as long), unless repeat is off.
     ; Paced here, not by the key's own repeat: Windows waits its repeat delay (a quarter to half a second)
     ; before the first one, the pause after the first press a user felt on an item key (2026-10-29).
+    ; The first repeat waits holdDelay (200 ms) all the same: from the first interval, a tap while mashing
+    ; keys (down 80-150 ms) went 2-3 times, and an ability with no cooldown (mana or charges only) cast as
+    ; many (the user's report, 2026-11-04); a cast's own wait (castGap) covers it for a targeted one.
     ; Still held: a key-up the hook missed (Windows drops hook events while the script is busy) left it
     ; "down" and the loop pressed on by itself (a user's report, 2026-10-29): the key's own repeat stopping
     ; ends it (repeatGone). Not GetAsyncKeyState: the hotkey keeps the key from Windows, so it reads up
@@ -444,17 +447,18 @@ class RemapEngine {
             DebugLog("quickcast " game ": the key to the game module, which presses its button and clicks (as WFE)")
         same := Norm(base) = Norm(RegExReplace(game, "[$*~]"))
         clicks := this.gm().keyClicks()
+        wait := Max(kc.interval, kc.HasProp("holdDelay") ? kc.holdDelay : 0)     ; the first: only once it's a hold, not a tap
         while kc.repeat && !IsWheel(base) {
-            if (why := this.waitHeld(base, same ? start : A_TickCount, kc.interval)) != ""
+            if (why := this.waitHeld(base, same ? start : A_TickCount, wait)) != ""
                 break
             ; the module clicked (a cast): wait the rest of the after-cast gap (the hero still turning or walking into
             ; range, and each press reopens the reticle); the game hook's own, 400 ms by default
             if clicks >= 0 && (now := this.gm().keyClicks()) > clicks {
                 clicks := now
-                if kc.HasProp("castGap") && kc.castGap > kc.interval && (why := this.waitHeld(base, same ? start : A_TickCount, kc.castGap - kc.interval)) != ""
+                if kc.HasProp("castGap") && kc.castGap > wait && (why := this.waitHeld(base, same ? start : A_TickCount, kc.castGap - wait)) != ""
                     break
             }
-            (this.sendFn)(q this.keyText(game)), presses++
+            (this.sendFn)(q this.keyText(game)), presses++, wait := kc.interval
         }
     }
     ; how long a press took from its hotkey to the key sent: every 25, the median and the slowest
@@ -534,7 +538,7 @@ class RemapEngine {
         ; key's own repeat: Windows waits its repeat delay (a quarter to half a second) before the
         ; first one, the pause after the first press a user felt on an item key (2026-10-29)
         if inGameQc && gameModule.keyCastReady()
-            return this.keyCastHeld(game, yourKey, base, { repeat: s.repeat, interval: s.interval, castGap: s.castGap }, t0)
+            return this.keyCastHeld(game, yourKey, base, { repeat: s.repeat, holdDelay: s.holdDelay, interval: s.interval, castGap: s.castGap }, t0)
         cal := !inGameQc && screenOn ? quickcast.current() : 0
         ; neither: the key alone, with a hint once per window (a fullscreen /
         ; windowed switch or a resize changes it; none when both switches are off)
@@ -560,7 +564,7 @@ class RemapEngine {
                 why := "repeat while held is off"
                 break
             }
-            if (why := this.waitHeld(base, start, hit ? Max(s.interval, s.castGap) : s.interval)) != ""
+            if (why := this.waitHeld(base, start, Max(hit ? Max(s.interval, s.castGap) : s.interval, A_Index = 1 ? s.holdDelay : 0))) != ""
                 break
         } finally
             this.holding[base] := false
