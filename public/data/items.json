@@ -9547,7 +9547,6 @@
       "Embrace of Death",
       "Crimson Whisper",
       "Heaven's Fall",
-      "Illumination",
       "Exsolus, the Armor of the Absolute",
       "Cape of the Saint",
       "Wings of Descender",
@@ -9595,7 +9594,8 @@
       "Plates of Divine Blood",
       "Codex of Light",
       "Aegis of Avalon",
-      "Godslayer Signet"
+      "Godslayer Signet",
+      "Illumination"
     ],
     "dropped_by": [
       "Gaia, the Earth Goddess"
@@ -27584,7 +27584,7 @@
         "Mask of Truth": 1
       },
       {
-        "Essence of Earth": 1
+        "Aegis of Earth": 1
       },
       {
         "Spirit of Damnation": 1
