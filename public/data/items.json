@@ -17715,7 +17715,7 @@
       "str": 335,
       "agi": 310,
       "periodicdamagepercent": 0.25,
-      "healreceivedpercent": -0.25,
+      "healreceivedpercent": -0.2,
       "passive": [
         "7.5% chance to activate Absolute Strike on attack",
         "Next 3 hits will deal bonus (ATK DMG X 1) pure damage",
@@ -21621,7 +21621,7 @@
       "str": 405,
       "agi": 375,
       "periodicdamagepercent": 0.3,
-      "healreceivedpercent": -0.3,
+      "healreceivedpercent": -0.2,
       "passive": [
         "On attack, 15% chance to activate Madness",
         "Next 3 hits will deal bonus (ATK DMG X 1) pure damage",
@@ -25138,7 +25138,7 @@
       "str": 455,
       "agi": 425,
       "periodicdamagepercent": 0.35,
-      "healreceivedpercent": -0.35,
+      "healreceivedpercent": -0.2,
       "passive": [
         "15% Chance to activate Lunacy on attack",
         "Next 3 attacks, and every 6th attack afterwards (up to 7 attacks total) deals (ATK DMG X 100%) bonus pure damage",
@@ -27409,8 +27409,8 @@
         "Fires 1-2 additional arrows that deal 20% of Attack Power as pure damage (average of 1.8 arrows)",
         "These arrows trigger the 'Trigger on Attack' effect and can hit with a critical strike.",
         "Activates bloody mark when attacking",
-        "Leaves a mark on the target, amplifying skill damage inflicted on the target by 5% for 5 seconds and accumulating blood energy on the target when attacking (maximum 50)",
-        "When the effect expires or the maximum stack is reached, the stacked blood explodes, dealing (Attack Power X 0.1 + Agility X 1) X stack magic damage.",
+        "Leaves a mark on the target, amplifying skill damage inflicted on the target by 5% for 5 seconds and accumulating blood energy on the target when attacking (maximum 35)",
+        "When the effect expires or the maximum stack is reached, the stacked blood explodes, dealing (Attack Power X 0.15 + Agility X 1.5) X stack magic damage.",
         "Cooldown: 15 seconds"
       ],
       "spec": [
@@ -27912,7 +27912,7 @@
         "Every 20th attack triggers a devastating blow, dealing 40,000 pure damage (attack hit)"
       ],
       "active": [
-        "Sanctuary is activated when HP falls below 20%",
+        "Sanctuary is activated when HP falls to 1 or below",
         "Ignore incoming damage and CC effects for 6 seconds",
         "Upon expiration, deal pure damage equal to Agility x 60–120 proportional to the target's missing HP to enemies within a 1000 radius, and restore 100% of your HP.",
         "Cooldown: 60 seconds"
@@ -28544,7 +28544,7 @@
       "str": 575,
       "agi": 550,
       "periodicdamagepercent": 0.4,
-      "healreceivedpercent": -0.4,
+      "healreceivedpercent": -0.2,
       "passive": [
         "Activates the End of the Gods with a chance on attack",
         "Activates with a 20% chance",

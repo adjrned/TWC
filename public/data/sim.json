@@ -112,7 +112,8 @@
     "Reaper": {
       "modifiers": [
         { "id": "rp-e-whirl", "label": "Death's Dash active: Whirl of Death +200%", "skill": "Death's Dash", "step": "conditional", "value": 2, "default": false, "onlyHits": ["Whirl of Death"] },
-        { "id": "rp-e-dash", "label": "Death's Dash active: Death's Dash +50%", "skill": "Death's Dash", "step": "conditional", "value": 0.5, "default": false, "onlyHits": ["Death's Dash"] }
+        { "id": "rp-e-dash", "label": "Death's Dash stacked casts: +25% per stack (up to 50%)", "skill": "Death's Dash", "step": "conditional",
+          "perStack": 0.25, "maxStacks": 2, "default": false, "onlyHits": ["Death's Dash"], "note": "Stacked casts hit once for their combined damage (base X N); count the extra casts as hits." }
       ]
     },
     "Dark Knight": {

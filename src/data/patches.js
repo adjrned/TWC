@@ -31,7 +31,7 @@ export const BOSS_ALIASES = {
   'Skeleton King': 'Skeletal King Desperia', 'Skeletal King': 'Skeletal King Desperia',
   'Chaos Elemental': 'Elemental of Chaos',
   'Corrupt Angel': "The Devil's Right Arm Corrupt Angel",
-  'Guardian Angels': "The 3rd Army's Guardian Angel",
+  'Guardian Angels': "The 3rd Army's Guardian Angel", 'Guardian Angel': "The 3rd Army's Guardian Angel",
   'Count Wallachia': 'Duchy of Wallachia Count', 'Count of Wallachia': 'Duchy of Wallachia Count',
   'Gatekeeper': 'Castle Avalon Gatekeeper', "Guardian Spirit, Avalon's Gatekeeper": 'Castle Avalon Gatekeeper',
   'Demon Lord': 'Demon Lord Beriel',

@@ -20,7 +20,7 @@ const SECTIONS = {
   'bug fix': 'Bug Fixes', 'bug fixes': 'Bug Fixes',
   'event': 'Events', 'events': 'Events',
   'item': 'Items', 'items': 'Items',
-  'monster': 'Monsters', 'monsters': 'Monsters',
+  'monster': 'Monsters', 'monsters': 'Monsters', 'area': 'Monsters', 'areas': 'Monsters',
   'character': 'Characters', 'characters': 'Characters',
   'system': 'Miscellaneous', 'system changes': 'Miscellaneous', 'misc': 'Miscellaneous',
   'miscellaneous': 'Miscellaneous', 'temporary': 'Miscellaneous',

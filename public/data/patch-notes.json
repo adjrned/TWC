@@ -1,5 +1,233 @@
 [
  {
+  "version": "v0.77c",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Eye of the Blood God - Fixed related bugs",
+     "Fixed issue with certain token skills not working",
+     "Fixed discrepancies between the descriptions and actual values of some items and skills"
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Crimson Whisper",
+      "entries": [
+       "Passive - Max stacks 50 -> 35, damage per stack AD X 0.1 + AGI X 1 -> AD X 0.15 + AGI X 1.5"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "Kamael",
+      "entries": [
+       "Ring from 'Kneel' / 'Silence' no longer affect summons"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Reaper",
+      "entries": [
+       "E - Rolled back to grant combo on dealing damage; combo gained on dealing damage 10 -> 10 X stack count"
+      ]
+     },
+     {
+      "name": "Gunner",
+      "entries": [
+       "Q - Now grants CC immunity while being cast"
+      ]
+     },
+     {
+      "name": "Elementalist",
+      "entries": [
+       "EQ - Now automatically cast by the summon when enough mana has been accumulated",
+       "T - After Spirit Release, elementals now automatically resume attacking their last target if it is within range"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Reforged - Load prompt changed to be less confusing",
+     "Reforged - Halloween Event information is now displayed upon loading"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.77b",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Halloween Event - Fixed issue with Candy drop rates being calculated using data from last year's event",
+     "(# has been reset on this version)",
+     [
+      "Halloween Event - Fixed issue with Halloween Costume and Coin of Effort exchange not working properly",
+      "Halloween Event - Fixed issue with event spawns not working in certain areas",
+      "Dark Knight - Fixed issue with E cooldown not resetting properly (for INT main stat)",
+      "Reforged - Fixed issue with characters failing to load under certain conditions",
+      "Reforged - Fixed skill cast issues with Pala W / Trickster R"
+     ]
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Reaper",
+      "entries": [
+       "E - Explosion delay 0.75 seconds -> 0.6 seconds, damage increase per stack 30% -> 25% (up to 50%). Each cast now adds 10 stacks, and only the final explosion refreshes the combo duration"
+      ]
+     },
+     {
+      "name": "Sniper",
+      "entries": [
+       "W - Limited to a maximum of 4 shots (only fires at the last attacked target)",
+       "T - Basic attacks no longer trigger R while channeling"
+      ]
+     }
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
+  "version": "v0.77a",
+  "compatible": "v0.62s ~",
+  "sections": [
+   {
+    "title": "Bug Fixes",
+    "entries": [
+     "Fixed minor discrepancies between the descriptions and actual values of various items",
+     "Fixed skills with missing elemental efficiency information in their descriptions, or that were described as being affected by elemental efficiency but were not",
+     "Fixed memory leaks in certain boss skills, including Styrix's sword waves",
+     "Fixed issue with some item cooldowns not resetting in the Training Room",
+     "Madness of Old Gods - Fixed issue with damage text sometimes not appearing when critical damage was amplified",
+     "Slayer Boots - Fixed issue with the frame appearance not being applied",
+     "Knight - Fixed resource consumption issues related to R",
+     "Dark Knight - Fixed issue with E sometimes not working properly when INT is the main stat",
+     "Mage (Fire) - Fixed issue with one player being credited with all burn damage when multiple players applied burns to the same enemy",
+     "Blood Weaver - Casting T no longer causes other players' screens to flash",
+     "Reforged - Fixed issue with stun effects not working properly",
+     "Reforged - Fixed issue with resources not being consumed properly when using certain skills, such as Paladin W and Trickster R",
+     "Reforged - Fixed issue with boss skill area indicators not displaying properly",
+     "Reforged - Fixed issue with Korean player names failing to load on Classic servers",
+     "Reforged - Fixed issue with Korean titles not loading properly"
+    ]
+   },
+   {
+    "title": "Events",
+    "entries": [
+     "Halloween Event",
+     [
+      "Active until November 29. The Winter Event will run from the end of the Halloween Event until December 27.",
+      "Please refer to the separate announcements for details."
+     ]
+    ]
+   },
+   {
+    "title": "Items",
+    "subsections": [
+     {
+      "name": "Bag of Sentience",
+      "entries": [
+       "Cooldown reset delay 1.5 seconds -> 2 seconds, notification text is now only visible to the target, and use cooldown removed"
+      ]
+     },
+     {
+      "name": "Exsolus, the Armor of the Absolute",
+      "entries": [
+       "Activation threshold: HP falls to 20% or below -> HP falls to 1 or below"
+      ]
+     },
+     {
+      "name": "Heart of Life / Primordial Heart",
+      "entries": [
+       "Use cooldown removed"
+      ]
+     },
+     {
+      "name": "Nightmare Ring Series",
+      "entries": [
+       "Healing received -20/25/30/35/40% -> fixed at -20%"
+      ]
+     },
+     {
+      "name": "Wing Frames",
+      "entries": [
+       "Added some missing top-tier wing frames"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Monsters",
+    "subsections": [
+     {
+      "name": "General",
+      "entries": [
+       "Improved visibility of certain boss skills that were difficult to see"
+      ]
+     },
+     {
+      "name": "Guardian Angel",
+      "entries": [
+       "Return portal now remains available until the boss has finished being resummoned"
+      ]
+     },
+     {
+      "name": "Corruptor Rectus",
+      "entries": [
+       "Invul is now removed immediately if the last Avenger is killed"
+      ]
+     },
+     {
+      "name": "Elemental Tower",
+      "entries": [
+       "Doors now open immediately when the corresponding key is crafted"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Characters",
+    "subsections": [
+     {
+      "name": "Reaper",
+      "entries": [
+       "E - Stacked casts now deal their combined damage in a single hit. 50% increased damage on the second hit when stacked -> 30% increased damage per stack (up to 60%) (2 casts: base damage x 2 x 130%, 3 or more casts: base damage x N x 160%)"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Miscellaneous",
+    "entries": [
+     "Reduced event-related fatal errors",
+     "Updated loading screen",
+     "Added many missing descriptions previously displayed as 'Unknown Effect' in the item UI",
+     "Reforged - Reduced instances of save codes being generated that cannot be entered in chat without shortening"
+    ]
+   }
+  ],
+  "source": "patchlog"
+ },
+ {
   "version": "v0.75b",
   "compatible": "v0.62s ~",
   "sections": [
