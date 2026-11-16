@@ -20,7 +20,8 @@ const SECTIONS = {
   'bug fix': 'Bug Fixes', 'bug fixes': 'Bug Fixes',
   'event': 'Events', 'events': 'Events',
   'item': 'Items', 'items': 'Items',
-  'monster': 'Monsters', 'monsters': 'Monsters', 'area': 'Monsters', 'areas': 'Monsters',
+  'monster': 'Monsters', 'monsters': 'Monsters',
+  'area': 'Skip', 'areas': 'Skip', // map areas (Elemental Tower, ...) aren't shown
   'character': 'Characters', 'characters': 'Characters',
   'system': 'Miscellaneous', 'system changes': 'Miscellaneous', 'misc': 'Miscellaneous',
   'miscellaneous': 'Miscellaneous', 'temporary': 'Miscellaneous',
@@ -86,6 +87,7 @@ function convert(file) {
     if (compat) { out.compatible = compat[1]; continue; }
     const header = !l.bullet && SECTIONS[l.text.toLowerCase()];
     if (header) { section = header; continue; }
+    if (section === 'Skip') continue;
     if (!bySection.has(section)) bySection.set(section, []);
     bySection.get(section).push(l);
   }

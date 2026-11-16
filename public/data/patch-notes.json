@@ -195,12 +195,6 @@
       "entries": [
        "Invul is now removed immediately if the last Avenger is killed"
       ]
-     },
-     {
-      "name": "Elemental Tower",
-      "entries": [
-       "Doors now open immediately when the corresponding key is crafted"
-      ]
      }
     ]
    },
