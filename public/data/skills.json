@@ -50,7 +50,7 @@
     "active": [
       "Swiftly disengages while attacking at the same time.",
       "Each arrow deals Attack Damage X 0.5 + AGI X 2.5 magic damage",
-      "First 4 arrows are fired at last attacked target",
+      "Fires up to 4 arrows, all at the last attacked target",
       "Arrows count as basic attacks"
     ]
   },
@@ -108,7 +108,8 @@
     "active": [
       "Finishes off an enemy from a far range.",
       "Attack Damage X 15 + AGI X 60 magic damage",
-      "Deals 50% damage to other enemies that are hit by the arrow"
+      "Deals 50% damage to other enemies that are hit by the arrow",
+      "Basic attacks do not trigger Explosive Shot (R) while channeling"
     ]
   },
   {
@@ -1482,7 +1483,7 @@
     "active": [
       "Travels a short distance by tumbling.",
       "Increases next bullet's damage by 200% and guarantees a critical strike (affected by skill damage increase)",
-      "Decreases damage taken by 60% while tumbling",
+      "Decreases damage taken by 60% and grants CC immunity while tumbling",
       "Cooldown is reset if reloaded with all bullets depleted"
     ]
   },
@@ -1924,7 +1925,8 @@
     "order": 14,
     "active": [
       "Releases built up energy.",
-      "Deals INT X 60 magic damage over 1.25 seconds"
+      "Deals INT X 60 magic damage over 1.25 seconds",
+      "Automatically cast by the Elemental of Lightning when it has accumulated enough mana"
     ]
   },
   {
@@ -2041,7 +2043,7 @@
     "active": [
       "Forms a spiritual link with elementals.",
       "Recalls all elementals into invulnerable state and heals them for Max HP X 15% every second",
-      "Resummons them on recast"
+      "Resummons them on recast; they resume attacking their last target if it is within range"
     ]
   },
   {
@@ -2724,7 +2726,10 @@
       "Pierces through the target, delivering a deadly strike.",
       "AGI X 12.5 magic damage",
       "Critically strikes",
-      "While active, Whirl of Death (Q) will deal an additional 200% damage and Death's Dash's damage is increased by 50%"
+      "While active, Whirl of Death (Q) will deal an additional 200% damage",
+      "Stacked casts explode together after 0.6 seconds, dealing their combined damage in a single hit",
+      "Damage increased by 25% per stack (up to 50%): 2 casts deal base damage X 2 X 125%, 3 or more deal base damage X N X 150%",
+      "On dealing damage, grants 10 X stack count combo"
     ]
   },
   {

@@ -23,8 +23,10 @@ export const TYPOS = [
   ['Irfrit', 'Ifrit'],
   ['Ifirit', 'Ifrit'],
   ['Corrputor', 'Corruptor'],
+  ['Corruptor Lectus', 'Corruptor Rectus'],
   ['Gaint', 'Giant'],
   ['monstrostity', 'monstrosity'],
+  ['evebt', 'event'],
   // Heroes
   ['Wing Mage', 'Wind Mage'],
   ['Wing mage', 'Wind Mage'],
