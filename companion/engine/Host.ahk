@@ -135,8 +135,8 @@ class HostEngine {
             if exAfter != ""
                 wc3Chat("/w " bot " " trig exAfter)
             wc3Chat("Game Name: " game)
-        } catch WC3FocusLost {
-            Push("toast", { kind: "error", msg: "Hosting stopped: Warcraft III lost focus" })
+        } catch ChatStopped as e {
+            Push("toast", { kind: "error", msg: "Hosting stopped: " e.Message })
             return { error: "focus lost" }
         }
         Push("toast", { kind: "ok", msg: "Hosting " (private ? "private" : "public") " lobby on " bot ": " game })

@@ -197,8 +197,8 @@ class TimerHud {
                 if this.pingQueue.Length
                     Sleep(80)
             }
-        } catch WC3FocusLost {
-            DebugLog("cooldown ping: the game went out of front while saying it: the rest dropped")
+        } catch ChatStopped as e {
+            DebugLog("cooldown ping: stopped (" e.Message "): the rest dropped")
             this.pingQueue := []
         } finally
             this.pingBusy := false

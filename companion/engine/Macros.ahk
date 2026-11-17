@@ -152,8 +152,8 @@ class MacrosEngine {
             for line in lines
                 if line != ""
                     wc3Chat(line)
-        } catch WC3FocusLost {
-            Push("toast", { kind: "error", msg: "Macro stopped: Warcraft III lost focus" })
+        } catch ChatStopped as e {
+            Push("toast", { kind: "error", msg: "Macro stopped: " e.Message })
         }
     }
 

@@ -220,6 +220,7 @@ SetTimer(() => webOverlay.startupCheck(), -8000)
 SetTimer(ChatWatch, 250)       ; record WC3 chat only while WC3 is focused
 SetTimer(ChatBoxPoll, 200)     ; and check the chat box on screen
 SetTimer(DialogPoll, 100)      ; a map's dialog on screen: remaps stand aside
+SetTimer(LoaderWatch, 1000)    ; the save list follows the save folder
 SetTimer(InGamePoll, 1000)     ; in a game or in a menu?
 SetTimer(() => gameModule.check(), 1000)    ; the 1.28 game module, when it's on (soon after the game starts: the Battle.net login waits on it)
 SetTimer(StartUpdateCheck, -4000)         ; source copies follow the beta branch:
@@ -701,63 +702,27 @@ BuildSaveList() {
     OnMessage(0x200, PopoverHover)         ; WM_MOUSEMOVE: open a popover when its anchor is hovered
 }
 
-; reload := false re-groups the saves already read (expand, search, show
-; hidden) instead of reading every file from disk again
+; The rows come from the loader (LoaderEngine.rows: grouping, names, order), so the list and -l
+; agree; here they're only filtered and drawn. reload := false keeps the rows already listed
+; (expand, show ignored); a new search lists them again (cheap: only changed files are read)
 RefreshFiles(reload := true) {
     global
-    if reload || !IsObject(saveCache)
-        saveCache := loader.files(Map("showHidden", 1))
-    local all := [], q := searchEdit.Value
-    for f in saveCache
-        if q = "" || InStr(f.name, q)
-            all.Push(f)
-    local pins := Map(), hiddenCount := 0, groups := Map(), tops := []
-    for i, n in loader.pinned()
-        pins[n] := i
-    ; numbered saves (knight#91, #92...) collapse into one row per series
-    for f in all {
-        if f.series {
-            if !groups.Has(f.key)
-                groups[f.key] := []
-            groups[f.key].Push(f)
-        } else {
-            tops.Push({ kind: "file", id: f.name, name: f.name, key: f.name, label: StrReplace(f.name, ".txt", ""),
-                pinned: pins.Has(f.name) ? pins[f.name] : 0, hidden: f.hidden, msg: f.msg, date: f.date, sortKey: f.sortKey, files: 0 })
-        }
-    }
-    for key, fs in groups {
-        SortBy(fs, (a, b) => b.series.num - a.series.num)              ; newest number first
-        local newest := ""
-        for f in fs
-            if !newest || f.sortKey > newest
-                newest := f.sortKey
-        ; the row is named after the series: its unnumbered save ("Sniper") if
-        ; there is one, else the name before the number ("knight" for knight#92);
-        ; loading it loads the newest number
-        local top := fs[1], label := top.series.stem
-        for f in fs
-            if StrReplace(f.name, ".txt", "") = f.series.stem
-                label := StrReplace(f.name, ".txt", "")
-        tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: label,
-            pinned: pins.Has(key) ? pins[key] : 0, hidden: top.hidden, msg: top.msg, date: top.date, sortKey: newest, files: fs })
-    }
-    for e in tops
+    local q := searchEdit.Value, e, f, hiddenCount := 0
+    static lastQ := ""
+    if reload || !IsObject(saveCache) || q != lastQ
+        saveCache := loader.rows(q), lastQ := q
+    for e in saveCache
         if e.hidden
             hiddenCount++
-    ; favourites first (in the order you starred them), then most recent
-    SortBy(tops, (a, b) => (a.pinned && b.pinned) ? a.pinned - b.pinned
-        : a.pinned ? -1 : b.pinned ? 1 : (a.sortKey < b.sortKey) - (a.sortKey > b.sortKey))
     saveFiles := []
-    for e in tops {
+    for e in saveCache {
         if e.hidden && !showHidden
             continue
         saveFiles.Push(e)
         if e.kind = "series" && expanded.Has(e.key)
-            loop e.files.Length {                   ; every save in it, newest first
-                local f := e.files[A_Index]
-                saveFiles.Push({ kind: "child", id: f.name, name: f.name, key: e.key, label: StrReplace(f.name, ".txt", ""),
+            for f in e.files                        ; every save in it, newest first
+                saveFiles.Push({ kind: "child", id: f.name, name: f.name, key: e.key, label: f.label,
                     pinned: 0, hidden: e.hidden, msg: e.msg, date: f.date, sortKey: f.sortKey, files: 0 })
-            }
     }
     hiddenChip.Text := (showHidden ? "Hide ignored" : "Show ignored") (hiddenCount ? "  (" hiddenCount ")" : "")
     if !SaveIndex(saveSel)
@@ -1791,9 +1756,39 @@ SaveContext(i) {
             pm.Check(p)
     }
     m.Add("Remap profile" (cur != "" ? ": " cur : "") series, pm)
+    ; a series' older saves to the Archive folder (the user's ask, 2026-11-16)
+    if f.kind != "file" {
+        am := Menu(), opts := 0
+        for keep in [1, 3, 5, 10]
+            if (cnt := loader.archiveCount(f.key, keep)) > 0
+                am.Add("Keep the newest " keep "  (moves " cnt ")", ((k, *) => ArchiveSeries(f.key, k)).Bind(keep)), opts++
+        if opts
+            m.Add("Archive older saves", am)
+    }
     m.Add()
     m.Add("Show in folder", (*) => Run('explorer.exe /select,"' loader.folder "\" f.name '"'))
     m.Show()
+}
+; asks, then moves all but the newest `keep` saves of a series to <save folder>\Archive
+ArchiveSeries(key, keep) {
+    global loader, mainGui
+    if !(n := loader.archiveCount(key, keep))
+        return
+    label := RegExReplace(key, "#\*$")
+    if MsgBox("Move the " n " older " label " saves to the Archive folder?`n`n" loader.folder "\" LoaderEngine.ARCHIVE
+            "`n`nThey leave the list and -l; the newest " keep " stay. Nothing is deleted.",
+            "TW Companion", "OKCancel 0x40000 Owner" mainGui.Hwnd) != "OK"
+        return
+    r := loader.archiveSeries(key, keep)
+    Toast(r.moved = n ? "Archived " n " " label " saves" : "Archived " r.moved " of " n " " label " saves (see the log)", r.moved = n ? "ok" : "error")
+    RefreshFiles()
+}
+; the save list follows the folder (the user's ask, 2026-11-16): a save written, added or removed
+; shows while the Loader page is open (the page lists them again whenever it's opened anyway)
+LoaderWatch() {
+    global loader, currentPage, mainGui
+    if loader.folderChanged() && currentPage = "loader" && DllCall("IsWindowVisible", "ptr", mainGui.Hwnd)
+        RefreshFiles()
 }
 SaveKeyPinned(key) {
     global loader

@@ -139,11 +139,14 @@ Join(sep, params*) {
 ; long lines, any characters; the clipboard is put back after.
 ; Keys go to the window in front, so each step first checks it's still the game
 ; (ChatGuard): a popup or an Alt+Tab mid-load got the -load codes, and the Enter
-; sent them there (pasted too: Enter, Ctrl+V, Enter). Callers catch WC3FocusLost.
+; sent them there (pasted too: Enter, Ctrl+V, Enter). On 1.28f the game's chat box
+; must be closed before the line's Enter (ChatWaitClosed): open, the Enter would
+; send what's in it and the line would go in as hotkeys. Callers catch ChatStopped.
 wc3Chat(text) {
     ChatGuard()
     if InStr(WC3WindowKey(), "reforged")
         return wc3ChatReforged(text)
+    ChatWaitClosed()
     ChatSendHold()
     if ChatPasteOn() {
         SendInput("{Enter}"), Sleep(40)
@@ -155,11 +158,26 @@ wc3Chat(text) {
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
 }
 ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
-class WC3FocusLost extends Error {
+class ChatStopped extends Error {
+}
+class WC3FocusLost extends ChatStopped {
 }
 ChatGuard() {
     if !WinActive(WarcraftIII)
-        throw WC3FocusLost("Warcraft III is no longer the window in front")
+        throw WC3FocusLost("Warcraft III lost focus")
+}
+; 1.28f with the game module (its chat box state): wait up to maxMs for the chat box to close (the
+; game reading the line before, or -l's own Enter); still open: stop. No module: nothing to wait for
+ChatWaitClosed(maxMs := 1000) {
+    global gameModule
+    if !IsSet(gameModule) || !gameModule
+        return
+    t := A_TickCount
+    while gameModule.chatState() = 2 {
+        if A_TickCount - t > maxMs
+            throw ChatStopped("the chat box stayed open in Warcraft III")
+        Sleep(15)
+    }
 }
 ; The game module's quickcast keys are off while the companion types a chat
 ; line: 1.28 opens its chat box a frame after the Enter, so the line's first

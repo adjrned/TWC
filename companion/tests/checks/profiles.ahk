@@ -3,7 +3,7 @@
 ; the links, a delete unlinks them; the last profile can't be deleted. All in the checks' own ini.
 TwcProfilesRun() {
     global remap, loader, iniFile
-    for s in ["RemapProfiles", "LoadProfiles", "RemapProfile Default", "RemapProfile Hero", "RemapProfile Mage"]
+    for s in ["RemapProfiles", "LoadProfiles", "Save knight#*", "Save other.txt","RemapProfile Default", "RemapProfile Hero", "RemapProfile Mage"]
         try IniDelete(iniFile, s)
     SetIni("$q", "Remap", "card9"), SetIni(1, "Remap", "cardQC9")
     p0 := remap.profile, l0 := remap.profiles().Length
@@ -32,7 +32,7 @@ TwcProfilesRun() {
     SetTimer(() => AskClick("Rogue", "OK"), -1200), t1 := AskText("Name check", "A name.", "")
     SetTimer(() => AskClick("x", "Cancel"), -1200), t2 := AskText("Name check", "A name.", "")
     TwcCheck(t1 = "Rogue" && t2 = "", "the name dialog: OK gives '" t1 "', Cancel gives '" t2 "'")
-    for s in ["RemapProfiles", "LoadProfiles", "RemapProfile Default", "RemapProfile Mage", "RemapProfile Paladin"]
+    for s in ["RemapProfiles", "LoadProfiles", "Save knight#*", "Save other.txt","RemapProfile Default", "RemapProfile Mage", "RemapProfile Paladin"]
         try IniDelete(iniFile, s)
     for k in ["card9", "cardQC9"]
         try IniDelete(iniFile, "Remap", k)

@@ -44,7 +44,7 @@ latest commit of the `beta` branch: on start and once an hour it compares
 its files with GitHub's (by git blob hash), downloads only the changed ones
 and restarts (in the middle of a game: once Warcraft III isn't focused). Tray
 menu: *Check for companion updates*, or *Check for updates* on the Settings page
-(which also shows the current commit and when it last checked). Settings, `HiddenFiles.txt` and `web\`
+(which also shows the current commit and when it last checked). Settings, `HiddenFiles.txt` (older versions) and `web\`
 are never touched. `[SelfUpdate] branch=` / `auto=0` in the ini change the
 branch or turn it off; a `.no-self-update` file next to the script turns it
 off too (for a dev checkout whose files are ahead of GitHub).
@@ -53,7 +53,10 @@ Double-click **`tw-companion.ahk`**. It relaunches itself as admin (WC3 Reforged
 usually runs elevated, and key sends need matching elevation).
 
 - Settings persist to `tw-companion.ini` (next to the script).
-- Hidden files persist to `HiddenFiles.txt`.
+- Each save's (or series') favourite, ignore, load message and Remap profile are one
+  `[Save <name>]` section there (`[Save knight#*]` for a series). Before 2026-11-16 they were in
+  `[Loader] pinned`, `HiddenFiles.txt`, `[LoaderMsg]` and `[LoadProfiles]`: moved over once
+  at start-up, then removed.
 
 ## Control hotkeys (fixed)
 
@@ -94,6 +97,16 @@ next to the script records each change and each quickcast with the time.
   (nothing / once per load / N options picked at random). Double-click,
   Enter or **LOAD** loads the selected save (arrows / PgUp / PgDn / wheel to move).
   `-convert <name>` is sent automatically (turn it off under Settings).
+  The list follows the save folder: a save TWRPG writes (or one added, renamed or
+  removed) shows up while the page is open. Only new or changed files are read, so
+  the list and `-l` / `-sn` stay quick with hundreds of saves.
+  Right-click a series for **Archive older saves** (keep the newest 1 / 3 / 5 / 10):
+  after a confirm, the older numbers move to an `Archive` folder inside the save
+  folder. They leave the list and `-l`, nothing is deleted, and a name already in
+  `Archive` is never overwritten.
+  On 1.28f with the game module, each line of a load waits for the game's chat box
+  to be closed (up to 1 s) and stops the load if it stays open, so codes never go in
+  as hotkeys.
   **In-game commands** (also under the **?** next to search): type in WC3 chat
   - `-l sniper` / `-load sniper`: the closest match (exact name, then starts
     with, then contains; favourites, then newest, win ties)

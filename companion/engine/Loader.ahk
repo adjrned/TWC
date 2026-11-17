@@ -4,17 +4,22 @@
 ; ============================================================================
 class LoaderEngine {
     section := "Loader"
-    hiddenMap := Map()
     detected := ""          ; cached detect() result
     sessionLast := ""       ; save loaded / saved through the companion since it started (-sn follows it)
     adopted := Map()        ; "lm.txt" -> "lm#*": unnumbered saves that head a series (see files)
+    heads := Map()          ; the other way: "lm#*" -> "lm.txt"
+    saves := Map()          ; per-save settings: key -> Map(field -> value) (see readSaves)
+    scan := Map()           ; folder scan cache: lowercase path -> { t, size, ok } (see files)
+    watch := 0              ; folder change notification: { path, h } (see folderChanged)
     static DEFAULT_MSG := "% time!"
 
     __New() {
-        this.loadHidden()
+        this.readSaves()
+        this.migrate()
     }
 
-    hiddenPath => A_ScriptDir "\HiddenFiles.txt"
+    hiddenPath => A_ScriptDir "\HiddenFiles.txt"          ; the ignored list until 2026-11-16 (see migrate)
+    ownHidden => iniFile = A_ScriptDir "\tw-companion.ini"
     static SUB := "CustomMapData\TWRPG"
 
     ; The folder you picked, if it still exists; otherwise wherever TWRPG saves
@@ -105,8 +110,8 @@ class LoaderEngine {
             return 0
         return { stem: m[1], sep: m[2], num: Integer(m[3]), width: StrLen(m[3]), key: StrLower(m[1]) "#*" }
     }
-    ; star / hide / message key for a save: its series, or the file itself
-    static KeyOf(name) => (s := LoaderEngine.Series(name)) ? s.key : name
+    ; star / hide / message key for a save: its series, or the file itself (lowercase)
+    static KeyOf(name) => (s := LoaderEngine.Series(name)) ? s.key : StrLower(name)
     ; the same, counting an unnumbered save that heads a series ("lm" with lm#2)
     keyOf(name) => this.adopted.Get(StrLower(name), LoaderEngine.KeyOf(name))
 
@@ -133,52 +138,146 @@ class LoaderEngine {
         return LoaderEngine.TwrpgName(s.stem s.sep Format("{:0" s.width "}", top + 1))
     }
 
-    ; -- RPC endpoints -------------------------------------------------------
+    ; -- per-save settings ------------------------------------------------------
+    ; One ini section per save or series (the user's pick, 2026-11-16: they were in four places, see
+    ; migrate):  [Save knight#*]  star=2  ignored=1  msg=% time!  profile=Hero
+    ; star = the favourites' order (lower first); msg absent = the default, "" = nothing sent.
+    ; Keys are lowercase: a save's file name ("sniper.txt") or its series' ("knight#*").
+    static FIELDS := ["star", "ignored", "msg", "profile"]
+    static SecOf(key) => "Save " StrReplace(StrReplace(key, "%", "%25"), "]", "%5D")
+    static KeyOfSec(sec) => StrLower(StrReplace(StrReplace(SubStr(sec, 6), "%5D", "]"), "%25", "%"))
+    readSaves() {
+        global iniFile
+        this.saves := Map()
+        try names := IniRead(iniFile)
+        catch
+            return
+        for sec in StrSplit(names, "`n") {
+            if SubStr(sec, 1, 5) != "Save "
+                continue
+            rec := Map()
+            for f in LoaderEngine.FIELDS
+                if (v := IniRead(iniFile, sec, f, Chr(1))) != Chr(1)
+                    rec[f] := v
+            if rec.Count
+                this.saves[LoaderEngine.KeyOfSec(sec)] := rec
+        }
+    }
+    ; a field of a save's settings ("" if unset). A series headed by an unnumbered save ("lm" with
+    ; lm#2) also takes what was set on that save before the series began: read here, never moved
+    get(key, field, default := "") {
+        key := StrLower(key)
+        if this.saves.Has(key) && this.saves[key].Has(field)
+            return this.saves[key][field]
+        if (head := this.heads.Get(key, "")) && this.saves.Has(head) && this.saves[head].Has(field)
+            return this.saves[head][field]
+        return default
+    }
+    ; set a field (Chr(1) = remove it); the series' own value from now on, so its head save's goes
+    put(key, field, value := Chr(1)) {
+        global iniFile
+        key := StrLower(key), sec := LoaderEngine.SecOf(key)
+        if !this.saves.Has(key)
+            this.saves[key] := Map()
+        rec := this.saves[key]
+        if value == Chr(1) {
+            if rec.Has(field)
+                rec.Delete(field)
+            try IniDelete(iniFile, sec, field)
+        } else {
+            rec[field] := value
+            IniWrite(value, iniFile, sec, field)
+        }
+        if (head := this.heads.Get(key, "")) && this.saves.Has(head) && this.saves[head].Has(field)
+            this.put(head, field)
+        if !rec.Count {
+            this.saves.Delete(key)
+            try IniDelete(iniFile, sec)
+        }
+    }
+
+    ; Settings from before [Save ...] (until 2026-11-16), moved once at start-up, then removed:
+    ; [Loader] pinned (a|b|c, in order), HiddenFiles.txt (one per line, next to the companion),
+    ; [LoaderMsg] key=msg, [LoadProfiles] key=profile. Per-file entries of numbered saves
+    ; (knight#91.txt) go to their series; a series' own entry wins over them.
+    migrate() {
+        global iniFile
+        raw := Ini(this.section, "pinned", Chr(1))
+        if raw != Chr(1) {
+            for n in StrSplit(raw, "|")
+                if n != "" && this.get(k := LoaderEngine.KeyOf(n), "star") = ""
+                    this.put(k, "star", this.nextStar())
+            IniDelete(iniFile, this.section, "pinned")
+        }
+        ; only into the ini next to it (a check's scratch ini never takes, nor deletes, the real one's)
+        if FileExist(this.hiddenPath) && this.ownHidden {
+            for line in StrSplit(FileRead(this.hiddenPath, "UTF-8"), "`n", "`r")
+                if Trim(line) != ""
+                    this.put(LoaderEngine.KeyOf(Trim(line)), "ignored", 1)
+            FileDelete(this.hiddenPath)
+        }
+        for sec, field in Map(this.section "Msg", "msg", "LoadProfiles", "profile") {
+            try body := IniRead(iniFile, sec)
+            catch
+                continue
+            lines := StrSplit(body, "`n")
+            for pass in [1, 2]                      ; series / plain saves first, then numbered files
+                for line in lines {
+                    if !(p := InStr(line, "="))
+                        continue
+                    n := SubStr(line, 1, p - 1), k := LoaderEngine.KeyOf(n)
+                    if (pass = 1) != (k = StrLower(n))
+                        continue
+                    if this.get(k, field, Chr(1)) == Chr(1)
+                        this.put(k, field, SubStr(line, p + 1))
+                }
+            IniDelete(iniFile, sec)
+        }
+    }
+
+    ; -- the save list ------------------------------------------------------------
     config(args := 0) {
         return { folder: this.folder, found: this.folderFound, auto: this.folderAuto,
             convert: Integer(Ini(this.section, "convert", 1)) }
     }
 
+    ; Every save in the folder: { name, key, series, date, sortKey, hidden, msg }. Lists the folder and
+    ; reads only files that are new or changed since the last time (time and size): reading all of them
+    ; took ~1 ms each, before every -l / -sn and after each star (300 saves: 0.3 s). Has no side effects
+    ; (it used to write settings while listing); keeps adopted / heads up to date.
     files(args := 0) {
         filter := args && args.Has("filter") ? args["filter"] : ""
         showHidden := args && args.Has("showHidden") ? args["showHidden"] : 0
-        out := []
+        out := [], seen := Map()
         Loop Files, this.folder "\*.txt" {
-            if filter && !InStr(A_LoopFileName, filter)
+            p := StrLower(A_LoopFileFullPath), t := A_LoopFileTimeModified, size := A_LoopFileSize
+            c := this.scan.Get(p, 0)
+            if !c || c.t != t || c.size != size
+                c := { t: t, size: size, ok: LoaderEngine.IsSave(FileRead(A_LoopFileFullPath, "UTF-8")) ? 1 : 0 }
+            seen[p] := c
+            if !c.ok || filter && !InStr(A_LoopFileName, filter)
                 continue
-            key := LoaderEngine.KeyOf(A_LoopFileName)
-            isHidden := this.hiddenMap.Has(key) || this.hiddenMap.Has(A_LoopFileName) ? 1 : 0
-            if !LoaderEngine.IsSave(FileRead(A_LoopFileFullPath, "UTF-8"))
-                continue
-            s := LoaderEngine.Series(A_LoopFileName)
-            out.Push({
-                name: A_LoopFileName,
-                key: key,
-                series: s,
-                date: FormatTime(A_LoopFileTimeModified, "MM/dd/yy  hh:mm tt"),
-                sortKey: A_LoopFileTimeModified,
-                hidden: isHidden,
-                msg: ""
-            })
+            out.Push({ name: A_LoopFileName, key: LoaderEngine.KeyOf(A_LoopFileName), series: LoaderEngine.Series(A_LoopFileName),
+                date: FormatTime(t, "MM/dd/yy  hh:mm tt"), sortKey: t, hidden: 0, msg: "" })
         }
-        ; an unnumbered save is #1 of the series -sn starts from it: "lm" joins
-        ; lm#2, lm#3 (one row, one star / hide / message, moved over once)
+        this.scan := seen
+        ; an unnumbered save is #1 of the series -sn starts from it: "lm" joins lm#2, lm#3
+        ; (one row, one star / hide / message)
         keys := Map()
         for f in out
             if f.series
                 keys[f.series.key] := 1
-        this.adopted := Map()
+        this.adopted := Map(), this.heads := Map()
         for f in out {
             base := RegExReplace(f.name, "i)\.txt$")
             if !f.series && keys.Has(k := StrLower(base) "#*") {
-                this.adopt(f.name, k)
+                this.adopted[StrLower(f.name)] := k, this.heads[k] := StrLower(f.name)
                 f.series := { stem: base, sep: "#", num: 1, width: 1, key: k }
                 f.key := k
-                f.hidden := this.hiddenMap.Has(k) ? 1 : 0
             }
         }
         for f in out
-            f.msg := this.messageFor(f.name)
+            f.hidden := this.get(f.key, "ignored") != "" ? 1 : 0, f.msg := this.messageFor(f.name)
         if !showHidden {
             kept := []
             for f in out
@@ -189,77 +288,85 @@ class LoaderEngine {
         return out
     }
 
-    ; move a save's own star / hide / message to its series key
-    adopt(name, key) {
-        this.adopted[StrLower(name)] := key
-        raw := Ini(this.section, "pinned", "")
-        if raw {
-            list := [], seen := Map()
-            for n in StrSplit(raw, "|")
-                if !seen.Has(n := (n = name ? key : n))
-                    seen[n] := 1, list.Push(n)
-            if (fixed := Join("|", list*)) != raw
-                SetIni(fixed, this.section, "pinned")
+    ; The list's rows (the page only filters and draws them): a save of its own, or a series
+    ; (knight#91, #92...) as one row named after it (its unnumbered save, "Sniper", if there is one,
+    ; else "knight"), loading its newest number, with its saves newest first in .files.
+    ; Favourites first in the order starred, then the most recent. q: only saves whose name has it.
+    ;   { kind: "file" / "series", id, name, key, label, pinned (its place, 0 = no), hidden, msg,
+    ;     date, sortKey, files: 0 / [{ name, label, date, sortKey }] }
+    rows(q := "") {
+        pins := Map()
+        for i, k in this.pinned()
+            pins[k] := i
+        groups := Map(), tops := []
+        for f in this.files(Map("showHidden", 1)) {
+            if q != "" && !InStr(f.name, q)
+                continue
+            if f.series {
+                if !groups.Has(f.key)
+                    groups[f.key] := []
+                groups[f.key].Push(f)
+            } else
+                tops.Push({ kind: "file", id: f.name, name: f.name, key: f.key, label: RegExReplace(f.name, "i)\.txt$"),
+                    pinned: pins.Get(f.key, 0), hidden: f.hidden, msg: f.msg, date: f.date, sortKey: f.sortKey, files: 0 })
         }
-        if this.hiddenMap.Has(name) {
-            this.hiddenMap.Delete(name), this.hiddenMap[key] := true
-            this.writeHidden()
+        for key, fs in groups {
+            SortBy(fs, (a, b) => b.series.num - a.series.num)              ; newest number first
+            top := fs[1], label := top.series.stem, newest := "", kids := []
+            for f in fs {
+                if newest = "" || f.sortKey > newest
+                    newest := f.sortKey
+                if RegExReplace(f.name, "i)\.txt$") = f.series.stem
+                    label := RegExReplace(f.name, "i)\.txt$")
+                kids.Push({ name: f.name, label: RegExReplace(f.name, "i)\.txt$"), date: f.date, sortKey: f.sortKey })
+            }
+            tops.Push({ kind: "series", id: "S|" key, name: top.name, key: key, label: label,
+                pinned: pins.Get(key, 0), hidden: top.hidden, msg: top.msg, date: top.date, sortKey: newest, files: kids })
         }
-        own := Ini(this.section "Msg", name, Chr(1))
-        if own != Chr(1) {
-            if Ini(this.section "Msg", key, Chr(1)) = Chr(1)
-                SetIni(own, this.section "Msg", key)
-            try IniDelete(iniFile, this.section "Msg", name)
-        }
+        SortBy(tops, (a, b) => (a.pinned && b.pinned) ? a.pinned - b.pinned
+            : a.pinned ? -1 : b.pinned ? 1 : (a.sortKey < b.sortKey) - (a.sortKey > b.sortKey))
+        return tops
     }
 
-    ; favourites, by key; entries saved per file before series existed
-    ; (knight#91.txt) are folded into their series key (knight#*) once
+    ; favourites: keys in the order starred (a head save's star counts for its series)
     pinned(args := 0) {
-        raw := Ini(this.section, "pinned", "")
+        list := []
+        for key, rec in this.saves
+            if rec.Has("star")
+                list.Push({ key: this.adopted.Get(key, key), star: Integer(rec["star"]) })
+        SortBy(list, (a, b) => a.star - b.star)
         out := [], seen := Map()
-        for n in (raw ? StrSplit(raw, "|") : [])
-            if !seen.Has(k := LoaderEngine.KeyOf(n))
-                seen[k] := 1, out.Push(k)
-        if (fixed := Join("|", out*)) != raw
-            SetIni(fixed, this.section, "pinned")
+        for e in list
+            if !seen.Has(e.key)
+                seen[e.key] := 1, out.Push(e.key)
         return out
     }
-
-    pinToggle(args) {
-        name := args["name"]
-        list := this.pinned()
-        idx := 0
-        for i, f in list
-            if f == name {
-                idx := i
-                break
-            }
-        if idx
-            list.RemoveAt(idx)
-        else
-            list.Push(name)
-        SetIni(list.Length ? Join("|", list*) : "", this.section, "pinned")
-        return { pinned: list }
+    nextStar() {
+        top := 0
+        for key, rec in this.saves
+            if rec.Has("star")
+                top := Max(top, Integer(rec["star"]))
+        return top + 1
     }
-
+    pinToggle(args) {
+        key := args["name"]
+        this.put(key, "star", this.get(key, "star") != "" ? Chr(1) : this.nextStar())
+        return { pinned: this.pinned() }
+    }
     hideToggle(args) {
-        name := args["name"]
-        if this.hiddenMap.Has(name)
-            this.hiddenMap.Delete(name)
-        else
-            this.hiddenMap.Set(name, true)
-        this.writeHidden()
+        key := args["name"]
+        this.put(key, "ignored", this.get(key, "ignored") != "" ? Chr(1) : 1)
         return { ok: 1 }
     }
 
-    ; load message for a save: its series' one, else its own, else "% time!"
-    ; (one cleared on purpose is kept as "" and sends nothing)
+    ; load message for a save: its series' (or its own), else "% time!" ("" = cleared on purpose: nothing)
     messageFor(name) {
-        m := Ini(this.section "Msg", this.keyOf(name), Chr(1))
-        if m = Chr(1)
-            m := Ini(this.section "Msg", name, Chr(1))
-        return m = Chr(1) ? LoaderEngine.DEFAULT_MSG : m
+        m := this.get(this.keyOf(name), "msg", Chr(1))
+        return m == Chr(1) ? LoaderEngine.DEFAULT_MSG : m
+    }
+    setMessage(args) {
+        this.put(args["name"], "msg", args["msg"])
+        return { ok: 1 }
     }
 
     ; % in a load message is the save's name ("knight" for knight#92)
@@ -278,29 +385,17 @@ class LoaderEngine {
     }
 
     ; a save's Remap profile (the user, 2026-11-01): loading it switches the remap to that profile;
-    ; none: the profile in use stays. [LoadProfiles] <the save's key (a series' for numbered ones)>=<profile>
-    profileFor(name) => Ini("LoadProfiles", this.keyOf(name), "")
-    setProfileFor(name, profile) {
-        global iniFile
-        if profile = "" {
-            try IniDelete(iniFile, "LoadProfiles", this.keyOf(name))
-        } else {
-            SetIni(profile, "LoadProfiles", this.keyOf(name))
-        }
-    }
+    ; none: the profile in use stays
+    profileFor(name) => this.get(this.keyOf(name), "profile")
+    setProfileFor(name, profile) => this.put(this.keyOf(name), "profile", profile = "" ? Chr(1) : profile)
     ; a profile renamed ("" deleted): every save linked to it follows (deleted: unlinked)
     renameProfileLinks(old, name) {
-        global iniFile
-        try section := IniRead(iniFile, "LoadProfiles")
-        catch
-            return
-        for line in StrSplit(section, "`n") {
-            if !(p := InStr(line, "="))
-                continue
-            k := SubStr(line, 1, p - 1), v := SubStr(line, p + 1)
-            if v = old
-                name = "" ? IniDelete(iniFile, "LoadProfiles", k) : SetIni(name, "LoadProfiles", k)
-        }
+        linked := []
+        for key, rec in this.saves
+            if rec.Get("profile", "") = old
+                linked.Push(key)
+        for key in linked
+            this.put(key, "profile", name = "" ? Chr(1) : name)
     }
     ; after a load: its profile in use (true if one was switched to)
     applyProfile(name) {
@@ -311,11 +406,6 @@ class LoaderEngine {
         remap.useProfile(p)
         Push("toast", { kind: "ok", msg: "Remap profile: " p })
         return true
-    }
-
-    setMessage(args) {
-        SetIni(args["msg"], this.section "Msg", args["name"])
-        return { ok: 1 }
     }
 
     setConvert(args) {
@@ -341,6 +431,79 @@ class LoaderEngine {
         this.detected := ""
         return { folder: this.folder }
     }
+
+    ; -- archive (the user's ask, 2026-11-16) ------------------------------------------
+    ; a series' older saves moved to <folder>\Archive, keeping its newest `keep` numbers: out of the
+    ; list and -l, still on disk. Never overwrites: a name already in Archive gets " (2)", " (3)"...
+    static ARCHIVE := "Archive"
+    archiveCount(key, keep) {
+        n := 0
+        for f in this.files(Map("showHidden", 1))
+            if f.key = key && f.series
+                n++
+        return Max(0, n - keep)
+    }
+    archiveSeries(key, keep) {
+        fs := []
+        for f in this.files(Map("showHidden", 1))
+            if f.key = key && f.series
+                fs.Push(f)
+        SortBy(fs, (a, b) => b.series.num - a.series.num)
+        dir := this.folder "\" LoaderEngine.ARCHIVE, moved := 0
+        if fs.Length > keep
+            DirCreate(dir)
+        loop fs.Length - keep {
+            f := fs[keep + A_Index], base := RegExReplace(f.name, "i)\.txt$"), to := dir "\" f.name, n := 1
+            while FileExist(to) {
+                n++
+                to := dir "\" base " (" n ").txt"
+            }
+            try {
+                FileMove(this.folder "\" f.name, to)
+                moved++
+            } catch as e
+                try DebugLog("archive: " f.name " not moved: " e.Message)
+        }
+        try DebugLog("archive " key ": " moved " moved to " dir ", newest " keep " kept")
+        return { moved: moved, folder: dir }
+    }
+
+    ; -- folder watch (the user's ask, 2026-11-16) -------------------------------------
+    ; true when a save was added, removed, renamed or written in the folder since the last call (a
+    ; Windows change notification: nothing is listed or read to find out). The first call starts it.
+    folderChanged() {
+        path := this.folder
+        if this.watch && this.watch.path != path
+            this.stopWatch()
+        if !this.watch {
+            if !DirExist(path)
+                return false
+            ; FILE_NOTIFY_CHANGE_FILE_NAME | LAST_WRITE, this folder only
+            h := DllCall("FindFirstChangeNotificationW", "str", path, "int", 0, "uint", 0x11, "ptr")
+            if h = -1 || !h
+                return false
+            this.watch := { path: path, h: h }
+            return false
+        }
+        if DllCall("WaitForSingleObject", "ptr", this.watch.h, "uint", 0, "uint") != 0
+            return false
+        ; a burst (a save written, files moved) signals more than once: taken as one
+        loop 20 {
+            if !DllCall("FindNextChangeNotification", "ptr", this.watch.h) {
+                this.stopWatch()                    ; the folder went away: started again next time
+                break
+            }
+            if DllCall("WaitForSingleObject", "ptr", this.watch.h, "uint", 0, "uint") != 0
+                break
+        }
+        return true
+    }
+    stopWatch() {
+        if this.watch
+            DllCall("FindCloseChangeNotification", "ptr", this.watch.h)
+        this.watch := 0
+    }
+    __Delete() => this.stopWatch()
 
     ; -- chat commands -------------------------------------------------------
     ; The main script hands every finished WC3 chat line to isCommand(); loader
@@ -368,8 +531,8 @@ class LoaderEngine {
             if !FocusWarcraft()
                 return Push("toast", { kind: "error", msg: FocusWarcraftError() })
             try wc3Chat("-save " name)
-            catch WC3FocusLost
-                return Push("toast", { kind: "error", msg: "Not saved: Warcraft III lost focus before -save " name })
+            catch ChatStopped as e
+                return Push("toast", { kind: "error", msg: "Not saved: " e.Message })
             ; that's now the save to continue from: -ll loads it, the next -sn
             ; counts up from it even before TWRPG has written the file
             prevSel := Ini(this.section, "selectedFile", ""), prevLast := this.sessionLast
@@ -383,7 +546,7 @@ class LoaderEngine {
         if arg = "" {
             last := Ini(this.section, "selectedFile", "")
             if !last && (fav := this.pinned()).Length
-                last := InStr(fav[1], "#*") ? this.latestOf(fav[1]) : fav[1]
+                last := this.latestOf(fav[1])
             if !last
                 return Push("toast", { kind: "error", msg: "No save loaded yet. Try -l <name>" })
             return this.load(Map("name", last))
@@ -423,12 +586,12 @@ class LoaderEngine {
         SetTimer(Tick, 250)
     }
 
-    ; newest-numbered file of a series key
+    ; the file to load for a key: a series' newest number, or the save itself ("" = none)
     latestOf(key, files := 0) {
         best := "", top := -1
         for f in (files ? files : this.files(Map("showHidden", 1)))
-            if f.key = key && f.series && f.series.num > top
-                best := f.name, top := f.series.num
+            if f.key = key && (f.series ? f.series.num : 0) > top
+                best := f.name, top := f.series ? f.series.num : 0
         return best
     }
 
@@ -436,10 +599,10 @@ class LoaderEngine {
     resolve(arg) {
         ; compare without spaces: TWRPG never writes them ("-l sorc 3" -> sorc3)
         q := LoaderEngine.TwrpgName(StrReplace(arg, ".txt", ""))
+        files := this.files(Map("showHidden", 1))       ; first: favourites of a series' head need it
         pins := Map()
         for i, n in this.pinned()
             pins[n] := i
-        files := this.files(Map("showHidden", 1))
         ; a number is a favourite slot (when you have that many favourites and no
         ; save is literally called that); otherwise it's matched as a name, so
         ; "-l 92" finds knight#92
@@ -449,7 +612,7 @@ class LoaderEngine {
                     return f.name
             for n, i in pins
                 if i = Integer(q)
-                    return InStr(n, "#*") ? this.latestOf(n, files) : n
+                    return this.latestOf(n, files)
         }
         ; ties: favourite, not ignored, then the highest number in a series, then newest (an ignored
         ; save is only ever its exact name: the user's Ignore, 2026-11-01)
@@ -461,7 +624,7 @@ class LoaderEngine {
                 score := 3                                  ; "-l knight" = the series
             if !score || (f.hidden && score < 3)        ; ignored: only by its exact name
                 continue
-            score := score * 10 + (pins.Has(f.key) || pins.Has(f.name) ? 5 : 0) + (f.hidden ? 0 : 1)
+            score := score * 10 + (pins.Has(f.key) ? 5 : 0) + (f.hidden ? 0 : 1)
             num := f.series ? f.series.num : -1
             if score > bestScore || (score = bestScore && (num > bestNum || (num = bestNum && f.sortKey > bestKey)))
                 best := f.name, bestScore := score, bestNum := num, bestKey := f.sortKey
@@ -514,10 +677,11 @@ class LoaderEngine {
         ; keyboard/mouse are held for the 1-2 s this takes: a key or Enter
         ; pressed mid-load would land inside the codes (needs admin, which the
         ; companion has; Ctrl+Alt+Del always releases it)
-        ; every line stops if the game isn't in front any more (wc3Chat's ChatGuard): typed on,
-        ; the codes went to that window instead, and its Enter sent them
+        ; Every line stops if the game isn't in front any more, or (1.28f, the module) its chat box
+        ; stays open (wc3Chat: ChatGuard, ChatWaitClosed): typed on, the codes went to the other
+        ; window and its Enter sent them, or into the game as hotkeys
         BlockInput("On")
-        sent := 0, lost := false
+        sent := 0, stopped := ""
         try {
             wc3Chat("-convert " userName)       ; always (the user, 2026-10-31: no longer a setting)
             for code in codes {
@@ -534,15 +698,15 @@ class LoaderEngine {
             Sleep(Integer(Ini("Settings", "postLoadDelay", 1000)))
             ControlSend("{f1}{Ctrl Down}{1}{Ctrl Up}", , WarcraftIII)
             ControlSend("{Esc}", , WarcraftIII)          ; the bag summoned back: always (the user, 2026-10-31)
-        } catch WC3FocusLost {
-            lost := true
+        } catch ChatStopped as e {
+            stopped := e.Message
         } finally {
             BlockInput("Off")
         }
-        if lost {
-            try DebugLog("load " name ": stopped, Warcraft III not in front (" WinGetTitle("A") "), " sent " of " codes.Length " codes sent")
-            Push("toast", { kind: "error", msg: "Load stopped: Warcraft III lost focus (" sent " of " codes.Length " codes sent)" })
-            return { error: "focus lost" }
+        if stopped != "" {
+            try DebugLog("load " name ": stopped (" stopped "; in front: " WinGetTitle("A") "), " sent " of " codes.Length " codes sent")
+            Push("toast", { kind: "error", msg: "Load stopped: " stopped " (" sent " of " codes.Length " codes sent)" })
+            return { error: "stopped" }
         }
         ; only a load that went through counts as "last" (-ll, -sn)
         SetIni(name, this.section, "selectedFile")
@@ -550,24 +714,5 @@ class LoaderEngine {
         Push("toast", { kind: "ok", msg: "Loaded " StrReplace(name, ".txt", "") " (" codes.Length " codes)" })
         this.applyProfile(name)
         return { ok: 1 }
-    }
-
-    ; -- hidden files persistence -------------------------------------------
-    loadHidden() {
-        this.hiddenMap := Map()
-        try {
-            for f in StrSplit(FileRead(this.hiddenPath, "UTF-8"), "`n")
-                if Trim(f)
-                    this.hiddenMap.Set(LoaderEngine.KeyOf(Trim(f)), true)   ; per-file -> series key
-        }
-    }
-
-    writeHidden() {
-        arr := []
-        for k in this.hiddenMap
-            arr.Push(k)
-        try FileDelete(this.hiddenPath)
-        if arr.Length
-            FileAppend(Join("`n", arr*), this.hiddenPath, "UTF-8")
     }
 }
