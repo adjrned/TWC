@@ -81,6 +81,28 @@ TwcLoaderDataRun() {
         finally Menu.Prototype.DeleteProp("Show"), showHidden := false
         TwcCheck(idx && shown = 1, "a series row's right-click menu builds (row " idx ")")
 
+        ; -- what changed since the save before (the test save's hero and items, #92 changed)
+        t := FileRead(A_ScriptDir "\test-saves\Lancer.txt", "UTF-8")
+        FileDelete(dir "\knight#91.txt"), FileAppend(t, dir "\knight#91.txt", "UTF-8")
+        t := StrReplace(t, "Level: 240", "Level: 243"), t := StrReplace(t, "2. Ring of Hope", "2. Calamity")
+        t := StrReplace(t, "1. Oath of Courage", "1. Niflheim"), t := StrReplace(t, "3. Niflheim", "3. Oath of Courage")
+        FileDelete(dir "\knight#92.txt"), FileAppend(t, dir "\knight#92.txt", "UTF-8")
+        d := loader.compare("knight#92.txt", "knight#91.txt"), g := "", l := ""
+        for it in d.gained
+            g .= it.name " (" it.where ")"
+        for it in d.lost
+            l .= it.name " (" it.where ")"
+        same := loader.compare("knight#91.txt", "knight#91.txt")
+        TwcCheck(d.cls = "Lancer" && d.from = "240" && d.to = "243" && g = "Calamity (inventory 2)" && l = "Ring of Hope (inventory 2)"
+            && !same.gained.Length && !same.lost.Length && LoaderEngine.ShortName("knight#91.txt", "knight#92.txt") = "#91",
+            "compare: " d.cls " " d.from " -> " d.to ", gained " g ", lost " l " (a 2nd Calamity: its new slot; bag items swapped: neither)")
+        global saveSel, diffHead, diffLevel, diffGained, saveRowsShown, SAVE_ROWS, DIFF_ROWS
+        ShowPage("loader"), showHidden := true, RefreshFiles(), saveSel := "S|knight#*", RenderSaves(), ShowSelectedMessage()
+        TwcCheck(diffHead.Visible && diffHead.Text = "knight#92   vs   #91" && InStr(diffGained.Text, "+ Calamity") && saveRowsShown = SAVE_ROWS - DIFF_ROWS,
+            "the panel: '" diffHead.Text "' / '" diffLevel.Text "' / '" diffGained.Text "'; rows in view " saveRowsShown)
+        saveSel := "Sniper.txt", RenderSaves(), ShowSelectedMessage(), showHidden := false
+        TwcCheck(!diffHead.Visible && saveRowsShown = SAVE_ROWS, "a save of its own: no panel, all rows")
+
         ; -- archive: knight keeps its newest 1; a name already in Archive isn't overwritten
         DirCreate(dir "\Archive"), FileAppend("old", dir "\Archive\knight#90.txt", "UTF-8")
         c := loader.archiveCount("knight#*", 1), r := loader.archiveSeries("knight#*", 1)

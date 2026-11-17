@@ -100,6 +100,10 @@ next to the script records each change and each quickcast with the time.
   The list follows the save folder: a save TWRPG writes (or one added, renamed or
   removed) shows up while the page is open. Only new or changed files are read, so
   the list and `-l` / `-sn` stay quick with hundreds of saves.
+  Select a numbered save (a series row is its newest) and the bottom of the list shows
+  what changed since the number before it: the hero and level (`Lancer 240 → 243`), items
+  gained on the left and lost on the right with their slot (`+ Calamity (inventory 2)`), or
+  "Same items as #92". An item that only moved (bag to inventory) isn't counted.
   Right-click a series for **Archive older saves** (keep the newest 1 / 3 / 5 / 10):
   after a confirm, the older numbers move to an `Archive` folder inside the save
   folder. They leave the list and `-l`, nothing is deleted, and a name already in

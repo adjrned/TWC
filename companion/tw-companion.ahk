@@ -121,6 +121,9 @@ global saveRows := [], saveCard, saveBar, saveThumb      ; the custom save list 
 global saveFiles := [], saveOffset := 0, saveSel := "", showHidden := false, expanded := Map(), saveCache := 0
 global saveRowAt := Map()       ; a save row's control hwnd -> its row (the right-click menu)
 global SAVE_ROWS := 10, SAVE_ROW_H := 34
+; what changed since the save before (the user's ask, 2026-11-16): the list's last DIFF_ROWS rows
+; give way to it while a numbered save is selected (ShowSaveDiff); saveRowsShown = the rows in view
+global DIFF_ROWS := 3, saveRowsShown := SAVE_ROWS, diffSep, diffHead, diffLevel, diffGained, diffLost
 ; macros
 global macroNewBtn, macroHelpBtn, macroPasteCb, macroPasteLbl, macroLblKey, macroKeyText, macroSummary, macroCapBtn, macroClearBtn, macroHint, macroMsgEdit
 global macroLblMsg
@@ -674,6 +677,18 @@ BuildSaveList() {
         }
         saveRows.Push(row)
     }
+    ; what changed since the save before: the bottom DIFF_ROWS rows of the card (ShowSaveDiff)
+    local dy := y + 1 + (SAVE_ROWS - DIFF_ROWS) * SAVE_ROW_H
+    diffSep := mainGui.AddText("x" (x + 1) " y" dy " w" (w - 2) " h1 +Background" C.frame)
+    diffHead := mainGui.AddText("x" (x + 16) " y" (dy + 8) " w380 h20 0x200 +Background" C.card " c" C.text, "")
+    UISetFont(diffHead, "s9 w600")
+    diffLevel := mainGui.AddText("x" (x + w - 276) " y" (dy + 8) " w260 h20 0x200 Right +Background" C.card " c" C.muted, "")
+    UISetFont(diffLevel, "s9")
+    diffGained := mainGui.AddText("x" (x + 16) " y" (dy + 32) " w316 h" (DIFF_ROWS * SAVE_ROW_H - 38) " +Background" C.card " c" C.text, "")
+    diffLost := mainGui.AddText("x" (x + 344) " y" (dy + 32) " w316 h" (DIFF_ROWS * SAVE_ROW_H - 38) " +Background" C.card " c" C.muted, "")
+    for ctl in [diffGained, diffLost]
+        UISetFont(ctl, "s9")
+    AddToPage("loader", diffSep, diffHead, diffLevel, diffGained, diffLost)
     ; empty state sits in the card
     emptyTitle := mainGui.AddText("x" x " y0 w" w " h24 Center +Background" C.card " c" C.text, "")
     UISetFont(emptyTitle, "s11 w600")
@@ -727,7 +742,7 @@ RefreshFiles(reload := true) {
     hiddenChip.Text := (showHidden ? "Hide ignored" : "Show ignored") (hiddenCount ? "  (" hiddenCount ")" : "")
     if !SaveIndex(saveSel)
         saveSel := saveFiles.Length ? saveFiles[1].id : ""
-    saveOffset := Max(0, Min(saveOffset, saveFiles.Length - SAVE_ROWS))
+    saveOffset := Max(0, Min(saveOffset, saveFiles.Length - saveRowsShown))
     RenderSaves()
     ShowEmptyState(saveFiles.Length ? "" : EmptyReason())
     ShowSelectedMessage()
@@ -755,7 +770,7 @@ RenderSaveRows() {
     local sel := SaveIndex(saveSel)
     saveBar.Visible := false
     for row in saveRows {
-        local idx := saveOffset + row.idx, has := idx <= saveFiles.Length
+        local idx := saveOffset + row.idx, has := idx <= saveFiles.Length && row.idx <= saveRowsShown
         for k in ["star", "name", "count", "msg", "date", "eye", "sep"]
             row.%k%.Visible := has
         if !has
@@ -781,11 +796,11 @@ RenderSaveRows() {
         }
     }
     ; scroll position, like a thin overlay scrollbar
-    local over := saveFiles.Length > SAVE_ROWS
+    local over := saveFiles.Length > saveRowsShown
     saveThumb.Visible := over
     if over {
-        local trackH := saveCard.h - 8, th := Max(18, trackH * SAVE_ROWS // saveFiles.Length)
-        saveThumb.Move(, saveCard.y + 4 + (trackH - th) * saveOffset // (saveFiles.Length - SAVE_ROWS), , th)
+        local trackH := saveRowsShown * SAVE_ROW_H - 6, th := Max(18, trackH * saveRowsShown // saveFiles.Length)
+        saveThumb.Move(, saveCard.y + 4 + (trackH - th) * saveOffset // (saveFiles.Length - saveRowsShown), , th)
     }
 }
 
@@ -825,20 +840,20 @@ SaveRowClick(i, what, *) {
 
 ; move the selection by n rows, keeping it in view
 SaveMove(n) {
-    global saveFiles, saveOffset, saveSel, SAVE_ROWS
+    global saveFiles, saveOffset, saveSel, saveRowsShown
     if !saveFiles.Length
         return
     i := Max(1, Min(saveFiles.Length, SaveIndex(saveSel) + n))
     saveSel := saveFiles[i].id
     if i <= saveOffset
         saveOffset := i - 1
-    else if i > saveOffset + SAVE_ROWS
-        saveOffset := i - SAVE_ROWS
+    else if i > saveOffset + saveRowsShown
+        saveOffset := i - saveRowsShown
     RenderSaves(), ShowSelectedMessage()
 }
 
 SaveListWheel(wParam, lParam, msg, hwnd) {
-    global mainGui, currentPage, saveCard, saveOffset, saveFiles, SAVE_ROWS
+    global mainGui, currentPage, saveCard, saveOffset, saveFiles, saveRowsShown
     if currentPage != "loader" || !WinActive("ahk_id " mainGui.Hwnd)
         return
     mx := lParam << 48 >> 48, my := lParam << 32 >> 48       ; signed screen coords
@@ -847,7 +862,7 @@ SaveListWheel(wParam, lParam, msg, hwnd) {
     if mx < saveCard.x || mx > saveCard.x + saveCard.w || my < saveCard.y || my > saveCard.y + saveCard.h
         return
     step := (wParam << 32 >> 48) > 0 ? -3 : 3
-    saveOffset := Max(0, Min(saveOffset + step, saveFiles.Length - SAVE_ROWS))
+    saveOffset := Max(0, Min(saveOffset + step, saveFiles.Length - saveRowsShown))
     RenderSaves()
     return 0
 }
@@ -862,6 +877,57 @@ ShowSelectedMessage() {
     if msgEdit.Value != v
         msgEdit.Value := v
     msgSummary.Text := i ? MessageSummary(v) : ""
+    ShowSaveDiff()
+}
+
+; What changed since the save before, for the selected save of a series (its row: the newest
+; number; an expanded row: that one) against the next lower number. Hero and level at the right,
+; items gained on the left, lost on the right (LoaderEngine.compare). No save before: the rows
+; take the space back.
+ShowSaveDiff() {
+    global saveSel, saveFiles, saveCache, saveOffset, saveRowsShown, loader, DIFF_ROWS, SAVE_ROWS
+    global diffSep, diffHead, diffLevel, diffGained, diffLost
+    name := "", prev := "", d := 0
+    if (i := SaveIndex(saveSel)) && (row := saveFiles[i]).kind != "file" {
+        for e in saveCache
+            if e.kind = "series" && e.key = row.key {
+                name := row.kind = "child" ? row.name : e.files[1].name
+                for k, f in e.files
+                    if f.name = name && k < e.files.Length
+                        prev := e.files[k + 1].name
+            }
+        if prev != ""
+            d := loader.compare(name, prev)
+    }
+    shown := d ? SAVE_ROWS - DIFF_ROWS : SAVE_ROWS
+    for ctl in [diffSep, diffHead, diffLevel, diffGained, diffLost]
+        ctl.Visible := !!d
+    if d {
+        diffHead.Text := RegExReplace(name, "i)\.txt$") "   vs   " LoaderEngine.ShortName(prev, name)
+        diffLevel.Text := Trim(d.cls " " (d.from = d.to || d.from = "" ? d.to : d.from " → " d.to))
+        diffGained.Text := DiffLines(d.gained, "+", d.lost.Length ? "" : "Same items as " LoaderEngine.ShortName(prev, name))
+        diffLost.Text := DiffLines(d.lost, "−", "")
+    }
+    if shown != saveRowsShown {
+        saveRowsShown := shown
+        ; the selection stays in view
+        if i && i > saveOffset + saveRowsShown
+            saveOffset := i - saveRowsShown
+        saveOffset := Max(0, Min(saveOffset, saveFiles.Length - saveRowsShown))
+        RenderSaves()
+    }
+}
+; up to 4 lines: "+ Calamity   (inventory 2)"; more: the last says how many more
+DiffLines(items, mark, none) {
+    if !items.Length
+        return none
+    out := ""
+    for k, it in items {
+        if k = 4 && items.Length > 4
+            return out mark " " (items.Length - 3) " more"
+        out .= mark " " it.name "   (" it.where ")`n"
+    }
+    return RTrim(out, "`n")
 }
 
 ; what a load message will send: nothing / the line / one of N at random
@@ -3115,8 +3181,8 @@ $~Esc:: EscHide()
 #HotIf WinActive("TW Companion") && currentPage = "loader" && !MsgEditFocused()
 Up:: SaveMove(-1)
 Down:: SaveMove(1)
-PgUp:: SaveMove(-SAVE_ROWS)
-PgDn:: SaveMove(SAVE_ROWS)
+PgUp:: SaveMove(-saveRowsShown)
+PgDn:: SaveMove(saveRowsShown)
 Enter:: LoadSelected()
 #HotIf
 

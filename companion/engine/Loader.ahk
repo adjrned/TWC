@@ -432,6 +432,62 @@ class LoaderEngine {
         return { folder: this.folder }
     }
 
+    ; -- what changed between two saves (the user's ask, 2026-11-16) ---------------------
+    ; A save's hero and items, from the lines TWRPG writes above its codes:
+    ;   "Class: Lancer", "Level: 240", then "----------Hero Inventory----------" "1. Calamity" ...,
+    ;   "----------Bag----------" "1. ..." up to a line of dashes alone.
+    ;   { cls, level, items: [{ name, where: "inventory 2" / "bag 4" }] }
+    static SaveInfo(text) {
+        info := { cls: "", level: "", items: [] }
+        if RegExMatch(text, 'Class:\s*([^"\r\n]+)', &m)
+            info.cls := Trim(m[1])
+        if RegExMatch(text, 'Level:\s*(\d+)', &m)
+            info.level := m[1]
+        where := ""
+        for line in StrSplit(text, "`n", "`r") {
+            if RegExMatch(line, '"-{5,}\s*(.*?)\s*-{5,}"', &h) {
+                where := h[1] = "" ? "" : InStr(h[1], "Inventory") || h[1] = "영웅 아이템" ? "inventory" : StrLower(h[1])
+                continue
+            }
+            if where != "" && RegExMatch(line, '"(\d+)\.\s*([^"]*?)\s*"', &it) && it[2] != ""
+                info.items.Push({ name: it[2], where: where " " it[1] })
+        }
+        return info
+    }
+    ; name's hero and level against prev's, and the items it has that prev hadn't (gained) and the
+    ; other way (lost); an item only moved (bag to inventory) is neither. 0 = a file can't be read
+    compare(name, prev) {
+        try a := LoaderEngine.SaveInfo(FileRead(this.folder "\" name, "UTF-8")), b := LoaderEngine.SaveInfo(FileRead(this.folder "\" prev, "UTF-8"))
+        catch
+            return 0
+        ; x's items not in y: the same item in the same slot first, then anywhere (two Calamity, one
+        ; new: the new one's slot is the one shown)
+        Only(x, y) {
+            same := Map(), n := Map(), rest := [], out := []
+            for it in y.items
+                same[it.name "|" it.where] := 1
+            for it in x.items
+                if same.Has(k := it.name "|" it.where)
+                    same.Delete(k)
+                else
+                    rest.Push(it)
+            for k in same
+                n[p := SubStr(k, 1, InStr(k, "|", , -1) - 1)] := n.Get(p, 0) + 1
+            for it in rest
+                if n.Get(it.name, 0) > 0
+                    n[it.name] -= 1
+                else
+                    out.Push(it)
+            return out
+        }
+        return { cls: a.cls != "" ? a.cls : b.cls, from: b.level, to: a.level, gained: Only(a, b), lost: Only(b, a) }
+    }
+    ; prev as short as it reads next to name: "#92" for knight#92 beside knight#93, else its name
+    static ShortName(prev, name) {
+        p := RegExReplace(prev, "i)\.txt$"), s := LoaderEngine.Series(prev), t := LoaderEngine.Series(name)
+        return s && t && s.key = t.key ? SubStr(p, StrLen(s.stem) + 1) : p
+    }
+
     ; -- archive (the user's ask, 2026-11-16) ------------------------------------------
     ; a series' older saves moved to <folder>\Archive, keeping its newest `keep` numbers: out of the
     ; list and -l, still on disk. Never overwrites: a name already in Archive gets " (2)", " (3)"...
