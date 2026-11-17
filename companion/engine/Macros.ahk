@@ -148,9 +148,13 @@ class MacrosEngine {
     }
 
     sendLines(lines) {
-        for line in lines
-            if line != ""
-                wc3Chat(line)
+        try {
+            for line in lines
+                if line != ""
+                    wc3Chat(line)
+        } catch WC3FocusLost {
+            Push("toast", { kind: "error", msg: "Macro stopped: Warcraft III lost focus" })
+        }
     }
 
     refresh() {

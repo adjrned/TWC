@@ -366,14 +366,19 @@ class LoaderEngine {
             if name = ""
                 return Push("toast", { kind: "error", msg: "Load a save with the companion first, or type -sn <name>" })
             if !FocusWarcraft()
-                return Push("toast", { kind: "error", msg: "Warcraft III not found" })
-            wc3Chat("-save " name)
+                return Push("toast", { kind: "error", msg: FocusWarcraftError() })
+            try wc3Chat("-save " name)
+            catch WC3FocusLost
+                return Push("toast", { kind: "error", msg: "Not saved: Warcraft III lost focus before -save " name })
             ; that's now the save to continue from: -ll loads it, the next -sn
             ; counts up from it even before TWRPG has written the file
+            prevSel := Ini(this.section, "selectedFile", ""), prevLast := this.sessionLast
             SetIni(name ".txt", this.section, "selectedFile")
             this.sessionLast := name ".txt"
             SetClipboardAfterChat(name)         ; the save's name, to paste where you keep track of them
-            return Push("toast", { msg: "Saved as " name " · copied to the clipboard" })
+            Push("toast", { msg: "Saving as " name "… · copied to the clipboard" })
+            this.watchSave(name ".txt", prevSel, prevLast)
+            return
         }
         if arg = "" {
             last := Ini(this.section, "selectedFile", "")
@@ -388,6 +393,34 @@ class LoaderEngine {
             return Push("toast", { kind: "error", msg: 'No save matches "' arg '"' })
         Push("toast", { msg: "Loading " StrReplace(name, ".txt", "") "…" })
         return this.load(Map("name", name))
+    }
+
+    ; -sn: whether TWRPG wrote the save (the user's ask, 2026-11-16: -sn took it as saved, and -ll
+    ; then pointed at a file that never came). Looked for every 250 ms for SAVE_WAIT ms: a new
+    ; file, or one there before with a newer time. Seen: "Saved". Not: said so, and -ll / -sn
+    ; go back to the save before (unless another load or -sn came since).
+    static SAVE_WAIT := 10000
+    watchSave(file, prevSel, prevLast) {
+        path := this.folder "\" file, start := A_TickCount
+        before := FileExist(path) ? FileGetTime(path, "M") : ""
+        Tick() {
+            if FileExist(path) && FileGetTime(path, "M") != before && FileGetSize(path) {
+                SetTimer(Tick, 0)
+                try DebugLog("-sn: " file " written after " (A_TickCount - start) " ms")
+                return Push("toast", { kind: "ok", msg: "Saved " StrReplace(file, ".txt", "") })
+            }
+            if A_TickCount - start < LoaderEngine.SAVE_WAIT
+                return
+            SetTimer(Tick, 0)
+            try DebugLog("-sn: no " file " in " this.folder " after " LoaderEngine.SAVE_WAIT " ms")
+            if this.sessionLast = file {
+                this.sessionLast := prevLast
+                if Ini(this.section, "selectedFile", "") = file
+                    SetIni(prevSel, this.section, "selectedFile")
+            }
+            Push("toast", { kind: "error", msg: "TWRPG didn't save " StrReplace(file, ".txt", "") ": no file after " LoaderEngine.SAVE_WAIT // 1000 " s" })
+        }
+        SetTimer(Tick, 250)
     }
 
     ; newest-numbered file of a series key
@@ -471,7 +504,7 @@ class LoaderEngine {
         }
 
         if !FocusWarcraft() {
-            Push("toast", { kind: "error", msg: "Warcraft III not found" })
+            Push("toast", { kind: "error", msg: FocusWarcraftError() })
             return { error: "no wc3" }
         }
 
@@ -481,12 +514,16 @@ class LoaderEngine {
         ; keyboard/mouse are held for the 1-2 s this takes: a key or Enter
         ; pressed mid-load would land inside the codes (needs admin, which the
         ; companion has; Ctrl+Alt+Del always releases it)
+        ; every line stops if the game isn't in front any more (wc3Chat's ChatGuard): typed on,
+        ; the codes went to that window instead, and its Enter sent them
         BlockInput("On")
+        sent := 0, lost := false
         try {
             wc3Chat("-convert " userName)       ; always (the user, 2026-10-31: no longer a setting)
             for code in codes {
                 Sleep(delay)
                 wc3Chat(code)
+                sent++
             }
             wc3Chat("-refresh")
             ; the load message once the save is in (the user's pick, 2026-10-29: after the codes, not before)
@@ -497,8 +534,15 @@ class LoaderEngine {
             Sleep(Integer(Ini("Settings", "postLoadDelay", 1000)))
             ControlSend("{f1}{Ctrl Down}{1}{Ctrl Up}", , WarcraftIII)
             ControlSend("{Esc}", , WarcraftIII)          ; the bag summoned back: always (the user, 2026-10-31)
+        } catch WC3FocusLost {
+            lost := true
         } finally {
             BlockInput("Off")
+        }
+        if lost {
+            try DebugLog("load " name ": stopped, Warcraft III not in front (" WinGetTitle("A") "), " sent " of " codes.Length " codes sent")
+            Push("toast", { kind: "error", msg: "Load stopped: Warcraft III lost focus (" sent " of " codes.Length " codes sent)" })
+            return { error: "focus lost" }
         }
         ; only a load that went through counts as "last" (-ll, -sn)
         SetIni(name, this.section, "selectedFile")

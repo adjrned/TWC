@@ -105,7 +105,14 @@ next to the script records each change and each quickcast with the time.
     `-save knight#93` after `knight#92` (not one remembered from an earlier day:
     you may be on another hero). TWRPG's `-save` drops spaces and saves
     lowercase (`-save Sorc 3` writes `sorc3.txt`), so `-sn` types names that
-    way, and `-l` ignores spaces when matching (`-l sorc 3` finds `sorc3`)
+    way, and `-l` ignores spaces when matching (`-l sorc 3` finds `sorc3`).
+    It then watches the save folder: "Saved knight#93" once the file is
+    written, or, if none comes within 10 s, says so and `-ll` / `-sn` stay on
+    the save before
+  - Every chat line the companion types (loads, `-sn`, hosting, macros, pings)
+    first checks that Warcraft III is still the window in front; if a popup or
+    Alt+Tab took it, the load stops ("Load stopped: … 3 of 5 codes sent")
+    instead of typing the codes into that window
 
   **Numbered saves.** Saves ending in a number (`knight#91`, `knight#92`, or
   `sniper_007`) are one *series*: a single row named after it (`knight`, or the

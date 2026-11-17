@@ -121,19 +121,24 @@ class HostEngine {
             return { error: "missing fields" }
         }
         if !FocusWarcraft() {
-            Push("toast", { kind: "error", msg: "Warcraft III not found" })
+            Push("toast", { kind: "error", msg: FocusWarcraftError() })
             return { error: "no wc3" }
         }
         ; what -h alone uses next time
         this.select(bot), SetIni(game, this.section, "gameName")
         HideMainWindow()
         exBefore := this.field(bot, "exBefore"), exAfter := this.field(bot, "exAfter")
-        if exBefore != ""
-            wc3Chat("/w " bot " " trig exBefore)
-        wc3Chat("/w " bot " " trig (private ? "priv" : "pub") " " game)
-        if exAfter != ""
-            wc3Chat("/w " bot " " trig exAfter)
-        wc3Chat("Game Name: " game)
+        try {
+            if exBefore != ""
+                wc3Chat("/w " bot " " trig exBefore)
+            wc3Chat("/w " bot " " trig (private ? "priv" : "pub") " " game)
+            if exAfter != ""
+                wc3Chat("/w " bot " " trig exAfter)
+            wc3Chat("Game Name: " game)
+        } catch WC3FocusLost {
+            Push("toast", { kind: "error", msg: "Hosting stopped: Warcraft III lost focus" })
+            return { error: "focus lost" }
+        }
         Push("toast", { kind: "ok", msg: "Hosting " (private ? "private" : "public") " lobby on " bot ": " game })
         return { ok: 1 }
     }

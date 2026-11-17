@@ -137,18 +137,30 @@ Join(sep, params*) {
 ; A chat line in Warcraft III: open chat, the text, Enter. With [Chat] paste
 ; on (Macros page), the text is pasted (Ctrl+V) instead of typed: faster for
 ; long lines, any characters; the clipboard is put back after.
+; Keys go to the window in front, so each step first checks it's still the game
+; (ChatGuard): a popup or an Alt+Tab mid-load got the -load codes, and the Enter
+; sent them there (pasted too: Enter, Ctrl+V, Enter). Callers catch WC3FocusLost.
 wc3Chat(text) {
+    ChatGuard()
     if InStr(WC3WindowKey(), "reforged")
         return wc3ChatReforged(text)
     ChatSendHold()
     if ChatPasteOn() {
         SendInput("{Enter}"), Sleep(40)
+        ChatGuard()
         ChatInsert(text)
+        ChatGuard()
         return SendInput("{Enter}")
     }
     SendInput("{Enter}" RegExReplace(text, "[\^!+#{}]", "{$0}") "{Enter}")
 }
 ChatPasteOn() => Integer(Ini("Chat", "paste", 0))
+class WC3FocusLost extends Error {
+}
+ChatGuard() {
+    if !WinActive(WarcraftIII)
+        throw WC3FocusLost("Warcraft III is no longer the window in front")
+}
 ; The game module's quickcast keys are off while the companion types a chat
 ; line: 1.28 opens its chat box a frame after the Enter, so the line's first
 ; quickcast key reached the module before it, which pressed the ability and
@@ -211,11 +223,13 @@ wc3ChatReforged(text) {
         Sleep(10)
     opened := A_TickCount - t
     Sleep(g ? 30 : 200)                     ; let its text field take focus (no box known: just wait)
+    ChatGuard()
     ChatInsert(text)
     Sleep(30)
     global debugGui
     if IsSet(debugGui) && debugGui          ; tray Debug on: keep what the box shows (chat-*.bmp)
         try ChatBoxSnapshot(g)
+    ChatGuard()
     SendInput("{Enter}")
     t := A_TickCount
     while A_TickCount - t < 200 && g && chatBox.isOpen(g)
@@ -250,13 +264,15 @@ ChatBoxSnapshot(g) {
     f.RawWrite(bmp), f.Close()
 }
 
+; true once the game is in front (WinActivate alone doesn't wait for it, and Windows may refuse)
 FocusWarcraft() {
-    if WinExist(WarcraftIII) {
-        WinActivate(WarcraftIII)
-        return true
-    }
-    return false
+    if !WinExist(WarcraftIII)
+        return false
+    WinActivate(WarcraftIII)
+    return WinWaitActive(WarcraftIII, , 1) ? true : false
 }
+; the error for a FocusWarcraft() that failed
+FocusWarcraftError() => WinExist(WarcraftIII) ? "Couldn't bring Warcraft III to the front" : "Warcraft III not found"
 
 ; ============================================================================
 ;  RegisterHotkey - self-managing hotkey binding.
