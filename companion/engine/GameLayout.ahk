@@ -192,5 +192,12 @@ class Shm {
     static chatState := 75640
     static dialogState := 75644
     static mbColour := 75648
-    static size := 75652
+    static blScreen := 75652
+    static blWindowed := 75656
+    static blRetry := 75660
+    static blRetryFor := 75664
+    static blTries := 75668
+    static blT := 75672
+    static blWhy := 75704
+    static size := 75800
 }
