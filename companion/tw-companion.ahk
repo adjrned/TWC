@@ -2373,10 +2373,14 @@ BuildSettingsPage() {
     ; -- updates, and Reset ------------------------------------------------------------------
     local uy := fy + 150 + 14
     local resetBtn := MkButton("Reset all settings", x, uy, 150, 28, C.chip, C.muted, (*) => ResetAll())
-    updLabel := mainGui.AddText("x" (x + 166) " y" (uy + 4) " w" (cw - 166 - 170) " h20 Right +Background" C.panel " c" C.muted, "")
+    updLabel := mainGui.AddText("x" (x + 166) " y" (uy + 4) " w" (cw - 166 - 170 - 160) " h20 Right +Background" C.panel " c" C.muted, "")
     UISetFont(updLabel, "s9")
+    ; the update channel: stable for everyone, beta only when opted in (the user, 2026-11-26)
+    local betaLbl := mainGui.AddText("x" (x + cw - 160 - 154) " y" (uy + 4) " w88 h20 Right +Background" C.panel " c" C.muted, "Beta updates")
+    UISetFont(betaLbl, "s9")
+    local betaTgl := MkToggle(mainGui, x + cw - 160 - 62, uy + 2, selfUpdate.channel = "beta", (on) => BetaChannel(on))
     updBtn := MkButton("Check for updates", x + cw - 160, uy, 160, 28, C.chip, C.text, (*) => UpdateButton())
-    AddToPage("settings", resetBtn, updLabel, updBtn)
+    AddToPage("settings", resetBtn, updLabel, betaLbl, betaTgl, updBtn)
 }
 ; the key that opens / hides the companion: [Settings] showKey (F8 by default; the user, 2026-10-31: it was fixed)
 ShowKey() => Ini("Settings", "showKey", "F8")
@@ -3041,7 +3045,7 @@ RefreshUpdateLabel() {
     }
     if A_IsCompiled {
         global buildCommit
-        updLabel.Text := "Updates: beta  ·  " version (buildCommit ? " (" SubStr(buildCommit, 1, 7) ")" : "")
+        updLabel.Text := "Updates: " selfUpdate.channel "  ·  " version (buildCommit ? " (" SubStr(buildCommit, 1, 7) ")" : "")
             . (ago ? "  ·  checked " ago : "") "  ·  checked every hour"
         return
     }
@@ -3054,6 +3058,18 @@ RefreshUpdateLabel() {
         . (ago ? "  ·  checked " ago : "") "  ·  checked every hour"
 }
 UpdateButton() => UpdateReady() ? UpdateNow() : SelfUpdateCheck(true)
+; Settings' Beta updates: the channel switched, and the other channel's version looked for at once (a beta
+; copy going back to stable gets the stable version, older or not)
+BetaChannel(on) {
+    global selfUpdate
+    if !selfUpdate.setChannel(on ? "beta" : "stable")
+        return
+    Toast(on ? "Beta updates on: new features before everyone else (they may not be finished)" : "Beta updates off: back to the stable version")
+    RefreshUpdateLabel()
+    if !A_IsCompiled && FileExist(A_ScriptDir "\.no-self-update")
+        return
+    SelfUpdateCheck(true)
+}
 ; Update now: what's waiting goes in at once, and the companion restarts
 UpdateNow() {
     global selfUpdate
@@ -3129,7 +3145,8 @@ StartUpdateCheck() {
     }
     SelfUpdateCheck()
 }
-; The installed exe follows the beta-latest release (rebuilt by GitHub on every push to beta): a build from
+; The installed exe follows its channel's release (stable-latest, or beta-latest when opted in; rebuilt by GitHub
+; on every push to that branch): a build from
 ; another commit has its Setup downloaded (checked by its SHA-256) and run at the next start (silently: it
 ; keeps the settings and starts the new version), or at once with Update now.
 ExeUpdateCheck(manual) {

@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 ; ============================================================================
 ;  SelfUpdateEngine - keeps a source copy of the companion on the latest commit
-;  of a GitHub branch (beta by default), without git.
+;  of a GitHub branch (the channel's: stable, or beta when opted in), without git.
 ;  The branch's file list (GitHub's tree API) gives every file's git blob id,
 ;  a SHA-1 of its content. Local files are hashed the same way, so only the
 ;  files that differ are downloaded (pinned to the commit, so they all match)
@@ -17,7 +17,20 @@ class SelfUpdateEngine {
     static TEXT := "i)\.(ahk|md|txt|py|ps1|json|csv)$"   ; stored with LF in git
 
     enabled => !A_IsCompiled && Integer(Ini(this.section, "auto", 1))
-    branch => Ini(this.section, "branch", "beta")
+    ; the update channel (the user, 2026-11-26): "stable" for everyone (the stable branch, its stable-latest
+    ; release), "beta" only for those who opt in (Settings: Beta updates). A new key: the old [SelfUpdate]
+    ; branch (beta) is never read, so every copy moves to stable unless it opts in.
+    channel => Ini(this.section, "channel", "stable") = "beta" ? "beta" : "stable"
+    branch => this.channel
+    ; -> true when it changed: what was downloaded for the other channel is dropped
+    setChannel(ch) {
+        ch := ch = "beta" ? "beta" : "stable"
+        if ch = this.channel
+            return false
+        SetIni(ch, this.section, "channel")
+        this.dropStaged(), this.setPendingSetup()
+        return true
+    }
     commit => Ini(this.section, "commit", "")
 
     ; -> { commit, files: [{ path, sha }] } changed against this folder; throws on network errors
@@ -100,28 +113,30 @@ class SelfUpdateEngine {
         SetIni(path, this.section, "setupPath"), SetIni(sha, this.section, "setupSha"), SetIni(commit, this.section, "setupCommit")
     }
 
-    ; -- the installed exe: the rolling beta-latest release ------------------
-    ; GitHub Actions rebuilds it on every push to beta (.github/workflows/
-    ; companion-beta.yml). -> { commit, url } of its build and its Setup.
-    static RELEASE := "beta-latest", SETUP := "TWC-Companion-Setup-beta.exe"
+    ; -- the installed exe: the channel's rolling release ---------------------
+    ; GitHub Actions rebuilds it on every push to the channel's branch: stable-latest
+    ; (.github/workflows/companion-stable.yml), beta-latest (companion-beta.yml).
+    ; -> { commit, url } of its build and its Setup.
+    release => this.channel "-latest"
+    setupName => "TWC-Companion-Setup-" this.channel ".exe"
     checkRelease() {
-        j := this.api("releases/tags/" SelfUpdateEngine.RELEASE)
+        j := this.api("releases/tags/" this.release)
         commit := RegExMatch(j, '"target_commitish"\s*:\s*"([0-9a-f]{40})"', &m) ? m[1] : ""
-        url := RegExMatch(j, '"browser_download_url"\s*:\s*"([^"]*' SelfUpdateEngine.SETUP ')"', &u) ? u[1] : ""
+        url := RegExMatch(j, '"browser_download_url"\s*:\s*"([^"]*' this.setupName ')"', &u) ? u[1] : ""
         ; the Setup's SHA-256, as GitHub keeps it for each release file ("digest"), in its own entry (from its name
         ; to its download link): the download is run as admin, so it's checked against it first
         sha := ""
-        if (at := RegExMatch(j, '"name"\s*:\s*"' SelfUpdateEngine.SETUP '"')) && (end := InStr(j, '"browser_download_url"', , at))
+        if (at := RegExMatch(j, '"name"\s*:\s*"' this.setupName '"')) && (end := InStr(j, '"browser_download_url"', , at))
             sha := RegExMatch(SubStr(j, at, end - at), '"digest"\s*:\s*"sha256:([0-9a-f]{64})"', &d) ? d[1] : ""
         if !commit || !url || !sha
-            throw Error("The beta release isn't ready (it's rebuilt after each change; try again in a few minutes)")
+            throw Error("The " this.channel " release isn't ready (it's rebuilt after each change; try again in a few minutes)")
         return { commit: commit, url: url, sha: sha }
     }
     static SetupMatches(path, sha) => sha != "" && FileExist(path) && FileSha256(path) = sha
     ; -> the downloaded Setup's path, once its SHA-256 is the release's (a security check found the Setup ran with
     ; only its size checked, 2026-10-31)
     downloadSetup(r) {
-        path := A_Temp "\" SelfUpdateEngine.SETUP
+        path := A_Temp "\" this.setupName
         try FileDelete(path)
         Download(r.url, path)
         if FileGetSize(path) < 1000000
