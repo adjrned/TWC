@@ -50,8 +50,6 @@ static int altJ;
 static bool inFront = true;
 static void FakeAltJ() { altJ++; }
 static bool FakeInFront() { return inFront; }
-static BYTE glueObj[0x200], dialogObj[0x200], dialogTextFrame[0x200], okBtn[0x200];
-static DWORD FakeSinceStart() { static DWORD t = 4000; return t += 500; }
 static void Stub(DWORD rva, const void *fn) { img[rva - 1] = 0xCC, img[rva] = 0xE9, *(LONG *)(img + rva + 1) = (LONG)((BYTE *)fn - (img + rva + 5)); }
 
 int main() {
@@ -61,13 +59,6 @@ int main() {
     g_base = img; g_imageSize = 0x1000000;
     Stub(RVA_FRAME_BY_NAME, FakeByName), Stub(RVA_CONTROL_CLICK, FakeClick), Stub(RVA_EDIT_SET_TEXT, FakeSetText);
     g_getUi = FakeGetUi, g_pressAltJ = FakeAltJ, g_gameInFront = FakeInFront;       // never a real key
-    g_sinceStart = FakeSinceStart;
-    // the glue (its screen [+0x180]) and the game's message dialog, as 1.28f keeps them
-    *(DWORD *)glueObj = (DWORD)(img + RVA_GLUE_VT), *(DWORD *)(glueObj + GLUE_SCREEN) = 16, *(BYTE **)(img + DATA_GLUE) = glueObj;
-    *(DWORD *)dialogObj = (DWORD)(img + RVA_DIALOG_VT), *(DWORD *)(dialogObj + FRAME_HIDDEN) = 1, *(BYTE **)(img + DATA_DIALOG) = dialogObj;
-    *(DWORD *)dialogTextFrame = (DWORD)(img + RVA_TEXT_FRAME_VT), *(const char **)(dialogTextFrame + TEXT_FRAME_TEXT) = "|cffff0000Unable to join game.|r";
-    *(BYTE **)(dialogObj + DIALOG_TEXT) = dialogTextFrame, *(BYTE **)(dialogObj + DIALOG_OK) = okBtn, *(DWORD *)(dialogObj + DIALOG_KIND) = 1;
-    *(DWORD *)okBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]), *(DWORD *)(okBtn + CONTROL_STATE) = CONTROL_ENABLED;
     static BYTE uiObj[0x10]; *(DWORD *)uiObj = 0x1234; g_uiVtable = 0x1234;
     *(DWORD *)mainBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[1]), *(DWORD *)logonBtn = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
     *(DWORD *)screen = (DWORD)(img + RVA_BNET_MAIN_VT), *(DWORD *)decoyLogon = (DWORD)(img + RVA_GLUE_BUTTON_VT[0]);
@@ -173,46 +164,12 @@ int main() {
     LoginPass(); Sleep(1100); LoginPass();
     bool typedWaits = g_blStep == 12 && altJ == 0 && !strcmp(*(const char **)(gameBox + EDIT_TEXT), "TWRPG 1.0");
     inFront = true; LoginPass();
-    CHECK(toChat && waitChat && customClicked && typedWaits && g_blStep == 13 && sh.blState == 7 && altJ == 1 && clicks == c0 + 2 && sh.blTries == 1,
-          "logged in: Custom Game clicked once the chat panel was ready a second, 'TWRPG 1.0' typed in, Alt+J once the game is in front (no click on the panel's +0x214); the join watched");
-    // layout 51: the game says there's no such game: OK clicked, after blRetry ms the name typed and Join again; then the lobby
-    sh.blRetry = 300, sh.blRetryFor = 60000;
-    LoginPass();
-    bool watching = g_blStep == 13 && sh.blState == 7;              // neither the lobby nor a message yet
-    *(DWORD *)(dialogObj + FRAME_HIDDEN) = 0;
-    LoginPass();
-    bool okClicked = g_blStep == 14 && sh.blState == 9 && clicks == c0 + 3 && clicked[(c0 + 2) % 8] == okBtn && !strcmp(sh.blWhy, "Unable to join game.");
-    *(DWORD *)(dialogObj + FRAME_HIDDEN) = 1;
-    LoginPass();
-    bool waits = g_blStep == 14 && altJ == 1;
-    Sleep(350); LoginPass();
-    bool backToPanel = g_blStep == 11;
-    LoginPass(); Sleep(400); LoginPass(); LoginPass();
-    bool second = altJ == 2 && sh.blTries == 2 && g_blStep == 13 && sh.blState == 7 && sh.blT[5] && sh.blT[6] > sh.blT[5];
-    *(DWORD *)(glueObj + GLUE_SCREEN) = SCREEN_LOBBY;
-    LoginPass();
-    CHECK(watching && okClicked && waits && backToPanel && second && g_blStep == 9 && sh.blState == 10 && sh.blT[7] > sh.blT[6] && sh.blT[4] && sh.blT[3],
-          "no such game: the message's OK clicked (blWhy without its colour codes), Join again after blRetry ms (try 2), then the lobby (blState 10), every step's time");
-    *(DWORD *)(glueObj + GLUE_SCREEN) = 16;
-    // no second try (blRetry 0): the message stays, left to you; the tries' time up: the same; a question isn't answered
-    auto toJoin = [&]() { loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass(); chatUp = false, joinUp = true; LoginPass(); Sleep(1100); LoginPass(); LoginPass(); };
-    sh.blRetry = 0; c0 = clicks; toJoin();
-    *(DWORD *)(dialogObj + FRAME_HIDDEN) = 0; LoginPass();
-    bool noRetry = g_blStep == 9 && sh.blState == 8 && clicks == c0 + 2;   // Logon and Custom Game only, no OK
-    sh.blRetry = 300, sh.blRetryFor = 1; *(DWORD *)(dialogObj + FRAME_HIDDEN) = 1;
-    c0 = clicks; toJoin(); Sleep(5); *(DWORD *)(dialogObj + FRAME_HIDDEN) = 0; LoginPass();
-    bool timeUp = g_blStep == 9 && sh.blState == 8 && clicks == c0 + 2;
-    sh.blRetryFor = 60000, *(DWORD *)(dialogObj + DIALOG_KIND) = DIALOG_QUESTION; c0 = clicks; toJoin(); LoginPass();
-    bool question = g_blStep == 13 && clicks == c0 + 2;
-    g_blAt -= JOIN_WATCH_MS + 1; LoginPass();
-    CHECK(noRetry && timeUp && question && g_blStep == 9 && sh.blState == 8 && clicks == c0 + 2,
-          "no second try when off or when the time for tries is up (OK not clicked: left to you); a question never answered; nothing in 20 s: left to you");
-    *(DWORD *)(dialogObj + FRAME_HIDDEN) = 1, *(DWORD *)(dialogObj + DIALOG_KIND) = 1, sh.blRetry = 0;
+    CHECK(toChat && waitChat && customClicked && typedWaits && g_blStep == 9 && sh.blState == 7 && altJ == 1 && clicks == c0 + 2,
+          "logged in: Custom Game clicked once the chat panel was ready a second, 'TWRPG 1.0' typed in, Alt+J once the game is in front (no click on the panel's +0x214)");
     // not in front for 10 s: the name stays typed in, Join left to you
-    int j0 = altJ;
     loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
     chatUp = false, joinUp = true, inFront = false; LoginPass(); Sleep(1100); LoginPass(); g_blAt -= 11000; LoginPass();
-    CHECK(sh.blState == 8 && altJ == j0 && g_blStep == 9, "the game not in front for 10 s: no key sent, Join left to you");
+    CHECK(sh.blState == 8 && altJ == 1 && g_blStep == 9, "the game not in front for 10 s: no key sent, Join left to you");
     inFront = true;
     // a game selected in the list: Join would join it, so not clicked: the list left to you; no name set: the list stays open
     c0 = clicks; loginAgain(); loginUp = false, chatUp = true; LoginPass(); Sleep(1100); LoginPass();
@@ -234,7 +191,7 @@ int main() {
     sh.blAfter = 0;
     // the password box keeps only 4 of the 7 characters: one line says so (lengths only), the password itself never
     pwMax = 4; loginAgain(); pwMax = 63;
-    static char logText[32768] = "";
+    char logText[8192] = "";
     FILE *lf;
     if (!fopen_s(&lf, "login.log", "rb"))
         logText[fread(logText, 1, sizeof(logText) - 1, lf)] = 0, fclose(lf);
@@ -243,11 +200,7 @@ int main() {
           && !strstr(strstr(logText, "the boxes don't hold") + 1, "the boxes don't hold") && !strstr(logText, "bytes")
           && !strstr(logText, "s3cr")
           && strstr(logText, "logged in: Custom Game clicked") && strstr(logText, "joining 'TWRPG 1.0' (the name box holds 'TWRPG 1.0'; Join ") && strstr(logText, "Alt+J pressed (the game's Join shortcut) for 'TWRPG 1.0'")
-          && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty")
-          && strstr(logText, "into the lobby: try 1 for 'TWRPG 1.0': the game says 'Unable to join game.': OK clicked, again in 0.3 s")
-          && strstr(logText, "into the lobby: in the lobby; from the game's start:") && strstr(logText, " lobby ") && strstr(logText, "(2 tries)")
-          && strstr(logText, "no second try (off): left to you") && strstr(logText, "no more tries (the time for them is up)")
-          && strstr(logText, "20 s after Join neither the lobby nor a message"),
+          && strstr(logText, "after Logon: the login screen not shown, the chat room not shown, the main menu not shown; the account box empty"),
           "the log: the steps, the menus after Logon; a box read-back line only when they don't hold what was typed (lengths only), never the password");
     Verdict();
     return g_fails;

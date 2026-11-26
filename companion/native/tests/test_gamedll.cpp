@@ -553,22 +553,6 @@ int main() {
           && Rtti(RVA_CHAT_PANEL_VT, "CBattleNetChatPanel") & Rtti(RVA_JOIN_PANEL_VT, "CBattleNetCustomJoinPanel") & Rtti(RVA_LISTBOX_WAR3_VT, "CListBoxWar3")
           && CHAT_CUSTOM_BUTTON == 0x2e0 && JOIN_NAME == 0x204 && JOIN_LIST == 0x208 && JOIN_LOAD_BUTTON == 0x214 && LIST_SELECTED == 0x1f4,
           "the chat panel's Custom Game (command 3), the custom games' name box / list / Join (command 4, by name: the selected game, else the typed name); +0x214 ends up as Load (command 3)");
-    // layout 51, into the lobby: the glue's show-screen +337240 (fastcall(index, force)) takes the glue from +3112A0, keeps the
-    // screen up in [glue+0x180] and makes it by its name [+CB3128 + 12 * index]: 11 "GameChatroom" (the lobby), 15 / 16 the
-    // Battle.net screens; the game's message box +2EEDC0 keeps its CDialogWar3 at +D316FC ("DialogWar3"), the dialog's kind at
-    // [+0x170] (+2EC9A0; kind 2 the question picture), its "DialogText" at +0x18C and "DialogButtonOK" at +0x194 (its init
-    // +2E0094..), a CTextFrame's text at +0x1E8 (+12C500)
-    auto str = [](DWORD at) { return *(const char **)(g_base + at); };
-    CHECK(!memcmp(g_base + 0x337258, "\x8B\xD9", 2) && SiteTarget(g_base + 0x33725a) == g_base + RVA_GLUE && !memcmp(g_base + 0x337265, "\x39\x9F\x80\x01\x00\x00", 6)
-          && !memcmp(g_base + 0x3372e1, "\x89\x9F\x80\x01\x00\x00", 6) && !memcmp(g_base + 0x3372ea, "\x8B\x0C\xB5", 3) && *(DWORD *)(g_base + 0x3372ed) == (DWORD)(g_base + 0xcb3128)
-          && !strcmp(str(0xcb3128 + 12 * SCREEN_LOBBY), "GameChatroom") && !strcmp(str(0xcb3128 + 12 * 15), "BattleNetMainFrame") && !strcmp(str(0xcb3128 + 12 * 16), "BattleNetChatroom")
-          && Rtti(RVA_GLUE_VT, "CGlueMgr") && *(DWORD *)(g_base + 0x2f7db7) == (DWORD)(g_base + RVA_GLUE_VT) && GLUE_SCREEN == 0x180 && SCREEN_SWAPPING == 0x11
-          && g_base[0x2eedd1] == 0xA1 && *(DWORD *)(g_base + 0x2eedd2) == (DWORD)(g_base + DATA_DIALOG) && g_base[0x2eede7] == 0xB9 && !strcmp(str(0x2eede8), "DialogWar3")
-          && Rtti(RVA_DIALOG_VT, "CDialogWar3") && !memcmp(g_base + 0x2ec9aa, "\x39\xB7\x70\x01\x00\x00", 6) && !memcmp(g_base + 0x2eca0f, "\x89\xB7\x70\x01\x00\x00", 6)
-          && strstr(str(0xa935a8 + 4 * DIALOG_QUESTION), "question") && DIALOG_KIND == 0x170
-          && !strcmp(str(0x2e0095), "DialogText") && !memcmp(g_base + 0x2e00a0, "\x89\x86\x8C\x01\x00\x00", 6) && !strcmp(str(0x2e00b9), "DialogButtonOK") && !memcmp(g_base + 0x2e00c4, "\x89\x86\x94\x01\x00\x00", 6)
-          && Rtti(RVA_TEXT_FRAME_VT, "CTextFrame") && !memcmp(g_base + 0x12c560, "\x89\x86\xE8\x01\x00\x00", 6),
-          "into the lobby: the screen up is [glue+0x180] (11 the lobby, 'GameChatroom'); the game's message is the CDialogWar3 at +D316FC: kind +0x170, text +0x18C (+0x1E8), OK +0x194");
     // our sweep's tint: a texture's vt+0x24 (+141D00) multiplies its alpha +0x68 by its frame's [+0x88] into +0x6C and takes its
     // colour from +0x69 / +0x6A / +0x6B (white: none)
     CHECK(*(DWORD *)(g_base + SWEEP_TEXTURE_VT + 0x24) == (DWORD)(g_base + 0x141d00) && !memcmp(g_base + 0x141d0c, "\x0F\xB6\xB0\x88\x00\x00\x00", 7)

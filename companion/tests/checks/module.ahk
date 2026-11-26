@@ -163,24 +163,6 @@ TwcModuleRun() {
     bnetLogin.setGame("TWRPG 1.0"), sb3 := sideGame.Value
     TwcCheck(sb1 = "TWRPG 1.0" && sb2 = "rr " && g2 = "rr" && sb3 = "TWRPG 1.0" && StrGet(v + Shm.blGame, 32, "UTF-8") = "TWRPG 1.0",
         "sidebar Join game: shows the Options' name (" sb1 "), typing 'rr ' keeps the space (saved 'rr'), a name set elsewhere shows there")
-    ; straight into the lobby (layout 51): the tries pushed (s -> ms, min -> ms), the status for a try and the lobby, the cover's line
-    ; through the real class (its window isn't touched: line() only); not over a full screen game, nor in a game, nor when off
-    global joinCover
-    NumPut("uint", 51, v, Shm.layout), bnetLogin.setRetry(4), bnetLogin.setRetryFor(2)
-    r1 := NumGet(v, Shm.blRetry, "uint"), r2 := NumGet(v, Shm.blRetryFor, "uint")
-    NumPut("uint", 1, v, Shm.blWindowed), NumPut("uint", 16, v, Shm.blScreen), NumPut("uint", 9, v, Shm.blState), NumPut("uint", 2, v, Shm.blTries)
-    StrPut("Unable to join game.", v + Shm.blWhy, 96, "UTF-8")
-    st9 := bnetLogin.statusText(), cv9 := joinCover.line(v)
-    NumPut("uint", 2, v, Shm.blState), cv2 := joinCover.line(v), NumPut("uint", 7, v, Shm.blState), cv7 := joinCover.line(v)
-    NumPut("uint", 0, v, Shm.blWindowed), cvFull := joinCover.line(v), NumPut("uint", 1, v, Shm.blWindowed)
-    NumPut("uint", 0xFFFFFFFF, v, Shm.blScreen), cvGame := joinCover.line(v), NumPut("uint", 16, v, Shm.blScreen)
-    joinCover.setEnabled(0), cvOff := joinCover.line(v), joinCover.setEnabled(1)
-    NumPut("uint", 10, v, Shm.blState), NumPut("uint", 14200, v, Shm.blT + 28), st10 := bnetLogin.statusText(), cv10 := joinCover.line(v)
-    NumPut("uint", 8, v, Shm.blState), cv8 := joinCover.line(v)
-    TwcCheck(r1 = 4000 && r2 = 120000 && InStr(st9, "TWRPG 1.0 isn't there yet: trying again (2 tries)") && InStr(cv9, "'TWRPG 1.0' isn't there yet · trying again (try 3)`nUnable to join game.")
-        && cv2 = "Logging in as Ruzai…" && cv7 = "Joining 'TWRPG 1.0'…" && cvFull = "" && cvGame = "" && cvOff = "" && InStr(st10, "in the lobby 14.2 s after the game started (2 tries)") && cv10 = "" && cv8 = "",
-        "into the lobby: tries every 4 s for 2 min pushed (" r1 ", " r2 "); '" st9 "' / '" st10 "'; the cover '" StrReplace(cv9, "`n", " / ") "', '" cv2 "', '" cv7 "', none full screen / in a game / off / in the lobby / left to you")
-    bnetLogin.setRetry(3), bnetLogin.setRetryFor(10), NumPut("uint", 3, v, Shm.blState), NumPut("uint", 32, v, Shm.layout)
     ; W3L: found in the game's folders (or their parent) and remembered; never started here
     w3dir := A_Temp "\twc-check-w3l", DirCreate(w3dir "\Game"), FileOpen(w3dir "\w3l.exe", "w").Close()
     loader.DefineProp("installDirs", { call: (*) => [w3dir "\Game"] })

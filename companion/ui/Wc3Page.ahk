@@ -460,7 +460,7 @@ BuffWatchDialog() {
 ; password (saved in Windows' Credential Manager with Save; the box is
 ; emptied then and never shows a saved one).
 BattleNetLoginDialog() {
-    global C, bnetLogin, joinCover
+    global C, bnetLogin
     static g := 0
     if g
         try g.Destroy()
@@ -496,12 +496,7 @@ BattleNetLoginDialog() {
     SendMessage(0x1501, 1, StrPtr("its name (empty: the list)"), gm)       ; EM_SETCUEBANNER
     gm.OnEvent("Change", (src, *) => bnetLogin.setGame(src.Value))
     d.y += 34
-    OptNote(d, "Joined by its name as soon as you're in. Empty: the custom games list stays open to pick from.")
-    OptSlider(d, "Try again every", (*) => bnetLogin.retry, (v) => (IsNumber(v) && (bnetLogin.setRetry(Round(Min(Max(v + 0, 0), 30))), true)), 0, 30, 1)
-    OptSlider(d, "For up to (min)", (*) => bnetLogin.retryFor, (v) => (IsNumber(v) && (bnetLogin.setRetryFor(Round(Min(Max(v + 0, 1), 60))), true)), 1, 60, 1)
-    OptNote(d, "If the game isn't there yet (or is full), its message is closed and the join tried again every so many seconds (0 = once only). Hold Shift to stop.")
-    OptToggle(d, "Cover the menus on the way", joinCover.enabled, (v) => joinCover.setEnabled(v))
-    OptNote(d, "A black screen saying what it's doing until the lobby is up, instead of the menus going by. Only with the game in a window (windowed or windowed full screen); hold Shift to look under it.")
+    OptNote(d, "Joined by its name as soon as you're in. Empty, or if it isn't there: the custom games list stays open to pick from.")
     OptDivider(d)
     OptNote(d, "Once each time the game starts. Hold Shift at the main menu to stay there. A wrong password isn't tried again: the game says so, log in yourself.")
     Wc3DialogShow(d)

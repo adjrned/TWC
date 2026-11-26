@@ -44,7 +44,6 @@ Thread("Interrupt", 0)
 #Include ui\WindowScale.ahk
 #Include ui\TimerHud.ahk
 #Include ui\BossTimers.ahk
-#Include ui\LobbyCover.ahk
 #Include ui\Wc3Page.ahk
 #Include ui\ModuleCheck.ahk
 #Include ui\OverlayPanel.ahk
@@ -186,7 +185,6 @@ buffWatch := BuffWatchEngine(timersHud)
 healthBars := HealthBarsEngine(gameModule)
 gameDisplay := GameDisplayEngine(gameModule)
 bnetLogin := BattleNetLoginEngine(gameModule)
-joinCover := LobbyCover(gameModule, bnetLogin)
 hudCapture := HudCaptureEngine(quickcast, timersHud)
 bossBars := BossTimers(gameModule)
 for fn in Extensions.onStart                ; parts loaded besides (their engines), now that the others are
