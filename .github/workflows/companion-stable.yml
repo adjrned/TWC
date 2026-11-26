@@ -1,0 +1,52 @@
+name: Companion stable build
+
+# Every push to stable that changes the companion builds TW Companion.exe and its
+# Setup on Windows and replaces the rolling "stable-latest" release: the official
+# version. Installed companions check that release and update themselves to it
+# (those who opted in to Beta updates follow beta-latest: companion-beta.yml).
+on:
+  push:
+    branches: ["stable"]
+    paths: ["companion/**", ".github/workflows/companion-stable.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: companion-stable
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build exe, Setup and zip
+        shell: pwsh
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./companion/build/build.ps1
+
+      - name: Replace the stable-latest release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $dist = "companion/dist"
+          $setup = Get-ChildItem "$dist/TWC-Companion-Setup-*.exe" | Select-Object -First 1
+          $zip = Get-ChildItem "$dist/TWC-Companion-*.zip" | Select-Object -First 1
+          # fixed names too, so the download links never change
+          Copy-Item $setup.FullName "$dist/TWC-Companion-Setup-stable.exe"
+          Copy-Item $zip.FullName "$dist/TWC-Companion-stable.zip"
+          $short = "${{ github.sha }}".Substring(0, 7)
+          $notes = "TW Companion, from commit $short on the stable branch. " +
+                   "Installed copies update themselves to this.`n`n" +
+                   "Install: download **TWC-Companion-Setup-stable.exe** and run it. " +
+                   "Windows SmartScreen may warn about an unknown app: *More info* > *Run anyway*."
+          gh release delete stable-latest --yes --cleanup-tag 2>$null
+          gh release create stable-latest --latest --target "${{ github.sha }}" `
+            --title "TW Companion ($short)" --notes "$notes" `
+            "$dist/TWC-Companion-Setup-stable.exe" "$dist/TWC-Companion-stable.zip" $setup.FullName
