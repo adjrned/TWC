@@ -40,6 +40,11 @@ class BattleNetLoginEngine {
     customGames => Integer(Ini(this.section, "customGames", 1))
     setCustomGames(on) => (SetIni(on ? 1 : 0, this.section, "customGames"), this.tick())
     game => Ini(this.section, "game", "")
+    ; the join tried again while the game isn't there yet (layout 51): every `retry` seconds (0 = once), for `retryFor` minutes
+    retry => Max(0, Min(30, Ini(this.section, "retry", 3) + 0))
+    retryFor => Max(1, Min(60, Ini(this.section, "retryFor", 10) + 0))
+    setRetry(s) => (SetIni(s, this.section, "retry"), this.tick())
+    setRetryFor(m) => (SetIni(m, this.section, "retryFor"), this.tick())
     setGame(name) {
         global sideGame
         SetIni(Trim(StrReplace(StrReplace(name, "`n"), "`r")), this.section, "game"), this.tick()
@@ -236,6 +241,8 @@ class BattleNetLoginEngine {
         NumPut("uint", this.enabled && this.gm.enabled ? 1 : 0, v, Shm.blOn)
         if NumGet(v, Shm.layout, "uint") >= 25
             NumPut("uint", this.customGames ? 1 : 0, v, Shm.blAfter), StrPut(SubStr(this.game, 1, 31), v + Shm.blGame, 32, "UTF-8")
+        if NumGet(v, Shm.layout, "uint") >= 51
+            NumPut("uint", Round(this.retry * 1000), v, Shm.blRetry), NumPut("uint", Round(this.retryFor * 60000), v, Shm.blRetryFor)
         if NumGet(v, Shm.blState, "uint") != 2 || !this.enabled
             return this.answered := 0               ; not asking now: the next ask (a new game start too) is answered again
         seq := NumGet(v, Shm.blSeq, "int")
@@ -251,6 +258,11 @@ class BattleNetLoginEngine {
         DebugLog("battle.net login: the module is at the login screen: account '" this.account "' handed over")
     }
 
+    ; " in 14.2 s (2 tries)": the game's start to the lobby (layout 51)
+    lobbyTime(v) {
+        t := NumGet(v, Shm.blT + 7 * 4, "uint"), n := NumGet(v, Shm.blTries, "uint")
+        return t ? " " Format("{:.1f}", t / 1000) " s after the game started" (n > 1 ? " (" n " tries)" : "") : ""
+    }
     statusText() {
         if !this.enabled
             return "Off"
@@ -264,6 +276,8 @@ class BattleNetLoginEngine {
         st := NumGet(v, Shm.blState, "uint")
         return "On · " this.account " · " (st = 1 ? "connecting to Battle.net" : st = 2 ? "at the login screen" : st = 3 ? "logged in (Logon clicked)"
             : st = 6 ? "logged in, the custom games open" : st = 7 ? "joining " this.game : st = 8 ? "logged in, the custom games left to you"
+            : st = 9 ? this.game " isn't there yet: trying again (" NumGet(v, Shm.blTries, "uint") " tries)"
+            : st = 10 ? "in the lobby" this.lobbyTime(v)
             : st = 4 ? "left to you this time (see the module log)" : st = 5 ? "refused (see the module log)" : "waiting for the main menu")
     }
 }

@@ -46,6 +46,7 @@ ModuleCheckFeatures() => [
     ["Your hero's buffs (alerts)", "hero buffs: your hero is", ""],
     ["Cooldown sweep", "cooldown sweep: the first one made", "cooldown sweep: .*(no sweeps|faulted)"],
     ["Battle.net login", "battle.net login: account '.*' typed in, Logon clicked", "battle.net login: .*(faulted|not a glue)"],
+    ["Into the lobby", "into the lobby: in the lobby; from the game's start", "into the lobby: the glue .* has vtable|into the lobby: .* neither the lobby nor a message"],
     ["Bigger buff bar", "buff bar size: x[0-9.]+ \(\d+ frames resized", "buff bar size: .*(refused|faulted)"],
     ["Damage feed", "damage: player \d+.s unit|damage: on \(", "damage: refused|damage: vtable \+[0-9A-F]+ entry"],
     ["Hide the UI, again (1.5 s pass)", "hide UI: the .* (hidden again|anchored again)", ""],

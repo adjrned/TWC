@@ -319,6 +319,18 @@ struct Shared {             // keep in step with engine/GameModule.ahk
     DWORD dialogState;      // module: 0 no game UI, 1 none, 2 one shown (its buttons' keys are the game's then)
     // layout 50: the mana bars' colour (WFE's "Mana Bar:" colour; a user's ask, 2026-11-04)
     DWORD mbColour;         // companion: 0xAARRGGBB, 0 = MANA_COLOUR
+    // layout 51: straight into the lobby (LoginPass / AfterLoginPass): the join watched and tried again, the steps' times.
+    // blState then also: 9 the game wasn't there (blWhy): trying again after blRetry ms, 10 in the lobby
+    DWORD blScreen;         // module: the menus' screen ([glue+0x180]: 11 the lobby, 15 Battle.net, 16 the chat room, 17 between
+                            //   screens), 0xFFFFFFFF no menus (in a game) or not known
+    DWORD blWindowed;       // module: 1 the game is in a window (a window can go over it), 0 full screen, 2 not known yet
+    DWORD blRetry;          // companion: ms between tries of the join while the game isn't there (0 = no second try)
+    DWORD blRetryFor;       // companion: tries go on for this many ms from the first one
+    DWORD blTries;          // module: tries of the join since this game start
+    DWORD blT[8];           // module: ms from the game's start to each step (0 = not reached): 0 the main menu up, 1 Battle.net
+                            //   clicked, 2 the login screen ready, 3 Logon clicked, 4 Custom Game clicked, 5 the first Join,
+                            //   6 the last Join, 7 the lobby
+    char blWhy[96];         // module: the game's message from the last try that failed (colour codes taken out; "" none)
 };
 #pragma pack(pop)
 
@@ -7413,7 +7425,9 @@ static void LoginPass();
 // the passes run while a step waits (the display passes' 4 a second otherwise)
 static const DWORD MENU_SETTLE = 300, MENU_PASS_MS = 50;
 static DWORD g_blWatchUntil;        // Battle.net login: watching the menus after Logon until then (0 = not)
-static int g_blStep;                // Battle.net login: 0 waiting for the main menu, 1 Battle.net clicked, 2 at the login screen, 9 done for this game start
+static int g_blStep;                // Battle.net login: 0 waiting for the main menu, 1 Battle.net clicked, 2 at the login screen, 9 done for this game start;
+                                    //   then 10 the chat panel's Custom Game, 11 the custom games, 12 the name typed: Alt+J, 13 watching the join, 14 waiting to try again
+static DWORD g_blFirstJoin;         // the first Join's tick (the tries go on for blRetryFor from it)
 // -- the boss timers' feed (layout 36) ------------------------------------------------------
 // Every spell's effect goes through the unit's SPELL_EFFECT event (+6b0fc0, thiscall(unit, ability),
 // ret 4: the unit and the player event 0x80323 / 0x80312 checked for listeners, then fired), called from
@@ -7534,8 +7548,8 @@ static void DisplayPass() {
 static void QueueDisplay() {
     static DWORD at;
     DWORD now = GetTickCount();
-    bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 12;
-    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_shared->icOn && !g_shared->csrOn && !g_csr[0].sprite && !g_csr[1].sprite && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !PvWants() && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && g_blStep != 10 && g_blStep != 11 && g_blStep != 12))
+    bool menuStep = g_shared->blOn && g_blStep != 9 || g_blStep >= 10 && g_blStep <= 14;
+    if (!g_getUi || now - at < (menuStep ? MENU_PASS_MS : 250) || (!g_shared->wsOn && !g_wsApplied && !FpsWork() && LatencyWanted() == g_latSet && !g_shared->uiHide && !g_uiHidden && !g_shared->ulOn && !g_ulN && !g_ulModelN && !g_shared->icOn && !g_shared->csrOn && !g_csr[0].sprite && !g_csr[1].sprite && !g_ptOn && !g_shared->fmOn && !g_fmHooked && CountdownWanted() == g_csSet && !g_shared->alOn && !g_alHooked && !g_shared->dmOn && !g_mtHooked && !g_dmPendN && !g_shared->bcOn && !g_bcHooked && !PvWants() && BuffBarScale() == 1 && !g_bbApplied && !g_shared->bbUp && !g_bbUpApplied && !(g_shared->blOn && g_blStep != 9) && !g_blWatchUntil && !(g_blStep >= 10 && g_blStep <= 14)))
         return;
     at = now;
     if (Subclass() && !InterlockedExchange(&g_dispQueued, 1))
@@ -7707,17 +7721,151 @@ static void PressAltJ() {
 }
 static void (*g_pressAltJ)() = PressAltJ;   // the tests' own (they never send keys)
 static bool (*g_gameInFront)() = GameInFront;
+
+// -- straight into the lobby (layout 51) ----------------------------------------------
+// Read by hand in Game.dll (pinned in test_gamedll): the menus are screens the glue (CGlueMgr, vtable
+// +0xa9a268, at +0xd31824: its getter +0x3112a0) shows one at a time through +0x337240 (fastcall(id,
+// force)), the one up in [glue+0x180]: an index into the screen table +0xcb3128 (12 bytes each: name,
+// maker, id), 11 "GameChatroom" (the lobby), 15 "BattleNetMainFrame", 16 "BattleNetChatroom"; 0x11 while
+// one is being swapped for the next. The game's messages are one dialog, CDialogWar3 (vtable +0xa94f88,
+// kept at +0xd316fc by +0x2eedc0, the message box: fastcall(kind, text, ...)): its kind [+0x170] (0 a
+// message, 1 and 3 an error: the OK button alone; 2 a question: Yes / No, +0x2ec9a0), its text frame
+// "DialogText" [+0x18c] (a CTextFrame, +0xa7b3d0: the text [+0x1e8], +0x12c500), "DialogButtonOK" [+0x194]
+// (its init +0x2e0099..+0x2e00fa). A join that fails (no such game, full, started) shows the message;
+// one that works swaps the screen for the lobby. So after Join: the lobby = done; the message (not a
+// question) = OK clicked, then after blRetry ms the name typed and Join again, for blRetryFor ms.
+static const DWORD RVA_GLUE_VT = 0xa9a268, GLUE_SCREEN = 0x180, SCREEN_LOBBY = 11, SCREEN_SWAPPING = 0x11;
+static const DWORD DATA_DIALOG = 0xd316fc, RVA_DIALOG_VT = 0xa94f88, DIALOG_KIND = 0x170, DIALOG_TEXT = 0x18c, DIALOG_OK = 0x194,
+    DIALOG_QUESTION = 2, RVA_TEXT_FRAME_VT = 0xa7b3d0, TEXT_FRAME_TEXT = 0x1e8;
+static const DWORD JOIN_WATCH_MS = 20000;
+// the screen up now, 0xFFFFFFFF none / not known (the glue isn't the one 1.28f makes: said once)
+static DWORD GlueScreen() {
+    BYTE *g = *(BYTE **)(g_base + DATA_GLUE);
+    if (!g || !PageIs(g, READ))
+        return 0xFFFFFFFF;
+    if (*(DWORD *)g != (DWORD)(g_base + RVA_GLUE_VT)) {
+        static bool said;
+        if (!said)
+            said = true, Log("into the lobby: the glue %p has vtable +%06lX, not CGlueMgr's +%06lX: the lobby isn't watched", g, *(DWORD *)g - (DWORD)g_base, RVA_GLUE_VT);
+        return 0xFFFFFFFF;
+    }
+    return *(DWORD *)(g + GLUE_SCREEN);
+}
+// the game's message dialog when it's up, else null
+static BYTE *ShownDialog() {
+    BYTE *d = *(BYTE **)(g_base + DATA_DIALOG);
+    return d && PageIs(d, READ) && *(DWORD *)d == (DWORD)(g_base + RVA_DIALOG_VT) && GlueShown(d) ? d : nullptr;
+}
+static void DialogText(BYTE *d, char *out, size_t n) {
+    out[0] = 0;
+    BYTE *t = *(BYTE **)(d + DIALOG_TEXT);
+    const char *s = t && PageIs(t, READ) && *(DWORD *)t == (DWORD)(g_base + RVA_TEXT_FRAME_VT) ? *(const char **)(t + TEXT_FRAME_TEXT) : nullptr;
+    if (s && PageIs(s, READ))
+        PlainText(s, out, n);
+}
+// ms since the game's process started (the steps' times)
+static DWORD SinceStart() {
+    FILETIME c, e, k, u, now;
+    if (!GetProcessTimes(GetCurrentProcess(), &c, &e, &k, &u))
+        return 0;
+    GetSystemTimeAsFileTime(&now);
+    ULONGLONG a = ((ULONGLONG)c.dwHighDateTime << 32) | c.dwLowDateTime, b = ((ULONGLONG)now.dwHighDateTime << 32) | now.dwLowDateTime;
+    return b > a ? (DWORD)((b - a) / 10000) : 0;
+}
+static DWORD (*g_sinceStart)() = SinceStart;     // the tests' own
+static void Step(int i, bool again = false) {
+    if (!g_shared->blT[i] || again) {
+        DWORD t = g_sinceStart();
+        g_shared->blT[i] = t ? t : 1;
+    }
+}
+// the whole way in one line, at the lobby (or where it stopped)
+static void TimelineLog(const char *end) {
+    static const char *NAMES[8] = { "main menu", "Battle.net clicked", "login screen", "Logon", "Custom Game", "first Join", "last Join", "lobby" };
+    char line[400];
+    int n = sprintf_s(line, "into the lobby: %s; from the game's start:", end);
+    for (int i = 0; i < 8 && n > 0 && n < (int)sizeof(line) - 40; i++)
+        if (g_shared->blT[i])
+            n += sprintf_s(line + n, sizeof(line) - n, " %s %.1f s,", NAMES[i], g_shared->blT[i] / 1000.0);
+    if (n > 0 && line[n - 1] == ',')
+        line[n - 1] = 0;
+    Log("%s (%lu %s)", line, g_shared->blTries, g_shared->blTries == 1 ? "try" : "tries");
+}
+// the screen and the window's kind, for the companion's cover
+static void PublishMenus() {
+    Shared *s = g_shared;
+    __try {
+        s->blScreen = GameUi() ? 0xFFFFFFFF : GlueScreen();
+        BYTE *r = Renderer();
+        s->blWindowed = !r ? 2 : *(DWORD *)(r + R_WINDOW_MODE) == 2 || *(DWORD *)(r + R_WINDOW_MODE) == 3 ? 1 : 0;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        s->blScreen = 0xFFFFFFFF, s->blWindowed = 2;
+    }
+}
+// after Join: the lobby, the game's message (tried again), or nothing (left to you)
+static void JoinWatch(DWORD now) {
+    Shared *s = g_shared;
+    DWORD scr = GlueScreen();
+    if (scr == SCREEN_LOBBY) {
+        Step(7);
+        g_blStep = 9, s->blState = 10;
+        TimelineLog("in the lobby");
+        return;
+    }
+    BYTE *d = ShownDialog();
+    if (d && *(DWORD *)(d + DIALOG_KIND) != DIALOG_QUESTION) {
+        char why[sizeof(s->blWhy)];
+        DialogText(d, why, sizeof(why));
+        BYTE *ok = GlueCheck(*(BYTE **)(d + DIALOG_OK), false, "the message's OK");
+        bool again = s->blRetry && now - g_blFirstJoin < s->blRetryFor;
+        strcpy_s(s->blWhy, why);
+        if (ok && GlueEnabled(ok) && again) {
+            ((ClickFn)(g_base + RVA_CONTROL_CLICK))(ok, 0, 1);
+            g_blStep = 14, g_blAt = now, s->blState = 9;
+            if (s->blTries <= 3 || !(s->blTries % 20))
+                Log("into the lobby: try %lu for '%s': the game says '%s': OK clicked, again in %.1f s", s->blTries, s->blGame, why, s->blRetry / 1000.0);
+            return;
+        }
+        g_blStep = 9, s->blState = 8;
+        Log("into the lobby: try %lu for '%s': the game says '%s': %s", s->blTries, s->blGame, why,
+            !again ? s->blRetry ? "no more tries (the time for them is up): left to you" : "no second try (off): left to you" : "its OK isn't a button that can be clicked: left to you");
+        TimelineLog("stopped");
+        return;
+    }
+    if (now - g_blAt > JOIN_WATCH_MS) {
+        g_blStep = 9, s->blState = 8;
+        Log("into the lobby: %lu s after Join neither the lobby nor a message (screen %lu, the dialog %s): left to you",
+            JOIN_WATCH_MS / 1000, scr, d ? "a question" : "not up");
+        TimelineLog("stopped");
+    }
+}
 static void AfterLoginPass() {
     Shared *s = g_shared;
     DWORD now = GetTickCount();
     static DWORD readySince;
     auto settled = [&](bool ready) { readySince = ready ? readySince ? readySince : now : 0; return ready && now - readySince >= MENU_SETTLE; };
     __try {
+        if (g_blStep == 13)
+            return JoinWatch(now);
+        if (g_blStep == 14) {                   // the game wasn't there: again after blRetry ms (Shift held: stop)
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+                g_blStep = 9, s->blState = 8;
+                Log("into the lobby: Shift held: no more tries for '%s'", s->blGame);
+                return;
+            }
+            if (now - g_blAt >= s->blRetry)
+                g_blStep = 11, g_blAt = now, readySince = 0;
+            return;
+        }
         if (g_blStep == 12) {                   // the name typed: Alt+J once the game is in front
             if (g_gameInFront()) {
                 g_pressAltJ();
-                g_blStep = 9, s->blState = 7;
-                Log("battle.net login: Alt+J pressed (the game's Join shortcut) for '%s'; if there's no such game, the game says so and the list stays", s->blGame);
+                if (!s->blTries++)
+                    g_blFirstJoin = now, Step(5);
+                Step(6, true);
+                g_blStep = 13, g_blAt = now, s->blState = 7;
+                if (s->blTries <= 3)
+                    Log("battle.net login: Alt+J pressed (the game's Join shortcut) for '%s' (try %lu): watching for the lobby or the game's message", s->blGame, s->blTries);
             } else if (now - g_blAt > 10000) {
                 g_blStep = 9, s->blState = 8;
                 Log("battle.net login: the game wasn't in front for 10 s: '%s' is typed in, press Join yourself", s->blGame);
@@ -7729,6 +7877,7 @@ static void AfterLoginPass() {
             BYTE *custom = chat ? GlueCheck(*(BYTE **)(chat + CHAT_CUSTOM_BUTTON), false, "the chat panel's Custom Game") : nullptr;
             if (settled(custom && GlueEnabled(custom))) {
                 ((ClickFn)(g_base + RVA_CONTROL_CLICK))(custom, 0, 1);
+                Step(4);
                 g_blStep = 11, g_blAt = now, readySince = 0;
                 Log("battle.net login: logged in: Custom Game clicked (chat panel %p, button %p)", chat, custom);
             } else if (now - g_blAt > 30000) {
@@ -7769,8 +7918,9 @@ static void AfterLoginPass() {
         }
         Game(RVA_EDIT_SET_TEXT, box, { (DWORD)s->blGame, 1 });
         const char *held = *(const char **)(box + EDIT_TEXT);
-        Log("battle.net login: joining '%s' (the name box holds '%s'; Join %p, the panel's +0x214 = Load %p): pressing Alt+J",
-            s->blGame, held ? held : "", button, *(BYTE **)(join + JOIN_LOAD_BUTTON));
+        if (s->blTries < 3)
+            Log("battle.net login: joining '%s' (the name box holds '%s'; Join %p, the panel's +0x214 = Load %p): pressing Alt+J",
+                s->blGame, held ? held : "", button, *(BYTE **)(join + JOIN_LOAD_BUTTON));
         g_blStep = 12, g_blAt = now;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         g_blStep = 9, s->blState = 5;
@@ -7781,7 +7931,8 @@ static void LoginPass() {
     static bool bad;
     Shared *s = g_shared;
     LoginWatch();
-    if (!bad && (g_blStep == 10 || g_blStep == 11 || g_blStep == 12))
+    PublishMenus();
+    if (!bad && g_blStep >= 10 && g_blStep <= 14)
         return AfterLoginPass();
     if (bad || g_blStep == 9)
         return;
@@ -7834,16 +7985,18 @@ static void LoginPass() {
                                     GlueEnabled(logon) ? "enabled" : "disabled", GlueEnabled(acc) ? "enabled" : "disabled", GlueEnabled(pw) ? "enabled" : "disabled");
         if (g_blStep == 0) {
             if (atLogin) {
-                g_blStep = 2, g_blAt = now, s->blState = 2;
+                g_blStep = 2, g_blAt = now, s->blState = 2, Step(2);
                 Log("battle.net login: at the login screen (account box %p, password %p, Logon %p): asking for the account", acc, pw, logon);
             } else if (GlueShown(bn)) {
                 if (!g_blAt) {
                     g_blAt = now;                       // the menu's own animation first
+                    Step(0);
                     Log("battle.net login: the main menu is up (Battle.net button %p, vtable +%06lX)", bn, *(DWORD *)bn - (DWORD)g_base);
                 } else if (now - g_blAt > MENU_SETTLE) {
                     if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
                         return LoginEnd(4, "Shift held at the main menu: skipped this time");
                     ((ClickFn)(g_base + RVA_CONTROL_CLICK))(bn, 0, 1);
+                    Step(1);
                     g_blStep = 1, g_blAt = now, s->blState = 1;
                     Log("battle.net login: Battle.net clicked");
                 }
@@ -7852,7 +8005,7 @@ static void LoginPass() {
         }
         if (g_blStep == 1) {
             if (atLogin) {
-                g_blStep = 2, g_blAt = now, s->blState = 2;
+                g_blStep = 2, g_blAt = now, s->blState = 2, Step(2);
                 Log("battle.net login: at the login screen (account box %p, password %p, Logon %p): asking for the account", acc, pw, logon);
             } else if (now - g_blAt > 30000)
                 LoginEnd(4, shownLogin ? "the login screen never got ready in 30 s (Logon disabled): left to you" : "no login screen within 30 s (not connected?): left to you");
@@ -7881,6 +8034,7 @@ static void LoginPass() {
             Log("battle.net login: the boxes don't hold what was typed: account '%s' (the companion's '%s'), a password of %u characters (%s the companion's %u)",
                 at ? at : "(none)", s->blAccount, (unsigned)held, same ? "the same as" : "NOT the same as", (unsigned)given);
         ((ClickFn)(g_base + RVA_CONTROL_CLICK))(logon, 0, 1);
+        Step(3);
         g_blStep = s->blAfter ? 10 : 9, s->blState = 3, g_blWatchUntil = GetTickCount() + 15000, g_blAt = GetTickCount();
         Log("battle.net login: account '%s' typed in, Logon clicked", s->blAccount);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -8863,7 +9017,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         }
         ZeroMemory(g_shared, sizeof(Shared));
         g_shared->magic = 'TWC1';
-        g_shared->layout = 50;
+        g_shared->layout = 51;
         g_shared->stamp = ((IMAGE_NT_HEADERS *)((BYTE *)inst + ((IMAGE_DOS_HEADER *)inst)->e_lfanew))->FileHeader.TimeDateStamp;
         sprintf_s(name, "Local\\TWC_GameQc_%lu", GetCurrentProcessId());
         g_wake = CreateEventA(nullptr, FALSE, FALSE, name);
